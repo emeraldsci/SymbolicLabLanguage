@@ -143,29 +143,6 @@ DefineTests[ExperimentDNASequencing,
       False,
       Variables:>{options}
     ],
-    Example[{Options,PreparatoryPrimitives,"Specify a series of manipulations which should be performed before the sequencing experiment:"},
-      ExperimentDNASequencing["Sequencing Standard Plate",
-        {
-          PreparatoryPrimitives -> {Define[<|Name -> "Sequencing Standard Plate", Container ->Model[Container,Plate,"id:Z1lqpMz1EnVL"]|>],
-            Define[<|Name -> "Resuspended Sequencing Standard", Sample -> Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID]|>],
-            Mix[<|Sample -> "Resuspended Sequencing Standard", MixType -> Vortex, Time -> Quantity[1, "Minutes"]|>],
-            Incubate[<|Sample -> "Resuspended Sequencing Standard", Time -> Quantity[2, "Minutes"], Temperature -> Quantity[95, "DegreesCelsius"]|>],
-            Incubate[<|Sample -> "Resuspended Sequencing Standard", Time -> Quantity[15, "Minutes"], Temperature -> Quantity[0, "DegreesCelsius"]|>],
-            Aliquot[
-              <|Source -> "Resuspended Sequencing Standard",
-                Amounts -> {Quantity[10, "Microliters"], Quantity[10, "Microliters"], Quantity[10, "Microliters"], Quantity[10, "Microliters"]},
-                Destinations -> {{"Sequencing Standard Plate", "A1"}, {"Sequencing Standard Plate", "B1"}, {"Sequencing Standard Plate", "C1"}, {"Sequencing Standard Plate", "D1"}}
-              |>
-            ]
-          },
-          DyeSet -> "Z_BigDye Terminator v3.1",
-          PreparedPlate -> True,
-          ReadLength -> 1200,
-          Confirm -> False,
-          Upload -> True}
-      ],
-      ObjectP[Object[Protocol,DNASequencing]]
-    ],
     Example[{Options,PreparatoryUnitOperations,"Specify a series of manipulations which should be performed before the sequencing experiment:"},
         ExperimentDNASequencing["Sequencing Standard Plate",
           {
@@ -448,10 +425,10 @@ DefineTests[ExperimentDNASequencing,
     (* AdenosineTriphosphateTerminator *)
     Example[{Options, AdenosineTriphosphateTerminator, "Specify the dye molecule (dideoxynucelotide triphosphate) used to terminate DNA chains at locations where the base pair on the opposing strand is thymine:"},
       options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID],
-        AdenosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye"],
+        AdenosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
         Output -> Options];
       Lookup[options, AdenosineTriphosphateTerminator],
-      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye"]],
+      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, AdenosineTriphosphateTerminator, "Automatically set based on the DyeSet:"},
@@ -467,10 +444,10 @@ DefineTests[ExperimentDNASequencing,
     (* ThymidineTriphosphateTerminator *)
     Example[{Options, ThymidineTriphosphateTerminator, "Specify the dye molecule (dideoxynucelotide triphosphate) used to terminate DNA chains at locations where the base pair on the opposing strand is adenine:"},
       options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID],
-        ThymidineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye"],
+        ThymidineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
         Output -> Options];
       Lookup[options, ThymidineTriphosphateTerminator],
-      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye"]],
+      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, ThymidineTriphosphateTerminator, "Automatically set based on the DyeSet name:"},
@@ -486,10 +463,10 @@ DefineTests[ExperimentDNASequencing,
     (* GuanosineTriphosphateTerminator *)
     Example[{Options, GuanosineTriphosphateTerminator, "Specify the dye molecule (dideoxynucelotide triphosphate) used to terminate DNA chains at locations where the base pair on the opposing strand is cytosine:"},
       options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID],
-        GuanosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye"],
+        GuanosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
         Output -> Options];
       Lookup[options, GuanosineTriphosphateTerminator],
-      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye"]],
+      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, GuanosineTriphosphateTerminator, "Automatically set based on the composition of MasterMix:"},
@@ -505,10 +482,10 @@ DefineTests[ExperimentDNASequencing,
     (* CytosineTriphosphateTerminator *)
     Example[{Options, CytosineTriphosphateTerminator, "Specify the dye molecule (dideoxynucelotide triphosphate) used to terminate DNA chains at locations where the base pair on the opposing strand is guanine:"},
       options = ExperimentDNASequencing[Object[Sample, "ExperimentDNASequencing test sample 1"<>$SessionUUID],
-        CytosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye"],
+        CytosineTriphosphateTerminator -> Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
         Output -> Options];
       Lookup[options, CytosineTriphosphateTerminator],
-      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye"]],
+      ObjectP[Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, CytosineTriphosphateTerminator, "Automatically set based on the composition of MasterMix:"},
@@ -1678,6 +1655,93 @@ DefineTests[ExperimentDNASequencing,
     (* -------------- *)
     (* -- MESSAGES -- *)
     (* -------------- *)
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentDNASequencing[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample and primer that do not exist (name form):"},
+      ExperimentDNASequencing[{Object[Sample, "Nonexistent sample"],Object[Sample, "Nonexistent sample"]}],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a list of sample(s) and primer(s) that does not exist (name form):"},
+      ExperimentDNASequencing[
+        {
+          Object[Sample, "Nonexistent sample 1"],
+          Object[Sample, "Nonexistent sample 2"]
+        },
+        {
+          Object[Sample, "Nonexistent sample 3"],
+          Object[Sample, "Nonexistent sample 4"]
+        }
+      ],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentDNASequencing[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample container and primer container that do not exist (name form):"},
+      ExperimentDNASequencing[{Object[Container, "Nonexistent container"],Object[Container, "Nonexistent container"]}],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a list of sample container(s) and primer container(s) that does not exist (name form):"},
+      ExperimentDNASequencing[
+        {
+          Object[Container, "Nonexistent Container 1"],
+          Object[Container, "Nonexistent Container 2"]
+        },
+        {
+          Object[Container, "Nonexistent Container 3"],
+          Object[Container, "Nonexistent Container 4"]
+        }
+      ],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentDNASequencing[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample and primer that does not exist (ID form):"},
+      ExperimentDNASequencing[{Object[Sample, "id:12345678"],Object[Sample, "id:12345678"]}],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a list of sample(s) and primer(s) that does not exist (ID form):"},
+      ExperimentDNASequencing[{Object[Sample, "id:12345678"],Object[Sample, "id:12345678"]},{Object[Sample, "id:12345678"],Object[Sample, "id:12345678"]}],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentDNASequencing[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample container and primer container that do not exist (ID form):"},
+      ExperimentDNASequencing[{Object[Container, Vessel, "id:12345678"],Object[Container, Vessel, "id:12345678"]}],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a list of sample container(s) and primer container(s) that do not exist (name form):"},
+      ExperimentDNASequencing[
+        {
+          Object[Container, Vessel, "id:12345678"],
+          Object[Container, Vessel, "id:12345678"]
+        },
+        {
+          Object[Container, Vessel, "id:12345678"],
+          Object[Container, Vessel, "id:12345678"]
+        }
+      ],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
     Example[{Messages, "DuplicateName", "The Name option must not be the name of an already-existing DNASequencing protocol:"},
       ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],
         Name -> "Already existing name"<>$SessionUUID],
@@ -2630,16 +2694,92 @@ DefineTests[ExperimentDNASequencing,
     Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],AliquotContainer->Model[Container,Vessel,"2mL Tube"],Output->Options];
       Lookup[options,AliquotContainer],
-      {1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
+      {{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
       Variables:>{options}
     ],
     Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],DestinationWell->"A1",Output->Options];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1"},
       Variables:>{options}
     ],
-
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount},
+      "Specify the container in which an input Model[Sample] should be prepared:"},
+      options = ExperimentDNASequencing[
+        {Object[Sample, "ExperimentDNASequencing test sample 1" <> $SessionUUID], Object[Sample, "ExperimentDNASequencing test sample 2" <> $SessionUUID]},
+        {Model[Sample, StockSolution, "Resuspended SARS-CoV-2, FluSC2 Multiplex Forward Primer"], Model[Sample, StockSolution, "Resuspended SARS-CoV-2, FluSC2 Multiplex Forward Primer"]},
+        PreparedModelContainer -> Model[Container, Plate, "id:01G6nvkKrrYm"],
+        PreparedModelAmount -> 5 Microliter,
+        (* Needs PrimerVolume option specified. *)
+        PrimerVolume -> 1 Microliter,
+        Output -> Options
+      ];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, StockSolution, "id:N80DNj17D14D"]] ..},
+        {ObjectP[Model[Container, Plate, "id:01G6nvkKrrYm"]] ..},
+        {EqualP[5 Microliter] ..},
+        {"A1", "B1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
+    ],
+    Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+      (* Need developer search here so that resource framework would be able to search out the developer objects *)
+      Block[{$DeveloperSearch = True},
+          ExperimentDNASequencing[
+          {Object[Sample, "ExperimentDNASequencing test sample 1" <> $SessionUUID], Object[Sample, "ExperimentDNASequencing test sample 2" <> $SessionUUID]},
+          {Model[Sample,"ExperimentDNASequencing test DNA sample"<>$SessionUUID], Model[Sample,"ExperimentDNASequencing test DNA sample"<>$SessionUUID]},
+          PreparedModelContainer -> Model[Container, Plate, "id:01G6nvkKrrYm"],
+          PreparedModelAmount -> 5 Microliter,
+          Aliquot -> True,
+          Mix -> True
+        ]
+      ],
+      ObjectP[Object[Protocol, DNASequencing]]
+    ],
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "The model input options are returned correctly when the input samples are models while the input primers are objects:"},
+      (* Need developer search here so that resource framework would be able to search out the developer objects *)
+      Block[{$DeveloperSearch = True},
+        options = ExperimentDNASequencing[
+          {
+            Model[Sample, "ExperimentDNASequencing test DNA sample" <> $SessionUUID],
+            Model[Sample, "ExperimentDNASequencing test DNA sample" <> $SessionUUID]},
+          {
+            Object[Sample, "ExperimentDNASequencing test primer sample 1" <> $SessionUUID],
+            Object[Sample, "ExperimentDNASequencing test primer sample 2" <> $SessionUUID]
+          },
+          PreparedModelContainer -> Model[Container, Plate, "id:01G6nvkKrrYm"],
+          PreparedModelAmount -> 5 Microliter,
+          (* Needs PrimerVolume option specified. *)
+          PrimerVolume -> 1 Microliter,
+          Output -> Options
+        ]
+      ];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, "ExperimentDNASequencing test DNA sample"<>$SessionUUID]] ..},
+        {ObjectP[Model[Container, Plate, "id:01G6nvkKrrYm"]] ..},
+        {EqualP[5 Microliter] ..},
+        {"A1", "B1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
+    ],
     (*Post-processing options tests*)
     Example[{Options,MeasureWeight,"Set the MeasureWeight option:"},
       options=ExperimentDNASequencing[Object[Sample,"ExperimentDNASequencing test sample 1"<>$SessionUUID],MeasureWeight->True,Output->Options];
@@ -2702,7 +2842,7 @@ DefineTests[ExperimentDNASequencing,
       Model[Container,Plate,"id:jLq9jXvzR0XR"],Model[Container,Plate,"id:7X104vneWNvw"],Model[Container,Plate,"id:1ZA60vL978v8"],
       Model[Container,Plate,"id:Z1lqpMzn3JMV"],Model[Container,Plate,"id:dORYzZJqe6e5"],Model[Container,Plate,"id:eGakldJRp9po"],
       Model[Container,Plate,"id:M8n3rx0w7ZNR"],Model[Container,Plate,"id:Y0lXejMaRo0P"],Model[Container,Plate,"id:Z1lqpMz1EnVL"],
-      Model[Container,Plate,"id:rea9jlR4L8eO"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
+      Model[Container,Plate,"id:L8kPEjno5XoE"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
       Model[Container,Plate,"id:L8kPEjnY8dME"],Model[Container,Plate,"id:dORYzZJwOJb5"],Model[Container,Plate,"id:1ZA60vLlZzrM"],
       Model[Container,Plate,"id:Y0lXejMW7NMo"],Model[Container,Plate,"id:Vrbp1jKw7W9q"],Model[Container,Plate,"id:vXl9j57AR9lD"],
       Model[Container,Plate,"id:8qZ1VW0na15R"],Model[Container,Plate,"id:xRO9n3Brzr1Z"],Model[Container,Plate,"id:lYq9jRx9p4xA"],
@@ -2745,6 +2885,8 @@ DefineTests[ExperimentDNASequencing,
         Object[Container,Vessel,"ExperimentDNASequencing test 50mL tube"<>$SessionUUID],
 
         Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID],
+
+        Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
 
         Model[Sample,"ExperimentDNASequencing test DNA sample"<>$SessionUUID],
         Model[Sample,"ExperimentDNASequencing test DNA sample (Deprecated)"<>$SessionUUID],
@@ -2799,10 +2941,15 @@ DefineTests[ExperimentDNASequencing,
 
 
     Block[{$AllowSystemsProtocols=True},
-      Module[{testBench, testProtocol, testInstrument, testPlateSepta, testCapillaryProtector, testSequencingCartridge, parentProtocol,
-        emptyTestContainers,testBufferCartridge,testOldBufferCartridge,fakeBufferCartridgeSepta,testOligomer,testSequencingCartridgeModel,testBufferCartridgeModel,testInstrumentPartsIncorrect,
-        testSampleModels,testDeprecatedSampleModel,testSampleContainerObjects,testSampleContainerResourceObjects,testDiscardedSamples,testModellessSample,
-        containerSampleObjects,instrumentPartsObjects,developerObjects,allObjects},
+      Module[
+        {
+          testBench, testProtocol, testInstrument, testPlateSepta, testCapillaryProtector, testSequencingCartridge, 
+          parentProtocol, emptyTestContainers, testBufferCartridge, testOldBufferCartridge, fakeBufferCartridgeSepta, 
+          testOligomer, testSequencingCartridgeModel, testBufferCartridgeModel, testInstrumentPartsIncorrect, 
+          testSampleModels, testTerminatorDyeMolecule, testDeprecatedSampleModel,testSampleContainerObjects, 
+          testSampleContainerResourceObjects, testDiscardedSamples, testModellessSample, containerSampleObjects, 
+          instrumentPartsObjects, developerObjects, allObjects
+        },
 
         (* set up fake bench as a location for the vessel *)
         {testBench, testProtocol, parentProtocol} = Upload[{
@@ -2979,6 +3126,14 @@ DefineTests[ExperimentDNASequencing,
         (*Make a test DNA identity model*)
         testOligomer=UploadOligomer["ExperimentDNASequencing test DNA molecule"<>$SessionUUID,Molecule->Strand[RandomSequence[500]],PolymerType->DNA];
 
+        (* Make a test terminator dye molecule. *)
+        testTerminatorDyeMolecule = Upload[
+          <|
+            Type -> Model[Molecule],
+            Name -> "ExperimentDNASequencing test terminator dye " <> $SessionUUID
+          |>
+        ];
+
         (*Make some test sample models*)
         testSampleModels=UploadSampleModel[
           {
@@ -3118,6 +3273,10 @@ DefineTests[ExperimentDNASequencing,
           ConstantArray[Discarded,2]
         ];
 
+        Upload[<|Object -> #, Status -> Stocked|> & /@ {
+          Object[Sample, "ExperimentDNASequencing test primer sample 1" <> $SessionUUID],
+          Object[Sample, "ExperimentDNASequencing test primer sample 2" <> $SessionUUID]}];
+
         (*Make a test model-less sample object*)
         testModellessSample=UploadSample[
           {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
@@ -3175,6 +3334,8 @@ DefineTests[ExperimentDNASequencing,
         Object[Container,Vessel,BufferCartridge,"ExperimentDNASequencing test buffer cartridge"<>$SessionUUID],
 
         Model[Molecule,Oligomer,"ExperimentDNASequencing test DNA molecule"<>$SessionUUID],
+
+        Model[Molecule,"ExperimentDNASequencing test terminator dye " <> $SessionUUID],
 
         Model[Sample,"ExperimentDNASequencing test DNA sample"<>$SessionUUID],
         Model[Sample,"ExperimentDNASequencing test DNA sample (Deprecated)"<>$SessionUUID],
@@ -3323,7 +3484,7 @@ DefineTests[ExperimentDNASequencingOptions,
       Model[Container,Plate,"id:jLq9jXvzR0XR"],Model[Container,Plate,"id:7X104vneWNvw"],Model[Container,Plate,"id:1ZA60vL978v8"],
       Model[Container,Plate,"id:Z1lqpMzn3JMV"],Model[Container,Plate,"id:dORYzZJqe6e5"],Model[Container,Plate,"id:eGakldJRp9po"],
       Model[Container,Plate,"id:M8n3rx0w7ZNR"],Model[Container,Plate,"id:Y0lXejMaRo0P"],Model[Container,Plate,"id:Z1lqpMz1EnVL"],
-      Model[Container,Plate,"id:rea9jlR4L8eO"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
+      Model[Container,Plate,"id:L8kPEjno5XoE"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
       Model[Container,Plate,"id:L8kPEjnY8dME"],Model[Container,Plate,"id:dORYzZJwOJb5"],Model[Container,Plate,"id:1ZA60vLlZzrM"],
       Model[Container,Plate,"id:Y0lXejMW7NMo"],Model[Container,Plate,"id:Vrbp1jKw7W9q"],Model[Container,Plate,"id:vXl9j57AR9lD"],
       Model[Container,Plate,"id:8qZ1VW0na15R"],Model[Container,Plate,"id:xRO9n3Brzr1Z"],Model[Container,Plate,"id:lYq9jRx9p4xA"],
@@ -3547,7 +3708,7 @@ DefineTests[ExperimentDNASequencingPreview,
       Model[Container,Plate,"id:jLq9jXvzR0XR"],Model[Container,Plate,"id:7X104vneWNvw"],Model[Container,Plate,"id:1ZA60vL978v8"],
       Model[Container,Plate,"id:Z1lqpMzn3JMV"],Model[Container,Plate,"id:dORYzZJqe6e5"],Model[Container,Plate,"id:eGakldJRp9po"],
       Model[Container,Plate,"id:M8n3rx0w7ZNR"],Model[Container,Plate,"id:Y0lXejMaRo0P"],Model[Container,Plate,"id:Z1lqpMz1EnVL"],
-      Model[Container,Plate,"id:rea9jlR4L8eO"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
+      Model[Container,Plate,"id:L8kPEjno5XoE"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
       Model[Container,Plate,"id:L8kPEjnY8dME"],Model[Container,Plate,"id:dORYzZJwOJb5"],Model[Container,Plate,"id:1ZA60vLlZzrM"],
       Model[Container,Plate,"id:Y0lXejMW7NMo"],Model[Container,Plate,"id:Vrbp1jKw7W9q"],Model[Container,Plate,"id:vXl9j57AR9lD"],
       Model[Container,Plate,"id:8qZ1VW0na15R"],Model[Container,Plate,"id:xRO9n3Brzr1Z"],Model[Container,Plate,"id:lYq9jRx9p4xA"],
@@ -3784,7 +3945,7 @@ DefineTests[ValidExperimentDNASequencingQ,
       Model[Container,Plate,"id:jLq9jXvzR0XR"],Model[Container,Plate,"id:7X104vneWNvw"],Model[Container,Plate,"id:1ZA60vL978v8"],
       Model[Container,Plate,"id:Z1lqpMzn3JMV"],Model[Container,Plate,"id:dORYzZJqe6e5"],Model[Container,Plate,"id:eGakldJRp9po"],
       Model[Container,Plate,"id:M8n3rx0w7ZNR"],Model[Container,Plate,"id:Y0lXejMaRo0P"],Model[Container,Plate,"id:Z1lqpMz1EnVL"],
-      Model[Container,Plate,"id:rea9jlR4L8eO"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
+      Model[Container,Plate,"id:L8kPEjno5XoE"],Model[Container,Plate,"id:KBL5DvwJ0q4k"],Model[Container,Plate,"id:jLq9jXvN5Bpz"],
       Model[Container,Plate,"id:L8kPEjnY8dME"],Model[Container,Plate,"id:dORYzZJwOJb5"],Model[Container,Plate,"id:1ZA60vLlZzrM"],
       Model[Container,Plate,"id:Y0lXejMW7NMo"],Model[Container,Plate,"id:Vrbp1jKw7W9q"],Model[Container,Plate,"id:vXl9j57AR9lD"],
       Model[Container,Plate,"id:8qZ1VW0na15R"],Model[Container,Plate,"id:xRO9n3Brzr1Z"],Model[Container,Plate,"id:lYq9jRx9p4xA"],

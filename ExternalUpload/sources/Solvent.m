@@ -34,6 +34,6 @@ DefineOptions[DefineSolvent,
 ];
 
 
-InstallDefaultUploadFunction[DefineSolvent, Object[Sample], {InstallNameOverload -> False, InstallObjectOverload -> True}];
+InstallDefaultUploadFunction[DefineSolvent, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
 InstallValidQFunction[DefineSolvent, Object[Sample]];
 InstallOptionsFunction[DefineSolvent, Object[Sample]];

@@ -30,6 +30,27 @@ DefineUsage[PlotDynamicLightScattering,
 				}
 			},
 			{
+				Definition -> {"PlotDynamicLightScattering[protocol]", "plot"},
+				Description -> "creates a 'plot' of the data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing dynamic light scattering data objects.",
+						Widget -> Alternatives[
+							"Dynamic light scattering protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, DynamicLightScattering]]],
+							"Thermal shift protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, ThermalShift]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the dynamic light scattering protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotDynamicLightScattering[coordinates]", "plot"},
 				Description->"the xy points making up the spectrum to be plotted.",
 				Inputs:>{
@@ -71,7 +92,7 @@ DefineUsage[PlotDynamicLightScattering,
 			"ExperimentDynamicLightScattering",
 			"PlotDynamicLightScatteringAnalysis"
 		},
-		Author -> {"kelmen.low", "harrison.gronlund", "weiran.wang", "spencer.clark"},
+		Author -> {"taylor.hochuli", "kelmen.low", "harrison.gronlund", "weiran.wang", "spencer.clark"},
 		Preview->True
 	}
 ];

@@ -2740,7 +2740,7 @@ DefineOptionSet[
 	BaseStyleOption :> {
 		{
 			OptionName->BaseStyle,
-			Default->{},
+			Default->White,
 			AllowNull->False,
 			Widget->Alternatives[
 				"Enter individual elements"->Adder[

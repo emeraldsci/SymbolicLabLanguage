@@ -44,7 +44,18 @@ DefineUsage[ExperimentHPLC,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]},
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials"
+                }
+              }
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -60,9 +71,8 @@ DefineUsage[ExperimentHPLC,{
   }},
   MoreInformation -> {
     "If the input samples are not in compatible containers, aliquots will automatically be transferred to appropriate containers.",
-    "Compatible containers for protocols using Model[Instrument, HPLC, \"Waters Acquity UPLC H-Class PDA\"] are: Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] and Model[Container, Vessel, \"HPLC vial (high recovery)\"].",
-    "Compatible containers for protocols using Model[Instrument, HPLC, \"UltiMate 3000\"] are: Model[Container, Plate, \"96-well 2mL Deep Well Plate\"].",
-    "Compatible containers for protocols using Model[Instrument, HPLC, \"Agilent 1290 Infinity II LC System\"] are: Model[Container, Vessel, \"50mL Tube\"] and Model[Container, Vessel, \"15mL Tube\"]."
+    "Compatible containers for protocols using SemiPreparative and Analytical instruments are: Model[Container, Plate, \"96-well 2mL Deep Well Plate\"], Model[Container, Vessel, \"HPLC vial (high recovery)\"], Model[Container, Vessel, \"1mL HPLC Vial (total recovery)\"], Model[Container, Vessel, \"Amber HPLC vial (high recovery)\"], Model[Container, Vessel, \"HPLC vial (high recovery), LCMS Certified\"], Model[Container, Vessel, \"HPLC vial (high recovery) - Deactivated Clear Glass\"],Model[Container, Vessel, \"Polypropylene HPLC vial (high recovery)\"] and Model[Container, Vessel, \"PFAS Testing Vials, Agilent\"].",
+    "Compatible containers for protocols using Preparative scale instruments are: Model[Container, Vessel, \"50mL Tube\"] and Model[Container, Vessel, \"15mL Tube\"]."
   },
   SeeAlso -> {
     "ValidExperimentHPLCQ",
@@ -121,7 +131,12 @@ DefineUsage[ExperimentHPLCPreview,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -139,7 +154,7 @@ DefineUsage[ExperimentHPLCPreview,{
     ""
   },
   SeeAlso -> {
-    "ExperimentSampleManipulation",
+    "ExperimentSamplePreparation",
     "ExperimentMassSpectrometry"
   },
   Tutorials->{
@@ -189,7 +204,12 @@ DefineUsage[ExperimentHPLCOptions,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -207,7 +227,7 @@ DefineUsage[ExperimentHPLCOptions,{
     ""
   },
   SeeAlso -> {
-    "ExperimentSampleManipulation",
+    "ExperimentSamplePreparation",
     "ExperimentMassSpectrometry"
   },
   Tutorials->{
@@ -257,7 +277,12 @@ DefineUsage[ValidExperimentHPLCQ,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -275,7 +300,7 @@ DefineUsage[ValidExperimentHPLCQ,{
     ""
   },
   SeeAlso -> {
-    "ExperimentSampleManipulation",
+    "ExperimentSamplePreparation",
     "ExperimentMassSpectrometry"
   },
   Tutorials->{

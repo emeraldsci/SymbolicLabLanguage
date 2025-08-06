@@ -22,7 +22,7 @@ DefineObjectType[Model[Instrument, SolidDispenser], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Gram],
 			Units -> Gram,
-			Description -> "This is the model of dispenser's ability to show consistent results under the same conditions acording to the manufacturer.",
+			Description -> "This is the model of dispenser's ability to show consistent results under the same conditions according to the manufacturer.",
 			Category -> "Instrument Specifications"
 		},
 		MinWeight -> {

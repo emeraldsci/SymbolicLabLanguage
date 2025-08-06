@@ -112,9 +112,7 @@ DefineUsage[ExperimentAssembleCrossFlowFiltrationTubing,
 			"ExperimentAssembleCrossFlowFiltrationTubingOptions",
 			"ValidExperimentAssembleCrossFlowFiltrationTubingQ"
 		},
-		Author->{
-			"gil.sharon","gokay.yamankurt"
-		}
+		Author->{"yanzhe.zhu", "gil.sharon", "gokay.yamankurt"}
 	}
 ];
 
@@ -146,7 +144,7 @@ DefineUsage[
 			"ExperimentAssembleCrossFlowFiltrationTubing",
 			"ValidExperimentAssembleCrossFlowFiltrationTubingQ"
 		},
-		Author->{"gil.sharon","gokay.yamankurt"}
+		Author->{"yanzhe.zhu", "gil.sharon", "gokay.yamankurt"}
 	}
 ];
 
@@ -179,7 +177,7 @@ DefineUsage[
 			"ValidExperimentAssembleCrossFlowFiltrationTubingQ",
 			"ExperimentAssembleCrossFlowFiltrationTubingOptions"
 		},
-		Author->{"gil.sharon","gokay.yamankurt"}
+		Author->{"yanzhe.zhu", "gil.sharon", "gokay.yamankurt"}
 	}
 ];
 
@@ -212,6 +210,6 @@ DefineUsage[
 			"ExperimentAssembleCrossFlowFiltrationTubingPreview",
 			"ExperimentAssembleCrossFlowFiltrationTubingOptions"
 		},
-		Author->{"gil.sharon","gokay.yamankurt"}
+		Author->{"yanzhe.zhu", "gil.sharon", "gokay.yamankurt"}
 	}
 ];

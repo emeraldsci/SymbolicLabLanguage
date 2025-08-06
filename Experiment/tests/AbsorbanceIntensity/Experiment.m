@@ -32,20 +32,25 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			ObjectP[Object[Protocol, AbsorbanceIntensity]]
 		],
 		Example[{Basic,"Generate protocol for measuring absorbance of samples in a plate object:"},
-			ExperimentAbsorbanceIntensity[Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]],
+			ExperimentAbsorbanceIntensity[Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]],
 			ObjectP[Object[Protocol, AbsorbanceIntensity]]
 		],
 		Example[{Additional,"Specify the input as {Position,Container}:"},
-			ExperimentAbsorbanceIntensity[{"A1",Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]}],
+			ExperimentAbsorbanceIntensity[{"A1",Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]}],
 			ObjectP[Object[Protocol, AbsorbanceIntensity]]
 		],
 		Example[{Additional,"Specify the input as a mixture of everything}:"},
-			ExperimentAbsorbanceIntensity[{{"A1",Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]},Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID], Object[Sample,"ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID]}],
+			ExperimentAbsorbanceIntensity[{{"A1",Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID]},Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID], Object[Sample,"ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID]}],
 			ObjectP[Object[Protocol, AbsorbanceIntensity]]
 		],
 		Example[{Basic,"Accepts a list of plate objects:"},
-			ExperimentAbsorbanceIntensity[{Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensity New Test Plate 2" <> $SessionUUID]}],
+			ExperimentAbsorbanceIntensity[{Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensity New Test Plate 2" <> $SessionUUID]}],
 			ObjectP[Object[Protocol, AbsorbanceIntensity]]
+		],
+		Test["If an object does not exist, then throw an error and return $Failed cleanly:",
+			ExperimentAbsorbanceIntensity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentAbsorbanceIntensity[Link[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID], Now - 1 Minute]],
@@ -65,7 +70,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentAbsorbanceIntensity 1",
+			{"Test Label for ExperimentAbsorbanceIntensity 1"},
 			Variables:>{options}
 		],
 		Example[{Options, Preparation, "Set whether to use the liquid handlers or manual pipettes to perform this aliquot:"},
@@ -89,9 +94,19 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			"Test Blank Label for ExperimentAbsorbanceIntensity 1",
 			Variables:>{options}
 		],
-		Example[{Options, WorkCell, "If Preparation->Robotic, set WorkCell to STAR:"},
+		Example[{Options, WorkCell, "If Preparation->Robotic, set WorkCell to bioSTAR if sample contains cell::"},
 			options = ExperimentAbsorbanceIntensity[
 				Object[Sample,"ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+				Preparation -> Robotic,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			bioSTAR,
+			Variables :> {options}
+		],
+		Example[{Options, WorkCell, "If Preparation->Robotic, set WorkCell to STAR if sample does not contain cell::"},
+			options = ExperimentAbsorbanceIntensity[
+				Object[Sample,"ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID],
 				Preparation -> Robotic,
 				Output -> Options
 			];
@@ -142,10 +157,67 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			Variables :> {protocol}
 		],
 		Example[{Options,Instrument,"If PlateReaderMix is True, Instrument resolves to the FLUOstar Omega:"},
-			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID], PlateReaderMix -> True];
+			(* Use a no-CellType non-living/sterile sample*)
+			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity Blank Buffer 3" <> $SessionUUID],
+				Aliquot -> True, (*Make sure potential work cells will allow all by setting Aliquot -> True*)
+				PlateReaderMix -> True];
 			Download[protocol, Instrument],
 			ObjectP[Model[Instrument, PlateReader, "FLUOstar Omega"]],
 			Variables :> {protocol}
+		],
+		Example[{Options,Instrument,"If due to the living/sterile of the input samples, the potential work cells for blank prep is limited to microbioSTAR or STAR, Instrument resolves to CLARIOstar Plus:"},
+			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID], PlateReaderMix -> True];
+			Download[protocol, Instrument],
+			ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]],(* "CLARIOstar Plus with ACU" *)
+			Variables :> {protocol},
+			SetUp :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> True
+				|>]
+			),
+			TearDown :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> False
+				|>]
+			)
+		],
+		Example[{Options,Instrument,"If the input sample itself is not living/sterile but it is on a plate with other living/sterile samples (and it is explictly set to not aliquot), the potential work cells for blank prep is limited to bioSTAR/microbioSTAR, resolves to CLARIOstar Plus:"},
+			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2" <> $SessionUUID], Aliquot -> False, PlateReaderMix -> True];
+			Download[protocol, Instrument],
+			ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]],(* "CLARIOstar Plus with ACU" *)
+			Variables :> {protocol},
+			SetUp :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> True
+				|>]
+			),
+			TearDown :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> False
+				|>]
+			)
+		],
+		Example[{Options,Instrument,"If the input sample itself is not living/sterile but it is on a plate with other living/sterile samples (and it is explictly set to aliquot out), the potential work cells for blank prep is not limited, Instrument can be resolved to any default:"},
+			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2" <> $SessionUUID], PlateReaderMix -> True, Aliquot -> True];
+			Download[protocol, Instrument],
+			ObjectP[Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]],(* FLUOstar Omega *)
+			Variables :> {protocol},
+			SetUp :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> True
+				|>]
+			),
+			TearDown :> (
+				Upload[<|
+					Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
+					Living -> False
+				|>]
+			)
 		],
 		Example[{Options,MicrofluidicChipLoading,"If Instrument is Lunatic, MicrofluidicChipLoading resolves to Robotic:"},
 			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"]];
@@ -225,6 +297,13 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			Download[protocol, Status],
 			Processing|ShippingMaterials|Backlogged,
 			Variables :> {protocol}
+		],
+		Test["Specify the CanaryBranch on which the protocol is run:",
+			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"];
+			Download[protocol, CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Variables :> {protocol},
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Temperature,"Specify the temperature at which the plates should be read in the plate reader:"},
 			protocol = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],Temperature -> 45*Celsius];
@@ -335,6 +414,30 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			EquivalenceFunction -> Equal,
 			Messages :> {Warning::InstrumentPrecision},
 			Variables :> {options, protocol}
+		],
+		Example[{Options, Instrument, "Instrument is automatically set to Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] if TargetCarbonDioxideLevel/TargetOxygenLevel is set:"},
+			Lookup[
+				ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1"<>$SessionUUID], TargetCarbonDioxideLevel -> 5 * Percent, Output -> Options],
+				{Instrument, Methods}
+			],
+			{ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]], PlateReader}
+		],
+		Example[{Options, TargetCarbonDioxideLevel, "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			Lookup[
+				ExperimentAbsorbanceIntensity[{Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1"<>$SessionUUID], Object[Sample, "ExperimentAbsorbanceIntensity New Test mammalian sample, no model" <> $SessionUUID]}, Instrument -> Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], Output -> Options],
+				TargetCarbonDioxideLevel
+			],
+			Messages :> {Warning::ExtCoeffNotFound},
+			5 * Percent
+		],
+		Example[{Messages, "NoACUOnInstrument", "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			ExperimentAbsorbanceIntensity[
+				Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1"<>$SessionUUID],
+				Instrument -> Model[Instrument, PlateReader, "Lunatic"],
+				TargetCarbonDioxideLevel -> 5 * Percent
+			],
+			$Failed,
+			Messages :> {Error::NoACUOnInstrument, Error::InvalidOption}
 		],
 		Example[{Options,QuantifyConcentration,"Indicate that the concentration of the input samples should be calculated:"},
 			options = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID], QuantifyConcentration -> True, Output -> Options];
@@ -526,7 +629,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			{0.1*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			protocol = ExperimentAbsorbanceIntensity[
@@ -538,7 +641,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			protocol = ExperimentAbsorbanceIntensity[
@@ -580,7 +683,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			Download[protocol, BlankVolumes],
 			{0.1111*Milliliter},
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample:"},
@@ -594,7 +697,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			0.1*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			options = ExperimentAbsorbanceIntensity[
@@ -607,7 +710,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			options = ExperimentAbsorbanceIntensity[
@@ -653,7 +756,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			Lookup[options, BlankVolumes],
 			0.1111*Milliliter,
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options,PlateReaderMix,"Set PlateReaderMix to True to shake the input plate in the reader before the assay begins:"},
@@ -1096,7 +1199,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 				BlankVolumes->100 Microliter
 			],
 			ObjectP[Object[Protocol,AbsorbanceIntensity]],
-			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::UnnecessaryBlankTransfer,Warning::NotEqualBlankVolumes}
 		],
 		Test["If Output -> Tests, return a list of tests:",
 			ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity Acetone Test Chemical 1" <> $SessionUUID], Output -> Tests],
@@ -1145,8 +1248,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 					Preparation -> Robotic
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages :> {Warning::InsufficientVolume}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 		Test["Generate an AbsorbanceIntensity protocol object based on a single primitive with Preparation->Manual:",
 			Experiment[{
@@ -1167,8 +1269,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 					InjectionSampleStorageCondition->AmbientStorage
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages :> {Warning::InsufficientVolume}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 		Test["Generate a RoboticSamplePreparation protocol object based on a primitive with multiple samples and Preparation->Robotic:",
 			Experiment[{
@@ -1190,6 +1291,32 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			ObjectP[Object[Protocol, AbsorbanceIntensity]],
 			TimeConstraint -> 2000
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAbsorbanceIntensity[
+				(* Red food dye *)
+				{Model[Sample, "id:BYDOjvG9z6Jl"], Model[Sample, "id:BYDOjvG9z6Jl"]},
+				(* UV-Star Plate*)
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},
 			protocol = ExperimentAbsorbanceIntensity[
 				{"red dye sample", Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID]},
@@ -1201,19 +1328,6 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			];
 			Download[protocol, PreparatoryUnitOperations],
 			{SamplePreparationP..},
-			Variables :> {protocol}
-		],
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to create test standards prior to running the experiment:"},
-			protocol = ExperimentAbsorbanceIntensity[
-				{"red dye sample", Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID]},
-				Instrument -> Model[Instrument, PlateReader, "Lunatic"],
-				PreparatoryPrimitives -> {
-					Define[Name -> "red dye sample", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Red Food Dye"], Amount -> 200*Microliter, Destination -> "red dye sample"]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
 			Variables :> {protocol}
 		],
 		(* incubate options *)
@@ -1506,7 +1620,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 		Example[{Options, DestinationWell, "Indicates the position in the AliquotContainer that we want to move the sample into:"},
 			options = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1589,7 +1703,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,MoatSize,"Indicate the first two columns and rows and the last two columns and rows of the plate should be filled with water to decrease evaporation of the inner assay samples:"},
@@ -1750,6 +1864,82 @@ DefineTests[ExperimentAbsorbanceIntensity,
 			ExperimentAbsorbanceIntensity[Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID], QuantificationAnalyte -> Model[Molecule, Oligomer, "ACTH 18-39"], QuantifyConcentration -> False],
 			$Failed,
 			Messages :> {Warning::ExtCoeffNotFound, Error::ConcentrationWavelengthMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAbsorbanceIntensity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAbsorbanceIntensity[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAbsorbanceIntensity[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAbsorbanceIntensity[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceIntensity[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::ExtCoeffNotFound,Warning::AliquotRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceIntensity[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::ExtCoeffNotFound,Warning::AliquotRequired}
 		]
 	},
 	(* every time a test is run reset $CreatedObjects and erase things at the end *)
@@ -1763,25 +1953,26 @@ DefineTests[ExperimentAbsorbanceIntensity,
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensity New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensity New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 11 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 12 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 13 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 14 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 15 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 16 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -1800,6 +1991,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID],
+				Object[Sample, "ExperimentAbsorbanceIntensity New Test mammalian sample, no model" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensity Injection 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity Injection 2" <> $SessionUUID],
@@ -1808,18 +2000,18 @@ DefineTests[ExperimentAbsorbanceIntensity,
 
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
-			EraseObject[existingObjs, Force -> True, Verbose -> False]
+			Quiet[EraseObject[existingObjs, Force -> True, Verbose -> False]]
 		];
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
 					fakeBench,
 					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11,
-					container12, container13, container14, container15, container16, container17, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
-					sample13, sample14, sample15, sample16, sample17, sample18, sample19, plateSamples, allObjs
+					container12, container13, container14, container15, container16, container17, container18, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
+					sample13, sample14, sample15, sample16, sample17, sample18, sample19, sample20, plateSamples, allObjs
 				},
 
-				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Fake bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,DeveloperObject->True|>];
+				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,DeveloperObject->True|>];
 				{
 					container,
 					container2,
@@ -1837,7 +2029,8 @@ DefineTests[ExperimentAbsorbanceIntensity,
 					container14,
 					container15,
 					container16,
-					container17
+					container17,
+					container18
 				}=UploadSample[
 					{
 						Model[Container, Plate, "96-well UV-Star Plate"],
@@ -1856,10 +2049,12 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
-						Model[Container, Vessel, "2mL Tube"]
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Plate, "96-well UV-Star Plate"]
 
 					},
 					{
+						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
@@ -1879,23 +2074,24 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						{"Work Surface",fakeBench}
 					},
 					Name->{
-						"Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensity New Test Plate 1" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensity New Test Plate 2" <> $SessionUUID,
-						"Fake container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Fake container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
 						"Test container 11 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
 						"Test container 12 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
 						"Test container 13 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
 						"Test container 14 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
-						"Test container 15 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID
+						"Test container 15 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID,
+						"Test container 16 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID
 					}
 				];
 
@@ -1918,7 +2114,8 @@ DefineTests[ExperimentAbsorbanceIntensity,
 					sample16,
 					sample17,
 					sample18,
-					sample19
+					sample19,
+					sample20
 				}=UploadSample[
 					{
 						Model[Sample, "Red Food Dye"],
@@ -1939,7 +2136,8 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						Model[Sample, "ACTH 18-39"],
 						Model[Sample, "ACTH 18-39"],
 						Model[Sample, "Leucine Enkephalin (Oligomer)"],
-						Model[Sample, "Leucine Enkephalin (Oligomer)"]
+						Model[Sample, "Leucine Enkephalin (Oligomer)"],
+						{{1000 * EmeraldCell / Milliliter, Model[Cell, Mammalian, "id:eGakldJvLvzq"]}, {100 * VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]}}
 					},
 					{
 						{"A1",container},
@@ -1956,11 +2154,12 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						{"A1",container10},
 						{"A1",container11},
 						{"A1",container12},
-						{"A2",container},
+						{"A3",container},
 						{"A1",container14},
 						{"A1",container15},
 						{"A1",container16},
-						{"A1",container17}
+						{"A1",container17},
+						{"A1",container18}
 					},
 					InitialAmount->{
 						200*Microliter,
@@ -1977,6 +2176,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						20 Milliliter,
 						20 Milliliter,
 						20 Milliliter,
+						200*Microliter,
 						200*Microliter,
 						200*Microliter,
 						200*Microliter,
@@ -2003,8 +2203,10 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						"ExperimentAbsorbanceIntensity New Test Peptide oligomer 2 (200 uL)" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensity New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensity New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID,
-						"ExperimentAbsorbanceIntensity New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID
-					}
+						"ExperimentAbsorbanceIntensity New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID,
+						"ExperimentAbsorbanceIntensity New Test mammalian sample, no model" <> $SessionUUID
+					},
+					Living -> False
 				];
 
 				UploadSampleTransfer[Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (15 mL)" <> $SessionUUID], Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID], 100 Microliter];
@@ -2015,12 +2217,15 @@ DefineTests[ExperimentAbsorbanceIntensity,
 					100 Microliter
 				];
 
+				(* make sample1 a cell sample *)
+				Upload[<|Object -> sample, CellType -> Mammalian|>];
+
 				plateSamples=UploadSample[
 					ConstantArray[Model[Sample, "Red Food Dye"],32],
 					{#,container13}&/@Take[Flatten[AllWells[]], 32],
 					InitialAmount->ConstantArray[200 Microliter,32]
 				];
-				
+
 				allObjs = Join[
 					{
 						container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11,
@@ -2052,7 +2257,7 @@ DefineTests[ExperimentAbsorbanceIntensity,
 						},
 						UnresolvedOptions -> {EquilibrationTime -> 46*Minute}
 					|>,
-					<|Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Red Food Dye"]]}}|>,
+					<|Object -> Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Red Food Dye"]], Now}}|>,
 					(* test on a model-less sample *)
 					<|Object -> sample19, Model -> Null|>
 				}]];
@@ -2066,25 +2271,26 @@ DefineTests[ExperimentAbsorbanceIntensity,
 		On[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensity New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensity New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 10 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 11 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 12 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 13 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 14 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 				Object[Container, Vessel, "Test container 15 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 16 for ExperimentAbsorbanceIntensity tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -2105,12 +2311,13 @@ DefineTests[ExperimentAbsorbanceIntensity,
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 4 (200 uL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensity New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID],
+				Object[Sample, "ExperimentAbsorbanceIntensity New Test mammalian sample, no model" <> $SessionUUID],
 
 				Object[Protocol, AbsorbanceIntensity, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID]
 
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
-			EraseObject[existingObjs, Force -> True, Verbose -> False]
+			Quiet[EraseObject[existingObjs, Force -> True, Verbose -> False]]
 		]
 	),
 	Variables :> {allObjsWeCreate, existingObjs},
@@ -2136,11 +2343,11 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 			True
 		],
 		Example[{Basic,"Generate protocol for measuring absorbance of samples in a plate object:"},
-			ValidExperimentAbsorbanceIntensityQ[Object[Container, Plate, "Fake container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID]],
+			ValidExperimentAbsorbanceIntensityQ[Object[Container, Plate, "Test container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID]],
 			True
 		],
 		Example[{Basic,"Accepts a list of plate objects:"},
-			ValidExperimentAbsorbanceIntensityQ[{Object[Container, Plate, "Fake container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],Object[Container, Plate,"ValidExperimentAbsorbanceIntensityQ New Test Plate 2" <> $SessionUUID]}],
+			ValidExperimentAbsorbanceIntensityQ[{Object[Container, Plate, "Test container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],Object[Container, Plate,"ValidExperimentAbsorbanceIntensityQ New Test Plate 2" <> $SessionUUID]}],
 			True
 		],
 		Example[{Options,ImageSample,"Indicate that the ContainersIn should be imaged after absorbance readings:"},
@@ -2179,6 +2386,11 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 		Test["If Confirm -> True, immediately confirm the protocol without sending it into the cart:",
 			ValidExperimentAbsorbanceIntensityQ[Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1" <> $SessionUUID], Confirm -> True],
 			True
+		],
+		Test["Specify the CanaryBranch on which the protocol is run:",
+			ValidExperimentAbsorbanceIntensityQ[Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"],
+			True,
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Temperature,"Specify the temperature at which the plates should be read in the plate reader:"},
 			ValidExperimentAbsorbanceIntensityQ[Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1" <> $SessionUUID],Temperature -> 45*Celsius],
@@ -2428,13 +2640,13 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 				Object[Container, Plate, "ValidExperimentAbsorbanceIntensityQ New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ValidExperimentAbsorbanceIntensityQ New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 
 				Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -2460,7 +2672,7 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 					allObjs
 				},
 
-				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Fake bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,DeveloperObject->True|>];
+				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,DeveloperObject->True|>];
 				{
 					container,
 					container2,
@@ -2483,11 +2695,11 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 						{"Work Surface",fakeBench}
 					},
 					Name->{
-						"Fake container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,
+						"Test container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,
 						"ValidExperimentAbsorbanceIntensityQ New Test Plate 1" <> $SessionUUID,
 						"ValidExperimentAbsorbanceIntensityQ New Test Plate 2" <> $SessionUUID,
-						"Fake container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,
-						"Fake container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID
+						"Test container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID,
+						"Test container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID
 					}
 				];
 				{
@@ -2576,13 +2788,13 @@ DefineTests[ValidExperimentAbsorbanceIntensityQ,
 		On[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 				Object[Container, Plate, "ValidExperimentAbsorbanceIntensityQ New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ValidExperimentAbsorbanceIntensityQ New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ValidExperimentAbsorbanceIntensityQ tests" <> $SessionUUID],
 
 				Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ValidExperimentAbsorbanceIntensityQ New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -2618,11 +2830,11 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 			_Grid
 		],
 		Example[{Basic,"Display all the resolved options for ExperimentAbsorbanceIntensityOptions as a table for plates:"},
-			ExperimentAbsorbanceIntensityOptions[Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID]],
+			ExperimentAbsorbanceIntensityOptions[Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID]],
 			_Grid
 		],
 		Example[{Basic,"Display all the resolved options for ExperimentAbsorbanceIntensityOptions as a table for a list of plates:"},
-			ExperimentAbsorbanceIntensityOptions[{Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensityOptions New Test Plate 2" <> $SessionUUID]}],
+			ExperimentAbsorbanceIntensityOptions[{Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensityOptions New Test Plate 2" <> $SessionUUID]}],
 			_Grid
 		],
 		Example[{Options, OutputFormat,"Display all the resolved options for ExperimentAbsorbanceIntensityOptions as a list if OutputFormat -> List:"},
@@ -2843,7 +3055,7 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 			0.1*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			options = ExperimentAbsorbanceIntensityOptions[
@@ -2856,7 +3068,7 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified, and Instrument -> a BMG plate reader, resolve BlankVolumes to the volume of the corresponding sample:"},
 			options = ExperimentAbsorbanceIntensityOptions[
@@ -2902,7 +3114,7 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 			Lookup[options, BlankVolumes],
 			0.1111*Milliliter,
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},
@@ -3028,7 +3240,7 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 			260*Nanometer,
 			Messages :> {Warning::ExtCoeffNotFound, Error::ExtinctionCoefficientMissing, Error::InvalidOption},
 			EquivalenceFunction -> Equal,
-			Variables :> {options}		
+			Variables :> {options}
 		]
 	},
 	(* every time a test is run reset $CreatedObjects and erase things at the end *)
@@ -3042,13 +3254,13 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityOptions New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityOptions New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensityOptions New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensityOptions New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -3074,7 +3286,7 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 					allObjs
 				},
 
-				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Fake bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,DeveloperObject->True|>];
+				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,DeveloperObject->True|>];
 				{
 					container,
 					container2,
@@ -3097,11 +3309,11 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 						{"Work Surface",fakeBench}
 					},
 					Name->{
-						"Fake container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,
+						"Test container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensityOptions New Test Plate 1" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensityOptions New Test Plate 2" <> $SessionUUID,
-						"Fake container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,
-						"Fake container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID
+						"Test container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID,
+						"Test container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID
 					}
 				];
 				{
@@ -3190,13 +3402,13 @@ DefineTests[ExperimentAbsorbanceIntensityOptions,
 		On[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityOptions New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityOptions New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensityOptions tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensityOptions New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensityOptions New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -3232,11 +3444,11 @@ DefineTests[ExperimentAbsorbanceIntensityPreview,
 			Null
 		],
 		Example[{Basic,"Return Null for a plate:"},
-			ExperimentAbsorbanceIntensityPreview[Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID]],
+			ExperimentAbsorbanceIntensityPreview[Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID]],
 			Null
 		],
 		Example[{Basic,"Returns Null for a list of plates:"},
-			ExperimentAbsorbanceIntensityPreview[{Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensityPreview New Test Plate 2" <> $SessionUUID]}],
+			ExperimentAbsorbanceIntensityPreview[{Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],Object[Container, Plate,"ExperimentAbsorbanceIntensityPreview New Test Plate 2" <> $SessionUUID]}],
 			Null
 		]
 	},
@@ -3251,13 +3463,13 @@ DefineTests[ExperimentAbsorbanceIntensityPreview,
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityPreview New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityPreview New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensityPreview New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensityPreview New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -3283,7 +3495,7 @@ DefineTests[ExperimentAbsorbanceIntensityPreview,
 					allObjs
 				},
 
-				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Fake bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,DeveloperObject->True|>];
+				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,DeveloperObject->True|>];
 				{
 					container,
 					container2,
@@ -3306,11 +3518,11 @@ DefineTests[ExperimentAbsorbanceIntensityPreview,
 						{"Work Surface",fakeBench}
 					},
 					Name->{
-						"Fake container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,
+						"Test container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensityPreview New Test Plate 1" <> $SessionUUID,
 						"ExperimentAbsorbanceIntensityPreview New Test Plate 2" <> $SessionUUID,
-						"Fake container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,
-						"Fake container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID
+						"Test container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID,
+						"Test container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID
 					}
 				];
 				{
@@ -3399,13 +3611,13 @@ DefineTests[ExperimentAbsorbanceIntensityPreview,
 		On[Warning::InstrumentUndergoingMaintenance];
 		Module[{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 
-				Object[Container, Plate, "Fake container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 1 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityPreview New Test Plate 1" <> $SessionUUID],
 				Object[Container, Plate, "ExperimentAbsorbanceIntensityPreview New Test Plate 2" <> $SessionUUID],
-				Object[Container, Plate, "Fake container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 2 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceIntensityPreview tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceIntensityPreview New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceIntensityPreview New Test Chemical 1 (200 uL)" <> $SessionUUID],

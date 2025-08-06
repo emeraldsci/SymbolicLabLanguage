@@ -54,7 +54,7 @@ DefineObjectType[Object[Maintenance, TrainExternalRobotArm], {
 			Class -> String,
 			Pattern:> _String,
 			Relation-> None,
-			Description -> "The latest error text we have recieved, which is stored so it can later be displayed.",
+			Description -> "The latest error text we have received, which is stored so it can later be displayed.",
 			Category->"General"
 		},
 		PathIndexCurrentlyTraining->{

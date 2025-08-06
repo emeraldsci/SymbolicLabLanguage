@@ -21,7 +21,7 @@ DefineOptions[ValidExperimentSerialDiluteQ,
 ];
 
 (* --- Overloads --- *)
-ValidExperimentSerialDiluteQ[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=ValidExperimentSerialDiluteQ[{{mySample}},myOptions];
+ValidExperimentSerialDiluteQ[mySample:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=ValidExperimentSerialDiluteQ[{{mySample}},myOptions];
 
 (*ValidExperimentSerialDiluteQ[mySample:ObjectP[Object[Sample]],myAmount:(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All),myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=ValidExperimentSerialDiluteQ[{{mySample}},{{myAmount}},myOptions];*)
 
@@ -33,7 +33,7 @@ ValidExperimentSerialDiluteQ[myContainers:{ListableP[ObjectP[Object[Container]]]
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentSerialDilute *)
@@ -76,7 +76,7 @@ ValidExperimentSerialDiluteQ[myContainers:{ListableP[ObjectP[Object[Container]]]
 ];*)
 
 (*Overload for ValidExpSD[{samples},{finalvolume}]*) (*use VolumeP*)
-ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume -> myFinalVolumes}];
 
@@ -85,7 +85,7 @@ ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},my
 ];
 
 (*Overload for ValidExpSD[{samples},{serialdilutionfactors}]*) (*use NumericP*)
-ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {SerialDilutionFactors -> mySerialDilutionFactors}];
 
@@ -94,7 +94,7 @@ ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},my
 ];
 
 (*Overload for ValidExpSD[{samples},{targetconcentrations}]*) (*use ConcentrationP*)
-ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {TargetConcentrations -> myTargetConcentrations}];
 
@@ -103,7 +103,7 @@ ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},my
 ];
 
 (*Overload for ValidExpSD[samples,{finalvolume}]*)
-ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume -> myFinalVolumes}];
 
@@ -112,7 +112,7 @@ ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{L
 ];
 
 (*Overload for ValidExpSD[samples,{serialdilutionfactors}]*)
-ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {SerialDilutionFactors -> mySerialDilutionFactors}];
 
@@ -121,7 +121,7 @@ ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],mySerialDilutionF
 ];
 
 (*Overload for ValidExpSD[samples,{targetconcentrations}]*)
-ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
+ValidExperimentSerialDiluteQ[mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {TargetConcentrations -> myTargetConcentrations}];
 
@@ -130,7 +130,7 @@ ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myTargetConcentra
 ];
 
 (*Overload for ValidExpSD[{samples},{finalvolume,targetConcentrations}]*)
-ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
+ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
   myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume->myFinalVolumes,TargetConcentrations -> myTargetConcentrations}];
@@ -140,7 +140,7 @@ ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},my
 ];
 
 (*Overload for ValidExpSD[samples,{finalvolume,targetConcentrations}]*)
-ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
+ValidExperimentSerialDiluteQ[mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
   myTargetConcentrations:{ListableP[ConcentrationP]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume->myFinalVolumes,TargetConcentrations -> myTargetConcentrations}];
@@ -150,7 +150,7 @@ ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{L
 ];
 
 (*Overload for ValidExpSD[{samples},{finalvolume,serialDilutionFactors}]*)
-ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
+ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
   mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume->myFinalVolumes,SerialDilutionFactors ->mySerialDilutionFactors}];
@@ -160,7 +160,7 @@ ValidExperimentSerialDiluteQ[mySamples:{ListableP[ObjectP[Object[Sample]]]..},my
 ];
 
 (*Overload for ValidExpSD[samples,{finalvolume,serialDilutionFactors}]*)
-ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
+ValidExperimentSerialDiluteQ[mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myFinalVolumes:{ListableP[(GreaterP[0 Liter]|GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..},
   mySerialDilutionFactors:{ListableP[GreaterP[0]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]] :=Module[{updatedOptions},
   (* update these option values in the provided options *)
   updatedOptions = ReplaceRule[ToList[myOptions], {FinalVolume->myFinalVolumes,SerialDilutionFactors ->mySerialDilutionFactors}];
@@ -170,13 +170,13 @@ ValidExperimentSerialDiluteQ[mySamples:ObjectP[Object[Sample]],myFinalVolumes:{L
 ];
 
 (* --- Core Function --- *)
-ValidExperimentSerialDiluteQ[mySamples:{ObjectP[Object[Sample]]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=Module[
+ValidExperimentSerialDiluteQ[mySamples:{ObjectP[{Object[Sample], Object[Container], Model[Sample]}]..},myOptions:OptionsPattern[ValidExperimentSerialDiluteQ]]:=Module[
   {listedOptions,preparedOptions,aliquotTests,allTests,verbose,outputFormat},
 
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions=DeleteCases[listedOptions,(Output|Verbose|OutputFormat)->_];
 
   (* return only the tests for ExperimentSerialDilute *)
@@ -231,15 +231,15 @@ DefineOptions[ExperimentSerialDiluteOptions,
 (* --- Overloads --- *)
 ExperimentSerialDiluteOptions[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentSerialDiluteOptions]] := ExperimentSerialDiluteOptions[{mySample}, myOptions];
 
-ExperimentSerialDiluteOptions[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentSerialDiluteOptions]] := ExperimentSerialDiluteOptions[{{myContainer}}, myOptions];
+ExperimentSerialDiluteOptions[myContainer : ObjectP[{Object[Container], Model[Sample]}], myOptions : OptionsPattern[ExperimentSerialDiluteOptions]] := ExperimentSerialDiluteOptions[{{myContainer}}, myOptions];
 
-ExperimentSerialDiluteOptions[myContainers : {ListableP[ObjectP[Object[Container]]]..}, myOptions : OptionsPattern[ExperimentSerialDiluteOptions]] := Module[
+ExperimentSerialDiluteOptions[myContainers : {ListableP[ObjectP[{Object[Container], Model[Sample]}]]..}, myOptions : OptionsPattern[ExperimentSerialDiluteOptions]] := Module[
   {listedOptions, noOutputOptions, options},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
   (* return only the options for ExperimentSerialDilute *)
@@ -354,7 +354,7 @@ ExperimentSerialDiluteOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..},m
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
   (* return only the options for ExperimentSerialDilute *)
@@ -377,16 +377,16 @@ DefineOptions[ExperimentSerialDilutePreview,
 ];
 
 (* --- Overloads --- *)
-ExperimentSerialDilutePreview[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[ExperimentSerialDilutePreview]]:=ExperimentSerialDilutePreview[{mySample},myOptions];
+ExperimentSerialDilutePreview[mySample:ObjectP[{Object[Sample], Object[Container], Model[Sample]}],myOptions:OptionsPattern[ExperimentSerialDilutePreview]]:=ExperimentSerialDilutePreview[{mySample},myOptions];
 
 (* --- Core Function --- *)
-ExperimentSerialDilutePreview[mySamples:{ListableP[ObjectP[Object[Sample]]]..},myOptions:OptionsPattern[ExperimentSerialDilutePreview]]:=Module[
+ExperimentSerialDilutePreview[mySamples:{ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},myOptions:OptionsPattern[ExperimentSerialDilutePreview]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions=DeleteCases[listedOptions,Output->_];
 
   (* return only the options for ExperimentSerialDilute *)

@@ -726,7 +726,7 @@ DefineUsage[ListPacletVersions,
 			"SymbolPackages"
 		},
 		TestsRequired->False,
-		Author->{"weiran"}
+		Author->{"dirk.schild", "weiran"}
 	}
 ];
 
@@ -750,6 +750,6 @@ DefineUsage[KernelVersionMatchQ,
 			"ListPacletVersions",
 			"LoadDistro"
 		},
-		Author->{"weiran"}
+		Author->{"dirk.schild", "weiran"}
 	}
 ];

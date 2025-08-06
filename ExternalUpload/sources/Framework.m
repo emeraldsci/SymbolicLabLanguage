@@ -11,717 +11,2580 @@
 (* ::Subsection::Closed:: *)
 (*Helper Parser Functions (UploadMolecule/UploadSampleModel)*)
 
+(* ::Subsubsection::Closed:: *)
+(* parsePubChemCID Helpers *)
 
-(* ::Subsubsubsection::Closed:: *)
+
+(* safeParse *)
+(* Small helper to wrap an expression in Quiet and Check, and return $Failed if parsing fails, just because we do this a lot *)
+(* Additional overload to also check that the value produced matches the expected pattern *)
+(* We return $Failed so that subsequent code in this function knows that parsing failed, rather than returned an empty value *)
+
+(* Don't prematurely evaluate the code block *)
+SetAttributes[safeParse, HoldAll];
+
+(* Simple quiet/check construct *)
+safeParse[expr_] := Quiet[Check[expr, $Failed]];
+
+(* Additional overload that checks the output matches a pattern too *)
+safeParse[expr_, pattern_] := Module[
+	{returnValue},
+
+	returnValue = safeParse[expr];
+
+	(* Return the value if it matches the expected pattern, otherwise return $Failed *)
+	If[MatchQ[returnValue, pattern],
+		returnValue,
+		$Failed
+	]
+];
+
+
+(* extractJSON *)
+(* Helper to extract data entries from JSON *)
+(* Takes a list of keys and looks up in the json in a nested fashion. Keys of form "a"=="b" apply to lists of associations and will pick the *)
+(* First association where the key "a" has value of "b" *)
+
+(* Ensure the a==b syntax doesn't prematurely evaluate *)
+SetAttributes[extractJSON, HoldRest];
+
+extractJSON::MissingKey = "Key `1` could not be found.";
+
+extractJSON[json : Alternatives[_Association, {_Association..}], path : {Alternatives[_String, Equal[_String, _String]]..}] := Module[
+	{heldPaths},
+
+	(* Hold each member of the paths individually, so we can easily map over them. As some use the Equal syntax *)
+	heldPaths = List @@ (Hold /@ Hold @@ Unevaluated[path]);
+
+	(* Iterate over the keys and extract deeper into the JSON. Exit early if we hit a problem *)
+	Catch[Fold[
+		Function[{data, heldKey},
+			Which[
+				(* Exit early if the data is no longer in a valid format *)
+				MatchQ[data, $Failed],
+				data,
+
+				(* If the top level data is an Association and a key was provided, it's a simple lookup *)
+				MatchQ[data, _Association] && MatchQ[heldKey, Hold[_String]],
+				Lookup[data, ReleaseHold[heldKey]],
+
+				(* If the top level data is an Association, but equality provided. Can't proceed *)
+				MatchQ[data, _Association],
+				Message[extractJSON::MissingKey, heldKey];
+				Throw[$Failed],
+
+				(* If a list of associations and key provided, don't proceed right now *)
+				MatchQ[heldKey, Hold[_String]],
+				Message[extractJSON::MissingKey, heldKey];
+				Throw[$Failed],
+
+				(* Otherwise we have a list of associations and we have an equality key, so select the first association that matches the equality *)
+				True,
+				SelectFirst[
+					data,
+					MatchQ[Lookup[#, heldKey[[1, 1]]], heldKey[[1, 2]]] &,
+					Message[extractJSON::MissingKey, heldKey];
+					Throw[$Failed]
+				]
+			]
+		],
+		json,
+		heldPaths
+	]]
+];
+extractJSON[___] := $Failed;
+
+
+(* extractValues *)
+(* When we have a list of associations containing the data we need in PubChem format, helper to pull out all the data entries that match a pattern *)
+
+(* Don't prematurely evaluate the pattern *)
+SetAttributes[extractValues, HoldRest];
+
+(* Main pattern overload - extract field values that MatchQ the pattern *)
+extractValues[associationList : {_Association..}, pattern_] := Module[
+	{valueData},
+
+	(* Extract the value data - each is an association with keys such as "StringWithMarkup" *)
+	valueData = Lookup[associationList, "Value"];
+
+	(* Use cases to pull out anything from the values that matches the pattern *)
+	Cases[valueData, pattern, Infinity]
+];
+
+(* Overload to pull out strings that don't match formatting text *)
+extractValues[associationList : {_Association..}] := extractValues[associationList, Except[Alternatives["Italics", "Superscript", "Subscript"], _String]];
+extractValues[{}, ___] := {};
+
+
+(* extractStringValues *)
+(* Wrapper to extractValues that matches string expressions. Longest match per string provided *)
+(* StringPattern can be a simple StringExpression, where the whole matching expression is returned *)
+(* Or a rule delayed can be supplied, as for StringCases, to extract part of the matching string, such as LetterCharacter ~~ x : DigitCharacter :> x *)
+
+(* Don't prematurely evaluate the string pattern *)
+SetAttributes[extractStringValues, HoldRest];
+
+(* Core overload - accepts myOptions to pass through options, such as CaseSensitive to StringCases *)
+extractStringValues[associationList : {_Association..}, stringPattern : _, All, myOptions : OptionsPattern[]] := Module[
+	{allStrings},
+
+	(* Extract all strings *)
+	allStrings = extractValues[associationList];
+
+	(* Extract all occurrences of the string pattern *)
+	StringCases[allStrings, stringPattern, myOptions (* Mainly to accept case sensitive *)]
+];
+
+(* Overload to just extract one value per string - the longest *)
+extractStringValues[associationList : {_Association..}, stringPattern : _, myOptions : OptionsPattern[]] := First[MaximalBy[#, StringLength[ToString[#]] &], Nothing] & /@ extractStringValues[associationList, stringPattern, All, myOptions];
+extractStringValues[{}, ___] := {};
+
+
+(* takeCommonest *)
+(* Helper to take the most frequent value from a list. Taking the shortest if a tie *)
+takeCommonest[myList_List] := First[SortBy[Commonest[myList], StringLength]];
+
+
+(* dotHazardInformation *)
+(* Helper for loading DOT hazard information from constellation *)
+dotHazardInformation[] := Module[
+	{rawData, dataAssociations},
+
+	(* Import the raw data *)
+	rawData = First[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "2839ab6f678c00e033bbb46e1d53638b.xls"]]];
+
+	(* Parse the data *)
+	dataAssociations = Module[
+		{columnNames, subColumnNames, combinedColumnNames},
+
+		(* Pull out the column names *)
+		columnNames = rawData[[2]];
+		subColumnNames = rawData[[3]];
+
+		(* Combine the column and subcolumn names - the column name continues from the previous one if it's empty *)
+		combinedColumnNames = Module[
+			{expandedHeadings},
+
+			(* Expand the column names to cover all the sub-columns *)
+			expandedHeadings = Fold[
+				Module[{newColumn},
+					newColumn = If[MatchQ[#2, ""], Last[#1, Null], #2];
+					Append[#1, newColumn]
+				] &,
+				{},
+				columnNames
+			];
+
+			(* Combine the names *)
+			MapThread[
+				StringJoin[#1, #2]&,
+				{expandedHeadings, subColumnNames}
+			]
+		];
+
+		(* Extract the data for each molecule and each column *)
+		Map[
+			Function[line,
+				AssociationThread[combinedColumnNames -> line]
+			],
+			rawData[[5 ;;]] (* Data starts on line 5 *)
+		]
+	];
+
+	(* Memoize if it worked *)
+	If[MatchQ[dataAssociations, {_Association..}],
+		If[!MemberQ[$Memoization, ExternalUpload`Private`dotHazardInformation],
+			AppendTo[$Memoization, ExternalUpload`Private`dotHazardInformation]
+		];
+		Set[dotHazardInformation[], dataAssociations]
+	];
+
+	(* Return the data *)
+	dataAssociations
+];
+
+
+(* dotHazardClass *)
+(* Very simple helper to go from UN Number to DOT Class *)
+dotHazardClass[unNumber : _String?(StringMatchQ[#, "UN" ~~ Repeated[DigitCharacter, {4}]]&)] := Module[
+	{dotHazardAssociation},
+
+	(* Pull out the first entry in our DOT hazard lookup that matches our compound *)
+	dotHazardAssociation = SelectFirst[dotHazardInformation[], MatchQ[Lookup[#, "ID Numbers"], unNumber] &, <||>];
+
+	(* Return the hazard class entry *)
+	Lookup[dotHazardAssociation, "Hazard class or Division", Null]
+];
+
+
+
+(* ::Subsection::Closed:: *)
 (*PubChem CID To Association (parsePubChemCID)*)
 
 
 (* Helper function to go from a PubChem CID (Compound ID) to an association of relevant information. *)
 (* We do not memoize this function because it should always be called by another memoized function. *)
-(* These other higher level functions check if they fail and do not memoize if so. This is because the *)
-(* PubChem API can sometimes spuriously return errors or not connect and we do not want to memoize a bad result. *)
-parsePubChemCID[cid_]:=Module[
-	{pubChemCIDURL, filledURL, httpResponse, bodyResponse, jsonResponse, mainJSON, identifiersJSON, name, computedDescriptorsJSON, molecularFormula, radioactive,
-		iupac, inchi, inchiKey, otherIdentifiersJSON, cas, unii, synonymsJSON, synonyms, physicalPropertiesJSON, computedPropertiesJSON,
-		molecularWeight, simulatedLogP, logP, experimentalPropertiesJSON, state, pka, viscosity, meltingPoint, boilingPoint, hazardous, flammable,
-		pyrophoric, waterReactive, fuming, pCodes, safetyJSON, unNumber, dotHazardClass, nfpaHazards, structureFileURL, imageFileURL},
+(* These other higher level functions check if they fail and do not memoize if so. *)
+parsePubChemCID[cid_] := Module[
+	{
+		pubchemRecord, moleculeName, namesAndIdentifiersJSON,
+		chemicalAndPhysicalProperties, computedChemicalAndPhysicalProperties, experimentalChemicalAndPhysicalProperties,
+		computedDescriptorsJSON, molecularFormula, exactMass, monatomic, radioactive, drainDisposal, hCodesSplit, pCodesSplit,
+		iupacName, inchi, inchiKey, otherIdentifiersJSON, casNumber, unii, synonyms, pungent, molecule,
+		molecularWeight, simulatedLogP, logP, state, pkas, viscosity, meltingPoint, boilingPoint, vaporPressure, density, hazardous, flammable,
+		pyrophoric, waterReactive, fuming, ventilated, lightSensitive, pCodes, hCodes, safetyAndHazards, unNumber, dotHazard, nfpaHazards, structureFileURL, imageFileURL,
+		incompatibleMaterials, stronglyAcidic, stronglyBasic, corrosive, particularlyHazardousSubstance, msdsRequired
+	},
 
-	(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
-	pubChemCIDURL="https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/`1`/JSON/";
+	(* Download the PubChem record *)
+	pubchemRecord = Module[
+		{pubChemCIDURL, filledPubChemURL, httpResponse, bodyResponse, jsonResponse},
 
-	(* Fill out the template URL with the given CID. *)
-	filledURL=StringTemplate[pubChemCIDURL][ToString[cid]];
+		(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
+		pubChemCIDURL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/`1`/JSON/";
 
-	(* Get the body of the response from this URL. *)
-	httpResponse=URLRead[filledURL];
-	bodyResponse=Quiet[httpResponse["Body"]];
+		(* Fill out the template URL with the given CID. *)
+		filledPubChemURL = StringTemplate[pubChemCIDURL][ToString[cid]];
 
-	(* Some of the entries on PubChem have bad UTF-8 encodings. Export as a correct UTF-8 encoding in order to generate a valid JSON response. *)
-	jsonResponse=Quiet[ImportString[ExportString[bodyResponse, "Text", CharacterEncoding -> "UTF8"], "RawJSON"]];
+		(* Get the body of the response from this URL. *)
+		httpResponse = ManifoldEcho[
+			URLRead[filledPubChemURL],
+			"URLRead[\"" <> ToString[filledPubChemURL] <> "\"]"
+		];
 
-	(* If an error was returned, return a $Failed. Throw a message in the higher level function that called this one. *)
-	If[MatchQ[jsonResponse, _Failure | $Failed | KeyValuePattern["Fault" -> _]],
-		Return[$Failed];
+		(* Return status code early if the URLRead failed *)
+		If[!MatchQ[httpResponse["StatusCode"], 200],
+			(*Return[httpResponse["StatusCode"], Module] - return more detail when rest of error handling is merged*)
+			$Failed
+		];
+
+		bodyResponse = Quiet[httpResponse["Body"]];
+
+		(* Some of the entries on PubChem have bad UTF-8 encodings. Export as a correct UTF-8 encoding in order to generate a valid JSON response. *)
+		jsonResponse = Quiet[ImportString[ExportString[bodyResponse, "Text", CharacterEncoding -> "UTF8"], "RawJSON"]];
+
+		(* If an error was returned, return a $Failed. Throw a message in the higher level function that called this one. *)
+		If[MatchQ[jsonResponse, _Failure | $Failed | KeyValuePattern["Fault" -> _]],
+			$Failed,
+			Lookup[jsonResponse, "Record"]
+		]
 	];
 
-	(* There should only be one response packet. Pull out the main data from it. *)
-	mainJSON=jsonResponse["Record"]["Section"];
 
-	(* -- Parse out the names and identifiers section. -- *)
-	identifiersJSON=SelectFirst[mainJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Names and Identifiers"&)]["Section"];
+	(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
+	If[!MatchQ[pubchemRecord, _Association],
+		Return[pubchemRecord];
+	];
 
-	(* Parse out the primary identifying name. *)
-	name=Quiet[Check[
-		Module[{nameAssociation},
-			jsonResponse["Record"]["RecordTitle"]
+
+	(* Do the parsing! *)
+
+	(* Top level *)
+	(* Molecule name *)
+	moleculeName = safeParse[
+		Lookup[pubchemRecord, "RecordTitle", Null],
+
+		_String
+	];
+
+
+	(* Names and Identifiers *)
+	(* Parse out the "Names and Identifiers" section *)
+	namesAndIdentifiersJSON = safeParse[extractJSON[pubchemRecord, {"Section", "TOCHeading" == "Names and Identifiers", "Section"}], _List];
+
+	(* Parse out Synonyms *)
+	synonyms = safeParse[
+		Module[
+			{synonymDataAssociations, allSynonyms},
+
+			(* Extract the list of associations containing synonym data *)
+			synonymDataAssociations = extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Synonyms", "Section", "TOCHeading" == "MeSH Entry Terms", "Information"}];
+
+			(* Extract the whole strings - each is a synonym *)
+			allSynonyms = extractValues[synonymDataAssociations];
+
+			(* Add the molecule name if it's not a member *)
+			If[!MemberQ[allSynonyms, moleculeName],
+				Prepend[allSynonyms, moleculeName],
+				allSynonyms
+			]
 		],
-		Null
-	]];
 
-	(* Parse out the molecular formula. *)
-	molecularFormula=Quiet[Check[
-		Module[{molecularFormulaAssociation},
-			(* Get the association that contains the IUPAC Name. *)
-			molecularFormulaAssociation=SelectFirst[identifiersJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Molecular Formula"&)];
+		(* Ensure a list of strings is returned *)
+		{_String...}
+	];
 
-			(* Sometimes there can be junk inside (text description) of the StringValue field. *)
-			(* Sort strings from shortest \[Rule] longest (we don't want the long description), and resolve based on majority vote. *)
-			First[Sort[Commonest[Cases[Lookup[molecularFormulaAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]]
+	(* Molecular formula *)
+	molecularFormula = safeParse[
+		Module[
+			{molecularFormulaDataAssociations, allFormulae},
+
+			(* Extract the list of associations containing molecular formula data *)
+			molecularFormulaDataAssociations = extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Molecular Formula", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for a molecular formula *)
+			allFormulae = extractStringValues[molecularFormulaDataAssociations, Alternatives[LetterCharacter, DigitCharacter]..];
+
+			(* Take the most frequent formula found *)
+			takeCommonest[allFormulae]
 		],
-		Null
-	]];
 
-	(* Parse our radioactive information. *)
-	radioactive=Quiet[Check[
-		Module[{descriptionAssociation, descriptions},
-			(* Being radioactive is a pretty big deal for a chemical - all radioactive examples I could find *)
-			(* mentioned the word "radioactive" in the chemical description. *)
-			(* Look for the work radioactive in the description and iff we find it, return True. *)
+		(* Ensure a single molecular formula string is returned *)
+		_String?(StringMatchQ[#, Alternatives[LetterCharacter, DigitCharacter]..] &)
+	];
 
-			descriptionAssociation=SelectFirst[identifiersJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Record Description"&)];
+	(* Monatomic - do we just have one atom? *)
+	monatomic = safeParse[
+		If[StringQ[molecularFormula],
+			(* If we have a molecular formula, we can tell if it's monatomic or not *)
+			StringMatchQ[
+				molecularFormula,
+				(* Will be a single chemical symbol, either a single upper case letter, or upper case followed by lower case *)
+				StringExpression[
+					(* Single capital letter *)
+					Alternatives @@ CharacterRange["A", "Z"],
 
-			(* Get the string descriptions for this molecule. *)
-			(* Filter out any failed extractions. *)
-			descriptions=Cases[(#["StringValue"]&) /@ descriptionAssociation["Information"], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity];
+					(* Optionally followed by lower case letter *)
+					Alternatives[
+						"",
+						Alternatives @@CharacterRange["a", "z"]
+					]
+				]
+			],
 
-			(* String join the descriptions and search for the word "radioactive" *)
-			StringContainsQ[ToLowerCase[StringJoin[descriptions]], "radioactive"]
+			(* No formula means we can't tell *)
+			Null
 		],
-		Null
-	]];
 
-	(* -- Computed Descriptors -- *)
-	computedDescriptorsJSON=SelectFirst[identifiersJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Computed Descriptors"&)];
+		Alternatives[BooleanP, Null]
+	];
 
-	(* Parse out the IUPAC name. *)
-	iupac=Quiet[Check[
-		Module[{iupacAssociation},
-			(* Get the association that contains the IUPAC Name. *)
-			iupacAssociation=SelectFirst[computedDescriptorsJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "IUPAC Name"&)];
+	(* Radioactive *)
+	radioactive = safeParse[
+		Module[
+			{descriptionDataAssociations},
 
-			First[Commonest[Cases[Lookup[iupacAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+			(* Extract the list of associations containing description information *)
+			descriptionDataAssociations = extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Record Description", "Information"}];
+
+			(* There is no specific information in the record for radioactive. However, as it's a big deal, it always gets mentioned in the description, so look there *)
+			(* If it's not mentioned, it's almost certain it's not radioactive *)
+			!MatchQ[extractStringValues[descriptionDataAssociations, Alternatives["radioactive"], IgnoreCase -> True], {}]
 		],
-		Null
-	]];
 
-	(* Parse out the InChI. *)
-	inchi=Quiet[Check[
-		Module[{inchiAssociation},
-			(* Get the association that contains the IUPAC Name. *)
-			inchiAssociation=SelectFirst[computedDescriptorsJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "InChI"&)];
+		Alternatives[BooleanP, Null]
+	];
 
-			First[Commonest[Cases[Lookup[inchiAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+
+	(* Computed Descriptors *)
+	(* Parse out the "Computed Descriptors" section *)
+	computedDescriptorsJSON = safeParse[extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Computed Descriptors", "Section"}], _List];
+
+	(* IUPAC systematic name *)
+	iupacName = safeParse[
+		Module[
+			{iupacDataAssociations, allNames},
+
+			(* Extract the list of associations containing IUPAC name data *)
+			iupacDataAssociations = extractJSON[computedDescriptorsJSON, {"TOCHeading" == "IUPAC Name", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for an IUPAC name *)
+			allNames = extractStringValues[iupacDataAssociations, Alternatives[LetterCharacter, DigitCharacter, PunctuationCharacter, Whitespace]..];
+
+			(* Take the most frequent name found *)
+			takeCommonest[allNames]
 		],
-		Null
-	]];
 
-	(* Parse out the InChIKey. *)
-	inchiKey=Quiet[Check[
-		Module[{inchiKeyAssociation},
-			(* Get the association that contains the IUPAC Name. *)
-			inchiKeyAssociation=SelectFirst[computedDescriptorsJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "InChIKey"&)];
+		_String
+	];
 
-			First[Commonest[Cases[Lookup[inchiKeyAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+	(* InChI, systematic identifier *)
+	inchi = safeParse[
+		Module[
+			{inchiDataAssociations, allInChIs},
+
+			(* Extract the list of associations containing InChI data *)
+			inchiDataAssociations = extractJSON[computedDescriptorsJSON, {"TOCHeading" == "InChI", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for an InChI. We can't use InChIP here as that's a pattern not a string pattern *)
+			allInChIs = extractStringValues[inchiDataAssociations, "InChI=" ~~ Except[WhitespaceCharacter]..];
+
+			(* Take the most frequent identifier found *)
+			takeCommonest[allInChIs]
 		],
-		Null
-	]];
 
-	(* -- Other Identifiers -- *)
-	otherIdentifiersJSON=SelectFirst[identifiersJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Other Identifiers"&)];
+		InChIP
+	];
 
-	(* Parse out the CAS. *)
-	cas=Quiet[Check[
-		Module[{casAssociation, casValues},
-			(* Get the association that contains the IUPAC Name. *)
-			casAssociation=SelectFirst[otherIdentifiersJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "CAS"&)];
+	(* InChIKey, hashed version of InChI. Highly unlikely to clash, but easier for database searching *)
+	inchiKey = safeParse[
+		Module[
+			{inchiKeyDataAssociations, allInChIKeys},
 
-			First[Commonest[Cases[Lookup[casAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+			(* Extract the list of associations containing InChiKey data *)
+			inchiKeyDataAssociations = extractJSON[computedDescriptorsJSON, {"TOCHeading" == "InChIKey", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for an InChI. We can't use InChIKeyP here as that's a pattern not a string pattern *)
+			allInChIKeys = extractStringValues[inchiKeyDataAssociations, Repeated[WordCharacter, {14}] ~~ "-" ~~ Repeated[WordCharacter, {10}] ~~ "-" ~~ WordCharacter];
+
+			(* Take the most frequent identifier found *)
+			takeCommonest[allInChIKeys]
 		],
-		Null
-	]];
 
-	(* Parse out the UNII. *)
-	unii=Quiet[Check[
-		Module[{uniiAssociation, uniiValues},
-			(* Get the association that contains the IUPAC Name. *)
-			uniiAssociation=SelectFirst[otherIdentifiersJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "UNII"&)];
+		InChIKeyP
+	];
 
-			First[Commonest[ToUpperCase /@ Cases[Lookup[uniiAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+	(* Generate the molecular representation, if we can *)
+	molecule = safeParse[
+		Molecule[inchi],
+		_Molecule
+	];
+
+
+	(* Other identifiers *)
+	(* Parse out the "Other Identifiers" section *)
+	otherIdentifiersJSON = safeParse[extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Other Identifiers", "Section"}], _List];
+
+	(* CAS registration number *)
+	casNumber = safeParse[
+		Module[
+			{casDataAssociations, allCASNumbers},
+
+			(* Extract the list of associations containing CAS number data *)
+			casDataAssociations = extractJSON[otherIdentifiersJSON, {"TOCHeading" == "CAS", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for a CAS Number. We can't use CASNumberP here as that's a pattern not a string pattern *)
+			allCASNumbers = extractStringValues[casDataAssociations, Repeated[DigitCharacter, {2, 7}] ~~ "-" ~~ Repeated[DigitCharacter, {2}] ~~ "-" ~~ DigitCharacter];
+
+			(* Take the most frequent identifier found *)
+			takeCommonest[allCASNumbers]
 		],
-		Null
-	]];
 
-	(* Parse out the UN Number. This is an international shipping number assigned by the United Nations. *)
-	(* We will need it laster to figure out the DOT information (DOT links up to UN) . *)
-	unNumber=Quiet[Check[
-		Module[{unAssociation, unValues},
-			(* Get the association that contains the IUPAC Name. *)
-			unAssociation=SelectFirst[otherIdentifiersJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "UN Number"&)];
+		CASNumberP
+	];
 
-			First[Commonest[Cases[Lookup[unAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]]]
+	(* UNII (FDA unique ingredient identifier) registration number *)
+	unii = safeParse[
+		Module[
+			{uniiDataAssociations, allUniiNumbers},
+
+			(* Extract the list of associations containing UNII data *)
+			uniiDataAssociations = extractJSON[otherIdentifiersJSON, {"TOCHeading" == "UNII", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for a UNII Number *)
+			allUniiNumbers = extractStringValues[uniiDataAssociations, WordCharacter..];
+
+			(* Take the most frequent identifier found *)
+			takeCommonest[allUniiNumbers]
 		],
-		Null
-	]];
 
-	synonymsJSON=SelectFirst[identifiersJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Synonyms"&)];
-	(* Parse out the Synonyms. *)
-	synonyms=Quiet[Check[
-		Module[{synonymsAssociation},
-			(* Get the association that contains the IUPAC Name. *)
-			synonymsAssociation=SelectFirst[synonymsJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "MeSH Entry Terms"&)];
+		_String?(StringMatchQ[#, WordCharacter..] &)
+	];
 
-			(* Pull out all of the synonyms. *)
-			Cases[Lookup[synonymsAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]
+	(* UN shipping hazard identifier number *)
+	unNumber = safeParse[
+		Module[
+			{unNumberAssociations, allUNNumbers},
+
+			(* Extract the list of associations containing UN Number data *)
+			unNumberAssociations = extractJSON[otherIdentifiersJSON, {"TOCHeading" == "UN Number", "Information"}];
+
+			(* Extract any strings or parts of strings that match the pattern for a UN Number - 4 digits *)
+			allUNNumbers = extractStringValues[unNumberAssociations, WordBoundary ~~ x : Repeated[DigitCharacter, {4}] ~~ WordBoundary :> x];
+
+			(* Take the most frequent identifier found *)
+			takeCommonest[allUNNumbers]
 		],
-		{}
-	]];
 
-	(* -- Parse out the physical properties of this chemical. -- *)
-	physicalPropertiesJSON=SelectFirst[mainJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Chemical and Physical Properties"&)]["Section"];
+		_String?(StringMatchQ[#, Repeated[DigitCharacter, {4}]] &)
+	];
 
-	computedPropertiesJSON=SelectFirst[physicalPropertiesJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Computed Properties"&)];
 
-	(* Pull out the molecular weight *)
-	molecularWeight=Quiet[Check[
-		Module[{molecularWeightAssociation, potentialMolecularWeight},
-			molecularWeightAssociation=SelectFirst[computedPropertiesJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Molecular Weight"&)];
+	(* Physical properties *)
+	(* Parse out the "Chemical and Physical Properties" section *)
+	chemicalAndPhysicalProperties = safeParse[extractJSON[pubchemRecord, {"Section", "TOCHeading" == "Chemical and Physical Properties", "Section"}], _List];
 
-			potentialMolecularWeight=With[{
-				mass=molecularWeightAssociation["Information"][[1]]["Value"]["Number"][[1]],
-				stringMass=ToExpression[molecularWeightAssociation["Information"][[1]]["Value"]["StringWithMarkup"][[1]]["String"]],
-				unit=molecularWeightAssociation["Information"][[1]]["Value"]["Unit"]
-			},
-				Which[
-					MatchQ[mass,GreaterP[0]],
-					Quantity[mass, unit],
-					MatchQ[stringMass,GreaterP[0]],
-					Quantity[stringMass, unit],
+	(* Computed Properties *)
+	(* Parse out the "Computed Properties" section *)
+	computedChemicalAndPhysicalProperties = safeParse[extractJSON[chemicalAndPhysicalProperties, {"TOCHeading" == "Computed Properties", "Section"}], _List];
+
+	(* Molecular weight *)
+	molecularWeight = safeParse[
+		Module[
+			{molecularWeightAssociations, molecularWeightTuples, allMolecularWeights},
+
+			(* Extract the list of associations containing MW data *)
+			molecularWeightAssociations = extractJSON[computedChemicalAndPhysicalProperties, {"TOCHeading" == "Molecular Weight", "Information"}];
+
+			(* Molecular weights come in an association, split into values and units, so extract both parts *)
+			molecularWeightTuples = extractValues[
+				molecularWeightAssociations,
+
+				(* Value may be a number in "Number", or a string in "StringWithMarkup". Unit is in "Unit" *)
+				(* Check for something with a unit *)
+				x : AssociationMatchP[<|"Unit" -> _|>, AllowForeignKeys -> True] :> Which[
+					(* String value *)
+					KeyExistsQ[x, "StringWithMarkup"],
+					{
+						ToExpression[Lookup[Lookup[x, "StringWithMarkup"], "String"][[1]]],
+						Lookup[x, "Unit"]
+					},
+
+					(* Numeric value *)
+					KeyExistsQ[x, "Number"],
+					{
+						Lookup[x, "Number"][[1]],
+						Lookup[x, "Unit"]
+					},
+
+					(* No data *)
 					True,
-					$Failed
+					Nothing
 				]
 			];
 
-			If[MatchQ[potentialMolecularWeight, _?QuantityQ] && MatchQ[potentialMolecularWeight, UnitsP[Gram / Mole]],
-				potentialMolecularWeight,
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Pull out the simulated LogP. *)
-	simulatedLogP=Quiet[Check[
-		Module[{logPAssociation, potentialLogP},
-			logPAssociation=SelectFirst[computedPropertiesJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "XLogP3"&)];
-
-			potentialLogP=logPAssociation["Information"][[1]]["Value"]["Number"][[1]];
-
-			If[MatchQ[potentialLogP, _?NumericQ],
-				potentialLogP,
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* -- Experimental Properties -- *)
-	experimentalPropertiesJSON=SelectFirst[physicalPropertiesJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Experimental Properties"&)];
-
-	(* Pull out the LogP. *)
-	logP=Quiet[Check[
-		(* NOTE: have to protect LogP here because the ToExpression can sometimes change the LogP string into our symbol. *)
-		Module[{logPAssociation, potentialLogPs, LogP},
-			logPAssociation=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "LogP"&)], "Information"];
-
-			potentialLogPs=Commonest@Cases[
-				Flatten[{
-					Quiet[StringCases[Lookup[Cases[Flatten@Lookup[Lookup[logPAssociation, "Value"], "StringWithMarkup"][[All, 1]], _Association], "String"], x : NumberString :> ToExpression[x]]],
-					Quiet[StringCases[Flatten@Lookup[Lookup[logPAssociation, "Value"], "Number"][[All, 1]], x : NumberString :> ToExpression[x]]]
-				}],
-				_?NumericQ
-			];
-
-			If[Length[potentialLogPs] > 0,
-				(* See if there is a most common LogP that we parsed out. *)
-				If[Length[Commonest[potentialLogPs]] == 1,
-					(* There is a most common LogP. Return that. *)
-					First[Commonest[potentialLogPs]],
-					(* There is not a most common LogP, Return the Median. *)
-					N[Median[potentialLogPs]]
+			(* Convert the tuples to quantities and filter out any invalid values *)
+			allMolecularWeights = Map[
+				Function[tuple,
+					(* Quantity can convert "g/mol" string into units very fast locally *)
+					With[{quantity = Quiet[Quantity @@ tuple]},
+						If[UnitsQ[quantity, Gram / Mole],
+							quantity,
+							Nothing
+						]
+					]
 				],
-				Null
-			]
+				molecularWeightTuples
+			];
+
+			(* Return the median if there are multiple values *)
+			SafeRound[Median[allMolecularWeights], 0.01 Gram / Mole]
 		],
-		Null
-	]];
 
-	(* Get the state of matter *)
-	state=Quiet[Check[
-		Module[{physicalDescription, joinedDescriptions, solidCounts, liquidCounts, gasCounts},
-			physicalDescription=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "Physical Description"&)], "Information"];
+		GreaterP[0 Gram / Mole]
+	];
 
-			(* For each of the physical descriptions, string join them together. *)
-			joinedDescriptions=ToLowerCase[
-				StringJoin[
-					Riffle[
-						(Lookup[#, Key["StringValue"], " "]&) /@ physicalDescription,
-						" "]
+
+	(* Parse the Exact mass *)
+	(* This is the most abundant mass of the molecule calculated using the natural abundance of isotopes on Earth *)
+	(* Note that this is *not* the same as using the mass for the most abundant isotope for each element *)
+	(* E.g. If an element, X, has two isotopes with mass 1 and 2, with 49 % and 51 % abundance *)
+	(* For one atom of X, most abundant mass is 2 (51 % weighting) *)
+	(* For 2 atoms of X, most abundant mass is *3* (50 % weighing) - you are statistically most likely to get one atom of each, not 2 of the most abundant *)
+	(* Monoisotopic mass is the term for the mass using the mass of the most abundant isotope for each atom and summing those *)
+	exactMass = safeParse[
+		Module[
+			{exactMassAssociations, exactMasses, validExactMasses},
+
+			(* Extract the list of associations containing the exact mass *)
+			exactMassAssociations = extractJSON[computedChemicalAndPhysicalProperties, {"TOCHeading" == "Exact Mass", "Information"}];
+
+			(* Extract exact mass if there is one - held in string form *)
+			exactMasses = extractStringValues[exactMassAssociations, NumberString];
+
+			(* Filter out invalid entries *)
+			validExactMasses = Module[{quantity},
+				quantity = Quiet[ToExpression[#] Gram / Mole];
+
+				If[Quiet[GreaterQ[quantity, 0 Gram / Mole]],
+					quantity,
+					Nothing
+				]
+			] & /@ exactMasses;
+
+			(* Return the value from the first valid reference if there are multiple values (should only be one) *)
+			First[validExactMasses]
+		],
+
+		GreaterP[0 Gram / Mole]
+	];
+
+	(* Simulated LogP *)
+	simulatedLogP = safeParse[
+		Module[
+			{simulatedLogPDataAssociations, allSimulatedLogPs},
+
+			(* Extract the list of associations containing simulated logP data *)
+			simulatedLogPDataAssociations = extractJSON[computedChemicalAndPhysicalProperties, {"TOCHeading" == "XLogP3", "Information"}];
+
+			(* Simulated logPs are numbers in the numeric field *)
+			allSimulatedLogPs = extractValues[simulatedLogPDataAssociations, _?NumericQ];
+
+			(* Return the median if there are multiple values *)
+			SafeRound[Median[allSimulatedLogPs], 0.01]
+		],
+
+		NumericP
+	];
+
+	(* Experimental Properties *)
+	(* Parse out the "Experimental Properties" section *)
+	experimentalChemicalAndPhysicalProperties = safeParse[extractJSON[chemicalAndPhysicalProperties, {"TOCHeading" == "Experimental Properties", "Section"}], _List];
+
+	(* LogP *)
+	logP = safeParse[
+		Module[
+			{logPDataAssociations, allLogPs},
+
+			(* Extract the list of associations containing experimental logP data *)
+			logPDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "LogP", "Information"}];
+
+			(* LogPs may be stored in numeric form or string form, so extract both *)
+			allLogPs = Join[
+				(* Some values are numeric *)
+				extractValues[logPDataAssociations, _?NumericQ],
+
+				(* Other values are in strings *)
+				extractStringValues[
+					logPDataAssociations,
+					{
+						(* Strings of the form e.g. "-0.30" *)
+						StartOfString ~~ x : NumberString ~~ EndOfString :> ToExpression[x],
+
+						(* Strings of the form e.g. "log Kow = -0.30" *)
+						"log Kow = " ~~ x : NumberString :> ToExpression[x]
+					}
 				]
 			];
 
-			(* Count the number of times that Solid, Liquid, and Gas show up in the text. *)
-			solidCounts=Length[StringPosition[joinedDescriptions, "solid"]];
-			liquidCounts=Length[StringPosition[joinedDescriptions, "liquid"]];
-			gasCounts=Length[StringPosition[joinedDescriptions, "gas"]];
-
-			Switch[First[FirstPosition[{solidCounts, liquidCounts, gasCounts}, Max[{solidCounts, liquidCounts, gasCounts}]]],
-				1,
-				Solid,
-				2,
-				Liquid,
-				3,
-				Gas
-			]
+			(* Return the median if there are multiple values *)
+			SafeRound[Median[allLogPs], 0.01]
 		],
-		Null
-	]];
 
-	(* Parse out pH. This will tell us *)
-	pka=Quiet[Check[
-		Module[{pkaAssociation, pkaStrings, digitPattern, pKaParsedStrings},
-			pkaAssociation=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "Dissociation Constants"&)], "Information"];
+		NumericP
+	];
 
-			(* Parse out the pKa strings *)
-			pkaStrings=Cases[Lookup[pkaAssociation, Key["Value"], {}], _String, Infinity];
+	(* pKa - note that each molecule may have multiple pkas. We store all acid dissociation constants in the database *)
+	pkas = safeParse[
+		Module[
+			{pkaDataAssociations, allpKas, clusteredpKas, allpKaEntries, splitpKaEntries, sanitizedpKaEntries},
 
-			(* Define a pattern for things that can show up in our pKa *)
-			digitPattern=DigitCharacter | "." | "-" | "+" | ";";
+			(* Extract the list of associations containing experimental pka data *)
+			pkaDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Dissociation Constants", "Information"}];
 
-			(* The pKa string is always in the form pKa=___ or pKa=___; pKb=___ or pKa=___ at 25 deg; pKb=___ at 25 deg *)
-			(* Try to pull out the pKa value from the string. *)
-			pKaParsedStrings=Flatten[(
-				ToExpression[
-					StringCases[#, {
-						"pKa = "~~x:digitPattern.. :> x,
-						"pKa="~~x:digitPattern.. :> x,
-						"pKa ="~~x:digitPattern.. :> x
-					}]
-				]&
-			) /@ pkaStrings];
+			(* pKas are stored in string form *)
+			(* Most pKa records don't have detailed condition information, don't indicate which part of the molecule the constant refers to, nor if it's pKa/pKaH so this isn't going to be perfect *)
+			(* Potentially pKa can be measured in different solvents too... *)
+			(* Each string can contain multiple values if the molecule has multiple acidic protons *)
+			(* First extract all of the string entries *)
+			allpKaEntries = extractValues[pkaDataAssociations];
 
-			(* Return the median of the parsed strings that match NumericP *)
-			If[Length[Cases[pKaParsedStrings, NumericP]] > 0,
-				Median[Cases[pKaParsedStrings, NumericP]],
-				Null
-			]
+			(* Each record might contain multiple values, so split *)
+			splitpKaEntries = StringTrim[Flatten[StringSplit[allpKaEntries, ";"]]];
+
+			(* Remove any entries that are particularly suspicious, suggesting they're not an actual pKa of the molecule *)
+			sanitizedpKaEntries = Select[splitpKaEntries, !StringContainsQ[#, Alternatives["cation", "pkah", "protonated", "conjugate"], IgnoreCase -> True] &];
+
+			(* Pull pkas out of the sanitized strings *)
+			allpKas = StringCases[
+				sanitizedpKaEntries,
+				{
+					(* Strings of the form e.g. "2.01". If the number begins at the start of the string, we can be confident it's a pKa *)
+					StartOfString ~~ x : NumberString :> ToExpression[x],
+
+					(* "pKa 1 = " *)
+					StringExpression[
+						"pKa",
+						Whitespace..,
+						DigitCharacter..,
+						Alternatives[Whitespace... ~~ Alternatives[":", "="]],
+						Whitespace...,
+						x : NumberString
+					] :> ToExpression[x],
+
+					(* "pKa =", "pK1:", "pK2" but not "pKb" as that's different *)
+					StringExpression[
+						"pK", Alternatives["a", DigitCharacter],
+						Alternatives[Whitespace... ~~ Alternatives[":", "="], " "],
+						Whitespace...,
+						x : NumberString
+					] :> ToExpression[x]
+				}
+			];
+
+			(* We don't know how many pKas there might be so cluster as best we can. Treat anything within 0.5 as the same value *)
+			(* A simple gather by a threshold is much faster and gives more intuitive results that the fancy ML FindClusters... *)
+			clusteredpKas = Gather[Flatten[allpKas], (LessEqualQ[Abs[#1 - #2], 0.5]) &];
+
+			(* Return the median for each cluster *)
+			Sort[SafeRound[Median[#], 0.01] & /@ clusteredpKas]
 		],
-		Null
-	]];
 
-	(* Parse out viscosity. *)
-	viscosity=Quiet[Check[
-		Module[{viscosityAssociation, viscosityStrings, viscosityParsedStrings, medianViscosity},
-			viscosityAssociation=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "Viscosity"&)], "Information"];
+		{NumericP...}
+	];
 
-			(* Parse out the pKa strings *)
-			viscosityStrings=Cases[Lookup[viscosityAssociation, Key["Value"], {}], _String, Infinity];
+	(* Viscosity *)
+	viscosity = safeParse[
+		Module[
+			{viscosityDataAssociations, viscosityTemperatureTuples, medianViscosity},
 
-			(* The pKa string is always in the form ____ at __ deg C. *)
-			(* Try to pull out the pKa value from the string. *)
-			viscosityParsedStrings=(N[Quantity[First[StringSplit[#, "at"]]]]&) /@ viscosityStrings;
+			(* Extract the list of associations containing experimental viscosity data *)
+			viscosityDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Viscosity", "Information"}];
 
-			(* Take the median of the parsed strings. *)
-			medianViscosity=Quiet[Median[Cases[viscosityParsedStrings, _?QuantityQ]]];
+			(* Viscosities are stored in string form *)
+			(* Records may contain temperature or dilution information. Important to filter out data not for pure compound, or near room temperature as it could be 100x out *)
+			(* Each string may contain multiple values, under different conditions *)
+			viscosityTemperatureTuples = Module[
+				{viscosityString, temperatureString, referenceString, recordDelimiter, allViscosityEntries, allViscosityStrings, viscosityStringTuples, viscosityTemperatureTuples},
 
-			(* If we were able to succesfully calculate a median value, convert it to Centipoise and return. *)
-			If[MatchQ[medianViscosity, _?QuantityQ] && MatchQ[medianViscosity, ViscosityP],
-				UnitConvert[medianViscosity, Centipoise],
-				Null
-			]
+				(* Define some useful string forms *)
+				(* The actual viscosity *)
+				(* "1 cP", "1.1 - 1.2 Pa.s" etc *)
+				viscosityString = StringExpression[
+					(* Optional second value for viscosity range *)
+					Alternatives[
+						StringExpression[
+							visc1 : NumberString,
+							Whitespace...,
+							Alternatives["to", "To", "TO", "-"],
+							Whitespace...
+						],
+						""
+					],
+
+					(* We must have at least this one value *)
+					visc2 : NumberString,
+					Whitespace...,
+					(* Poise, POISE, CENTIPOISES, cP, mPa.s, mPa-sec *)
+					units : StringExpression[WordCharacter..., Alternatives["poise", "Poise", "POISE", "P", "Pa-s", "Pa.s", "Pa*s"], WordCharacter...],
+					WordBoundary
+				];
+
+				(* Qualifies temperature at which reading was taken *)
+				(* "at 298 K", "@ 300 Fahrenheit" etc *)
+				temperatureString = StringExpression[
+					Alternatives["AT", "At", "at", "@"],
+					Whitespace...,
+					temp : StringExpression[
+						NumberString,
+						Whitespace...,
+						Alternatives["\[Degree]C", "\[Degree]F", "K", "Celsius", "Centigrade", "Fahrenheit", "Kelvin"]
+					]
+				];
+
+				(* Quantity reference *)
+				(* "(Smith et al., 2008)" etc *)
+				referenceString = StringExpression[
+					"(",
+					Except[")"].., (* Reference name - could be in many forms. We'll take the chance it doesn't include parentheses *)
+					",",
+					Whitespace...,
+					Repeated[DigitCharacter, {4}], (* Year *)
+					")"
+				];
+
+				(* Record delimiter - splitting multiple records in same entry *)
+				recordDelimiter = Alternatives[";"];
+
+				(* We need to be defensive about string pattern matching, so don't allow random stuff in the string *)
+				(* For example, ethylene glycol (PubChem[174) contains many records of the form "PEG 400: 105 to 130 mPa.s at 20 °C;" where "PEG 400" is *not* ethylene glycol *)
+				(* Additionally, glycerin (PubChem[753]) has a record "17 CENTIPOISES AT 25 °C (70% SOLN)" which again is not for the pure molecule of interest *)
+
+				(* First pull out any strings that contain a viscosity. May contain multiple records and may not be for pure compound *)
+				allViscosityEntries = extractStringValues[
+					viscosityDataAssociations,
+					StartOfString ~~ ___ ~~ viscosityString ~~ ___ ~~ EndOfString
+				];
+
+				(* Now split each string to make sure each string only contains one record. *)
+				(* (It's challenging to pull out whole records from "record1; record2; record3;" with StringCases because the delimiter can only belong to one match, and allowing overlaps gets complicated) *)
+				(* String expressions don't have positive lookahead like regex *)
+				allViscosityStrings = Flatten[StringSplit[allViscosityEntries, recordDelimiter]];
+
+				(* Now pull out viscosity information from the string, but only if there is no superfluous information that's a red flag for an invalid value *)
+				(* In form {{viscosity1 (optional for range), viscosity2, viscosity units, temperature of measurement}..} *)
+				viscosityStringTuples = Flatten[StringCases[
+					allViscosityStrings,
+					StringExpression[
+						StartOfString, (* Don't allow random stuff at beginning of entry which often indicates the wrong type of molecule *)
+						Whitespace...,
+						viscosityString,
+						Whitespace...,
+						Alternatives[temperatureString, ""],
+						Whitespace...,
+						Alternatives[referenceString, ""],
+						EndOfString (* Don't allow random stuff at the end of entry which often indicates dilution/modification of the molecule *)
+					] :> {visc1, visc2, units, temp}
+				], 1];
+
+				(* Interpret the tuples as quantities *)
+				viscosityTemperatureTuples = Map[
+					Function[
+						entry,
+						Module[
+							{viscosity1, viscosity2, viscosityUnits, tempString, validatedUnits, averageViscosity, temperature},
+
+							{viscosity1, viscosity2, viscosityUnits, tempString} = entry;
+
+							(* Convert some unusual unit forms *)
+							(* As these are non-standard, it could be dangerous adding to StringToQuantity, so convert here *)
+							validatedUnits = viscosityUnits /. {"mPa-sec" -> "mPa*s"};
+
+							(* If we found a viscosity range, average it *)
+							averageViscosity = Quiet[If[MatchQ[viscosity1, ""],
+								StringToQuantity[viscosity2 <> " " <> validatedUnits, Server -> False],
+								Mean[StringToQuantity[{viscosity1 <> " " <> validatedUnits, viscosity2 <> " " <> validatedUnits}, Server -> False]]
+							]];
+
+							(* Parse the temperature if we have one *)
+							temperature = If[MatchQ[temperatureString, ""],
+								Null,
+								Quiet[StringToQuantity[tempString, Server -> False]]
+							];
+
+							(* Return the tuple only if valid *)
+							If[UnitsQ[averageViscosity, Centipoise] && Or[UnitsQ[temperature, Celsius], NullQ[temperature]],
+								{averageViscosity, temperature},
+								Nothing
+							]
+						]
+					],
+					viscosityStringTuples
+				]
+			];
+
+			(* The viscosities may be at different temperatures, so filter for the preferred 25 C *)
+			(* Take the median of the parsed strings within appropriate temperature range *)
+			medianViscosity = Module[
+				{viscositiesExact, viscosities5C},
+
+				(* Pull out viscosities that meet a certain tolerance of the required temperature *)
+				viscositiesExact = Cases[viscosityTemperatureTuples, {visc_, RangeP[24 Celsius, 26 Celsius]} :> visc];
+				viscosities5C = Cases[viscosityTemperatureTuples, {visc_, RangeP[20 Celsius, 30 Celsius]} :> visc];
+
+				(* Use the best tolerance for which we have data *)
+				Which[
+					!MatchQ[viscositiesExact, {}],
+					UnitConvert[Median[viscositiesExact], Centipoise],
+
+					!MatchQ[viscosities5C, {}],
+					UnitConvert[Median[viscosities5C], Centipoise],
+
+					True,
+					Null
+				]
+			];
+
+			(* Return the viscosity *)
+			SafeRound[medianViscosity, 0.01]
 		],
-		Null
-	]];
+
+		Alternatives[GreaterEqualP[0 Centipoise], Null]
+	];
 
 	(* Get the melting point *)
-	meltingPoint=Quiet[Check[
+	meltingPoint = safeParse[
 		Module[
-			{meltingPointDescriptionAssociations, meltingPointDescriptions, meltingPoints, filteredMeltingPoints},
+			{meltingPointDataAssociations, allMeltingTemperatureLists, medianMeltingPoint},
 
-			(* Get all of the string descriptions of the melting point. *)
-			meltingPointDescriptionAssociations=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "Melting Point"&)], "Information"];
-			meltingPointDescriptions=Cases[Lookup[meltingPointDescriptionAssociations, Key["Value"]], _String, Infinity];
+			(* Extract the list of associations containing experimental melting point data *)
+			meltingPointDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Melting Point", "Information"}];
 
-			(* For each of the descriptions, try to parse it into a quantity. Return Null if the parsing fails. *)
-			meltingPoints=Map[
-				Function[{meltingPointDescription},
-					Module[{parsedQuantity},
-						(* Attempt to parse the description into a quantity. If it fails, return Null. *)
-						Quiet[Check[
-							(* Parse the description into a quantity. *)
-							parsedQuantity=Quantity[meltingPointDescription];
+			(* Melting points are stored in string form *)
+			(* Sometimes there might be hydrates or random compounds thrown in, but difficult to interpret that from the context *)
+			(* Some values also just seem to be wrong without any clarifying information, for example PubChem[174] has records at -13 C and 4-10 C with no qualification *)
+			(* Or PubChem[1004] with values at 42 C, 21 C *)
+			(* Some records are also populated with random invalid data, such as "Latent heat of fusion - 10.5 kJ/mol (25 \[Degree]C)" which is super stupid as the temperature in there is not a melting point *)
+			(* As melting points tend to be highly populated, pull them all out and rely on filtering the values afterwards by comparing them to eachother to guess what's right *)
+			allMeltingTemperatureLists = Module[
+				{temperatureStringTupleLists, meltingPointString, meltingPointQuantities},
 
-							(* If the parsed quantity matches an Interval *)
-							If[MatchQ[parsedQuantity, Quantity[_Interval, _]],
-								(* Average the min and max *)
-								N[(Min[parsedQuantity] + Max[parsedQuantity]) / 2],
-								(* Otherwise, return the quantity. *)
-								parsedQuantity
+				(* Define some useful string forms *)
+				(* The actual melting point *)
+				(* Could be of form "x units" or "x to y units" *)
+				meltingPointString = StringExpression[
+					(* Optional second value for temperature range *)
+					Alternatives[
+						StringExpression[
+							mp1 : NumberString,
+							Whitespace...,
+							Alternatives["to", "To", "TO", "-"],
+							Whitespace...
+						],
+						""
+					],
+					(* There must be at least this one temperature *)
+					mp2 : NumberString,
+					Whitespace...,
+					units : StringExpression[WordCharacter..., Alternatives["\[Degree]C", "\[Degree]F", "K", "Celsius", "Centigrade", "Fahrenheit", "Kelvin"], WordCharacter...],
+					WordBoundary
+				];
+
+				(* Pull out all the temperatures - this is a list of lists as there might be more than one temperature within an entry *)
+				(* Knowing which temperatures came from the same reference is useful later *)
+				temperatureStringTupleLists = extractStringValues[
+					meltingPointDataAssociations,
+					meltingPointString :> {mp1, mp2, units},
+
+					(* Pull out as many temperatures from each entry as possible *)
+					All
+				];
+
+				(* Convert to quantities - map over each reference, and then each temperature in the reference *)
+				meltingPointQuantities = Map[
+					Function[tupleList,
+						Module[{allTemperaturesForReference},
+
+							(* Convert all the temperatures for a given reference *)
+							allTemperaturesForReference = Map[
+								Function[tuple,
+									Module[{meltingPoint1, meltingPoint2, units, meltingPointQuantity},
+
+										{meltingPoint1, meltingPoint2, units} = tuple;
+
+										(* Try and convert the melting point to a quantity *)
+										(* Average the two values if we found a temperature range *)
+										meltingPointQuantity = If[MatchQ[meltingPoint1, ""],
+											Quiet[StringToQuantity[meltingPoint2 <> " " <> units, Server -> False]],
+											Quiet[Mean[StringToQuantity[{meltingPoint1 <> " " <> units, meltingPoint2 <> " " <> units}, Server -> False]]]
+										];
+
+										(* Return the quantity if it's valid, else return Nothing *)
+										If[UnitsQ[meltingPointQuantity, Celsius],
+											meltingPointQuantity,
+											Nothing
+										]
+									]
+								],
+								tupleList
 							]
-							, Null]]
+						]
+					],
+					temperatureStringTupleLists
+				]
+			];
+
+			(* Now filter the melting points if we have multiple to try and guess what the right number is *)
+			medianMeltingPoint = Module[
+				{meltingPointsRefined, meltingPointGroups, mostFrequentMeltingPointGroups, meltingPointTolerance},
+
+				(* Each reference may have multiple temperatures - take the best temperature from each one *)
+				(* There can only be one correct melting point, so this does no harm, but prevents terrible references from overwhelming the correct data *)
+				(* For example ethylene glycol has a single reference containing melting points for 6 PEGs that are obviously *not* ethylene glycol... *)
+				(* Take the highest as pure compounds have higher melting points than impure - so at least we get it right for mixtures or hydrates *)
+				meltingPointsRefined = If[!MatchQ[#, {}], Convert[Max[#], Celsius], Nothing] & /@ allMeltingTemperatureLists;
+
+				(* Group the melting points. Correct melting points tend to be within 1C or so *)
+				meltingPointTolerance = 1 Celsius;
+				meltingPointGroups = Gather[meltingPointsRefined, (LessEqualQ[Abs[#1 - #2], meltingPointTolerance]) &];
+
+				(* Find the longest group(s) = most frequent temperature found *)
+				mostFrequentMeltingPointGroups = MaximalBy[meltingPointGroups, Length];
+
+				(* Return the best temperature we found *)
+				Which[
+					(* No data *)
+					MatchQ[mostFrequentMeltingPointGroups, {{}}],
+					Null,
+
+					(* If one temperature, use it *)
+					EqualQ[Length[mostFrequentMeltingPointGroups], 1],
+					Median[First[mostFrequentMeltingPointGroups]],
+
+					(* More than one group *)
+					True,
+					Module[{medians},
+						(* Compute all the medians *)
+						medians = Median /@ mostFrequentMeltingPointGroups;
+
+						(* Take the highest melting point that's not 25 C *)
+						(* Highest melting point => purest compound *)
+						(* 25 C is a common pollutant when people insert random data into the field, so don't use it when we have a choice *)
+						(* We shouldn't end up with an empty list here, but handle it as Null in any case *)
+						Max[
+							Cases[medians, Except[RangeP[25 Celsius - (meltingPointTolerance / 2), 25 Celsius + (meltingPointTolerance / 2)]]]
+						] /. (-Infinity) -> Null
 					]
-				],
-				meltingPointDescriptions];
+				]
+			];
 
-			(* Filter out the Nulls from the melting points. *)
-			filteredMeltingPoints=Cases[meltingPoints, TemperatureP];
-
-			(* If we ended up with any successful parsings, return the median. Otherwise, return Null. *)
-			If[Length[filteredMeltingPoints] > 0,
-				(* See if there is a most common melting point that we parsed out. *)
-				If[Length[Commonest[filteredMeltingPoints]] == 1,
-					(* There is a most common melting point. Return that. *)
-					First[Commonest[filteredMeltingPoints]],
-					(* There is not a most common melting point, Return the Median. *)
-					N[Median[filteredMeltingPoints]]
-				],
-				Null
-			]
+			(* Return the melting point *)
+			SafeRound[medianMeltingPoint, 0.1]
 		],
-		Null
-	]];
+
+		Alternatives[UnitsP[Celsius], Null]
+	];
 
 	(* Get the boiling point *)
-	boilingPoint=Quiet[Check[
+	boilingPoint = safeParse[
 		Module[
-			{boilingPointDescriptionAssociations, boilingPointDescriptions, boilingPoints, filteredBoilingPoints},
+			{boilingPointDataAssociations, allBoilingTemperatureTupleLists, medianBoilingPoint},
 
-			(* Get all of the string descriptions of the boiling point. *)
-			boilingPointDescriptionAssociations=Lookup[SelectFirst[experimentalPropertiesJSON["Section"], (#["TOCHeading"] == "Boiling Point"&)], "Information"];
-			boilingPointDescriptions=Cases[Lookup[boilingPointDescriptionAssociations, Key["Value"]], _String, Infinity];
+			(* Extract the list of associations containing experimental boiling point data *)
+			boilingPointDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Boiling Point", "Information"}];
 
-			(* For each of the descriptions, try to parse it into a quantity. Return Null if the parsing fails. *)
-			boilingPoints=Map[
-				Function[{boilingPointDescription},
-					Module[{parsedQuantity},
-						(* Attempt to parse the description into a quantity. If it fails, return Null. *)
-						Quiet[Check[
-							(* Parse the description into a quantity. *)
-							parsedQuantity=Quantity[boilingPointDescription];
+			(* Boiling points are stored in string form *)
+			(* Most common issue is multiple boiling points measured at different pressures, so important to parse out pressure if there is one *)
+			(* Occasionally values just seem to be wrong without any clarifying information, for example PubChem[1004] has records at 407 C and 158 C with no qualification *)
+			(* As boiling points tend to be highly populated, pull them all out and rely on filtering the values afterwards by comparing them to eachother to guess what's right *)
+			allBoilingTemperatureTupleLists = Module[
+				{temperatureStringTupleLists, boilingPointString, pressureString, boilingPointQuantityTuples},
 
-							(* If the parsed quantity matches an Interval *)
-							If[MatchQ[parsedQuantity, Quantity[_Interval, _]],
-								(* Average the min and max *)
-								N[(Min[parsedQuantity] + Max[parsedQuantity]) / 2],
-								(* Otherwise, return the quantity. *)
-								parsedQuantity
-							]
-							, Null]]
+				(* Define some useful string forms *)
+				(* The actual boiling point *)
+				(* Could be of form "x units" or "x to y units" *)
+				boilingPointString = StringExpression[
+					(* Optional second value for temperature range *)
+					Alternatives[
+						StringExpression[
+							bp1 : NumberString,
+							Whitespace...,
+							Alternatives["to", "To", "TO", "-"],
+							Whitespace...
+						],
+						""
+					],
+					(* There must be at least this one temperature *)
+					bp2 : NumberString,
+					Whitespace...,
+					units : StringExpression[WordCharacter..., Alternatives["\[Degree]C", "\[Degree]F", "K", "Celsius", "Centigrade", "Fahrenheit", "Kelvin"], WordCharacter...],
+					WordBoundary
+				];
+
+				(* Pressure at which reading was taken *)
+				pressureString = StringExpression[
+					Alternatives["AT", "At", "at", "@"],
+					Whitespace...,
+					pressure : StringExpression[
+						NumberString,
+						Whitespace...,
+						Alternatives["mmHg", "mm Hg", "Atm", "atm"]
 					]
-				],
-				boilingPointDescriptions];
+				];
 
-			(* Filter out the Nulls from the boiling points. *)
-			filteredBoilingPoints=Cases[boilingPoints, TemperatureP];
+				(* Pull out all the temperatures - this is a list of lists as there might be more than one temperature within a line *)
+				(* Knowing which temperatures came from the same reference is useful later *)
+				temperatureStringTupleLists = extractStringValues[
+					boilingPointDataAssociations,
+					StringExpression[
+						boilingPointString,
+						Alternatives[
+							StringExpression[
+								Shortest[___],
+								pressureString
+							],
+							""
+						]
+					] :> {bp1, bp2, units, pressure},
 
-			(* If we ended up with any successful parsings, return the median. Otherwise, return Null. *)
-			If[Length[filteredBoilingPoints] > 0,
-				(* See if there is a most common boiling point that we parsed out. *)
-				If[Length[Commonest[filteredBoilingPoints]] == 1,
-					(* There is a most common boiling point. Return that. *)
-					First[Commonest[filteredBoilingPoints]],
-					(* There is not a most common boiling point, Return the Median. *)
-					N[Median[filteredBoilingPoints]]
-				],
+					(* Pull out as many temperatures from each entry as possible *)
+					All
+				];
+
+				(* Convert to quantities - map over each reference, and then each temperature in the reference. Tuple of {bp, pressure} *)
+				boilingPointQuantityTuples = Map[
+					Function[tupleList,
+						Module[{allTemperaturesForReference},
+
+							(* Convert all the temperatures for a given reference *)
+							allTemperaturesForReference = Map[
+								Function[tuple,
+									Module[{boilingPoint1, boilingPoint2, units, pressure, boilingPointQuantity, pressureQuantity, sanitizedPressure},
+
+										{boilingPoint1, boilingPoint2, units, pressure} = tuple;
+
+										(* Try and convert the boiling point to a quantity *)
+										(* Average the two values if we found a temperature range *)
+										boilingPointQuantity = If[MatchQ[boilingPoint1, ""],
+											Quiet[StringToQuantity[boilingPoint2 <> " " <> units, Server -> False]],
+											Quiet[Mean[StringToQuantity[{boilingPoint1 <> " " <> units, boilingPoint2 <> " " <> units}, Server -> False]]]
+										];
+
+										(* Sanitize the pressure to ensure units are recognized *)
+										sanitizedPressure = StringReplace[pressure, {"mm Hg" -> "mmHg"}];
+
+										(* Try and convert the pressure to a quantity *)
+										pressureQuantity = If[MatchQ[sanitizedPressure, ""],
+											Null,
+											Quiet[StringToQuantity[sanitizedPressure, Server -> False]]
+										];
+
+										(* Return the quantity if it's valid, else return Nothing *)
+										If[UnitsQ[boilingPointQuantity, Celsius] && Or[UnitsQ[pressureQuantity], NullQ[pressureQuantity]],
+											{boilingPointQuantity, pressureQuantity},
+											Nothing
+										]
+									]
+								],
+								tupleList
+							]
+						]
+					],
+					temperatureStringTupleLists
+				]
+			];
+
+			(* Now filter the boiling points if we have multiple to try and guess what the right number is *)
+			medianBoilingPoint = Module[
+				{boilingPointsRefined, boilingPointGroups, mostFrequentBoilingPointGroups, relevantBoilingPoints, boilingPointTolerance},
+
+				(* Each reference may have multiple temperatures at the same pressure - take the best temperature from each one *)
+				(* There can only be one correct boiling point, so this does no harm, but prevents terrible references from overwhelming the correct data *)
+				(* Take the highest as pure compounds have higher boiling points than impure - so at least we get it right for mixtures *)
+				boilingPointsRefined = Flatten[If[!MatchQ[#, {}],
+					(* If we have data, group by the pressure at which the bp was measured *)
+					Values[GroupBy[#,
+						Last,
+
+						(* For each set of bps at a given pressure, take the highest bp and return in a tuple with the pressure in mmHg *)
+						Function[{duplicates}, {Convert[Max[First /@ duplicates], Celsius], SafeRound[Convert[duplicates[[1, 2]], MillimeterMercury], 1 MillimeterMercury]}]
+					]],
+
+					(* Otherwise return nothing if there was no data *)
+					Nothing
+				] & /@ allBoilingTemperatureTupleLists,
+					1
+				];
+
+				(* Pull out the boiling points at the relevant pressure - 760 mmHg/1 atm *)
+				relevantBoilingPoints = Module[{gatheredBoilingPoints, exactBoilingPoints, boilingPoints20mmHg},
+
+					(* Gather the boiling points by pressure *)
+					gatheredBoilingPoints = GroupBy[boilingPointsRefined, Last -> First];
+
+					(* Pull out boiling points at 1 atmosphere. Assume no mention of pressure means 1 atm *)
+					exactBoilingPoints = Flatten[Values[KeySelect[gatheredBoilingPoints, MatchQ[#, Alternatives[Null, RangeP[755 MillimeterMercury, 765 MillimeterMercury]]] &]]];
+
+					(* Cast a wider net *)
+					boilingPoints20mmHg = Flatten[Values[KeySelect[gatheredBoilingPoints, MatchQ[#, Alternatives[Null, RangeP[740 MillimeterMercury, 780 MillimeterMercury]]] &]]];
+
+					If[!MatchQ[exactBoilingPoints, {}],
+						exactBoilingPoints,
+						boilingPoints20mmHg
+					]
+				];
+
+				(* Group the boiling points. Correct boiling points tend to be within 1C or so *)
+				boilingPointTolerance = 1 Celsius;
+				boilingPointGroups = Gather[relevantBoilingPoints, (LessEqualQ[Abs[#1 - #2], boilingPointTolerance]) &];
+
+				(* Find the longest group(s) = most frequent temperature found *)
+				mostFrequentBoilingPointGroups = MaximalBy[boilingPointGroups, Length];
+
+				(* Return the best temperature we found *)
+				Which[
+					(* No data *)
+					MatchQ[mostFrequentBoilingPointGroups, {{}}],
+					Null,
+
+					(* If one temperature, use it *)
+					EqualQ[Length[mostFrequentBoilingPointGroups], 1],
+					Median[First[mostFrequentBoilingPointGroups]],
+
+					(* More than one group *)
+					True,
+					Module[{medians},
+						(* Compute all the medians *)
+						medians = Median /@ mostFrequentBoilingPointGroups;
+
+						(* Take the highest boiling point that's not 25 C *)
+						(* Highest boiling point => purest compound *)
+						(* 25 C is a common pollutant when people insert random data into the field, so don't use it when we have a choice *)
+						(* We shouldn't end up with an empty list here, but handle it as Null in any case *)
+						Max[
+							Cases[medians, Except[RangeP[25 Celsius - (boilingPointTolerance / 2), 25 Celsius + (boilingPointTolerance / 2)]]]
+						]
+					]
+				]
+			];
+
+			(* Return the boiling point *)
+			SafeRound[medianBoilingPoint, 0.1]
+		],
+
+		Alternatives[UnitsP[Celsius], Null]
+	];
+
+	(* Get the state of matter *)
+	state = safeParse[
+		Module[{physicalDescriptionAssociations, stateDescriptors, stateDescriptorFrequencies, likelyState, likelyStateFromTemperatures, stateDefaultPriorities},
+
+			(* There is no specific field for state of matter, so parse out descriptions, which almost always mention it *)
+			physicalDescriptionAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Physical Description", "Information"}];
+
+			(* Words that indicate a certain state of matter *)
+			stateDescriptors = <|
+				Solid -> Alternatives["solid", "powder", "powdery", "needles", "crystals", "crystalline"],
+				Liquid -> Alternatives["liquid", "oil", "oily"],
+				Gas -> Alternatives["gas", "gaseous"]
+			|>;
+
+			(* Count the number of times descriptors for each state are mentioned *)
+			stateDescriptorFrequencies = Map[
+				Length[Flatten[extractStringValues[physicalDescriptionAssociations, WordBoundary ~~ # ~~ WordBoundary, All, IgnoreCase -> True]]] &,
+				stateDescriptors
+			];
+
+			(* See which state(s) is most frequent *)
+			likelyState = MaximalBy[Keys[stateDescriptors], stateDescriptorFrequencies];
+
+			(* Determine the state from the melting and boiling points. Use to break ties *)
+			(* mp and bp data can be missing or occasionally spurious, so don't rely on it alone *)
+			likelyStateFromTemperatures = Switch[{meltingPoint, boilingPoint},
+				{_, LessP[25 Celsius]},
+				Gas,
+
+				{GreaterP[25 Celsius], _},
+				Solid,
+
+				{LessP[25 Celsius], GreaterP[25 Celsius]},
+				Liquid,
+
+				{_, _},
+				Null
+			];
+
+			(* Set default ordering if we need to disambiguate *)
+			stateDefaultPriorities = <|Solid -> 3, Liquid -> 2, Gas -> 1|>;
+
+			(* Return the most likely state. Break final tie in order Solid > Liquid > Gas *)
+			Which[
+				(* If we have a state from the description, and it doesn't conflict with that from the temperatures, us it *)
+				EqualQ[Length[likelyState], 1] && Or[MatchQ[likelyStateFromTemperatures, Null], MemberQ[likelyState, likelyStateFromTemperatures]],
+				First[likelyState],
+
+				(* If we got a state from the temperatures and it doesn't conflict with the description, use it *)
+				!NullQ[likelyStateFromTemperatures] && Or[MemberQ[likelyState, likelyStateFromTemperatures], MatchQ[likelyState, {}]],
+				likelyStateFromTemperatures,
+
+				(* If the description and temperature method conflict, return the description method *)
+				!NullQ[likelyStateFromTemperatures] && !MemberQ[likelyState, likelyStateFromTemperatures],
+				First[MaximalBy[likelyState, stateDefaultPriorities]],
+
+				(* Return Null if we failed *)
+				True,
 				Null
 			]
 		],
-		Null
-	]];
+
+		Alternatives[Solid, Liquid, Gas]
+	];
+
+	(* Get the vapor pressure *)
+	vaporPressure = safeParse[
+		Module[
+			{vaporPressureDataAssociations, allVaporPressureTupleLists, medianVaporPressure},
+
+			(* Extract the list of associations containing experimental vapor pressure data *)
+			vaporPressureDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Vapor Pressure", "Information"}];
+
+			(* Vapor pressures are stored in string form *)
+			(* Most common issue is multiple vapor pressures measured at different temperatures, so important to parse out temperature if there is one *)
+			(* Pull out all values and rely on filtering the values afterwards by comparing them to eachother to guess what's right *)
+			allVaporPressureTupleLists = Module[
+				{pressureStringTupleLists, vaporPressureString, temperatureString, vaporPressureQuantityTuples},
+
+				(* Define some useful string forms *)
+				(* The actual vapor pressure *)
+				(* Could be of form "x units" or "x to y units" *)
+				vaporPressureString = StringExpression[
+					(* Optional second value for vapor pressure range *)
+					Alternatives[
+						StringExpression[
+							vp1 : NumberString,
+							Whitespace...,
+							Alternatives["to", "To", "TO", "-"],
+							Whitespace...
+						],
+						""
+					],
+					(* There must be at least this one pressure *)
+					vp2 : NumberString,
+					Whitespace...,
+					units : StringExpression[WordCharacter..., Alternatives["mmHg", "mm Hg", "Atm", "atm", "kPa", "Pa"], WordCharacter...],
+					WordBoundary
+				];
+
+				(* Temperature at which reading was taken *)
+				temperatureString = StringExpression[
+					Alternatives["AT", "At", "at", "@"],
+					Whitespace...,
+					temperature : StringExpression[
+						NumberString,
+						Whitespace...,
+						Alternatives["\[Degree]C", "\[Degree]F", "K", "Celsius", "Centigrade", "Fahrenheit", "Kelvin"]
+					]
+				];
+
+				(* Pull out all the vapor pressures - this is a list of lists as there might be more than one pressure within a line *)
+				(* Knowing which pressure came from the same reference is useful later *)
+				pressureStringTupleLists = extractStringValues[
+					vaporPressureDataAssociations,
+					StringExpression[
+						vaporPressureString,
+						Alternatives[
+							StringExpression[
+								Shortest[___],
+								temperatureString
+							],
+							""
+						]
+					] :> {vp1, vp2, units, temperature},
+
+					(* Pull out as many temperatures from each entry as possible *)
+					All
+				];
+
+				(* Convert to quantities - map over each reference, and then each pressure in the reference. Tuple of {vp, temperature} *)
+				vaporPressureQuantityTuples = Map[
+					Function[tupleList,
+						Module[{allTemperaturesForReference},
+
+							(* Convert all the pressures for a given reference *)
+							allTemperaturesForReference = Map[
+								Function[tuple,
+									Module[{vaporPressure1, vaporPressure2, vaporPressure1Sanitized, vaporPressure2Sanitized, units, temperature, vaporPressureQuantity, temperatureQuantity},
+
+										{vaporPressure1, vaporPressure2, units, temperature} = tuple;
+
+										(* Sanitize the pressure to ensure units are recognized *)
+										{vaporPressure1Sanitized, vaporPressure2Sanitized} = {
+											vaporPressure1,
+											vaporPressure2
+										} /. {"mm Hg" -> "mmHg"};
+
+										(* Try and convert the vapor pressure to a quantity *)
+										(* Average the two values if we found a pressure range *)
+										vaporPressureQuantity = If[MatchQ[vaporPressure1Sanitized, ""],
+											Quiet[StringToQuantity[vaporPressure2Sanitized <> " " <> units, Server -> False]],
+											Quiet[Mean[StringToQuantity[{vaporPressure1Sanitized <> " " <> units, vaporPressure2Sanitized <> " " <> units}, Server -> False]]]
+										];
+
+										(* Try and convert the temperature to a quantity *)
+										temperatureQuantity = If[MatchQ[temperature, ""],
+											Null,
+											Quiet[StringToQuantity[temperature, Server -> False]]
+										];
+
+										(* Return the quantity if it's valid, else return Nothing *)
+										If[UnitsQ[vaporPressureQuantity, Kilopascal] && Or[UnitsQ[temperatureQuantity], NullQ[temperatureQuantity]],
+											{vaporPressureQuantity, temperatureQuantity},
+											Nothing
+										]
+									]
+								],
+								tupleList
+							]
+						]
+					],
+					pressureStringTupleLists
+				]
+			];
+
+			(* Now filter the vapor pressures if we have multiple to try and guess what the right number is *)
+			medianVaporPressure = Module[
+				{vaporPressuresRefined, vaporPressureGroups, mostFrequentVaporPressureGroups, relevantVaporPressures},
+
+				(* Each reference may have multiple vapor pressures at the same temperature - take the best pressure from each one *)
+				(* There can only be one correct vapor pressure, so this does no harm, but prevents terrible references from overwhelming the correct data *)
+				(* Take the highest *)
+				vaporPressuresRefined = Flatten[If[!MatchQ[#, {}],
+					(* If we have data, group by the pressure at which the vp was measured *)
+					Values[GroupBy[#,
+						Last,
+
+						(* For each set of vps at a given pressure, take the highest vp and return in a tuple with the temperature in C *)
+						Function[{duplicates}, {Convert[Max[First /@ duplicates], Kilopascal], SafeRound[Convert[duplicates[[1, 2]], Celsius], 1 Celsius]}]
+					]],
+
+					(* Otherwise return nothing if there was no data *)
+					Nothing
+				] & /@ allVaporPressureTupleLists,
+					1
+				];
+
+				(* Pull out the vapor pressures at the relevant temperature - 25 C *)
+				relevantVaporPressures = Module[{gatheredVaporPressures, exactVaporPressures, vaporPressures5Celsius},
+
+					(* Gather the vapor pressures by temperature *)
+					gatheredVaporPressures = GroupBy[vaporPressuresRefined, Last -> First];
+
+					(* Pull out vapor pressures at 25 C. Assume no mention of temperature means 25 C *)
+					exactVaporPressures = Flatten[Values[KeySelect[gatheredVaporPressures, MatchQ[#, Alternatives[Null, RangeP[24 Celsius, 26 Celsius]]] &]]];
+
+					(* Cast a wider net *)
+					vaporPressures5Celsius = Flatten[Values[KeySelect[gatheredVaporPressures, MatchQ[#, Alternatives[Null, RangeP[20 Celsius, 30 Celsius]]] &]]];
+
+					If[!MatchQ[exactVaporPressures, {}],
+						exactVaporPressures,
+						vaporPressures5Celsius
+					]
+				];
+
+				(* Group the vapor pressures within 5 % of the smaller value *)
+				vaporPressureGroups = Gather[relevantVaporPressures, (LessEqualQ[Abs[#1 - #2], Min[#1, #2] * 0.05]) &];
+
+				(* Find the longest group(s) = most frequent pressure found *)
+				mostFrequentVaporPressureGroups = MaximalBy[vaporPressureGroups, Length];
+
+				(* Return the best vapor pressure we found *)
+				Which[
+					(* No data *)
+					MatchQ[mostFrequentVaporPressureGroups, {{}}],
+					Null,
+
+					(* If one pressure, use it *)
+					EqualQ[Length[mostFrequentVaporPressureGroups], 1],
+					Median[First[mostFrequentVaporPressureGroups]],
+
+					(* More than one group *)
+					True,
+					Module[{medians},
+						(* Compute all the medians *)
+						medians = Median /@ mostFrequentVaporPressureGroups;
+
+						(* Take the median pressure *)
+						Median[
+							medians
+						]
+					]
+				]
+			];
+
+			(* Return the vapor pressure *)
+			SafeRound[UnitScale[medianVaporPressure], 0.1]
+		],
+
+		Alternatives[UnitsP[Kilopascal], Null]
+	];
+
+
+	(* Get the density *)
+	density = safeParse[
+		Module[
+			{densityDataAssociations, densityTemperatureTuples, medianDensity},
+
+			(* Extract the list of associations containing experimental density data *)
+			densityDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Density", "Information"}];
+
+			(* Densities are stored in string form *)
+			(* Most common issue is densities measured at different temperatures, so important to parse out temperature if there is one *)
+			(* Records may contain temperature or dilution information. Important to filter out data not for pure compound, or near room temperature *)
+			(* Each string may contain multiple values, under different conditions *)
+			densityTemperatureTuples = Module[
+				{densityString, densityUnits, temperatureString, densityStringTupleLists, densityQuantityTuples},
+
+				(* Define some useful string forms *)
+				(* The actual density *)
+				(* Could be x to y units *)
+				densityString = StringExpression[
+					(* Optional second value for density range *)
+					Alternatives[
+						StringExpression[
+							dens1 : NumberString,
+							Whitespace...,
+							Alternatives["to", "To", "TO", "-"],
+							Whitespace...
+						],
+						""
+					],
+					(* There must be at least this one density *)
+					dens2 : NumberString
+				];
+
+				(* Units of density - optional as may be a relative density which is unitless *)
+				densityUnits = units : Alternatives[
+					Alternatives["k", ""] ~~ "g" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ Alternatives["m", ""] ~~ "L",
+					Alternatives["k", ""] ~~ "g" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ "cm" ~~ Whitespace... ~~ "^" ~~ Whitespace... ~~ "3",
+					Alternatives["k", ""] ~~ "g" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ "dm" ~~ Whitespace... ~~ "^" ~~ Whitespace... ~~ "3",
+					Alternatives["k", ""] ~~ "g" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ Alternatives["cu", "cubic"] ~~ Whitespace... ~~ "cm",
+					Alternatives["k", ""] ~~ "g" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ Alternatives["cu", "cubic"] ~~ Whitespace... ~~ "dm",
+					Alternatives["kilo", ""] ~~ "gram" ~~ Whitespace... ~~ "/" ~~ Whitespace... ~~ Alternatives["milli", ""] ~~ "liter"
+				];
+
+				(* Qualifies temperature at which reading was taken *)
+				temperatureString = StringExpression[
+					Alternatives["AT", "At", "at", "@"],
+					Whitespace...,
+					temp : StringExpression[
+						NumberString,
+						Whitespace...,
+						Alternatives["\[Degree]C", "\[Degree]F", "K", "Celsius", "Centigrade", "Fahrenheit", "Kelvin"]
+					]
+				];
+
+				(* Pull out all the densities - this is a list of lists as there might be more than one density within a line *)
+				(* Knowing which densities came from the same reference is useful later *)
+				(* We have to be careful to make sure we're only pulling out valid densities *)
+				densityStringTupleLists = extractStringValues[
+					densityDataAssociations,
+					{
+						(* If just a number on its own, allow it to not have units. We know for sure this should be a density *)
+						StartOfString ~~ densityString ~~ EndOfString :> {dens1, dens2, units, temp},
+
+						(* Match a PubChem entry that explicitly mentions the density of water *)
+						StartOfString ~~ "Relative density (water = 1): " ~~ densityString ~~ EndOfString :> {dens1, dens2, units, temp},
+
+						(* If we have a density with units, we can be permissive and look anywhere in the string. There may be multiple per reference *)
+						densityString ~~ Whitespace... ~~ densityUnits ~~ Alternatives[Whitespace... ~~ temperatureString, ""] :> {dens1, dens2, units, temp},
+
+						(* If density has a qualifying temperature we can also be more permissive about where we find it *)
+						densityString ~~ Alternatives[Whitespace... ~~ densityUnits, ""] ~~ Whitespace... ~~ temperatureString :> {dens1, dens2, units, temp}
+					},
+					All
+				] /. {dens1 -> "", dens2 -> "", units -> "", temp -> ""};
+
+				(* Convert to quantities - map over each reference, and then each density in the reference. Tuple of {density, temperature} *)
+				densityQuantityTuples = Map[
+					Function[tupleList,
+						Module[{allDensitiesForReference},
+
+							(* Convert all the densities for a given reference *)
+							allDensitiesForReference = Map[
+								Function[tuple,
+									Module[{density1, density2, units, sanitizedUnits, temperature, density, densityQuantity, temperatureQuantity, sanitizedPressure},
+
+										{density1, density2, units, temperature} = tuple;
+
+										(* Sanitize the density units to ensure they are recognized *)
+										sanitizedUnits = StringReplace[units, {Alternatives["cu cm", "cubic cm"] -> "cm^3", Alternatives["cu dm", "cubic dm"] -> "dm^3"}];
+
+										(* Try and convert the density to a quantity *)
+										(* Average the two values if we found a density range *)
+										density = If[MatchQ[density1, ""],
+											Quiet[StringToQuantity[density2 <> " " <> sanitizedUnits, Server -> False]],
+											Quiet[Mean[StringToQuantity[{density1 <> " " <> sanitizedUnits, density2 <> " " <> sanitizedUnits}, Server -> False]]]
+										];
+
+										(* If quantity has no units, assume it's a relative density *)
+										densityQuantity = If[MatchQ[density, NumberP],
+											density Gram / Milliliter,
+											density
+										];
+
+										(* Try and convert the temperature to a quantity *)
+										temperatureQuantity = If[MatchQ[temperature, ""],
+											Null,
+											Quiet[StringToQuantity[temperature, Server -> False]]
+										];
+
+										(* Return the quantity if it's valid, else return Nothing *)
+										(* As some quantities are unitless, it's difficult to tell what's a density and what's a plain number, so filter out scientifically implausible values for standard conditions on earth *)
+										If[MatchQ[densityQuantity, RangeP[0 Gram / Liter, 25 Gram / Milliliter]] && Or[UnitsQ[temperatureQuantity], NullQ[temperatureQuantity]],
+											{densityQuantity, temperatureQuantity},
+											Nothing
+										]
+									]
+								],
+								tupleList
+							]
+						]
+					],
+					densityStringTupleLists
+				]
+			];
+
+			(* The densities may be at different temperatures, so filter for the preferred 25 C *)
+			(* Take the median of the parsed strings within appropriate temperature range *)
+			medianDensity = Module[
+				{densitiesRefined, densityGroups, mostFrequentDensityGroups, relevantDensities},
+
+				(* Each reference may have multiple densities at the same temperature - take the best density from each one *)
+				(* There can only be one correct density, so this does no harm, but prevents terrible references from overwhelming the correct data *)
+				(* Take the highest *)
+				densitiesRefined = Flatten[If[!MatchQ[#, {}],
+					(* If we have data, group by the temperature at which the density was measured *)
+					Values[GroupBy[#,
+						Last,
+
+						(* For each set of densities at a given temperature, take the highest densities and return in a tuple with the temperature in C *)
+						Function[{duplicates}, {Convert[Max[First /@ duplicates], Gram / Milliliter], SafeRound[Convert[duplicates[[1, 2]], Celsius], 1 Celsius]}]
+					]],
+
+					(* Otherwise return nothing if there was no data *)
+					Nothing
+				] & /@ densityTemperatureTuples,
+					1
+				];
+
+				(* Pull out the densities at the relevant temperature - 25 C *)
+				relevantDensities = Module[{gatheredDensities, exactDensities, densities10C, allDensities},
+
+					(* Gather the densities by temperature *)
+					gatheredDensities = GroupBy[densitiesRefined, Last -> First];
+
+					(* Pull out densities at 25 C. Assume no mention of temperature means 25 C *)
+					exactDensities = Flatten[Values[KeySelect[gatheredDensities, MatchQ[#, Alternatives[Null, RangeP[24 Celsius, 26 Celsius]]] &]]];
+
+					(* Cast a wider net *)
+					densities10C = Flatten[Values[KeySelect[gatheredDensities, MatchQ[#, Alternatives[Null, RangeP[20 Celsius, 30 Celsius]]] &]]];
+
+					(* Full net *)
+					allDensities = Flatten[Values[gatheredDensities]];
+
+					Which[
+						(* If we have densities at the right temperature, use them *)
+						!MatchQ[exactDensities, {}],
+						exactDensities,
+
+						(* Otherwise if we have some with a slightly wider net, use those *)
+						!MatchQ[densities10C, {}],
+						densities10C,
+
+						(* Otherwise if we're in condensed phase, use any values as density isn't strongly dependent on temperature *)
+						MatchQ[state, Alternatives[Solid, Liquid]],
+						allDensities,
+
+						True,
+						{}
+					]
+				];
+
+				(* Group the densities. Check within 5 % of smallest value as densities cover many orders of magnitude *)
+				densityGroups = Gather[
+					relevantDensities,
+					(LessEqualQ[Abs[#1 - #2], Min[#1, #2] * 0.05])&
+				];
+
+				(* Find the longest group(s) = most frequent density found *)
+				mostFrequentDensityGroups = MaximalBy[densityGroups, Length];
+
+				(* Return the best density we found *)
+				Which[
+					(* No data *)
+					MatchQ[mostFrequentDensityGroups, {{}}],
+					Null,
+
+					(* If one density, use it *)
+					EqualQ[Length[mostFrequentDensityGroups], 1],
+					Median[First[mostFrequentDensityGroups]],
+
+					(* More than one group *)
+					True,
+					Module[{medians},
+						(* Compute all the medians *)
+						medians = Median /@ mostFrequentDensityGroups;
+
+						(* Take the middle density *)
+						Median[
+							medians
+						]
+					]
+				]
+			];
+
+			(* Return the density *)
+			medianDensity
+		],
+
+		Alternatives[UnitsP[Gram / Centimeter^3], Null]
+	];
+
 
 	(* -- Safety and Hazards Information Properties -- *)
-	safetyJSON=SelectFirst[mainJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Safety and Hazards"&)]["Section"];
+	safetyAndHazards = safeParse[extractJSON[pubchemRecord, {"Section", "TOCHeading" == "Safety and Hazards", "Section"}], _List];
 
-	(* Parse out the Precautionary Statement Codes from the GHS Classification description. *)
-	(* These Precautionary Statement Codes (P-Codes) will inform us of the Health & Safety fields. *)
-	pCodes=Quiet[Check[
-		Module[{hazardsAssociation, ghsClassificationAssociation, ghsInformation, ghsStrings},
-			hazardsAssociation=Lookup[SelectFirst[safetyJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Hazards Identification"&)], "Section"];
-			ghsClassificationAssociation=SelectFirst[hazardsAssociation, (#["TOCHeading"] == "GHS Classification"&)];
+	(* Lookup the NPFA hazards - system used for lab safety *)
+	nfpaHazards = safeParse[
+		Module[
+			{
+				nfpaAssociations, nfpaFireAssociations, nfpaHealthAssociations, nfpaInstabilityAssociations, nfpaSpecificAssociations, nfpaPictogramAssociation, specialAbbreviations,
+				pictogramHazardTuple, additionalHealthRatings, additionalFireRatings, additionalReactivityRatings, additionalSpecialRatings
+			},
 
-			(* Actuall pull out the HTML that displays the GHS classification now. *)
-			ghsInformation=SelectFirst[ghsClassificationAssociation["Information"], (#["Name"] == "Precautionary Statement Codes"&)];
+			(* Pull out all NFPA associations *)
+			nfpaAssociations = extractJSON[safetyAndHazards, {"TOCHeading" == "Hazards Identification", "Section", "TOCHeading" == "NFPA Hazard Classification", "Information"}];
 
-			(* Get the strings.*)
-			ghsStrings=ghsInformation["Value"]["StringWithMarkup"][[1]]["String"];
+			(* Return $Failed early if no information *)
+			If[FailureQ[nfpaAssociations],
+				Return[$Failed, Module]
+			];
 
-			(* If we weren't able to get the GHS strings, return an empty list. *)
-			If[!MatchQ[ghsStrings, _String],
-				Null,
-				(* The P-Codes are in the format P### where # is a number. *)
-				(* Pull out all of the P-Codes from the GHS Information. *)
-				StringCases[ghsStrings, "P"~~DigitCharacter~~DigitCharacter~~DigitCharacter]
-			]
-		],
-		Null
-	]];
-
-	(* Figure out if this chemcial is hazardous. *)
-	hazardous=Quiet[Check[
-		Module[{hazardsAssociation, ghsClassificationAssociation, ghsInformation, ghsStrings},
-			hazardsAssociation=Lookup[SelectFirst[safetyJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Hazards Identification"&)], "Section"];
-			ghsClassificationAssociation=SelectFirst[hazardsAssociation, (#["TOCHeading"] == "GHS Classification"&)];
-
-			(* Actuall pull out the HTML that displays the GHS classification now. *)
-			ghsInformation=SelectFirst[ghsClassificationAssociation["Information"], (#["Name"] == "GHS Classification"&)];
-
-			(* Get the strings.*)
-			ghsStrings=Cases[Lookup[ghsInformation, Key["Value"]], _String, Infinity];
-
-			(* PubChem displays the string "Reported as not meeting GHS hazard criteria..." if the majority of *)
-			(* sources which it pulls from say that it is not hazardous. Search for this string. *)
-			If[!SameQ[pCodes, Null],
-				!StringContainsQ[ghsStrings, "Reported as not meeting GHS hazard criteria"],
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Figure out from the P-Codes if this chemical is Flammable. *)
-	flammable=Quiet[Check[
-		Module[{flammablePCodes},
-			(* The following are the P-Codes that indicate that this chemical is Flammable. *)
-			flammablePCodes={"P210", "P211", "P220", "P221", "P241", "P242", "P243", "P244", "P250", "P251", "P283", "P370", "P371", "P372"};
-
-			(* Do our P-Codes contain any of these? *)
-			If[!SameQ[pCodes, Null],
-				ContainsAny[pCodes, flammablePCodes],
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Figure out from the P-Codes if this chemical is pyrophoric. *)
-	pyrophoric=Quiet[Check[
-		Module[{pyrophoricPCodes},
-			(* The following are the P-Codes that indicate that this chemical is pyrophoric. *)
-			pyrophoricPCodes={"P222", "P231", "P232"};
-
-			(* Do our P-Codes contain any of these? *)
-			If[!SameQ[pCodes, Null],
-				ContainsAny[pCodes, pyrophoricPCodes],
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Figure out from the P-Codes if this chemical is water reactive. *)
-	waterReactive=Quiet[Check[
-		Module[{waterReactivePCodes},
-			(* The following are the P-Codes that indicate that this chemical is pyrophoric. *)
-			waterReactivePCodes={"P222", "P223", "P231", "P232"};
-
-			(* Do our P-Codes contain any of these? *)
-			If[!SameQ[pCodes, Null],
-				ContainsAny[pCodes, waterReactivePCodes],
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Figure out from the P-Codes if this chemical is fuming (releases rumes on exposure to air). *)
-	fuming=Quiet[Check[
-		Module[{fumingPCodes},
-			(* The following are the P-Codes that indicate that this chemical is pyrophoric. *)
-			fumingPCodes={"P260", "P261", "P284", "P285", "P304", "P403"};
-
-			(* Do our P-Codes contain any of these? *)
-			If[!SameQ[pCodes, Null],
-				ContainsAny[pCodes, fumingPCodes],
-				Null
-			]
-		],
-		Null
-	]];
-
-	(* Lookup the safety and hazard properties. *)
-	nfpaHazards=Quiet[Check[
-		Module[{hazardsAssociation, nfpaAssociations, fireRating, healthRatingPacket, healthRating, reactivityRatingPacket, reactivityRating},
-			(* Pull out the Safety & Hazards Properties section. *)
-			hazardsAssociation=Lookup[SelectFirst[safetyJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Safety and Hazard Properties"&)], "Section"];
-
-			(* Pull out the NFPA sections. *)
-			nfpaAssociations=Select[hazardsAssociation, (MatchQ[#["TOCHeading"], "NFPA Fire Rating" | "NFPA Health Rating" | "NFPA Reactivity Rating"]&)];
-
-			(* If there is more than one NFPA, we can parse them. *)
-			If[Length[nfpaAssociations] > 1,
-				Module[{fireRatingPacket},
-					(* NFPA ratings that aren't included are implicitly 0. No idea why PubChem does this. *)
-					fireRatingPacket=SelectFirst[nfpaAssociations, (#["TOCHeading"] == "NFPA Fire Rating"&)];
-
-					(* If there is a fire rating, set it. Otherwise, it is implicitly 0. *)
-					fireRating=If[Length[fireRatingPacket] > 1,
-						ToExpression[First[fireRatingPacket["Information"]]["Value"]["StringWithMarkup"][[1]]["String"]],
-						0
-					];
-
-					(* NFPA ratings that aren't included are implicitly 0. No idea why PubChem does this. *)
-					healthRatingPacket=SelectFirst[nfpaAssociations, (#["TOCHeading"] == "NFPA Health Rating"&)];
-
-					(* If there is a health rating, set it. Otherwise, it is implicitly 0. *)
-					healthRating=If[Length[healthRatingPacket] > 1,
-						ToExpression[First[healthRatingPacket["Information"]]["Value"]["StringWithMarkup"][[1]]["String"]],
-						0
-					];
-
-					(* NFPA ratings that aren't included are implicitly 0. No idea why PubChem does this. *)
-					reactivityRatingPacket=SelectFirst[nfpaAssociations, (#["TOCHeading"] == "NFPA Reactivity Rating"&)];
-
-					(* If there is a reactivity rating, set it. Otherwise, it is implicitly 0. *)
-					reactivityRating=If[Length[reactivityRatingPacket] > 1,
-						ToExpression[First[reactivityRatingPacket["Information"]]["Value"]["StringWithMarkup"][[1]]["String"]],
-						0
-					];
-
-					(* PubChem doesn't store information about the special hazard. Return an empty list for now, thinking about how to get this information. *)
-					{healthRating, fireRating, reactivityRating, {}}
+			(* Pull out the NFPA Safety & Hazards Properties associations. May be multiple for each category *)
+			{
+				nfpaFireAssociations,
+				nfpaHealthAssociations,
+				nfpaInstabilityAssociations,
+				nfpaSpecificAssociations,
+				nfpaPictogramAssociation
+			} = Map[
+				Function[{section},
+					Select[
+						nfpaAssociations,
+						MatchQ[Lookup[#, "Name"], section] &
+					]
 				],
-				(* If there are no NFPA Associations, then return Null. *)
+				{"NFPA Fire Rating", "NFPA Health Rating", "NFPA Instability Rating", "NFPA Specific Notice", "NFPA 704 Diamond"}
+			];
+
+			(* Abbreviations in the special category - all lower case as we'll do a lower case match *)
+			specialAbbreviations = <|
+				"ox" -> Oxidizer, (* PubChem[944] *)
+				"\:0335w\:0335" -> WaterReactive, (* PubChem[5462222] *)
+				"w" -> WaterReactive, (* Seems reasonable to have this too in case special character isn't used *)
+				"sa" -> Aspyxiant, (* Typo in the pattern *) (* I tried hard to find one but couldn't test this. Tried N2, H2, Xe, Kr, CO2, Cl2, SF6, C2F6, CH4, ...*)
+				"cor" -> Corrosive, (* Again, couldn't get any obvious ones here *)
+				"acid" -> Acid, (* Same here *)
+				"bio" -> Bio, (* Couldn't find any evidence of this in PubChem, nor a standard abbreviation, so this is a guess *)
+				"poison" -> Poisonous, (* Couldn't find any evidence of this in PubChem, nor a standard abbreviation, so this is a guess *)
+				"rad" -> Radioactive, (* Couldn't find any evidence of this in PubChem, nor a standard abbreviation, so this is a guess *)
+				"cryo" -> Cryogenic (* Couldn't find any evidence of this in PubChem, nor a standard abbreviation, so this is a guess *)
+			|>;
+
+			(* Parse the pictogram as that should summarize all our hazard information *)
+			pictogramHazardTuple = If[!FailureQ[nfpaPictogramAssociation],
+				Module[{rawTuples},
+					(* If we have a pictogram, pull the information out of the string *)
+					rawTuples = extractStringValues[
+						nfpaPictogramAssociation,
+						StringExpression[
+							health : Alternatives["0", "1", "2", "3", "4"],
+							"-",
+							flammability : Alternatives["0", "1", "2", "3", "4"],
+							"-",
+							reactivity : Alternatives["0", "1", "2", "3", "4"],
+							(* Special doesn't appear if there is no special *)
+							Alternatives[
+								StringExpression[
+									"-",
+									Whitespace...,
+									special : __,
+									EndOfString
+								],
+								""
+							]
+						] :> {
+							ToExpression[health], ToExpression[flammability], ToExpression[reactivity],
+							Lookup[specialAbbreviations, ToLowerCase[special], Null]
+						}
+					];
+
+					(* Combine the tuples. Take the worst case scenario if there are multiple pictograms *)
+					{
+						Max[rawTuples[[All, 1]]],
+						Max[rawTuples[[All, 2]]],
+						Max[rawTuples[[All, 3]]],
+						Cases[DeleteDuplicates[rawTuples[[All, 4]]], Except[Null]]
+					}
+				],
+
+				(* Otherwise keep as Null *)
 				Null
+			];
+
+			(* Check the specific hazard sections and double check the information here isn't stricter than in the pictogram *)
+			{
+				additionalHealthRatings,
+				additionalFireRatings,
+				additionalReactivityRatings
+			} = Map[
+				Function[associations,
+					(* Pull out all the values *)
+					extractStringValues[
+						associations,
+						StartOfString ~~ Whitespace ... ~~ x : DigitCharacter :> ToExpression[x]
+					]
+				],
+				{nfpaHealthAssociations, nfpaFireAssociations, nfpaInstabilityAssociations}
+			];
+
+			additionalSpecialRatings = extractStringValues[
+				nfpaSpecificAssociations,
+				StartOfString ~~ Whitespace ... ~~ x : WordCharacter.. ~~ WordBoundary :> Lookup[specialAbbreviations, ToLowerCase[x], Null]
+			];
+
+			(* Return the most stringent requirements *)
+			{
+				Max[Prepend[additionalHealthRatings, pictogramHazardTuple[[1]]]],
+				Max[Prepend[additionalFireRatings, pictogramHazardTuple[[2]]]],
+				Max[Prepend[additionalReactivityRatings, pictogramHazardTuple[[3]]]],
+				Cases[DeleteDuplicates[Join[additionalSpecialRatings, pictogramHazardTuple[[4]]]], Except[Null]]
+			}
+		],
+
+		{
+			Alternatives[0, 1, 2, 3, 4],
+			Alternatives[0, 1, 2, 3, 4],
+			Alternatives[0, 1, 2, 3, 4],
+			{Alternatives[Oxidizer, WaterReactive, Aspyxiant (* Typo in pattern *), Corrosive, Acid, Bio, Poisonous, Radioactive, Cryogenic, Null]...}
+		}
+	];
+
+	(* Parse out the Precautionary Statement Codes (P phrases) from the GHS Classification description. Just used internally in this function to augment other systems as contains more granular chemical information *)
+	pCodes = safeParse[
+		Module[{pCodeAssociation, pCodes},
+			(* Pull out the association containing p codes *)
+			pCodeAssociation = extractJSON[safetyAndHazards, {"TOCHeading" == "Hazards Identification", "Section", "TOCHeading" == "GHS Classification", "Information", "Name" == "Precautionary Statement Codes"}];
+
+			(* Return $Failed early if insufficient information *)
+			If[!AssociationQ[pCodeAssociation],
+				Return[$Failed, Module]
+			];
+
+			(* Pull out the P-codes - of the form P### or P###+P###... *)
+			pCodes = Flatten[extractStringValues[
+				{pCodeAssociation},
+				StringExpression[
+					"P" ~~ Repeated[DigitCharacter, {3}],
+					RepeatedNull[
+						"+" ~~ "P" ~~ Repeated[DigitCharacter, {3}]
+					]
+				],
+				All
+			]]
+		],
+
+		{
+			_String?(StringMatchQ[
+				#,
+				StringExpression[
+					"P" ~~ Repeated[DigitCharacter, {3}],
+					RepeatedNull[
+						"+" ~~ "P" ~~ Repeated[DigitCharacter, {3}]
+					]
+				]
+			]&)...
+		}
+	];
+
+	(* P codes can sometimes be combined e.g. P304+P316 *)
+	(* pCodesSplit contains a unique list of all the individual pCodes to make it easier to check for codes internally within this function *)
+	pCodesSplit = safeParse[
+		Sort[DeleteDuplicates[Flatten[StringSplit[pCodes, "+"]]]],
+		{_String?(StringMatchQ[#, "P" ~~ Repeated[DigitCharacter, {3}]]&)...}
+	];
+
+	(* Parse out the Hazard Statement Codes (H phrases) from the GHS Classification description. Just used internally in this function to augment other systems as contains more granular chemical information *)
+	hCodes = safeParse[
+		Module[{hCodeAssociation, hCodes},
+			(* Pull out the association containing h codes *)
+			hCodeAssociation = extractJSON[safetyAndHazards, {"TOCHeading" == "Hazards Identification", "Section", "TOCHeading" == "GHS Classification", "Information", "Name" == "GHS Hazard Statements"}];
+
+			(* Return $Failed early if insufficient information *)
+			If[!AssociationQ[hCodeAssociation],
+				Return[$Failed, Module]
+			];
+
+			(* Pull out the H-codes - of the form H### or H###+H###... *)
+			hCodes = Flatten[extractStringValues[
+				{hCodeAssociation},
+				StringExpression[
+					"H" ~~ Repeated[DigitCharacter, {3}],
+					RepeatedNull[
+						"+" ~~ "H" ~~ Repeated[DigitCharacter, {3}]
+					]
+				],
+				All
+			]]
+		],
+
+		{
+			_String?(StringMatchQ[
+				#,
+				StringExpression[
+					"H" ~~ Repeated[DigitCharacter, {3}],
+					RepeatedNull[
+						"+" ~~ "H" ~~ Repeated[DigitCharacter, {3}]
+					]
+				]
+			]&)...
+		}
+	];
+
+	(* Hazard codes can sometimes be combined e.g. H300+H310 *)
+	(* hCodesSplit contains a unique list of all the individual hCodes to make it easier to check for codes internally within this function *)
+	hCodesSplit = safeParse[
+		Sort[DeleteDuplicates[Flatten[StringSplit[hCodes, "+"]]]],
+		{_String?(StringMatchQ[#, "H" ~~ Repeated[DigitCharacter, {3}]]&)...}
+	];
+
+	(* Figure out if this chemical is "hazardous" according to GHS criteria. False/True/ParticularlyHazardousSubstance *)
+	hazardous = safeParse[
+		Module[{hazardsAssociations},
+			(* Pull out the GHS section of the hazard information *)
+			hazardsAssociations = extractJSON[safetyAndHazards, {"TOCHeading" == "Hazards Identification", "Section", "TOCHeading" == "GHS Classification", "Information"}];
+
+			(* Return Null early if insufficient information *)
+			If[!MatchQ[hazardsAssociations, {_Association..}],
+				Return[Null, Module]
+			];
+
+			(* Rank as non-hazardous, hazardous, or particularly hazardous *)
+			Which[
+				(* If no information, return $Failed *)
+				FailureQ[hCodesSplit],
+				$Failed,
+
+				(* If no h-phrases/failed h-phrases, it's not hazardous *)
+				!MatchQ[hCodesSplit, {_String..}],
+				False,
+
+				(* If it contains certain nasty h-codes, it's particularly hazardous. This list is from the definition of ParticularlyHazardousSubstance field *)
+				MemberQ[hCodesSplit, Alternatives["H340", "H360", "H362", "H300", "H310", "H330", "H370", "H371", "H372", "H373", "H350"]],
+				ParticularlyHazardousSubstance,
+
+				(* Otherwise it's simply hazardous *)
+				True,
+				True
 			]
 		],
-		Null
-	]];
+
+		Alternatives[BooleanP, ParticularlyHazardousSubstance, Null]
+	];
+
+	(* Store whether the molecule is particularly hazardous in a boolean *)
+	particularlyHazardousSubstance = safeParse[
+		MatchQ[hazardous, ParticularlyHazardousSubstance],
+		BooleanP
+	];
+
+	(* Determine if MSDS if required *)
+	msdsRequired = safeParse[
+		!MatchQ[hazardous, False],
+		BooleanP
+	];
+
+	(* Figure out from the hazard information if this chemical is Flammable. *)
+	(* H-phrase information can be pulled from here https://pubchem.ncbi.nlm.nih.gov/ghs/ghscode_10.txt *)
+	flammable = safeParse[
+		Module[{flammableHCodes, npfaFlammability},
+			(* The following are the H-Codes that indicate that this chemical is Flammable. *)
+			(* Anything with the flammable pictogram (GHS02). Note that low flammability substances, such as H227 combustible liquid doesn't have the pictogram whereas H226, Flammable liquid and vapor does *)
+			(* So something like 1-octanol is *not* flammable (even though it's combustible). This meets our field definition where something must be easily ignited. *)
+			flammableHCodes = {
+				"H205", "H206", "H207", "H208", "H220", "H221", "H222", "H223",
+				"H224", "H225", "H226", "H228", "H229", "H230", "H231",
+				"H241", "H242", "H251", "H252", "H260", "H261", "H282",
+				"H283",
+
+				(* Pyrophoric - let's keep in flammable as GHS gives the flammable pictogram *)
+				"H232", "H250"
+			};
+
+			(* Also cross check with NFPA *)
+			(* NFPA 3 and above indicates a substance easily set alight at room temperature, per our field definition *)
+			npfaFlammability = If[MatchQ[nfpaHazards, {_, _, _, _}],
+				nfpaHazards[[2]],
+				$Failed
+			];
+
+			(* Do our H-Codes contain any of these, or NFPA exceeds threshold? *)
+			If[
+				(* Can't tell if we have no info *)
+				FailureQ[hCodesSplit] && FailureQ[npfaFlammability],
+				$Failed,
+
+				(* Otherwise see if any of the info indicates flammable *)
+				Or[ContainsAny[hCodesSplit, flammableHCodes], GreaterEqualQ[npfaFlammability, 3]]
+			]
+		],
+
+		BooleanP
+	];
+
+	(* Figure out if this chemical is pyrophoric (ignites spontaneously in air) *)
+	pyrophoric = safeParse[
+		Module[{pyrophoricHCodes},
+			(* The following are the H-Codes that indicate that this chemical is pyrophoric. *)
+			pyrophoricHCodes = {
+				(* Pyrophoric *)
+				"H220", "H232", "H250",
+				(* Self-heating. Not technically pyrophoric, but has the same effect. Include whilst we don't have a separate field for self-heating *)
+				"H251", "H252"
+			};
+
+			(* Do our H-Codes contain any of these? *)
+			If[!FailureQ[hCodesSplit],
+				ContainsAny[hCodesSplit, pyrophoricHCodes],
+				$Failed
+			]
+		],
+
+		BooleanP
+	];
+
+	(* Figure out if this chemical is water reactive. *)
+	waterReactive = safeParse[
+		Module[{waterReactiveHCodes, npfaWaterReactive},
+			(* The following are the H-Codes that indicate that this chemical is water reactive *)
+			waterReactiveHCodes = {
+				"H260", "H261"
+			};
+
+			(* Also cross check with NFPA - one of the special categories *)
+			npfaWaterReactive = If[MatchQ[nfpaHazards, {_, _, _, _}],
+				MemberQ[nfpaHazards[[4]], WaterReactive],
+				$Failed
+			];
+
+			(* Do our H-Codes contain any of these? Or does NFPA indicate water reactive? *)
+			If[
+				(* Can't tell if we have no info *)
+				FailureQ[hCodesSplit] && FailureQ[npfaWaterReactive],
+				$Failed,
+
+				(* Otherwise see if any of the info indicates water reactivity *)
+				Or[ContainsAny[hCodesSplit, waterReactiveHCodes], TrueQ[npfaWaterReactive]]
+			]
+		],
+
+		BooleanP
+	];
+
+	(* Figure out if this chemical is fuming (releases fumes spontaneously in air) *)
+	fuming = safeParse[
+		Module[{fumingHCodes, fumingDescriptionQ},
+			(* The following are the H-Codes that suggest that this chemical is fuming. There are no specific codes *)
+			(* This is over-cautious but best be safe *)
+			fumingHCodes = {
+				(* Codes that mention harm through inhalation *)
+				"H330", "H331", "H332", "H333", "H334", "H350i", "H300+H330", "H310+H330",
+				"H300+H310+H330", "H301+H331", "H311+H331", "H301+H311+H331", "H302+H332",
+				"H312+H332", "H312+H332", "H302+H321+H332", "H303+H333", "H313+H333", "H303+H313+H333",
+
+				(* Codes that mention vapor *)
+				"H224", "H225", "H226"
+			};
+
+			(* Check if the description mentions fuming - this is likely more accurate *)
+			fumingDescriptionQ = Module[
+				{moleculeDescriptionAssociations, fumingMentions},
+
+				(* Pull out description *)
+				moleculeDescriptionAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Physical Description", "Information"}];
+
+				(* Count the number of times descriptors for each state are mentioned *)
+				fumingMentions = Flatten[extractStringValues[
+					moleculeDescriptionAssociations,
+					WordBoundary ~~ Alternatives["fuming", "fume", "suffocating"] ~~ WordBoundary,
+					All,
+					IgnoreCase -> True
+				]];
+
+				MatchQ[fumingMentions, {_String..}]
+			];
+
+			(* Do our H-Codes contain any of these? Gases also can't be fuming as they're already gas *)
+			If[
+				(* If state is a gas, we can't fume *)
+				MatchQ[state, Gas],
+				False,
+
+				(* Otherwise check the h codes and the description check *)
+				Or[ContainsAny[hCodesSplit /. $Failed -> {}, fumingHCodes], fumingDescriptionQ]
+			]
+		],
+
+		BooleanP
+	];
 
 	(* Parse the DOT Hazard Class using the DOT Hazardous materials table. *)
-	dotHazardClass=Quiet[Check[
-		Module[{dotData, chemicalRecord, dotHazardNumber},
-			(* If we were able to find a UN number before, use that to look up the DOT Hazard Class. *)
-			If[!SameQ[unNumber, Null],
-				(* Import our DOT Hazard dataset and look for this UN Number. *)
-				dotData=First[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "2839ab6f678c00e033bbb46e1d53638b.xls"]]];
+	dotHazard = safeParse[
+		Module[{dotHazardClasses, dotHazardAssociations, pubchemDOTLabel},
 
-				(* The UN Number in this dataset is in the 4th column. Do a search for the UN Number. *)
-				chemicalRecord=SelectFirst[dotData, (#[[2]] == "UN"<>ToString[unNumber]&)];
+			(* Hazard number to class *)
+			dotHazardClasses = <|
+				0. -> "Class 0",
+				1.1 -> "Class 1 Division 1.1 Mass Explosion Hazard",
+				1.2 -> "Class 1 Division 1.2 Projection Hazard",
+				1.3 -> "Class 1 Division 1.3 Fire, Blast, or Projection Hazard",
+				1.4 -> "Class 1 Division 1.4 Limited Explosion",
+				1.5 -> "Class 1 Division 1.5 Insensitive Mass Explosion Hazard",
+				1.6 -> "Class 1 Division 1.6 Insensitive No Mass Explosion Hazard",
+				2.1 -> "Class 2 Division 2.1 Flammable Gas Hazard",
+				2.2 -> "Class 2 Division 2.2 Non-Flammable Gas Hazard",
+				2.3 -> "Class 2 Division 2.3 Toxic Gas Hazard",
+				3. -> "Class 3 Flammable Liquids Hazard",
+				4.1 -> "Class 4 Division 4.1 Flammable Solid Hazard",
+				4.2 -> "Class 4 Division 4.2 Spontaneously Combustible Hazard",
+				4.3 -> "Class 4 Division 4.3 Dangerous when Wet Hazard",
+				5.1 -> "Class 5 Division 5.1 Oxidizers Hazard",
+				5.2 -> "Class 5 Division 5.2 Organic Peroxides Hazard",
+				6.1 -> "Class 6 Division 6.1 Toxic Substances Hazard",
+				6.2 -> "Class 6 Division 6.2 Infectious Substances Hazard",
+				7. -> "Class 7 Division 7 Radioactive Material Hazard",
+				8. -> "Class 8 Division 8 Corrosives Hazard",
+				9. -> "Class 9 Miscellaneous Dangerous Goods Hazard"
+			|>;
 
-				(* From our dataset, the DOT Hazard number is in the 3rd column. *)
-				dotHazardNumber=chemicalRecord[[1]];
+			(* Pull out the DOT hazard association section *)
+			dotHazardAssociations = safeParse[extractJSON[safetyAndHazards, {"TOCHeading" == "Transport Information", "Section", "TOCHeading" == "DOT Label", "Information"}], _List];
 
-				(* Convert this Hazard number into the correct Emerald string that matches DOTHazardClassP. *)
-				Switch[dotHazardNumber,
-					0.,
-					"Class 0",
-					1.1,
-					"Class 1 Division 1.1 Mass Explosion Hazard",
-					1.2,
-					"Class 1 Division 1.2 Projection Hazard",
-					1.3,
-					"Class 1 Division 1.3 Fire, Blast, or Projection Hazard",
-					1.4,
-					"Class 1 Division 1.4 Limited Explosion",
-					1.5,
-					"Class 1 Division 1.5 Insensitive Mass Explosion Hazard",
-					1.6,
-					"Class 1 Division 1.6 Insensitive No Mass Explosion Hazard",
-					2.1,
-					"Class 2 Division 2.1 Flammable Gas Hazard",
-					2.2,
-					"Class 2 Division 2.2 Non-Flammable Gas Hazard",
-					2.3,
-					"Class 2 Division 2.3 Toxic Gas Hazard",
-					3.,
-					"Class 3 Flammable Liquids Hazard",
-					4.1,
-					"Class 4 Division 4.1 Flammable Solid Hazard",
-					4.2,
-					"Class 4 Division 4.2 Spontaneously Combustible Hazard",
-					4.3,
-					"Class 4 Division 4.3 Dangerous when Wet Hazard",
-					5.1,
-					"Class 5 Division 5.1 Oxidizers Hazard",
-					5.2,
-					"Class 5 Division 5.2 Organic Peroxides Hazard",
-					6.1,
-					"Class 6 Division 6.1 Toxic Substances Hazard",
-					6.2,
-					"Class 6 Division 6.2 Infectious Substances Hazard",
-					7.,
-					"Class 7 Division 7 Radioactive Material Hazard",
-					8.,
-					"Class 8 Division 8 Corrosives Hazard",
-					9.,
-					"Class 9 Miscellaneous Dangerous Goods Hazard",
-					_,
-					Null
+			(* Check if DOT information is included in the PubChem record *)
+			pubchemDOTLabel = If[!FailureQ[dotHazardAssociations],
+				Module[{pubchemDOTLabelStrings, labelWords, bestCode},
+					(* And then pull out the label - often a shorthand version of the strings above *)
+					pubchemDOTLabelStrings = extractValues[dotHazardAssociations];
+
+					(* Find the best match *)
+
+
+					(* Split the labels we found into words and crudely remove plurals. No harm if we remove "s" from other words *)
+					labelWords = DeleteDuplicates[StringReplace[Flatten[StringSplit[pubchemDOTLabelStrings]], "s" ~~ WordBoundary -> ""]];
+
+					(* See which code contains the most words *)
+					bestCode = MaximalBy[
+						Values[dotHazardClasses],
+						StringCount[#,
+							(* Make sure pattern matches whole words only - We can't use WordBoundary because it classes "-" in non-flammable as a word boundary *)
+							(* Match whole words so flammable doesn't match non-flammable *)
+							(* As we use whitespace, we have to allow overlaps in case words share a space *)
+							Alternatives @@ (StringExpression[
+								Alternatives[StartOfString, WhitespaceCharacter],
+								#,
+								Alternatives[Alternatives[EndOfString, WhitespaceCharacter], "s" ~~ Alternatives[EndOfString, WhitespaceCharacter]]
+							]
+								& /@ labelWords),
+							IgnoreCase -> True,
+							Overlaps -> True
+						] &
+					];
+
+					(* Return the shortest match of the best ones if there are multiple *)
+					First[MinimalBy[bestCode, StringLength], Null]
 				],
-				(* Otherwise, we don't currently have a way of looking up the DOT Hazard Class. Return Null. *)
 				Null
+			];
+
+			(* If we were able to find a UN number before, use that to look up the DOT Hazard Class. *)
+			Which[
+				(* If we got the label from PubChem, use it *)
+				!NullQ[pubchemDOTLabel],
+				pubchemDOTLabel,
+
+				(* Otherwise look up in hard coded database *)
+				!NullQ[unNumber],
+				Module[{dotHazardNumber}, (* Import our DOT Hazard dataset and look for this UN Number. *)
+					dotHazardNumber = dotHazardClass["UN" <> unNumber];
+
+					(* Convert this Hazard number into the correct Emerald string that matches DOTHazardClassP. *)
+					FirstCase[KeyValueMap[{#1, #2} &, dotHazardClasses], {EqualP[dotHazardNumber], x_} :> x, $Failed]
+				],
+
+				(* Otherwise, we can't find a hazard class, so return Null *)
+				True,
+				$Failed
 			]
 		],
-		Null
-	]];
+
+		DOTHazardClassP
+	];
+
+	(* Determine if our molecule is unsuitable for drain disposal *)
+	drainDisposal = safeParse[
+		Module[
+			{environmentalHazardHCodes, disposalPCodes, hCodeDrainDisposalProblemQ, pCodeDrainDisposalProblemQ},
+
+			(* H codes indicating environmental hazard *)
+			environmentalHazardHCodes = {"H400", "H401", "H402", "H410", "H411", "H412", "H413"};
+
+			(* P codes indicating special disposal instructions *)
+			disposalPCodes = {"P273"};
+
+			(* Check if we have a problem because of the codes *)
+			hCodeDrainDisposalProblemQ = TrueQ[MemberQ[hCodesSplit, Alternatives @@ environmentalHazardHCodes]];
+			pCodeDrainDisposalProblemQ = TrueQ[MemberQ[pCodesSplit, Alternatives @@ disposalPCodes]];
+
+			(* If any of the listed conditions are met, set DrainDisposal to False. Otherwise we $Failed *)
+			If[
+				Or[
+					hCodeDrainDisposalProblemQ,
+					pCodeDrainDisposalProblemQ,
+
+					(* Also don't dispose of if radioactive *)
+					radioactive
+
+					(* Don't add other hazards here as they can be too broad brush *)
+					(* E.g. sulfuric acid is water reactive (explosive when concentrated) but is fine for drain disposal when diluted *)
+				],
+				False,
+				$Failed
+			]
+		],
+
+		BooleanP
+	];
+
+	(* Figure out if this chemical is light sensitive *)
+	lightSensitive = safeParse[
+		Module[{stabilityAndShelfLifeSection, storageConditionsSection, combinedLightSensitiveSections, lightSensitivityMentions},
+			(* Check if the storage section mentions light sensitivity *)
+			stabilityAndShelfLifeSection = Quiet[extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Stability/Shelf Life", "Information"}]];
+			storageConditionsSection = Quiet[extractJSON[safetyAndHazards, {"TOCHeading" == "Handling and Storage", "Section", "TOCHeading" == "Storage Conditions", "Information"}]];
+
+			(* Combine the associations *)
+			combinedLightSensitiveSections = Cases[Flatten[{stabilityAndShelfLifeSection, storageConditionsSection}], _Association];
+
+			(* Return $Failed if no info *)
+			If[MatchQ[combinedLightSensitiveSections, {}],
+				Return[$Failed, Module]
+			];
+
+			(* Find any strings that confirm light sensitivity *)
+			lightSensitivityMentions = extractStringValues[
+				combinedLightSensitiveSections,
+				Alternatives[
+					"light sensitive",
+					"protect" ~~ Alternatives["", "ed", "ion"] ~~ " from " ~~ Alternatives["", "sun"] ~~ "light",
+					"light" ~~ Alternatives["", " ", "-"] ~~ "resistant container",
+					"avoid "~~ Alternatives["", "sun"] ~~ "light"
+				],
+				IgnoreCase -> True
+			];
+
+			(* Light sensitivity is relatively uncommon and should be mentioned in these sections, so we can be fairly confident that no mention == False *)
+			(* So seems reasonable to set False if it's not True, if we have data *)
+			MatchQ[lightSensitivityMentions, {_String..}]
+		],
+
+		BooleanP
+	];
+
+	(* Figure out if this chemical is pungent *)
+	pungent = safeParse[
+		Module[
+			{
+				recordDescriptionSection, propertiesPhysicalDescriptionSection, namesPhysicalDescriptionSection,
+				odorDescriptionSection, combinedOdorDescriptionSections, odorDescriptionMentions, odorSectionMentions,
+				strongOdorQualifiers, odorSynonyms, odorDescriptionPungentQ, odorSectionPungentQ
+			},
+
+			(* Check if description and odor sections mention odor *)
+			recordDescriptionSection = Quiet[extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Record Description", "Information"}]];
+			propertiesPhysicalDescriptionSection = Quiet[extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Physical Description", "Information"}]];
+			namesPhysicalDescriptionSection = Quiet[extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Physical Description", "Information"}]];
+			odorDescriptionSection = Quiet[extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "Physical Description", "Information"}]];
+
+			(* Combine the description associations *)
+			combinedOdorDescriptionSections = Cases[Flatten[{recordDescriptionSection, propertiesPhysicalDescriptionSection, namesPhysicalDescriptionSection}], _Association];
+
+			(* Return $Failed if no info *)
+			If[And[MatchQ[combinedOdorDescriptionSections, {}], !MatchQ[odorDescriptionSection, {_Association..}]],
+				Return[$Failed, Module]
+			];
+
+			(* Set of words that mean a strong odor. Celebrating the rich tapestry of the English language *)
+			strongOdorQualifiers = {"strong", "pungent", "suffocating", "sharp", "offensive", "disagreeable", "intense", "penetrating", "jolly nasty"};
+			odorSynonyms = {"odor", "odour", "smell"};
+
+			(* Find any strings that confirm strong odor. These sections are general, so we need to make sure it's talking about odor *)
+			odorDescriptionMentions = extractStringValues[
+				combinedOdorDescriptionSections,
+				StringExpression[
+					Alternatives @@ strongOdorQualifiers,
+					" ",
+					Alternatives @@ odorSynonyms
+				],
+				IgnoreCase -> True
+			];
+
+			(* Decide if odor description mentions exceed the threshold *)
+			(* A single mention is sufficient here - false positive are unlikely *)
+			odorDescriptionPungentQ = MatchQ[odorDescriptionMentions, {_String..}];
+
+			(* Find any strings that confirm strong odor. This section is for odors only, so strong/pungent etc alone are sufficient without any odor word *)
+			odorSectionMentions = extractStringValues[
+				odorDescriptionSection,
+				Alternatives @@ strongOdorQualifiers,
+				IgnoreCase -> True
+			];
+
+			(* Decide if odor section mentions exceed the threshold *)
+			(* Make sure at least 1/2 mention - this guards against irritating entries that describe what the odor is *not* such as ref 32 for glycerin *)
+			odorSectionPungentQ = MatchQ[odorSectionMentions, {Repeated[_String, {Max[Floor[Length[odorDescriptionSection] / 2], 1], Infinity}]}];
+
+			(* High pungency is unusual and should be mentioned in these sections, so we can be fairly confident that no mention == False *)
+			(* So seems reasonable to set False if it's not True, if we have data *)
+			Or[odorDescriptionPungentQ, odorSectionPungentQ]
+		],
+
+		Alternatives[BooleanP, Null]
+	];
+
+	(* Figure out if our compound is strongly acidic - defined as ~pKa <= 4 *)
+	(* This includes acids that are chemically not a "strong acid" such as phosphoric acid, but they are acidic enough to have storage implications *)
+	stronglyAcidic = safeParse[
+		Module[
+			{nfpaAcidQ, pkaAcidQ},
+
+			(* Check if our NFPA rating says we're acidic. Defer to Null as this is a non-standard code *)
+			nfpaAcidQ = If[MatchQ[nfpaHazards, _List],
+				MemberQ[Last[nfpaHazards], Acid] /. False -> Null,
+				Null
+			];
+
+			(* GHS h-codes don't have any acid specific codes *)
+
+			(* Check if we meet the pKa threshold *)
+			pkaAcidQ = If[MatchQ[pkas, _List],
+				MemberQ[pkas, LessEqualP[4]],
+				Null
+			];
+
+			If[NullQ[nfpaAcidQ] && NullQ[pkaAcidQ],
+				(* Return $Failed if we can't tell *)
+				$Failed,
+
+				(* Otherwise return our determination *)
+				Or[nfpaAcidQ, pkaAcidQ]
+			]
+		],
+		BooleanP
+	];
+
+	(* Figure out if our compound is a strong base - defined as ~pKaH >= 11 *)
+	(* But we don't parse the pka of the conjugate acid, so we can't work with that. Instead take a look at the pH section *)
+	stronglyBasic = safeParse[
+		Module[
+			{pHDataAssociations, alkalineSolutionQ},
+
+			(* Pull out the pH section, if there is one *)
+			pHDataAssociations = extractJSON[experimentalChemicalAndPhysicalProperties, {"TOCHeading" == "pH", "Information"}];
+
+			(* If the section mentions strongly alkaline solutions, we've got a strong base *)
+			(* pH is the property of a solution - concentration/condition dependent - so don't attempt to parse values *)
+			alkalineSolutionQ = MatchQ[
+				extractStringValues[
+					pHDataAssociations,
+					"strong" ~~ ___ ~~ Alternatives["base", "basic", "alkaline"],
+					IgnoreCase -> True
+				],
+				{_String..}
+			];
+
+			(* If we didn't find a mention, return $Failed rather than False as information could be missing *)
+			alkalineSolutionQ /. {False -> $Failed}
+		],
+		BooleanP
+	];
+
+	(* Figure out if our compound is corrosive *)
+	corrosive = safeParse[
+		Module[
+			{nfpaCorrosiveQ, corrosiveHCodes, hCodeCorrosiveQ, dotCorrosiveQ},
+
+			(* Check if our NFPA rating says we're corrosive. Defer to Null as this is a non-standard code *)
+			nfpaCorrosiveQ = If[MatchQ[nfpaHazards, _List],
+				MemberQ[Last[nfpaHazards], Corrosive] /. False -> Null,
+				Null
+			];
+
+			(* GHS h-codes for corrosion *)
+			corrosiveHCodes = {"H290"};
+
+			hCodeCorrosiveQ = If[MatchQ[hCodesSplit, _List],
+				MemberQ[hCodes, Alternatives @@ corrosiveHCodes],
+				Null
+			];
+
+			(* Check DOT code *)
+			dotCorrosiveQ = If[StringQ[dotHazard],
+				MatchQ[dotHazard, "Class 8 Division 8 Corrosives Hazard"],
+				Null
+			];
+
+			(* Determine if we're corrosive *)
+			If[NullQ[nfpaCorrosiveQ] && NullQ[hCodeCorrosiveQ] && NullQ[stronglyAcidic] && NullQ[stronglyBasic] && NullQ[dotCorrosiveQ],
+				(* Return $Failed if we can't tell *)
+				$Failed,
+
+				(* Otherwise return our determination *)
+				Or[nfpaCorrosiveQ, hCodeCorrosiveQ, stronglyAcidic, stronglyBasic, dotCorrosiveQ]
+			]
+		],
+		BooleanP
+	];
+
+	(* Determine if compound needs to be ventilated *)
+	ventilated = safeParse[
+		TrueQ[Or[
+			fuming,
+			pungent,
+			MatchQ[hazardous, ParticularlyHazardousSubstance]
+		]],
+		BooleanP
+	];
+
+	(* Assemble a list of probably incompatible materials *)
+	incompatibleMaterials = safeParse[
+		Module[
+			{
+				safeStorageAssociations, reactivityProfileAssociations, reactivityAndIncompatibilityAssociations, joinedIncompatibilityAssociations,
+				incompatibleOxidizers, incompatibleOrganics, incompatibleGlasses, incompatibleMetals, allIncompatibleMaterials,
+				listify
+			},
+
+			(* Look up key descriptions *)
+			safeStorageAssociations = Quiet@extractJSON[safetyAndHazards, {"TOCHeading" == "Handling and Storage", "Section", "TOCHeading" == "Safe Storage", "Information"}];
+			reactivityProfileAssociations = Quiet@extractJSON[safetyAndHazards, {"TOCHeading" == "Stability and Reactivity", "Section", "TOCHeading" == "Reactivity Profile", "Information"}];
+			reactivityAndIncompatibilityAssociations = Quiet@extractJSON[safetyAndHazards, {"TOCHeading" == "Stability and Reactivity", "Section", "TOCHeading" == "Hazardous Reactivities and Incompatibilities", "Information"}];
+
+			(* Combine the associations *)
+			joinedIncompatibilityAssociations = Cases[Flatten[{safeStorageAssociations, reactivityProfileAssociations, reactivityAndIncompatibilityAssociations}], _Association];
+
+
+			(* See if we have indicators of incompatibility with various classes *)
+			(* When checking the safety data, you need to be careful. Occasionally compounds that are not a problem are mentioned. Also "Metal" could be "Metal", "non-metal", or "store in metal containers" *)
+			(* Potential application for LLM *)
+
+			(* Small helper to convert nested Alternatives in patterns to a list of items *)
+			listify[pattern_] := Sort[Flatten[ReplaceAll[pattern, Alternatives -> List]]];
+
+			(* Check for incompatibility with oxidizers *)
+			incompatibleOxidizers = Module[
+				{mentionedInSafetySection},
+
+				(* Check if oxidizers are mentioned in the safety section - these only get mentioned if they're a problem *)
+				mentionedInSafetySection = MatchQ[
+					extractStringValues[
+						joinedIncompatibilityAssociations,
+						Alternatives["oxidizer", "oxidant"],
+						IgnoreCase -> True
+					],
+					{_String..}
+				];
+
+				(* Incompatible if mentioned in the safety section, we're flammable/pyrophoric or a strong acid or base *)
+				If[
+					TrueQ[Or[
+						mentionedInSafetySection,
+						flammable,
+						pyrophoric,
+						stronglyAcidic,
+						stronglyBasic
+					]],
+					{Oxidizer},
+					{}
+				]
+			];
+
+			(* Check for incompatibility with organic substances, such as wood. We're not referring to "organic" as in organic solvents here *)
+			incompatibleOrganics = If[
+				TrueQ[Or[
+					stronglyAcidic,
+					stronglyBasic,
+					corrosive
+				]],
+				listify[OrganicMaterialP],
+				{}
+			];
+
+			(* Check for incompatibility with glass *)
+			(* Check for the word "etching". Glass if often mentioned as a safe container material. Corrosive materials are typically deemed compatible with glass *)
+			incompatibleGlasses = If[
+				MatchQ[extractStringValues[joinedIncompatibilityAssociations, Alternatives[WordBoundary ~~ "etch"], IgnoreCase -> True], {_String..}],
+				listify[GlassP],
+				{}
+			];
+
+			(* Check for incompatibility with metals *)
+			(* These are metals that can be used as 'material' so we're not talking alkali metals *)
+			(* We will also exclude corrosion resistant metals from our list too *)
+			incompatibleMetals = Module[{corrosionResistantMetals, baseReactiveMetals, allMetals},
+
+				(* Define some lists of special metals - members of MetalP *)
+				(* Some metals are slow to corrode - we're being generic here about corrosion - anything marked as such by hazard classifications *)
+				corrosionResistantMetals = {Platinum, Gold, Silver, StainlessSteel, Titanium, Aluminum};
+
+				(* Most metals don't react with bases *)
+				baseReactiveMetals = {Aluminum, Zinc};
+
+				(* List all the metals we know *)
+				allMetals = listify[MetalP];
+
+				Which[
+					(* Strong acids react with most metals *)
+					TrueQ[stronglyAcidic],
+					Complement[allMetals, corrosionResistantMetals],
+
+					(* Strong bases only react with some metals *)
+					TrueQ[stronglyBasic],
+					baseReactiveMetals,
+
+					(* If corrosive, assume reacts with all but inert metals. If we know it's a strong base, we already took the shorter list *)
+					TrueQ[corrosive],
+					Complement[allMetals, corrosionResistantMetals],
+
+					(* Otherwise we're good *)
+					True,
+					{}
+				]
+			];
+
+			(* Total up the list of incompatible materials *)
+			allIncompatibleMaterials = Flatten[{
+				incompatibleOxidizers,
+				incompatibleOrganics,
+				incompatibleGlasses,
+				incompatibleMetals
+			}];
+
+			(* Return the list, or {None} if it's empty *)
+			If[!MatchQ[allIncompatibleMaterials, {}],
+				allIncompatibleMaterials,
+				{None}
+			]
+		],
+		Alternatives[{MaterialP..}, {None}]
+	];
 
 	(* -- Misc -- *)
 	(* Having the PubChem ID buys us a few more things *)
-	structureFileURL="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/"<>ToString[cid]<>"/record/SDF/?record_type=2d&response_type=display";
-	imageFileURL="https://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi?cid="<>ToString[cid]<>"&width=500&height=500";
+	(* Unoptimized coordinates of structure in sdf format *)
+	structureFileURL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/" <> ToString[cid] <> "/record/SDF/?record_type=2d&response_type=display";
 
-
-	(* Chemicals should all be BSL-1? *)
-	(* DefaultStorageCondition *)
-	(* IncompatibleMaterials *)
-	(* Resolve StorageCondition based on safety information. *)
+	(* 2D image of chemical structure *)
+	imageFileURL = "https://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi?cid=" <> ToString[cid] <> "&width=500&height=500";
 
 	(* Return an association with our constructed information. *)
-	<|
-		Name -> name,
-		MolecularWeight -> molecularWeight,
-		MolecularFormula -> molecularFormula,
-		StructureFile -> structureFileURL,
-		StructureImageFile -> imageFileURL,
-		CAS -> cas,
-		UNII -> unii,
-		IUPAC -> iupac,
-		InChI -> inchi,
-		InChIKey -> inchiKey,
-		Synonyms -> synonyms,
-		State -> state,
-		pKa -> pka,
-		(* Additional scraping data that we should only lookup if we're being called from SimulateLogPartitionCoefficient. *)
-		If[MatchQ[ExternalUpload`Private`$SimulatedLogP, True],
-			SimulatedLogP -> simulatedLogP,
-			Nothing
-		],
-		LogP -> logP,
-		BoilingPoint -> boilingPoint,
-		MeltingPoint -> meltingPoint,
-		Viscosity -> viscosity,
-		Radioactive -> radioactive,
-		ParticularlyHazardousSubstance -> TrueQ[hazardous],
-		MSDSRequired -> Not /@ TrueQ[hazardous],
-		DOTHazardClass -> dotHazardClass,
-		NFPA -> nfpaHazards,
-		Flammable -> flammable,
-		Pyrophoric -> pyrophoric,
-		WaterReactive -> waterReactive,
-		Fuming -> fuming,
-		Ventilated -> TrueQ[fuming],
-		PubChemID -> ToExpression[cid],
-
-		(* Automatically populate the native representation if we have the InChI. *)
-		If[MatchQ[inchi, InChIP],
-			Molecule -> Molecule[inchi],
-			Nothing
-		]
-	|>
+	(* Replace any $Failed values with Null. It was useful internally to know if parsing failed, or we explicitly extracted a Null value *)
+	(* But this function should not make a fuss and return Null *)
+	Replace[
+		<|
+			Name -> moleculeName,
+			MolecularWeight -> molecularWeight,
+			MolecularFormula -> molecularFormula,
+			ExactMass -> exactMass,
+			Monatomic -> monatomic,
+			StructureFile -> structureFileURL,
+			StructureImageFile -> imageFileURL,
+			CAS -> casNumber,
+			UNII -> unii,
+			IUPAC -> iupacName,
+			InChI -> inchi,
+			InChIKey -> inchiKey,
+			Synonyms -> synonyms,
+			State -> state,
+			pKa -> pkas,
+			(* Additional scraping data that we should only lookup if we're being called from SimulateLogPartitionCoefficient. *)
+			If[MatchQ[ExternalUpload`Private`$SimulatedLogP, True],
+				SimulatedLogP -> simulatedLogP,
+				Nothing
+			],
+			LogP -> logP,
+			BoilingPoint -> boilingPoint,
+			VaporPressure -> vaporPressure,
+			MeltingPoint -> meltingPoint,
+			Density -> density,
+			Viscosity -> viscosity,
+			Radioactive -> radioactive,
+			ParticularlyHazardousSubstance -> particularlyHazardousSubstance,
+			MSDSRequired -> msdsRequired,
+			DOTHazardClass -> dotHazard,
+			NFPA -> nfpaHazards,
+			Flammable -> flammable,
+			Pyrophoric -> pyrophoric,
+			WaterReactive -> waterReactive,
+			Fuming -> fuming,
+			Ventilated -> ventilated,
+			DrainDisposal -> drainDisposal,
+			LightSensitive -> lightSensitive,
+			Pungent -> pungent,
+			Acid -> stronglyAcidic,
+			Base -> stronglyBasic,
+			IncompatibleMaterials -> incompatibleMaterials,
+			PubChemID -> ToExpression[cid],
+			Molecule -> molecule
+		|>,
+		$Failed -> Null,
+		{1}
+	]
 ];
 
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*PubChem CID to Association (parsePubChem) *)
 
 
@@ -746,7 +2609,7 @@ parsePubChem[PubChem[myPubChemID_]]:=Module[
 
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*Chemical Identifier to Association (parseChemicalIdentifier)*)
 
 
@@ -762,7 +2625,7 @@ parseChemicalIdentifier[identifier_String]:=Module[
 			filledURL=StringTemplate[pubChemNameURL][EncodeURIComponent[identifier]];
 
 			(* Make a POST request to this URL. *)
-			jsonResponse=Quiet[URLExecute[filledURL, "RawJSON"]];
+			jsonResponse=ManifoldEcho[Quiet[URLExecute[filledURL, "RawJSON"]], "URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]"];
 
 			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
 			If[MemberQ[jsonResponse, _Failure],
@@ -790,7 +2653,7 @@ parseChemicalIdentifier[identifier_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*InChI to Association (parseInChI)*)
 
 (* Overload for MM 12.3.1 which uses the Head ExternalIdentified[], instead of a direct string *)
@@ -798,7 +2661,7 @@ parseInChI[ExternalIdentifier["InChI", identifier_String]]:=parseInChI[identifie
 (* This helper function takes in an InChI and returns an association of PubChem information. *)
 parseInChI[identifier_String]:=Module[
 	{result, pubChemInChIURL, filledURL, jsonResponse, cid},
-    
+
 	result=Quiet[
 		Check[
 			(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
@@ -808,7 +2671,10 @@ parseInChI[identifier_String]:=Module[
 			filledURL=StringTemplate[pubChemInChIURL][EncodeURIComponent[identifier]];
 
 			(* Make a POST request to this URL. *)
-			jsonResponse=Quiet[URLExecute[filledURL, "RawJSON"]];
+			jsonResponse=ManifoldEcho[
+				Quiet[URLExecute[filledURL, "RawJSON"]],
+				"Quiet[URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]]"
+			];
 
 			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
 			If[MemberQ[jsonResponse, _Failure],
@@ -836,12 +2702,12 @@ parseInChI[identifier_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*ThermoFisher to Association (parseThermoURL)*)
 
 
 parseThermoURL[url_String]:=Module[
-	{result, thermoWebsite, casList, generalCASList, casInformation, productID, msdsURL, msdsPage, msdsString, cas,
+	{result, response, thermoWebsite, casList, generalCASList, casInformation, productID, msdsURL, msdsPage, msdsString, cas,
 		pubChemInformation, informationWithMSDS, thermoName},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
@@ -849,7 +2715,16 @@ parseThermoURL[url_String]:=Module[
 		Check[
 
 			(* Download the HTML for the website. *)
-			thermoWebsite = {URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"]};
+			response = ManifoldEcho[
+				URLRead[HTTPRequest[url, <|Method -> "GET"|>]],
+				"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\"|>]]"
+			];
+			thermoWebsite = {response["Body"]};
+
+			(* Return early if the URLRead failed *)
+			If[MatchQ[thermoWebsite, {Missing["NotAvailable", "Body"]}],
+				Return[$Failed]
+			];
 
 			(* Get the product number from the ThermoFisher URL. *)
 			(* If for some reason the URL doesnt match this pattern, look for it in the thermoWebsite. *)
@@ -888,9 +2763,11 @@ parseThermoURL[url_String]:=Module[
 					First[thermoWebsite],
 					{
 						"CAS number: "~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"<" -> {x, y, z},
-						"CAS\",\"value\":\""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z}
+						"CAS\",\"value\":\""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z},
+						"CAS\",\n"~~Whitespace..~~"\"value\": \""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z}
 					}
-				]
+				],
+				{}
 			];
 
 			(* If we successfully extracted CAS Number: XXX-XXX-XXX, use that. Otherwise, look for CAS in a more general way.*)
@@ -946,7 +2823,11 @@ parseThermoURL[url_String]:=Module[
 
 			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
 			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)];
+			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
+				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
+				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
+				$Failed
+			];
 
 			(* If the name parsing succeeded, return our association with the new name. *)
 			If[!SameQ[thermoName, Null],
@@ -981,7 +2862,7 @@ parseThermoURL[url_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*Sigma to Association (parseSigmaURL)*)
 
 
@@ -994,7 +2875,29 @@ parseSigmaURL[url_String]:=Module[
 	result = Quiet[
 		Check[
 			(* Download the HTML for the website. *)
-			sigmaWebsite = {URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"]};
+			sigmaWebsite = {
+				ManifoldEcho[
+					URLRead[
+						HTTPRequest[
+							url,
+							<|
+								Method -> "GET",
+								(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+								"Headers" -> {
+									"accept-language" -> "en-US,en;q=0.9",
+									"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+								}
+							|>
+						]
+					]["Body"],
+					"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\", \"Headers\" -> {\"accept-language\" -> \"en-US,en;q=0.9\", \"user-agent\" -> \"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36\"}|>]][\"Body\"]"
+				]
+			};
+
+			(* Return early if the URLRead failed *)
+			If[MatchQ[sigmaWebsite, {Missing["NotAvailable", "Body"]}],
+				Return[$Failed]
+			];
 
 			(* Attempt to parse out the name of this chemical from the page. *)
 			sigmaName = Quiet[Check[
@@ -1121,7 +3024,19 @@ parseSigmaURL[url_String]:=Module[
 				];
 
 				(* Read from the MSDS page URL *)
-				msdsBody = URLRead[sigmaMSDSPage, "Body"];
+				msdsBody = URLRead[
+					HTTPRequest[
+						sigmaMSDSPage,
+						<|
+							Method -> "GET",
+							(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+							"Headers" -> {
+								"accept-language" -> "en-US,en;q=0.9",
+								"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+							}
+						|>
+					]
+				]["Body"];
 
 				(* 10/22/21 - The sigma website now directly returns the PDF from this request *)
 				If[Length[StringCases[msdsBody, "PDF"]] > 0,
@@ -1137,7 +3052,19 @@ parseSigmaURL[url_String]:=Module[
 						potentialMSDSURL = "https://www.sigmaaldrich.com/MSDS/MSDS/PrintMSDSAction.do?name=msdspdf_"<>msdsID;
 
 						(* Download the body of the potential MSDS url. *)
-						potentialMSDSBody = URLRead[potentialMSDSURL, "Body"];
+						potentialMSDSBody = URLRead[
+							HTTPRequest[
+								potentialMSDSURL,
+								<|
+									Method -> "GET",
+									(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+									"Headers" -> {
+										"accept-language" -> "en-US,en;q=0.9",
+										"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+									}
+								|>
+							]
+						]["Body"];
 
 						(* Check that the URL returned a PDF header. If so, it is good. If not, return Null. *)
 						If[Length[StringCases[potentialMSDSBody, "PDF"]] > 0,
@@ -1152,7 +3079,11 @@ parseSigmaURL[url_String]:=Module[
 
 			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
 			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)];
+			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
+				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
+				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
+				$Failed
+			];
 
 			(* If the name parsing succeeded, return our association with the new name. *)
 			If[!SameQ[sigmaName, Null],
@@ -1186,6 +3117,472 @@ parseSigmaURL[url_String]:=Module[
 	(* Return our result. *)
 	result
 ];
+
+
+(* ::Subsubsection::Closed:: *)
+(* findSDS *)
+
+DefineOptions[findSDS,
+	Options :> {
+		{Vendor -> All, Alternatives[All, ListableP[_String]], "Ordered list of preferred vendors to return SDS from. Matches vendor URL. Function will attempt to return an SDS in all cases, even if one can't be sourced from a listed Vendor."},
+		{Manufacturer -> All, Alternatives[All, ListableP[_String]], "Ordered list of preferred manufacturer to return SDS from. Matches manufacturer name. Function will attempt to return an SDS in all cases, even if one can't be sourced from a listed manufacturer."},
+		{Product -> All, Alternatives[All, ListableP[_String]], "A list of preferred product numbers to return the SDS for. Matches any part of SDS database entry. Function will attempt to return an SDS in all cases, even if one can't be sourced with the specified product identifier."},
+		{Output -> Open, Alternatives[URL, ValidatedURL, TemporaryFile, Open, CloudFile], "The format to return the SDS in. URL returns the best URL. ValidatedURL returns the best URL that's confirmed to return a pdf. Temporary file downloads the pdf and returns the local file reference. Open opens the pdf. Cloud file uploads the pdf to constellation and returns the cloud file."}
+	}
+];
+
+(* Pretty much every part of this function is memoized to reduce pinging of servers and reduce the chance we hit any rate limits *)
+findSDS[myIdentifier: Alternatives[_String, CASNumberP], myOptions : OptionsPattern[findSDS]] := Module[
+	{safeOptions, vendorOption, outputOption, productOption, manufacturerOption, sdsData, filteredSDSData, sortedSDSData, validatedURL, downloadedPDF},
+
+	(* Parse the options *)
+	safeOptions = SafeOptions[findSDS, ToList[myOptions]];
+	{vendorOption, manufacturerOption, productOption, outputOption} = Lookup[safeOptions, {Vendor, Manufacturer, Product, Output}];
+
+	(* Get a list of associations from Chemical Safety website, each detailing a link to an SDS *)
+	sdsData = searchChemicalSafetySDS[myIdentifier];
+
+	(* There are likely many entries in the table so filter down and sort *)
+
+	(* Filter out data we don't want *)
+	filteredSDSData = If[MatchQ[sdsData, {}],
+		sdsData,
+		Module[{gatheredByCAS, sortedByCASFrequency, filteredByCAS},
+
+			(* Filter by CAS number. Redundant if the input was a CAS but helps figure out the most likely chemical if name was provided *)
+			(* Gather the information by CAS number *)
+			gatheredByCAS = GatherBy[sdsData, Lookup[#, "CAS"] &];
+
+			(* Sort the data by frequency the CAS appeared *)
+			sortedByCASFrequency = SortBy[gatheredByCAS, Length];
+
+			(* Take the most frequent cas number found, unless it's blank. In that case, use the second most frequent if possible *)
+			filteredByCAS = If[GreaterQ[Length[sortedByCASFrequency], 1] && MatchQ[Lookup[sortedByCASFrequency[[-1, 1]], "CAS"], ""],
+				sortedByCASFrequency[[-2]],
+				sortedByCASFrequency[[-1]]
+			];
+
+			(* Filter out anything with no URL *)
+			Select[filteredByCAS, MatchQ[Lookup[#, "URL"], URLP] &]
+		]
+	];
+
+	(* Now sort the data from best to worst *)
+	sortedSDSData = Module[{defaultVendorPriority, defaultManufacturerPriority, manufacturerOrdering, vendorOrdering},
+
+		(* Default scores we give to prioritize vendors *)
+		(* These strings match the URL *)
+		(* Sigma are good but their website is incredibly twitchy with rate limits - I hit one whilst opening links in my browser whilst developing this function *)
+		defaultVendorPriority = {
+			"sigmaaldrich" -> 1,
+			"thermofisher" -> 4,
+			"fishersci" -> 3
+		};
+
+		(* Default scores we give to prioritize manufacturers *)
+		(* These match the manufacturer field in words *)
+		(* Sigma are good but their website is incredibly twitchy with rate limits - I hit one whilst opening links in my browser whilst developing this function *)
+		defaultManufacturerPriority = {
+			"Sigma Aldrich" -> 3,
+			"Sigma" -> 3,
+			"Aldrich" -> 3,
+			"Thermo Fisher" -> 4,
+			"Fisher Scientific" -> 4,
+			"Alfa Aesar" -> 2,
+			"VWR" -> 2
+		};
+
+		(* Compute the manufacturer priority *)
+		manufacturerOrdering = Module[{completePriorityList, sanitizedManufacturers},
+			(* Add any user specified priorities to the top of the list *)
+			completePriorityList = If[MatchQ[manufacturerOption, All],
+				defaultManufacturerPriority,
+				Join[
+					(# -> 50) & /@ ToList[manufacturerOption], (* Weight strongly if we match manufacturer *)
+					defaultManufacturerPriority
+				]
+			];
+
+			(* Sanitize the values *)
+			sanitizedManufacturers = DeleteDuplicates[(StringReplace[ToLowerCase[First[#]], Whitespace -> ""] -> Last[#]) & /@ completePriorityList];
+
+			(* Return the ranking, higher is better *)
+			sanitizedManufacturers
+		];
+
+
+		(* Compute the manufacturer priority *)
+		vendorOrdering = Module[{completePriorityList, sanitizedVendors},
+			(* Add any user specified priorities to the top of the list *)
+			completePriorityList = If[MatchQ[vendorOption, All],
+				defaultVendorPriority,
+				Join[
+					(# -> 50) & /@ ToList[vendorOption],  (* Weight strongly if we match vendor *)
+					defaultVendorPriority
+				]
+			];
+
+			(* Sanitize the values *)
+			sanitizedVendors = DeleteDuplicates[(StringReplace[ToLowerCase[First[#]], Whitespace -> ""] -> Last[#]) & /@ completePriorityList];
+
+			(* Return the ranking, higher is better *)
+			sanitizedVendors
+		];
+
+		(* No default prioritization for product numbers *)
+
+		(* Sort the data *)
+		ReverseSortBy[
+			filteredSDSData,
+
+			(* Compute a simple integer that represents the ordering priority of the entry *)
+			Module[{url, manufacturer, productPriority, manufacturerPriority, vendorPriority},
+
+				{url, manufacturer} = Lookup[#, {"URL", "Manufacturer"}];
+
+				(* Compute the priority of the product matching. Just a binary True/False if the URL contains the product identifiers *)
+				productPriority = If[MatchQ[productOption, All],
+					(* No priority if no product specified *)
+					0,
+
+					(* Otherwise check if the url contains the product ID. Weight overwhelmingly if we find a match *)
+					StringContainsQ[
+						url,
+						(* Compare in lower case and remove spaces *)
+						Alternatives @@ StringReplace[ToLowerCase[ToList[productOption]], Whitespace -> ""],
+						IgnoreCase -> True
+					] /. {True -> 100, False -> 0}
+				];
+
+				(* Now deduce the manufacturer for this entry *)
+				(* For every match, StringCases will return the priority number associated with it. Max will then either return the max priority found, or 0 if none found *)
+				manufacturerPriority = Max[{
+					0,
+					StringCases[
+						StringReplace[ToLowerCase[manufacturer], Whitespace -> ""],
+						manufacturerOrdering,
+						IgnoreCase -> True,
+						Overlaps -> All
+					]
+				}];
+
+				(* Now deduce the vendor priority for this entry *)
+				(* For every match, StringCases will return the priority number associated with it. Max will then either return the max priority found, or 0 if none found *)
+				vendorPriority = Max[{
+					0,
+					StringCases[
+						StringReplace[ToLowerCase[url], Whitespace -> ""],
+						vendorOrdering,
+						IgnoreCase -> True,
+						Overlaps -> All
+					]
+				}];
+
+				(* Add up all the priority weightings *)
+				Total[
+					{
+						productPriority,
+						vendorPriority,
+						manufacturerPriority
+					}
+				]
+			]&
+		]
+	];
+
+	(* Return the requested output *)
+
+	(* Return early if we just want a URL without contacting the server and validating *)
+	If[MatchQ[outputOption, URL],
+		Return[First[Lookup[sortedSDSData, "URL", {}], Null]]
+	];
+
+	(* In all other cases, first download the contents of the URL to make sure it's a real pdf *)
+	{validatedURL, downloadedPDF} = Module[
+		{scanResult},
+
+		(* Scan over all of the potential SDS in order and exit as soon as one works *)
+		scanResult = Scan[
+			Module[{url, downloadResult},
+
+				url = Lookup[#, "URL"];
+
+				(* Try and import the PDF, and check if the result is valid *)
+				(* Returns either the valid File or $Failed. Function memoizes *)
+				downloadResult = downloadAndValidateSDSURL[url];
+
+				(* If the pdf is valid, return early and break the loop *)
+				If[MatchQ[downloadResult, _File],
+					Return[{url, downloadResult}]
+				]
+			] &,
+			sortedSDSData
+		];
+
+		If[MatchQ[scanResult, {URLP, _File}],
+			scanResult,
+			{Null, Null}
+		]
+	];
+
+	(* Return the output *)
+	Which[
+		(* Return the URL that we checked works *)
+		MatchQ[outputOption, ValidatedURL],
+		validatedURL,
+
+		(* Return the path to the downloaded pdf *)
+		MatchQ[outputOption, TemporaryFile],
+		downloadedPDF,
+
+		(* If user wants to open the SDS, use SystemOpen if we have one *)
+		MatchQ[outputOption, Open] && !MatchQ[downloadedPDF, Null],
+		SystemOpen[downloadedPDF],
+
+		(* Otherwise return Null if we didn't have an SDS *)
+		MatchQ[outputOption, Open],
+		Null,
+
+		(* If the user wants a cloud file, upload the pdf and return the cloud file *)
+		MatchQ[outputOption, CloudFile],
+		UploadCloudFile[downloadedPDF],
+
+		(* Fall back - we shouldn't get here. Return both *)
+		True,
+		{validatedURL, downloadedPDF}
+	]
+];
+
+
+
+(* Internal memoized function to perform an SDS search request with Chemical Safety website *)
+searchChemicalSafetySDS[myIdentifier: Alternatives[_String, CASNumberP]] := Module[
+	{casNumberQ, httpRequest, httpResponse, parsedData},
+
+	(* Determine if the input is a cas number or not *)
+	casNumberQ = MatchQ[myIdentifier, CASNumberP];
+
+	(* Assemble the http request for ChemicalSafety.com *)
+	httpRequest = Module[{searchCriteria},
+
+		(* List of parameters to search by - we'll search by name or by cas *)
+		searchCriteria = If[casNumberQ,
+			{"cas|" <> myIdentifier},
+			{"name|" <> myIdentifier}
+		];
+
+		<|
+			"URL" -> "https://chemicalsafety.com/sds1/sds_retriever.php?action=search",
+			"Headers" -> Association[
+				"ContentType" -> "application/json"
+			],
+			"Method" -> "POST",
+			"Body" -> <|
+				"IsContains" -> False,
+				"IncludeSynonyms" -> False,
+				"SearchSdsServer" -> False,
+				"HostName" -> "sfs website",
+				"Remote" -> "209.105.189.138",
+				"Bee" -> "stevia",
+				"Action" -> "search",
+				"Criteria" -> searchCriteria
+			|>
+		|>
+	];
+
+	(* Perform the request *)
+	httpResponse = HTTPRequestJSON[httpRequest];
+
+	(* Return $Failed if not successful *)
+	If[!MatchQ[httpResponse, _Association],
+		Return[$Failed]
+	];
+
+	(* Parse the response *)
+	parsedData = Module[
+		{columnNames, rowData, associationData},
+
+		(* Lookup and sanitize the column names *)
+		columnNames = Lookup[Lookup[httpResponse, "cols"], "prompt"] /. <|
+			"MANUFACTURER" -> "Manufacturer",
+			"HTTP REF" -> "URL"
+		|>;
+
+		rowData = Lookup[httpResponse, "rows"];
+
+		(* Convert each entry into an association *)
+		associationData = Map[
+			AssociationThread[columnNames -> #] &,
+			rowData
+		];
+
+		(* Drop keys we don't want *)
+		KeyDrop[associationData, {"HASMSDS", "HPHRASES_IDS", "SDSSERVER"}]
+	];
+
+	(* Memoize result if successful *)
+	If[MatchQ[parsedData, {_Association...}],
+		(
+			If[!MemberQ[$Memoization, ExternalUpload`Private`searchChemicalSafetySDS],
+				AppendTo[$Memoization, ExternalUpload`Private`searchChemicalSafetySDS]
+			];
+			Set[searchChemicalSafetySDS[myIdentifier], parsedData]
+		)
+	];
+
+	(* Return the data *)
+	parsedData
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(* File/CloudFile Handling *)
+
+
+(* Internal memoized function to perform HTTPRequest when validating URLs *)
+downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationFunction : _Function] := Module[
+	{filePath, downloadedFile, validFileQ, returnValue},
+
+	(* Location to (attempt to) download file to *)
+	filePath = Module[
+		{splitFileName, fileNameIdentifierStem, fileNameIdentifierExtension},
+
+		(* Split off the extension from the file name *)
+		splitFileName = StringSplit[fileNameIdentifier, "."];
+
+		(* Parse out the extension from the rest of the name *)
+		{fileNameIdentifierStem, fileNameIdentifierExtension} = If[EqualQ[Length[splitFileName], 1],
+			{First[splitFileName], ""},
+			{StringRiffle[Most[splitFileName], "."], Last[splitFileName]}
+		];
+
+		(* Assemble the file name *)
+		FileNameJoin[{$TemporaryDirectory, ToString[Unique[fileNameIdentifierStem]] <> "." <> fileNameIdentifierExtension}]
+	];
+
+	(* Attempt to download the file *)
+	downloadedFile = URLDownload[
+		HTTPRequest[url,
+			<|
+				Method -> "GET",
+				"Headers" -> {
+					"accept-language" -> "en-US,en;q=0.9",
+					"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+				}
+			|>
+		],
+		filePath,
+		TimeConstraint -> 3
+	];
+
+	(* Check if we got something *)
+	validFileQ = Quiet[Check[
+		TrueQ[fileValidationFunction[downloadedFile]],
+		False
+	]];
+
+	(* We'll return either the file or $Failed *)
+	returnValue = If[validFileQ,
+		downloadedFile,
+		$Failed
+	];
+
+	(* Memoize the result - even if failed *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`downloadAndValidateURL],
+		AppendTo[$Memoization, ExternalUpload`Private`downloadAndValidateURL]
+	];
+	Set[downloadAndValidateURL[url, fileNameIdentifier, fileValidationFunction], returnValue];
+
+	(* Return the result *)
+	returnValue
+];
+
+(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
+(* SDS *)
+downloadAndValidateSDSURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"sds.pdf",
+	And[
+		(* First check the file format - FileFormat isn't outfoxed by incorrect extensions- we may have downloaded HTML to a .pdf filename but this will show it's still HTML *)
+		MatchQ[FileFormat[#], "PDF"],
+
+		(* If the file truly appears to be PDF format, import it and check we can read some text *)
+		Quiet[Check[
+			StringContainsQ[Import[#, "Plaintext"], Alternatives["safety data sheet", CaseSensitive["CAS"], CaseSensitive["GHS"]], IgnoreCase -> True],
+			False
+		]]
+	]&
+];
+
+(* Structure Image File *)
+downloadAndValidateStructureImageFileURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"structureimage.png",
+	(* Check that we get an image when we import the file *)
+	ImageQ[Import[#]]&
+];
+
+(* Structure File *)
+downloadAndValidateStructureFileURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"structure.sdf",
+	(* Check that we get a valid molecule when we import the structure file *)
+	MatchQ[Import[#], {_Molecule..}]&
+];
+
+
+(* Internal memoized function for validating local files *)
+validateLocalFile[filePath : FilePathP, fileValidationFunction : _Function] := Module[
+	{validFileQ, returnValue},
+
+	(* Validate the file using the supplied function *)
+	validFileQ = Quiet[Check[
+		TrueQ[fileValidationFunction[filePath]],
+		False
+	]];
+
+	(* We'll return either the file or $Failed *)
+	returnValue = If[validFileQ,
+		File[filePath],
+		$Failed
+	];
+
+	(* Memoize the result - even if failed *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`validateLocalFile],
+		AppendTo[$Memoization, ExternalUpload`Private`validateLocalFile]
+	];
+	Set[validateLocalFile[filePath, fileValidationFunction], returnValue];
+
+	(* Return the result *)
+	returnValue
+];
+
+(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
+(* Structure File *)
+validateStructureFilePath[filePath : FilePathP] := validateLocalFile[
+	filePath,
+	MatchQ[Import[#], {_Molecule..}] &
+];
+
+(* Structure Image File *)
+validateStructureImageFilePath[filePath : FilePathP] := validateLocalFile[
+	filePath,
+	ImageQ[Import[#]] &
+];
+
+
+(* Helper for uploading a file to AWS and returning constellation cloud file packet. Memoized to prevent re-uploading *)
+pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFilePacket[file] = Module[
+	{},
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`pathToCloudFilePacket],
+		AppendTo[$Memoization, ExternalUpload`Private`pathToCloudFilePacket]
+	];
+
+	(* Upload the file to AWS and return the un-uploaded constellation packet *)
+	UploadCloudFile[file, Upload -> False]
+]);
 
 
 (* ::Subsection::Closed:: *)
@@ -1238,7 +3635,7 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule are strong acids (pH <= 2) and require dedicated secondary containment during storage.",
+					Description -> "Indicates if this molecule forms strongly acidic solutions when dissolved in water (typically pKa <= 4) and requires secondary containment during storage.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1246,7 +3643,7 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates if pure samples of this molecule are strong bases (pH >= 12) and require dedicated secondary containment during storage.",
+					Description -> "Indicates if this molecule forms strongly basic solutions when dissolved in water (typically pKaH >= 11) and requires secondary containment during storage.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1321,7 +3718,7 @@ DefineOptionSet[
 						Widget[Type -> String, Pattern :> URLP, Size -> Line],
 						Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]], PatternTooltip -> "A cloud file stored on Constellation that ends in .PDF."]
 					],
-					Description -> "URL of the MSDS (Materials Saftey Data Sheet) PDF file.",
+					Description -> "URL of the MSDS (Materials Safety Data Sheet) PDF file.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1360,6 +3757,14 @@ DefineOptionSet[
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BiosafetyLevelP],
 					Description -> "The Biosafety classification of the substance.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> DoubleGloveRequired,
+					Default -> Null,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if working with this substance required wearing two pairs of gloves.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1454,8 +3859,19 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates that this model of sample arrives sterile from the manufacturer.",
+					Description -> "Indicates that this model of sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling.",
 					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> AsepticHandling,
+					Default -> Null,
+					Description -> "Indicates if aseptic techniques are expected for handling this model of sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
+					AllowNull -> True,
+					Category -> "Health & Safety",
+					Widget -> Widget[
+						Type -> Enumeration,
+						Pattern :> BooleanP
+					]
 				},
 				{
 					OptionName -> DefaultStorageCondition,
@@ -1490,26 +3906,15 @@ DefineOptionSet[
 					Category -> "Storage Information"
 				},
 				{
-					OptionName -> TransportWarmed,
+					OptionName -> TransportTemperature,
 					Default -> Null,
 					Description -> "The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[30 Celsius, 105 Celsius],
+						Pattern :> Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
 						Units -> Celsius
-					]
-				},
-				{
-					OptionName -> TransportChilled,
-					Default -> Null,
-					Description -> "Indicates if samples of this model should be refrigerated during transport when used in experiments.",
-					AllowNull -> True,
-					Category -> "Storage Information",
-					Widget -> Widget[
-						Type -> Enumeration,
-						Pattern :> BooleanP
 					]
 				},
 				{
@@ -1572,7 +3977,7 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates that this model of sample arrives sterile from the manufacturer.",
+					Description -> "Indicates that this sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during experimentation and storage.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1608,26 +4013,15 @@ DefineOptionSet[
 					Category -> "Storage Information"
 				},
 				{
-					OptionName -> TransportWarmed,
+					OptionName -> TransportTemperature,
 					Default -> Null,
-					Description -> "The temperature at which the sample should be incubated while transported between instruments during experimentation.",
+					Description -> "The temperature that this sample should be heated or refrigerated while transported between instruments during experimentation.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[30 Celsius, 105 Celsius],
-						Units -> Celsius
-					]
-				},
-				{
-					OptionName -> TransportChilled,
-					Default -> Null,
-					Description -> "Indicates if this sample should be refrigerated while transported between instruments during experimentation.",
-					AllowNull -> True,
-					Category -> "Storage Information",
-					Widget -> Widget[
-						Type -> Enumeration,
-						Pattern :> BooleanP
+						Type->Quantity,
+						Pattern:>Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
+						Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
 					]
 				},
 				{
@@ -1685,9 +4079,9 @@ DefineOptionSet[
 					]
 				},
 				{
-					OptionName -> BiosafetyHandling,
+					OptionName -> AsepticHandling,
 					Default -> Null,
-					Description -> "Indicates if this sample must be handled in a biosafety cabinet.",
+					Description -> "Indicates if aseptic techniques are followed for this sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -1748,6 +4142,17 @@ DefineOptionSet[
 					Widget -> Widget[
 						Type -> Enumeration,
 						Pattern :> BooleanP
+					]
+				},
+				{
+					OptionName -> AsepticTransportContainerType,
+					Default -> Null,
+					Description -> "Indicates how this sample is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+					AllowNull -> True,
+					Category -> "Storage Information",
+					Widget -> Widget[
+						Type -> Enumeration,
+						Pattern :> AsepticTransportContainerTypeP
 					]
 				}
 			],
@@ -2065,7 +4470,7 @@ retryConnection[command_, numberOfRetries_Integer]:=Module[{i, commandResult},
 			Return[commandResult];
 		];
 
-		Pause[1.2^i];
+		Pause[2^i];
 	];
 
 	(* We tried multiple times but get $Failed every time. Return $Failed. *)
@@ -2268,30 +4673,60 @@ SetAttributes[holdCompositionList, HoldAll];
 (* ::Subsection::Closed:: *)
 (*Packet Formatting*)
 
+(* ::Subsubsection::Closed:: *)
+(*generateChangePacket*)
 
-(* Given a type and a list of resolved options, formats the options into a change packet. If no append input is provide, default it to false (normal behavior)*)
-generateChangePacket[myType_, resolvedOptions_List, myOptions:OptionsPattern[]]:=generateChangePacket[myType, resolvedOptions, False, myOptions];
-(* Given a type and a list of resolved options, formats the options into a change packet. *)
-generateChangePacket[myType_, resolvedOptions_List, appendInput:BooleanP, myOptions:OptionsPattern[]]:=Module[{existingPacket, fields, convertedPacket, diffedPacket},
-	(* Get the existing packet, if we were given one. *)
-	existingPacket=Lookup[ToList[myOptions], ExistingPacket, <||>];
+DefineOptions[generateChangePacket,
+	Options :> {
+		{ExistingPacket -> <||>, _Association, "The current packet of the object as in Constellation."},
+		{Output -> Packet, ListableP[Alternatives[Packet, IrrelevantFields]], "Output of the function. Packet indicates the change packet, while IrrelavantFields is a list of options that exists in the resolved option input, but doesn't exist as a field of the target type."},
+		{RemoveNull -> True, BooleanP, "Indicate if options which values are Null, {} or Automatic should be removed and not included in the final change packet."},
+		{Append -> False, Alternatives[True, False, {_Symbol...}], "Indicates if multiple fields will be appended or replaced in the change packet. In addition to a single Boolean, one can also list fields that should be appended, in that case all other multiple fields will be replaced."}
+	}
+];
+
+(* Given a type and a list of resolved options, formats the options into a change packet. Use a Boolean to indicate whether all multiple fields will be Appended (True) or Replaced (False). *)
+generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, appendInput:BooleanP, myOptions:OptionsPattern[]]:= If[appendInput,
+	generateChangePacket[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> True}]],
+	generateChangePacket[myType, resolvedOptions, ReplaceRule[ToList[myOptions], {Append -> False}]]
+];
+
+(* main overload: Given a type and a list of resolved options, formats the options into a change packet. *)
+generateChangePacket[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOptions:OptionsPattern[]]:=Module[
+	{
+		existingPacket, fields, convertedPacket, diffedPacket, output, genericOptions, irrelevantFields,
+		packet, resolvedOptionsNoNull, fieldDefinitions, safeOps, removeNull, fieldsToAppend
+	},
+	(* get the options *)
+	safeOps = SafeOptions[generateChangePacket, ToList[myOptions]];
+	{existingPacket, output, removeNull, fieldsToAppend} = Lookup[safeOps, {ExistingPacket, Output, RemoveNull, Append}];
+
 	(* Get the definition of this type. *)
-	fields=Association@Lookup[LookupTypeDefinition[myType], Fields];
+	fieldDefinitions = Lookup[LookupTypeDefinition[myType], Fields];
+
+	(* Remove entries from ResolvedOptions which the value are Null, Automatic, {} or a list of these, if we have RemoveNull -> True *)
+	resolvedOptionsNoNull = If[TrueQ[removeNull],
+		Select[resolvedOptions, !MatchQ[Values[#], ListableP[(Automatic | Null | {})]]&],
+		resolvedOptions
+	];
+
+	(* Convert the field definition into an association *)
+	fields = Association[fieldDefinitions];
 
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
-	convertedPacket=Association@KeyValueMap[
+	convertedPacket = Association@KeyValueMap[
 		Function[{optionSymbol, optionValue},
-			Module[{fieldDefinition, formattedOptionSymbol},
-				(* If this option doesn't exist as a field, do not include it in the change packet. *)
-				If[!KeyExistsQ[fields, optionSymbol] || MatchQ[optionValue, Null],
-					Nothing,
-
+			(* If this option doesn't exist as a field, do not include it in the change packet. *)
+			If[!KeyExistsQ[fields, optionSymbol],
+				Nothing,
+				(* Otherwise, fetch the field definition and do some modifications on the Key and Values *)
+				Module[{fieldDefinition, formattedOptionSymbol, formattedOptionValue},
 					(* Get the information about this specific field. *)
-					fieldDefinition=Association@Lookup[fields, optionSymbol];
+					fieldDefinition = Lookup[fields, optionSymbol];
 					(* Format our option symbol. *)
-					(*If the Append options is true, switch the multiple field options to Append, otherwise Replace as usual*)
+					(*If the option symbol is in the Append option, or Append -> True, switch the multiple field options to Append, otherwise Replace as usual*)
 					formattedOptionSymbol=If[
-						appendInput,
+						(TrueQ[fieldsToAppend] || MemberQ[ToList[fieldsToAppend], optionSymbol]),
 						Switch[{Lookup[fieldDefinition, Format], optionSymbol},
 							{Single, Notebook},
 							Transfer[optionSymbol],
@@ -2310,71 +4745,19 @@ generateChangePacket[myType_, resolvedOptions_List, appendInput:BooleanP, myOpti
 						]
 					];
 
-					(* Based on the class of our field, we have to format the values differently. *)
-					Switch[Lookup[fieldDefinition, Class],
-						Link,
-						(* Are we dealing with a cloud file field? *)
-						Switch[Lookup[fieldDefinition, Relation],
-							Object[EmeraldCloudFile],
-							(* If we already have a cloud file, just use that *)
-							If[MatchQ[optionValue, ObjectP[Object[EmeraldCloudFile]]],
-								formattedOptionSymbol -> Link[optionValue],
-								Module[{heldFormattedOptionValue},
-									(* Convert any URLs to be uploaded on real upload of the packet. *)
-									heldFormattedOptionValue=With[{insertMe=optionValue},
-										Replace[
-											Hold[insertMe],
-											{
-												(* If our string is a URL, then try and download it. Otherwise, pass directly to UploadCloudFile. *)
-												string_String :> If[MatchQ[string, URLP],
-													With[{downloaded=Quiet[First[URLDownload[string]]]},
-														If[MatchQ[downloaded, "ConnectionFailure"],
-															Null,
-															Link[UploadCloudFile[downloaded]]
-														]
-													],
-													Link[Quiet[UploadCloudFile[string]]]
-												]
-											},
-											{1}
-										]
-									];
+					(* Call the helper to format the option value. The helper does the following things: *)
+					(* 1. Wrap Link[] on objects for any link fields, including backlinks *)
+					(* 2. For link fields relating to EmeraldCloudFile, if a local file path or url is provided, call UploadCloudFile to do the upload and replace field value with cloud file object *)
+					(* 3. correctly format named multiple fields if the option value is index-multiple *)
+					(* 4. feature 1 and 2 also applies to inner fields of named multiple or index multiple fields (e.g., first column of StoragePositions will get wrapped with Link[] *)
+					(* 5. Performs any known custom conversions *)
+					formattedOptionValue = formatFieldValue[myType, optionSymbol, optionValue, fieldDefinition];
 
-									(* Compose the Field\[RuleDelayed]Value, getting rid of the holds. *)
-									With[{insertMe1=formattedOptionSymbol, insertMe2=heldFormattedOptionValue},
-										ReleaseHold[
-											holdCompositionList[Rule, {Hold[insertMe1], insertMe2}]
-										]
-									]
-								]
-							],
-							_,
-							Module[{relationsList, backlinkMap},
-								(* Convert our Relation field into a list of relations. *)
-								relationsList=If[MatchQ[Lookup[fieldDefinition, Relation], _Alternatives],
-									List @@ Lookup[fieldDefinition, Relation],
-									ToList[Lookup[fieldDefinition, Relation]]
-								];
-
-								(* Build the type \[Rule] backlink mapping. *)
-								backlinkMap=(
-									If[!MatchQ[#, TypeP[]],
-										obj:ObjectReferenceP[Head[#]] :> Link[obj, Sequence @@ #],
-										obj:ObjectReferenceP[Head[#]] :> Link[obj]
-									]
-										&) /@ relationsList;
-
-								(* Apply the backlink mapping. *)
-								formattedOptionSymbol -> (optionValue /. {link_Link :> Download[link, Object]}) /. backlinkMap
-							]
-						],
-						_,
-						formattedOptionSymbol -> optionValue
-					]
+					formattedOptionSymbol -> formattedOptionValue
 				]
 			]
 		],
-		Association@resolvedOptions
+		Association@resolvedOptionsNoNull
 	];
 
 	(* Only include our key in our change packet if it is different than in our existing packet, if we have one. *)
@@ -2398,37 +4781,435 @@ generateChangePacket[myType_, resolvedOptions_List, appendInput:BooleanP, myOpti
 	];
 
 	(* Append the fields required to upload the object. *)
-	Join[
+	packet = Join[
 		diffedPacket,
 		<|
-			(* Only add Authors if it's in the type definition. *)
-			If[KeyExistsQ[fields, Authors],
+			(* Only add Authors if it's in the type definition and it's not already in the resolved options list. *)
+			If[KeyExistsQ[fields, Authors] && (!KeyExistsQ[resolvedOptionsNoNull, Authors]),
 				Replace[Authors] -> {Link[$PersonID]},
 				Nothing
 			],
 			(*more custom stuff that might pertain to specific upload functions*)
 			(*Upload Column specific*)
-			If[MemberQ[Keys@resolvedOptions, ConnectorType],
-				Switch[Lookup[resolvedOptions, ConnectorType],
+			If[MemberQ[Keys@resolvedOptionsNoNull, ConnectorType],
+				Switch[Lookup[resolvedOptionsNoNull, ConnectorType],
 					FemaleFemale, Replace[Connectors] -> {{"Column Inlet", Threaded, "10-32", 0.18 Inch, 0.18 Inch, Female}, {"Column Outlet", Threaded, "10-32", 0.18 Inch, 0.18 Inch, Female}},
 					FemaleMale, Replace[Connectors] -> {{"Column Inlet", Threaded, "10-32", 0.18 Inch, 0.18 Inch, Female}, {"Column Outlet", Threaded, "10-32", 0.18 Inch, 0.18 Inch, Male}}
 				],
 				Nothing
 			],
 			(* If we're changing the Composition field, add a sample history card. *)
+			(* Note: since SampleHistory has timestamp, we are not appending date (3rd column) of composition *)
 			If[KeyExistsQ[diffedPacket, Replace[Composition] && !MatchQ[myType, TypeP[Model[Sample]]]],
 				Append[SampleHistory] -> {
 					DefinedComposition[<|
 						Date -> Now,
-						Composition -> (Lookup[diffedPacket, Replace[Composition]] /. {link_Link :> Download[link, Object]}),
+						Composition -> Map[{#[[1]], #[[2]]}&,(Lookup[diffedPacket, Replace[Composition]] /. {link_Link :> Download[link, Object]})],
 						ResponsibleParty -> Download[$PersonID, Object]
 					|>]
 				},
 				Nothing
 			]
 		|>
-	]
+	];
+
+	(* Define a list of options that is normal to appear in resolved options but not fields *)
+	genericOptions = {Upload, Cache, Simulation, Force, Output};
+	(* Find irrelevant options that were specified *)
+	irrelevantFields = Complement[Keys[resolvedOptionsNoNull], Join[Keys[fields], genericOptions]];
+
+	output /. {Packet -> packet, IrrelevantFields -> irrelevantFields}
+
 ];
+
+(* Define a helper to format the field value *)
+formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule | _RuleDelayed)..}] := Module[
+	{format, class, relation, headers, preProcessedOptionValue, standardFieldValue},
+	(* Look up the key field definitions *)
+	{format, class, relation, headers} = Lookup[fieldDefinition, {Format, Class, Relation, Headers}, Null];
+
+	(* Sanitize the option if required before standard processing *)
+	(* Some options may be handled in partial form within SLL. This function fleshes them out into standard format *)
+	(* A notable example is Object[Sample][Composition] which adds a Date column at upload time *)
+	preProcessedOptionValue = preProcessOptionValue[objectType, optionName, optionValue];
+
+	(* Format field values according to standard rules for the field type *)
+	standardFieldValue = Which[
+		(* For fields link to cloud file, if our field value is indeed EmeraldCloudFile, wrap that with Link[] *)
+		MatchQ[class, Link] && MatchQ[relation, Object[EmeraldCloudFile]] && MatchQ[preProcessedOptionValue, ListableP[ObjectP[Object[EmeraldCloudFile]]]],
+		Link[preProcessedOptionValue],
+
+		(* For fields link to cloud file but our field value is not EmeraldCloudFile (most likely string, either local file path or url), replace that with UploadCloudFile *)
+		MatchQ[class, Link] && MatchQ[relation, Object[EmeraldCloudFile]],
+		Replace[
+			preProcessedOptionValue,
+			{
+				(* If our string is a URL, then try and download it. Otherwise, pass directly to UploadCloudFile. *)
+				(* TODO for now I just copied from the old code, but this is certainly not ideal. We should try to implement downloadAndValidateURL and validateLocalFile *)
+				string_String :> If[MatchQ[string, URLP],
+					With[{downloaded=Quiet[First[URLDownload[string]]]},
+						If[MatchQ[downloaded, "ConnectionFailure"],
+							Null,
+							Link[UploadCloudFile[downloaded]]
+						]
+					],
+					Link[Quiet[UploadCloudFile[string]]]
+				]
+			},
+			{0, 1}
+		],
+
+		(* For other linked fields, we need to construct backlink as needed *)
+		MatchQ[class, Link],
+		Module[{relationsList, backlinkMap},
+			(* Convert our Relation field into a list of relations. *)
+			relationsList=If[MatchQ[relation, _Alternatives],
+				List @@ relation,
+				ToList[relation]
+			];
+
+			(* Build the type \[Rule] backlink mapping. *)
+			backlinkMap=(
+				If[!MatchQ[#, TypeP[]],
+					obj:ObjectReferenceP[Head[#]] :> Link[obj, Sequence @@ #],
+					obj:ObjectReferenceP[Head[#]] :> Link[obj]
+				]
+					&) /@ relationsList;
+
+			(* Apply the backlink mapping. *)
+			(preProcessedOptionValue /. {link_Link :> Download[link, Object]}) /. backlinkMap
+		],
+
+		(* For Index-multiple fields: divide the field definition by index, then recursively map the function to resolve field values *)
+		MatchQ[class, _List] && MatchQ[headers, {_String..}],
+		Module[{fieldPropertyKeys, fieldPropertyValues, indexLength, expandedFieldPropertyValues, expandedFieldDefinitions, expandedOptionValue, listedConvertedField},
+			indexLength = Length[headers];
+			(* Extract keys and values from field definition *)
+			fieldPropertyKeys = Keys[fieldDefinition];
+			fieldPropertyValues = Values[fieldDefinition];
+
+			(* Expand the field definition to make it index-match to headers *)
+			(* e.g., say original field definition is {Headers -> {"X", "Y"}, Description -> "xxx", Class -> {Link, Integer}}, *)
+			(* We want {{Headers -> "X", Description -> "xxx", Class -> Link}, {Headers -> "Y", Description -> "xxx", Class -> Integer}} *)
+
+			(* Form of this is {{"X", "Y"}, {"xxx", "xxx"}, {{Link, Integer}} *)
+			expandedFieldPropertyValues = Map[
+				If[MatchQ[#, _List] && Length[#] == indexLength,
+					#,
+					ConstantArray[#, indexLength]
+				]&,
+				fieldPropertyValues
+			];
+
+			expandedFieldDefinitions = Map[
+				Function[{fieldPropertyValuesPerIndex},
+					Normal[AssociationThread[fieldPropertyKeys, fieldPropertyValuesPerIndex], Association]
+				],
+				Transpose[expandedFieldPropertyValues]
+			];
+
+			(* Also expand the option value *)
+			(* Option value should be a list of list, while the inner list index-match to headers *)
+			expandedOptionValue = Which[
+				(* If the length looks all good, make no change *)
+				MatchQ[preProcessedOptionValue, {_List..}] && Length[First[preProcessedOptionValue]] == indexLength,
+				preProcessedOptionValue,
+				(* Otherwise, if the option value length itself matches index, most likely we simply need to wrap it with another layer of list *)
+				MatchQ[preProcessedOptionValue, _List] && Length[preProcessedOptionValue] == indexLength,
+				{preProcessedOptionValue},
+				(* All other cases we have an error *)
+				True,
+				$Failed
+			];
+
+			(* If anything failing index-matching, return $Failed *)
+			If[MatchQ[expandedOptionValue, $Failed],
+				Return[$Failed, Module]
+			];
+
+			(* Now we have expanded our field definitions and values, call MapThread on the formatFieldValue function recursively *)
+			listedConvertedField = Map[
+				Function[{singleValues},
+					MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
+						formatFieldValue[objectType, optionName, singleHeaderValue, singleHeaderDefinition]
+					],
+						{singleValues, expandedFieldDefinitions}
+					]
+				],
+				expandedOptionValue
+			];
+
+			(* If the field format is single, convert back to a single value from list of lists *)
+			Which[
+				MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
+				First[listedConvertedField],
+
+				(* Throw an error if it's a single and we got multiple entries *)
+				MatchQ[format, Single],
+				$Failed,
+
+				(* No change if it's a multiple *)
+				True,
+				listedConvertedField
+			]
+		],
+
+		(* For named-multiple fields: do a similar treatment as index-multiple *)
+		MatchQ[class, _List] && MatchQ[headers, {_Rule..}],
+		Module[
+			{
+				indexLength, fieldPropertyKeys, fieldPropertyValues, expandedFieldPropertyValues, expandedFieldDefinitions,
+				headerKeys, expandedOptionValue, indexMultipleFieldValue, listedConvertedField
+			},
+			indexLength = Length[headers];
+			(* Extract keys and values from field definition *)
+			fieldPropertyKeys = Keys[fieldDefinition];
+			fieldPropertyValues = Values[fieldDefinition];
+
+			(* Expand the field definition to make it index-match to headers *)
+			(* e.g., say original field definition is {Headers -> {"X", "Y"}, Description -> "xxx", Class -> {Link, Integer}}, *)
+			(* We want {{Headers -> "X", Description -> "xxx", Class -> Link}, {Headers -> "Y", Description -> "xxx", Class -> Integer}} *)
+
+			(* Form of this is {{"X", "Y"}, {"xxx", "xxx"}, {{Link, Integer}} *)
+			expandedFieldPropertyValues = Map[
+				If[MatchQ[#, _List] && Length[#] == indexLength,
+					#,
+					ConstantArray[#, indexLength]
+				]&,
+				fieldPropertyValues
+			];
+
+			expandedFieldDefinitions = Map[
+				Function[{fieldPropertyValuesPerIndex},
+					Normal[AssociationThread[fieldPropertyKeys, fieldPropertyValuesPerIndex], Association]
+				],
+				Transpose[expandedFieldPropertyValues]
+			];
+
+			(* Also expand the option value *)
+			headerKeys = Keys[headers];
+			expandedOptionValue = Which[
+				(* If the option value is in named-multiple form, i.e., list of associations, extract the values *)
+				MatchQ[preProcessedOptionValue, {_Association..}],
+				Lookup[#, headerKeys, Null]& /@ preProcessedOptionValue,
+				(* If the option value is a singleton association, make it into a list of index-multiple *)
+				MatchQ[preProcessedOptionValue, _Association],
+				{Lookup[preProcessedOptionValue, headerKeys, Null]},
+				(* If the option value is in index-multiple form, make no change *)
+				MatchQ[preProcessedOptionValue, {_List..}] && Length[First[preProcessedOptionValue]] == indexLength,
+				preProcessedOptionValue,
+				(* Otherwise, if the option value length itself matches index, most likely we simply need to wrap it with another layer of list *)
+				MatchQ[preProcessedOptionValue, _List] && Length[preProcessedOptionValue] == indexLength,
+				{preProcessedOptionValue},
+				(* All other cases we have an error *)
+				True,
+				$Failed
+			];
+
+			(* If anything failing index-matching, return $Failed *)
+			If[MatchQ[expandedOptionValue, $Failed],
+				Return[$Failed, Module]
+			];
+
+			(* Now we have expanded our field definitions and values, call MapThread on the formatFieldValue function recursively *)
+			indexMultipleFieldValue = Map[
+				Function[{singleValues},
+					MapThread[Function[{singleHeaderValue, singleHeaderDefinition},
+						formatFieldValue[objectType, optionName, singleHeaderValue, singleHeaderDefinition]
+					],
+						{singleValues, expandedFieldDefinitions}
+					]
+				],
+				expandedOptionValue
+			];
+
+			(* Finally, we need to convert the field value in index-multiple format into the correct named-multiple format *)
+			listedConvertedField = Map[
+				Function[{innerValue},
+					AssociationThread[headerKeys, innerValue]
+				],
+				indexMultipleFieldValue
+			];
+
+			(* If the field format is single, convert back to a single value from list of lists *)
+			Which[
+				MatchQ[format, Single] && EqualQ[Length[listedConvertedField], 1],
+				First[listedConvertedField],
+
+				(* Throw an error if it's a single and we got multiple entries *)
+				MatchQ[format, Single],
+				$Failed,
+
+				(* No change if it's a multiple *)
+				True,
+				listedConvertedField
+			]
+		],
+		(* Any other case, make no change to field value *)
+		True,
+		preProcessedOptionValue
+	];
+
+	(* Perform any custom conversions where the translation from option pattern to field pattern is non-standard *)
+	translateCustomOptionValue[optionName, standardFieldValue]
+];
+
+(* helper *)
+(* packet overload *)
+
+(* some multiple options are specified in the form of index-multiple, e.g. Positions, however the actual field is Named multiple *)
+(* So we need to convert the resolved option into correct association for upload *)
+indexToNamedMultiple[myPacket_Association, myFieldDefinitions:{_Rule...}] := indexToNamedMultiple[Normal[myPacket, Association], myFieldDefinitions];
+
+(* Empty rule (either resolved options or Named multiple field definitions) overload *)
+indexToNamedMultiple[{}, _] := {};
+indexToNamedMultiple[myfieldRules:{_Rule..}, {}] := myfieldRules;
+
+(* Type overload *)
+indexToNamedMultiple[myInput:{_Rule..}, myType:TypeP[]] := Module[
+	{fieldDefinitions, namedMultipleFieldDefinitions},
+	fieldDefinitions = Lookup[LookupTypeDefinition[myType], Fields];
+	namedMultipleFieldDefinitions = Select[fieldDefinitions, MatchQ[Lookup[Values[#], Format], Multiple] && MatchQ[Lookup[Values[#], Headers, Null], {_Rule ..}] &];
+	indexToNamedMultiple[myInput, namedMultipleFieldDefinitions]
+];
+
+(* singleton overload *)
+indexToNamedMultiple[mySingleRule_Rule, mySecondInput_] := First[indexToNamedMultiple[{mySingleRule}, mySecondInput]]
+
+(* Main overload *)
+indexToNamedMultiple[myfieldRules:{_Rule..}, myFieldDefinitions:{_Rule..}] := Module[
+	{fieldHeaders, fieldValues, fieldNames, correctedFieldValues, rulesNeedsTransfer, correctedFieldRules},
+
+	fieldHeaders = Keys[Lookup[#, Headers]]& /@ Values[myFieldDefinitions];
+	fieldNames = Keys[myFieldDefinitions];
+
+	fieldValues = Lookup[myfieldRules, #, Null]& /@ fieldNames;
+
+	(* Here is what we are trying to do. Use the Positions field in Model[Container] as an example: *)
+	(* In the option for the UploadContainerModel function we are expecting the Positions field to format as index-multiple *)
+	(* like {{"A1", Null, 1Meter, 1Meter, 1Meter}}. However, the Positions field in Model[Container] is defined as named-multiple *)
+	(* Something like {<|Name -> "A1", Footprint -> Null, MaxWidth -> 1Meter, MaxDepth -> 1Meter, MaxHeight -> 1Meter|>} *)
+	(* We need to convert the index-multiple option value into the correctly-formatted named-multiple field value, in order for the change packet to be valid *)
+	correctedFieldValues = MapThread[
+		Function[{fieldValue, headersOfOneField},
+			If[NullQ[fieldValue] || MatchQ[fieldValue, {}],
+				{},
+				rulesNeedsTransfer = Transpose[
+					MapThread[
+						Function[{headerValues, header},
+							If[MatchQ[headerValues, _List],
+								(header -> #)& /@ headerValues,
+								header -> headerValues
+							]
+						],
+						{Transpose[fieldValue], headersOfOneField}
+					]
+				];
+				If[MatchQ[rulesNeedsTransfer, {_Rule..}],
+					{Association[rulesNeedsTransfer]},
+					Association /@ rulesNeedsTransfer
+				]
+			]
+		],
+		{fieldValues, fieldHeaders}
+	];
+
+	correctedFieldRules = MapThread[
+		Function[{field, value},
+			If[MemberQ[Keys[myfieldRules], field],
+				field -> value,
+				Nothing
+			]
+		],
+		{fieldNames, correctedFieldValues}
+	];
+
+	ReplaceRule[myfieldRules, correctedFieldRules]
+
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*translateCustomOptionValue*)
+
+(* Helper to convert the values of options into format suitable for upload where the relationship between the two is non-standard *)
+translateCustomOptionValue[field_Symbol, optionValue_] := Switch[field,
+
+	(* NFPA. Handled as a single expression, even though it looks a bit like a named single *)
+	(* {1, 2, 3, {Oxidizer}} -> {Health -> 1, Flammability -> 2, Reactivity -> 3, Special -> {Oxidizer}} *)
+	NFPA,
+	Which[
+		(* If matches NFPA field already except Special is set to Null, change that Null to a {} so we match NFPA *)
+		MatchQ[ReplaceRule[optionValue, (Rule[Special, Null] -> Rule[Special, {}])], NFPAP],
+		ReplaceRule[
+			optionValue,
+			(Rule[Special, Null] -> Rule[Special, {}])
+		],
+
+		(* If in option format, convert it to field format *)
+		MatchQ[
+			optionValue,
+			{
+			Alternatives[0, 1, 2, 3, 4],
+			Alternatives[0, 1, 2, 3, 4],
+			Alternatives[0, 1, 2, 3, 4],
+			{Alternatives[Oxidizer, WaterReactive, Aspyxiant, Corrosive, Acid, Bio, Poisonous, Radioactive, Cryogenic, Null]...} | Null
+		}],
+		{
+			Health -> optionValue[[1]],
+			Flammability -> optionValue[[2]],
+			Reactivity -> optionValue[[3]],
+			Special -> If[NullQ[optionValue[[4]]], {}, ToList[optionValue[[4]]]]
+		},
+
+		(* Otherwise leave unchanged *)
+		True,
+		optionValue
+	],
+
+	(* Extinction coefficient. This field doesn't have headers *)
+	(* {{myWavelength,myExtinctionCoefficient}} -> {<|Wavelength->myWavelength,ExtinctionCoefficient->myExtinctionCoefficient|>..} *)
+	ExtinctionCoefficients,
+	If[MatchQ[optionValue, {{_, _}..}],
+		(* If we've got tuples, convert to an association *)
+		Function[
+			{myExtinctionCoefficient},
+			<|Wavelength -> myExtinctionCoefficient[[1]], ExtinctionCoefficient -> myExtinctionCoefficient[[2]]|>
+		] /@ optionValue,
+
+		(* Otherwise leave as is *)
+		optionValue
+	],
+
+	(* Anything else is unchanged *)
+	_,
+	optionValue
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*preProcessOptionValue*)
+
+(* Helper to convert incompletely defined options to fully defined options before standard processing *)
+preProcessOptionValue[objectType : TypeP[], fieldName_Symbol, optionValue_] := Switch[{objectType, fieldName, optionValue},
+	(* Object[Sample][Composition] has a 3rd column for date that needs to be added at upload time *)
+	(* Convert any field value with only two columns *)
+	{Object[Sample], Composition, {{_, _}..}},
+	Module[{now},
+		now = Now;
+
+		(* Append the upload time to each row *)
+		Append[#, now] & /@ optionValue
+	],
+
+	(* Leave anything else unchanged *)
+	_,
+	optionValue
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*stripChangePacket*)
 
 
 (* Change any change heads in our packet. Make sure to keep DelayedRules from evaluating the RHS. *)
@@ -2537,7 +5318,7 @@ InstallValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, valid
 				"Inspect"
 			},
 			Author -> {
-				"thomas"
+				"lige.tonggu"
 			}
 		}
 	];
@@ -2638,7 +5419,7 @@ InstallOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, opt
 				"Inspect"
 			},
 			Author -> {
-				"thomas"
+				"lige.tonggu"
 			}
 		}
 	];
@@ -3057,17 +5838,65 @@ InstallIdentityModelTests[myFunction_, basicDescription_, defaultFunctionArgumen
 
 LazyLoading[$DelayDefaultUploadFunction, InstallDefaultUploadFunction, DownValueTrigger -> True, UpValueTriggers -> {Usage}];
 
+DefineOptions[InstallDefaultUploadFunction,
+	Options :> {
+		{
+			OptionName -> OptionResolver,
+			Default -> resolveDefaultUploadFunctionOptions,
+			AllowNull -> False,
+			Pattern :> _Symbol,
+			Description -> "Specify the head of the option resolver function to use in the function definition.",
+			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> AuxilliaryPacketsFunction,
+			Default -> generateDefaultUploadFunctionAuxilliaryPackets,
+			AllowNull -> False,
+			Pattern :> _Symbol,
+			Description -> "Specify the head of the function to use to generate changes to additional objects in the function definition.",
+			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> InstallNameOverload,
+			Default -> True,
+			AllowNull -> False,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the input pattern to the function allows a new object to be created by providing the new object name as a string input.",
+			Category -> "Organizational Information"
+		},
+		{
+			OptionName -> InstallObjectOverload,
+			Default -> True,
+			AllowNull -> False,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the input pattern to the function allows modification of existing objects by providing the object reference as input.",
+			Category -> "Organizational Information"
+		}
+	}
+];
 
-(* Overload to install using the default option resolver. *)
-InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[]]:=InstallDefaultUploadFunction[myFunction, myType, resolveDefaultUploadFunctionOptions, options];
 
 (* Overload that specifies the option resolver to use. *)
-InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, options:OptionsPattern[]]:=Module[
-	{installNameOverload, installObjectOverload, stringInputName, singletonOverloadSymbol, singletonFunctionPattern, listableFunctionPattern},
+InstallDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[InstallDefaultUploadFunction]]:=Module[
+	{safeOptions, installNameOverload, installObjectOverload, optionResolver, auxilliaryPacketsFunction, stringInputName, singletonFunctionPattern, listableFunctionPattern},
 
-	(* Default InstallNameOverload\[Rule]True and InstallObjectOverload\[Rule]True. *)
-	installNameOverload=Lookup[ToList[options], InstallNameOverload, True];
-	installObjectOverload=Lookup[ToList[options], InstallObjectOverload, True];
+	(* Get the safe options *)
+	safeOptions = SafeOptions[InstallDefaultUploadFunction, ToList[options]];
+
+	(* Look up option values *)
+	{
+		installNameOverload,
+		installObjectOverload,
+		optionResolver,
+		auxilliaryPacketsFunction
+	}=Lookup[safeOptions,
+		{
+			InstallNameOverload,
+			InstallObjectOverload,
+			OptionResolver,
+			AuxilliaryPacketsFunction
+		}
+	];
 
 	(* Install the usage rules. *)
 	stringInputName=ToLowerCase[ToString[Last[myType]]];
@@ -3160,6 +5989,12 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 					Nothing
 				]
 			},
+			If[MatchQ[myFunction,UploadSampleModel],
+				MoreInformation -> {
+					"If Updating the Composition of a Model[Sample], the Compositions of all linked Object[Sample]'s will also be updated. The date in the components of the composition will have the Date of when UploadSampleModel is executed."
+				},
+				Nothing
+			],
 			SeeAlso -> {
 				"UploadOligomer",
 				"UploadProtein",
@@ -3182,14 +6017,10 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 				"Inspect"
 			},
 			Author -> {
-				"thomas",
 				"lige.tonggu"
 			}
 		}
 	];
-
-	(* Create the function signature for the singleton overload. *)
-	singletonOverloadSymbol=ToExpression[ToString[myFunction]<>"Singleton"];
 
 	(* Create an input pattern for our listable and singleton functions. *)
 	singletonFunctionPattern=Switch[{installNameOverload, installObjectOverload},
@@ -3201,485 +6032,496 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 		ObjectP[myType]
 	];
 
-	listableFunctionPattern=ListableP[singletonFunctionPattern];
+	listableFunctionPattern={singletonFunctionPattern..};
 
 	(* Install the listable overload. *)
-	myFunction[myInputs:listableFunctionPattern, myOptions:OptionsPattern[]]:=Module[
-		{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
-			knownInputPatterns, invalidInputs, expandedInputs, expandedOptions, optionName, optionValueList, expandedOptionsWithName, transposedInputsAndOptions,
-			results, messages, messageRules, messageRulesGrouped,
-			messageRulesWithoutInvalidInput, transposedResults, outputRules, resultRule, packetUUIDs, packetsToUpload, uploadedPackets, resultRuleWithObjects,
-			invalidOptionMap, invalidOptions, messageRulesWithoutRequiredOptions, inputObjectCache},
+	With[
+		{
+			optionResolverFunction = optionResolver,
+			auxPacketsFunction = auxilliaryPacketsFunction
+		},
 
-		(* Make sure we're working with a list of options *)
-		listedOptions=ToList[myOptions];
+		myFunction[myInputs : listableFunctionPattern, myOptions : OptionsPattern[myFunction]] := Module[
+			{listedInputs, listedOptions, outputSpecification, cache, simulation, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
+				expandedInputs, expandedOptions, optionName, optionValueList, expandedOptionsWithName,
+				resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, collapsedResolvedOptions, uploadPackets, auxilliaryPackets,
+				voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions, allInvalidInputs, allInvalidOptions,
+				resultRule, previewRule, optionsRule, testsRule,
+				inputObjectCache, listedOptionsWithCache, safeOptionsWithCache},
 
-		(* Determine the requested return value from the function *)
-		outputSpecification=If[!MatchQ[Lookup[listedOptions, Output], _Missing],
-			Lookup[listedOptions, Output],
-			Result
-		];
-		output=ToList[outputSpecification];
+			(* Make sure we're working with a list of inputs and options *)
+			listedInputs = ToList[myInputs];
+			listedOptions = ToList[myOptions];
 
-		(* Determine if we should keep a running list of tests *)
-		gatherTests=MemberQ[output, Tests];
-
-		(* Call SafeOptions to make sure all options match pattern *)
-		{safeOptions, safeOptionTests}=If[gatherTests,
-			SafeOptions[myFunction, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
-			{SafeOptions[myFunction, listedOptions, AutoCorrect -> False], Null}
-		];
-
-		(* Call ValidInputLengthsQ to make sure all options are the right length *)
-		{validLengths, validLengthTests}=If[gatherTests,
-			ValidInputLengthsQ[myFunction, {ToList[myInputs]}, listedOptions, Output -> {Result, Tests}],
-			{ValidInputLengthsQ[myFunction, {ToList[myInputs]}, listedOptions], Null}
-		];
-
-		(* If the specified options don't match their patterns return $Failed (or the tests up to this point)  *)
-		If[MatchQ[safeOptions, $Failed],
-			Return[outputSpecification /. {
-				Result -> $Failed,
-				Tests -> safeOptionTests,
-				Options -> $Failed,
-				Preview -> Null
-			}]
-		];
-
-		(* If option lengths are invalid return $Failed (or the tests up to this point) *)
-		If[!validLengths,
-			Return[outputSpecification /. {
-				Result -> $Failed,
-				Tests -> Join[safeOptionTests, validLengthTests],
-				Options -> $Failed,
-				Preview -> Null
-			}]
-		];
-
-		(* SafeOptions passed. Use SafeOptions to get the output format. *)
-		outputSpecification=Lookup[safeOptions, Output];
-
-		(*-- Otherwise, we're dealing with a listable version. Map over the inputs and options. --*)
-		(*-- Basic checks of input and option validity passed. We are ready to map over the inputs and options. --*)
-		(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
-		{expandedInputs, expandedOptions}=ExpandIndexMatchedInputs[myFunction, {ToList[myInputs]}, listedOptions];
-
-		(* Download all of the objects from our input list without computable fields. *)
-		inputObjectCache=Module[{objects, fields},
-
-			(*all unique objects we are working with*)
-			objects=DeleteDuplicates[Cases[ToList[myInputs], ObjectReferenceP[myType], Infinity]];
-
-			(* fields without computable fields *)
-			fields=Packet[Sequence @@
-				Cases[
-					Lookup[LookupTypeDefinition[myType], Fields],
-					Verbatim[Rule][_, KeyValuePattern[Format -> Except[Computable]]]
-				][[All, 1]]];
-
-			(* need to Flatten here to get a flat list of packets *)
-			Flatten@Download[
-				objects,
-				fields
-			]
-		];
-
-		(* Put the option name inside of the option values list so we can easily MapThread. *)
-		expandedOptionsWithName=Function[{option},
-			optionName=option[[1]];
-			optionValueList=option[[2]];
-
-			(* We are given OptionName\[Rule]OptionValueList. *)
-			(* We want {OptionName\[Rule]OptionValue1, OptionName\[Rule]OptionValue2, etc.} *)
-			Function[{optionValue},
-				optionName -> optionValue
-			] /@ optionValueList
-		] /@ expandedOptions;
-
-		(* Transpose our inputs and options together. *)
-		transposedInputsAndOptions=Transpose[{Sequence @@ expandedInputs, Sequence @@ expandedOptionsWithName}];
-
-		(* We want to get all of the messages thrown by the function while not showing them to the user. *)
-		(* Internal`InheritedBlock inherits the DownValues of Message while allowing block-scoped modification. *)
-		{results, messages}=Internal`InheritedBlock[{Message, $InMsg=False},
-			Transpose[(
-				Module[{myMessageList},
-					myMessageList={};
-					Unprotect[Message];
-
-					(* Set a conditional downvalue for the Message function. *)
-					(* Record the message if it has an Error:: or Warning:: head. *)
-					Message[msg_, vars___]/;!$InMsg:=Block[{$InMsg=True},
-						If[MatchQ[HoldForm[msg], HoldForm[MessageName[Error | Warning, _]]],
-							AppendTo[myMessageList, {HoldForm[msg], vars}];
-							Message[msg, vars]
-						]
-					];
-
-					(* Evaluate the singleton function. Return the result along with the messages. *)
-					{Quiet[singletonOverloadSymbol[Sequence @@ Append[#, Cache -> inputObjectCache]]], myMessageList}
-				]
-					&) /@ transposedInputsAndOptions]
-		];
-
-		(* Build a map of messages and which inputs they were thrown for. *)
-		messageRules=Flatten@Map[
-			Function[{inputMessageList},
-				Function[{inputMessage},
-					ToString[First[inputMessage]] -> Rest[inputMessage]
-				] /@ inputMessageList
-			],
-			messages
-		];
-
-		(* Group together our message rules. *)
-		messageRulesGrouped=Merge[
-			messageRules,
-			Transpose
-		];
-
-		(* Throw Error::InvalidOption based on the messages that we threw in RunUnitTest. *)
-		invalidOptionMap=lookupInvalidOptionMap[myType];
-
-		(* Get the options that are invalid. *)
-		invalidOptions=Cases[DeleteDuplicates[Flatten[Function[{messageName},
-			(* If we're dealing with "Error::RequiredOptions", only count the options that are Null. *)
-			If[MatchQ[messageName, "Error::RequiredOptions"],
-				(* Only count the ones that are Null. *)
-				Module[{allPossibleOptions},
-					allPossibleOptions=Lookup[invalidOptionMap, messageName];
-
-					(* We may have multiple Outputs requested from our result, so Flatten first and pull out the rules to get the options. *)
-					(
-						If[MemberQ[Lookup[Cases[Flatten[results], _Rule], #, Null], Null],
-							#,
-							Nothing
-						]
-							&) /@ allPossibleOptions
-				],
-				(* ELSE: Just lookup like normal. *)
-				Lookup[invalidOptionMap, messageName, Null]
-			]
-		] /@ Keys[messageRulesGrouped]]], Except[_String | Null]];
-
-		If[Length[invalidOptions] > 0,
-			Message[Error::InvalidOption, ToString[invalidOptions]];
-		];
-
-		(* If Error::InvalidInput is thrown, message it seperately. These error names must be present for the Command Builder to pick up on them. *)
-		messageRulesWithoutInvalidInput=If[KeyExistsQ[messageRulesGrouped, "Error::InvalidInput"],
-			Message[Error::InvalidInput, ToString[First[messageRulesGrouped["Error::InvalidInput"]]]];
-			KeyDrop[messageRulesGrouped, "Error::InvalidInput"],
-			messageRulesGrouped
-		];
-
-		(* Throw Error::RequiredOptions separately. This is so that we can delete duplicates on the first `1`. *)
-		messageRulesWithoutRequiredOptions=If[KeyExistsQ[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
-			Message[
-				Error::RequiredOptions,
-				(* Flatten all of the options that are required. *)
-				ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[1]]]]],
-
-				(* Also delete duplicates for the inputs. *)
-				ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[2]]]]]
+			(* Determine the requested return value from the function *)
+			outputSpecification = If[!MatchQ[Lookup[listedOptions, Output], _Missing],
+				Lookup[listedOptions, Output],
+				Result
 			];
-			KeyDrop[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
-			messageRulesWithoutInvalidInput
-		];
+			output = ToList[outputSpecification];
 
-		(* Throw the listable versions of the Error and Warning messages. *)
-		(
-			Module[{messageName, messageContents, messageNameHead, messageNameTag, originalMessage, additionalInputInformation},
-				messageName=#[[1]];
-				messageContents=#[[2]];
+			(* Determine if we should keep a running list of tests *)
+			gatherTests = MemberQ[output, Tests];
 
-				(* First, get the message name head and tag.*)
-				messageNameHead=ToExpression[First[StringCases[messageName, x___~~"::"~~___ :> x]]];
-				messageNameTag=First[StringCases[messageName, ___~~"::"~~x___ :> x]];
+			(* Call SafeOptions to make sure all options match pattern *)
+			{safeOptions, safeOptionTests} = If[gatherTests,
+				SafeOptions[myFunction, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
+				{SafeOptions[myFunction, listedOptions, AutoCorrect -> False], Null}
+			];
 
-				(* Ignore Warning::UnknownOption since this is quieted in RunUnitTest but we're catching all messages. *)
-				(* Also ignore Error::UnsupportedPolymers *)
-				If[!MatchQ[messageName, "Warning::UnknownOption" | "Error::UnsupportedPolymers"],
-					(* Throw the listable message. *)
-					With[{insertMe1=messageNameHead, insertMe2=messageNameTag}, Message[MessageName[insertMe1, insertMe2], Sequence @@ (ToString[DeleteDuplicates[#]]& /@ messageContents)]];
+			(* Call ValidInputLengthsQ to make sure all options are the right length *)
+			{validLengths, validLengthTests} = If[gatherTests,
+				ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions, Output -> {Result, Tests}],
+				{ValidInputLengthsQ[myFunction, {listedInputs}, listedOptions], Null}
+			];
+
+			(* If the specified options don't match their patterns return $Failed (or the tests up to this point)  *)
+			If[MatchQ[safeOptions, $Failed],
+				Return[outputSpecification /. {
+					Result -> $Failed,
+					Tests -> safeOptionTests,
+					Options -> $Failed,
+					Preview -> Null
+				}]
+			];
+
+			(* If option lengths are invalid return $Failed (or the tests up to this point) *)
+			If[!validLengths,
+				Return[outputSpecification /. {
+					Result -> $Failed,
+					Tests -> Join[safeOptionTests, validLengthTests],
+					Options -> $Failed,
+					Preview -> Null
+				}]
+			];
+
+			(* SafeOptions passed. Use SafeOptions to get the output format. *)
+			outputSpecification = Lookup[safeOptions, Output];
+
+			(* Grab the cache and simulation from options *)
+			cache = Lookup[safeOptions, Cache, {}];
+			simulation = Lookup[safeOptions, Simulation, Null];
+
+			(* Download all of the objects from our input list without computable fields. *)
+			inputObjectCache = Module[{objects, types, typeFields, fullDownloadFields},
+
+				(*all unique objects we are working with*)
+				objects = DeleteDuplicates[Cases[listedInputs, ObjectReferenceP[myType], Infinity]];
+				(* This is required as the objects may be subtype of myType and we need to download all the fields. This is specifically important for Model[Sample,StockSolution] *)
+				types = Download[objects, Type];
+
+				(* fields without computable fields *)
+				typeFields = Map[
+					(
+						# -> {Packet @@ Experiment`Private`noComputableFieldsList[#]}
+					)&,
+					DeleteDuplicates[types]
 				];
 
-			]
-				&) /@ Normal[messageRulesWithoutRequiredOptions];
+				fullDownloadFields = types /. typeFields;
 
-		(* Transpose our result (if we have an output in a list form) and return them in the correct format. If we aren't dealing with an output list, just add a level of listing. *)
-		transposedResults=If[MatchQ[outputSpecification, _List],
-			Transpose[results],
-			{results}
-		];
-
-		(* Generate the output rules for this output. *)
-		outputRules=MapThread[
-			(
-				Switch[#1,
-					Result,
-					#1 -> #2,
-					Options,
-					#1 -> Normal[Merge[Association /@ #2, Identity]],
-					Tests,
-					#1 -> Flatten[#2],
-					_,
-					#1 -> #2
+				(* need to Flatten here to get a flat list of packets *)
+				Experiment`Private`FlattenCachePackets[
+					Download[
+						objects,
+						fullDownloadFields,
+						Cache -> cache,
+						Simulation -> simulation
+					]
 				]
-					&),
-			{ToList[outputSpecification], transposedResults}
-		];
+			];
 
-		(* Change the result rule to include the object IDs if we're uploading. *)
-		resultRule=Result -> If[MemberQ[Keys[outputRules], Result] && !(Length[invalidOptions] > 0 || Length[invalidInputs] > 0),
-			(* Lookup our output packets. *)
-			packetsToUpload=Flatten[Lookup[outputRules, Result]];
+			(* Add the input object packets to the Cache option *)
+			listedOptionsWithCache = ReplaceRule[listedOptions, Cache -> inputObjectCache];
+			safeOptionsWithCache = ReplaceRule[safeOptions, Cache -> inputObjectCache];
 
-			(* Upload if we're supposed to upload our packets and didn't get a Null result (a failure for one of the packets). *)
-			If[Lookup[safeOptions, Upload] && !MemberQ[packetsToUpload, Null],
-				Module[{allObjects, filteredObjects},
-					(* Get rid of DelayedRules, then upload. *)
-					allObjects=Upload[
-						(Association @@ #&) /@ ReplaceAll[
-							Normal /@ packetsToUpload,
-							RuleDelayed -> Rule
+			(*-- Otherwise, we're dealing with a listable version. Map over the inputs and options. --*)
+			(*-- Basic checks of input and option validity passed. We are ready to map over the inputs and options. --*)
+			(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
+			{expandedInputs, expandedOptions} = ExpandIndexMatchedInputs[myFunction, {listedInputs}, listedOptionsWithCache];
+
+			(* Put the option name inside of the option values list so we can easily MapThread. *)
+			expandedOptionsWithName = Function[{option},
+				optionName = option[[1]];
+				optionValueList = option[[2]];
+
+				(* We are given OptionName\[Rule]OptionValueList. *)
+				(* We want {OptionName\[Rule]OptionValue1, OptionName\[Rule]OptionValue2, etc.} *)
+				Function[{optionValue},
+					optionName -> optionValue
+				] /@ optionValueList
+			] /@ expandedOptions;
+
+			(* Resolve our options *)
+			(* This is mapped for now, whilst converting from the previous mapping approach to listed form in line with style guide *)
+			(* Note the options come out mapthread style - list of associations *)
+			{resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions} = Module[
+				{resolverOutput},
+
+				(* Resolve the options *)
+				(* This returns in a different format to an experiment function resolver *)
+				(* Options need to be passed in in mapthread style format *)
+				resolverOutput = optionResolverFunction[
+					myType,
+					listedInputs,
+					SafeOptions[myFunction, #] & /@ Transpose[{Sequence @@ expandedOptionsWithName}](* Safe options *),
+					Transpose[{Sequence @@ expandedOptionsWithName}](* User specified options *)
+				];
+
+				(* Return the required information *)
+				Lookup[resolverOutput, {Result, InvalidInputs, InvalidOptions}]
+			];
+
+			(* Collapse and filter the resolved options *)
+			collapsedResolvedOptions = CollapseIndexMatchedOptions[
+				myFunction,
+				RemoveHiddenOptions[
+					UploadSampleModel,
+					Replace[Merge[resolvedOptions, Identity], Association -> List, {1}, Heads -> True]
+				],
+				Ignore -> listedOptions,
+				Messages -> False
+			];
+
+
+			(* Generate the upload packets from the resolved options *)
+			uploadPackets = Module[
+				{appendToFieldsQ, initialChangePackets, fullChangePackets},
+
+				(* Check if we're appending to fields (rather than replacing the whole contents *)
+				appendToFieldsQ = Lookup[safeOptionsWithCache, Append, False];
+
+				(* Convert resolved options into change packets *)
+				initialChangePackets = MapThread[
+					With[{objectPacket = Experiment`Private`fetchPacketFromCache[#1, Lookup[safeOptionsWithCache, Cache]]},
+						If[MatchQ[objectPacket, PacketP[]],
+							(* If modifying an existing object, feed in the packet for the existing object *)
+							generateChangePacket[myType, #2, appendToFieldsQ, ExistingPacket -> objectPacket],
+
+							(* Otherwise, just pass in the resolved options *)
+							generateChangePacket[myType, #2, appendToFieldsQ]
+						]
+					] &,
+					{First[expandedInputs], resolvedOptions}
+				];
+
+				(* Create a new object reference for the object, or sub in the existing one if modifying an existing object *)
+				fullChangePackets = MapThread[
+					If[MatchQ[#1, ObjectP[myType]],
+						Append[#2, Object -> Download[#1, Object]],
+						Append[#2, Object -> CreateID[myType]]
+					] &,
+					{First[expandedInputs], initialChangePackets}
+				]
+			];
+
+
+			(* Now create upload packets for any auxilliary changes, if needed *)
+			(* The default function returns an empty list *)
+			auxilliaryPackets = auxPacketsFunction[myType, listedInputs, listedOptionsWithCache, resolvedOptions];
+
+
+			(* Perform error checking using VOQ system *)
+			(* VOQ test failures will generate messages themselves directly *)
+			{voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions} = Module[
+				{pseudoObjectPackets, pseudoObjectPacketsWithoutRuleDelayeds, voqTestLists, voqResults, invalidOptions, invalidInputs},
+
+				(* Convert the upload packets into packets that look like a real object, such as removing Append/Replace *)
+				(* The new packet includes all fields including those with Null/{} value that were excluded from the change packet. *)
+				(* If we're modifying an existing object, we merge that packet with our change packet *)
+				pseudoObjectPackets = MapThread[
+					Function[{inp, inpPack},
+						With[{objectPacket = Experiment`Private`fetchPacketFromCache[inp, Lookup[listedOptionsWithCache, Cache]]},
+							If[MatchQ[objectPacket, PacketP[]],
+								stripChangePacket[Append[inpPack, Type -> myType], ExistingPacket -> objectPacket],
+								stripChangePacket[Append[inpPack, Type -> myType]]
+							]
+						]
+					],
+					{listedInputs, uploadPackets}
+				];
+
+				(* Remove rule delayeds from the packet *)
+				pseudoObjectPacketsWithoutRuleDelayeds = Module[
+					{ruleLists, ruleListsWithoutRuleDelayeds},
+
+					(* Convert the associations into lists of rules, as we can't filter by rule type in an association *)
+					ruleLists = Replace[pseudoObjectPackets, Association -> List, {2}, Heads -> True];
+
+					(* Remove the rule delayeds *)
+					ruleListsWithoutRuleDelayeds = DeleteCases[ruleLists, _RuleDelayed, {2}];
+
+					(* Convert back into associations and return *)
+					Association @@@ ruleListsWithoutRuleDelayeds
+				];
+
+				(* Get the tests for each input *)
+				voqTestLists = ValidObjectQ`Private`testsForPacket /@ pseudoObjectPacketsWithoutRuleDelayeds;
+
+				(* Run the VOQ tests for each input *)
+				{voqResults, invalidInputs, invalidOptions} = Module[
+					{
+						testEvaluationData, testMessageData, passingQs, messagesQs, messageRulesGrouped, invalidOptionMap,
+						invalidOptions, messageRulesWithoutInvalidInput, messageRulesWithoutRequiredOptions
+					},
+
+					(* Run the tests *)
+					(* This actually throws messages directly *)
+					(* The custom error handling is reproduced from the previous code - it prevents the messages being thrown multiple times in the map *)
+					(* so they can be combined later. But it's rather nasty redefining Message and can lead to weird side effects when anything *)
+					(* within the error handling block is relying on what a message is (such as Check) *)
+					(* But it does hide the mapped messages from Command Center when it calls the whole upload function wrapped in EvaluationData *)
+					{testEvaluationData, testMessageData} = Internal`InheritedBlock[{Message, $InMsg = False},
+						Module[{voqMessageList, evaluationData},
+
+							(* Deprotect Message so that we can modify the downvalues. Ouch *)
+							Unprotect[Message];
+
+							(* Actually run the voq tests for each of the upload packets *)
+							{evaluationData, voqMessageList} = Transpose[Block[
+								{ECL`$UnitTestMessages = True},
+								Module[{messageList, evaluationOutput},
+
+									(* Create a list to store details about the messages in *)
+									messageList = {};
+
+									(* Set a conditional downvalue for the Message function, directing the information to our message list *)
+									(* Record the message if it has an Error:: or Warning:: head. *)
+									Message[msg_, vars___] /; !$InMsg := Block[{$InMsg = True},
+										If[MatchQ[HoldForm[msg], HoldForm[MessageName[Error | Warning, _]]],
+
+											(* If it's an error or warning, capture it and don't display *)
+											AppendTo[messageList, {HoldForm[msg], vars}];
+
+											(* If it's a different type of message, throw it as normal *)
+											Message[msg, vars]
+										]
+									];
+
+									(* Run the tests. Quiet other messages but we'll still capture our messages of interest *)
+									evaluationOutput = Quiet[EvaluationData[RunUnitTest[<|"Function" -> #|>, OutputFormat -> SingleBoolean, Verbose -> False]]];
+
+									(* Return the output and details of the messages thrown *)
+									{evaluationOutput, messageList}
+								]& /@ voqTestLists
+							]];
+
+							(* Return the evaluation data and the list of messages thrown *)
+							{
+								evaluationData,
+								voqMessageList
+							}
 						]
 					];
 
-					(* Return all objects of our type. *)
-					filteredObjects=DeleteDuplicates[Cases[allObjects, ObjectP[myType]]];
+					(* Combine the captured messages so that they become listable and avoid duplicated messages *)
+					(* i.e. rather than "Input A is invalid" and "Input B is invalid" we say "Inputs A and B are invalid" *)
 
-					(* If we only have one filtered object, unlist it. *)
-					If[Length[filteredObjects] == 1,
-						First[filteredObjects],
-						filteredObjects
+					(* Build a map of messages and which inputs they were thrown for. Group together our message rules. *)
+					messageRulesGrouped = Module[
+						{messageRules},
+
+						messageRules = Flatten@Map[
+							Function[{inputMessageList},
+								Function[{inputMessage},
+									ToString[First[inputMessage]] -> Rest[inputMessage]
+								] /@ inputMessageList
+							],
+							testMessageData
+						];
+
+						Merge[
+							messageRules,
+							Transpose
+						]
+					];
+
+					(* Lookup the map from invalid option error message type to the list of invalid options that triggered it *)
+					(* e.g. <|"Error::NameIsNotPartOfSynonyms" -> {Name, Synonyms}|> *)
+					invalidOptionMap = lookupInvalidOptionMap[myType];
+
+					(* Get the options that are invalid. *)
+					invalidOptions = Cases[DeleteDuplicates[Flatten[Function[{messageName},
+						(* If we're dealing with "Error::RequiredOptions", only count the options that are Null. *)
+						If[MatchQ[messageName, "Error::RequiredOptions"],
+							(* Only count the ones that are Null. *)
+							Module[{allPossibleOptions},
+								allPossibleOptions = Lookup[invalidOptionMap, messageName];
+
+								(* We may have multiple Outputs requested from our result, so Flatten first and pull out the rules to get the options. *)
+								(
+									If[MemberQ[Lookup[Cases[Flatten[resolvedOptions], _Rule], #, Null], Null],
+										#,
+										Nothing
+									]
+										&) /@ allPossibleOptions
+							],
+							(* ELSE: Just lookup like normal. *)
+							Lookup[invalidOptionMap, messageName, Null]
+						]
+					] /@ Keys[messageRulesGrouped]]], Except[_String | Null]];
+
+					(* Get inputs that are invalid *)
+					invalidInputs = First[Lookup[messageRulesGrouped, "Error::InvalidInput", {{}}]];
+
+					(* Drop the invalid input messages *)
+					messageRulesWithoutInvalidInput = KeyDrop[messageRulesGrouped, "Error::InvalidInput"];
+
+					(* Throw Error::RequiredOptions separately. This is so that we can delete duplicates on the first `1`. *)
+					messageRulesWithoutRequiredOptions = If[KeyExistsQ[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
+						Message[
+							Error::RequiredOptions,
+							(* Flatten all of the options that are required. *)
+							ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[1]]]]],
+
+							(* Also delete duplicates for the inputs. *)
+							ToString[DeleteDuplicates[Flatten[messageRulesWithoutInvalidInput["Error::RequiredOptions"][[2]]]]]
+						];
+						KeyDrop[messageRulesWithoutInvalidInput, "Error::RequiredOptions"],
+						messageRulesWithoutInvalidInput
+					];
+
+					(* Throw the listable versions of the Error and Warning messages. *)
+					(
+						Module[{messageName, messageContents, messageNameHead, messageNameTag},
+							messageName = #[[1]];
+							messageContents = #[[2]];
+
+							(* First, get the message name head and tag.*)
+							messageNameHead = ToExpression[First[StringCases[messageName, x___ ~~ "::" ~~ ___ :> x]]];
+							messageNameTag = First[StringCases[messageName, ___ ~~ "::" ~~ x___ :> x]];
+
+							(* Ignore Warning::UnknownOption since this is quieted in RunUnitTest but we're catching all messages. *)
+							(* Also ignore Error::UnsupportedPolymers *)
+							If[!MatchQ[messageName, "Warning::UnknownOption" | "Error::UnsupportedPolymers"],
+								(* Throw the listable message. *)
+								With[{insertMe1 = messageNameHead, insertMe2 = messageNameTag}, Message[MessageName[insertMe1, insertMe2], Sequence @@ (ToString[DeleteDuplicates[#]]& /@ messageContents)]];
+							];
+
+						] &
+					) /@ Normal[messageRulesWithoutRequiredOptions];
+
+
+
+					(* Did the tests pass? *)
+					passingQs = Lookup[testEvaluationData, "Result"];
+
+					(* Did the tests throw messages? (Either directly, or captured) *)
+					messagesQs = MapThread[
+						!MatchQ[{#1, #2}, {{}, {}}] &,
+						{Lookup[testEvaluationData, "Messages"], testMessageData}
+					];
+
+					(* If VOQ didn't pass but also didn't throw any messages, call again with Verbose -> Failures to display the failures VOQ style *)
+					MapThread[
+						Function[{tests, passingQ, messageQ},
+							If[!passingQ && !messageQ,
+								RunUnitTest[<|"Function" -> tests|>, Verbose -> Failures]
+							]
+						],
+						{voqTestLists, passingQs, messagesQs}
+					];
+
+					(* Return the VOQ results, invalid inputs and options *)
+					{passingQs, invalidInputs, invalidOptions}
+				];
+
+				(* Return the VOQ results and the tests *)
+				{voqResults, Flatten[voqTestLists], invalidInputs, invalidOptions}
+			];
+
+
+			(* Combine the lists of invalid inputs and invalid options *)
+			allInvalidInputs = DeleteDuplicates[Join[resolvedOptionsInvalidInputs, voqInvalidInputs]];
+			allInvalidOptions = Sort[DeleteDuplicates[Join[resolvedOptionsInvalidOptions, voqInvalidOptions]]];
+
+			If[Length[allInvalidInputs] > 0,
+				Message[Error::InvalidInput, ToString[allInvalidInputs]];
+			];
+
+			If[Length[allInvalidOptions] > 0,
+				Message[Error::InvalidOption, ToString[allInvalidOptions]];
+			];
+
+			(* --- Generate rules for each possible Output value ---  *)
+			(* Preview  *)
+			previewRule = Preview -> Null;
+
+			(* Options *)
+			optionsRule = Options -> If[MemberQ[output, Options],
+				collapsedResolvedOptions,
+				Null
+			];
+
+			(* Tests *)
+			testsRule = Tests -> If[MemberQ[output, Tests],
+				Join[safeOptionTests, validLengthTests, voqTests],
+				Null
+			];
+
+			(* Result *)
+			resultRule = Result -> If[MemberQ[output, Result],
+				Module[
+					{allUploadPackets, uploadResult},
+
+					(* If we failed to resolve options, return Null *)
+					If[Or[Length[allInvalidInputs] > 0, Length[allInvalidOptions] > 0],
+						Return[Null, Module]
+					];
+
+					(* Otherwise combine all the upload packets *)
+					allUploadPackets = Flatten[{uploadPackets, auxilliaryPackets}];
+
+					(* If not uploading, return the packets *)
+					If[!TrueQ[Lookup[safeOptions, Upload]],
+						Return[allUploadPackets, Module]
+					];
+
+					(* Perform the upload *)
+					uploadResult = Upload[allUploadPackets];
+
+					(* If upload was successful, return the list of core objects created/modified. Otherwise return Null *)
+					If[MatchQ[uploadResult, {ObjectReferenceP[]...}],
+						Cases[uploadResult, ObjectP[myType]],
+						Null
 					]
 				],
-				(* ELSE: Just return our packets. *)
-				packetsToUpload
-			],
-			Null
+
+				Null
+			];
+
+			(* return the output as requested *)
+			outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
 		];
 
-		(* Return the output in the specification wanted. *)
-		outputSpecification /. (outputRules /. (Result -> _) -> (resultRule))
-	];
-
-	(* Install the singleton overload. *)
-	singletonOverloadSymbol[myInput:singletonFunctionPattern, myOptions:OptionsPattern[]]:=Module[
-		{listedOptions, safeOptions, safeOptionTests, validLengths, validLengthTests, outputSpecification, output, gatherTests,
-			resolvedOptions, optionswithNFPA, optionsWithExtinctionCoefficient, optionsWithOpticalCompositions, optionsWithCompositions, changePacket, nonChangePacket,
-			packetTests, passedQ, evaluationData, optionsRule, previewRule, testsRule, resultRule, fullChangePacket, packetWithoutRuleDelayed,
-			additionalChangePackets, appendInput},
-
-		(* Make sure we're working with a list of options *)
-		listedOptions=ToList[myOptions];
-
-		(* Call SafeOptions to make sure all options match pattern *)
-		{safeOptions, safeOptionTests}=SafeOptions[myFunction, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False];
-
-		(* Call ValidInputLengthsQ to make sure all options are the right length *)
-		{validLengths, validLengthTests}=ValidInputLengthsQ[myFunction, {myInput}, listedOptions, Output -> {Result, Tests}];
-
-		(* Determine the requested return value from the function *)
-		outputSpecification=Lookup[safeOptions, Output];
-		output=ToList[outputSpecification];
-
-		(* If the specified options don't match their patterns return $Failed *)
-		If[MatchQ[safeOptions, $Failed],
-			Return[Lookup[listedOptions, Output] /. {
-				Result -> $Failed,
-				Tests -> safeOptionTests,
-				Options -> $Failed,
-				Preview -> Null
-			}]
+		(* Install the singleton overload. *)
+		myFunction[myInput : singletonFunctionPattern, myOptions : OptionsPattern[myFunction]] := Replace[
+			myFunction[{myInput}, myOptions],
+			(* Remove the listedness of any molecule in the Result *)
+			x : {ObjectReferenceP[myType]} :> First[x]
 		];
 
-		(* If option lengths are invalid return $Failed *)
-		If[!validLengths,
-			Return[outputSpecification /. {
-				Result -> $Failed,
-				Tests -> Join[safeOptionTests, validLengthTests],
-				Options -> $Failed,
-				Preview -> Null
-			}]
-		];
-
-		(* Determine if we should keep a running list of tests *)
-		gatherTests=MemberQ[output, Tests];
-
-		(* Get our resolved options. *)
-		resolvedOptions=myOptionResolver[myType, myInput, safeOptions, listedOptions];
-
-		(* --- Generate our formatted upload packet --- *)
-
-		(* Change any options that aren't in the same format as the field definition. *)
-
-		(* Convert our NFPA option into a valid NFPAP. *)
-		(* no idea where Special->Null comes from, somewhere in the option resolver, but did not find the root cause *)
-		optionswithNFPA=Which[
-			MatchQ[Lookup[resolvedOptions, NFPA, Null]/.(Rule[Special, Null] -> Rule[Special, {}]), NFPAP],
-			ReplaceRule[
-				resolvedOptions,
-				NFPA -> {
-					Health -> Lookup[Lookup[resolvedOptions, NFPA], Health],
-					Flammability -> Lookup[Lookup[resolvedOptions, NFPA], Flammability],
-					Reactivity -> Lookup[Lookup[resolvedOptions, NFPA], Reactivity],
-					Special -> ToList[Lookup[Lookup[resolvedOptions, NFPA], Special]]
-				}],
-			MatchQ[Lookup[resolvedOptions, NFPA, Null],{
-				0 | 1 | 2 | 3 | 4,
-				0 | 1 | 2 | 3 | 4,
-				0 | 1 | 2 | 3 | 4,
-				{(Oxidizer | WaterReactive | Aspyxiant | Corrosive | Acid | Bio |
-					Poisonous | Radioactive | Cryogenic | Null) ...}|Null
-			}],
-			ReplaceRule[
-				resolvedOptions,
-				NFPA -> {
-					Health -> Lookup[resolvedOptions, NFPA][[1]],
-					Flammability -> Lookup[resolvedOptions, NFPA][[2]],
-					Reactivity -> Lookup[resolvedOptions, NFPA][[3]],
-					Special -> ToList[Lookup[resolvedOptions, NFPA][[4]]]
-				}],
-			True,resolvedOptions
-		];
-
-		(* Convert our named multiple field - ExtinctionCoefficient - into its correct format. *)
-		optionsWithExtinctionCoefficient=(
-			If[SameQ[ExtinctionCoefficients, #[[1]]] && !MatchQ[#[[2]], Null | _Association],
-				(* Right now, our extinction coefficient option is in the form {{myWavelength,myExtinctionCoefficient. *)
-				(* We need the format to be {<|Wavelength->myWavelength,ExtinctionCoefficient->myExtinctionCoefficient|>..} *)
-				#[[1]] -> Function[{myExtinctionCoefficient}, <|Wavelength -> myExtinctionCoefficient[[1]], ExtinctionCoefficient -> myExtinctionCoefficient[[2]]|>] /@ #[[2]],
-				#
-			]
-				&) /@ optionswithNFPA;
-
-		(*Transfer the OpticalComposition to the Link[] that can be uploaded to Model[Sample] packet*)
-		optionsWithOpticalCompositions=(
-			If[MatchQ[#[[1]], OpticalComposition] && !MatchQ[#[[2]], Null | {Null}],
-				#[[1]] -> Function[{myEntry}, If[MatchQ[myEntry[[2]], Null], myEntry, {myEntry[[1]], Link[myEntry[[2]]]}]] /@ #[[2]],
-				#[[1]] -> If[MatchQ[#[[2]], {Null}],
-					Null,
-					#[[2]]
-				]
-			]&) /@ optionsWithExtinctionCoefficient;
-
-		(* Convert our indexed multiple field - Solvent and Composition - into its correct format. *)
-		optionsWithCompositions=(
-			If[MatchQ[#[[1]], Composition] && !MatchQ[#[[2]], Null | {Null}],
-				#[[1]] -> Function[{myEntry}, If[MatchQ[myEntry[[2]], Null], myEntry, {myEntry[[1]], Link[myEntry[[2]]]}]] /@ #[[2]],
-				#[[1]] -> If[MatchQ[#[[2]], {Null}],
-					Null,
-					#[[2]]
-				]
-			]
-				&) /@ optionsWithOpticalCompositions;
-
-		(*Extract the append option and use as an input (so it is not deleted for not being included in the fields list)*)
-		appendInput=If[
-			(*If the user provided an append option (key is present), use that*)
-			KeyExistsQ[safeOptions, Append],
-			Lookup[safeOptions, Append],
-			(*If no option was provided, default to False (to replace list as usual)*)
-			False];
-
-		(* Convert our options into a change packet. *)
-		changePacket=With[{objectPacket=Experiment`Private`fetchPacketFromCache[myInput, Lookup[ToList[myOptions], Cache]]},
-			If[MatchQ[objectPacket, PacketP[]],
-				generateChangePacket[myType, optionsWithCompositions, appendInput, ExistingPacket -> objectPacket],
-				generateChangePacket[myType, optionsWithCompositions, appendInput]
-			]
-		];
-
-		(* Overwrite the Object key if our object already exists. *)
-		fullChangePacket=If[MatchQ[myInput, ObjectP[myType]],
-			Append[changePacket, Object -> Download[myInput, Object]],
-			Append[changePacket, Object -> CreateID[myType]]
-		];
-
-		(* If we are inside of UploadSampleModel, also update any Object[Sample]s that are still linked to the Model[Sample]. *)
-		additionalChangePackets=If[MatchQ[myFunction, UploadSampleModel] && MatchQ[myInput, ObjectP[myType]],
-			Module[{allSamples, allSamplePackets},
-				(* Get all of the Object[Sample]s still linked to our Model[Sample] that we can modify. *)
-				allSamples=Search[Object[Sample], Status != Discarded && Model == myInput];
-
-				(* Download our sample packets. *)
-				allSamplePackets=Download[allSamples];
-
-				(* Append the object IDs to it. *)
-				(* NOTE: Also never include the Name option since we don't want to change the names of Object[Samples]. *)
-				(
-					Append[generateChangePacket[Object[Sample], Cases[optionsWithCompositions, Verbatim[Rule][Except[Name], _]], ExistingPacket -> #], Object -> Lookup[#, Object]]
-						&) /@ allSamplePackets
-			],
-			{}
-		];
-
-		(* Strip off our change heads (Replace/Append) so that we can pretend that this is a real object so that we can call VOQ on it. *)
-		(* This includes all fields to the packet as Null/{} if they weren't included in the change packet. *)
-		(* If we had a previously existing packet, we merge that packet with our packet. *)
-		nonChangePacket=With[{objectPacket=Experiment`Private`fetchPacketFromCache[myInput, Lookup[ToList[myOptions], Cache]]},
-			If[MatchQ[objectPacket, PacketP[]],
-				stripChangePacket[Append[fullChangePacket, Type -> myType], ExistingPacket -> objectPacket],
-				stripChangePacket[Append[fullChangePacket, Type -> myType]]
-			]
-		];
-
-		(* Get rid of any delayed rules so that we don't double upload. *)
-		packetWithoutRuleDelayed=Association[Cases[Normal[nonChangePacket], Except[_RuleDelayed]]];
-
-		(* Call VOQ, catch the messages that are thrown so that we know the corresponding InvalidOptions message to throw. *)
-		packetTests=ValidObjectQ`Private`testsForPacket[packetWithoutRuleDelayed];
-
-		(* VOQ passes if we didn't have any messages thrown. *)
-		evaluationData=EvaluationData[
-			Block[{ECL`$UnitTestMessages=True},
-				RunUnitTest[<|"Function" -> packetTests|>, OutputFormat -> SingleBoolean, Verbose -> False]
-			]
-		];
-		passedQ=Lookup[evaluationData, "Result"];
-
-		(* If we didn't pass but also didn't throw any messages, call again with Verbose->Failures. *)
-		If[!MatchQ[passedQ, True] && Length[Lookup[evaluationData, "Messages"]] == 0,
-			RunUnitTest[<|"Function" -> packetTests|>, Verbose -> Failures],
-			Null
-		];
-
-		(* --- Generate rules for each possible Output value ---  *)
-		(* Prepare the Options result if we were asked to do so *)
-		optionsRule=Options -> If[MemberQ[output, Options],
-			RemoveHiddenOptions[myFunction, resolvedOptions],
-			Null
-		];
-
-		(* Prepare the Preview result if we were asked to do so *)
-		(* There is no preview for this function. *)
-		previewRule=Preview -> Null;
-
-		(* Prepare the Test result if we were asked to do so *)
-		testsRule=Tests -> If[MemberQ[output, Tests],
-			(* Join all exisiting tests generated by helper functions with any additional tests *)
-			Flatten[Join[safeOptionTests, validLengthTests, packetTests]],
-			Null
-		];
-
-		(* Prepare the standard result if we were asked for it and we can safely do so *)
-		resultRule=Result -> If[MemberQ[output, Result] && TrueQ[passedQ],
-			(* We never upload in the singleton overload. This is so that we can bundle in the listable overload. *)
-			Append[additionalChangePackets, fullChangePacket],
-			Null
-		];
-
-		outputSpecification /. {previewRule, optionsRule, testsRule, resultRule}
-	];
-
+	]
 ];
 
 
 (* ::Subsubsection::Closed:: *)
 (*resolveDefaultUploadFunctionOptions*)
 
+(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+resolveDefaultUploadFunctionOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
+	{result},
+
+	(* Map over the singleton function - this is legacy code *)
+	result = MapThread[resolveDefaultUploadFunctionOptions[myType, #1, #2, #3] &, {myInput, myOptions, rawOptions}];
+
+	(* Return the output in the expected format *)
+	<|
+		Result -> result,
+		InvalidInputs -> {},
+		InvalidOptions -> {}
+	|>
+];
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
@@ -3701,7 +6543,7 @@ resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptio
 
 
 	(* Make sure that if we have a Name and Synonyms field  that Name is apart of the Synonyms list. *)
-	myFinalizedOptions=If[MatchQ[Lookup[myOptionsWithName, Synonyms], Null] || (!MemberQ[Lookup[myOptionsWithName, Synonyms], Lookup[myOptionsWithName, Name]] && MatchQ[Lookup[myOptionsWithName, Name], _String]),
+	myFinalizedOptions=If[MatchQ[Lookup[myOptionsWithName, Synonyms], Null] || (KeyExistsQ[myOptionsWithName, Synonyms] && !MemberQ[Lookup[myOptionsWithName, Synonyms], Lookup[myOptionsWithName, Name]] && MatchQ[Lookup[myOptionsWithName, Name], _String]),
 		Append[myOptionsWithName, Synonyms -> (Append[Lookup[myOptionsWithName, Synonyms] /. Null -> {}, Lookup[myOptionsWithName, Name]])],
 		myOptionsWithName
 	];
@@ -3711,7 +6553,8 @@ resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptio
 ];
 
 (* Helper function to resolve the options to our function. *)
-(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+
+(* Core overload *)
 resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=Module[
 	{objectPacket, fields, resolvedOptions},
 
@@ -3759,27 +6602,41 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 	Normal[resolvedOptions]
 ];
 
+(* ::Subsubsection::Closed:: *)
+(* generateDefaultUploadFunctionAuxilliaryPackets *)
+
+(* Function simply returns an empty list *)
+(* This makes implementation easier rather than conditionally writing the main function definition *)
+generateDefaultUploadFunctionAuxilliaryPackets[___] := {};
+
 
 (* ::Subsection::Closed:: *)
 (* combineEHSFields *)
 
 (* This overload doesn't take in any historical amounts to determine whether it's gone over the required threshold. *)
 (* So, if you add one drop of acid into the solution, it will become Acid->True. This overload is only used for option *)
-(* resolving in UploadSampleModel to be extra safe since we want the user to tell us if things are okay. *)
+(* resolving in UploadSampleModel/UploadSample/UploadSampleTransfer/ExperimentTransfer to be extra safe since we want the user to tell us if things are okay. *)
 combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 	(* Note: If an EHS field gets added to the Object, it must be added to this merger function: *)
 	ehsField -> Switch[ehsField,
-		(* BiosafetyLevel has its own hiearchy: *)
+		(* State has its own hierarchy: Liquid overrule Solid, then Gas if present. *)
 		State,
 		FirstCase[{Liquid, Solid, Gas, Null}, sourceEHSValue | destinationEHSValue, Null],
+		(* CellType has its own hierarchy: Mammalian>Yeast>Bacteria, the same logic in UploadSampleModel *)
+		CellType,
+		FirstCase[{Mammalian, Yeast, Bacterial}, sourceEHSValue | destinationEHSValue, Null],
 
-		(* BiosafetyLevel has its own hiearchy: *)
+		(* BiosafetyLevel has its own hierarchy: *)
 		BiosafetyLevel,
 		FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, sourceEHSValue | destinationEHSValue, Null],
 
-		(* PipettingMethod has its own hiearchy: *)
+		(* double gloved doesn't care about % and just inherits any True if present *)
+		DoubleGloveRequired,
+		Or@@Map[MatchQ[#,True]&,{sourceEHSValue,destinationEHSValue}],
+
+		(* PipettingMethod has its own hierarchy: *)
 		PipettingMethod,
-		(* First try to pick out of the hierachy, from most to least conservative: *)
+		(* First try to pick out of the hierarchy, from most to least conservative: *)
 		FirstCase[
 			{
 				Model[Method, Pipetting, "id:AEqRl9KqjO4R"], (*Model[Method, Pipetting, "Organic High Viscosity"]*)
@@ -3792,7 +6649,7 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 				Model[Method, Pipetting, "id:wqW9BP7WbvjG"](*Model[Method, Pipetting, "Aqueous Low Volume"]*)
 			},
 			ObjectP[sourceEHSValue] | ObjectP[destinationEHSValue], (* Note: ObjectP may use Download[] to check an ID vs a Name *)
-			(* If we aren't in the ECL defined hiearchy of pipetting methods (we have a custom method), use our custom method. *)
+			(* If we aren't in the ECL defined hierarchy of pipetting methods (we have a custom method), use our custom method. *)
 			FirstCase[{sourceEHSValue, destinationEHSValue}, ObjectP[Model[Method, Pipetting]], Null]
 		],
 
@@ -3804,12 +6661,12 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 			(* If we have more than one, get rid of None: *)
 			If[Length[combinedMaterials] > 1,
 				Cases[combinedMaterials, Except[None]],
-				combinedMaterials /. {$Failed -> None}
+				combinedMaterials
 			]
 		],
 
 		(* Fields that False wins out over True: *)
-		Sterile | DrainDisposal,
+		Sterile | DrainDisposal | Anhydrous | AsepticHandling,
 		FirstCase[{False, Null, True}, sourceEHSValue | destinationEHSValue, Null],
 
 		(* Fields that True wins out over False|Null: *)
@@ -3824,7 +6681,7 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 			Min[{sourceEHSValue, destinationEHSValue}]
 		],
 
-		(* Fields that get Nulled if there are competiting values: *)
+		(* Fields that get Nulled if there are competing values: *)
 		MSDSFile | DOTHazardClass,
 		(* If we have a Null, go with the value: *)
 		If[MemberQ[{sourceEHSValue, destinationEHSValue}, Null | $Failed],
@@ -3874,7 +6731,7 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 	];
 
 	(* get the composition with packets fetched from the cache *)
-	(* in an ideal world ObjectP[packet] would actually work, but it doesn't so sucks to suck I guess *)
+	(* in an ideal world ObjectP[packet] would actually work, but it doesn't *)
 	(* also if we have a Null in the composition then just remove that from this guy *)
 	compositionPackets=Map[
 		Which[
@@ -4017,20 +6874,24 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 					Null
 				],
 
-				(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample.*)
+				(* If we have any bit of Mammalian, it's Mammalian if we have any bit of a Mammalian sample. Otherwise, if we have microbial, it's Microbial. *)
 				CellType,
 				Which[
-					MemberQ[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
-						FirstCase[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
 					MemberQ[ehsFieldPercentage[[All, 1]], NonMicrobialCellTypeP],
 						FirstCase[ehsFieldPercentage[[All, 1]], NonMicrobialCellTypeP],
+					MemberQ[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
+						FirstCase[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
 					True,
 						Null
 				],
 
-				(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all:*)
+				(* BiosafetyLevel is just a hierarchy and doesn't care about percentages at all:*)
 				BiosafetyLevel,
 				FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (ehsFieldPercentage[[All, 1]]), Null],
+
+				(* double gloved doesn't care about % and just inherits any True if present *)
+				DoubleGloveRequired,
+				FirstCase[ehsFieldPercentage[[All, 1]], True, Null],
 
 				(* PipettingMethod will take the pipetting method of the largest percentage:*)
 				PipettingMethod,
@@ -4038,17 +6899,25 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 
 				(* Materials are added to the larger list if they comprise more than 5%:*)
 				IncompatibleMaterials,
-				DeleteDuplicates[Cases[Flatten[Cases[ehsFieldPercentage, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-				
-				(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-				Sterile|DrainDisposal|Anhydrous,Which[
-					MemberQ[newDestinationEHSFieldPercentages,False->_],False,
-					MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
+				Module[{combinedMaterials},
+					combinedMaterials=DeleteDuplicates[Cases[Flatten[Cases[ehsFieldPercentage, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+					(* If we have more than one, get rid of None: *)
+					If[Length[combinedMaterials] > 1,
+						Cases[combinedMaterials, Except[None]],
+						combinedMaterials
+					]
+				],
+
+				(* Fields that False wins out over True: *)
+				Sterile|DrainDisposal|Anhydrous|AsepticHandling,
+				Which[
+					MemberQ[ehsFieldPercentage,False->_],False,
+					MemberQ[ehsFieldPercentage,Null->_],Null,
 					True,True
 				],
 
 				(* A drop of True will make it True:*)
-				Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+				Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 				FirstCase[{True, False, Null}, Alternatives @@ (ehsFieldPercentage[[All, 1]]), Null],
 
 				(* Cautious 5% Threshold to make it True.*)
@@ -4072,14 +6941,14 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 					Min[Cases[ehsFieldPercentage[[All, 1]], _?DateObjectQ]]
 				],
 
-				(* Fields that get Nulled if there are competiting values:*)
-				MSDSFile | DOTHazardClass | TransportWarmed | TransportChilled,
+				(* Fields that get Nulled if there are competing values:*)
+				MSDSFile | DOTHazardClass | TransportTemperature,
 				If[Length[ehsFieldPercentage] > 1,
 					Null,
 					FirstOrDefault[FirstOrDefault[ehsFieldPercentage]]
 				],
 
-				(* Fields that get Nulled if there are competiting values:*)
+				(* Fields that get Nulled if there are competing values:*)
 				NFPA,
 				If[AnyTrue[Length[#] & /@ Values[ehsFieldPercentage], MatchQ[GreaterP[1]]],
 					Null,
@@ -4203,7 +7072,7 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 
 	(* Based on these accumulated percentages, figure out the new value of the destination's EHS field. *)
 	newDestinationEHSValue=Switch[ehsField,
-		(* Solid and Liquid overrule Gas if present. Assume that the sample is liquid if there is more than 10% Liquid in the sample. *)
+		(*  State has its own hierarchy: Liquid overrule Solid, then Gas if present. Assume that the sample is liquid if there is more than 10% Liquid in the sample. *)
 		State,
 		Which[
 			And[
@@ -4252,20 +7121,24 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 			Null
 		],
 
-		(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample. *)
+		(* If we have any bit of Mammalian sample, it's NonMicrobial. *)
 		CellType,
 		Which[
-			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
-				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
 				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
+			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
+				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 			True,
 				Null
 		],
 
-		(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all: *)
+		(* BiosafetyLevel is just a hierarchy and doesn't care about percentages at all: *)
 		BiosafetyLevel,
 		FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
+
+		(* double gloved doesn't care about % and just inherits any True if present *)
+		DoubleGloveRequired,
+		FirstCase[newDestinationEHSFieldPercentages[[All, 1]], True, Null],
 
 		(* PipettingMethod will take the pipetting method of the largest percentage: *)
 		PipettingMethod,
@@ -4273,17 +7146,25 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 
 		(* Materials are added to the larger list if they comprise more than 5%: *)
 		IncompatibleMaterials,
-		DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-		
-		(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-		Sterile|DrainDisposal|Anhydrous,Which[
+		Module[{combinedMaterials},
+			combinedMaterials = DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+			(* If we have more than one, get rid of None: *)
+			If[Length[combinedMaterials] > 1,
+				Cases[combinedMaterials, Except[None]],
+				combinedMaterials
+			]
+		],
+
+		(* Fields that False wins out over True: *)
+		Sterile|DrainDisposal|Anhydrous| AsepticHandling,
+		Which[
 			MemberQ[newDestinationEHSFieldPercentages,False->_],False,
 			MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
 			True,True
 		],
 
 		(* A drop of True will make it True: *)
-		Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+		Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 		FirstCase[{True, False, Null}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
 
 		(* Cautious 5% Threshold to make it True. *)
@@ -4307,8 +7188,8 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 			Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 		],
 
-		(* Fields that get Nulled if there are competiting values: *)
-		MSDSFile | DOTHazardClass | NFPA | TransportWarmed | TransportChilled,
+		(* Fields that get Nulled if there are competing values: *)
+		MSDSFile | DOTHazardClass | NFPA | TransportTemperature,
 		If[Length[newDestinationEHSFieldPercentages] > 1,
 			Null,
 			FirstOrDefault[FirstOrDefault[newDestinationEHSFieldPercentages]]
@@ -4396,9 +7277,28 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 		Map[
 			Function[{field},
 				Module[{sourceEHSValue, destinationEHSValue, currentDestinationEHSFieldPercentages, newDestinationEHSFieldPercentages, newDestinationEHSValue},
-					(* Get the existing value of the EHS Field from our source and destination packet.*)
-					sourceEHSValue=Lookup[sourcePacket, field];
-					destinationEHSValue=Lookup[destinationPacket, field];
+					(* Get the existing value of the EHS Field from our source and destination packet. *)
+					(* NOTE: If SampleHandling is Null, but the sample/model is a liquid, will use Liquid handling. Otherwise adding a liquid to a solid will result in solid handling. *)
+					sourceEHSValue = If[
+						And[
+							MatchQ[Lookup[sourcePacket, Object], ObjectP[{Object[Sample], Model[Sample]}]],
+							MatchQ[field, SampleHandling],
+							MatchQ[Lookup[sourcePacket, field], Null],
+							MatchQ[Lookup[sourcePacket, State], Liquid]
+						],
+						Liquid,
+						Lookup[sourcePacket, field]
+					];
+					destinationEHSValue = If[
+						And[
+							MatchQ[Lookup[destinationPacket, Object], ObjectP[{Object[Sample], Model[Sample]}]],
+							MatchQ[field, SampleHandling],
+							MatchQ[Lookup[destinationPacket, field], Null],
+							MatchQ[Lookup[destinationPacket, State], Liquid]
+						],
+						Liquid,
+						Lookup[destinationPacket, field]
+					];
 
 
 					(* If we don't have any destination percentages, assume that the percentage of the field value is 100%,*)
@@ -4495,20 +7395,24 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 							Null
 						],
 
-						(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample.*)
+						(* If we have any bit of NonMicrobial sample, it's NonMicrobial. *)
 						CellType,
 						Which[
-							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
-								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
 								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
+							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
+								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 							True,
 								Null
 						],
 
-						(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all:*)
+						(* BiosafetyLevel is just a hierarchyand doesn't care about percentages at all:*)
 						BiosafetyLevel,
 						FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
+
+						(* double gloved doesn't care about % and just inherits any True if present *)
+						DoubleGloveRequired,
+						FirstCase[newDestinationEHSFieldPercentages[[All, 1]], True, Null],
 
 						(* PipettingMethod will take the pipetting method of the largest percentage:*)
 						PipettingMethod,
@@ -4516,17 +7420,25 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 
 						(* Materials are added to the larger list if they comprise more than 5%:*)
 						IncompatibleMaterials,
-						DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-						
+						Module[{combinedMaterials},
+							combinedMaterials=DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+							(* If we have more than one, get rid of None: *)
+							If[Length[combinedMaterials] > 1,
+								Cases[combinedMaterials, Except[None]],
+								combinedMaterials
+							]
+						],
+
 						(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-						Sterile|DrainDisposal|Anhydrous,Which[
+						Sterile|DrainDisposal|Anhydrous|AsepticHandling,
+						Which[
 							MemberQ[newDestinationEHSFieldPercentages,False->_],False,
 							MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
 							True,True
 						],
-						
+
 						(* A drop of True will make it True:*)
-						Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+						Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 						FirstCase[{True, False, Null}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
 
 						(* Cautious 5% Threshold to make it True.*)
@@ -4550,8 +7462,8 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 							Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 						],
 
-						(* Fields that get Nulled if there are competiting values:*)
-						MSDSFile | DOTHazardClass | NFPA | TransportWarmed | TransportChilled,
+						(* Fields that get Nulled if there are competing values:*)
+						MSDSFile | DOTHazardClass | NFPA | TransportTemperature,
 						If[Length[newDestinationEHSFieldPercentages] > 1,
 							Null,
 							FirstOrDefault[FirstOrDefault[newDestinationEHSFieldPercentages]]
@@ -4706,7 +7618,7 @@ ValidObjectQMessages[myInput_, newPacket:PacketP[], myOptions_, funcOptions:Opti
 	];
 
 	nonChangePacket=If[MatchQ[originalPacket, PacketP[]],
-		stripChangePacket[Append[fullChangePacket, Type -> myType], ExistingPacket -> originalPacket],
+		stripChangePacket[fullChangePacket, ExistingPacket -> originalPacket],
 		stripChangePacket[Append[fullChangePacket, Type -> myType]]
 	];
 
@@ -4735,3 +7647,215 @@ ValidObjectQMessages[myInput_, newPacket:PacketP[], myOptions_, funcOptions:Opti
 
 (* Authors definition for ExternalUpload`Private`approximateDensity *)
 Authors[ExternalUpload`Private`approximateDensity]:={"dima", "steven", "simon.vu"};
+
+
+(* ::Subsection::Closed:: *)
+(*Test Data*)
+
+(* Response from pubchem for caffeine *)
+
+
+(* Expected data downloaded from pubchem for caffeine *)
+caffeineData = <|
+	Name -> "Caffeine",
+	MolecularWeight -> 194.19 Gram / Mole,
+	ExactMass -> 194.08037557` Gram / Mole,
+	MolecularFormula -> "C8H10N4O2",
+	Monatomic -> False,
+	StructureFile -> "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/2519/record/SDF/?record_type=2d&response_type=display",
+	StructureImageFile -> "https://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi?cid=2519&width=500&height=500",
+	CAS -> "58-08-2",
+	UNII -> "3G6A5W338E",
+	IUPAC -> "1,3,7-trimethylpurine-2,6-dione",
+	InChI -> "InChI=1S/C8H10N4O2/c1-10-4-9-6-5(10)7(13)12(3)8(14)11(6)2/h4H,1-3H3",
+	InChIKey -> "RYYVLZVUVIJVGH-UHFFFAOYSA-N",
+	Synonyms -> {
+		"1,3,7-Trimethylxanthine", "Caffedrine", "Caffeine",
+		"Coffeinum N", "Coffeinum Purrum", "Dexitac", "Durvitan", "No Doz",
+		"Percoffedrinol N", "Percutaf\[EAcute]ine", "Quick Pep", "Quick-Pep",
+		"QuickPep", "Vivarin"
+	},
+	State -> Solid,
+	pKa -> {10.4, 14.},
+	LogP -> -0.07,
+	BoilingPoint -> 178 Celsius,
+	VaporPressure -> Null,
+	MeltingPoint -> 237.9 Celsius,
+	Density -> 1.23 Gram / Centimeter^3,
+	Viscosity -> Null,
+	Radioactive -> False,
+	ParticularlyHazardousSubstance -> False,
+	MSDSRequired -> True,
+	DOTHazardClass -> "Class 0",
+	NFPA -> Null,
+	Flammable -> False,
+	Pyrophoric -> False,
+	WaterReactive -> False,
+	Fuming -> False,
+	Ventilated -> False,
+	DrainDisposal -> Null,
+	LightSensitive -> False,
+	Pungent -> False,
+	PubChemID -> 2519,
+	Molecule -> Molecule[
+		{
+			Atom["C", "HydrogenCount" -> 3],
+			Atom["C", "HydrogenCount" -> 3],
+			Atom["C", "HydrogenCount" -> 3],
+			Atom["C", "HydrogenCount" -> 1],
+			"C", "C", "C", "C", "N", "N", "N", "N", "O", "O"
+		},
+		{
+			Bond[{1, 10}, "Single"],
+			Bond[{2, 11}, "Single"],
+			Bond[{3, 12}, "Single"],
+			Bond[{4, 9}, "Aromatic"],
+			Bond[{4, 10}, "Aromatic"],
+			Bond[{5, 6}, "Aromatic"],
+			Bond[{5, 7}, "Aromatic"],
+			Bond[{5, 10}, "Aromatic"],
+			Bond[{6, 9}, "Aromatic"],
+			Bond[{6, 11}, "Aromatic"],
+			Bond[{7, 12}, "Aromatic"],
+			Bond[{7, 13}, "Double"],
+			Bond[{8, 11}, "Aromatic"],
+			Bond[{8, 12}, "Aromatic"],
+			Bond[{8, 14}, "Double"]
+		},
+		{}
+	],
+	Acid -> Null,
+	Base -> Null,
+	IncompatibleMaterials -> {None}
+|>;
+
+(* Expected data downloaded from pubchem for cubane *)
+cubaneData = <|
+	Name -> "Cubane",
+	MolecularWeight -> 104.15 Gram / Mole,
+	ExactMass -> 104.062600255` Gram / Mole,
+	MolecularFormula -> "C8H8",
+	Monatomic -> False,
+	StructureFile -> "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/136090/record/SDF/?record_type=2d&response_type=display",
+	StructureImageFile -> "https://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi?cid=136090&width=500&height=500",
+	CAS -> "277-10-1",
+	UNII -> "Z5HM0Q7DK1",
+	IUPAC -> "cubane",
+	InChI -> "InChI=1S/C8H8/c1-2-5-3(1)7-4(1)6(2)8(5)7/h1-8H",
+	InChIKey -> "TXWRERCHRDBNLG-UHFFFAOYSA-N",
+	Synonyms -> Null,
+	State -> Null,
+	pKa -> Null,
+	LogP -> Null,
+	BoilingPoint -> Null,
+	VaporPressure -> Null,
+	MeltingPoint -> Null,
+	Density -> Null,
+	Viscosity -> Null,
+	Radioactive -> False,
+	ParticularlyHazardousSubstance -> False,
+	MSDSRequired -> False,
+	DOTHazardClass -> Null,
+	NFPA -> Null,
+	Flammable -> Null,
+	Pyrophoric -> Null,
+	WaterReactive -> Null,
+	Fuming -> Null,
+	Ventilated -> Null,
+	DrainDisposal -> Null,
+	LightSensitive -> False,
+	Pungent -> False,
+	PubChemID -> 136090,
+	Molecule -> Molecule[
+		{
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1],
+			Atom["C", "HydrogenCount" -> 1]
+		},
+		{
+			Bond[{1, 2}, "Single"],
+			Bond[{1, 3}, "Single"],
+			Bond[{1, 4}, "Single"],
+			Bond[{2, 5}, "Single"],
+			Bond[{2, 6}, "Single"],
+			Bond[{3, 5}, "Single"],
+			Bond[{3, 7}, "Single"],
+			Bond[{4, 6}, "Single"],
+			Bond[{4, 7}, "Single"],
+			Bond[{5, 8}, "Single"],
+			Bond[{6, 8}, "Single"],
+			Bond[{7, 8}, "Single"]
+		},
+		{}
+	],
+	Acid -> Null,
+	Base -> Null,
+	IncompatibleMaterials -> {None}
+|>;
+
+(* Additional keys if SDS also scraped *)
+caffeineDataSDS = Join[
+	caffeineData,
+	<|
+		MSDSFile -> "All-sds.pdf"
+	|>
+];
+
+cubaneDataSDS = Join[
+	cubaneData,
+	<|
+		MSDSFile -> Null
+	|>
+];
+
+(* Thermo SDS will be scraped from Thermo *)
+caffeineDataThermo = Join[
+	caffeineData,
+	<|
+		MSDSFile -> "thermo-sds.pdf"
+	|>
+];
+
+(* Sigma SDS will be scraped from Sigma *)
+caffeineDataSigma = Join[
+	caffeineData,
+	<|
+		MSDSFile -> "sigma-sds.pdf"
+	|>
+];
+
+
+(* Helper to convert a data association into a matchable pattern *)
+patternify[assoc_Association] := AssociationMatchP[
+	Map[
+		Which[
+			(* Use RangeP for numbers/quantities to allow a slight tolerance *)
+			TrueQ[Or[UnitsQ[#], IntegerQ[#], NumericQ[#]]] && GreaterEqualQ[Unitless[#], 0],
+				RangeP[0.99 * #, 1.01 * #],
+
+			(* Reverse the range for negative values *)
+			TrueQ[Or[UnitsQ[#], IntegerQ[#], NumericQ[#]]],
+				RangeP[1.01 * #, 0.99 * #],
+
+			(* Otherwise simply match the value *)
+			True,
+				#
+		] &,
+		assoc
+	],
+	AllowForeignKeys -> False,
+	RequireAllKeys -> True
+];
+
+(* Patterns *)
+caffeineDataP := patternify[caffeineData];
+caffeineDataSDSP := patternify[caffeineDataSDS];
+caffeineDataThermoP := patternify[caffeineDataThermo];
+caffeineDataSigmaP := patternify[caffeineDataSigma];
+cubaneDataP := patternify[cubaneData];
+cubaneDataSDSP := patternify[cubaneDataSDS];

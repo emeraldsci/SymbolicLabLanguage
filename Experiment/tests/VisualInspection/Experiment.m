@@ -145,14 +145,14 @@ DefineTests[ExperimentVisualInspection,
 		Example[{Options, DestinationWell, "Specify the DestinationWell option:"},
 			options = ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (aliquot true)"<> $SessionUUID], DestinationWell->"A1", Output->Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options},
 			Messages :> {Warning::SampleMustBeMoved}
 		],
 
 		Example[{Options, AliquotContainer, "Specify the AliquotContainer option:"},
 			options = ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (aliquot true)"<> $SessionUUID], AliquotContainer->Model[Container, Vessel, "2ml clear glass wide neck bottle"], Output->Options];
-			Lookup[options, AliquotContainer][[2]],
+			Lookup[options, AliquotContainer][[1]][[2]],
 			ObjectP[Model[Container, Vessel, "2ml clear glass wide neck bottle"]],
 			Variables :> {options},
 			Messages :> {Warning::SampleMustBeMoved}
@@ -186,7 +186,7 @@ DefineTests[ExperimentVisualInspection,
 				Output->Options
 			];
 			Lookup[options, AliquotSampleLabel],
-			"My test sample",
+			{"My test sample"},
 			Variables :> {options},
 			Messages :> {Warning::SampleMustBeMoved}
 		],
@@ -759,23 +759,66 @@ DefineTests[ExperimentVisualInspection,
 			{ManualSamplePreparationP..},
 			Variables:>{protocol}
 		],
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			ExperimentVisualInspection[{"My New Sample"},
-				PreparatoryPrimitives->{
-					Define[
-						Name->"My New Sample",
-						Container->Model[Container, Vessel, "2mL clear fiolax type 1 glass vial (CSL)"],
-						ModelType->Model[Sample],
-						ModelName->"Cocktail House"
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Destination->"My New Sample",
-						Amount->2 Milliliter
-					]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentVisualInspection[
+				{Model[Sample, "Red Food Dye"], Model[Sample, "Red Food Dye"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2ml clear glass wide neck bottle"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Vessel, "id:Y0lXejMVMExa"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentVisualInspection[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentVisualInspection[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "2ml clear glass wide neck bottle"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 1 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentVisualInspection[sampleID, Simulation -> simulationToPassIn, Output -> Options]
 			],
-			ObjectP[Object[Protocol, VisualInspection]]
+			{__Rule}
 		],
 		Example[{Messages, "ConflictingInstrumentSampleMixingRates", "Throw an error if the user-specified Instrument cannot mix the sample at the user-specified SampleMixingRate:"},
 			ExperimentVisualInspection[Object[Sample,"Test sample for ExperimentVisualInspection (orbitalShaker, ambient storage) 01"<>$SessionUUID],
@@ -807,7 +850,7 @@ DefineTests[ExperimentVisualInspection,
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 
-		Module[{objects,existsFilter,testBench,testBenchPacket,vortexLabels,vortexContainerLabels, vortexContainerModels,vortexSampleLabels,vortexSampleModels,orbitalShakerLabels,orbitalShakerContainerModels,orbitalShakerSampleLabels,orbitalShakerSampleModels,plasticContainerLabels,plasticContainerModels,plasticContainerObjectLabels,plasticContainerSampleLabels,plasticContainerSampleModels,aliquotFalseLabels,aliquotFalseContainerLabels,aliquotFalseContainerModels,aliquotFalseSampleLabels,aliquotFalseSampleModels,aliquotTrueLiquidLabels,aliquotTrueLiquidContainerLabels,aliquotTrueLiquidContainerModels,aliquotTrueLiquidSampleLabels,aliquotTrueLiquidSampleModels,aliquotTrueSolidLabels,aliquotTrueSolidContainerLabels, aliquotTrueSolidContainerModels,aliquotTrueSolidSampleLabels,aliquotTrueSolidSampleModels,allTestContainerLabels, allTestContainerModels,allTestSampleLabels,orbitalShakerContainerLabels, allTestSampleContainers,allTestSampleContainerPackets,allTestSampleModels,allTestSamplePackets,testConcentratedBufferPacket,discardedObjects},
+		Module[{objects,existsFilter,testBench,vortexLabels,vortexContainerLabels, vortexContainerModels,vortexSampleLabels,vortexSampleModels,orbitalShakerLabels,orbitalShakerContainerModels,orbitalShakerSampleLabels,orbitalShakerSampleModels,plasticContainerLabels,plasticContainerModels,plasticContainerObjectLabels,plasticContainerSampleLabels,plasticContainerSampleModels,aliquotFalseLabels,aliquotFalseContainerLabels,aliquotFalseContainerModels,aliquotFalseSampleLabels,aliquotFalseSampleModels,aliquotTrueLiquidLabels,aliquotTrueLiquidContainerLabels,aliquotTrueLiquidContainerModels,aliquotTrueLiquidSampleLabels,aliquotTrueLiquidSampleModels,aliquotTrueSolidLabels,aliquotTrueSolidContainerLabels, aliquotTrueSolidContainerModels,aliquotTrueSolidSampleLabels,aliquotTrueSolidSampleModels,allTestContainerLabels, allTestContainerModels,allTestSampleLabels,orbitalShakerContainerLabels, allTestSampleContainers,allTestSampleModels,discardedObjects},
 
 			(* list of test objects *)
 			objects = {
@@ -862,13 +905,12 @@ DefineTests[ExperimentVisualInspection,
 			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
 			
 			testBench = CreateID[Object[Container,Bench]];
-			testBenchPacket = UploadSample[
+			UploadSample[
 				Model[Container,Bench,"The Bench of Testing"],
 				{$Site[AllowedPositions][[1]],$Site},
 				Name->"Test Bench for ExperimentVisualInspection"<>$SessionUUID,
 				ID->testBench[ID],
-				FastTrack->True,
-				Upload->False
+				FastTrack->True
 			];
 			
 			UploadSampleModel["Test sample model for ExperimentVisualInspection"<>$SessionUUID,
@@ -927,15 +969,13 @@ DefineTests[ExperimentVisualInspection,
 			allTestSampleModels = Join[vortexSampleModels,orbitalShakerSampleModels,plasticContainerSampleModels,aliquotFalseSampleModels,aliquotTrueLiquidSampleModels,aliquotTrueSolidSampleModels];
 			
 			allTestSampleContainers = CreateID[ConstantArray[Object[Container,Vessel],Length[allTestContainerModels]]];
-			allTestSampleContainerPackets = UploadSample[allTestContainerModels,
+			UploadSample[allTestContainerModels,
 				ConstantArray[{"Bench Top Slot",testBench},Length[allTestContainerModels]],
 				Name->allTestContainerLabels,
-				ID->allTestSampleContainers[ID],
-				Cache->testBenchPacket,
-				Upload->False
+				ID->allTestSampleContainers[ID]
 			];
 
-			allTestSamplePackets = UploadSample[allTestSampleModels,
+			UploadSample[allTestSampleModels,
 				Map[{"A1",#}&, allTestSampleContainers],
 				Name->allTestSampleLabels,
 				InitialAmount->Join[
@@ -950,30 +990,26 @@ DefineTests[ExperimentVisualInspection,
 				StorageCondition->{
 					AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage
 				},
-				Status->ConstantArray[Available, Length[allTestSampleContainers]],
-				Cache->allTestSampleContainerPackets,
-				Upload->False
+				Status->ConstantArray[Available, Length[allTestSampleContainers]]
 			];
 			
 			(* 10x PBS with BSA *)
-			testConcentratedBufferPacket = UploadSampleModel["10x PBS with BSA for ExperimentVisualInspection"<>$SessionUUID,
+			UploadSampleModel["10x PBS with BSA for ExperimentVisualInspection"<>$SessionUUID,
 				Composition->{
 					{100VolumePercent,Model[Molecule,"Water"]},
 					{151.515Micromolar,Model[Molecule,Protein,"Bovine Albumin"]},
-					{17.6Millimolar,Model[Molecule,"Potassium Phosphate"]},
+					{17.6Millimolar,Model[Molecule, "Potassium Phosphate (Dibasic)"]},
 					{81Millimolar,Model[Molecule,"Dibasic Sodium Phosphate"]},
 					{27 Millimolar,Link[Model[Molecule,"Potassium Chloride"]]},
 					{1.37 Molar,Link[Model[Molecule,"Sodium Chloride"]]}
 				},
-				Upload->False,
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 				State->Liquid,
-				MSDSRequired->False
+				MSDSRequired->False,
+				IncompatibleMaterials->{None}
 			];
-			
-			Upload[Join[testBenchPacket,allTestSampleContainerPackets,allTestSamplePackets,testConcentratedBufferPacket]];
-			
+
 			(* Upload test unitOperations *)
 			Upload[{
 				<|
@@ -1210,166 +1246,168 @@ DefineTests[VisualInspection,
 
 			(* Erase any objects that we failed to erase in the last unit test. *)
 			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
-			
-			testBench = UploadSample[
-				Model[Container,Bench,"The Bench of Testing"],
-				{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
-				Name->"Test Bench for VisualInspection Primitive"<>$SessionUUID,
-				FastTrack->True
-			];
-			
-			UploadSampleModel["Test sample model for VisualInspection Primitive"<>$SessionUUID,
-				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
-				State->Liquid,
-				Expires->False,
-				MSDSRequired->False,
-				BiosafetyLevel->"BSL-1",
-				IncompatibleMaterials->{None},
-				DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
-			];
-			
-			(* Vortex containers & samples *)
-			vortexLabels = {"(vortex, ambient storage) 01", "(vortex, ambient storage) 02", "(vortex, ambient storage) 03", "(vortex, discarded)", "(vortex, refrigerator storage) 01", "(vortex, refrigerator storage) 02", "(vortex, refrigerator storage) 03"};
-			vortexContainerLabels = Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&,vortexLabels];
-			vortexContainerModels = ConstantArray[Model[Container, Vessel, "2ml clear glass wide neck bottle"],Length[vortexLabels]];
-			vortexSampleLabels = Map["Test sample for VisualInspection Primitive "<> # <>$SessionUUID&, vortexLabels];
-			vortexSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[vortexLabels]];
-			
-			(* Orbital shaker containers & samples *)
-			orbitalShakerLabels = {"(orbitalShaker, ambient storage) 01", "(orbitalShaker, ambient storage) 02", "(orbitalShaker, ambient storage) 03", "(orbitalShaker, discarded)", "(orbitalShaker, refrigerator storage) 01", "(orbitalShaker, refrigerator storage) 02", "(orbitalShaker, refrigerator storage) 03"};
-			orbitalShakerContainerLabels = Map["Test container for sample for VisualInspection Primitive "<>#<>$SessionUUID&, orbitalShakerLabels];
-			orbitalShakerContainerModels = ConstantArray[Model[Container, Vessel, "50mL clear glass vial with stopper"],Length[orbitalShakerLabels]];
-			orbitalShakerSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, orbitalShakerLabels];
-			orbitalShakerSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[orbitalShakerLabels]];
-			
-			(* Aliquot False containers & samples *)
-			aliquotFalseLabels = {"(2mL Tube, aliquot false)"};
-			aliquotFalseContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotFalseLabels];
-			aliquotFalseContainerModels = ConstantArray[Model[Container, Vessel, "2mL Tube"],Length[aliquotFalseLabels]];
-			aliquotFalseSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotFalseLabels];
-			aliquotFalseSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[aliquotFalseLabels]];
-			
-			aliquotTrueLiquidLabels = {"(aliquot true)"};
-			aliquotTrueLiquidContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotTrueLiquidLabels];
-			aliquotTrueLiquidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueLiquidLabels]];
-			aliquotTrueLiquidSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotTrueLiquidLabels];
-			aliquotTrueLiquidSampleModels = ConstantArray[Model[Sample,"Test sample model for VisualInspection Primitive"<>$SessionUUID],Length[aliquotTrueLiquidLabels]];
-			
-			aliquotTrueSolidLabels = {"(non-liquid, aliquot true)"};
-			aliquotTrueSolidContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotTrueSolidLabels];
-			aliquotTrueSolidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueSolidLabels]];
-			aliquotTrueSolidSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotTrueSolidLabels];
-			aliquotTrueSolidSampleModels = ConstantArray[Model[Sample,"Uracil"],Length[aliquotTrueSolidLabels]];
-			
-			allTestContainerLabels = Join[vortexContainerLabels,orbitalShakerContainerLabels,aliquotFalseContainerLabels,aliquotTrueLiquidContainerLabels,aliquotTrueSolidContainerLabels];
-			allTestContainerModels = Join[vortexContainerModels,orbitalShakerContainerModels,aliquotFalseContainerModels,aliquotTrueLiquidContainerModels,aliquotTrueSolidContainerModels];
-			allTestSampleLabels = Join[vortexSampleLabels,orbitalShakerSampleLabels,aliquotFalseSampleLabels,aliquotTrueLiquidSampleLabels,aliquotTrueSolidSampleLabels];
-			allTestSampleModels = Join[vortexSampleModels,orbitalShakerSampleModels,aliquotFalseSampleModels,aliquotTrueLiquidSampleModels,aliquotTrueSolidSampleModels];
-			
-			allTestSampleContainers = UploadSample[allTestContainerModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[allTestContainerModels]],
-				Name->allTestContainerLabels
-			];
-			
-			allTestSamples = UploadSample[allTestSampleModels,
-				Map[{"A1",#}&, allTestSampleContainers],
-				Name->allTestSampleLabels,
-				InitialAmount->Join[
-					ConstantArray[2 Milliliter, Length[vortexLabels]],
-					ConstantArray[50 Milliliter, Length[orbitalShakerLabels]],
-					{
-						1 Milliliter,
-						30 Milliliter,
-						20 Gram
-					}
-				],
-				StorageCondition->{
-					AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage
-				},
-				Status->ConstantArray[Available, Length[allTestSampleContainers]]
-			];
-			
-			(* Change the status of discarded samples to Discarded *)
-			discardedObjects = {
-				Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, discarded)"<>$SessionUUID],
-				Object[Sample,"Test sample for VisualInspection Primitive (vortex, discarded)"<>$SessionUUID]
-			};
-			UploadSampleStatus[discardedObjects, Discarded];
 
-			transferPrimitiveDestinationContainer = Upload[
-				<|
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "2ml clear glass wide neck bottle"], Objects],
-					Name->"Test container for sample for VisualInspection Primitive (transfer primitive)"<>$SessionUUID,
-					DeveloperObject->True
-				|>
-			];
+			Block[{$DeveloperUpload = True},
+				testBench = UploadSample[
+					Model[Container,Bench,"The Bench of Testing"],
+					{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
+					Name->"Test Bench for VisualInspection Primitive"<>$SessionUUID,
+					FastTrack->True
+				];
 
-			(* Upload test unitOperations *)
-			Upload[{
-				<|
-					Replace[SampleLink]->{
-						Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID]]
+				UploadSampleModel["Test sample model for VisualInspection Primitive"<>$SessionUUID,
+					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
+					State->Liquid,
+					Expires->False,
+					MSDSRequired->False,
+					BiosafetyLevel->"BSL-1",
+					IncompatibleMaterials->{None},
+					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
+				];
+
+				(* Vortex containers & samples *)
+				vortexLabels = {"(vortex, ambient storage) 01", "(vortex, ambient storage) 02", "(vortex, ambient storage) 03", "(vortex, discarded)", "(vortex, refrigerator storage) 01", "(vortex, refrigerator storage) 02", "(vortex, refrigerator storage) 03"};
+				vortexContainerLabels = Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&,vortexLabels];
+				vortexContainerModels = ConstantArray[Model[Container, Vessel, "2ml clear glass wide neck bottle"],Length[vortexLabels]];
+				vortexSampleLabels = Map["Test sample for VisualInspection Primitive "<> # <>$SessionUUID&, vortexLabels];
+				vortexSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[vortexLabels]];
+
+				(* Orbital shaker containers & samples *)
+				orbitalShakerLabels = {"(orbitalShaker, ambient storage) 01", "(orbitalShaker, ambient storage) 02", "(orbitalShaker, ambient storage) 03", "(orbitalShaker, discarded)", "(orbitalShaker, refrigerator storage) 01", "(orbitalShaker, refrigerator storage) 02", "(orbitalShaker, refrigerator storage) 03"};
+				orbitalShakerContainerLabels = Map["Test container for sample for VisualInspection Primitive "<>#<>$SessionUUID&, orbitalShakerLabels];
+				orbitalShakerContainerModels = ConstantArray[Model[Container, Vessel, "50mL clear glass vial with stopper"],Length[orbitalShakerLabels]];
+				orbitalShakerSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, orbitalShakerLabels];
+				orbitalShakerSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[orbitalShakerLabels]];
+
+				(* Aliquot False containers & samples *)
+				aliquotFalseLabels = {"(2mL Tube, aliquot false)"};
+				aliquotFalseContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotFalseLabels];
+				aliquotFalseContainerModels = ConstantArray[Model[Container, Vessel, "2mL Tube"],Length[aliquotFalseLabels]];
+				aliquotFalseSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotFalseLabels];
+				aliquotFalseSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[aliquotFalseLabels]];
+
+				aliquotTrueLiquidLabels = {"(aliquot true)"};
+				aliquotTrueLiquidContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotTrueLiquidLabels];
+				aliquotTrueLiquidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueLiquidLabels]];
+				aliquotTrueLiquidSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotTrueLiquidLabels];
+				aliquotTrueLiquidSampleModels = ConstantArray[Model[Sample,"Test sample model for VisualInspection Primitive"<>$SessionUUID],Length[aliquotTrueLiquidLabels]];
+
+				aliquotTrueSolidLabels = {"(non-liquid, aliquot true)"};
+				aliquotTrueSolidContainerLabels =  Map["Test container for sample for VisualInspection Primitive "<> # <>$SessionUUID&, aliquotTrueSolidLabels];
+				aliquotTrueSolidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueSolidLabels]];
+				aliquotTrueSolidSampleLabels = Map["Test sample for VisualInspection Primitive "<> #<>$SessionUUID&, aliquotTrueSolidLabels];
+				aliquotTrueSolidSampleModels = ConstantArray[Model[Sample,"Uracil"],Length[aliquotTrueSolidLabels]];
+
+				allTestContainerLabels = Join[vortexContainerLabels,orbitalShakerContainerLabels,aliquotFalseContainerLabels,aliquotTrueLiquidContainerLabels,aliquotTrueSolidContainerLabels];
+				allTestContainerModels = Join[vortexContainerModels,orbitalShakerContainerModels,aliquotFalseContainerModels,aliquotTrueLiquidContainerModels,aliquotTrueSolidContainerModels];
+				allTestSampleLabels = Join[vortexSampleLabels,orbitalShakerSampleLabels,aliquotFalseSampleLabels,aliquotTrueLiquidSampleLabels,aliquotTrueSolidSampleLabels];
+				allTestSampleModels = Join[vortexSampleModels,orbitalShakerSampleModels,aliquotFalseSampleModels,aliquotTrueLiquidSampleModels,aliquotTrueSolidSampleModels];
+
+				allTestSampleContainers = UploadSample[allTestContainerModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[allTestContainerModels]],
+					Name->allTestContainerLabels
+				];
+
+				allTestSamples = UploadSample[allTestSampleModels,
+					Map[{"A1",#}&, allTestSampleContainers],
+					Name->allTestSampleLabels,
+					InitialAmount->Join[
+						ConstantArray[2 Milliliter, Length[vortexLabels]],
+						ConstantArray[50 Milliliter, Length[orbitalShakerLabels]],
+						{
+							1 Milliliter,
+							30 Milliliter,
+							20 Gram
+						}
+					],
+					StorageCondition->{
+						AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage
 					},
-					Replace[Instrument]->{
+					Status->ConstantArray[Available, Length[allTestSampleContainers]]
+				];
+
+				(* Change the status of discarded samples to Discarded *)
+				discardedObjects = {
+					Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, discarded)"<>$SessionUUID],
+					Object[Sample,"Test sample for VisualInspection Primitive (vortex, discarded)"<>$SessionUUID]
+				};
+				UploadSampleStatus[discardedObjects, Discarded];
+
+				transferPrimitiveDestinationContainer = Upload[
+					<|
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "2ml clear glass wide neck bottle"], Objects],
+						Name->"Test container for sample for VisualInspection Primitive (transfer primitive)"<>$SessionUUID,
+						DeveloperObject->True
+					|>
+				];
+
+				(* Upload test unitOperations *)
+				Upload[{
+					<|
+						Replace[SampleLink]->{
+							Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID]]
+						},
+						Replace[Instrument]->{
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
+						},
+						Replace[InspectionCondition]->{Ambient, Ambient},
+						Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
+						Replace[ColorCorrection]->{True, True},
+						Replace[VortexSampleMixingRate]->{3., 3.},
+						Replace[OrbitalShakerSampleMixingRate]->{Null, Null},
+						Name->"Vortex unit operations for VisualInspection Primitive"<>$SessionUUID,
+						Type->Object[UnitOperation, VisualInspection]
+					|>,
+					<|
+						Replace[SampleLink]->{
+							Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID]]
+						},
+						Replace[Instrument]->{
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]]
+						},
+						Replace[InspectionCondition]->{Chilled, Chilled},
+						Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
+						Replace[ColorCorrection]->{True, True},
+						Replace[VortexSampleMixingRate]->{Null, Null},
+						Replace[OrbitalShakerSampleMixingRate]->{200 RPM, 200 RPM},
+						Name->"Orbital shaker unit operations for VisualInspection Primitive"<>$SessionUUID,
+						Type->Object[UnitOperation, VisualInspection]
+					|>
+				}];
+
+				(* Upload template/test protocol *)
+				Upload[<|
+					Type->Object[Protocol, VisualInspection],
+					Name->"Test template protocol for VisualInspection Primitive"<>$SessionUUID,
+
+					Replace[SamplesIn]->{
+						Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
+					},
+					Replace[ContainersIn]->{
+						Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
+					},
+					Replace[BatchedUnitOperations]->{
+						Link[Object[UnitOperation,VisualInspection,"Vortex unit operations for VisualInspection Primitive"<>$SessionUUID], Protocol],
+						Link[Object[UnitOperation,VisualInspection,"Orbital shaker unit operations for VisualInspection Primitive"<>$SessionUUID], Protocol]
+					},
+					Replace[Instruments]->{
+						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
+						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
 						Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
 						Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
 					},
-					Replace[InspectionCondition]->{Ambient, Ambient},
-					Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
-					Replace[ColorCorrection]->{True, True},
-					Replace[VortexSampleMixingRate]->{3., 3.},
-					Replace[OrbitalShakerSampleMixingRate]->{Null, Null},
-					Name->"Vortex unit operations for VisualInspection Primitive"<>$SessionUUID,
-					Type->Object[UnitOperation, VisualInspection]
-				|>,
-				<|
-					Replace[SampleLink]->{
-						Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID]]
-					},
-					Replace[Instrument]->{
-						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]]
-					},
-					Replace[InspectionCondition]->{Chilled, Chilled},
-					Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
-					Replace[ColorCorrection]->{True, True},
-					Replace[VortexSampleMixingRate]->{Null, Null},
-					Replace[OrbitalShakerSampleMixingRate]->{200 RPM, 200 RPM},
-					Name->"Orbital shaker unit operations for VisualInspection Primitive"<>$SessionUUID,
-					Type->Object[UnitOperation, VisualInspection]
-				|>
-			}];
-
-			(* Upload template/test protocol *)
-			Upload[<|
-				Type->Object[Protocol, VisualInspection],
-				Name->"Test template protocol for VisualInspection Primitive"<>$SessionUUID,
-
-				Replace[SamplesIn]->{
-					Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
-				},
-				Replace[ContainersIn]->{
-					Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for VisualInspection Primitive (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
-				},
-				Replace[BatchedUnitOperations]->{
-					Link[Object[UnitOperation,VisualInspection,"Vortex unit operations for VisualInspection Primitive"<>$SessionUUID], Protocol],
-					Link[Object[UnitOperation,VisualInspection,"Orbital shaker unit operations for VisualInspection Primitive"<>$SessionUUID], Protocol]
-				},
-				Replace[Instruments]->{
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
-				},
-				Replace[InspectionConditions]->{Ambient, Chilled, Ambient, Chilled}
-			|>];
+					Replace[InspectionConditions]->{Ambient, Chilled, Ambient, Chilled}
+				|>]
+			]
 		]
 	},
 	SymbolTearDown:>{
@@ -1639,7 +1677,7 @@ DefineTests[ExperimentVisualInspectionOptions,
 					Replace[Composition]->{
 						{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "Water"]]},
 						{151.515 Micromolar, Link[Model[Molecule, Protein, "Bovine Albumin"]]},
-						{17.6 Millimolar, Link[Model[Molecule, "Potassium Phosphate"]]},
+						{17.6 Millimolar, Link[Model[Molecule, "Potassium Phosphate (Dibasic)"]]},
 						{81 Millimolar, Link[Model[Molecule, "Dibasic Sodium Phosphate"]]},
 						{27 Millimolar, Link[Model[Molecule, "Potassium Chloride"]]},
 						{1.37 Molar, Link[Model[Molecule, "Sodium Chloride"]]}
@@ -1885,182 +1923,184 @@ DefineTests[ValidExperimentVisualInspectionQ,
 
 			(* Erase any objects that we failed to erase in the last unit test. *)
 			Quiet[EraseObject[PickList[objects, existsFilter], Force->True, Verbose->False]];
-			
-			testBench = UploadSample[
-				Model[Container,Bench,"The Bench of Testing"],
-				{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
-				Name->"Test Bench for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-				FastTrack->True
-			];
-			UploadSampleModel["Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-				Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
-				State->Liquid,
-				Expires->False,
-				MSDSRequired->False,
-				BiosafetyLevel->"BSL-1",
-				IncompatibleMaterials->{None},
-				DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
-			];
-			
-			(* Vortex containers & samples *)
-			vortexLabels = {"(vortex, ambient storage) 01", "(vortex, ambient storage) 02", "(vortex, ambient storage) 03", "(vortex, discarded)", "(vortex, refrigerator storage) 01", "(vortex, refrigerator storage) 02", "(vortex, refrigerator storage) 03"};
-			vortexContainerLabels = Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&,vortexLabels];
-			vortexContainerModels = ConstantArray[Model[Container, Vessel, "2ml clear glass wide neck bottle"],Length[vortexLabels]];
-			vortexSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, vortexLabels];
-			vortexSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[vortexLabels]];
-			
-			(* Orbital shaker containers & samples *)
-			orbitalShakerLabels = {"(orbitalShaker, ambient storage) 01", "(orbitalShaker, ambient storage) 02", "(orbitalShaker, ambient storage) 03", "(orbitalShaker, discarded)", "(orbitalShaker, refrigerator storage) 01", "(orbitalShaker, refrigerator storage) 02", "(orbitalShaker, refrigerator storage) 03"};
-			orbitalShakerContainerLabels = Map["Test container for sample for ValidExperimentVisualInspectionQ "<>#<>$SessionUUID&, orbitalShakerLabels];
-			orbitalShakerContainerModels = ConstantArray[Model[Container, Vessel, "50mL clear glass vial with stopper"],Length[orbitalShakerLabels]];
-			orbitalShakerSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, orbitalShakerLabels];
-			orbitalShakerSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[orbitalShakerLabels]];
-			
-			(* Aliquot False containers & samples *)
-			aliquotFalseLabels = {"(2mL Tube, aliquot false)"};
-			aliquotFalseContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotFalseLabels];
-			aliquotFalseContainerModels = ConstantArray[Model[Container, Vessel, "2mL Tube"],Length[aliquotFalseLabels]];
-			aliquotFalseSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotFalseLabels];
-			aliquotFalseSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[aliquotFalseLabels]];
-			
-			aliquotTrueLiquidLabels = {"(aliquot true)"};
-			aliquotTrueLiquidContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotTrueLiquidLabels];
-			aliquotTrueLiquidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueLiquidLabels]];
-			aliquotTrueLiquidSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotTrueLiquidLabels];
-			aliquotTrueLiquidSampleModels = ConstantArray[Model[Sample,"Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID],Length[aliquotTrueLiquidLabels]];
-			
-			aliquotTrueSolidLabels = {"(non-liquid, aliquot true)"};
-			aliquotTrueSolidContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotTrueSolidLabels];
-			aliquotTrueSolidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueSolidLabels]];
-			aliquotTrueSolidSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotTrueSolidLabels];
-			aliquotTrueSolidSampleModels = ConstantArray[Model[Sample,"Uracil"],Length[aliquotTrueSolidLabels]];
-			
-			allTestContainerLabels = Join[vortexContainerLabels,orbitalShakerContainerLabels,aliquotFalseContainerLabels,aliquotTrueLiquidContainerLabels,aliquotTrueSolidContainerLabels];
-			allTestContainerModels = Join[vortexContainerModels,orbitalShakerContainerModels,aliquotFalseContainerModels,aliquotTrueLiquidContainerModels,aliquotTrueSolidContainerModels];
-			allTestSampleLabels = Join[vortexSampleLabels,orbitalShakerSampleLabels,aliquotFalseSampleLabels,aliquotTrueLiquidSampleLabels,aliquotTrueSolidSampleLabels];
-			allTestSampleModels = Join[vortexSampleModels,orbitalShakerSampleModels,aliquotFalseSampleModels,aliquotTrueLiquidSampleModels,aliquotTrueSolidSampleModels];
-			
-			allTestSampleContainers = UploadSample[allTestContainerModels,
-				ConstantArray[{"Bench Top Slot",testBench},Length[allTestContainerModels]],
-				Name->allTestContainerLabels
-			];
-			
-			allTestSamples = UploadSample[allTestSampleModels,
-				Map[{"A1",#}&, allTestSampleContainers],
-				Name->allTestSampleLabels,
-				InitialAmount->Join[
-					ConstantArray[2 Milliliter, Length[vortexLabels]],
-					ConstantArray[50 Milliliter, Length[orbitalShakerLabels]],
-					{
-						1 Milliliter,
-						30 Milliliter,
-						20 Gram
-					}
-				],
-				StorageCondition->{
-					AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage
-				},
-				Status->ConstantArray[Available, Length[allTestSampleContainers]]
-			];
-			
-			(* Change the status of discarded samples to Discarded *)
-			discardedObjects = {
-				Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, discarded)"<>$SessionUUID],
-				Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, discarded)"<>$SessionUUID]
-			};
-			UploadSampleStatus[discardedObjects, Discarded];
 
-			transferPrimitiveDestinationContainer = Upload[
-				<|
-					Type->Object[Container, Vessel],
-					Model->Link[Model[Container, Vessel, "2ml clear glass wide neck bottle"], Objects],
-					Name->"Test container for sample for ValidExperimentVisualInspectionQ (transfer primitive)"<>$SessionUUID,
-					DeveloperObject->True
-				|>
-			];
-
-			(* 10x OBS with BSA *)
-			Upload[
-				<|
-					Type->Model[Sample, StockSolution],
+			Block[{$DeveloperUpload = True},
+				testBench = UploadSample[
+					Model[Container,Bench,"The Bench of Testing"],
+					{"First Floor Slot",Object[Container,Building,"15500 Wells Port Drive"]},
+					Name->"Test Bench for ValidExperimentVisualInspectionQ"<>$SessionUUID,
+					FastTrack->True
+				];
+				UploadSampleModel["Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID,
+					Composition->{{100VolumePercent,Model[Molecule,"Water"]},{1 Molar,Model[Molecule,"Uracil"]}},
 					State->Liquid,
-					Replace[Composition]->{
-						{151.515 Micromolar, Link[Model[Molecule, Protein, "Bovine Albumin"]]},
-						{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "Water"]]},
-						{17.6 Millimolar, Link[Model[Molecule, "Potassium Phosphate"]]},
-						{81 Millimolar, Link[Model[Molecule, "Dibasic Sodium Phosphate"]]},
-						{27 Millimolar, Link[Model[Molecule, "Potassium Chloride"]]},
-						{1.37 Molar, Link[Model[Molecule, "Sodium Chloride"]]}
-					},
-					Name->"10x PBS with BSA for ValidExperimentVisualInspectionQ"<>$SessionUUID
-				|>
-			];
+					Expires->False,
+					MSDSRequired->False,
+					BiosafetyLevel->"BSL-1",
+					IncompatibleMaterials->{None},
+					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]
+				];
 
-			(* Upload test unitOperations *)
-			Upload[{
-				<|
-					Replace[SampleLink]->{
-						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID]]
+				(* Vortex containers & samples *)
+				vortexLabels = {"(vortex, ambient storage) 01", "(vortex, ambient storage) 02", "(vortex, ambient storage) 03", "(vortex, discarded)", "(vortex, refrigerator storage) 01", "(vortex, refrigerator storage) 02", "(vortex, refrigerator storage) 03"};
+				vortexContainerLabels = Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&,vortexLabels];
+				vortexContainerModels = ConstantArray[Model[Container, Vessel, "2ml clear glass wide neck bottle"],Length[vortexLabels]];
+				vortexSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, vortexLabels];
+				vortexSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[vortexLabels]];
+
+				(* Orbital shaker containers & samples *)
+				orbitalShakerLabels = {"(orbitalShaker, ambient storage) 01", "(orbitalShaker, ambient storage) 02", "(orbitalShaker, ambient storage) 03", "(orbitalShaker, discarded)", "(orbitalShaker, refrigerator storage) 01", "(orbitalShaker, refrigerator storage) 02", "(orbitalShaker, refrigerator storage) 03"};
+				orbitalShakerContainerLabels = Map["Test container for sample for ValidExperimentVisualInspectionQ "<>#<>$SessionUUID&, orbitalShakerLabels];
+				orbitalShakerContainerModels = ConstantArray[Model[Container, Vessel, "50mL clear glass vial with stopper"],Length[orbitalShakerLabels]];
+				orbitalShakerSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, orbitalShakerLabels];
+				orbitalShakerSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[orbitalShakerLabels]];
+
+				(* Aliquot False containers & samples *)
+				aliquotFalseLabels = {"(2mL Tube, aliquot false)"};
+				aliquotFalseContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotFalseLabels];
+				aliquotFalseContainerModels = ConstantArray[Model[Container, Vessel, "2mL Tube"],Length[aliquotFalseLabels]];
+				aliquotFalseSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotFalseLabels];
+				aliquotFalseSampleModels = ConstantArray[Model[Sample,"Milli-Q water"],Length[aliquotFalseLabels]];
+
+				aliquotTrueLiquidLabels = {"(aliquot true)"};
+				aliquotTrueLiquidContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotTrueLiquidLabels];
+				aliquotTrueLiquidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueLiquidLabels]];
+				aliquotTrueLiquidSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotTrueLiquidLabels];
+				aliquotTrueLiquidSampleModels = ConstantArray[Model[Sample,"Test sample model for ValidExperimentVisualInspectionQ"<>$SessionUUID],Length[aliquotTrueLiquidLabels]];
+
+				aliquotTrueSolidLabels = {"(non-liquid, aliquot true)"};
+				aliquotTrueSolidContainerLabels =  Map["Test container for sample for ValidExperimentVisualInspectionQ "<> # <>$SessionUUID&, aliquotTrueSolidLabels];
+				aliquotTrueSolidContainerModels = ConstantArray[Model[Container, Vessel, "50mL Tube"],Length[aliquotTrueSolidLabels]];
+				aliquotTrueSolidSampleLabels = Map["Test sample for ValidExperimentVisualInspectionQ "<> #<>$SessionUUID&, aliquotTrueSolidLabels];
+				aliquotTrueSolidSampleModels = ConstantArray[Model[Sample,"Uracil"],Length[aliquotTrueSolidLabels]];
+
+				allTestContainerLabels = Join[vortexContainerLabels,orbitalShakerContainerLabels,aliquotFalseContainerLabels,aliquotTrueLiquidContainerLabels,aliquotTrueSolidContainerLabels];
+				allTestContainerModels = Join[vortexContainerModels,orbitalShakerContainerModels,aliquotFalseContainerModels,aliquotTrueLiquidContainerModels,aliquotTrueSolidContainerModels];
+				allTestSampleLabels = Join[vortexSampleLabels,orbitalShakerSampleLabels,aliquotFalseSampleLabels,aliquotTrueLiquidSampleLabels,aliquotTrueSolidSampleLabels];
+				allTestSampleModels = Join[vortexSampleModels,orbitalShakerSampleModels,aliquotFalseSampleModels,aliquotTrueLiquidSampleModels,aliquotTrueSolidSampleModels];
+
+				allTestSampleContainers = UploadSample[allTestContainerModels,
+					ConstantArray[{"Bench Top Slot",testBench},Length[allTestContainerModels]],
+					Name->allTestContainerLabels
+				];
+
+				allTestSamples = UploadSample[allTestSampleModels,
+					Map[{"A1",#}&, allTestSampleContainers],
+					Name->allTestSampleLabels,
+					InitialAmount->Join[
+						ConstantArray[2 Milliliter, Length[vortexLabels]],
+						ConstantArray[50 Milliliter, Length[orbitalShakerLabels]],
+						{
+							1 Milliliter,
+							30 Milliliter,
+							20 Gram
+						}
+					],
+					StorageCondition->{
+						AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage, AmbientStorage, Refrigerator, Refrigerator, Refrigerator, AmbientStorage, AmbientStorage, AmbientStorage
 					},
-					Replace[Instrument]->{
+					Status->ConstantArray[Available, Length[allTestSampleContainers]]
+				];
+
+				(* Change the status of discarded samples to Discarded *)
+				discardedObjects = {
+					Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, discarded)"<>$SessionUUID],
+					Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, discarded)"<>$SessionUUID]
+				};
+				UploadSampleStatus[discardedObjects, Discarded];
+
+				transferPrimitiveDestinationContainer = Upload[
+					<|
+						Type->Object[Container, Vessel],
+						Model->Link[Model[Container, Vessel, "2ml clear glass wide neck bottle"], Objects],
+						Name->"Test container for sample for ValidExperimentVisualInspectionQ (transfer primitive)"<>$SessionUUID,
+						DeveloperObject->True
+					|>
+				];
+
+				(* 10x OBS with BSA *)
+				Upload[
+					<|
+						Type->Model[Sample, StockSolution],
+						State->Liquid,
+						Replace[Composition]->{
+							{151.515 Micromolar, Link[Model[Molecule, Protein, "Bovine Albumin"]]},
+							{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "Water"]]},
+							{17.6 Millimolar, Link[Model[Molecule, "Potassium Phosphate (Dibasic)"]]},
+							{81 Millimolar, Link[Model[Molecule, "Dibasic Sodium Phosphate"]]},
+							{27 Millimolar, Link[Model[Molecule, "Potassium Chloride"]]},
+							{1.37 Molar, Link[Model[Molecule, "Sodium Chloride"]]}
+						},
+						Name->"10x PBS with BSA for ValidExperimentVisualInspectionQ"<>$SessionUUID
+					|>
+				];
+
+				(* Upload test unitOperations *)
+				Upload[{
+					<|
+						Replace[SampleLink]->{
+							Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID]]
+						},
+						Replace[Instrument]->{
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
+						},
+						Replace[InspectionCondition]->{Ambient, Ambient},
+						Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
+						Replace[ColorCorrection]->{True, True},
+						Replace[VortexSampleMixingRate]->{3., 3.},
+						Replace[OrbitalShakerSampleMixingRate]->{Null, Null},
+						Name->"Vortex unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID,
+						Type->Object[UnitOperation, VisualInspection]
+					|>,
+					<|
+						Replace[SampleLink]->{
+							Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID]]
+						},
+						Replace[Instrument]->{
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
+							Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]]
+						},
+						Replace[InspectionCondition]->{Chilled, Chilled},
+						Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
+						Replace[ColorCorrection]->{True, True},
+						Replace[VortexSampleMixingRate]->{Null, Null},
+						Replace[OrbitalShakerSampleMixingRate]->{200 RPM, 200 RPM},
+						Name->"Orbital shaker unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID,
+						Type->Object[UnitOperation, VisualInspection]
+					|>
+				}];
+
+				(* Upload template/test protocol *)
+				Upload[<|
+					Type->Object[Protocol, VisualInspection],
+					Name->"Test template protocol for ValidExperimentVisualInspectionQ"<>$SessionUUID,
+
+					Replace[SamplesIn]->{
+						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
+					},
+					Replace[ContainersIn]->{
+						Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
+						Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
+					},
+					Replace[BatchedUnitOperations]->{
+						Link[Object[UnitOperation,VisualInspection,"Vortex unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID], Protocol],
+						Link[Object[UnitOperation,VisualInspection,"Orbital shaker unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID], Protocol]
+					},
+					Replace[Instruments]->{
+						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
+						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
 						Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
 						Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
 					},
-					Replace[InspectionCondition]->{Ambient, Ambient},
-					Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
-					Replace[ColorCorrection]->{True, True},
-					Replace[VortexSampleMixingRate]->{3., 3.},
-					Replace[OrbitalShakerSampleMixingRate]->{Null, Null},
-					Name->"Vortex unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-					Type->Object[UnitOperation, VisualInspection]
-				|>,
-				<|
-					Replace[SampleLink]->{
-						Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID]], Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID]]
-					},
-					Replace[Instrument]->{
-						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-						Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]]
-					},
-					Replace[InspectionCondition]->{Chilled, Chilled},
-					Replace[TemperatureEquilibrationTime]->{1 Minute, 1 Minute},
-					Replace[ColorCorrection]->{True, True},
-					Replace[VortexSampleMixingRate]->{Null, Null},
-					Replace[OrbitalShakerSampleMixingRate]->{200 RPM, 200 RPM},
-					Name->"Orbital shaker unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-					Type->Object[UnitOperation, VisualInspection]
-				|>
-			}];
-
-			(* Upload template/test protocol *)
-			Upload[<|
-				Type->Object[Protocol, VisualInspection],
-				Name->"Test template protocol for ValidExperimentVisualInspectionQ"<>$SessionUUID,
-
-				Replace[SamplesIn]->{
-					Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Sample,"Test sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
-				},
-				Replace[ContainersIn]->{
-					Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (vortex, ambient storage) 02"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 01"<>$SessionUUID], Protocols],
-					Link[Object[Container,Vessel,"Test container for sample for ValidExperimentVisualInspectionQ (orbitalShaker, ambient storage) 02"<>$SessionUUID], Protocols]
-				},
-				Replace[BatchedUnitOperations]->{
-					Link[Object[UnitOperation,VisualInspection,"Vortex unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID], Protocol],
-					Link[Object[UnitOperation,VisualInspection,"Orbital shaker unit operations for ValidExperimentVisualInspectionQ"<>$SessionUUID], Protocol]
-				},
-				Replace[Instruments]->{
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 2"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]],
-					Link[Object[Instrument,SampleInspector,"Visual Inspector 1"]]
-				},
-				Replace[InspectionConditions]->{Ambient, Chilled, Ambient, Chilled}
-			|>];
+					Replace[InspectionConditions]->{Ambient, Chilled, Ambient, Chilled}
+				|>];
+			]
 		]
 	},
 	SymbolTearDown:>{

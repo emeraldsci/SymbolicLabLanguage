@@ -82,7 +82,7 @@ UpstreamSampleUsage[sample_, ops:OptionsPattern[]]:=Module[
 		]
 	];
 
-	(* lookup the layout from teh options *)
+	(* lookup the layout from the options *)
 	safeGraphLayout = graphLayout/.{Null-> "RadialDrawing"};
 
 	(*identify the graph and downstream samples*)

@@ -14,33 +14,27 @@ DefineUsage[ValidExperimentBioconjugationQ,
         Definition -> {"ValidExperimentBioconjugationQ[SamplePools, NewIdentityModels]", "Boolean"},
         Description -> "returns a 'Boolean' indicating the validity of an ExperimentBioconjugaton call for covalently binding input 'SamplePools' to create new molecules characterized by 'NewIdentityModels'.",
         Inputs :> {
-          IndexMatching[
-            {
-              InputName -> "SamplePools",
-              Description -> "The samples to be chemically linked together into a pool.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                    Dereference -> {
-                      Object[Container] -> Field[Contents[[All, 2]]]
-                    }
-                  ],
-              Expandable -> False,
-              NestedIndexMatching->True
-            },
-            {
-            InputName -> "NewIdentityModels",
-            Description -> "The models of the resulting conjugated molecule in each pool.",
-            Widget ->
-                Widget[
-                  Type -> Object,
-                  Pattern :> ObjectP[IdentityModelTypes]
-                ],
-            Expandable -> False
-          },
-            IndexName -> "experiment samples"
-          ]
+          {
+            InputName -> "SamplePools",
+            Description -> "The samples to be chemically linked together into a pool.",
+            Widget -> Alternatives[
+              "Sample or Container"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                ObjectTypes -> {Object[Sample], Object[Container]},
+                Dereference -> {
+                  Object[Container] -> Field[Contents[[All, 2]]]
+                }
+              ],
+              "Model Sample"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[Model[Sample]],
+                ObjectTypes -> {Model[Sample]}
+              ]
+            ],
+            Expandable -> False,
+            NestedIndexMatching->True
+          }
         },
         Outputs :> {
           {
@@ -78,33 +72,27 @@ DefineUsage[ExperimentBioconjugationOptions,
         Definition -> {"ExperimentBioconjugationOptions[SamplePools, NewIdentityModels]", "ResolvedOptions"},
         Description -> "generates the 'ResolvedOptions' for covalently binding input 'SamplePools' to create new molecules characterized by 'NewIdentityModels'.",
         Inputs :> {
-          IndexMatching[
-            {
-              InputName -> "SamplePools",
-              Description -> "The samples to be chemically linked together into a pool.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                    Dereference -> {
-                      Object[Container] -> Field[Contents[[All, 2]]]
-                    }
-                  ],
-              Expandable -> False,
-              NestedIndexMatching->True
-            },
-            {
-              InputName -> "NewIdentityModels",
-              Description -> "The models of the resulting conjugated molecule in each pool.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[IdentityModelTypes]
-                  ],
-              Expandable -> False
-            },
-            IndexName -> "experiment samples"
-          ]
+          {
+            InputName -> "SamplePools",
+            Description -> "The samples to be chemically linked together into a pool.",
+            Widget -> Alternatives[
+              "Sample or Container"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                ObjectTypes -> {Object[Sample], Object[Container]},
+                Dereference -> {
+                  Object[Container] -> Field[Contents[[All, 2]]]
+                }
+              ],
+              "Model Sample"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[Model[Sample]],
+                ObjectTypes -> {Model[Sample]}
+              ]
+            ],
+            Expandable -> False,
+            NestedIndexMatching->True
+          }
         },
         Outputs :> {
           {
@@ -141,33 +129,27 @@ DefineUsage[ExperimentBioconjugationPreview,
         Definition -> {"ExperimentBioconjugationPreview[SamplePools, NewIdentityModels]", "Preview"},
         Description -> "generates a graphical 'Preview' for the process of covalently binding input 'SamplePools' to create new molecules characterized by 'NewIdentityModels'.",
         Inputs :> {
-          IndexMatching[
-            {
-              InputName -> "SamplePools",
-              Description -> "The samples to be chemically linked together into a pool.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                    Dereference -> {
-                      Object[Container] -> Field[Contents[[All, 2]]]
-                    }
-                  ],
-              Expandable -> False,
-              NestedIndexMatching->True
-            },
-            {
-              InputName -> "NewIdentityModels",
-              Description -> "The models of the resulting conjugated molecule in each pool.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[IdentityModelTypes]
-                  ],
-              Expandable -> False
-            },
-            IndexName -> "experiment samples"
-          ]
+          {
+            InputName -> "SamplePools",
+            Description -> "The samples to be chemically linked together into a pool.",
+            Widget -> Alternatives[
+              "Sample or Container"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                ObjectTypes -> {Object[Sample], Object[Container]},
+                Dereference -> {
+                  Object[Container] -> Field[Contents[[All, 2]]]
+                }
+              ],
+              "Model Sample"->Widget[
+                Type -> Object,
+                Pattern :> ObjectP[Model[Sample]],
+                ObjectTypes -> {Model[Sample]}
+              ]
+            ],
+            Expandable -> False,
+            NestedIndexMatching->True
+          }
         },
         Outputs :> {
           {

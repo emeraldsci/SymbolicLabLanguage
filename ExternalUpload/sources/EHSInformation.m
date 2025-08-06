@@ -24,6 +24,6 @@ DefineOptions[DefineEHSInformation,
 ];
 
 
-InstallDefaultUploadFunction[DefineEHSInformation, Object[Sample], {InstallNameOverload -> False, InstallObjectOverload -> True}];
+InstallDefaultUploadFunction[DefineEHSInformation, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
 InstallValidQFunction[DefineEHSInformation, Object[Sample]];
 InstallOptionsFunction[DefineEHSInformation, Object[Sample]];

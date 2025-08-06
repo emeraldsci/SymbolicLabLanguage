@@ -13,35 +13,39 @@ DefineUsage[ExperimentICPMSPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
-							],
-							Expandable -> False
-						},
-						IndexName -> "Input"
-					]
-				},
-				Outputs :> {
-					{
-						OutputName -> "Preview",
-						Description -> "Graphical preview representing the output of ExperimentICPMS.  This value is always Null.",
-						Pattern :> Null
-					}
-				}
-			},
-			{
-				Definition -> {"ExperimentICPMSPreview[containers]", "Preview"},
-				Description -> "returns the graphical preview for ExperimentICPMS when it is called on 'containers'.  This output is always Null.",
-				Inputs :> {
-					IndexMatching[
-						{
-							InputName -> "containers",
-							Description -> "The containers holding samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Container, Vessel], Object[Container, Plate]}],
-								ObjectTypes -> {Object[Container, Vessel], Object[Container, Plate]}
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -64,9 +68,7 @@ DefineUsage[ExperimentICPMSPreview,
 			"ExperimentICPMSOptions",
 			"ExperimentMassSpectrometry"
 		},
-		Author -> {
-			"hanming.yang"
-		}
+		Author -> {"hanming.yang"}
 	}
 ];
 
@@ -86,9 +88,39 @@ DefineUsage[ExperimentICPMSOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -102,32 +134,6 @@ DefineUsage[ExperimentICPMSOptions,
 						Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
 					}
 				}
-			},
-			{
-				Definition -> {"ExperimentICPMSOptions[containers]", "ResolvedOptions"},
-				Description -> "returns the resolved options for ExperimentICPMS when it is called on 'containers'.",
-				Inputs :> {
-					IndexMatching[
-						{
-							InputName -> "containers",
-							Description -> "The containers holding samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Container, Vessel], Object[Container, Plate]}],
-								ObjectTypes -> {Object[Container, Vessel], Object[Container, Plate]}
-							],
-							Expandable -> False
-						},
-						IndexName -> "Input"
-					]
-				},
-				Outputs :> {
-					{
-						OutputName -> "ResolvedOptions",
-						Description -> "Resolved options when ExperimentICPMS is called on the input containers.",
-						Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
-					}
-				}
 			}
 		},
 		SeeAlso -> {
@@ -136,9 +142,7 @@ DefineUsage[ExperimentICPMSOptions,
 			"ExperimentICPMSPreview",
 			"ExperimentMassSpectrometry"
 		},
-		Author -> {
-			"hanming.yang"
-		}
+		Author -> {"hanming.yang"}
 	}
 ];
 
@@ -159,35 +163,39 @@ DefineUsage[ValidExperimentICPMSQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
-							],
-							Expandable -> False
-						},
-						IndexName -> "Input"
-					]
-				},
-				Outputs :> {
-					{
-						OutputName -> "Booleans",
-						Description -> "Whether or not the ExperimentICPMS call is valid.  Return value can be changed via the OutputFormat option.",
-						Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
-					}
-				}
-			},
-			{
-				Definition -> {"ValidExperimentICPMSQ[containers]", "Booleans"},
-				Description -> "checks whether the provided 'containers' and specified options are valid for calling ExperimentICPMS.",
-				Inputs :> {
-					IndexMatching[
-						{
-							InputName -> "containers",
-							Description -> "The containers holding samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Container, Vessel], Object[Container, Plate]}],
-								ObjectTypes -> {Object[Container, Vessel], Object[Container, Plate]}
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -209,8 +217,6 @@ DefineUsage[ValidExperimentICPMSQ,
 			"ExperimentICPMSOptions",
 			"ExperimentMassSpectrometry"
 		},
-		Author -> {
-			"hanming.yang"
-		}
+		Author -> {"hanming.yang"}
 	}
 ];

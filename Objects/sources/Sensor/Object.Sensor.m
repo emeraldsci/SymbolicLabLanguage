@@ -209,6 +209,18 @@ DefineObjectType[Object[Sensor], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+
+		(* --- Quality Assurance --- *)
+		Certificates -> {
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Report, Certificate, Calibration][SensorCertified],
+			Description->"The quality assurance documentation and data for this sensor.",
+			Category->"Quality Assurance"
+		},
+
+		(* --- Sensor Information --- *)
 		DevicesMonitored -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -218,7 +230,7 @@ DefineObjectType[Object[Sensor], {
 				Object[Container][EnvironmentalSensors],
 				Object[Container, Site][NitrogenPressureSensor],
 				Object[Container, Site][ArgonPressureSensor],
-				Object[Container, Site][CO2PressureSensor],
+				Object[Container, Site][CarbonDioxidePressureSensor],
 				Object[Instrument, LiquidLevelDetector][VolumeSensor],
 				Object[Instrument, Balance][WeightSensor],
 				Object[Instrument][WasteScale],
@@ -248,23 +260,27 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument][NitrogenPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgePressureSensor],
 				Object[Container, GasCylinder][PressureSensor],
+				Object[Container, GasCylinder][LiquidLevelSensor],
 				Object[Container, WasteBin][WasteScale],
 				Object[Part, DispensingHead][VolumeSensor],
 				Object[Instrument][HeliumPressureSensor],
-				Object[Instrument,SchlenkLine][ChannelAGasPressureSensor],
-				Object[Instrument,SchlenkLine][ChannelBGasPressureSensor],
-				Object[Instrument,SchlenkLine][ChannelCGasPressureSensor],
-				Object[Instrument,SchlenkLine][ChannelDGasPressureSensor],
-				Object[Instrument,SchlenkLine][VacuumSensor],
+				Object[Instrument, SchlenkLine][ChannelAGasPressureSensor],
+				Object[Instrument, SchlenkLine][ChannelBGasPressureSensor],
+				Object[Instrument, SchlenkLine][ChannelCGasPressureSensor],
+				Object[Instrument, SchlenkLine][ChannelDGasPressureSensor],
+				Object[Instrument, SchlenkLine][VacuumSensor],
 				Object[Instrument, ControlledRateFreezer][TemperatureSensor],
-				Object[Instrument,SampleInspector][TemperatureSensor],
-				Object[Instrument,SampleInspector][LightSensor],
-				Object[Instrument,SampleInspector][LightSensor],
+				Object[Instrument, SampleInspector][TemperatureSensor],
+				Object[Instrument, SampleInspector][LightSensor],
+				Object[Instrument, SampleInspector][LightSensor],
 				Object[Instrument, GloveBox][AntechamberSensors, 2],
+				Object[Instrument, HandlingStation, GloveBox][AntechamberSensors, 2],
 				Object[Instrument, GasChromatograph][HeliumTankPressureSensor],
 				Object[Instrument, GasChromatograph][HeliumDeliveryPressureSensor],
 				Object[Instrument, GasChromatograph][MethaneTankPressureSensor],
 				Object[Instrument, GasChromatograph][MethaneDeliveryPressureSensor],
+				Object[Instrument, GasChromatograph][AirPressureSensor],
+				Object[Instrument, GasChromatograph][HydrogenPressureSensor],
 				Object[Instrument, GasFlowSwitch][LeftInletPressureSensor],
 				Object[Instrument, GasFlowSwitch][RightInletPressureSensor],
 				Object[Instrument, GasFlowSwitch][OutletPressureSensor],
@@ -273,7 +289,8 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, MassSpectrometer][CollisionCellGasTankPressureSensor],
 				Object[Instrument, MassSpectrometer][CollisionCellGasDeliveryPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasTankPressureSensor],
-				Object[Instrument, Spectrophotometer][PurgeGasDeliveryPressureSensor]
+				Object[Instrument, Spectrophotometer][PurgeGasDeliveryPressureSensor],
+				Object[Instrument, PortableCooler][TemperatureSensor]
 			],
 			Description -> "All instruments and/or sensors that are being directly monitored by this sensor.",
 			Category -> "Sensor Information",

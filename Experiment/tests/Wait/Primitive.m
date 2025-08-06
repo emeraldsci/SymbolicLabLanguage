@@ -25,3 +25,30 @@ DefineTests[
     ]
 	}
 ];
+
+
+DefineTests[
+	Wait,
+	{
+		Example[
+			{Basic, "Resolve a basic wait request:"},
+			Experiment[{
+				Wait[Duration -> 11 Minute],
+				Transfer[
+					Source -> Model[Sample, "Milli-Q water"],
+					Destination -> Model[Container, Vessel, "50mL Tube"],
+					Amount -> 20 Milliliter,
+					DestinationLabel -> "my sample"
+				],
+				Transfer[
+					Source -> Model[Sample, "Methanol"],
+					Destination -> Model[Container, Vessel, "50mL Tube"],
+					Amount -> 1 Milliliter,
+					DestinationLabel -> "my sample 2"
+				]
+			}],
+			ObjectP[Object[Protocol]]
+		]
+	}
+];
+

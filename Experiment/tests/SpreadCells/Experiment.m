@@ -1,12 +1,58 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 (* ::Subsection:: *)
 (* ExperimentSpreadCells *)
 DefineTests[ExperimentSpreadCells,
 	{
+		Example[{Options,InoculationSource,"InoculationSource is automatically set to LiquidMedia if the state of the input sample is Liquid and the storage condition is not DeepFreezer or Cryogenic:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				SpreadVolume -> 50 Microliter
+			];
+			Download[protocol,OutputUnitOperations[[1]][InoculationSource]],
+			LiquidMedia
+		],
+		Example[{Options,InoculationSource,"InoculationSource is automatically set to FreezeDried if the state of the input sample is Solid and the sample container is an ampoule:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				SpreadVolume -> 50 Microliter
+			];
+			Download[protocol,OutputUnitOperations[[1]][InoculationSource]],
+			FreezeDried
+		],
+		Example[{Options,InoculationSource,"InoculationSource is automatically set to FrozenGlycerol if the state of the input sample is Solid and the storage condition is DeepFreezer or Cryogenic:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample, "Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID]
+			];
+			Download[protocol,OutputUnitOperations[[1]][InoculationSource]],
+			FrozenGlycerol
+		],
+		Example[{Options,{ResuspensionMedia, ResuspensionMediaVolume, ResuspensionContainer, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes},"If the source is freeze dried, unless otherwise specified, 1) ResuspensionMedia is set to the PreferredLiquidMedia of the cell model, 2) ResuspensionMediaVolume is set to 1/4 of the sample container's max volume, 3) ResuspensionContainer is set to Model[Container, Plate, \"96-well 2mL Deep Well Plate, Sterile\"] if ResuspensionMediaVolume is not specified, 4) ResuspensionContainerWell is set to the first available position in the container, 5) ResuspensionMix is set to True, 6) NumberOfResuspensionMixes is set to 5, 6) ResuspensionMixVolume is set to 1/2 of the ResuspensionMediaVolume, and 7) NumberOfSourceScrapes is set to Null:"},
+			protocol = ExperimentSpreadCells[Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID]];
+			Download[protocol, OutputUnitOperations[[1]][{ResuspensionMediaLink, ResuspensionMediaVolume, ResuspensionContainerLink, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes}]],
+
+			{
+				{ObjectP[Model[Sample, Media, "id:XnlV5jlXbNx8"](*"LB Broth, Miller"*)]},
+				{EqualP[0.5 Milliliter]}, {ObjectP[Model[Container, Plate, "id:4pO6dMmErzez"](*"Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"*)]}, {"A1"}, {True}, {EqualP[5]}, {EqualP[0.25 Milliliter]}, {Null}
+			}
+		],
+		Example[{Options,{ResuspensionMedia, ResuspensionMediaVolume, ResuspensionContainer, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes},"If the source is frozen glycerol, unless otherwise specified, 1) ResuspensionMedia is set to the PreferredLiquidMedia of the cell model, 2) ResuspensionMediaVolume is set to 1/4 of the ResuspensionContainer's max volume, 3) ResuspensionContainer is set to Model[Container, Plate, \"96-well 2mL Deep Well Plate, Sterile\"] if ResuspensionMediaVolume is not specified, 4) ResuspensionContainerWell is set to the first available position in the container, 5) ResuspensionMix is set to True, 6) NumberOfResuspensionMixes is set to 5, 6) ResuspensionMixVolume is set to 1/2 of the ResuspensionMediaVolume, and 7) NumberOfSourceScrapes is set to 5:"},
+			protocol = ExperimentSpreadCells[Object[Sample, "Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID]];
+			Download[protocol,OutputUnitOperations[[1]][{ResuspensionMediaLink, ResuspensionMediaVolume, ResuspensionContainerLink, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes}]
+			],
+			{{ObjectP[Model[Sample, Media, "id:XnlV5jlXbNx8"](*"LB Broth, Miller"*)]},
+				{EqualP[0.5 Milliliter]}, {ObjectP[Model[Container, Plate, "id:4pO6dMmErzez"](*"Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"*)]}, {"A1"}, {True}, {EqualP[5]}, {EqualP[0.25 Milliliter]}, {EqualP[5]}}
+		],
+		Example[{Options,{ResuspensionMedia, ResuspensionMediaVolume, ResuspensionContainer, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes},"If the source is liquid media, unless otherwise specified, all resuspension options are set to Null:"},
+			protocol = ExperimentSpreadCells[Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]],
+			Download[protocol, OutputUnitOperations[[1]][{ResuspensionMediaLink, ResuspensionMediaVolume, ResuspensionContainerLink, ResuspensionContainerWell,ResuspensionMix, NumberOfResuspensionMixes, ResuspensionMixVolume, NumberOfSourceScrapes}
+			]],
+			{{Null}..}
+		],
+
 		Example[{Options,SpreadVolume,"Specify the amount of cells in suspension to spread on the destination container:"},
 			protocol = ExperimentSpreadCells[
 				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
@@ -185,6 +231,57 @@ DefineTests[ExperimentSpreadCells,
 				"My sample 1", "My sample 2", "My sample 3", "My sample 4"
 			}}
 		],
+		Example[{Options, {SampleOutLabel, ContainerOutLabel}, "SampleOutLabels should be resolved to a listness that can be run again for multiple samples with no dilution:"},
+			Lookup[
+				ExperimentSpreadCells[
+					{
+						Object[Sample, "Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+					},
+					Output -> Options
+				],
+				{SampleOutLabel, ContainerOutLabel}
+			],
+			{
+				(* SampleOutLabel *)
+				{
+					(* Sample 1 *){(_String)},
+					(* Sample 2 *){(_String)}
+				},
+				(* ContainerOutLabel *)
+				{
+					(* Sample 1 *){(_String)},
+					(* Sample 2 *){(_String)}
+				}
+			}
+		],
+		Example[{Options, {SampleOutLabel, ContainerOutLabel}, "SampleOutLabels should be resolved to a listness that can be run again for multiple samples with specified dilution:"},
+			Lookup[
+				ExperimentSpreadCells[
+					{
+						Object[Sample, "Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+					},
+					NumberOfDilutions -> 3,
+					DilutionType -> Serial,
+					DilutionStrategy -> Series,
+					Output -> Options
+				],
+				{SampleOutLabel, ContainerOutLabel}
+			],
+			{
+				(* SampleOutLabel *)
+				{
+					(* Sample 1 *){(_String), (_String), (_String), (_String)},
+					(* Sample 2 *){(_String), (_String), (_String), (_String)}
+				},
+				(* ContainerOutLabel *)
+				{
+					(* Sample 1 *){(_String), (_String), (_String), (_String)},
+					(* Sample 2 *){(_String), (_String), (_String), (_String)}
+				}
+			}
+		],
 		Example[{Options,ContainerOutLabel,"Specify labels for the containers out:"},
 			protocol = ExperimentSpreadCells[
 				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
@@ -216,6 +313,21 @@ DefineTests[ExperimentSpreadCells,
 			];
 			Download[protocol,OutputUnitOperations[[1]][DilutionType]],
 			{Serial}
+		],
+		Example[{Options,DilutionType,"DilutionType can be automatically resolve to Null if any of them is set to Null:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				NumberOfDilutions -> Null
+			];
+			Download[protocol,OutputUnitOperations[[1]][DilutionType]],
+			{Null}
+		],
+		Example[{Options,DilutionType,"DilutionType can be automatically resolve to Null if no dilution option is set:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+			];
+			Download[protocol,OutputUnitOperations[[1]][DilutionType]],
+			{Null}
 		],
 		Example[{Options,NumberOfDilutions,"Perform multiple serial dilutions before spreading the cells:"},
 			protocol = ExperimentSpreadCells[
@@ -438,7 +550,7 @@ DefineTests[ExperimentSpreadCells,
 			];
 			Download[protocol,OutputUnitOperations[[1]][DilutionMixOscillationAngle]],
 			{RangeP[8 AngularDegree]},
-			Messages :> {Warning::AmbiguousAnalyte}
+			Messages :> {Warning::AmbiguousAnalyte,Warning::AliquotRequired}
 		],
 		(* Sanitization Options *)
 		Example[{Options,PrimaryWash,"PrimaryWash will default to True if not specified:"},
@@ -601,9 +713,17 @@ DefineTests[ExperimentSpreadCells,
 			Download[protocol,OutputUnitOperations[[1]][SecondaryDryTime]],
 			{RangeP[2 Second], RangeP[5 Second]}
 		],
-		Example[{Options,TertiaryWash,"TertiaryWash will default to True if not specified:"},
+		Example[{Options,TertiaryWash,"TertiaryWash will default to False if not specified:"},
 			protocol = ExperimentSpreadCells[
 				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+			];
+			Download[protocol,OutputUnitOperations[[1]][TertiaryWash]],
+			{False}
+		],
+		Example[{Options,TertiaryWash,"TertiaryWash will default to True if QuaternaryWash is set to True:"},
+			protocol = ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				QuaternaryWash -> True
 			];
 			Download[protocol,OutputUnitOperations[[1]][TertiaryWash]],
 			{True}
@@ -629,7 +749,8 @@ DefineTests[ExperimentSpreadCells,
 		],
 		Example[{Options,TertiaryWashSolution,"The TertiaryWashSolution will automatically be set to Model[Sample, StockSolution, \"10% Bleach\"]:"},
 			protocol = ExperimentSpreadCells[
-				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				TertiaryWash -> True
 			];
 			Download[protocol,OutputUnitOperations[[1]][TertiaryWashSolutionLink]],
 			{ObjectP[Model[Sample, StockSolution, "10% Bleach"]]}
@@ -647,7 +768,8 @@ DefineTests[ExperimentSpreadCells,
 		],
 		Example[{Options,NumberOfTertiaryWashes,"The NumberOfTertiaryWashes will automatically be set to 5:"},
 			protocol = ExperimentSpreadCells[
-				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				TertiaryWash -> True
 			];
 			Download[protocol,OutputUnitOperations[[1]][NumberOfTertiaryWashes]],
 			{5}
@@ -665,7 +787,8 @@ DefineTests[ExperimentSpreadCells,
 		],
 		Example[{Options,TertiaryDryTime,"The TertiaryDryTime will automatically be set to 10 Seconds:"},
 			protocol = ExperimentSpreadCells[
-				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				TertiaryWash -> True
 			];
 			Download[protocol,OutputUnitOperations[[1]][TertiaryDryTime]],
 			{RangeP[10 Second]}
@@ -763,6 +886,137 @@ DefineTests[ExperimentSpreadCells,
 		],
 
 		(* Messages tests *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentSpreadCells[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentSpreadCells[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentSpreadCells[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentSpreadCells[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Plate, "id:n0k9mGkwbvG4"],(* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"]*)
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 1 Milliliter,
+					State -> Liquid
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentSpreadCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Plate, "id:n0k9mGkwbvG4"],(* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"]*)
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 1 Milliliter,
+					State -> Liquid
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentSpreadCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages,"NoPreferredLiquidMediaForResuspension","If the input sample does not have cells in the composition, throw a warning:"},
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 24 for ExperimentSpreadCells (freeze dried cell 2 in ampoule 3)" <> $SessionUUID], SpreadVolume -> 50 Microliter
+			],
+		    ObjectP[Object[Protocol,RoboticCellPreparation]],
+		    Messages :> {Warning::NoPreferredLiquidMediaForResuspension}
+		],
+		Example[{Messages,"MultipleInoculationSourceInInput","A message is thrown if different input samples have different InoculationSource types:"},
+			ExperimentSpreadCells[
+					{Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID]}
+			],
+			$Failed,
+			Messages :> {Error::MultipleInoculationSourceInInput,Error::InvalidInput}
+		],
+		Example[{Messages,"NoResuspensionMix","A warning message is thrown if it is specified not to mix during resuspension when the source type is FreezeDried or FrozenGlycerol:"},
+			protocol = ExperimentSpreadCells[Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				ResuspensionMix ->False
+			];
+			Download[protocol, OutputUnitOperations[[1]][{NumberOfResuspensionMixes,ResuspensionMixVolume}]],
+			{{Null}, {Null}},
+			Messages :> {Warning::NoResuspensionMix}
+		],
+		Example[{Messages,"ResuspensionMixMismatch","A message is thrown if there is mismatch in resuspension mix options:"},
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				ResuspensionMix -> True,
+				ResuspensionMixVolume -> Null
+			],
+			$Failed,
+			Messages :> {Error::ResuspensionMixMismatch,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidResuspensionContainerWellPosition","If InoculationSource is FreezeDried or FrozenGlycerol, if the specified ResuspensionContainerWell is not a Position in the ResuspensionContainer, an error will be thrown:"},
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				ResuspensionContainerWell -> "A13"
+			],
+			$Failed,
+			Messages :> {Error::InvalidResuspensionContainerWellPosition,Error::InvalidOption}
+		],
+		Example[{Messages,"ResuspensionOptionIncompatibleSource","If InoculationSource is LiquidMedia and any resuspension option is set, an error will be thrown:"},
+			ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				ResuspensionMix -> True
+			],
+			$Failed,
+			Messages :> {Error::ResuspensionOptionIncompatibleSource,Error::InvalidOption}
+		],
+		Example[{Messages,"ResuspensionOptionIncompatibleSource","If InoculationSource is FreezeDried and NumberOfSourceScrapes is set, an error will be thrown:"},
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				NumberOfSourceScrapes -> 5
+			],
+			$Failed,
+			Messages :> {Error::ResuspensionOptionIncompatibleSource,Error::InvalidOption}
+		],
 		Example[{Messages,"SourceMixMismatch","If SourceMix is True but either SourceMixVolume or NumberOfSourceMixes is Null, an error is thrown:"},
 			ExperimentSpreadCells[
 				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
@@ -972,7 +1226,7 @@ DefineTests[ExperimentSpreadCells,
 				SampleOutLabel -> {"my label 1","my label 2"}
 			],
 			$Failed,
-			Messages :> {Error::SampleOutLabelMismatch,Error::InvalidOption,Error::DilutionMismatch}
+			Messages :> {Error::SampleOutLabelMismatch,Error::InvalidOption}
 		],
 		Example[{Messages,"ContainerOutLabelMismatch","If DilutionStrategy is Series and the length of ContainerOutLabel is not NumberOfDilutions + 1, an error is thrown:"},
 			ExperimentSpreadCells[
@@ -1003,26 +1257,34 @@ DefineTests[ExperimentSpreadCells,
 				ContainerOutLabel -> {"my label 1","my label 2"}
 			],
 			$Failed,
-			Messages :> {Error::ContainerOutLabelMismatch,Error::InvalidOption,Error::DilutionMismatch}
+			Messages :> {Error::ContainerOutLabelMismatch,Error::InvalidOption}
 		],
-        Example[{Messages,"IncompatibleMaterials","If a wash solution is not compatible with the wetted materials of the instrument, an error will be thrown:"},
-            ExperimentSpreadCells[
-                Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
-                PrimaryWashSolution -> Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
-                SecondaryWash -> False,
-                Output->Options
-            ],
-            _List,
-            Messages :> {Warning::IncompatibleMaterials}
-        ],
-        Example[{Messages,"IncompatibleMaterials","If the input sample is not compatible with the wetted materials of the instrument, an error will be thrown:"},
-            ExperimentSpreadCells[
-                Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID],
-                Output->Options
-            ],
-            _List,
-            Messages :> {Warning::IncompatibleMaterials}
-        ],
+		Example[{Messages,"IncompatibleMaterials","If a wash solution is not compatible with the wetted materials of the instrument, an error will be thrown:"},
+				ExperimentSpreadCells[
+						Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+						PrimaryWashSolution -> Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
+						SecondaryWash -> False,
+						Output->Options
+				],
+				_List,
+				Messages :> {Error::IncompatibleMaterials,Error::InvalidOption}
+		],
+		Example[{Messages,"IncompatibleMaterials","If the input sample is not compatible with the wetted materials of the instrument, an error will be thrown:"},
+				ExperimentSpreadCells[
+						Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID],
+						Output->Options
+				],
+				_List,
+				Messages :> {Error::IncompatibleMaterials}
+		],
+		Example[{Messages,"QPixWashSolutionInsufficientVolume","If there is not sufficient volume (150mL) left in a specified Object[Sample] for any wash solution options, an error will be thrown:"},
+			ExperimentSpreadCells[
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				PrimaryWashSolution -> Object[Sample,"Test Wash Solution for ExperimentSpreadCells (MilliQ)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::QPixWashSolutionInsufficientVolume,Error::InvalidOption}
+		],
 		(* Batching tests *)
 		Test["If there are more than 8 source plates, split into multiple physical batches:",
 			protocol = ExperimentSpreadCells[
@@ -1136,12 +1398,12 @@ DefineTests[ExperimentSpreadCells,
 				ObjectP[Model[Container,Rack,"QPix Riser"]]
 			}
 		],
-		Test["Initially pick all possible risers/carriers:",
+		Test["Only pick the carriers/risers needed for the protocol:",
 			protocol = ExperimentSpreadCells[
 				Object[Sample,"Test Sample 10 for ExperimentSpreadCells (Test Cell 1 in LB in UV Star 1)" <> $SessionUUID]
 			];
 			Length[Download[protocol,OutputUnitOperations[[1]][CarrierAndRiserInitialResources]]],
-			6
+			3
 		],
 		Test["Carriers are placed directly on deck if we have deep well source containers:",
 			protocol = ExperimentSpreadCells[
@@ -1180,8 +1442,12 @@ DefineTests[ExperimentSpreadCells,
 					Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
 				}
 			];
-			Download[protocol,OutputUnitOperations[[1]][BatchedUnitOperations][[1]][ColonyHandlerHeadCassette]],
-			ObjectP[Model[Part,ColonyHandlerHeadCassette]]
+			Download[protocol,OutputUnitOperations[[1]][BatchedUnitOperations][[1]][ColonyHandlerHeadCassettePlacement]],
+			{
+				ObjectP[Model[Part,ColonyHandlerHeadCassette]],
+				ObjectP[Model[Instrument,ColonyHandler]],
+				"QPix ColonyHandlerHeadCassette Slot"
+			}
 		],
 		Test["Have a colony spreading tool return in the second batch if it specifies a new head",
 			protocol = ExperimentSpreadCells[
@@ -1248,15 +1514,61 @@ DefineTests[ExperimentSpreadCells,
 				NumberOfDilutions -> 3
 			];
 			Download[protocol,{
-				OutputUnitOperations[[1]][BatchedUnitOperations][[1]][TipRackDeckPlacement]
+				OutputUnitOperations[[1]][BatchedUnitOperations][[1]][TipRackDeckPlacements]
 			}],
 			{
-				{ObjectP[Model[Item,Tips,"QPix Tips"]], {"QPix Tip Slot"}}
+				{{ObjectP[Model[Item,Tips,"QPix Tips"]], {"QPix Tip Slot"}}}
 			}
+		],
+		Test["Generate the protocol with a resuspension primitive of InoculateLiquid Media when both resuspension and dilution are performed for freeze dried input samples:",
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+				Diluent -> Model[Sample, Media, "LB (Liquid)"],
+				NumberOfDilutions -> 3
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]],
+			Messages :> {Warning::MissingTargetAnalyteInitialConcentration}(*This message is expected because we set a 100 MassPercent cells in freeze dried sample composition and start with with a mass. We don't know the cell count at the point before the first inoculation and measurement of the resulted culture*)
+		],
+		Test["Generate the protocol with a resuspension primitive of InoculateLiquid Media when both resuspension and dilution are performed for frozen glycerol input samples:",
+			ExperimentSpreadCells[
+				Object[Sample, "Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID],
+				Diluent -> Model[Sample, Media, "LB (Liquid)"],
+				NumberOfDilutions -> 3
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
+		],
+		Test["Generate the protocol with LabeledObjects and FutureLabeledObjects populated based on resolved labels:",
+			protocol = ExperimentSpreadCells[
+				Object[Sample, "Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				SampleLabel -> "My Favorite Sample",
+				SampleContainerLabel -> "My Favorite Container",
+				SampleOutLabel -> "My sample 1",
+				ContainerOutLabel -> "My container 1"
+			];
+			Download[protocol, {LabeledObjects, FutureLabeledObjects}],
+			{
+				{
+					{"My Favorite Sample",ObjectP[Object[Sample]]},
+					{"My Favorite Container",ObjectP[Object[Container]]}
+				},
+				{"My sample 1" -> LabelField_, "My container 1" -> {"My sample 1", Container}}
+			}
+		],
+		Test["The generated RCP, requires the Magnetic Hazard Safety certification:",
+			Module[{protocol,requiredCerts},
+				protocol = ExperimentSpreadCells[
+					Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					SpreadVolume -> 50 Microliter
+				];
+				requiredCerts = Download[protocol,RequiredCertifications];
+				MemberQ[requiredCerts,ObjectP[Model[Certification, "id:XnlV5jNAkGmM"]]]
+			],
+			True
 		]
 	},
 	SymbolSetUp :> (
 		Module[{objs,existingObjs},
+			Off[Warning::SamplesOutOfStock];
 			objs=Quiet[Cases[
 				Flatten[{
 					(* Bench *)
@@ -1273,12 +1585,19 @@ DefineTests[ExperimentSpreadCells,
 					Object[Container,Plate,"Test DWP 8 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Plate,"Test DWP 9 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Plate,"Test DWP 10 for ExperimentSpreadCells" <> $SessionUUID],
-                    Object[Container,Plate,"Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Plate,"Test Omnitray 1 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Plate,"Test Omnitray 2 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Plate,"Test Omnitray 3 for ExperimentSpreadCells" <> $SessionUUID],
 					Object[Container,Vessel,"Test 50 mL Tube 1 for ExperimentSpreadCells" <> $SessionUUID],
-					Object[Container,Plate,"Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel,"Test 50 mL Tube 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate, "Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 3 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test cryoVial 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test cryoVial 2 for ExperimentSpreadCells" <> $SessionUUID],
+
 
 					(* Cells *)
 					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCells" <> $SessionUUID],
@@ -1291,7 +1610,10 @@ DefineTests[ExperimentSpreadCells,
 					Model[Sample,"Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
 					Model[Sample,"Test Sample Model 2 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID],
 					Model[Sample,"Test Sample Model 3 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID],
-                    Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
+					Model[Sample, "Test freeze dried cells sample Model for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample, "Test freeze dried cells sample Model 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample, "Test cells in 50% frozen glycerol sample Model for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
 
 					(* Samples *)
 					Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
@@ -1312,8 +1634,13 @@ DefineTests[ExperimentSpreadCells,
 					Object[Sample,"Test Sample 16 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
 					Object[Sample,"Test Sample 17 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
 					Object[Sample,"Test Sample 18 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 10)" <> $SessionUUID],
-                    Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID]
-
+					Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID],
+					Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+					Object[Sample, "Test Sample 21 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 2)" <> $SessionUUID],
+					Object[Sample, "Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID],
+					Object[Sample, "Test Sample 23 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 2)" <> $SessionUUID],
+					Object[Sample, "Test Sample 24 for ExperimentSpreadCells (freeze dried cell 2 in ampoule 3)" <> $SessionUUID],
+					Object[Sample,"Test Wash Solution for ExperimentSpreadCells (MilliQ)" <> $SessionUUID]
 				}],
 				ObjectP[]
 			]];
@@ -1324,11 +1651,15 @@ DefineTests[ExperimentSpreadCells,
 			Module[
 				{
 					testBench,inputPlate1,inputPlate2,inputPlate3, inputPlate4, inputPlate5, inputPlate6, inputPlate7, inputPlate8, inputPlate9,
-					inputPlate10,inputPlate11,destinationPlate1,destinationPlate2,invalidDestinationPlate,diluentTube,uvStarPlate1,testCell1,testCell2NoPrefSolidMedia,testSolidMedia,
-					testCell1InLB,testCell2InLB,testCell1InTB,testIncompatibleSampleModel,testCell1InLBSample1,testCell1InLBSample2,testCell2InLBSample2,testCell2InLBSample1,
+					inputPlate10,inputPlate11,destinationPlate1,destinationPlate2,invalidDestinationPlate,diluentTube,washSolutionTube,uvStarPlate1,
+					ampoule1, ampoule2, ampoule3, cryoVial1, cryoVial2,
+					testCell1,testCell2NoPrefSolidMedia,testSolidMedia,
+					testCell1InLB,testCell2InLB,testCell1InTB,testIncompatibleSampleModel,testFreezeDriedCell1,testFreezeDriedCell2,
+					testFrozenGlycerolCell1,testCell1InLBSample1,testCell1InLBSample2,testCell2InLBSample2,testCell2InLBSample1,
 					testCell1InTBSample1,lbBrothSample, lbBrothDiluentSample,destinationSample,invalidDestinationSample,testCell1inUVStar,
 					testCell1InLBSample3, testCell1InLBSample4, testCell1InLBSample5, testCell1InLBSample6, testCell1InLBSample7, testCell1InLBSample8,
-					testCell1InLBSample9, testCell1InLBSample10,testIncompatibleInput
+					testCell1InLBSample9, testCell1InLBSample10,testIncompatibleInput,testCell1FreezeDried1, testCell1FreezeDried2, testCell2FreezeDried1,
+					testCell1FrozenGlycerol1, testCell1FrozenGlycerol2,testWashSolution
 				},
 
 				(* Create test bench for containers *)
@@ -1353,32 +1684,44 @@ DefineTests[ExperimentSpreadCells,
 					inputPlate8,
 					inputPlate9,
 					inputPlate10,
-                    inputPlate11,
+					inputPlate11,
 					destinationPlate1,
 					destinationPlate2,
 					invalidDestinationPlate,
 					diluentTube,
-					uvStarPlate1
+					washSolutionTube,
+					uvStarPlate1,
+					ampoule1,
+					ampoule2,
+					ampoule3,
+					cryoVial1,
+					cryoVial2
 				} = UploadSample[
 					{
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-                        Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Vessel, "id:bq9LA0dBGGR6"], (* Model[Container, Vessel, "50mL Tube"] *)
-						Model[Container, Plate, "id:n0k9mGzRaaBn"] (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+						Model[Container, Vessel, "id:bq9LA0dBGGR6"], (* Model[Container, Vessel, "50mL Tube"] *)
+						Model[Container, Plate, "id:n0k9mGzRaaBn"], (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+						Model[Container, Vessel, "id:n0k9mGkp4OK6"],(* Model[Container, Vessel, "2mL amber glass ampoule"] *)
+						Model[Container, Vessel, "id:n0k9mGkp4OK6"],(* Model[Container, Vessel, "2mL amber glass ampoule"] *)
+						Model[Container, Vessel, "id:n0k9mGkp4OK6"],(* Model[Container, Vessel, "2mL amber glass ampoule"] *)
+						Model[Container, Vessel, "id:vXl9j5qEnnOB"],(* Model[Container, Vessel, "2mL Cryogenic Vial"] *)
+						Model[Container, Vessel, "id:vXl9j5qEnnOB"](* Model[Container, Vessel, "2mL Cryogenic Vial"] *)
 					},
-					ConstantArray[{"Work Surface",testBench},16],
+					ConstantArray[{"Work Surface",testBench},22],
 					Name -> {
 						"Test DWP 1 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test DWP 2 for ExperimentSpreadCells" <> $SessionUUID,
@@ -1390,32 +1733,19 @@ DefineTests[ExperimentSpreadCells,
 						"Test DWP 8 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test DWP 9 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test DWP 10 for ExperimentSpreadCells" <> $SessionUUID,
-                        "Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test Omnitray 1 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test Omnitray 2 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test Omnitray 3 for ExperimentSpreadCells" <> $SessionUUID,
 						"Test 50 mL Tube 1 for ExperimentSpreadCells" <> $SessionUUID,
-						"Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID
+						"Test 50 mL Tube 2 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test 2mL amber glass ampoule 1 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test 2mL amber glass ampoule 2 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test 2mL amber glass ampoule 3 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test cryoVial 1 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test cryoVial 2 for ExperimentSpreadCells" <> $SessionUUID
 					}
-				];
-
-				(* Cells *)
-				{
-					testCell1,
-					testCell2NoPrefSolidMedia
-				} = UploadBacterialCell[
-					{
-						"Test Cell 1 for ExperimentSpreadCells" <> $SessionUUID,
-						"Test Cell 1 for ExperimentSpreadCells - no PrefSolidMedia" <> $SessionUUID
-					},
-					Morphology -> Cocci,
-					BiosafetyLevel -> "BSL-1",
-					Flammable -> False,
-					MSDSRequired -> False,
-					IncompatibleMaterials -> {None},
-					CellType -> Bacterial,
-					CultureAdhesion -> Suspension,
-					PreferredSolidMedia -> {Model[Sample, Media, "id:9RdZXvdwAEo6"] (* Model[Sample, Media, "LB (Solid Agar)"] *),Null}
 				];
 
 				(* Media *)
@@ -1434,28 +1764,54 @@ DefineTests[ExperimentSpreadCells,
 					State -> Solid
 				|>];
 
+				(* Cells *)
+				{
+					testCell1,
+					testCell2NoPrefSolidMedia
+				} = UploadBacterialCell[
+					{
+						"Test Cell 1 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test Cell 1 for ExperimentSpreadCells - no PrefSolidMedia" <> $SessionUUID
+					},
+					Morphology -> Cocci,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension,
+					PreferredLiquidMedia -> {Model[Sample, Media, "id:XnlV5jlXbNx8"],Null},(* Model[Sample, Media, "LB Broth, Miller"] *)
+					PreferredSolidMedia -> {Model[Sample, Media, "id:9RdZXvdwAEo6"] (* Model[Sample, Media, "LB (Solid Agar)"] *),Null}
+				];
+
 				(* Sample Models *)
 				{
 					testCell1InLB,
 					testCell2InLB,
 					testCell1InTB,
-                    testIncompatibleSampleModel
+					testIncompatibleSampleModel,
+					testFreezeDriedCell1,
+					testFreezeDriedCell2,
+					testFrozenGlycerolCell1
 				} = UploadSampleModel[
 					{
 						"Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
 						"Test Sample Model 2 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
 						"Test Sample Model 3 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID,
-                        "Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID
+						"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID,
+						"Test freeze dried cells sample Model for ExperimentSpreadCells" <> $SessionUUID,
+						"Test freeze dried cells sample Model 2 for ExperimentSpreadCells" <> $SessionUUID,
+						"Test cells in 50% frozen glycerol sample Model for ExperimentSpreadCells" <> $SessionUUID
 					},
 					Composition -> {
 						{
-							{5000 Cell/Milliliter, testCell1},
+							{5000 EmeraldCell/Milliliter, testCell1},
 							{Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
 							{Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
 							{Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
 						},
 						{
-							{5000 Cell/Milliliter, testCell2NoPrefSolidMedia},
+							{5000 EmeraldCell/Milliliter, testCell2NoPrefSolidMedia},
 							{Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
 							{Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
 							{Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
@@ -1463,37 +1819,52 @@ DefineTests[ExperimentSpreadCells,
 						{
 							{0.8 OD600, testCell1},
 							{95 VolumePercent, Model[Molecule,"Water"]},
-							{55 Millimolar, Model[Molecule, "Potassium Phosphate"]},
+							{55 Millimolar, Model[Molecule, "Potassium Phosphate (Dibasic)"]},
 							{10 Millimolar, Model[Molecule, "Potassium Phosphate (Monobasic)"]},
 							{0.4 VolumePercent, Model[Molecule, "Glycerol"]},
 							{0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
 						},
-                        {
-                          {100 VolumePercent, Model[Molecule, "Water"]}
-                        }
+						{
+							{100 VolumePercent, Model[Molecule, "Water"]}
+						},
+						{
+							{100 MassPercent, testCell1}
+						},
+						{
+							{100 MassPercent, testCell2NoPrefSolidMedia}
+						},
+						{
+							{50 VolumePercent, Model[Molecule, "Nutrient Broth"]},
+							{50 VolumePercent, Model[Molecule, "Glycerol"]},
+							{(1000 EmeraldCell)/Milliliter, testCell1}
+						}
 					},
 					IncompatibleMaterials -> {
-                        {None},
-                        {None},
-                        {None},
-                        {Nylon}
-                    },
-					Expires -> {True,True,True,False},
-					ShelfLife -> {2 Week,2 Week,2 Week,Null},
-					UnsealedShelfLife -> {1 Hour,1 Hour,1 Hour,Null},
+						{None},
+						{None},
+						{None},
+						{Nylon},
+						{None},
+						{None},
+						{None}
+					},
+					Expires -> False,
 					DefaultStorageCondition -> {
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
-                        Model[StorageCondition, "id:7X104vnR18vX"] (* Model[StorageCondition, "Ambient Storage"] *)
+						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
+						Model[StorageCondition, "id:N80DNj1r04jW"], (*Model[StorageCondition, "Refrigerator"]*)
+						Model[StorageCondition, "id:N80DNj1r04jW"], (*Model[StorageCondition, "Refrigerator"]*)
+						Model[StorageCondition, "id:xRO9n3BVOe3z"]  (*Model[StorageCondition, "Deep Freezer"]*)
 					},
-					Flammable -> False,
+					Flammable -> {False,False,False,False,False,False,True},
 					MSDSRequired -> False,
 					BiosafetyLevel -> "BSL-1",
-					State -> Liquid,
+					State -> {Liquid,Liquid,Liquid,Liquid,Solid,Solid,Liquid},
 					UsedAsSolvent -> False,
 					UsedAsMedia -> False,
-					Living -> True
+					Living -> {True,True,True,False,True,True,True}
 				];
 
 				(* Samples *)
@@ -1516,7 +1887,13 @@ DefineTests[ExperimentSpreadCells,
 					testCell1InLBSample8,
 					testCell1InLBSample9,
 					testCell1InLBSample10,
-                    testIncompatibleInput
+					testIncompatibleInput,
+					testCell1FreezeDried1,
+					testCell1FreezeDried2,
+					testCell2FreezeDried1,
+					testCell1FrozenGlycerol1,
+					testCell1FrozenGlycerol2,
+					testWashSolution
 				} = UploadSample[
 					{
 						testCell1InLB,
@@ -1537,7 +1914,13 @@ DefineTests[ExperimentSpreadCells,
 						testCell1InLB,
 						testCell1InLB,
 						testCell1InLB,
-                        testIncompatibleSampleModel
+						testIncompatibleSampleModel,
+						testFreezeDriedCell1,
+						testFreezeDriedCell1,
+						testFreezeDriedCell2,
+						testFrozenGlycerolCell1,
+						testFrozenGlycerolCell1,
+						Model[Sample, "id:8qZ1VWNmdLBD"](*"Milli-Q water"*)
 					},
 					{
 						{"A1",inputPlate1},
@@ -1558,7 +1941,13 @@ DefineTests[ExperimentSpreadCells,
 						{"A1",inputPlate8},
 						{"A1",inputPlate9},
 						{"A1",inputPlate10},
-                        {"A1",inputPlate11}
+						{"A1",inputPlate11},
+						{"A1",ampoule1},
+						{"A1",ampoule2},
+						{"A1",ampoule3},
+						{"A1",cryoVial1},
+						{"A1",cryoVial2},
+						{"A1",washSolutionTube}
 					},
 					Name -> {
 						"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID,
@@ -1579,7 +1968,13 @@ DefineTests[ExperimentSpreadCells,
 						"Test Sample 16 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 8)" <> $SessionUUID,
 						"Test Sample 17 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 9)" <> $SessionUUID,
 						"Test Sample 18 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 10)" <> $SessionUUID,
-                        "Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID
+						"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID,
+						"Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID,
+						"Test Sample 21 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 2)" <> $SessionUUID,
+						"Test Sample 24 for ExperimentSpreadCells (freeze dried cell 2 in ampoule 3)" <> $SessionUUID,
+						"Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID,
+						"Test Sample 23 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 2)" <> $SessionUUID,
+						"Test Wash Solution for ExperimentSpreadCells (MilliQ)" <> $SessionUUID
 					},
 					InitialAmount -> {
 						1 Milliliter,
@@ -1600,7 +1995,13 @@ DefineTests[ExperimentSpreadCells,
 						1 Milliliter,
 						1 Milliliter,
 						1 Milliliter,
-                        1 Milliliter
+						1 Milliliter,
+						100 Milligram,
+						100 Milligram,
+						100 Milligram,
+						1 Milliliter,
+						1 Milliliter,
+						45 Milliliter
 					},
 					State -> {
 						Liquid,
@@ -1621,8 +2022,25 @@ DefineTests[ExperimentSpreadCells,
 						Liquid,
 						Liquid,
 						Liquid,
-                        Liquid
-					}
+						Liquid,
+						Solid,
+						Solid,
+						Solid,
+						Solid,
+						Solid,
+						Liquid
+					},
+					StorageCondition -> Join[
+						ConstantArray[Model[StorageCondition, "Ambient Storage"],19],
+						{
+							Model[StorageCondition, "Refrigerator"],
+							Model[StorageCondition, "Refrigerator"],
+							Model[StorageCondition, "Refrigerator"],
+							Model[StorageCondition, "Deep Freezer"],
+							Model[StorageCondition, "Deep Freezer"],
+							Model[StorageCondition, "Ambient Storage"]
+						}
+					]
 				];
 
 				(* Other info to upload/correct *)
@@ -1665,67 +2083,83 @@ DefineTests[ExperimentSpreadCells,
 	SymbolTearDown :> (
 		Module[{objs,existingObjs},
 			objs=Quiet[Cases[
-              Flatten[{
-                  (* Bench *)
-                  Object[Container,Bench,"Bench for ExperimentSpreadCells Testing"<>$SessionUUID],
+				Flatten[{
+					(* Bench *)
+					Object[Container,Bench,"Bench for ExperimentSpreadCells Testing"<>$SessionUUID],
 
-                  (* Containers *)
-                  Object[Container,Plate,"Test DWP 1 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 2 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 3 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 4 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 5 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 6 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 7 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 8 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 9 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 10 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test Omnitray 1 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test Omnitray 2 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test Omnitray 3 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Vessel,"Test 50 mL Tube 1 for ExperimentSpreadCells" <> $SessionUUID],
-                  Object[Container,Plate,"Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID],
+					(* Containers *)
+					Object[Container,Plate,"Test DWP 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 3 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 4 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 5 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 6 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 7 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 8 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 9 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 10 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 11 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 3 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel,"Test 50 mL Tube 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel,"Test 50 mL Tube 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Plate, "Test UV Star Plate 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test 2mL amber glass ampoule 3 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test cryoVial 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Object[Container,Vessel, "Test cryoVial 2 for ExperimentSpreadCells" <> $SessionUUID],
 
-                  (* Cells *)
-                  Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCells" <> $SessionUUID],
-                  Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCells - no PrefSolidMedia" <> $SessionUUID],
 
-                  (* Media *)
-                  Model[Sample,Media,"Test Solid Media for ExperimentSpreadCells" <> $SessionUUID],
+					(* Cells *)
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCells - no PrefSolidMedia" <> $SessionUUID],
 
-                  (* Sample Models *)
-                  Model[Sample,"Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
-                  Model[Sample,"Test Sample Model 2 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID],
-                  Model[Sample,"Test Sample Model 3 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID],
-                  Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
+					(* Media *)
+					Model[Sample,Media,"Test Solid Media for ExperimentSpreadCells" <> $SessionUUID],
 
-                  (* Samples *)
-                  Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 2 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 3 for ExperimentSpreadCells (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 4 for ExperimentSpreadCells (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 5 for ExperimentSpreadCells (LB Broth in DWP 1)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 6 for ExperimentSpreadCells (LB Broth in 50 mL Tube)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 7 for ExperimentSpreadCells (Solid LB Agar in Omnitray)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 8 for ExperimentSpreadCells (Test Cell 1 in TB in DWP 1)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 9 for ExperimentSpreadCells (LB Agar in Omnitray)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 10 for ExperimentSpreadCells (Test Cell 1 in LB in UV Star 1)"<>$SessionUUID],
-                  Object[Sample,"Test Sample 11 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 3)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 12 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 4)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 13 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 5)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 14 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 6)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 15 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 7)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 16 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 17 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 18 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 10)" <> $SessionUUID],
-                  Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID]
+					(* Sample Models *)
+					Model[Sample,"Test Sample Model 1 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 2 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 3 for ExperimentSpreadCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID],
+					Model[Sample, "Test freeze dried cells sample Model for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample, "Test freeze dried cells sample Model 2 for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample, "Test cells in 50% frozen glycerol sample Model for ExperimentSpreadCells" <> $SessionUUID],
+					Model[Sample,"Test Incompatible Sample Model for ExperimentSpreadCells " <> $SessionUUID],
 
-                  }],
+					(* Samples *)
+					Object[Sample,"Test Sample 1 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 2 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 3 for ExperimentSpreadCells (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 4 for ExperimentSpreadCells (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 5 for ExperimentSpreadCells (LB Broth in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 6 for ExperimentSpreadCells (LB Broth in 50 mL Tube)" <> $SessionUUID],
+					Object[Sample,"Test Sample 7 for ExperimentSpreadCells (Solid LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 8 for ExperimentSpreadCells (Test Cell 1 in TB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 9 for ExperimentSpreadCells (LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 10 for ExperimentSpreadCells (Test Cell 1 in LB in UV Star 1)"<>$SessionUUID],
+					Object[Sample,"Test Sample 11 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 3)" <> $SessionUUID],
+					Object[Sample,"Test Sample 12 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 4)" <> $SessionUUID],
+					Object[Sample,"Test Sample 13 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 5)" <> $SessionUUID],
+					Object[Sample,"Test Sample 14 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 6)" <> $SessionUUID],
+					Object[Sample,"Test Sample 15 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 7)" <> $SessionUUID],
+					Object[Sample,"Test Sample 16 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
+					Object[Sample,"Test Sample 17 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
+					Object[Sample,"Test Sample 18 for ExperimentSpreadCells (Test Cell 1 in LB in DWP 10)" <> $SessionUUID],
+					Object[Sample,"Test Sample 19 for ExperimentSpreadCells (Incompatible sample in DWP 11)" <> $SessionUUID],
+					Object[Sample, "Test Sample 20 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 1)" <> $SessionUUID],
+					Object[Sample, "Test Sample 21 for ExperimentSpreadCells (freeze dried cell 1 in ampoule 2)" <> $SessionUUID],
+					Object[Sample, "Test Sample 22 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 1)" <> $SessionUUID],
+					Object[Sample, "Test Sample 23 for ExperimentSpreadCells (cell 1 in frozen glycerol in cryoVial 2)" <> $SessionUUID],
+					Object[Sample, "Test Sample 24 for ExperimentSpreadCells (freeze dried cell 2 in ampoule 3)" <> $SessionUUID],
+					Object[Sample,"Test Wash Solution for ExperimentSpreadCells (MilliQ)" <> $SessionUUID]
+				}],
 				  ObjectP[]
 			]];
 			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
-			EraseObject[existingObjs,Force->True,Verbose->False]
+			EraseObject[existingObjs,Force->True,Verbose->False];
+			On[Warning::SamplesOutOfStock];
 		]
 	)
 ];
@@ -1862,16 +2296,16 @@ DefineTests[ExperimentSpreadCellsOptions,
 					uvStarPlate1
 				} = UploadSample[
 					{
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
@@ -1960,16 +2394,14 @@ DefineTests[ExperimentSpreadCellsOptions,
 						{
 							{0.8 OD600, testCell1},
 							{95 VolumePercent, Model[Molecule,"Water"]},
-							{55 Millimolar, Model[Molecule, "Potassium Phosphate"]},
+							{55 Millimolar, Model[Molecule, "Potassium Phosphate (Dibasic)"]},
 							{10 Millimolar, Model[Molecule, "Potassium Phosphate (Monobasic)"]},
 							{0.4 VolumePercent, Model[Molecule, "Glycerol"]},
 							{0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
 						}
 					},
 					IncompatibleMaterials -> {None},
-					Expires -> True,
-					ShelfLife -> 2 Week,
-					UnsealedShelfLife -> 1 Hour,
+					Expires -> False,
 					DefaultStorageCondition -> {
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
@@ -2104,7 +2536,8 @@ DefineTests[ExperimentSpreadCellsOptions,
 						Liquid,
 						Liquid,
 						Liquid
-					}
+					},
+					StorageCondition -> ConstantArray[Model[StorageCondition, "Ambient Storage"],18]
 				];
 
 				(* Other info to upload/correct *)
@@ -2347,16 +2780,16 @@ DefineTests[ValidExperimentSpreadCellsQ,
 					uvStarPlate1
 				} = UploadSample[
 					{
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
@@ -2445,16 +2878,14 @@ DefineTests[ValidExperimentSpreadCellsQ,
 						{
 							{0.8 OD600, testCell1},
 							{95 VolumePercent, Model[Molecule,"Water"]},
-							{55 Millimolar, Model[Molecule, "Potassium Phosphate"]},
+							{55 Millimolar, Model[Molecule, "Potassium Phosphate (Dibasic)"]},
 							{10 Millimolar, Model[Molecule, "Potassium Phosphate (Monobasic)"]},
 							{0.4 VolumePercent, Model[Molecule, "Glycerol"]},
 							{0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
 						}
 					},
 					IncompatibleMaterials -> {None},
-					Expires -> True,
-					ShelfLife -> 2 Week,
-					UnsealedShelfLife -> 1 Hour,
+					Expires -> False,
 					DefaultStorageCondition -> {
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
 						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
@@ -2589,7 +3020,8 @@ DefineTests[ValidExperimentSpreadCellsQ,
 						Liquid,
 						Liquid,
 						Liquid
-					}
+					},
+					StorageCondition -> ConstantArray[Model[StorageCondition, "Ambient Storage"],18]
 				];
 
 				(* Other info to upload/correct *)
@@ -2684,6 +3116,478 @@ DefineTests[ValidExperimentSpreadCellsQ,
 					Object[Sample,"Test Sample 16 for ValidExperimentSpreadCellsQ (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
 					Object[Sample,"Test Sample 17 for ValidExperimentSpreadCellsQ (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
 					Object[Sample,"Test Sample 18 for ValidExperimentSpreadCellsQ (Test Cell 1 in LB in DWP 10)" <> $SessionUUID]
+
+				}],
+				ObjectP[]
+			]];
+			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
+			EraseObject[existingObjs,Force->True,Verbose->False]
+		]
+	)
+];
+(* ::Subsection:: *)
+(* ExperimentSpreadCellsPreview *)
+DefineTests[
+	ExperimentSpreadCellsPreview,
+	{
+		(* --- Basic Examples --- *)
+		Example[
+			{Basic, "Generate a preview for an ExperimentSpreadCells call to pick colonies from a single sample:"},
+			ExperimentSpreadCellsPreview[Object[Sample,"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]],
+			Null
+		],
+		Example[
+			{Basic, "Generate a preview for an ExperimentSpreadCells call to pick colonies from multiple samples:"},
+			ExperimentSpreadCellsPreview[{
+				Object[Sample,"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+				Object[Sample,"Test Sample 2 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID]
+			}],
+			Null
+		],
+		Example[
+			{Basic, "Generate a preview for an ExperimentSpreadCells call to pick colonies from a single container:"},
+			ExperimentSpreadCellsPreview[Object[Container,Plate,"Test DWP 1 for ExperimentSpreadCellsPreview" <> $SessionUUID]],
+			Null
+		]
+	},
+	SymbolSetUp :> (
+		Module[{objs,existingObjs},
+			objs=Quiet[Cases[
+				Flatten[{
+					(* Bench *)
+					Object[Container,Bench,"Bench for ExperimentSpreadCellsPreview Testing"<>$SessionUUID],
+
+					(* Containers *)
+					Object[Container,Plate,"Test DWP 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 2 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 3 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 4 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 5 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 6 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 7 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 8 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 9 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 10 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 2 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 3 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Vessel,"Test 50 mL Tube 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test UV Star Plate 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+
+					(* Cells *)
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCellsPreview - no PrefSolidMedia" <> $SessionUUID],
+
+					(* Media *)
+					Model[Sample,Media,"Test Solid Media for ExperimentSpreadCellsPreview" <> $SessionUUID],
+
+					(* Sample Models *)
+					Model[Sample,"Test Sample Model 1 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 2 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 3 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID],
+
+					(* Samples *)
+					Object[Sample,"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 2 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 3 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 4 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 5 for ExperimentSpreadCellsPreview (LB Broth in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 6 for ExperimentSpreadCellsPreview (LB Broth in 50 mL Tube)" <> $SessionUUID],
+					Object[Sample,"Test Sample 7 for ExperimentSpreadCellsPreview (Solid LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 8 for ExperimentSpreadCellsPreview (Test Cell 1 in TB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 9 for ExperimentSpreadCellsPreview (LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 10 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in UV Star 1)"<>$SessionUUID],
+					Object[Sample,"Test Sample 11 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 3)" <> $SessionUUID],
+					Object[Sample,"Test Sample 12 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 4)" <> $SessionUUID],
+					Object[Sample,"Test Sample 13 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 5)" <> $SessionUUID],
+					Object[Sample,"Test Sample 14 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 6)" <> $SessionUUID],
+					Object[Sample,"Test Sample 15 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 7)" <> $SessionUUID],
+					Object[Sample,"Test Sample 16 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
+					Object[Sample,"Test Sample 17 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
+					Object[Sample,"Test Sample 18 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 10)" <> $SessionUUID]
+
+				}],
+				ObjectP[]
+			]];
+			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
+			EraseObject[existingObjs,Force->True,Verbose->False]
+		];
+		Block[{$DeveloperUpload = True},
+			Module[
+				{
+					testBench,inputPlate1,inputPlate2,inputPlate3, inputPlate4, inputPlate5, inputPlate6, inputPlate7, inputPlate8, inputPlate9,
+					inputPlate10,destinationPlate1,destinationPlate2,invalidDestinationPlate,diluentTube,uvStarPlate1,testCell1,testCell2NoPrefSolidMedia,testSolidMedia,
+					testCell1InLB,testCell2InLB,testCell1InTB,testCell1InLBSample1,testCell1InLBSample2,testCell2InLBSample2,testCell2InLBSample1,
+					testCell1InTBSample1,lbBrothSample, lbBrothDiluentSample,destinationSample,invalidDestinationSample,testCell1inUVStar,
+					testCell1InLBSample3, testCell1InLBSample4, testCell1InLBSample5, testCell1InLBSample6, testCell1InLBSample7, testCell1InLBSample8,
+					testCell1InLBSample9, testCell1InLBSample10
+				},
+
+				(* Create test bench for containers *)
+				(* Upload bench *)
+				testBench = Upload[
+					<|
+						Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
+						Type->Object[Container,Bench],
+						Name->"Bench for ExperimentSpreadCellsPreview Testing"<>$SessionUUID
+					|>
+				];
+
+				(* Containers *)
+				{
+					inputPlate1,
+					inputPlate2,
+					inputPlate3,
+					inputPlate4,
+					inputPlate5,
+					inputPlate6,
+					inputPlate7,
+					inputPlate8,
+					inputPlate9,
+					inputPlate10,
+					destinationPlate1,
+					destinationPlate2,
+					invalidDestinationPlate,
+					diluentTube,
+					uvStarPlate1
+				} = UploadSample[
+					{
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
+						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
+						Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
+						Model[Container, Vessel, "id:bq9LA0dBGGR6"], (* Model[Container, Vessel, "50mL Tube"] *)
+						Model[Container, Plate, "id:n0k9mGzRaaBn"] (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+					},
+					ConstantArray[{"Work Surface",testBench},15],
+					Name -> {
+						"Test DWP 1 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 2 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 3 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 4 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 5 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 6 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 7 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 8 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 9 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test DWP 10 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test Omnitray 1 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test Omnitray 2 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test Omnitray 3 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test 50 mL Tube 1 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test UV Star Plate 1 for ExperimentSpreadCellsPreview" <> $SessionUUID
+					}
+				];
+
+				(* Cells *)
+				{
+					testCell1,
+					testCell2NoPrefSolidMedia
+				} = UploadBacterialCell[
+					{
+						"Test Cell 1 for ExperimentSpreadCellsPreview" <> $SessionUUID,
+						"Test Cell 1 for ExperimentSpreadCellsPreview - no PrefSolidMedia" <> $SessionUUID
+					},
+					Morphology -> Cocci,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension,
+					PreferredSolidMedia -> {Model[Sample, Media, "id:9RdZXvdwAEo6"] (* Model[Sample, Media, "LB (Solid Agar)"] *),Null}
+				];
+
+				(* Media *)
+				testSolidMedia = UploadStockSolution[
+					{{Quantity[20,"Grams"],Model[Sample,"Agar"]},{Quantity[25,"Grams"],Model[Sample,"LB Broth Miller (Sigma Aldrich)"]},{Quantity[900,"Milliliters"],Model[Sample,"Milli-Q water"]}},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					Name -> "Test Solid Media for ExperimentSpreadCellsPreview" <> $SessionUUID,
+					Type -> Media,
+					DefaultStorageCondition -> AmbientStorage,
+					Expires -> True
+				];
+				(* Fix the state *)
+				Upload[<|
+					Object -> testSolidMedia,
+					State -> Solid
+				|>];
+
+				(* Sample Models *)
+				{
+					testCell1InLB,
+					testCell2InLB,
+					testCell1InTB
+				} = UploadSampleModel[
+					{
+						"Test Sample Model 1 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
+						"Test Sample Model 2 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
+						"Test Sample Model 3 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
+					},
+					Composition -> {
+						{
+							{5000 Cell/Milliliter, testCell1},
+							{Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
+							{Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
+							{Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
+						},
+						{
+							{5000 Cell/Milliliter, testCell2NoPrefSolidMedia},
+							{Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
+							{Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
+							{Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
+						},
+						{
+							{0.8 OD600, testCell1},
+							{95 VolumePercent, Model[Molecule,"Water"]},
+							{55 Millimolar, Model[Molecule, "Potassium Phosphate (Dibasic)"]},
+							{10 Millimolar, Model[Molecule, "Potassium Phosphate (Monobasic)"]},
+							{0.4 VolumePercent, Model[Molecule, "Glycerol"]},
+							{0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
+						}
+					},
+					IncompatibleMaterials -> {None},
+					Expires -> False,
+					DefaultStorageCondition -> {
+						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
+						Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
+						Model[StorageCondition, "id:7X104vnR18vX"] (* Model[StorageCondition, "Ambient Storage"] *)
+					},
+					Flammable -> False,
+					MSDSRequired -> False,
+					BiosafetyLevel -> "BSL-1",
+					State -> Liquid,
+					UsedAsSolvent -> False,
+					UsedAsMedia -> False,
+					Living -> True
+				];
+
+				(* Samples *)
+				{
+					testCell1InLBSample1,
+					testCell1InLBSample2,
+					testCell2InLBSample1,
+					testCell2InLBSample2,
+					testCell1InTBSample1,
+					lbBrothSample,
+					lbBrothDiluentSample,
+					destinationSample,
+					invalidDestinationSample,
+					testCell1inUVStar,
+					testCell1InLBSample3,
+					testCell1InLBSample4,
+					testCell1InLBSample5,
+					testCell1InLBSample6,
+					testCell1InLBSample7,
+					testCell1InLBSample8,
+					testCell1InLBSample9,
+					testCell1InLBSample10
+				} = UploadSample[
+					{
+						testCell1InLB,
+						testCell1InLB,
+						testCell2InLB,
+						testCell2InLB,
+						testCell1InTB,
+						Model[Sample, Media, "id:XnlV5jlXbNx8"], (* Model[Sample, Media, "LB Broth, Miller"] *)
+						Model[Sample, Media, "id:XnlV5jlXbNx8"], (* Model[Sample, Media, "LB Broth, Miller"] *)
+						Model[Sample, Media, "id:9RdZXvdwAEo6"], (* Model[Sample, Media, "LB (Solid Agar)"] *)
+						Model[Sample, Media, "id:XnlV5jlXbNx8"], (* Model[Sample, Media, "LB Broth, Miller"] *)
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB,
+						testCell1InLB
+					},
+					{
+						{"A1",inputPlate1},
+						{"B1",inputPlate1},
+						{"A1",inputPlate2},
+						{"B1",inputPlate2},
+						{"C1",inputPlate1},
+						{"D1",inputPlate1},
+						{"A1",diluentTube},
+						{"A1",destinationPlate1},
+						{"A1",invalidDestinationPlate},
+						{"A1",uvStarPlate1},
+						{"A1",inputPlate3},
+						{"A1",inputPlate4},
+						{"A1",inputPlate5},
+						{"A1",inputPlate6},
+						{"A1",inputPlate7},
+						{"A1",inputPlate8},
+						{"A1",inputPlate9},
+						{"A1",inputPlate10}
+					},
+					Name -> {
+						"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID,
+						"Test Sample 2 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID,
+						"Test Sample 3 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID,
+						"Test Sample 4 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID,
+						"Test Sample 8 for ExperimentSpreadCellsPreview (Test Cell 1 in TB in DWP 1)" <> $SessionUUID,
+						"Test Sample 5 for ExperimentSpreadCellsPreview (LB Broth in DWP 1)" <> $SessionUUID,
+						"Test Sample 6 for ExperimentSpreadCellsPreview (LB Broth in 50 mL Tube)" <> $SessionUUID,
+						"Test Sample 7 for ExperimentSpreadCellsPreview (Solid LB Agar in Omnitray)" <> $SessionUUID,
+						"Test Sample 9 for ExperimentSpreadCellsPreview (LB Agar in Omnitray)" <> $SessionUUID,
+						"Test Sample 10 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in UV Star 1)" <> $SessionUUID,
+						"Test Sample 11 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 3)" <> $SessionUUID,
+						"Test Sample 12 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 4)" <> $SessionUUID,
+						"Test Sample 13 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 5)" <> $SessionUUID,
+						"Test Sample 14 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 6)" <> $SessionUUID,
+						"Test Sample 15 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 7)" <> $SessionUUID,
+						"Test Sample 16 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 8)" <> $SessionUUID,
+						"Test Sample 17 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 9)" <> $SessionUUID,
+						"Test Sample 18 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 10)" <> $SessionUUID
+					},
+					InitialAmount -> {
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1.5 Milliliter,
+						1 Milliliter,
+						1.23 Milliliter,
+						20 Milliliter,
+						10 Gram,
+						20 Milliliter,
+						500 Microliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter,
+						1 Milliliter
+					},
+					State -> {
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Solid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid
+					},
+					StorageCondition -> ConstantArray[Model[StorageCondition, "Ambient Storage"],18]
+				];
+
+				(* Other info to upload/correct *)
+				Upload[
+					{
+						<|
+							Object -> Object[Sample,"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "LB Broth, Miller"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 2 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "LB Broth, Miller"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 3 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "LB Broth, Miller"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 4 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "LB Broth, Miller"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 8 for ExperimentSpreadCellsPreview (Test Cell 1 in TB in DWP 1)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "Terrific Broth"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 9 for ExperimentSpreadCellsPreview (LB Agar in Omnitray)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "id:XnlV5jlXbNx8"]]
+						|>,
+						<|
+							Object -> Object[Sample,"Test Sample 10 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in UV Star 1)" <> $SessionUUID],
+							Media -> Link[Model[Sample, Media, "LB Broth, Miller"]]
+						|>
+					}
+				]
+
+			]
+		]
+	),
+	SymbolTearDown :> (
+		Module[{objs,existingObjs},
+			objs=Quiet[Cases[
+				Flatten[{
+					(* Bench *)
+					Object[Container,Bench,"Bench for ExperimentSpreadCellsPreview Testing"<>$SessionUUID],
+
+					(* Containers *)
+					Object[Container,Plate,"Test DWP 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 2 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 3 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 4 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 5 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 6 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 7 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 8 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 9 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test DWP 10 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 2 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test Omnitray 3 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Vessel,"Test 50 mL Tube 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Object[Container,Plate,"Test UV Star Plate 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+
+					(* Cells *)
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCellsPreview" <> $SessionUUID],
+					Model[Cell,Bacteria,"Test Cell 1 for ExperimentSpreadCellsPreview - no PrefSolidMedia" <> $SessionUUID],
+
+					(* Media *)
+					Model[Sample,Media,"Test Solid Media for ExperimentSpreadCellsPreview" <> $SessionUUID],
+
+					(* Sample Models *)
+					Model[Sample,"Test Sample Model 1 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 2 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID],
+					Model[Sample,"Test Sample Model 3 for ExperimentSpreadCellsPreview (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID],
+
+					(* Samples *)
+					Object[Sample,"Test Sample 1 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 2 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 3 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 4 for ExperimentSpreadCellsPreview (Test Cell 2 in LB in DWP 2)" <> $SessionUUID],
+					Object[Sample,"Test Sample 5 for ExperimentSpreadCellsPreview (LB Broth in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 6 for ExperimentSpreadCellsPreview (LB Broth in 50 mL Tube)" <> $SessionUUID],
+					Object[Sample,"Test Sample 7 for ExperimentSpreadCellsPreview (Solid LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 8 for ExperimentSpreadCellsPreview (Test Cell 1 in TB in DWP 1)" <> $SessionUUID],
+					Object[Sample,"Test Sample 9 for ExperimentSpreadCellsPreview (LB Agar in Omnitray)" <> $SessionUUID],
+					Object[Sample,"Test Sample 10 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in UV Star 1)"<>$SessionUUID],
+					Object[Sample,"Test Sample 11 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 3)" <> $SessionUUID],
+					Object[Sample,"Test Sample 12 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 4)" <> $SessionUUID],
+					Object[Sample,"Test Sample 13 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 5)" <> $SessionUUID],
+					Object[Sample,"Test Sample 14 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 6)" <> $SessionUUID],
+					Object[Sample,"Test Sample 15 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 7)" <> $SessionUUID],
+					Object[Sample,"Test Sample 16 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 8)" <> $SessionUUID],
+					Object[Sample,"Test Sample 17 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 9)" <> $SessionUUID],
+					Object[Sample,"Test Sample 18 for ExperimentSpreadCellsPreview (Test Cell 1 in LB in DWP 10)" <> $SessionUUID]
 
 				}],
 				ObjectP[]
@@ -2793,7 +3697,7 @@ DefineTests[SpreadCells,
 				(* Containers *)
 				UploadSample[
 					{
-						Model[Container, Plate, "id:L8kPEjkmLbvW"], (* DWP *)
+						Model[Container, Plate, "id:4pO6dMmErzez"],(* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
 						Model[Container, Plate, "id:O81aEBZjRXvx"] (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
 					},
 					{
@@ -2808,7 +3712,7 @@ DefineTests[SpreadCells,
 
 				(* Populate the destination container with solid media *)
 				UploadSample[
-					Model[Sample, Media, "LB (Solid Agar)"],
+					Model[Sample, Media, "id:9RdZXvdwAEo6"], (* Model[Sample, Media, "LB (Solid Agar)"] *)
 					{"A1",Object[Container,Plate,"Test Omnitray 1 for SpreadCells unit tests " <> $SessionUUID]},
 					Name -> "Test Destination Sample for SpreadCells unit tests " <> $SessionUUID,
 					InitialAmount -> 10 Gram
@@ -2839,9 +3743,7 @@ DefineTests[SpreadCells,
 						}
 					},
 					IncompatibleMaterials -> {None},
-					Expires -> True,
-					ShelfLife -> 2 Week,
-					UnsealedShelfLife -> 1 Hour,
+					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX"], (* Model[StorageCondition, "Ambient Storage"] *)
 					Flammable -> False,
 					MSDSRequired -> False,

@@ -18,9 +18,41 @@ DefineUsage[ExperimentAlphaScreenOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that have analytes with acceptor and donor beads ready for luminescent AlphaScreen measurement.",
-							Widget -> Widget[Type->Object,Pattern:>ObjectP[{Object[Sample],Object[Container]}],ObjectTypes->{Object[Sample],Object[Container]}],
-							Expandable -> False,
-							Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							],
+							Expandable -> False
 						},
 						IndexName->"experiment samples"
 					]
@@ -42,7 +74,7 @@ DefineUsage[ExperimentAlphaScreenOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "jihan.kim", "fan.wu"}
+		Author->{"xu.yi", "eunbin.go", "jihan.kim", "fan.wu"}
 	}
 ];
 
@@ -62,9 +94,41 @@ DefineUsage[ExperimentAlphaScreenPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that have analytes with acceptor and donor beads ready for luminescent AlphaScreen measurement.",
-							Widget -> Widget[Type->Object,Pattern:>ObjectP[{Object[Sample],Object[Container]}],ObjectTypes->{Object[Sample],Object[Container]}],
-							Expandable -> False,
-							Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							],
+							Expandable -> False
 						},
 						IndexName->"experiment samples"
 					]
@@ -86,7 +150,7 @@ DefineUsage[ExperimentAlphaScreenPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "jihan.kim", "fan.wu"}
+		Author->{"xu.yi", "eunbin.go", "jihan.kim", "fan.wu"}
 	}
 ];
 
@@ -106,9 +170,41 @@ DefineUsage[ValidExperimentAlphaScreenQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that have analytes with acceptor and donor beads ready for luminescent AlphaScreen measurement.",
-							Widget -> Widget[Type->Object,Pattern:>ObjectP[{Object[Sample],Object[Container]}],ObjectTypes->{Object[Sample],Object[Container]}],
-							Expandable -> False,
-							Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							],
+							Expandable -> False
 						},
 						IndexName->"experiment samples"
 					]
@@ -130,6 +226,6 @@ DefineUsage[ValidExperimentAlphaScreenQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"eunbin.go", "jihan.kim", "fan.wu"}
+		Author -> {"xu.yi", "eunbin.go", "jihan.kim", "fan.wu"}
 	}
 ];

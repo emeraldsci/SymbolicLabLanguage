@@ -38,9 +38,8 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					QuantitativeTransferWashSolution -> Null,
 					QuantitativeTransferWashVolume -> Null,
 					QuantitativeTransferWashInstrument -> Null,
@@ -74,6 +73,23 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
+		Example[{Additional, "Transfer automatically expand source/destination/amount singletons to match the length of the listed input:"},
+			{
+				(* a, b, {c, c} *)
+				ExperimentTransfer[Model[Sample, "Milli-Q water"], Model[Container, Vessel, "2mL Tube"], {1 Milliliter, 0.8 Milliliter}],
+				(* a, {b, b}, c *)
+				ExperimentTransfer[Model[Sample, "Milli-Q water"], {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "2mL Tube"]}, 1 Milliliter],
+				(* {a, a}, b, c *)
+				ExperimentTransfer[{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}, Model[Container, Vessel, "2mL Tube"], 1 Milliliter],
+				(* a, {b, b}, {c, c} *)
+				ExperimentTransfer[Model[Sample, "Milli-Q water"], {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "2mL Tube"]}, {1 Milliliter, 0.8 Milliliter}],
+				(* {a, a}, b, {c, c} *)
+				ExperimentTransfer[{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}, Model[Container, Vessel, "2mL Tube"], {1 Milliliter, 0.8 Milliliter}],
+				(* {a, a}, {b, b}, c *)
+				ExperimentTransfer[{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}, {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "2mL Tube"]}, 1 Milliliter]
+			},
+			{ObjectP[Object[Protocol, ManualSamplePreparation]]..}
+		],
 		Example[{Options,PipettingMethod,"Setting this option to control the pipetting parameters in Robotic transfers:"},
 			Lookup[
 				ExperimentTransfer[
@@ -97,7 +113,7 @@ DefineTests[
 			],
 			{
 				ObjectP[Model[Method, Pipetting, "DMSO"]],
-				Download[Model[Method, Pipetting, "DMSO"],CorrectionCurve]
+				Round[Download[Model[Method, Pipetting, "DMSO"],CorrectionCurve], 0.01 Microliter]
 			}
 		],
 		Example[{Options,PipettingMethod,"Setting this option to control the pipetting parameters in Robotic transfers. This option can be overwritten by other pipetting parameter options:"},
@@ -155,6 +171,22 @@ DefineTests[
 				{1000 Microliter, 1050 Microliter}
 			},
 			EquivalenceFunction->Equal
+		],
+		Example[{Messages,"IncompatibleTipItemConsumable","An error is thrown if the specified Tips is a Model[Item,Consumable] and the Instrument is not a Model[Container,GraduatedCylinder] and the destination container is not of Model[Container,Vessel,VolumetricFlask]"},
+			ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter,
+				Tips-> Model[Item, Consumable, "id:bq9LA0J1xmBd"] (*Model[Item, Consumable, "VWR Disposable Transfer Pipet"]*)
+			],
+			$Failed,
+			Messages :> {
+				(* Though use of Model[Item,Consumable] always throws out error IncorrectlySpecifiedTransferOptions outside of FTV, we add IncompatibleTipItemConsumable to have a clear message not to use this model as Tips *)
+				Error::IncorrectlySpecifiedTransferOptions,
+				Error::IncompatibleTipItemConsumable,
+				Error::InvalidInput,
+				Error::InvalidOption
+			}
 		],
 		Example[{Messages,"CorrectionCurveNotMonotonic","A warning is thrown if the specified CorrectionCurve does not have monotonically increasing actual volume values:"},
 			Lookup[
@@ -308,6 +340,26 @@ DefineTests[
 			(* First resource corresponds to the source stock solution *)
 			{True,Null}
 		],
+		Example[{Options,OrderFulfilled,"Tie an order to the protocol using OrderFulfilled option:"},
+			Module[{testOrder, protocol},
+				(* Make an order that should be fulfilled internally *)
+				testOrder = OrderSamples[
+					Model[Sample, "Milli-Q water"],
+					5 * Milliliter,
+					InternalOrder -> True
+				];
+
+				protocol = ExperimentTransfer[
+					Model[Sample, "Milli-Q water"],
+					Model[Container, Vessel, "id:bq9LA0dBGGR6"], (* Model[Container, Vessel, "50mL Tube"] *)
+					5 * Milliliter,
+					OrderFulfilled -> testOrder
+				];
+
+				Download[First[testOrder], Fulfillment]
+			],
+			{LinkP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]}
+		],
 		Example[{Options, OptionsResolverOnly, "If OptionsResolverOnly -> True and Output -> Options, skip the resource packets and simulation functions:"},
 			ExperimentTransfer[
 				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
@@ -334,6 +386,339 @@ DefineTests[
 			(* stubbing to be False so that we return $Failed; in this case, it should actually get to this point *)
 			Stubs :> {Resources`Private`fulfillableResourceQ[___]:=False}
 		],
+		Example[{Options, SterileTechnique, "If SterileTechnique is set to True, perform transfers using technique that is designed to keep the sample extremely clean:"},
+			options = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Plate, "Omni Tray Sterile Media Plate"],
+				1 Milliliter,
+				SterileTechnique -> True,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, SterileTechnique],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, TransferEnvironment, "If transferring sterile samples that do not contain cells, perform in the Aseptic Transfer BSCs with corresponding aseptic transfer pipettes:"},
+			options = ExperimentTransfer[
+				Model[Sample,"RPMI-1640 Medium"],
+				Model[Container, Plate, "Omni Tray Sterile Media Plate"],
+				1 Milliliter,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			{resolvedTransferEnvironment, resolvedInstrument} = Lookup[options, {TransferEnvironment, Instrument}];
+			{
+				Lookup[options, SterileTechnique],
+				Download[resolvedTransferEnvironment, {Object, CultureHandling}],
+				Download[resolvedInstrument, {Object, CultureHandling, AsepticHandling}]
+			},
+			{
+				True,
+				{ObjectP[Model[Instrument, BiosafetyCabinet]], Null},
+				{ObjectP[Model[Instrument, Pipette]], Null, True}
+			},
+			Variables :> {options, resolvedTransferEnvironment, resolvedInstrument}
+		],
+		Example[{Options, WorkCell, "If transferring mammalian samples robotically, perform in the bioSTAR:"},
+			protocol = ExperimentTransfer[
+				Model[Sample, "HEK293"],
+				Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{bioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If transferring bacterial samples robotically, perform in the microbioSTAR:"},
+			protocol = ExperimentTransfer[
+				Model[Sample, "E.coli MG1655"],
+				Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				0.25 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{microbioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If SterileTechnique is set to true for robotic transfer, perform in the microbioSTAR or bioSTAR amd generate RCP:"},
+			protocol = ExperimentTransfer[
+				Model[Sample, "Milli-Q water"],
+				Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				0.25 Milliliter,
+				Preparation -> Robotic,
+				SterileTechnique -> True
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{microbioSTAR|bioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If SterileTechnique is not specified for robotic transfer but WorkCell is, sterile samples can STILL be transferred in STAR and RSP is generated:"},
+			protocol = ExperimentTransfer[
+				Model[Sample, "Milli-Q water"],
+				Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"],
+				0.25 Milliliter,
+				WorkCell -> STAR,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticSamplePreparation]],
+				{STAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Messages, "ConflictingSterileTransferWithWorkCell", "An error is thrown if the sterile sample is transferred in STAR work cell and SterileTechnique is specified:"},
+			ExperimentTransfer[
+				Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				0.95 Milliliter,
+				SterileTechnique -> True,
+				Preparation -> Robotic,
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingSterileTransferWithWorkCell,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingSourceAndDestinationAsepticHandling", "A warning is thrown if the source sample is Sterile -> True but the destination is not sterile nor asepticHandling:"},
+			ExperimentTransfer[
+				Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Container, Vessel, "Test non-sterile 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]],
+			Messages :> {Warning::ConflictingSourceAndDestinationAsepticHandling}
+		],
+		Example[{Messages, "ConflictingSourceAndDestinationAsepticHandling", "A warning is thrown if the source sample is AsepticHandling -> True but the destination model is not sterile:"},
+			ExperimentTransfer[
+				Model[Sample, "SARS-CoV-2 RNA (MT007544.1)"],
+				Model[Container, Plate, "96-well UV-Star Plate"],
+				0.1 Milliliter,
+				Preparation -> Manual
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]],
+			Messages :> {Warning::ConflictingSourceAndDestinationAsepticHandling}
+		],
+		Example[{Messages, "ConflictingSourceAndDestinationAsepticHandling", "If transferring from a sterile sample to another sterile sample, then won't throw a message"},
+			ExperimentTransfer[
+				Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Example[{Messages, "ConflictingSourceAndDestinationAsepticHandling", "If transferring from a sterile sample to a non-sterile but aseptichandling sample, then won't throw a message"},
+			ExperimentTransfer[
+				Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test non-sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+				ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Example[{Messages, "ConflictingSourceAndDestinationAsepticHandling", "If transferring from a sterile sample to a sterile model container, then won't throw a message"},
+			ExperimentManualCellPreparation[{
+				Transfer[
+					Source -> Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Destination -> Model[Container, Vessel, "2mL Cryogenic Vial"],
+					Amount -> 500 Microliter,
+					DestinationContainerLabel -> "ExperimentTransfer DestionationContainerLabel" <> $SessionUUID,
+					SterileTechnique -> True
+				],
+				Transfer[
+					Source -> Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Destination -> "ExperimentTransfer DestionationContainerLabel" <> $SessionUUID,
+					Amount -> 500 Microliter,
+					SterileTechnique -> True
+				]
+			}],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Example[{Options, KeepSourceCovered, "If SterileTechnique is set to True and Preparation is Robotic, KeepSourceCovered will automatically be set to True:"},
+			options = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				0.5 Milliliter,
+				SterileTechnique -> True,
+				Preparation -> Robotic,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, KeepSourceCovered],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, KeepDestinationCovered, "If SterileTechnique is set to True and Preparation is Robotic, KeepDestinationCovered will automatically be set to True:"},
+			options = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				0.5 Milliliter,
+				SterileTechnique -> True,
+				Preparation -> Robotic,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, KeepDestinationCovered],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, IntermediateDecant, "If SterileTechnique is set to True, then all intermediate decant containers must be Sterile -> True:"},
+			prot = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "2mL Tube"],
+				1 Milliliter,
+				SterileTechnique -> True,
+				IntermediateDecant -> True,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			batchedUnitOpRequiredResources = Download[prot, BatchedUnitOperations[[1]][RequiredResources]];
+			intermediateContainerResource = FirstCase[batchedUnitOpRequiredResources, {res: ObjectP[Object[Resource, Sample]], IntermediateContainerLink, _, _} :> Download[res, Object]];
+			Download[intermediateContainerResource, Sterile],
+			True,
+			Variables :> {prot, batchedUnitOpRequiredResources, intermediateContainerResource}
+		],
+		Example[{Options, Funnel, "If instrument is GraduatedCylinder, resolved Funnel is compatible with destination container and is FunnelType -> Wet:"},
+			options = ExperimentTransfer[
+				Model[Sample,"Milli-Q water"],
+				Object[Sample,"Test water sample 2 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+				60 Milliliter,
+				Preparation->Manual,
+				Output->Options
+			];
+			Download[Lookup[options,Funnel],FunnelType],
+			Wet,
+			Variables :> {options}
+		],
+		Example[{Options, Funnel, "If instrument is Null, resolved Funnel is compatible with destination container and FunnelType based on State of source:"},
+			options = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				All,
+				Preparation->Manual,
+				Output -> Options
+			];
+			Download[Lookup[options,Funnel],FunnelType],
+			Wet,
+			Variables :> {options}
+		],
+		Example[{Options, IntermediateDecantRecoup, "Always default to not recoup residual sample from IntermediateContainer:"},
+			prot = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "2mL Tube"],
+				1 Milliliter,
+				SterileTechnique -> True,
+				IntermediateDecant -> True,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			Download[prot, BatchedUnitOperations[[1]][IntermediateDecantRecoup]],
+			{False},
+			Variables :> {prot}
+		],
+		Example[{Messages, RecoupContamination, "Throw an error if recouping back to a public sample:"},
+			ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer"<>$SessionUUID],
+				Model[Container, Vessel, "2mL Tube"],
+				1 Milliliter,
+				SterileTechnique -> True,
+				IntermediateDecant -> True,
+				IntermediateDecantRecoup -> True
+			],
+			$Failed,
+			Messages :> {Error::RecoupContamination, Error::InvalidOption}
+		],
+		Example[{Messages, "RecoupContamination", "Throw an error if recouping back to a Model[Sample]:"},
+			ExperimentManualSamplePreparation[
+				{
+					LabelSample[
+						(* "Milli-Q water" *)
+						Sample -> Model[Sample, "id:8qZ1VWNmdLBD"],
+						Amount -> 10 Milliliter,
+						(* "50mL Tube" *)
+						Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+						Label -> "my model sample"
+					],
+					Transfer[
+						(* "Milli-Q water" *)
+						Source -> {"my model sample"},
+						(* "50mL Tube" *)
+						Destination -> {Model[Container, Vessel, "2mL Tube"]},
+						Amount -> {1 Milliliter},
+						IntermediateDecant -> True,
+						IntermediateDecantRecoup -> True
+					]
+				}
+			],
+			$Failed,
+			Messages :> {Error::RecoupContamination, Error::InvalidInput}
+		],
+		Test["Always try to resolve to an intermediate container with graduation lines:",
+			prot = ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer"<>$SessionUUID],
+				Model[Container, Vessel, "2mL Tube"],
+				1 Milliliter,
+				SterileTechnique -> True,
+				IntermediateDecant -> True,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer"<>$SessionUUID]
+			];
+			Download[prot, {BatchedUnitOperations[[1]][IntermediateContainerLink][[1]][Graduations], BatchedUnitOperations[[1]][IntermediateContainerImage]}],
+			{{VolumeP..}, LinkP[Object[EmeraldCloudFile]]},
+			Variables :> {prot}
+		],
+		Test["Set Tips to one that can aspirate from the intermediate container:",
+			Lookup[
+				ExperimentTransfer[
+					{
+						Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer"<>$SessionUUID],
+						Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer"<>$SessionUUID]
+					},
+					{
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "50mL Tube"]
+					},
+					{
+						200 Microliter,
+						1 Milliliter
+					},
+					IntermediateDecant -> True,
+					IntermediateContainer -> {
+						Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
+						Model[Container, Vessel, "2mL Tube"]
+					},
+					Output -> Options
+				],
+				Tips
+			],
+			(* Model[Item, Tips, "200 uL tips, non-sterile"], Model[Item, Tips, "1000 uL reach tips, non-sterile"] *)
+			{ObjectP[Model[Item, Tips, "id:O81aEBZDpVzN"]], ObjectP[Model[Item, Tips, "id:eGakldJR8D9e"]]}
+		],
 		Test["Source samples that are marked as Slurry have the SlurryTransfer option resolve to True:",
 			ExperimentTransfer[
 				{
@@ -348,6 +733,26 @@ DefineTests[
 				Output->Options
 			],
 			KeyValuePattern[{SlurryTransfer->ListableP[True], MaxNumberOfAspirationMixes->ListableP[_Integer]}]
+		],
+		Test["Populate PipetteDialImage, AspirationMixPipetteDialImage, DispenseMixPipetteDialImage properly in the batched unit operations:",
+			Download[
+				ExperimentTransfer[
+					Model[Sample, "Milli-Q water"],
+					Model[Container, Vessel, "2mL Tube"],
+					{1 Milliliter, 0.8 Milliliter},
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer"<>$SessionUUID],
+					AspirationMix -> {True, False},
+					AspirationMixType -> {Pipette, Automatic},
+					AspirationMixVolume -> {0.5 Milliliter, Automatic},
+					DispenseMixType -> {Swirl, Pipette},
+					DispenseMixVolume -> {Automatic, 0.5 Milliliter}
+				],
+				BatchedUnitOperations[{PipetteDialImage, AspirationMixPipetteDialImage, DispenseMixPipetteDialImage}]
+			],
+			{
+				{LinkP[Object[EmeraldCloudFile]], LinkP[Object[EmeraldCloudFile]], Null},
+				{LinkP[Object[EmeraldCloudFile]], Null, LinkP[Object[EmeraldCloudFile]]}
+			}
 		],
 		Test["Correctly resolves AspirationMixVolume if AspirationMix->True and AspirationMixType->Pipette:",
 			ExperimentTransfer[
@@ -364,7 +769,41 @@ DefineTests[
 				AspirationMixType->Pipette,
 				Output->Options
 			],
-			KeyValuePattern[{AspirationMixVolume->ListableP[VolumeP]}]
+			KeyValuePattern[{AspirationMixVolume->VolumeP}]
+		],
+		Test["Correctly resolves DispenseMixVolume if DispenseMix->True and DispenseMixType->Pipette:",
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					{1, Model[Container, Vessel,"50mL Tube"]}
+				},
+				{
+					100 Microliter
+				},
+				DispenseMix->True,
+				DispenseMixType->Pipette,
+				Output->Options
+			],
+			KeyValuePattern[{DispenseMixVolume->EqualP[50 Microliter]}]
+		],
+		Test["Correctly resolves DispenseMixVolume if DispenseMix->True and DispenseMixType->Pipette based on the total volume of original sample and transferIn volume:",
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					10 Milliliter
+				},
+				DispenseMix->True,
+				DispenseMixType->Pipette,
+				Output->Options
+			],
+			KeyValuePattern[{DispenseMixVolume->EqualP[10 Milliliter]}]
 		],
 		Test["Test gravimetric transfer of liquids with small volumes:",
 			ExperimentTransfer[
@@ -384,7 +823,8 @@ DefineTests[
 					1 Milliliter
 				}
 			],
-			ObjectP[Object[Protocol, ManualSamplePreparation]]
+			ObjectP[Object[Protocol, ManualSamplePreparation]],
+			Messages :> {Message[Warning::QuantitativeTransferRecommended]}
 		],
 		Test["Test gravimetric transfer of liquids with larger volumes:",
 			ExperimentTransfer[
@@ -562,6 +1002,108 @@ DefineTests[
 				c_String
 			}
 		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentTransfer[
+				Object[Sample, "Nonexistent sample"],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentTransfer[
+				Object[Container, Vessel, "Nonexistent container"],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentTransfer[
+				Object[Sample, "id:123456"],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentTransfer[
+				Object[Container, Vessel, "id:123456"],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "Test bench for ExperimentTransfer tests" <> $SessionUUID]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					InitialAmount -> 25 Milliliter,
+					Simulation -> simulationToPassIn
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentTransfer[
+					sampleID,
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					1 Milliliter,
+					Simulation -> simulationToPassIn,
+					Output -> Options
+				]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "Test bench for ExperimentTransfer tests" <> $SessionUUID]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					InitialAmount -> 25 Milliliter,
+					Simulation -> simulationToPassIn
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentTransfer[
+					containerID,
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					1 Milliliter,
+					Simulation -> simulationToPassIn,
+					Output -> Options
+				]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentTransfer[
 				{
@@ -684,10 +1226,77 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages, "TransferEnvironmentBalanceCombination","Gravimetric transfers in a fume hood must use $TransferFumeHoodModel:"},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					{1, Model[Container, Vessel,"50mL Tube"]},
+					{1, Model[Container, Vessel,"50mL Tube"]}
+				},
+				{
+					1 Gram,
+					1 Gram,
+					1 Milliliter
+				},
+				TransferEnvironment->Model[Instrument, FumeHood, "Labconco Premier 6 Foot"]
+			],
+			$Failed,
+			Messages:>{
+				Error::TransferEnvironmentBalanceCombination,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "TransferEnvironmentInstrumentCombination", "Manual transfers in a microbial BSC should only use microbial pipette model:"},
+			ExperimentTransfer[
+				{Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Milliliter},
+				Instrument -> Model[Instrument, Pipette, "Eppendorf Research Plus P1000, Tissue Culture"],
+				TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Microbial)"]
+			],
+			$Failed,
+			Messages :> {
+				Error::TransferEnvironmentInstrumentCombination,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "TransferEnvironmentInstrumentCombination", "Manual transfers in a tissue culture BSC should only use tissue culture pipette model:"},
+			ExperimentTransfer[
+				{Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Milliliter},
+				Instrument -> Model[Instrument, Pipette, "Eppendorf Research Plus P1000, Microbial"],
+				TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture)"]
+			],
+			$Failed,
+			Messages :> {
+				Error::TransferEnvironmentInstrumentCombination,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "TransferEnvironmentInstrumentCombination", "Manual transfers in an aseptic transfer BSC should only use aseptic transfer pipette model:"},
+			ExperimentTransfer[
+				{Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Milliliter},
+				Instrument -> Model[Instrument, Pipette, "Eppendorf Research Plus P1000"],
+				TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Aseptic Transfer)"]
+			],
+			$Failed,
+			Messages :> {
+				Error::TransferEnvironmentInstrumentCombination,
+				Error::InvalidOption
+			}
+		],
 		Test["Using a pipette that should already be in the BSC will result in us requesting not to pick it up front:",
 			Module[{protocol},
-				(* Put a "Eppendorf Research Plus P200, Tissue Culture" in the BSC so that it doesn't get picked up front. *)
-				UploadLocation[Object[Instrument, Pipette, "id:O81aEBZDbB7D"], {"Work Surface", Object[Instrument, BiosafetyCabinet, "id:Y0lXejMaxDwV"]}];
+				(* Put a "Eppendorf Research Plus P200, Aseptic Transfer" in the BSC so that it doesn't get picked up front. *)
+				UploadLocation[Object[Instrument, Pipette, "id:Vrbp1jK6dGlm"], {"Work Surface", Object[Instrument, BiosafetyCabinet, "id:Y0lXejMaxDwV"]}];
 
 				Upload[<|
 					Object->Object[Instrument, BiosafetyCabinet, "id:Y0lXejMaxDwV"],
@@ -698,8 +1307,8 @@ DefineTests[
 					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
 					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
 					100 Microliter,
-					Instrument -> Model[Instrument, Pipette, "id:xRO9n3BqKznz"],
-					TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "id:dORYzZJzEBdE"],
+					Instrument -> Model[Instrument, Pipette, "Eppendorf Research Plus P200, Aseptic Transfer"],
+					TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Aseptic Transfer)"],
 					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
 				];
 
@@ -712,7 +1321,8 @@ DefineTests[
 				]
 			],
 			{
-				{{NonMicrobial}},
+				(* null because it's a Transfer bench *)
+				{{Null}},
 				{Except[ObjectP[Model[Instrument, Pipette]]]..}|{}
 			}
 		],
@@ -896,6 +1506,94 @@ DefineTests[
 			{Refrigerator},
 			Variables :> {protocol}
 		],
+		Example[{Options, {SourceTemperature,DestinationTemperature},"SourceTemperature and DestinationTemperature can be specified as Cold and translated into Celsius in the protocol for Preparation -> Manual:"},
+			protocol=ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				1 Milliliter,
+				SourceTemperature -> Cold,
+				DestinationTemperature -> Cold,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			Download[protocol,
+				{
+					SourceTemperatures,
+					DestinationTemperatures,
+					BatchedUnitOperations[[1]][SourceTemperatureReal],
+					BatchedUnitOperations[[1]][DestinationTemperatureReal]
+				}
+			],
+			{
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]}
+			},
+			Variables :> {protocol}
+		],
+		Example[{Options, {SourceTemperature,DestinationTemperature},"SourceTemperature and DestinationTemperature can be specified as Cold for Transfer primitive in MSP, and eventually translated into Celsius in Transfer Subprotocol:"},
+			protocol=ExperimentManualSamplePreparation[
+				Transfer[
+					Source -> Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Destination -> Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Amount -> 1 Milliliter,
+					SourceTemperature -> Cold,
+					DestinationTemperature -> Cold
+				]
+			];
+			{resolvedInputs, resolvedOptions} = Download[
+				protocol,
+				{
+					ResolvedUnitOperationInputs[[1]],
+					ResolvedUnitOperationOptions[[1]]
+				}];
+			transferSub = ExperimentTransfer[
+				Sequence @@ resolvedInputs,
+				Sequence @@ Join[resolvedOptions, {ParentProtocol -> protocol}]
+			];
+			Download[
+				protocol,
+				{
+					OutputUnitOperations[[1]][SourceTemperatureReal],
+					OutputUnitOperations[[1]][SourceTemperatureExpression],
+					OutputUnitOperations[[1]][DestinationTemperatureReal],
+					OutputUnitOperations[[1]][DestinationTemperatureExpression],
+					Subprotocols[[1]][SourceTemperatures],
+					Subprotocols[[1]][DestinationTemperatures],
+					Subprotocols[[1]][BatchedUnitOperations][[1]][SourceTemperatureReal],
+					Subprotocols[[1]][BatchedUnitOperations][[1]][DestinationTemperatureReal]
+				}
+			],
+			{
+				{Null},
+				{Cold},
+				{Null},
+				{Cold},
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]},
+				{EqualP[4 Celsius]}
+			},
+			Variables :> {protocol, resolvedInputs, resolvedOptions}
+		],
+		Example[{Options, {SourceTemperature,DestinationTemperature},"SourceTemperature and DestinationTemperature can be specified as Cold and translated into Celsius in the unit operation for Preparation -> Robotic:"},
+			protocol=ExperimentTransfer[
+				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				0.5 Milliliter,
+				SourceTemperature -> Cold,
+				DestinationTemperature -> Cold,
+				Preparation -> Robotic
+			];
+			Download[protocol,
+				{
+					OutputUnitOperations[[-1]][SourceTemperatureReal],
+					OutputUnitOperations[[-1]][DestinationTemperatureReal]
+				}
+			],
+			{{EqualP[4 Celsius]},{EqualP[4 Celsius]}},
+			Variables :> {protocol}
+		],
 		Example[{Messages,"InvalidTransferSourceStorageCondition", "Error is thrown if SamplesInStorageCondition is set for a Model[Sample] source:"},
 			ExperimentTransfer[
 				Model[Sample, "Milli-Q water"],
@@ -906,6 +1604,47 @@ DefineTests[
 			$Failed,
 			Messages:>{
 				Error::InvalidTransferSourceStorageCondition,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages,"InvalidTransferNonDisposalSourceStorageCondition", "Error is thrown if SamplesInStorageCondition is not set to Disposal if the source container is an ampoule:"},
+			ExperimentTransfer[
+				Object[Sample, "Test sterile sample in a 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				All,
+				SamplesInStorageCondition->Null
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidTransferNonDisposalSourceStorageCondition,
+				Error::InvalidOption
+			}
+		],
+		Test["InvalidTransferNonDisposalSourceStorageCondition is not thrown from Engine, SamplesInStorageCondition is automatically set to Disposal instead:",
+			Download[ExperimentTransfer[
+				Object[Sample, "Test sterile sample in a 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				All,
+				SamplesInStorageCondition->Null
+			], OutputUnitOperations[SamplesInStorageCondition]],
+			{{Disposal}},
+			Stubs :> {$ECLApplication = Engine}
+		],
+		Example[{Messages,"InvalidTransferNonDisposalSourceStorageCondition", "Error is thrown if SamplesInStorageCondition is not set to Disposal if the source container is crimp-sealed, and it is getting unsealed in a biosafety cabinet:"},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID]
+				},
+				{Model[Container, Vessel, "50mL Tube"],Model[Container, Vessel, "50mL Tube"]},
+				{1 Milliliter,1 Milliliter},
+				UnsealHermeticSource -> True,
+				TransferEnvironment -> Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Aseptic Transfer)"],
+				SamplesInStorageCondition->Freezer
+			],
+			$Failed,
+			Messages:>{
+				Error::InvalidTransferNonDisposalSourceStorageCondition,
 				Error::InvalidOption
 			}
 		],
@@ -928,9 +1667,8 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					QuantitativeTransferWashSolution -> Null,
 					QuantitativeTransferWashVolume -> Null,
 					QuantitativeTransferWashInstrument -> Null,
@@ -953,7 +1691,7 @@ DefineTests[
 				}]
 			}
 		],
-		Example[{Basic,"Transferring into a crimped container using a pipette should result in pipette usage and the destination container ot be unsealed and replaced with a new cover:"},
+		Example[{Basic,"Transferring into a crimped container using a pipette should result in pipette usage and the destination container to be unsealed and replaced with a new cover:"},
 			ExperimentTransfer[
 				{
 					Model[Sample,"Milli-Q water"]
@@ -965,11 +1703,12 @@ DefineTests[
 					150 Microliter
 				},
 				SterileTechnique->True,
+				TransferEnvironment->Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture)"],
 				Instrument->Model[Instrument,Pipette,"Eppendorf Research Plus P200, Tissue Culture"],
 				Output-> {Result, Options}
 			],
 			{
-				ObjectP[Object[Protocol, ManualSamplePreparation]],
+				ObjectP[Object[Protocol, ManualCellPreparation]],
 				KeyValuePattern[{
 					Instrument -> ListableP[ObjectP[Model[Instrument, Pipette]]],
 					Tips -> ListableP[ObjectP[Model[Item, Tips]]],
@@ -978,9 +1717,8 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					QuantitativeTransferWashSolution -> Null,
 					QuantitativeTransferWashVolume -> Null,
 					QuantitativeTransferWashInstrument -> Null,
@@ -1016,9 +1754,8 @@ DefineTests[
 					Needle -> ObjectP[Model[Item, Needle]],
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					QuantitativeTransferWashSolution -> Null,
 					QuantitativeTransferWashVolume -> Null,
 					QuantitativeTransferWashInstrument -> Null,
@@ -1032,32 +1769,215 @@ DefineTests[
 				}]
 			}
 		],
-		Example[{Options,QuantitativeTransfer,"Quantitative Transfer using 2 Milliliter of Milli-Q Water"},
+		Example[{Options, QuantitativeTransfer, "Quantitative Transfer can be set to True for manual transfer:"},
 			ExperimentTransfer[
-				{
-					Model[Sample, "id:mnk9jOkmavPY"]
-				},
-				{
-					Model[Container, Vessel, VolumetricFlask, "id:kEJ9mqRNvwNE"]
-				},
-				{
-					12 Milligram
-				},
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{12 Gram},
 				QuantitativeTransfer -> True,
-				QuantitativeTransferWashSolution -> Model[Sample,"id:8qZ1VWNmdLBD"],
+				QuantitativeTransferWashSolution -> Model[Sample, "Milli-Q water"],
 				QuantitativeTransferWashVolume -> 2 Milliliter,
 				NumberOfQuantitativeTransferWashes -> 2,
-				QuantitativeTransferWashTips -> Model[Item,Tips,"id:mnk9jO3qD6R7"],
+				QuantitativeTransferWashTips -> Model[Item, Tips, "5000 uL tips, non-sterile"],
 				Output-> {Result,Options}
 			],
 
 			{ObjectP[Object[Protocol, ManualSamplePreparation]],
 				KeyValuePattern[{
 					QuantitativeTransfer -> True,
-					QuantitativeTransferWashVolume->2 Milliliter,
-					NumberOfQuantitativeTransferWashes->2,
-					QuantitativeTransferWashTips->Model[Item,Tips,"id:mnk9jO3qD6R7"]}
+					NumberOfQuantitativeTransferWashes -> 2,
+					QuantitativeTransferWashInstrument -> ObjectP[Model[Instrument, Pipette, "id:KBL5Dvw6eLDk"]]
+				}
 				]}
+		],
+		Test[{"Quantitative Transfer can be performed using a labeled sample upstream in a ManualSamplePreparation:"},
+			ExperimentManualSamplePreparation[
+				{
+					LabelSample[
+						Sample -> Model[Sample, "id:8qZ1VWNmdLBD"](*"Milli-Q water"*),
+						Amount -> 10 Milliliter,
+						Label -> "my wash solution"
+					],
+					Transfer[
+						Source -> {Model[Sample, "id:mnk9jOkmavPY"]},(*"Acetylsalicylic Acid (Aspirin)"*)
+						Destination -> {Model[Container, Vessel, "id:bq9LA0dBGGR6"](*"50mL Tube"*)},
+						Amount -> {12 Gram},
+						QuantitativeTransfer -> True,
+						QuantitativeTransferWashVolume -> 3 Milliliter,
+						QuantitativeTransferWashSolution -> "my wash solution",
+						NumberOfQuantitativeTransferWashes -> 2,
+						QuantitativeTransferWashTips -> Model[Item, Tips, "id:mnk9jO3qD6R7"](*"5000 uL tips, non-sterile"*)
+					]
+				}
+			],
+			ObjectP[Object[Protocol, ManualSamplePreparation]]
+		],
+		Test[{"When Quantitative Transfer is performed, Volume is populated in simulation and State is simulated as Liquid:"},
+			{options, simulation} = ExperimentTransfer[
+				{Model[Sample, "id:mnk9jOkmavPY"]},(*"Acetylsalicylic Acid (Aspirin)"*)
+				{Model[Container, Vessel, "id:bq9LA0dBGGR6"](*"50mL Tube"*)},
+				{12 Gram},
+				QuantitativeTransfer -> True,
+				QuantitativeTransferWashVolume -> 3 Milliliter,
+				QuantitativeTransferWashSolution -> Model[Sample, StockSolution, "70% Ethanol"],
+				NumberOfQuantitativeTransferWashes -> 2,
+				QuantitativeTransferWashTips -> Model[Item, Tips, "id:mnk9jO3qD6R7"],(*"5000 uL tips, non-sterile"*)
+				Output -> {Options, Simulation}
+			];
+			destinationSample = LookupLabeledObject[simulation, Lookup[options, DestinationLabel]];
+			Download[
+				destinationSample,
+				{State, Volume},
+				Simulation -> simulation
+			],
+			{Liquid, GreaterP[6 Milliliter]},
+			Variables :> {options, simulation, destinationSample}
+		],
+		Test["Create a transfer protocol when ExperimentTransfer is called on the ResolvedUnitOperationInputs and ResolvedUnitOperationOptions of an MSP generated inside ExperimentFillToVolume:",
+			ExperimentTransfer[
+				Object[Protocol, ManualSamplePreparation,"Test MSP Protocol of FillToVolume for ExperimentTransfer tests"<>$SessionUUID][ResolvedUnitOperationInputs][[1]],
+				Sequence @@ Object[Protocol, ManualSamplePreparation,"Test MSP Protocol of FillToVolume for ExperimentTransfer tests"<>$SessionUUID][ResolvedUnitOperationOptions][[1]],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation,"Test MSP Protocol of FillToVolume for ExperimentTransfer tests"<>$SessionUUID]
+			],
+			ObjectP[Object[Protocol,Transfer]]
+		],
+		Test["When calling from FillToVolume, accept Tips to be specified as Disposable Transfer Pipet:",
+			Lookup[
+				ExperimentTransfer[
+					Model[Sample, "Milli-Q water"],
+					Object[Sample, "Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer"<>$SessionUUID],
+					40Milliliter,
+					Tips -> Model[Item, Consumable, "id:bq9LA0J1xmBd"],
+					FillToVolume -> True,
+					Preparation -> Manual,
+					OptionsResolverOnly -> True,
+					Output->Options
+				],
+				Tips
+			],
+			Model[Item, Consumable, "id:bq9LA0J1xmBd"]
+		],
+		Test["Using a non-sterile model sample as source to a sterile model container, and then use the first destination container as source to transfer again will not resolve using SterileTechnique, and only 1 single transfer unit operation is in output:",
+			Module[{protocol},
+				protocol=ExperimentManualSamplePreparation[
+					{
+						LabelContainer[
+							Label->"my container for non-sterile model sample",
+							Container->Model[Container, Vessel, "50mL Tube"]
+						],
+						Transfer[
+							Source->Model[Sample, "Milli-Q water"],
+							Destination->"my container for non-sterile model sample",
+							Amount->5 Milliliter
+						],
+						Transfer[
+							Source->"my container for non-sterile model sample",
+							Destination->Model[Container, Vessel, "2mL Tube"],
+							Amount->500 Microliter
+						]
+					}
+				];
+
+				Download[Cases[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Transfer]]], SterileTechnique]
+			],
+			{{False, False}},
+			TimeConstraint -> 10000
+		],
+		Test["Using a sterile model sample as source to a sterile model container, and then use the first destination container as source to transfer again will resolve using SterileTechnique, and only 1 single transfer unit operation is in output:",
+			Module[{protocol},
+				protocol=ExperimentManualSamplePreparation[
+					{
+						LabelContainer[
+							Label->"my container for sterile model sample",
+							Container->Model[Container, Vessel, "50mL Tube"]
+						],
+						Transfer[
+							Source->Model[Sample, "Tissue Culture Grade Water"],
+							Destination->"my container for sterile model sample",
+							Amount->5 Milliliter
+						],
+						Transfer[
+							Source->"my container for sterile model sample",
+							Destination->Model[Container, Vessel, "2mL Tube"],
+							Amount->500 Microliter
+						]
+					},
+					ImageSample -> False,
+					MeasureWeight -> False,
+					MeasureVolume -> False
+				];
+
+				Download[Cases[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Transfer]]], SterileTechnique]
+			],
+			{{True, True}},
+			TimeConstraint -> 10000
+		],
+		Test["Using a non-sterile model sample as source to a sterile model container, and then use the first sample out as source to transfer again will not resolved using SterileTechnique, while 2 transfer unit operations are in output:",
+			Module[{protocol},
+				protocol=ExperimentManualSamplePreparation[
+					{
+						LabelContainer[
+							Label->"my sterile container",
+							Container->Model[Container, Vessel, "50mL Tube"]
+						],
+						Transfer[
+							Source->Model[Sample, "Milli-Q water"],
+							Destination->"my sterile container",
+							DestinationLabel->"my non-sterile water",
+							Amount->5 Milliliter
+						],
+						Transfer[
+							Source->"my non-sterile water",
+							Destination->Model[Container, Vessel, "2mL Tube"],
+							Amount->500 Microliter
+						]
+					}
+				];
+
+				Download[Cases[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Transfer]]], SterileTechnique]
+			],
+			{{False}, {False}},
+			TimeConstraint -> 10000
+		],
+		Test["When using model container as destination, cover is simulated to cover destination and pass down to the next unit operation for manual preparation:",
+			ExperimentManualCellPreparation[
+				{
+					Transfer[
+						Source -> Model[Sample, "E.coli MG1655"],
+						Destination -> Model[Container, Vessel, "id:AEqRl9KXBDoW"],(*Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap*)
+						DestinationLabel -> "my cells",
+						Amount -> 5 Milliliter
+					],
+					IncubateCells[
+						Sample -> "my cells",
+						CultureAdhesion -> Suspension,
+						Time -> 2 Hour
+					]
+				},
+				Output -> Input
+			],
+			{TransferP, IncubateCellsP},
+			TimeConstraint -> 10000
+		],
+		Test["When using model container as destination, cover is not simulated instead a cover unit operation is added for robotic preparation:",
+			ExperimentRoboticCellPreparation[
+				{
+					Transfer[
+						Source -> Model[Sample, "E.coli MG1655"],
+						Destination -> Model[Container, Plate, "id:4pO6dMmErzez"],(*Sterile Deep Round Well, 2 mL*)
+						DestinationLabel -> "my cells",
+						Amount -> 1 Milliliter
+					],
+					IncubateCells[
+						Sample -> "my cells",
+						CultureAdhesion -> Suspension,
+						Time -> 0.5 Hour
+					]
+				},
+				Output -> Input
+			],
+			{TransferP, CoverP, IncubateCellsP},
+			TimeConstraint -> 10000
 		],
 		Example[{Additional,"Detects two separate multichannel runs, 1) up/down -> left/right, 2) left/right -> left/right:"},
 			{protocol,options}=ExperimentTransfer[{
@@ -1091,6 +2011,29 @@ DefineTests[
 				}]
 			},
 			Variables :> {protocol, options}
+		],
+		Test["Require advanced pipetting certificate if we are using multichannel pipette:",
+			protocol = ExperimentTransfer[{
+				{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+				Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+				Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+				Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+				Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID],
+				Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID]},
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"A2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"A3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"A4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"A5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"A6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				{All, All, All, All, All, All}
+			];
+
+			MemberQ[Download[protocol, RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			True,
+			Variables :> {protocol}
 		],
 		Example[{Additional,"Detects two separate multichannel runs, 1) up/down -> down/up, 2) right/left -> left/right:"},
 			{protocol,options}=ExperimentTransfer[{
@@ -1176,7 +2119,7 @@ DefineTests[
 						Object -> Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
 						Solvent -> Link[Model[Sample, "Test solvent model sample for ExperimentTransfer" <> $SessionUUID]],
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]]}
+							{100 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]], Now}
 						}
 					|>,
 					<|
@@ -1208,8 +2151,8 @@ DefineTests[
 					<|
 						Object -> Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
 						Replace[Composition] -> {
-							{90 VolumePercent, Link[Model[Molecule,"id:qdkmxzq6W6Ba"]]},
-							{10 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]]}
+							{90 VolumePercent, Link[Model[Molecule,"id:qdkmxzq6W6Ba"]], Now},
+							{10 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]], Now}
 						},
 						Solvent -> Null
 					|>,
@@ -1246,8 +2189,8 @@ DefineTests[
 					<|
 						Object -> Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
 						Replace[Composition] -> {
-							{10 VolumePercent, Link[Model[Molecule,"id:qdkmxzq6W6Ba"]]},
-							{90 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]]}
+							{10 VolumePercent, Link[Model[Molecule,"id:qdkmxzq6W6Ba"]], Now},
+							{90 VolumePercent, Link[Model[Molecule, Oligomer, "id:54n6evLldkal"]], Now}
 						},
 						Solvent -> Null
 					|>,
@@ -1605,6 +2548,163 @@ DefineTests[
 			},
 			Variables :> {protocol, options}
 		],
+		Example[{Additional, "Set MultichannelTransfer to False is we are aspiration mixing for more than $MaxNumberOfMultichannelPipetteMixes times manually:"},
+			ExperimentTransfer[
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID]
+				},
+				{
+					{"B4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				ConstantArray[0.5 * Milliliter, 6],
+				Preparation -> Manual,
+				NumberOfAspirationMixes -> ($MaxNumberOfMultichannelPipetteMixes + 1),
+				AspirationMixType -> Pipette,
+				Output -> {Result, Options}
+			],
+			{
+				ObjectP[Object[Protocol, ManualSamplePreparation]],
+				KeyValuePattern[{
+					MultichannelTransfer -> False
+				}]
+			}
+		],
+		Test["do not need advanced pipetting certificate if we are not using advanced pipettes (multichannel or positive displacement):",
+			protocol = ExperimentTransfer[
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID]
+				},
+				{
+					{"B4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				ConstantArray[0.5 * Milliliter, 6],
+				Preparation -> Manual,
+				NumberOfAspirationMixes -> ($MaxNumberOfMultichannelPipetteMixes + 1),
+				AspirationMixType -> Pipette,
+				MultichannelTransfer -> False
+			];
+
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			False,
+			Variables :> {protocol}
+		],
+		Example[{Additional, "$MaxNumberOfMultichannelPipetteMixes is not considered when resolving MultichannelTransfer if the transfer is done robotically:"},
+			ExperimentTransfer[
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID]
+				},
+				{
+					{"B4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				ConstantArray[0.5 * Milliliter, 6],
+				Preparation -> Robotic,
+				NumberOfAspirationMixes -> ($MaxNumberOfMultichannelPipetteMixes + 1),
+				AspirationMixType -> Pipette,
+				Output -> {Result, Options}
+			],
+			{
+				ObjectP[Object[Protocol, RoboticSamplePreparation]],
+				KeyValuePattern[{
+					MultichannelTransfer -> True
+				}]
+			}
+		],
+		Example[{Messages, "TooManyMixesWithMultichannelPipette", "Throw a warning if we are aspiration mixing for more than $MaxNumberOfMultichannelPipetteMixes times using multichannel transfer manually:"},
+			ExperimentTransfer[
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID]
+				},
+				{
+					{"B4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				ConstantArray[0.5 * Milliliter, 6],
+				Preparation -> Manual,
+				NumberOfAspirationMixes -> ($MaxNumberOfMultichannelPipetteMixes + 1),
+				MultichannelTransfer -> True,
+				AspirationMixType -> Pipette,
+				Output -> {Result, Options}
+			],
+			{
+				ObjectP[Object[Protocol, ManualSamplePreparation]],
+				KeyValuePattern[{
+					MultichannelTransfer -> True
+				}]
+			},
+			Messages :> {Warning::TooManyMixesWithMultichannelPipette}
+		],
+		Example[{Messages, "TooManyMixesWithMultichannelPipette", "Throw a warning if we are dispense mixing for more than $MaxNumberOfMultichannelPipetteMixes times using multichannel transfer manually:"},
+			ExperimentTransfer[
+				{
+					{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer"<>$SessionUUID]},
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer"<>$SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer"<>$SessionUUID]
+				},
+				{
+					{"B4", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B3", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B2", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B1", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B5", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]},
+					{"B6", Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer"<>$SessionUUID]}
+				},
+				ConstantArray[0.5 * Milliliter, 6],
+				Preparation -> Manual,
+				NumberOfDispenseMixes -> ($MaxNumberOfMultichannelPipetteMixes + 1),
+				MultichannelTransfer -> True,
+				DispenseMixType -> Pipette,
+				Output -> {Result, Options}
+			],
+			{
+				ObjectP[Object[Protocol, ManualSamplePreparation]],
+				KeyValuePattern[{
+					MultichannelTransfer -> True
+				}]
+			},
+			Messages :> {Warning::TooManyMixesWithMultichannelPipette}
+		],
 		Example[{Additional,"Detects two separate multichannel runs, 1) up/down -> down/up, 2) right/left -> left/right, with a random transfer in between:"},
 			{protocol,options}=ExperimentTransfer[{
 				{"A1", Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID]},
@@ -1680,7 +2780,7 @@ DefineTests[
 				_List
 			}
 		],
-		Example[{Additional,"A single transfer of Model[Sample, \"Milli-Q water\"] over 50mL will result in us directly using a graduated cylinder and a water purifier:"},
+		Example[{Additional,"A single transfer of Model[Sample, \"Milli-Q water\"] over 50mL will result in us directly using a graduated cylinder:"},
 			ExperimentTransfer[
 				Model[Sample, "Milli-Q water"],
 				PreferredContainer[100 Milliliter],
@@ -1690,8 +2790,7 @@ DefineTests[
 			{
 				ObjectP[Object[Protocol, ManualSamplePreparation]],
 				KeyValuePattern[{
-					Instrument -> ObjectP[Model[Container, GraduatedCylinder]],
-					WaterPurifier -> ObjectP[{Model[Instrument, WaterPurifier], Object[Instrument, WaterPurifier]}]
+					Instrument -> ObjectP[Model[Container, GraduatedCylinder]]
 				}]
 			}
 		],
@@ -1705,8 +2804,7 @@ DefineTests[
 			{
 				ObjectP[Object[Protocol, ManualSamplePreparation]],
 				KeyValuePattern[{
-					Instrument->ObjectP[Model[Instrument, Pipette]],
-					WaterPurifier->Null
+					Instrument->ObjectP[Model[Instrument, Pipette]]
 				}]
 			}
 		],
@@ -1802,9 +2900,8 @@ DefineTests[
 					Needle -> ObjectP[Model[Item, Needle]],
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					UnsealHermeticSource -> True,
 					UnsealHermeticDestination -> False,
 					BackfillNeedle -> Null,
@@ -1833,9 +2930,8 @@ DefineTests[
 					Needle -> ObjectP[Model[Item, Needle]],
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
-					QuantitativeTransfer -> Null,
+					QuantitativeTransfer -> False,
 					UnsealHermeticSource -> False,
 					UnsealHermeticDestination -> True,
 					BackfillNeedle -> ObjectP[Model[Item, Needle]],
@@ -1864,7 +2960,6 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> Null,
-					WaterPurifier -> Null,
 					HandPump -> Null,
 					UnsealHermeticSource -> True,
 					UnsealHermeticDestination -> True,
@@ -1893,7 +2988,6 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> MassP,
-					WaterPurifier -> Null,
 					HandPump -> Null,
 					BackfillNeedle -> Null,
 					BackfillGas -> Null,
@@ -1971,7 +3065,6 @@ DefineTests[
 					Needle -> Null,
 					WeighingContainer -> Null,
 					Tolerance -> MassP,
-					WaterPurifier -> Null,
 					HandPump -> Null,
 					BackfillNeedle -> Null,
 					BackfillGas -> Null,
@@ -2101,6 +3194,67 @@ DefineTests[
 			Variables :> {protocol},
 			Messages :> {}
 		],
+		Test["Require advanced pipetting certificate if we are using positive displacement pipette in the top level msp:",
+			protocol = ExperimentTransfer[
+				Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				0.5 Milliliter
+			];
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			True,
+			Variables :> {protocol}
+		],
+		Test["Require advanced pipetting certificate if we are using positive displacement pipette in a transfer UO using msp call:",
+			protocol = ExperimentManualSamplePreparation[
+				{
+					Transfer[
+						Source -> Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer"<>$SessionUUID],
+						Destination -> Model[Container, Vessel, "50mL Tube"],
+						Amount -> 0.5 Milliliter
+					]
+				}
+			];
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			True,
+			Variables :> {protocol}
+		],
+		Test["Require advanced pipetting certificate if we are using positive displacement pipette in Object[Protocol, Transfer]:",
+			protocol = ExperimentTransfer[
+				Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				0.5 Milliliter,
+				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			True,
+			Variables :> {protocol}
+		],
+		Test["Require advanced pipetting certificate if we are doing slurry transfer with micropipette:",
+			protocol = ExperimentTransfer[
+				Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				0.5 Milliliter,
+				Instrument -> Model[Instrument, Pipette, "id:1ZA60vL547EM"], (* P1000 *)
+				SlurryTransfer -> True,
+				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			True,
+			Variables :> {protocol}
+		],
+		Test["Do not require advanced pipetting certificate if we are not doing slurry transfer with micropipette:",
+			protocol = ExperimentTransfer[
+				Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "50mL Tube"],
+				9 Milliliter,
+				Instrument -> Model[Container, GraduatedCylinder, "id:Z1lqpMGjee4O"],
+				SlurryTransfer -> True,
+				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			MemberQ[Download[protocol,RequiredCertifications], LinkP[Model[Certification, "id:jLq9jXqPmvxE"]]], (* Model[Certification, "Advanced Pipetting"] *)
+			False,
+			Variables :> {protocol}
+		],
 		Example[{Additional, "A viscous sample can be transferred gravimetrically by specifying mass amount when Mass is informed in the object:"},
 			protocol = ExperimentTransfer[
 				Object[Sample, "Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
@@ -2203,6 +3357,30 @@ DefineTests[
 			],
 			KeyValuePattern[{
 				TransferEnvironment->Model[Container, Bench, "id:pZx9jonGJJqM"],
+				BackfillGas->Argon
+			}],
+			Messages :> {
+				Message[Error::InvalidBackfillGas],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"InvalidBackfillGas","Backfill transfers must occur in $TransferFumeHoodModel (gas lines are not available on a non-transfer fume hood):"},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					1 Milliliter
+				},
+				TransferEnvironment->Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"],
+				BackfillGas->Argon,
+				Output -> Options
+			],
+			KeyValuePattern[{
+				TransferEnvironment->Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"],
 				BackfillGas->Argon
 			}],
 			Messages :> {
@@ -2324,9 +3502,43 @@ DefineTests[
 				Output -> Options
 			],
 			KeyValuePattern[{
-				Balance -> ObjectP[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],
+				Balance -> ObjectP[{Model[Instrument, Balance, "id:vXl9j5qEnav7"], Model[Instrument, Balance, "id:KBL5DvYl3zGN"], Model[Instrument, Balance, "id:N80DNj1Gr5RD"], Model[Instrument, Balance, "id:rea9jl5Vl1ae"]}],
 				WeighingContainer -> ObjectP[]
-			}]
+			}],
+			Messages :> {Message[Warning::QuantitativeTransferRecommended]}
+		],
+		Test["Use a weighing container if we are transferring solids into a container that is Immobile:",
+			ExperimentTransfer[
+				Model[Sample, "id:BYDOjv1VA88z"],
+				Model[Container, Vessel, "Bruker ALPHA Sampling Module"],
+				10 Milligram,
+				Output -> Options
+			],
+			KeyValuePattern[{
+				WeighingContainer -> ObjectP[]
+			}],
+			Messages :> {Message[Warning::QuantitativeTransferRecommended]}
+		],
+		Test["When using weigh boat for multiple transfer, resource pick only 1 bag:",
+			protocol = ExperimentTransfer[
+				{Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				Model[Sample, "id:BYDOjv1VA88z"]},
+				{(*250 mL Glass Bottle*)
+				Model[Container, Vessel, "id:J8AY5jwzPPR7"],
+				Model[Container, Vessel, "id:J8AY5jwzPPR7"]},
+				{10 Milligram, 20 Milligram},
+				WeighingContainer -> Model[Item, WeighBoat, "id:vXl9j57j0zpm"],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			(* Download all the resouce objects created for WeighingContainers *)
+			DeleteDuplicates@Cases[
+				Download[protocol, RequiredResources],
+				{_, WeighingContainers, _, _}
+			][[All, 1]][Object],
+			(*Should be just 1*)
+			{ObjectP[Object[Resource, Sample]]},
+			Messages :> {Message[Warning::QuantitativeTransferRecommended]},
+			Variables :> {protocol, resource}
 		],
 		Example[{Messages,"PlateTransferInstrumentRequired","If we are transferring a sample out of a plate, we cannot pour (Instrument->Null):"},
 			ExperimentTransfer[
@@ -2375,8 +3587,7 @@ DefineTests[
 				Message[Error::InvalidOption]
 			}
 		],
-		(* Rounding is a little messed up right now. Investigate SafeRound. *)
-		(*Example[{Messages,"RoundedTransferAmount","The amount transferred will be rounded if it is not achievable by the Resolution of the transfer devices at the ECL for the given mass/volume range:"},
+		Example[{Messages,"RoundedTransferAmount","The amount transferred will be rounded if it is not achievable by the Resolution of the transfer devices at the ECL for the given mass/volume range:"},
 			ExperimentTransfer[
 				{
 					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
@@ -2393,7 +3604,7 @@ DefineTests[
 			Messages :> {
 				Message[Warning::RoundedTransferAmount]
 			}
-		],*)
+		],
 		Example[{Messages,"TransferSolidSampleByVolume","Solid samples cannot be transferred by volume:"},
 			ExperimentTransfer[
 				{
@@ -2436,10 +3647,79 @@ DefineTests[
 				Message[Error::InvalidOption]
 			}
 		],
-		Example[{Messages,"TabletCrusherRequired","A pill crusher will be used if a transfer amount is given as a mass when SampleHandling->Itemized:"},
+		Example[{Messages,"IncompatibleTransferDestinationContainer","Sample(s) cannot be trasnferred to destination container(s) that contain IncompatibleMaterials:"},
+			ExperimentTransfer[
+				Model[Sample, StockSolution, "0.1% (v/v) Methanesulfonic Acid"],
+				Model[Container, Vessel, "100 mL Glass Bottle"],
+				50 Milliliter,
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleTransferDestinationContainer],
+				Message[Error::InvalidInput]
+			}
+		],
+		Example[{Messages,"IncompatibleTransferIntermediateContainer","Sample(s) cannot be trasnferred to intermediate container(s) that contain IncompatibleMaterials:"},
+			ExperimentTransfer[
+				Model[Sample, StockSolution, "0.1% (v/v) Methanesulfonic Acid"],
+				Model[Container, Vessel, "50mL Tube"],
+				20 Milliliter,
+				IntermediateContainer->	Model[Container, Vessel, "100 mL Glass Bottle"],
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleTransferIntermediateContainer],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"IncompatibleFTVTransferIntermediateContainer","Transfer involving FillToVolume to VolumetricFlask only allows Model[Container, Vessel, \"20mL Pyrex Beaker\"] as IntermediateContainer:"},
+			ExperimentFillToVolume[
+				Object[Sample,"Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+				100 Milliliter,
+				Solvent->Model[Sample, "Milli-Q water"],
+				IntermediateContainer -> Model[Container, Vessel, "100 mL Glass Bottle"],
+				Output->Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleFTVTransferIntermediateContainer],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"IncompatibleFTVTransferIntermediateDecant","Transfer involving FillToVolume to VolumetricFlask only allows IntermediateDecant False:"},
+			ExperimentFillToVolume[
+				Object[Sample,"Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+				100 Milliliter,
+				Solvent->Model[Sample, "Milli-Q water"],
+				IntermediateDecant -> True,
+				Output->Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleFTVTransferIntermediateDecant],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"IncompatibleFTVTransferInstrument","Transfer involving FillToVolume to VolumetricFlask only allows Instrument Null or GraduatedCylinder:"},
+			ExperimentFillToVolume[
+				Object[Sample,"Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+				100 Milliliter,
+				Solvent->Model[Sample, "Milli-Q water"],
+				Instrument ->  Model[Instrument,Pipette,"pipetus"],
+				Output->Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleFTVTransferInstrument],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"TabletCrusherRequired","A pill crusher will be used if a transfer amount is given as a mass when SampleHandling->Itemized and Tablet -> True:"},
 			ExperimentTransfer[
 				{
-					Object[Sample, "Test itemized sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+					Object[Sample, "Test itemized tablet sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
 				},
 				{
 					Model[Container, Vessel, "50mL Tube"]
@@ -2453,6 +3733,48 @@ DefineTests[
 			Messages :> {
 				Message[Warning::TabletCrusherRequired]
 			}
+		],
+		Example[{Messages,"SachetMassSpecified","A warning is thrown if a mass is specified to transfer from a sachet sample:"},
+			{options, simulation} = ExperimentTransfer[
+				{Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Gram},
+				IncludeSachetPouch -> True,
+				Output -> {Options, Simulation}
+			];
+			{sourceSample, destinationSample} = LookupLabeledObject[simulation, Lookup[options, {SourceLabel, DestinationLabel}]];
+			{
+				Lookup[options,{Instrument, IncludeSachetPouch, WeighingContainer}],
+				Download[
+					{sourceSample, destinationSample},
+					{Mass, Count, Sachet, Composition},
+					Simulation -> simulation
+				]
+			},
+			{
+				{ObjectP[Model[Item, Scissors]], True, Null(* We don't need a weighing container because the destination is empty *)},
+				{
+					{
+						MassP, 19, True,
+						{
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]], _},
+							{Null, ObjectP[Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID]], _}
+						}
+					},
+					{
+						MassP, Null, False,
+						{
+							(* Default to not include the pouch *)
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]], _},
+							{Null, ObjectP[Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID]], _}
+						}
+					}
+				}
+			},
+			Messages :> {
+				Message[Warning::SachetMassSpecified]
+			},
+			Variables :> {options, simulation, sourceSample, destinationSample}
 		],
 		Example[{Messages,"InvalidTransferTemperatureGloveBox","Transfer in the glove box cannot have a SourceTemperature/DestinationTemperature:"},
 			ExperimentTransfer[
@@ -2533,6 +3855,57 @@ DefineTests[
 			Messages :> {
 				Message[Warning::OveraspiratedTransfer]
 			}
+		],
+		Test["Transfer using a container label multiple times can check OveraspirationTransfer error(part1):",
+			ExperimentManualSamplePreparation[
+				{
+					LabelContainer[
+						Label->"my container",
+						Container->Model[Container, Vessel, "50mL Tube"]
+					],
+					Transfer[
+						Source->Model[Sample, "Milli-Q water"],
+						Destination->"my container",
+						Amount->1 Milliliter
+					],
+					Transfer[
+						Source->"my container",
+						Destination->Model[Container, Vessel, "2mL Tube"],
+						Amount->1.5 Milliliter
+					]
+				},
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {Warning::OveraspiratedTransfer}
+		],
+		Test["Transfer using a container label multiple times can check OveraspirationTransfer error(part2):",
+			ExperimentManualSamplePreparation[
+				{
+					LabelContainer[
+						Label->"my container",
+						Container->Model[Container, Vessel, "50mL Tube"]
+					],
+					Transfer[
+						Source->Model[Sample, "Milli-Q water"],
+						Destination->"my container",
+						Amount->1 Milliliter
+					],
+					Transfer[
+						Source->"my container",
+						Destination->Model[Container, Vessel, "2mL Tube"],
+						Amount->0.5 Milliliter
+					],
+					Transfer[
+						Source->"my container",
+						Destination->Model[Container, Vessel, "2mL Tube"],
+						Amount->0.8 Milliliter
+					]
+				},
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {Warning::OveraspiratedTransfer}
 		],
 		Example[{Messages,"OverfilledTransfer","Using integer Model[Container] syntax, specify a transfer into the same container, this will cause an overfilled error:"},
 			ExperimentTransfer[
@@ -2802,7 +4175,21 @@ DefineTests[
 				Message[Error::InvalidOption]
 			}
 		],
-		Example[{Messages,"QuantitativeTransferOptions","A message is thrown if only some of the quantitative transfer options are set:"},
+		Example[{Messages, "QuantitativeTransferRecommended", "A warning to suggest QuantitativeTransfer is thrown when transfer amount is less than 50 milligrams:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				(* Use a VolumetricFlask to force it to use a weighing container. If using a 50 mL tube, we will actually use it directly on balance *)
+				{Model[Container, Vessel, VolumetricFlask, "id:n0k9mGOLdwjr"]},
+				{12 Milligram},
+				QuantitativeTransfer -> False,
+				Output-> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Warning::QuantitativeTransferRecommended]
+			}
+		],
+		Example[{Messages,"ConflictingQuantitativeTransferOptions","A message is thrown if only some of the quantitative transfer options are set:"},
 			ExperimentTransfer[
 				{
 					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
@@ -2822,11 +4209,25 @@ DefineTests[
 			],
 			KeyValuePattern[{}],
 			Messages :> {
-				Message[Error::QuantitativeTransferOptions],
+				Message[Error::ConflictingQuantitativeTransferOptions],
 				Message[Error::InvalidOption]
 			}
 		],
-		Example[{Messages,"InvalidWaterPurifier","A message is thrown if a non-water transfer over 3mL is done, but a water purifier is specified 1:"},
+		Example[{Messages,"NoCompatibleWeighingContainer","A message is thrown if QuantitativeTransfer is True but no compatible WeighingContainer is found (eg IncompatibleMaterials conflict):"},
+			ExperimentTransfer[
+				{Model[Sample, "Test solid model sample for ExperimentTransfer"<>$SessionUUID]},
+				{Model[Container, Vessel, VolumetricFlask, "25 mL Glass Volumetric Flask"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::NoCompatibleWeighingContainer],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages,"ConflictingQuantitativeTransferOptions","A message is thrown if Preparation is Robotic:"},
 			ExperimentTransfer[
 				{
 					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
@@ -2835,42 +4236,117 @@ DefineTests[
 					Object[Container,Plate,"Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID]
 				},
 				{
-					1 Milliliter
+					0.5 Milliliter
 				},
 				DestinationWell -> {
 					"A1"
 				},
-				WaterPurifier->Model[Instrument, WaterPurifier, "id:eGakld01zVXG"],
+				QuantitativeTransfer -> True,
+
+				Preparation -> Robotic,
 				Output -> Options
 			],
 			KeyValuePattern[{}],
 			Messages :> {
-				Message[Error::InvalidWaterPurifier],
+				Message[Error::ConflictingQuantitativeTransferOptions],
+				Message[Error::ConflictingUnitOperationMethodRequirements],
 				Message[Error::InvalidOption]
 			}
 		],
-		Example[{Messages,"InvalidWaterPurifier","A message is thrown if a non-water transfer over 3mL is done, but a water purifier is specified 2:"},
+		Example[{Messages, "InvalidQuantitativeTransferWashVolume", "A message is thrown if QuantitativeTransferVolume is greater than 5 Milliliter  since this is the max volume a Micropipette type can hold:"},
 			ExperimentTransfer[
-				{
-					Model[Sample, "Milli-Q water"]
-				},
-				{
-					Object[Container,Plate,"Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID]
-				},
-				{
-					1 Milliliter
-				},
-				DestinationWell -> {
-					"A1"
-				},
-				WaterPurifier->Model[Instrument, WaterPurifier, "id:eGakld01zVXG"],
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				QuantitativeTransferWashSolution -> Model[Sample, "Milli-Q water"],
+				QuantitativeTransferWashVolume -> 15 Milliliter,
 				Output -> Options
 			],
 			KeyValuePattern[{}],
 			Messages :> {
-				Message[Error::InvalidWaterPurifier],
+				Message[Error::InvalidQuantitativeTransferWashVolume],
 				Message[Error::InvalidOption]
 			}
+		],
+		Example[{Messages, "IncompatibleQuantitativeTransferWashTips", "A message is thrown if an incompatible QuantitativeTransferWashTips is specified:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				QuantitativeTransferWashSolution -> Model[Sample, "Milli-Q water"],
+				QuantitativeTransferWashTips -> Model[Item, Tips, "5 mL glass barrier serological pipets, sterile"],
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleQuantitativeTransferWashTips],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages, "IncompatibleQuantitativeTransferWashInstrument", "A message is thrown if an incompatible QuantitativeTransferWashInstrument is specified:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				QuantitativeTransferWashSolution -> Model[Sample, "Milli-Q water"],
+				QuantitativeTransferWashInstrument -> Model[Instrument, Pipette, "pipetus"],
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleQuantitativeTransferWashInstrument],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages, "IncompatibleQuantitativeTransferWeighingContainer", "If QuantitativeTransfer is True and WeighingContainer is NOT set to a Model[Item,WeighBoat] or Object[Item,WeighBoat], throw an error:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				WeighingContainer->Model[Item, Consumable, "id:3em6Zv9Njj5W"],
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::IncompatibleQuantitativeTransferWeighingContainer],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Messages, "InvalidNumberOfQuantitativeTransferWashes", "If NumberOfQuantitativeTransferWashes is less than 2, throw an error:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{60 Milligram},
+				QuantitativeTransfer -> True,
+				NumberOfQuantitativeTransferWashes->1,
+				Output -> Options
+			],
+			KeyValuePattern[{}],
+			Messages :> {
+				Message[Error::InvalidNumberOfQuantitativeTransferWashes],
+				Message[Error::InvalidOption]
+			}
+		],
+		Example[{Options, WeighingContainer, "WeighingContainer is automatically resolved if QuantitativeTransfer is set to True:"},
+			ExperimentTransfer[
+				{Model[Sample, "Acetylsalicylic Acid (Aspirin)"]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{10 Milligram},
+				Balance -> Model[Instrument, Balance, "Mettler Toledo XP6"],
+				QuantitativeTransfer -> True,
+				QuantitativeTransferWashSolution -> Model[Sample, "Milli-Q water"],
+				QuantitativeTransferWashVolume -> 0.2 Milliliter,
+				NumberOfQuantitativeTransferWashes -> 2,
+				QuantitativeTransferWashTips -> Model[Item, Tips, "200 uL wide-bore tips, non-sterile"],
+				Output -> Options
+			],
+			KeyValuePattern[{
+				WeighingContainer -> ObjectP[Model[Item, WeighBoat]]
+			}]
 		],
 		Example[{Messages,"RequiredWeighingContainerNonEmptyDestination","A message is thrown if the weighing container is set to Null, but the destination position will be non-empty at the time of transfer:"},
 			ExperimentTransfer[
@@ -3050,6 +4526,90 @@ DefineTests[
 				Message[Warning::ReversePipettingSampleVolume]
 			}
 		],
+		Example[{Messages, "AspirationMixVolumeOutOfTipRange", "When AspirationMixVolume exceeds the MaxVolume of Tips, an error will be thrown."},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					100 Microliter
+				},
+				Tips -> Model[Item, Tips, "id:O81aEBZDpVzN"],
+				AspirationMix -> True,
+				AspirationMixVolume -> 500 Microliter
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::InvalidOption],
+				Message[Error::AspirationMixVolumeOutOfTipRange]
+			}
+		],
+		Example[{Messages, "AspirationMixVolumeOutOfTipRange", "When AspirationMixVolume is below the MinVolume of Tips, an error will be thrown."},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					100 Microliter
+				},
+				Tips -> Model[Item, Tips, "id:O81aEBZDpVzN"],
+				AspirationMix -> True,
+				AspirationMixVolume -> 15 Microliter
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::InvalidOption],
+				Message[Error::AspirationMixVolumeOutOfTipRange]
+			}
+		],
+		Example[{Messages, "DispenseMixVolumeOutOfTipRange", "When DispenseMixVolume exceeds the MaxVolume of Tips, an error will be thrown."},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					100 Microliter
+				},
+				Tips -> Model[Item, Tips, "id:O81aEBZDpVzN"],
+				DispenseMix -> True,
+				DispenseMixVolume -> 500 Microliter
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::InvalidOption],
+				Message[Error::DispenseMixVolumeOutOfTipRange]
+			}
+		],
+		Example[{Messages, "DispenseMixVolumeOutOfTipRange", "When DispenseMixVolume is below the MinVolume of Tips, an error will be thrown."},
+			ExperimentTransfer[
+				{
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]
+				},
+				{
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					100 Microliter
+				},
+				Tips -> Model[Item, Tips, "id:O81aEBZDpVzN"],
+				DispenseMix -> True,
+				DispenseMixVolume -> 15 Microliter
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::InvalidOption],
+				Message[Error::DispenseMixVolumeOutOfTipRange]
+			}
+		],
 		(* ExperimentTransfer should be modified for this test to work *)
 		(*Example[{Messages,"IrretrievableSamples","An error is thrown if a irretrievable sample is given as an input to be transferred:"},
 			ExperimentTransfer[
@@ -3092,6 +4652,19 @@ DefineTests[
 			],
 			KeyValuePattern[{
 				Instrument->Null
+			}]
+		],
+		Test["We should NOT pour if transferring All and we're in a vessel but SterileTechnique -> True:",
+			ExperimentTransfer[
+				Object[Sample, "Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+				PreferredContainer[50 Milliliter],
+				All,
+				SterileTechnique -> True,
+				Output -> Options
+			],
+			KeyValuePattern[{
+				Instrument -> ObjectP[Model[Instrument, Pipette]],
+				Tips -> ObjectP[Model[Item, Tips]]
 			}]
 		],
 		Test["We shouldn't pour if transferring All and we're in a plate:",
@@ -3152,8 +4725,7 @@ DefineTests[
 							DispenseAngle->10 AngularDegree
 						]
 					},
-					OptimizeUnitOperations->False,
-					Debug->True
+					OptimizeUnitOperations->False
 				];
 
 				Download[protocol, OutputUnitOperations[[3]][AspirationAngle]]
@@ -3450,7 +5022,6 @@ DefineTests[
 				{200 Microliter, 200 Microliter, 200 Microliter},
 				Tips -> {Model[Item,Tips,"200 uL tips, non-sterile"], Model[Item,Tips,"200 uL tips, non-sterile"], Model[Item,Tips,"200 uL tips, non-sterile"]},
 				MultichannelTransfer -> True,
-				NumberOfAspirationMixes -> 10,
 				Preparation -> Manual,
 				Output -> Options
 			];
@@ -3579,7 +5150,8 @@ DefineTests[
 				(* One of the resources should be >160 mL in a reservoir *)
 				{___,GreaterP[160Milliliter],___},
 				{___,{LinkP[Model[Container, Plate, "id:54n6evLWKqbG"]]},___}
-			}
+			},
+			TimeConstraint -> 3600
 		],
 		Example[{Additional,"If the total required volume of a manual Model[Sample] resource is larger than the maximum of a 20L carboy, require multiple resources:"},
 			Module[
@@ -3718,6 +5290,517 @@ DefineTests[
 				}
 			],
 			ObjectP[Object[Protocol, RoboticSamplePreparation]]
+		],
+		Test["Resolves to the transfer fume hood model if hermetic transfers are required:",
+			Module[
+				{austinProtocol,cmuProtocol},
+				austinProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
+					Site -> Object[Container, Site, "ECL-2"]
+				];
+				cmuProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
+					Site -> Object[Container, Site, "ECL-CMU"]
+				];
+				Download[{austinProtocol,cmuProtocol},BatchedUnitOperations[[1]][TransferEnvironment][[1]]]
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Resolves to the transfer enclosure model if a micro balance model is specified:",
+			Module[
+				{austinProtocol},
+				austinProtocol=ExperimentTransfer[
+					Model[Sample,"Sodium Chloride"],
+					Model[Container, Vessel, "2mL Tube"],
+					500 Milligram,
+					Balance -> Model[Instrument,Balance,"Mettler Toledo XP6"],
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
+					Site -> Object[Container, Site, "ECL-2"]
+				];
+				(* Note:CMU only has Model[Instrument, Balance, "Mettler Toledo XPR6U Ultra-Microbalance"] as micro balance and it is not actively used *)
+				Download[austinProtocol,BatchedUnitOperations[[1]][TransferEnvironment][[1]]]
+			],
+			(* $TransferEnclosureModel - Model[Container, Enclosure, "Emerald 35x35x35 Closed Enclosure for micro balance"] *)
+			ObjectP[Model[Container, Enclosure, "Emerald 35x35x35 Closed Enclosure for micro balance"]]
+		],
+		Test["Resolves to the transfer fume hood model based on Site of the parent protocol (Hermetic container transfers):",
+			Module[
+				{austinProtocol,cmuProtocol},
+				austinProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test ECL-2 MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				cmuProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test CMU MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				Download[{austinProtocol,cmuProtocol},BatchedUnitOperations[[1]][TransferEnvironment][[1]]]
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Always resolves to the transfer fume hood model in generating Object[Protocol,ManualSamplePreparation] and Object[Protocol,Transfer] (Hermetic container transfers, ECL-2 version):",
+			Module[
+				{mspProtocol,mspProtocolTransferEnvironment,transferProtocol,transferProtocolTransferEnvironment},
+				mspProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					Name -> "Test Fume Hood MSP 1 for ExperimentTransfer" <> $SessionUUID
+				];
+				mspProtocolTransferEnvironment=Lookup[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],TransferEnvironment];
+				(* ConfirmProtocol usually checks for resources and assigns a Site to the protocol but we are going to do it manually here *)
+				Upload[<|Object->mspProtocol,Site->Link[Object[Container,Site,"ECL-2"]]|>];
+				ClearMemoization[];
+				transferProtocol=ExperimentTransfer[
+					Download[mspProtocol,ResolvedUnitOperationInputs[[1]]],
+					Join[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],{ParentProtocol->mspProtocol,Name -> "Test Fume Hood Transfer Subprotocol 1 for ExperimentTransfer" <> $SessionUUID}]
+				];
+				transferProtocolTransferEnvironment=Download[transferProtocol,BatchedUnitOperations[[1]][TransferEnvironment][[1]]];
+				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Always resolves to the transfer fume hood model in generating Object[Protocol,ManualSamplePreparation] and Object[Protocol,Transfer] (Hermetic container transfers, ECL-CMU version):",
+			Module[
+				{mspProtocol,mspProtocolTransferEnvironment,transferProtocol,transferProtocolTransferEnvironment},
+				mspProtocol=ExperimentTransfer[
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					500 Microliter,
+					Name -> "Test Fume Hood MSP 2 for ExperimentTransfer" <> $SessionUUID
+				];
+				mspProtocolTransferEnvironment=Lookup[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],TransferEnvironment];
+				(* ConfirmProtocol usually checks for resources and assigns a Site to the protocol but we are going to do it manually here *)
+				Upload[<|Object->mspProtocol,Site->Link[Object[Container,Site,"ECL-CMU"]]|>];
+				ClearMemoization[];
+				transferProtocol=ExperimentTransfer[
+					Download[mspProtocol,ResolvedUnitOperationInputs[[1]]],
+					Join[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],{ParentProtocol->mspProtocol,Name -> "Test Fume Hood Transfer Subprotocol 2 for ExperimentTransfer" <> $SessionUUID}]
+				];
+				transferProtocolTransferEnvironment=Download[transferProtocol,BatchedUnitOperations[[1]][TransferEnvironment][[1]]];
+				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Resolves to the transfer fume hood model for Fuming solid transfer that requires a balance:",
+			Module[
+				{austinProtocol,cmuProtocol},
+				austinProtocol=ExperimentTransfer[
+					Model[Sample, "Fmoc-L-Ala-OH"],
+					Model[Container, Vessel, "2mL Tube"],
+					25 Milligram,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test ECL-2 MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				cmuProtocol=ExperimentTransfer[
+					Model[Sample, "Fmoc-L-Ala-OH"],
+					Model[Container, Vessel, "2mL Tube"],
+					25 Milligram,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test CMU MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				Download[{austinProtocol,cmuProtocol},BatchedUnitOperations[[1]][TransferEnvironment][[1]]]
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Always resolves to the transfer fume hood model in generating Object[Protocol,ManualSamplePreparation] and Object[Protocol,Transfer] (Fuming solid transfer that requires a balance, ECL-2 version):",
+			Module[
+				{mspProtocol,mspProtocolTransferEnvironment,transferProtocol,transferProtocolTransferEnvironment},
+				mspProtocol=ExperimentTransfer[
+					Model[Sample, "Fmoc-L-Ala-OH"],
+					Model[Container, Vessel, "2mL Tube"],
+					25 Milligram,
+					Name -> "Test Fume Hood MSP 3 for ExperimentTransfer" <> $SessionUUID
+				];
+				mspProtocolTransferEnvironment=Lookup[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],TransferEnvironment];
+				(* ConfirmProtocol usually checks for resources and assigns a Site to the protocol but we are going to do it manually here *)
+				Upload[<|Object->mspProtocol,Site->Link[Object[Container,Site,"ECL-2"]]|>];
+				ClearMemoization[];
+				transferProtocol=ExperimentTransfer[
+					Download[mspProtocol,ResolvedUnitOperationInputs[[1]]],
+					Join[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],{ParentProtocol->mspProtocol,Name -> "Test Fume Hood Transfer Subprotocol 3 for ExperimentTransfer" <> $SessionUUID}]
+				];
+				transferProtocolTransferEnvironment=Download[transferProtocol,BatchedUnitOperations[[1]][TransferEnvironment][[1]]];
+				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["Always resolves to the transfer fume hood model in generating Object[Protocol,ManualSamplePreparation] and Object[Protocol,Transfer] (Fuming solid transfer that requires a balance, ECL-CMU version):",
+			Module[
+				{mspProtocol,mspProtocolTransferEnvironment,transferProtocol,transferProtocolTransferEnvironment},
+				mspProtocol=ExperimentTransfer[
+					Model[Sample, "Fmoc-L-Ala-OH"],
+					Model[Container, Vessel, "2mL Tube"],
+					25 Milligram,
+					Name -> "Test Fume Hood MSP 4 for ExperimentTransfer" <> $SessionUUID,
+					Site -> Object[Container, Site, "ECL-CMU"]
+				];
+				mspProtocolTransferEnvironment=Lookup[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],TransferEnvironment];
+				(* ConfirmProtocol usually checks for resources and assigns a Site to the protocol but we are going to do it manually here *)
+				Upload[<|Object->mspProtocol,Site->Link[Object[Container,Site,"ECL-CMU"]]|>];
+				ClearMemoization[];
+				transferProtocol=ExperimentTransfer[
+					Download[mspProtocol,ResolvedUnitOperationInputs[[1]]],
+					Join[Download[mspProtocol,ResolvedUnitOperationOptions[[1]]],{ParentProtocol->mspProtocol,Name -> "Test Fume Hood Transfer Subprotocol 4 for ExperimentTransfer" <> $SessionUUID}]
+				];
+				transferProtocolTransferEnvironment=Download[transferProtocol,BatchedUnitOperations[[1]][TransferEnvironment][[1]]];
+				{mspProtocolTransferEnvironment,transferProtocolTransferEnvironment}
+			],
+			{
+				(* $TransferFumeHoodModel - Model[Instrument, FumeHood, "Labconco Premier 6 Foot Variant A"] *)
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]],
+				ObjectP[Model[Instrument, FumeHood, "id:eGakldaEnWr4"]]
+			}
+		],
+		Test["If transferring a sample that is incompatible with some containers (for instance, glass) and we're doing an intermediate transfer, don't use an intermediate container that is that material:",
+			Module[{protocol, unitOpRequiredResources, sourceResource},
+				protocol = ExperimentTransfer[
+					Model[Sample, "Triethylamine trihydrofluoride"],
+					Model[Container, Vessel, "5L Plastic Container"],
+					1 Liter,
+					IntermediateDecant -> True,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				unitOpRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
+				sourceResource = FirstCase[unitOpRequiredResources, {resource:ObjectP[], IntermediateContainerLink, 1, Null} :> resource];
+				Download[sourceResource, Models[ContainerMaterials]]
+			],
+			{{Polypropylene}}
+		],
+		Test["Populate proper waste bin/bag resources when the TransferEnvironment is a BSC:",
+			Module[{protocol},
+				protocol = ExperimentTransfer[
+					{
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"]
+					},
+					{
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"]
+					},
+					{
+						900 Microliter,
+						900 Microliter,
+						900 Microliter
+					},
+					TransferEnvironment -> {
+						Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 1 " <> $SessionUUID],
+						Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 1 " <> $SessionUUID],
+						Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 2 " <> $SessionUUID]
+					},
+					Preparation -> Manual,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+
+				Download[
+					protocol,
+					BatchedUnitOperations[{BiosafetyWasteBin,BiosafetyWasteBag,BiosafetyWasteBinPlacements,BiosafetyWasteBinTeardowns}]
+				]
+			],
+			{
+				{
+					{ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID]]},
+					{ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]]}, (* Model[Item, Consumable, "Biohazard Waste Bags, 8x12"] *)
+					{
+						{ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]], ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID]], "A1"},
+						{ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID]], ObjectP[Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 1 " <> $SessionUUID]], "Waste Bin Slot"}
+					},
+					{}
+				},
+				{
+					{ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID]]},
+					{ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]]}, (* Model[Item, Consumable, "Biohazard Waste Bags, 8x12"] *)
+					{},
+					{
+						ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID]],
+						ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]]
+					}
+				},
+				{
+					{ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 " <> $SessionUUID]]},
+					{ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]]}, (* Model[Item, Consumable, "Biohazard Waste Bags, 8x12"] *)
+					{
+						{ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]], ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 " <> $SessionUUID]], "A1"},
+						{ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 " <> $SessionUUID]], ObjectP[Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 2 " <> $SessionUUID]], "Waste Bin Slot"}
+					},
+					{
+						ObjectP[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 " <> $SessionUUID]],
+						ObjectP[Model[Item, Consumable, "id:7X104v6oeYNJ"]]
+					}
+				}
+			}
+		],
+		Test["WasteBin and WasteBag resources are not populated if the TransferEnvironment is NOT a bsc:",
+			Module[{protocol},
+				protocol = ExperimentTransfer[
+					Model[Sample, "Milli-Q water"],
+					Model[Container, Vessel, "50mL Tube"],
+					900 Microliter,
+					TransferEnvironment -> Model[Container, Bench, "id:pZx9jonGJJqM"],
+					Preparation -> Manual,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+
+				Download[protocol,BatchedUnitOperations[{BiosafetyWasteBin,BiosafetyWasteBag,BiosafetyWasteBinPlacements,BiosafetyWasteBinTeardowns}]]
+			],
+			{{{},{},{},{}}}
+		],
+		Test["If transferring a sample that is incompatible with some containers (for instance, glass), do not resolve to a source container that is that material:",
+			Module[{protocol, unitOpRequiredResources, sourceResource},
+				protocol = ExperimentTransfer[
+					Model[Sample, "Triethylamine trihydrofluoride"],
+					Model[Container, Vessel, "5L Plastic Container"],
+					1 Liter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				unitOpRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
+				sourceResource = FirstCase[unitOpRequiredResources, {resource:ObjectP[], SourceLink, 1, Null} :> resource];
+				Download[sourceResource, ContainerModels[ContainerMaterials]]
+			],
+			{{Polypropylene}}
+		],
+		Test["If transferring a sample that is incompatible with some containers (for instance, glass) and we're doing an intermediate transfer, don't use an intermediate container that is that material:",
+			Module[{protocol, unitOpRequiredResources, sourceResource},
+				protocol = ExperimentTransfer[
+					Model[Sample, "Triethylamine trihydrofluoride"],
+					Model[Container, Vessel, "5L Plastic Container"],
+					1 Liter,
+					IntermediateDecant -> True,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+				];
+				unitOpRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
+				sourceResource = FirstCase[unitOpRequiredResources, {resource:ObjectP[], IntermediateContainerLink, 1, Null} :> resource];
+				Download[sourceResource, Models[ContainerMaterials]]
+			],
+			{{Polypropylene}}
+		],
+		Test["Generate an Object[Protocol, ManualCellPreparation] if Preparation -> Manual and a cell-containing sample is used:",
+			ExperimentTransfer[
+				{Object[Sample, "Test cell sample 1 for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{0.5 Milliliter},
+				Preparation -> Manual,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Test["Generate an Object[Protocol, RoboticCellPreparation] if Preparation -> Robotic and a cell-containing sample is used:",
+			ExperimentTransfer[
+				{Object[Sample, "Test cell sample 1 for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{0.5 Milliliter},
+				Preparation -> Robotic,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
+		],
+		Test["Transfer of specified counts can be resolved for sachet samples:",
+			{options, simulation} = ExperimentTransfer[
+				{Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{5},
+				Output -> {Options, Simulation}
+			];
+			{sourceSample, destinationSample} = LookupLabeledObject[simulation, Lookup[options, {SourceLabel, DestinationLabel}]];
+
+			{
+				Lookup[options,{Instrument, IncludeSachetPouch}],
+				Download[
+					{sourceSample, destinationSample},
+					{Mass, Count, Sachet, Composition},
+					Simulation -> simulation
+				]
+			},
+			{
+				{ObjectP[Model[Item, Scissors]], False},
+				{
+					{
+						MassP, 15, True,
+						{
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]], _},
+							{Null, ObjectP[Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID]],_}
+						}
+					},
+					{
+						MassP, Null, False,
+						{
+							(* Default to not include the pouch *)
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]],_}
+						}
+					}
+				}
+			},
+			Variables :> {options, simulation, sourceSample, destinationSample}
+		],
+		Test["Transfer of specified counts using tweezers can be resolved for sachet samples, and destination samples gets Count correctly populated:",
+			{options, simulation} = ExperimentTransfer[
+				{Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{5},
+				Instrument -> Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"], (* "Straight flat tip tweezer" *)
+				Output -> {Options, Simulation}
+			];
+			{sourceSample, destinationSample} = LookupLabeledObject[simulation, Lookup[options, {SourceLabel, DestinationLabel}]];
+
+			{
+				Lookup[options,{Instrument, IncludeSachetPouch}],
+				Download[
+					{sourceSample, destinationSample},
+					{Mass, Count, Sachet, Model, Composition},
+					Simulation -> simulation
+				]
+			},
+			{
+				{ObjectP[Model[Item, Tweezer]], Null},
+				{
+					{
+						MassP, 15, True,
+						ObjectP[Model[Sample, "Test sachet model sample for ExperimentTransfer"<> $SessionUUID]],
+						{
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]], _},
+							{Null, ObjectP[Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID]],_}
+						}
+					},
+					{
+						MassP, 5, True,
+						ObjectP[Model[Sample, "Test sachet model sample for ExperimentTransfer"<> $SessionUUID]],
+						{
+							{EqualP[100 MassPercent], ObjectP[Model[Molecule, "Test sachet filler model for ExperimentTransfer" <> $SessionUUID]], _},
+							{Null, ObjectP[Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID]],_}
+						}
+					}
+				}
+			},
+			Variables :> {options, simulation, sourceSample, destinationSample}
+		],
+		Test["Specifying a volume for transfer from sachet source cleanly errors out:",
+			ExperimentTransfer[
+				{Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID]},
+				{Model[Container, Vessel, "50mL Tube"]},
+				{1 Milliliter},
+				IncludeSachetPouch -> True
+			],
+			$Failed,
+			Messages :> {
+				Message[Error::TransferSolidSampleByVolume],
+				Message[Error::InvalidInput]
+			}
+		],
+		Test["Defaulting to PreferredContainer if we are requesting a sample model of an amount that can be prepared via Consolidation in lab, otherwise, set to product default container:",
+			{
+				Block[{$DeveloperSearch = True}, Module[{protocol, unitOpRequiredResources, sourceResource},
+					protocol = ExperimentTransfer[
+						Model[Sample, "test liquid model for ExperimentTransfer unit testing "<>$SessionUUID],
+						Model[Container, Vessel, "2L Glass Bottle"],
+						1.2 Liter,
+						ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer"<>$SessionUUID]
+					];
+					unitOpRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
+					sourceResource = FirstCase[unitOpRequiredResources, {resource:ObjectP[], SourceLink, 1, Null} :> resource];
+					Download[sourceResource, ContainerModels][[1]]
+				]],
+				Block[{$DeveloperSearch = True, $RequiredSearchName = "This search must fail :)"}, Module[{protocol, unitOpRequiredResources, sourceResource},
+					protocol = ExperimentTransfer[
+						Model[Sample, "test liquid model for ExperimentTransfer unit testing "<>$SessionUUID],
+						Model[Container, Vessel, "2L Glass Bottle"],
+						1.2 Liter,
+						ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer"<>$SessionUUID]
+					];
+					unitOpRequiredResources = Download[protocol, BatchedUnitOperations[[1]][RequiredResources]];
+					sourceResource = FirstCase[unitOpRequiredResources, {resource:ObjectP[], SourceLink, 1, Null} :> resource];
+					Download[sourceResource, ContainerModels][[1]]
+				]]
+			},
+			{ObjectP[Model[Container, Vessel, "2L Glass Bottle"]], ObjectP[Model[Container, Vessel, "4L disposable amber glass bottle for inventory chemicals"]]}
+		],
+		Test[{"Resolves to not use serological pipettes if we are using volumetric flask as the source:"},
+			Module[{msp},
+				msp = ExperimentManualSamplePreparation[
+					{
+						LabelSample[
+							(* "Milli-Q water" *)
+							Sample -> Model[Sample, "id:8qZ1VWNmdLBD"],
+							Amount -> 10 Milliliter,
+							(* "20 mL Glass Volumetric Flask" *)
+							Container -> Model[Container, Vessel, VolumetricFlask, "id:n0k9mGOLdwjr"],
+							Label -> "my sample in volumetric flask"
+						],
+						Transfer[
+							(* "Milli-Q water" *)
+							Source -> {"my sample in volumetric flask"},
+							(* "50mL Tube" *)
+							Destination -> {Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
+							Amount -> {5 Milliliter}
+						]
+					}
+				];
+				Download[Lookup[Download[msp, ResolvedUnitOperationOptions[[2]]], Tips], PipetteType]
+			],
+			Micropipette
+		],
+		Test["HandPumpAdapter is specified in a Transfer UO if the resolved HandPump IntakeTubeLength is incompatible with the source container :",
+			transferProtocol=ExperimentTransfer[
+				Object[Sample, "Test water sample in 10L Carboy for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "4L bottle"],
+				3 Liter,
+				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			Download[transferProtocol,BatchedUnitOperations[[1]][HandPumpAdapter]][[1]],
+			ObjectP[Model[Part,HandPumpAdapter]],
+			Variables:>{
+				transferProtocol
+			}
+		],
+		Test["HandPumpAdapter is not needed in a Transfer UO if the resolved HandPump IntakeTubeLength is compatible with the source container :",
+			transferProtocol=ExperimentTransfer[
+				Object[Sample, "Test water sample in 20L Carboy for ExperimentTransfer" <> $SessionUUID],
+				Model[Container, Vessel, "4L bottle"],
+				3 Liter,
+				ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID]
+			];
+			Download[transferProtocol,BatchedUnitOperations[[1]][HandPumpAdapter]][[1]],
+			Null,
+			Variables:>{
+				transferProtocol
+			}
 		]
 	},
 	SetUp :> (
@@ -3732,472 +5815,493 @@ DefineTests[
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Off[Warning::DeprecatedProduct];
-		Block[{$Notebook=Null},
-			Module[{allObjects, existsFilter},
-
-			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
-			allObjects= Cases[Flatten[{
-				Object[Container, Bench, "Test bench for ExperimentTransfer tests" <> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID], (* LEAVE THIS EMPTY *)
-				Object[Container,Vessel,"Test 50mL Tube 5 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 6 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 7 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 8 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 9 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 10 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 11 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 12 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 13 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 2mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 14 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 15 for ExperimentTransfer"<> $SessionUUID],
-				Object[Container,Vessel,"Test Hermetic Container 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test Hermetic Container 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test 96-DWP 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 3 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 4 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 5 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test reservoir for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test reservoir 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Capillary,"Test capillary 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test powder sample 5 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test powder sample 6 (SampleHandling->Null) in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test methanol sample 7 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test paste sample 10 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test brittle sample 11 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test fabric sample 12 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test itemized sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 14 in 2mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 15 in A1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 21 in G4 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 22 in H2 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test Null Volume sample 24 in DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample in a reservoir for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test sample in a capillary for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Model[Sample, "Test solvent model sample for ExperimentTransfer" <> $SessionUUID],
-				Model[Method, Pipetting, "Test pipetting method for ExperimentTransfer" <> $SessionUUID],
-				Model[Container, Plate, "Test plate without LiquidHandlerPrefix for ExperimentTransfer" <> $SessionUUID],
-				Quiet[Download[Object[Protocol, StockSolution, "Fake stock solution protocol for ExperimentTransfer" <> $SessionUUID], {Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]]
-			}], ObjectP[]];
-
-				(* Erase any objects that we failed to erase in the last unit test *)
-				existsFilter=DatabaseMemberQ[allObjects];
-
-			Quiet[EraseObject[
-				PickList[
-					allObjects,
-					existsFilter
-				],
-				Force->True,
-				Verbose->False
-			]];
-		];
-		Module[
-			{
-				tube1, tube2, tube3, tube4, tube5, tube6, tube7, tube8, tube9, tube10, tube11, tube12, tube13, tube14, tube15, tube16,
-				hermeticContainer1, hermeticContainer2, plate1, plate2, capillary1, ssProt, method, plateModel,
-				testBench, allContainers, solventSampleModel, reservoir1, plate3, plate4, reservoir2, plate5, createdSamples, capillarySample, discardedTube
-			},
-			Upload[<|
-				Type->Object[Protocol, ManualSamplePreparation],
-				Name->"Test MSP for ExperimentTransfer" <> $SessionUUID,
-				Author -> Link[$PersonID, ProtocolsAuthored],
-				Site -> Link[$Site]
-			|>];
-
-				testBench = Upload[<|Type -> Object[Container, Bench], Name -> "Test bench for ExperimentTransfer tests" <> $SessionUUID, DeveloperObject -> True, Site -> Link[$Site], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects]|>];
-
-			(* Create some empty containers. *)
-			allContainers = Upload[{
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 5 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 6 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 7 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 8 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 9 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 10 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 11 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 12 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
-					Name -> "Test 2mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 13 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 14 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Name -> "Test 50mL Tube 15 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "id:6V0npvmW99k1"], Objects],
-					Name -> "Test Hermetic Container 1 for ExperimentTransfer" <> $SessionUUID,
-					Hermetic -> True,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "id:6V0npvmW99k1"], Objects],
-					Name -> "Test Hermetic Container 2 for ExperimentTransfer" <> $SessionUUID,
-					Hermetic -> True,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "Test 96-DWP 2 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "Test 96-DWP 3 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "Test 96-DWP 4 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Name -> "Test 96-DWP 5 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "id:54n6evLWKqbG"], Objects],(*"200mL Polypropylene Robotic Reservoir, non-sterile"*)
-					Name -> "Test reservoir for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "id:54n6evLWKqbG"], Objects],(*"200mL Polypropylene Robotic Reservoir, non-sterile"*)
-					Name -> "Test reservoir 2 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type -> Object[Container, Capillary],
-					Model -> Link[Model[Container, Capillary, "Melting point capillary"], Objects],
-					Name -> "Test capillary 1 for ExperimentTransfer" <> $SessionUUID,
-					DeveloperObject -> True
-				|>
-			}];
-			{
-				discardedTube,
-				tube1,
-				tube2,
-				tube3,
-				tube4,
-				tube5,
-				tube6,
-				tube7,
-				tube8,
-				tube9,
-				tube10,
-				tube11,
-				tube12,
-				tube13,
-				tube14,
-				tube15,
-				tube16,
-				hermeticContainer1,
-				hermeticContainer2,
-				plate1,
-				plate2,
-				plate3,
-				plate4,
-				plate5,
-				reservoir1,
-				reservoir2,
-				capillary1
-			} = allContainers;
-			UploadLocation[allContainers, ConstantArray[{"Work Surface", testBench}, Length[allContainers]], FastTrack -> True];
-
-			UploadSampleStatus[Object[Container,Vessel,"Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID], Discarded, FastTrack -> True];
-
-			(* Create test solvent sample model *)
-			solventSampleModel = UploadSampleModel[
-				"Test solvent model sample for ExperimentTransfer" <> $SessionUUID,
-				Composition -> {
-					{90 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
-					{10 VolumePercent, Link[Model[Molecule, Oligomer, "XNASMAD01"]]}
+		Off[Warning::APIConnection];
+		ClearMemoization[];
+		Block[{$Notebook = Null, $DeveloperUpload = True},
+			experimentTransferTestCleanup[];
+			Module[
+				{
+					tube1, tube2, tube3, tube4, tube5, tube6, tube7, tube8, tube9, tube10, tube11, tube12, tube13, tube14, tube15, tube16, tube17, tube18, tube19, tube20, tube21, tube22, tube23,
+					hermeticContainer1, hermeticContainer2, plate1, plate2, volFlask1,volFlask2,carboy20L,carboy10L,capillary1, ssProt, method, plateModel,handPumpAdapterModel,handPumpAdapterObject,
+					testBench, solventSampleModel,solidSampleModel,
+					filler, pouch, sachetSampleModel, reservoir1, plate3, plate4, reservoir2, plate5, ampoule1,
+					cover1, cover2, createdSamples, capillarySample, discardedTube, testLiquidModel, testProduct, containers,fillToVolumeProtocol,transferUnitOperation,mspProtocol
 				},
-				Expires -> False,
-				ShelfLife -> Null,
-				DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Flammable -> False,
-				MSDSRequired -> False,
-				IncompatibleMaterials -> {None},
-				PipettingMethod -> Model[Method, Pipetting, "id:4pO6dM5OV9vr"]
-			];
+				Upload[
+					{
+						<|
+							Type -> Object[Protocol, ManualSamplePreparation],
+							Name -> "Test MSP for ExperimentTransfer"<>$SessionUUID,
+							Author -> Link[$PersonID, ProtocolsAuthored],
+							Site -> Link[$Site]
+						|>,
+						<|
+							Type -> Object[Protocol, ManualSamplePreparation],
+							Name -> "Test CMU MSP for ExperimentTransfer"<>$SessionUUID,
+							Author -> Link[$PersonID, ProtocolsAuthored],
+							Site -> Link[Object[Container, Site, "ECL-CMU"]]
+						|>,
+						<|
+							Type -> Object[Protocol, ManualSamplePreparation],
+							Name -> "Test ECL-2 MSP for ExperimentTransfer"<>$SessionUUID,
+							Author -> Link[$PersonID, ProtocolsAuthored],
+							Site -> Link[Object[Container, Site, "ECL-2"]]
+						|>
+					}
+				];
+
+				testBench = Upload[<|Type -> Object[Container, Bench], Name -> "Test bench for ExperimentTransfer tests"<>$SessionUUID, DeveloperObject -> True, Site -> Link[$Site], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects]|>];
+
+				{
+					(*1*)discardedTube,
+					(*2*)tube1,
+					(*3*)tube2,
+					(*4*)tube3,
+					(*5*)tube4,
+					(*6*)tube5,
+					(*7*)tube6,
+					(*8*)tube7,
+					(*9*)tube8,
+					(*10*)tube9,
+					(*11*)tube10,
+					(*12*)tube11,
+					(*13*)tube12,
+					(*14*)tube13,
+					(*15*)tube14,
+					(*16*)tube15,
+					(*17*)tube16,
+					(*18*)tube17,
+					(*19*)tube18,
+					(*20*)tube19,
+					(*21*)hermeticContainer1,
+					(*22*)hermeticContainer2,
+					(*23*)plate1,
+					(*24*)plate2,
+					(*25*)plate3,
+					(*26*)plate4,
+					(*27*)plate5,
+					(*28*)reservoir1,
+					(*29*)reservoir2,
+					(*30*)capillary1,
+					(*31*)ampoule1,
+					(*32*)tube20,
+					(*33*)tube21,
+					(*34*)tube22,
+					(*35*)tube23,
+					(*36*)volFlask1,
+					(*37*)volFlask2,
+					(*38*)carboy20L,
+					(*39*)carboy10L
+				} = UploadSample[
+					{
+						(*1*)Model[Container, Vessel, "50mL Tube"],
+						(*2*)Model[Container, Vessel, "50mL Tube"],
+						(*3*)Model[Container, Vessel, "50mL Tube"],
+						(*4*)Model[Container, Vessel, "50mL Tube"],
+						(*5*)Model[Container, Vessel, "50mL Tube"],
+						(*6*)Model[Container, Vessel, "50mL Tube"],
+						(*7*)Model[Container, Vessel, "50mL Tube"],
+						(*8*)Model[Container, Vessel, "50mL Tube"],
+						(*9*)Model[Container, Vessel, "50mL Tube"],
+						(*10*)Model[Container, Vessel, "50mL Tube"],
+						(*11*)Model[Container, Vessel, "50mL Tube"],
+						(*12*)Model[Container, Vessel, "50mL Tube"],
+						(*13*)Model[Container, Vessel, "50mL Tube"],
+						(*14*)Model[Container, Vessel, "2mL Tube"],
+						(*15*)Model[Container, Vessel, "50mL Tube"],
+						(*16*)Model[Container, Vessel, "50mL Tube"],
+						(*17*)Model[Container, Vessel, "50mL Tube"],
+						(*18*)Model[Container, Vessel, "50mL Tube"],
+						(*19*)Model[Container, Vessel, "50mL Tube"],
+						(*20*)Model[Container, Vessel, "50mL Tube"],
+						(*21*)Model[Container, Vessel, "id:6V0npvmW99k1"],
+						(*22*)Model[Container, Vessel, "id:6V0npvmW99k1"],
+						(*23*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						(*24*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						(*25*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						(*26*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						(*27*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						(*28*)Model[Container, Plate, "id:54n6evLWKqbG"],
+						(*29*)Model[Container, Plate, "id:54n6evLWKqbG"],
+						(*30*)Model[Container, Capillary, "Melting point capillary"],
+						(*31*)Model[Container, Vessel, "id:n0k9mGkp4OK6"], (* Model[Container, Vessel, "2mL amber glass ampoule"] *)
+						(*32*)Model[Container, Vessel, "50mL Tube"],
+						(*33*)Model[Container, Vessel, "50mL Tube"],
+						(*34*)Model[Container, Vessel, "50mL Tube"],
+						(*35*)Model[Container, Vessel, "50mL Tube"],
+						(*36*)Model[Container, Vessel, VolumetricFlask, "100 mL Glass Volumetric Flask"],
+						(*37*)Model[Container, Vessel, VolumetricFlask, "100 mL Glass Volumetric Flask"],
+						(*38*)Model[Container, Vessel, "id:3em6Zv9NjjkY"],(*Model[Container, Vessel, "20L Polypropylene Carboy"]*)
+						(*39*)Model[Container, Vessel, "id:aXRlGnZmOOB9"](*Model[Container, Vessel, "10L Polypropylene Carboy"]*)
+					},
+					ConstantArray[{"Work Surface", testBench}, 39],
+					Name -> {
+						(*1*)"Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*2*)"Test 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
+						(*3*)"Test 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID,
+						(*4*)"Test 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID,
+						(*5*)"Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID,
+						(*6*)"Test 50mL Tube 5 for ExperimentTransfer" <> $SessionUUID,
+						(*7*)"Test 50mL Tube 6 for ExperimentTransfer" <> $SessionUUID,
+						(*8*)"Test 50mL Tube 7 for ExperimentTransfer" <> $SessionUUID,
+						(*9*)"Test 50mL Tube 8 for ExperimentTransfer" <> $SessionUUID,
+						(*10*)"Test 50mL Tube 9 for ExperimentTransfer" <> $SessionUUID,
+						(*11*)"Test 50mL Tube 10 for ExperimentTransfer" <> $SessionUUID,
+						(*12*)"Test 50mL Tube 11 for ExperimentTransfer" <> $SessionUUID,
+						(*13*)"Test 50mL Tube 12 for ExperimentTransfer" <> $SessionUUID,
+						(*14*)"Test 2mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
+						(*15*)"Test 50mL Tube 13 for ExperimentTransfer" <> $SessionUUID,
+						(*16*)"Test 50mL Tube 14 for ExperimentTransfer" <> $SessionUUID,
+						(*17*)"Test 50mL Tube 15 for ExperimentTransfer" <> $SessionUUID,
+						(*18*)"Test sterile 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
+						(*19*)"Test sterile 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID,
+						(*20*)"Test non-sterile 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID,
+						(*21*)"Test Hermetic Container 1 for ExperimentTransfer" <> $SessionUUID,
+						(*22*)"Test Hermetic Container 2 for ExperimentTransfer" <> $SessionUUID,
+						(*23*)"Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID,
+						(*24*)"Test 96-DWP 2 for ExperimentTransfer" <> $SessionUUID,
+						(*25*)"Test 96-DWP 3 for ExperimentTransfer" <> $SessionUUID,
+						(*26*)"Test 96-DWP 4 for ExperimentTransfer" <> $SessionUUID,
+						(*27*)"Test 96-DWP 5 for ExperimentTransfer" <> $SessionUUID,
+						(*28*)"Test reservoir for ExperimentTransfer" <> $SessionUUID,
+						(*29*)"Test reservoir 2 for ExperimentTransfer" <> $SessionUUID,
+						(*30*)"Test capillary 1 for ExperimentTransfer" <> $SessionUUID,
+						(*31*)"Test 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID,
+						(*32*)"Test 50mL Tube 16 for ExperimentTransfer" <> $SessionUUID,
+						(*33*)"Test non-sterile 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID,
+						(*34*)"Test 50mL Tube 17 for ExperimentTransfer" <> $SessionUUID,
+						(*35*)"Test non-sterile 50mL Tube 3 for ExperimentTransfer"<>$SessionUUID,
+						(*36*)"Test 100mL VolumetricFlask 1 for ExperimentTransfer" <> $SessionUUID,
+						(*37*)"Test 100mL VolumetricFlask 2 for ExperimentTransfer" <> $SessionUUID,
+						(*38*)"Test 20L Carboy ExperimentTransfer" <> $SessionUUID,
+						(*39*)"Test 10L Carboy ExperimentTransfer" <> $SessionUUID
+					},
+					Sterile -> {
+						(*1*)Automatic,
+						(*2*)Automatic,
+						(*3*)Automatic,
+						(*4*)Automatic,
+						(*5*)Automatic,
+						(*6*)Automatic,
+						(*7*)Automatic,
+						(*8*)Automatic,
+						(*9*)Automatic,
+						(*10*)Automatic,
+						(*11*)Automatic,
+						(*12*)Automatic,
+						(*13*)Automatic,
+						(*14*)Automatic,
+						(*15*)Automatic,
+						(*16*)Automatic,
+						(*17*)Automatic,
+						(*18*)True,
+						(*19*)True,
+						(*20*)False,
+						(*21*)Automatic,
+						(*22*)Automatic,
+						(*23*)Automatic,
+						(*24*)Automatic,
+						(*25*)Automatic,
+						(*26*)Automatic,
+						(*27*)Automatic,
+						(*28*)Automatic,
+						(*29*)Automatic,
+						(*30*)Automatic,
+						(*31*)True,
+						(*32*)True,
+						(*33*)False,
+						(*34*)False,
+						(*35*)False,
+						(*36*)Automatic,
+						(*37*)Automatic,
+						(*38*)Automatic,
+						(*39*)Automatic
+					}
+				];
+
+				UploadSampleStatus[Object[Container, Vessel, "Test discarded 50mL Tube for ExperimentTransfer"<>$SessionUUID], Discarded, FastTrack -> True];
+
+				(* Create test solvent sample model *)
+				solventSampleModel = UploadSampleModel[
+					"Test solvent model sample for ExperimentTransfer"<>$SessionUUID,
+					Composition -> {
+						{90 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]},
+						{10 VolumePercent, Link[Model[Molecule, Oligomer, "XNASMAD01"]]}
+					},
+					Expires -> False,
+					ShelfLife -> Null,
+					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+					State -> Liquid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					PipettingMethod -> Model[Method, Pipetting, "id:4pO6dM5OV9vr"]
+				];
+				filler = UploadMolecule[
+					"Test sachet filler model for ExperimentTransfer"<> $SessionUUID,
+					State -> Solid,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					Force -> True
+				];
+				pouch = UploadMaterial[
+					"Test sachet pouch model for ExperimentTransfer"<> $SessionUUID,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					BiosafetyLevel -> "BSL-1"
+				];
+				sachetSampleModel = UploadSampleModel[
+					"Test sachet model sample for ExperimentTransfer"<> $SessionUUID,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					BiosafetyLevel -> "BSL-1",
+					Composition -> {{100 MassPercent, filler}, {Null,
+						pouch}},
+					Sachet -> True,
+					SolidUnitWeight -> 0.85 Gram,
+					Expires -> True,
+					ShelfLife -> 1 Year,
+					UnsealedShelfLife -> 2 Month,
+					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
+					DefaultSachetPouch -> Model[Material, "Test sachet pouch model for ExperimentTransfer" <> $SessionUUID],
+					State -> Solid
+				];
+				
+				(* Create test sample model that has IncompatibleMaterials Polypropylene *)
+				solidSampleModel = UploadSampleModel[
+					"Test solid model sample for ExperimentTransfer"<>$SessionUUID,
+					Composition -> {
+						{Null,Null}
+					},
+					Expires -> False,
+					ShelfLife -> Null,
+					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+					State -> Solid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {Polypropylene}
+				];
 
 				(* Create some samples for testing purposes *)
 				createdSamples = UploadSample[
 					(* NOTE: We over-ride the SampleHandling of these models so that we get consistent test results. *)
 					Join[{
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
-						Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
-						Model[Sample, "Methanol"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "id:6V0npvmqVoK1"], (* "Colgate Optic White 8321" *)
-						Model[Sample, "Rink Amide ChemMatrix"], (* Brittle *)
-						Model[Sample, "Milli-Q water"], (* Pretend fabric *)
-						Model[Sample, "id:zGj91a7RJ5mL"], (* "Ibuprofen tablets 500 Count" *)
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"]
+						(*1*)Model[Sample, "Milli-Q water"],
+						(*2*)Model[Sample, "Milli-Q water"],
+						(*3*)Model[Sample, "Milli-Q water"],
+						(*4*)Model[Sample, "Milli-Q water"],
+						(*5*)Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
+						(*6*)Model[Sample, "id:vXl9j5qEn66B"], (* "Sodium carbonate, anhydrous" *)
+						(*7*)Model[Sample, "Methanol"],
+						(*8*)Model[Sample, "Milli-Q water"],
+						(*9*)Model[Sample, "Milli-Q water"],
+						(*10*)Model[Sample, "id:6V0npvmqVoK1"], (* "Colgate Optic White 8321" *)
+						(*11*)Model[Sample, "Rink Amide ChemMatrix"], (* Brittle *)
+						(*12*)Model[Sample, "Milli-Q water"], (* Pretend fabric *)
+						(*13*)Model[Sample, "id:zGj91a7RJ5mL"], (* "Ibuprofen tablets 500 Count" *)
+						(*14*)Model[Sample, "Milli-Q water"],
+						(*15*)Model[Sample, "Milli-Q water"],
+						(*16*)Model[Sample, "Milli-Q water"],
+						(*17*)Model[Sample, "Milli-Q water"],
+						(*18*)Model[Sample, "Milli-Q water"],
+						(*19*)Model[Sample, "Milli-Q water"],
+						(*20*)Model[Sample, "Milli-Q water"],
+						(*21*)Model[Sample, "Milli-Q water"],
+						(*22*)Model[Sample, "Milli-Q water"],
+						(*23*)Model[Sample, "Milli-Q water"],
+						(*24*)Model[Sample, "Milli-Q water"],
+						(*25*)Model[Sample, "Milli-Q water"],
+						(*26*)Model[Sample, "Milli-Q water"],
+						(*27*)Model[Sample, "Milli-Q water"],
+						(*28*)Model[Sample, "Milli-Q water"],
+						(*29*)Model[Sample, "Milli-Q water"],
+						(*30*)Model[Sample, "E.coli MG1655"],
+						(*31*)Model[Sample, "E.coli MG1655"],
+						(*32*)Model[Sample, "Milli-Q water"],
+						(*33*)Model[Sample, "Milli-Q water"],
+						(*34*)Model[Sample, "Milli-Q water"],
+						(*35*)Model[Sample, "Milli-Q water"]
 					},
-						ConstantArray[Model[Sample,"Milli-Q water"],96]
-						],
+						ConstantArray[Model[Sample, "Milli-Q water"], 96],
+						{
+							(*34*)Model[Sample, "Milli-Q water"],
+							(*35*)sachetSampleModel
+						}
+					],
 					Join[{
-						{"A1", tube1},
-						{"A1", tube2},
-						{"A1", hermeticContainer1},
-						{"A1", hermeticContainer2},
-						{"A1", tube3},
-						{"A1", tube5},
-						{"A1", tube6},
-						{"A1", tube7},
-						{"A1", tube8},
-						{"A1", tube9},
-						{"A1", tube10},
-						{"A1", tube11},
-						{"A1", tube12},
-						{"A1", tube13},
-						{"A1", plate1},
-						{"B1", plate1},
-						{"C1", plate1},
-						{"D1", plate1},
-						{"A2", plate1},
-						{"A3", plate1},
-						{"G4", plate1},
-						{"H2", plate1},
-						{"A1", tube14},
-						{"A1", tube15},
-						{"A1", tube16},
-						{"H8", plate1},
-						{"A1", reservoir1}
+						(*1*){"A1", tube1},
+						(*2*){"A1", tube2},
+						(*3*){"A1", hermeticContainer1},
+						(*4*){"A1", hermeticContainer2},
+						(*5*){"A1", tube3},
+						(*6*){"A1", tube5},
+						(*7*){"A1", tube6},
+						(*8*){"A1", tube7},
+						(*9*){"A1", tube8},
+						(*10*){"A1", tube9},
+						(*11*){"A1", tube10},
+						(*12*){"A1", tube11},
+						(*13*){"A1", tube12},
+						(*14*){"A1", tube13},
+						(*15*){"A1", plate1},
+						(*16*){"B1", plate1},
+						(*17*){"C1", plate1},
+						(*18*){"D1", plate1},
+						(*19*){"A2", plate1},
+						(*20*){"A3", plate1},
+						(*21*){"G4", plate1},
+						(*22*){"H2", plate1},
+						(*23*){"A1", tube14},
+						(*24*){"A1", tube15},
+						(*25*){"A1", tube16},
+						(*26*){"H8", plate1},
+						(*27*){"A1", reservoir1},
+						(*28*){"A1", tube17},
+						(*29*){"A1", tube18},
+						(*30*){"A1", tube20},
+						(*31*){"A1", tube23},
+						(*32*){"A1", volFlask1},
+						(*33*){"A1", volFlask2},
+						(*34*){"A1", carboy20L},
+						(*35*){"A1", carboy10L}
 					},
-						({#,plate3}&/@Flatten@AllWells[])
-						],
+						({#, plate3}& /@ Flatten@AllWells[]),
+						{
+							(*36*)	{"A1", ampoule1},
+							(*37*)	{"A1", tube22}
+						}
+					],
 					Name -> Join[{
-						"Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID,
-						"Test powder sample 5 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test powder sample 6 (SampleHandling->Null) in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test methanol sample 7 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test paste sample 10 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test brittle sample 11 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test fabric sample 12 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test itemized sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 14 in 2mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 15 in A1 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 16 in B1 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 17 in C1 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 18 in D1 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 19 in A2 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 20 in A3 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 21 in G4 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample 22 in H2 of DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
-						"Test Null Volume sample 24 in DWP for ExperimentTransfer" <> $SessionUUID,
-						"Test water sample in a reservoir for ExperimentTransfer" <> $SessionUUID
+						(*1*)"Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*2*)"Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*3*)"Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID,
+						(*4*)"Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID,
+						(*5*)"Test powder sample 5 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*6*)"Test powder sample 6 (SampleHandling->Null) in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*7*)"Test methanol sample 7 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*8*)"Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*9*)"Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*10*)"Test paste sample 10 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*11*)"Test brittle sample 11 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*12*)"Test fabric sample 12 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*13*)"Test itemized tablet sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*14*)"Test water sample 14 in 2mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*15*)"Test water sample 15 in A1 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*16*)"Test water sample 16 in B1 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*17*)"Test water sample 17 in C1 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*18*)"Test water sample 18 in D1 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*19*)"Test water sample 19 in A2 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*20*)"Test water sample 20 in A3 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*21*)"Test water sample 21 in G4 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*22*)"Test water sample 22 in H2 of DWP for ExperimentTransfer" <> $SessionUUID,
+						(*23*)"Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*24*)"Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*25*)"Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*26*)"Test Null Volume sample 24 in DWP for ExperimentTransfer" <> $SessionUUID,
+						(*27*)"Test water sample in a reservoir for ExperimentTransfer" <> $SessionUUID,
+						(*28*)"Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*29*)"Test sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID,
+						(*30*)"Test cell sample 1 for ExperimentTransfer"<>$SessionUUID,
+						(*31*)"Test non-sterile sample 2 in a 50mL Tube for ExperimentTransfer"<>$SessionUUID,
+						(*32*)"Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID,
+						(*33*)"Test water sample 2 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID,
+						(*34*)"Test water sample in 20L Carboy for ExperimentTransfer" <> $SessionUUID,
+						(*35*)"Test water sample in 10L Carboy for ExperimentTransfer" <> $SessionUUID
 					},
-						ConstantArray[Null, 96]
-						],
+						ConstantArray[Null, 96],
+						{
+							(*36*)"Test sterile sample in a 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID,
+							(*37*)"Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID
+						}
+					],
+					Sterile -> Join[{
+						(*1*)Automatic,
+						(*2*)Automatic,
+						(*3*)Automatic,
+						(*4*)Automatic,
+						(*5*)Automatic,
+						(*6*)Automatic,
+						(*7*)Automatic,
+						(*8*)Automatic,
+						(*9*)Automatic,
+						(*10*)Automatic,
+						(*11*)Automatic,
+						(*12*)Automatic,
+						(*13*)Automatic,
+						(*14*)Automatic,
+						(*15*)Automatic,
+						(*16*)Automatic,
+						(*17*)Automatic,
+						(*18*)Automatic,
+						(*19*)Automatic,
+						(*20*)Automatic,
+						(*21*)Automatic,
+						(*22*)Automatic,
+						(*23*)Automatic,
+						(*24*)Automatic,
+						(*25*)Automatic,
+						(*26*)Automatic,
+						(*27*)Automatic,
+						(*28*)True,
+						(*29*)True,
+						(*30*)Automatic,
+						(*31*)False,
+						(*32*)Automatic,
+						(*33*)Automatic,
+						(*34*)Automatic,
+						(*35*)Automatic
+					},
+						ConstantArray[Automatic, 96],
+						{
+							(*36*) True,
+							(*37*) False
+						}
+					],
 					InitialAmount -> Join[{
-						25 Milliliter,
-						10 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						10 Gram,
-						10 Gram,
-						10 Milliliter,
-						10 Milliliter,
-						10 Milliliter,
-						10 Gram,
-						5 Gram,
-						5 Gram,
-						20,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						1 Milliliter,
-						20 Gram,
-						Null,
-						25 Milliliter,
-						Null,
-						200 Milliliter
+						(*1*)25 Milliliter,
+						(*2*)10 Milliliter,
+						(*3*)1 Milliliter,
+						(*4*)1 Milliliter,
+						(*5*)10 Gram,
+						(*6*)10 Gram,
+						(*7*)10 Milliliter,
+						(*8*)10 Milliliter,
+						(*9*)10 Milliliter,
+						(*10*)10 Gram,
+						(*11*)5 Gram,
+						(*12*)5 Gram,
+						(*13*)20,
+						(*14*)1 Milliliter,
+						(*15*)1 Milliliter,
+						(*16*)1 Milliliter,
+						(*17*)1 Milliliter,
+						(*18*)1 Milliliter,
+						(*19*)1 Milliliter,
+						(*20*)1 Milliliter,
+						(*21*)1 Milliliter,
+						(*22*)1 Milliliter,
+						(*23*)20 Gram,
+						(*24*)Null,
+						(*25*)25 Milliliter,
+						(*26*)Null,
+						(*27*)200 Milliliter,
+						(*28*)1 Milliliter,
+						(*29*)1 Milliliter,
+						(*30*)1 Milliliter,
+						(*31*)1 Milliliter,
+						(*32*)60 Milliliter,
+						(*33*)40 Milliliter,
+						(*34*)16 Liter,
+						(*35*)8 Liter
 					},
-						ConstantArray[1 Milliliter, 96]
-						],
+						ConstantArray[1 Milliliter, 96],
+						{
+							(*36*)1 Milliliter,
+							(*37*)20
+						}
+					],
 					SampleHandling -> Join[{
 						Liquid,
 						Liquid,
@@ -4225,23 +6329,56 @@ DefineTests[
 						Null,
 						Liquid,
 						Null,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
+						Liquid,
 						Liquid
 					},
-						ConstantArray[Liquid, 96]
-						]
+						ConstantArray[Liquid, 96],
+						{
+							Liquid,
+							Itemized
+						}
+					]
+				];
+				Upload[{
+					<|Object -> Object[Sample, "Test non-sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID], AsepticHandling -> True|>,
+					<|Object -> Object[Sample, "Test itemized tablet sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID], Tablet -> True|>
+				}];
+				(* Create a cover for the crimped container *)
+				{cover1, cover2} = UploadSample[
+					{
+						Model[Item, Cap, "id:mnk9jORMoabZ"],
+						Model[Item, Cap, "id:mnk9jORMoabZ"]
+					},
+					ConstantArray[{"Work Surface", testBench}, 2],
+					Name -> {
+						"Test crimp cover 1 for ExperimentTransfer"<>$SessionUUID,
+						"Test crimp cover 2 for ExperimentTransfer"<>$SessionUUID
+					}
 				];
 
-			(* FastTrack should be True for this sample due to footprinted destination *)
-			capillarySample = UploadSample[
-				Model[Sample, "Sodium Chloride"],
-				{"A1", capillary1},
-				FastTrack -> True,
-				InitialAmount -> 5 Milligram,
-				Name -> "Test sample in a capillary for ExperimentTransfer" <> $SessionUUID
-			];
+				UploadCover[
+					{hermeticContainer1, hermeticContainer2},
+					Cover -> {cover1, cover2}
+				];
 
-			(* for reasons that are not totally clear to me all of a sudden this is only working if Mix -> False *)
-			ssProt = ExperimentStockSolution[Model[Sample, StockSolution, "70% Ethanol"], Volume -> 100 Milliliter, Name -> "Fake stock solution protocol for ExperimentTransfer" <> $SessionUUID, Mix -> False];
+				(* FastTrack should be True for this sample due to footprinted destination *)
+				capillarySample = UploadSample[
+					Model[Sample, "Sodium Chloride"],
+					{"A1", capillary1},
+					FastTrack -> True,
+					InitialAmount -> 5 Milligram,
+					Name -> "Test sample in a capillary for ExperimentTransfer"<>$SessionUUID
+				];
+
+				(* for reasons that are not totally clear to me all of a sudden this is only working if Mix -> False *)
+				ssProt = ExperimentStockSolution[Model[Sample, StockSolution, "70% Ethanol"], Volume -> 100 Milliliter, Name -> "Fake stock solution protocol for ExperimentTransfer"<>$SessionUUID, Mix -> False];
 
 				method = Quiet[
 					UploadPipettingMethod[
@@ -4257,16 +6394,17 @@ DefineTests[
 					]
 				];
 
-				plateModel=Upload[<|
-					Type->Model[Container,Plate],
-					Footprint->Plate,
-					Name->"Test plate without LiquidHandlerPrefix for ExperimentTransfer" <> $SessionUUID,
+				plateModel = Upload[<|
+					Type -> Model[Container, Plate],
+					Footprint -> Plate,
+					Name -> "Test plate without LiquidHandlerPrefix for ExperimentTransfer"<>$SessionUUID,
 					Replace[PositionPlotting] -> {
 						<|Name -> "A1", XOffset -> Quantity[0.063295, "Meters"], YOffset -> Quantity[0.043395, "Meters"], ZOffset -> Quantity[0.0011, "Meters"], CrossSectionalShape -> Rectangle, Rotation -> 0.|>
 					},
 					Replace[Positions] -> {
 						<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.12159, "Meters"], MaxDepth -> Quantity[0.07931, "Meters"], MaxHeight -> Quantity[0.03675, "Meters"]|>},
-					DeveloperObject -> True
+					DeveloperObject -> True,
+					MaxVolume->1 Milliliter
 				|>];
 
 				(* Make some changes to our samples for testing purposes *)
@@ -4274,110 +6412,325 @@ DefineTests[
 					<|
 						Object -> solventSampleModel, DeveloperObject -> True
 					|>,
-					<|Object->#, Status->Available, DeveloperObject->True|>&/@createdSamples,
+					<|
+						Object -> solidSampleModel, DeveloperObject -> True
+					|>,
+					<|Object -> #, Status -> Available, DeveloperObject -> True|>& /@ createdSamples,
 					<|Object -> #, DeveloperObject -> True|>& /@ Quiet[Cases[Flatten[Download[ssProt, {Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]], ObjectReferenceP[]]],
 					(* Remove Model and PipettingMethod for one sample for testing *)
 					<|
-						Object->Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-						Model->Null,
-						Solvent->Null,
-						PipettingMethod->Null
+						Object -> Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer"<>$SessionUUID],
+						Model -> Null,
+						Solvent -> Null,
+						PipettingMethod -> Null
 					|>,
-					<|Object->method,Name->"Test pipetting method for ExperimentTransfer" <> $SessionUUID,DeveloperObject->True|>
+					<|Object -> method, Name -> "Test pipetting method for ExperimentTransfer"<>$SessionUUID, DeveloperObject -> True|>
 				}]];
+
+				(* Create test waste bins *)
+				Upload[{
+					<|
+						Type -> Object[Container, WasteBin],
+						Model -> Link[Model[Container, WasteBin, "Biohazard Waste Container, BSC (Aseptic Transfer)"], Objects], (*"Biohazard Waste Container, BSC (Aseptic Transfer)"*)
+						Site -> Link[$Site],
+						Status -> Available,
+						Name -> "ExperimentTransfer test biosafety waste bin 1 "<>$SessionUUID,
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Object[Container, WasteBin],
+						Model -> Link[Model[Container, WasteBin, "Biohazard Waste Container, BSC (Aseptic Transfer)"], Objects], (*"Biohazard Waste Container, BSC (Aseptic Transfer)"*)
+						Site -> Link[$Site],
+						Status -> Available,
+						Name -> "ExperimentTransfer test biosafety waste bin 2 "<>$SessionUUID,
+						DeveloperObject -> True
+					|>
+				}];
+
+				(* Create test hand pump adapters *)
+				handPumpAdapterModel = Upload[<|
+					Type->Model[Part,HandPumpAdapter],
+					Name->"Test HandPumpAdapter Model for Experiment Transfer"<>$SessionUUID,
+					DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+					Dimensions->{0.101 Meter, 0.101 Meter, 0.14 Meter}
+				|>];
+
+				handPumpAdapterObject = Upload[<|
+					Type->Object[Part,HandPumpAdapter],
+					Model->Link[handPumpAdapterModel,Objects],
+					Name->"Test HandPumpAdapter Object for Experiment Transfer"<>$SessionUUID
+				|>];
+
+				(* Upload test bscs *)
+				Upload[{
+					<|
+						Type -> Object[Instrument, BiosafetyCabinet],
+						Model -> Link[Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Aseptic Transfer)"], Objects],
+						Site -> Link[$Site],
+						Status -> Available,
+						Name -> "ExperimentTransfer test bsc 1 "<>$SessionUUID,
+						BiosafetyWasteBin -> Link[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 "<>$SessionUUID]],
+						DeveloperObject -> True
+					|>,
+					<|
+						Type -> Object[Instrument, BiosafetyCabinet],
+						Model -> Link[Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Aseptic Transfer)"], Objects],
+						Site -> Link[$Site],
+						Status -> Available,
+						Name -> "ExperimentTransfer test bsc 2 "<>$SessionUUID,
+						BiosafetyWasteBin -> Link[Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 "<>$SessionUUID]],
+						DeveloperObject -> True
+					|>
+				}];
+
+				{
+					testLiquidModel,
+					testProduct
+				} = CreateID[{
+					Model[Sample],
+					Object[Product]
+				}];
+
+				(* upload a new test liquid model *)
+				Upload[{
+					<|
+						Object -> testLiquidModel,
+						Name -> "test liquid model for ExperimentTransfer unit testing "<>$SessionUUID,
+						Replace[Synonyms] -> {"test liquid model for ExperimentTransfer unit testing "<>$SessionUUID},
+						BiosafetyLevel -> "BSL-1",
+						BoilingPoint -> 81 Celsius,
+						Replace[Composition] -> {{99.9 VolumePercent, Link[Model[Molecule, "Acetonitrile"]]}, {0.1 VolumePercent, Null}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage, Flammable"]],
+						Density -> (0.7019560000000001 Gram / Milliliter),
+						DOTHazardClass -> "Class 3 Flammable Liquids Hazard",
+						Expires -> True,
+						Fiber -> False,
+						Flammable -> True,
+						Replace[IncompatibleMaterials] -> {Nitrile, Polypropylene},
+						Living -> False,
+						MeltingPoint -> -46 Celsius,
+						MSDSFile -> Link[Object[EmeraldCloudFile, "id:Z1lqpMz5eqe5"]],
+						NFPA -> {Health -> 2, Flammability -> 3, Reactivity -> 0, Special -> {}},
+						ShelfLife -> 1825 Day,
+						State -> Liquid,
+						Tablet -> False,
+						UltrasonicIncompatible -> True,
+						UnsealedShelfLife -> 1825 Day,
+						UsedAsMedia -> False,
+						UsedAsSolvent -> True,
+						VaporPressure -> 9.7 Kilopascal,
+						Ventilated -> True
+					|>,
+					<|
+						Object -> testProduct,
+						Name -> "test product for ExperimentTransfer unit testing "<>$SessionUUID,
+						Replace[Synonyms] -> {"test product for ExperimentTransfer unit testing "<>$SessionUUID},
+						Amount -> Quantity[4, "Liters"],
+						Author -> Link[$PersonID],
+						CatalogDescription -> "Fisher Chemical Acetonitrile, OPTIMA\[Trademark] Grade, 4 L",
+						CatalogNumber -> "A996-4",
+						DefaultContainerModel -> Link[Model[Container, Vessel, "4L disposable amber glass bottle for inventory chemicals"], ProductsContained],
+						DefaultCoverModel -> Link[Model[Item, Cap, "Bottle Cap, 52x38mm"]],
+						Deprecated -> False,
+						EstimatedLeadTime -> Quantity[17., "Days"],
+						Manufacturer -> Link[Object[Company, Supplier, "Fisher Scientific"], Products],
+						ManufacturerCatalogNumber -> "A9964",
+						NumberOfItems -> 1,
+						Packaging -> Single,
+						Price -> Quantity[912., "USDollars"],
+						ProductModel -> Link[testLiquidModel, Products],
+						ProductURL -> "https://www.fishersci.com/shop/products/acetonitrile-optima-fisher-chemical-6/A9964",
+						SampleType -> Bottle,
+						UsageFrequency -> High
+					|>
+				}];
+
+				(* upload a few empty containers *)
+				containers = UploadSample[
+					ConstantArray[Model[Container, Vessel, "4L disposable amber glass bottle for inventory chemicals"], 4],
+					ConstantArray[{"Work Surface", testBench}, 4],
+					Name -> ("test consolidation container "<>ToString[#]<>" for ExperimentTransfer unit test "<>$SessionUUID& /@ Range[4])
+				];
+
+				(* upload 4 samples *)
+				UploadSample[
+					ConstantArray[testLiquidModel, 4],
+					{"A1", #}& /@ containers,
+					Name -> ("test consolidation sample "<>ToString[#]<>" for ExperimentTransfer unit test "<>$SessionUUID& /@ Range[4]),
+					InitialAmount -> ConstantArray[0.5 Liter, 4]
+				];
+
+				fillToVolumeProtocol = ExperimentFillToVolume[
+					Object[Sample,"Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+					100 Milliliter,
+					Solvent -> Model[Sample, "Milli-Q water"],
+					Name->"Test FillToVolume Protocol for ExperimentTransfer tests"<>$SessionUUID
+				];
+
+				TestResources[fillToVolumeProtocol];
+
+				transferUnitOperation = fillToVolumeProtocol[BatchedUnitOperations][[1]][TransferUnitOperations][[1]][Object];
+
+				mspProtocol = ExperimentManualSamplePreparation[transferUnitOperation,Name->"Test MSP Protocol of FillToVolume for ExperimentTransfer tests"<>$SessionUUID,ParentProtocol->fillToVolumeProtocol];
 			]
 		]
-		),
+	),
 
-		SymbolTearDown :> (
-			On[Warning::SamplesOutOfStock];
-			On[Warning::InstrumentUndergoingMaintenance];
-			On[Warning::DeprecatedProduct];
-			Module[{allObjects, existsFilter},
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		On[Warning::DeprecatedProduct];
+		On[Warning::APIConnection];
+		experimentTransferTestCleanup[]
 
-			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
-			allObjects= Cases[Flatten[{
-				Object[Container, Bench, "Test bench for ExperimentTransfer tests" <> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID], (* LEAVE THIS EMPTY *)
-				Object[Container,Vessel,"Test 50mL Tube 5 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 6 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 7 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 8 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 9 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 10 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 11 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 12 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 13 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 2mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 14 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test 50mL Tube 15 for ExperimentTransfer"<> $SessionUUID],
-				Object[Container,Vessel,"Test Hermetic Container 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Vessel,"Test Hermetic Container 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test 96-DWP 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 3 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 4 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate, "Test 96-DWP 5 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test reservoir for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Plate,"Test reservoir 2 for ExperimentTransfer" <> $SessionUUID],
-				Object[Container,Capillary,"Test capillary 1 for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test powder sample 5 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test powder sample 6 (SampleHandling->Null) in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test methanol sample 7 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test paste sample 10 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test brittle sample 11 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test fabric sample 12 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test itemized sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 14 in 2mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 15 in A1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 21 in G4 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample 22 in H2 of DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test Null Volume sample 24 in DWP for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test water sample in a reservoir for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test sample in a capillary for ExperimentTransfer" <> $SessionUUID],
-				Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
-				Model[Sample, "Test solvent model sample for ExperimentTransfer" <> $SessionUUID],
-				Model[Method, Pipetting, "Test pipetting method for ExperimentTransfer" <> $SessionUUID],
-				Model[Container, Plate, "Test plate without LiquidHandlerPrefix for ExperimentTransfer" <> $SessionUUID],
-				Quiet[Download[Object[Protocol, StockSolution, "Fake stock solution protocol for ExperimentTransfer" <> $SessionUUID], {Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]]
-			}], ObjectP[]];
-
-				(* Erase any objects that we failed to erase in the last unit test *)
-				existsFilter=DatabaseMemberQ[allObjects];
-
-				Quiet[EraseObject[
-					PickList[
-						allObjects,
-						existsFilter
-					],
-					Force->True,
-					Verbose->False
-				]];
-			]
 	),
 	Stubs:>{
 		$AllowPublicObjects=True,
 		$PersonID=Object[User,"Test user for notebook-less test protocols"]
 	}
 ];
+
+experimentTransferTestCleanup[] := Module[{allObjects, existsFilter},
+
+			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
+				allObjects = Cases[Flatten[{
+					Object[Container, Bench, "Test bench for ExperimentTransfer tests" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test CMU MSP for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test ECL-2 MSP for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Fume Hood MSP 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Fume Hood MSP 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Fume Hood MSP 3 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Fume Hood MSP 4 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Water Purifier MSP 5 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test Water Purifier MSP 6 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Fume Hood Transfer Subprotocol 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Fume Hood Transfer Subprotocol 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Fume Hood Transfer Subprotocol 3 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Fume Hood Transfer Subprotocol 4 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Water Purifier Transfer Subprotocol 5 for ExperimentTransfer" <> $SessionUUID],
+					Object[Protocol, Transfer, "Test Water Purifier Transfer Subprotocol 6 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test discarded 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentTransfer" <> $SessionUUID], (* LEAVE THIS EMPTY *)
+					Object[Container, Vessel, "Test 50mL Tube 5 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 6 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 7 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 8 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 9 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 10 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 11 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 12 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 13 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 2mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 14 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 15 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test Hermetic Container 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test Hermetic Container 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, VolumetricFlask,"Test 100mL VolumetricFlask 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, VolumetricFlask,"Test 100mL VolumetricFlask 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 20L Carboy ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 10L Carboy ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test 96-DWP 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test 96-DWP 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test 96-DWP 3 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test 96-DWP 4 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test 96-DWP 5 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test reservoir for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Plate, "Test reservoir 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Capillary, "Test capillary 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 1 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 2 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 3 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 4 in Hermetic Container for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test powder sample 5 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test powder sample 6 (SampleHandling->Null) in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test methanol sample 7 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test slurry sample 8 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test viscous sample 9 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test paste sample 10 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test brittle sample 11 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test fabric sample 12 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test itemized tablet sample 13 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 14 in 2mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 15 in A1 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 16 in B1 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 17 in C1 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 18 in D1 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 19 in A2 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 20 in A3 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 21 in G4 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 22 in H2 of DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test viscous sample 22 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test Null Volume sample 23 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test Null Volume sample 24 in DWP for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample in a reservoir for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test sample in a capillary for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test model-less sample in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test sterile sample 1 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test non-sterile sample 2 in a 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 1 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample 2 in 100mL VolumetricFlask for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample in 20L Carboy for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test water sample in 10L Carboy for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test sterile 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test sterile 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test non-sterile 50mL Tube 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test non-sterile 50mL Tube 2 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test non-sterile 50mL Tube 3 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test sterile sample in a 2mL amber glass ampoule for ExperimentTransfer" <> $SessionUUID],
+					Object[Sample, "Test itemized sachet sample 25 in 50mL Tube for ExperimentTransfer" <> $SessionUUID],
+					Object[Item, Cap, "Test crimp cover 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Item, Cap, "Test crimp cover 2 for ExperimentTransfer" <> $SessionUUID],
+					Model[Sample, "Test solvent model sample for ExperimentTransfer" <> $SessionUUID],
+					Model[Sample,"Test solid model sample for ExperimentTransfer"<>$SessionUUID],
+					Model[Molecule, "Test sachet filler model for ExperimentTransfer"<> $SessionUUID],
+					Model[Material, "Test sachet pouch model for ExperimentTransfer"<> $SessionUUID],
+					Model[Sample, "Test sachet model sample for ExperimentTransfer"<> $SessionUUID],
+					Model[Method, Pipetting, "Test pipetting method for ExperimentTransfer" <> $SessionUUID],
+					Model[Container, Plate, "Test plate without LiquidHandlerPrefix for ExperimentTransfer" <> $SessionUUID],
+					Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 1 " <> $SessionUUID],
+					Object[Instrument, BiosafetyCabinet, "ExperimentTransfer test bsc 2 " <> $SessionUUID],
+					Object[Sample, "Test cell sample 1 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 16 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, Vessel, "Test 50mL Tube 17 for ExperimentTransfer" <> $SessionUUID],
+					Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 1 " <> $SessionUUID],
+					Object[Container, WasteBin, "ExperimentTransfer test biosafety waste bin 2 " <> $SessionUUID],
+					Quiet[Download[Object[Protocol, StockSolution, "Fake stock solution protocol for ExperimentTransfer" <> $SessionUUID], {Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]],
+					Object[Protocol,FillToVolume,"Test FillToVolume Protocol for ExperimentTransfer tests"<>$SessionUUID],
+					Object[Protocol,ManualSamplePreparation,"Test MSP Protocol of FillToVolume for ExperimentTransfer tests"<>$SessionUUID],
+					Model[Part,HandPumpAdapter,"Test HandPumpAdapter Model for Experiment Transfer"<>$SessionUUID],
+					Object[Part,HandPumpAdapter,"Test HandPumpAdapter Object for Experiment Transfer"<>$SessionUUID],
+					Model[Sample, "test liquid model for ExperimentTransfer unit testing "<>$SessionUUID],
+					Object[Product, "test product for ExperimentTransfer unit testing "<>$SessionUUID],
+					Object[Container, Vessel, "test consolidation container 1 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Container, Vessel, "test consolidation container 2 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Container, Vessel, "test consolidation container 3 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Container, Vessel, "test consolidation container 4 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Sample, "test consolidation sample 1 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Sample, "test consolidation sample 2 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Sample, "test consolidation sample 3 for ExperimentTransfer unit test "<>$SessionUUID],
+					Object[Sample, "test consolidation sample 4 for ExperimentTransfer unit test "<>$SessionUUID]
+				}], ObjectP[]];
+
+	(* Erase any objects that we failed to erase in the last unit test *)
+	existsFilter = DatabaseMemberQ[allObjects];
+
+	Quiet[EraseObject[
+		PickList[
+			allObjects,
+			existsFilter
+		],
+		Force -> True,
+		Verbose -> False
+	]];
+];
+
 
 DefineTests[
 	tipsCanAspirateQ,
@@ -4447,6 +6800,17 @@ DefineTests[
 				Download[Model[Container, Vessel, "10L Polypropylene Carboy"][VolumeCalibrations]]
 			],
 			True
+		],
+		Example[{Basic,"Serological tips should not be used to aspirate from any cuvette:"},
+			Experiment`Private`tipsCanAspirateQ[
+				Model[Item, Tips, "2 mL plastic barrier serological pipets, sterile"],
+				Download[Model[Container, Cuvette, "Micro Scale UV Quartz Cuvette with Stirring"]],
+				1.5 Milliliter,
+				1.0 Milliliter,
+				Download[{Model[Item, Tips, "2 mL plastic barrier serological pipets, sterile"]}],
+				Download[Model[Container, Cuvette, "Micro Scale UV Quartz Cuvette with Stirring"][VolumeCalibrations]]
+			],
+			False
 		]
 	}
 ];
@@ -5116,6 +7480,117 @@ DefineTests[
 				Verbose->False
 			]];
 		]
+	),
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	}
+];
+
+
+
+(* ::Subsubsection:: *)
+(*Transfer*)
+
+
+DefineTests[
+	Transfer,
+	{
+		Example[{Basic, "Perform a basic transfer with liquid samples in 50mL Tubes:"},
+			Experiment[
+				{
+					Transfer[
+						Source -> Object[Sample, "Test Tris sample in 50mL tube (1) for Transfer unit test "<>$SessionUUID],
+						Destination -> Object[Sample, "Test water sample in 50mL tube (2) for Transfer unit test "<>$SessionUUID],
+						Amount -> 1 Milliliter
+					]
+				}
+			],
+			ObjectP[Object[Protocol]]
+		],
+		Example[{Basic, "Perform Robotic transfers:"},
+			ExperimentRoboticSamplePreparation[
+				{
+					Transfer[
+						Source -> Model[Sample, "Milli-Q water"],
+						Destination -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 0.5 Milliliter,
+						PipettingMethod -> Model[Method, Pipetting, "DMSO"]
+					]
+				}
+			],
+			ObjectP[Object[Protocol, RoboticSamplePreparation]]
+		]
+	},
+	SymbolSetUp :> (Module[{existsFilter, emptyContainer1, emptyContainer2, waterSample, waterSample2},
+		ClearMemoization[];
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+		$CreatedObjects = {};
+		(* IMPORTANT: Make sure that any objects you upload have DeveloperObject\[Rule]True. *)
+		(* Erase any objects that we failed to erase in the last unit test. *)
+		existsFilter = DatabaseMemberQ[{
+			Object[Container, Vessel, "Test container 1 for Transfer unit test "<>$SessionUUID],
+			Object[Container, Vessel, "Test container 2 for Transfer unit test "<>$SessionUUID],
+			Object[Sample, "Test Tris sample in 50mL tube (1) for Transfer unit test "<>$SessionUUID],
+			Object[Sample, "Test water sample in 50mL tube (2) for Transfer unit test "<>$SessionUUID]
+		}];
+		EraseObject[
+			PickList[
+				{
+					Object[Container, Vessel, "Test container 1 for Transfer unit test "<>$SessionUUID],
+					Object[Container, Vessel, "Test container 2 for Transfer unit test "<>$SessionUUID],
+					Object[Sample, "Test Tris sample in 50mL tube (1) for Transfer unit test "<>$SessionUUID],
+					Object[Sample, "Test water sample in 50mL tube (2) for Transfer unit test "<>$SessionUUID]
+				},
+				existsFilter
+			],
+			Force -> True,
+			Verbose -> False
+		];
+		(* Create some empty containers *)
+		{emptyContainer1, emptyContainer2} = Upload[{
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test container 1 for Transfer unit test "<>$SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+				Name -> "Test container 2 for Transfer unit test "<>$SessionUUID,
+				Site -> Link[$Site],
+				DeveloperObject -> True
+			|>
+		}];
+		(* Create some water samples *)
+		{waterSample, waterSample2} = ECL`InternalUpload`UploadSample[
+			{
+				Model[Sample, StockSolution, "1 M TrisHCl, pH 7.5"],
+				Model[Sample, "Milli-Q water"]
+			},
+			{
+				{"A1", emptyContainer1},
+				{"A1", emptyContainer2}
+			},
+			InitialAmount -> {40 Milliliter, 20 Milliliter},
+			Name -> {
+				"Test Tris sample in 50mL tube (1) for Transfer unit test "<>$SessionUUID,
+				"Test water sample in 50mL tube (2) for Transfer unit test "<>$SessionUUID
+			}
+		];
+		(* Make some changes to our samples to make them invalid. *)
+		Upload[{
+			<|Object -> waterSample, DeveloperObject -> True|>,
+			<|Object -> waterSample2, DeveloperObject -> True|>
+		}];
+	]
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 	),
 	Stubs :> {
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]

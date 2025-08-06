@@ -159,6 +159,24 @@ DefineObjectType[Object[UnitOperation,Mix],
 				Description->"For each member of SampleLink, the maximum duration of time for which the samples will be mixed, in an attempt to dissolve any solute, if the MixUntilDissolved option is chosen. Note this option only applies for mix type: Shake, Roll, Vortex or Sonicate.",
 				Category->"Incubation"
 			},
+			PreSonicationTime->{
+				Format->Multiple,
+				Class->Real,
+				Units->Minute,
+				Pattern:>GreaterEqualP[0 Minute],
+				IndexMatching->SampleLink,
+				Description->"For each member of SampleLink, the duration of time for which the sonicator water bath degases prior to loading sample.",
+				Category->"Incubation"
+			},
+			AlternateInstruments -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern:> _List,
+				Description -> "For each member of SampleLink, the alternative instruments can be used to perform the Mix and/or Incubation. Currently, this field is only used when mixing with Sonicator.",
+				Category -> "Incubation",
+				IndexMatching -> SampleLink,
+				Developer -> True
+			},
 			DutyCycle->{
 				Format->Multiple,
 				Class->Expression,
@@ -525,6 +543,48 @@ DefineObjectType[Object[UnitOperation,Mix],
 				Category->"Incubation",
 				Headers->{"Mix Type","Batch","Fully Dissolved List"},
 				Developer->True
+			},
+
+			(* Transform fields *)
+			Transform->{
+				Format->Multiple,
+				Class->Boolean,
+				Pattern:>BooleanP,
+				IndexMatching->SampleLink,
+				Description->"For each member of SampleLink, indicates if SampleLink are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformHeatShockTemperature->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Kelvin],
+				Units->Celsius,
+				Description->"For each member of SampleLink, the temperature at which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformHeatShockTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Second,
+				Description->"For each member of SampleLink, the length of time for which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformPreHeatCoolingTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Minute,
+				Description->"For each member of SampleLink, the length of time for which the cells are cooled prior to heat shocking.",
+				Category->"Incubation"
+			},
+			TransformPostHeatCoolingTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Second,
+				Description->"For each member of SampleLink, the length of time for which the cells are cooled after heat shocking.",
+				Category->"Incubation"
 			},
 
 			AspirationDate->{

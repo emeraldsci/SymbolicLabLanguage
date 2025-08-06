@@ -19,13 +19,20 @@ DefineUsage[ExperimentMeasureSurfaceTension,
 						{
 							InputName -> "Samples",
 							Description-> "The samples to be diluted to varying concentrations and have their surface tensions determined.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -60,7 +67,7 @@ DefineUsage[ExperimentMeasureSurfaceTension,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+		Author -> {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"}
 	}
 ];
 
@@ -79,10 +86,20 @@ DefineUsage[ExperimentMeasureSurfaceTensionOptions,
 						{
 							InputName -> "Objects",
 							Description-> "The samples or containers whose contents are to be dialyzed during the protocol.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -110,7 +127,7 @@ DefineUsage[ExperimentMeasureSurfaceTensionOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+		Author -> {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"}
 	}
 ];
 
@@ -130,10 +147,20 @@ DefineUsage[ExperimentMeasureSurfaceTensionPreview,
 						{
 							InputName -> "Objects",
 							Description-> "The samples or containers whose contents are to be dialyzed during the protocol.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -158,7 +185,7 @@ DefineUsage[ExperimentMeasureSurfaceTensionPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+		Author -> {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"}
 	}
 ];
 
@@ -178,10 +205,20 @@ DefineUsage[ValidExperimentMeasureSurfaceTensionQ,
 						{
 							InputName -> "Objects",
 							Description-> "The samples or containers whose contents are to be dialyzed during the protocol.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -206,6 +243,6 @@ DefineUsage[ValidExperimentMeasureSurfaceTensionQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+		Author -> {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"}
 	}
 ];

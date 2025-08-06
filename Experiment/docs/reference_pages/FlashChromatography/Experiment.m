@@ -14,7 +14,7 @@ DefineUsage[ExperimentFlashChromatography,{
 					Expandable->False,
 					Widget->Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+						Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 						Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 					]
 				},
@@ -51,9 +51,7 @@ DefineUsage[ExperimentFlashChromatography,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"clayton.schwarz"
-	}
+	Author->{"dirk.schild", "clayton.schwarz"}
 }];
 
 
@@ -72,7 +70,7 @@ DefineUsage[ExperimentFlashChromatographyOptions,{
 					Expandable->False,
 					Widget->Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+						Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 						Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 					]
 				},
@@ -98,9 +96,7 @@ DefineUsage[ExperimentFlashChromatographyOptions,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"clayton.schwarz"
-	}
+	Author->{"dirk.schild", "clayton.schwarz"}
 }];
 
 
@@ -119,7 +115,7 @@ DefineUsage[ExperimentFlashChromatographyPreview,{
 					Expandable->False,
 					Widget->Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+						Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 						Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 					]
 				},
@@ -142,9 +138,7 @@ DefineUsage[ExperimentFlashChromatographyPreview,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"clayton.schwarz"
-	}
+	Author->{"dirk.schild", "clayton.schwarz"}
 }];
 
 
@@ -163,7 +157,7 @@ DefineUsage[ValidExperimentFlashChromatographyQ,{
 					Expandable->False,
 					Widget->Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+						Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 						Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 					]
 				},
@@ -187,8 +181,5 @@ DefineUsage[ValidExperimentFlashChromatographyQ,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"clayton.schwarz"
-	}
+	Author->{"dirk.schild", "clayton.schwarz"}
 }];
-

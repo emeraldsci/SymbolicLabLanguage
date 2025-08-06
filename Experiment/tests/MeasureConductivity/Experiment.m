@@ -20,8 +20,7 @@
 (*ExperimentMeasureConductivity*)
 
 
-DefineTests[
-	ExperimentMeasureConductivity,
+DefineTests[ExperimentMeasureConductivity,
 	{
 		Example[{Basic,"Measure the conductivity of a single sample:"},
 			ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID]],
@@ -60,6 +59,28 @@ DefineTests[
 			ObjectP[Model[Part, ConductivityProbe, "InLab 751-4mm"]],
 			Variables :> {options}
 		],
+		(*TODO: Update the three test below to include SecondaryCalibrationStandard in the option argument once SecondaryCalibrationStandard is added to ExperimentMeasureConductivity's options.*)
+			(*Small Volume Probe Uses both a primary and secondary calibration standard.*)
+			Example[{Additional,"Calibration of the small volume probe uses two calibration standards:"},
+				prot=ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],Probe->Model[Part, ConductivityProbe, "InLab 751-4mm"],CalibrationStandard->Model[Sample, "Conductivity Standard 1413 \[Micro]S, Sachets"]];
+				Download[prot, {CalibrationStandard, SecondaryCalibrationStandard}],
+				{{ObjectP[Model[Sample, "id:eGakldJ6WqD4"]]},{ObjectP[Model[Sample,"id:4pO6dM5qa66o"]]}},
+				Variables :> {prot}
+			],
+			(*Regular Probe Uses only a single calibration standard.*)
+			Example[{Additional,"Calibration of the regular probe uses a single calibration standard:"},
+				prot=ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],Probe->Model[Part, ConductivityProbe, "InLab 731-ISM"],CalibrationStandard->Model[Sample, "Conductivity Standard 1413 \[Micro]S, Sachets"]];
+				Download[prot, {CalibrationStandard,SecondaryCalibrationStandard}],
+				{{ObjectP[Model[Sample, "id:eGakldJ6WqD4"]]},{Null}},
+				Variables :> {prot}
+			],
+			(*CalibrationStandard and SecondaryCalibrationStandard Index match to probes correctly.*)
+			Example[{Additional,"CalibrationStandard and SecondaryCalibrationStandard Index match to probes correctly:"},
+				prot=ExperimentMeasureConductivity[{Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID]},Probe->{Model[Part, ConductivityProbe, "InLab 731-ISM"],Model[Part, ConductivityProbe, "InLab 751-4mm"]},CalibrationStandard->Model[Sample, "Conductivity Standard 1413 \[Micro]S, Sachets"]];
+				Download[prot, {CalibrationStandard,SecondaryCalibrationStandard}],
+				{{ObjectP[Model[Sample, "id:eGakldJ6WqD4"]],ObjectP[Model[Sample, "id:eGakldJ6WqD4"]]}, {ObjectP[Model[Sample,"id:4pO6dM5qa66o"]], Null}},
+				Variables :> {prot}
+			],
 		(*NumberOfReadings*)
 		Example[{Options,NumberOfReadings,"Measure the conductivity of multiple liquid samples by taking a specific number of readings:"},
 			options=ExperimentMeasureConductivity[{Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],Object[Sample, "Test MilliQ water sample for ExperimentMeasureConductivity" <> $SessionUUID]},NumberOfReadings->{1,1},Output->Options];
@@ -69,9 +90,9 @@ DefineTests[
 		],
 		(*CalibrationStandard*)
 		Example[{Options,CalibrationStandard,"Measure the conductivity of a single liquid sample by specifying a specific calibration standard solution:"},
-			options=ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],CalibrationStandard->Model[Sample, "Conductivity Standard 10\[Mu]S"],Output->Options];
+			options=ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],CalibrationStandard->Model[Sample, "Conductivity Standard 10 \[Mu]S"],Output->Options];
 			Lookup[options, CalibrationStandard],
-			ObjectP[Model[Sample, "Conductivity Standard 10\[Mu]S"]],
+			ObjectP[Model[Sample, "Conductivity Standard 10 \[Mu]S"]],
 			Variables :> {options}
 		],
 		(*CalibrationConductivity*)
@@ -152,7 +173,7 @@ DefineTests[
     Example[{Options,Name,"Measure the conductivity of a single liquid sample with a Name specified for the protocol:"},
       options=ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],Name->"Measure conductivity without temperature correction.",TemperatureCorrection->None,Output->Options];
       Lookup[options,{Name,TemperatureCorrection}],
-			{"Measure conductivity without temperature correction.",{Off}},
+			{"Measure conductivity without temperature correction.",Off},
       Variables:>{options}
     ],
 		Example[{Basic,"Setting Aliquot->True will take an aliquot of your sample for conductivity measurement - this is often used to prevent sample contamination. The option RecoupSample->True can be set if the aliquotted sample should be recouped after measurement:"},
@@ -205,28 +226,38 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,MeasureConductivity]]
 		],
-		Example[
-			{Options,PreparatoryPrimitives,"Describe the preparation of a buffer before using it in a MeasureConductivity protocol:"},
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureConductivity[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"id:3em6Zv9NjjN8"],(*2mL Tube*)
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"id:3em6Zv9NjjN8"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
 			ExperimentMeasureConductivity[
-				"My Buffer",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Buffer",
-						Sample -> {Model[Container,Vessel,"Amber Glass Bottle 4 L"],"A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My Buffer",
-						Amount -> 2 Liter
-					],
-					Transfer[
-						Source -> Model[Sample, "Heptafluorobutyric acid"],
-						Destination -> "My Buffer",
-						Amount -> 1 Milliliter
-					]
-				}
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
 			],
-			ObjectP[Object[Protocol,MeasureConductivity]]
+			ObjectP[Object[Protocol, MeasureConductivity]]
 		],
 		(*---Post Processing options---*)
 		Example[{Options,ImageSample,"Measure the conductivity of a single liquid sample and do not take an image afterwards:"},
@@ -551,7 +582,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureConductivity[Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], AliquotContainer -> Model[Container,Vessel,"50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,SamplesInStorageCondition, "Indicates how the input samples of the experiment should be stored:"},
@@ -581,10 +612,30 @@ DefineTests[
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureConductivity[Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		(*---Error Messages---*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureConductivity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureConductivity[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureConductivity[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureConductivity[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"DiscardedSamples","Return an error for a discarded sample:"},
 			ExperimentMeasureConductivity[Object[Sample, "Test discarded sample for ExperimentMeasureConductivity" <> $SessionUUID]],
 			$Failed,
@@ -708,7 +759,7 @@ DefineTests[
 		Example[{Messages,"ConflictingCalibrantion","Return an error if the given CalibrationConductivity does not match with the Conductivity of CalibrationStandard:"},
 			ExperimentMeasureConductivity[
 				Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],
-				CalibrationStandard -> Model[Sample, "Conductivity Standard 10\[Mu]S"],
+				CalibrationStandard -> Model[Sample, "Conductivity Standard 10 \[Mu]S"],
 				CalibrationConductivity -> 100 Micro Siemens/Centimeter],
 			$Failed,
 			Messages:>{
@@ -719,7 +770,7 @@ DefineTests[
 		Example[{Messages,"ConflictingVerification","Return an error if the given VerificationConductivity does not match with the Conductivity of VerificationStandard:"},
 			ExperimentMeasureConductivity[
 				Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID],
-				VerificationStandard -> Model[Sample, "Conductivity Standard 10\[Mu]S"],
+				VerificationStandard -> Model[Sample, "Conductivity Standard 10 \[Mu]S"],
 				VerificationConductivity -> 100 Micro Siemens/Centimeter],
 			$Failed,
 			Messages:>{
@@ -728,6 +779,8 @@ DefineTests[
 			}
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	SymbolSetUp:>(
 		$CreatedObjects={};
 		Off[Warning::SamplesOutOfStock];
@@ -1060,18 +1113,18 @@ DefineTests[
 			<|Object->discardedChemical,Status->Discarded,DeveloperObject->True|>,
 			<|
 				Object->waterSample,
-				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 				DeveloperObject->True
 			|>,
 			<|
 				Object->waterSample2,
-				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 				Conductivity->QuantityDistribution[DataDistribution["Empirical", List[List[1.`], List[0.`], False], 1, 3], Times[Power["Centimeters", -1], "Microsiemens"]],
 				DeveloperObject->True
 			|>,
 			<|
 				Object->waterSample3,
-				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 				Conductivity->QuantityDistribution[DataDistribution["Empirical", List[List[0.333333, 0.333333, 0.333333], List[163944., 191844., 202514.], False], 1, 3], Times[Power["Centimeters", -1], "Microsiemens"]],
 				DeveloperObject->True
 			|>,

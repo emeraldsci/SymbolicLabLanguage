@@ -463,6 +463,11 @@ PlotTrajectory[trajList:{_Trajectory..},opts:OptionsPattern[PlotTrajectory]] :=
 PlotTrajectory::BadSpecies="The following species are not present in the Trajectory: `1`";
 PlotTrajectory::NoSpecies="There are no valid species to plot";
 
+
+
+(* Authors definition for Plot`Private`trajectoryConcentrationSum *)
+Authors[Plot`Private`trajectoryConcentrationSum]:={"dirk.schild"};
+
 trajectoryConcentrationSum[Trajectory[specs_List,concs_List,ts_List,uns_List]] :=
 	Trajectory[{"ConcentrationSum"}, (List@*Total) /@ concs, ts, uns];
 

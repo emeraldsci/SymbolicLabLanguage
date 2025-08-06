@@ -9,7 +9,6 @@ DefineObjectType[Object[Maintenance, Decontaminate], {
 	CreatePrivileges -> None,
 	Cache -> Session,
 	Fields -> {
-		
 		LabArea -> {
 			Format -> Single,
 			Class -> Expression,

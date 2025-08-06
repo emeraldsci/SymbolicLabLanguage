@@ -87,11 +87,13 @@ PlotCrossFlowFiltration[myInput:ObjectP[{Object[Protocol,CrossFlowFiltration]}],
 	If[
 		Length[dataObjs]==1,
 		PlotCrossFlowFiltration[First[dataObjs],optionWithCache],
-		Map[
-			Function[data,
-				PlotCrossFlowFiltration[data,optionWithCache]
-			],
-			dataObjs
+		SlideView[
+			Map[
+				Function[data,
+					PlotCrossFlowFiltration[data,optionWithCache]
+				],
+				dataObjs
+			]
 		]
 	]
 ];

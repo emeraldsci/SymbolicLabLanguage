@@ -339,7 +339,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 		PCRPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the loading of ReadPlate with input samples, primers, master mix, and diluent.",
 			Category->"Sample Loading"
 		},
@@ -347,7 +347,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"The sample manipulation protocol generated as a result of the execution of PCRPlatePrimitives, which is used to load ReadPlate with input samples, primers, master mix, and diluents.",
 			Category->"Sample Loading"
 		},
@@ -493,7 +493,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 		AssayPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the loading of ReadPlate with quenching reagents.",
 			Category->"Sample Post-Processing"
 		},
@@ -501,7 +501,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"The sample manipulation protocol generated as a result of the execution of AssayPlatePrimitives, which is used to load ReadPlate with quenching reagents.",
 			Category->"Sample Loading"
 		},
@@ -540,7 +540,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 		SequencingPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the loading of ReadPlate with sequencing buffer.",
 			Category->"Sample Post-Processing"
 		},
@@ -548,7 +548,7 @@ DefineObjectType[Object[Protocol,DNASequencing],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"The sample manipulation protocol generated as a result of the execution of SequencingPlatePrimitives, which is used to load ReadPlate with sequencing buffer.",
 			Category->"Sample Loading"
 		},

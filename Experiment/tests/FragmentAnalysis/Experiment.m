@@ -61,6 +61,31 @@ DefineTests[ExperimentFragmentAnalysis,
 		],
 
 		(*===Options===*)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentFragmentAnalysis[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages :> {Warning::CantDetermineSampleAnalyteType, Warning::CantDetermineReadLengths}
+		],
 		(*PreparedPlate Option*)
 		Example[{Options,PreparedPlate,"PreparedPlate is successfully set to True if input is a compatible container:"},
 			Lookup[
@@ -336,50 +361,34 @@ DefineTests[ExperimentFragmentAnalysis,
 		(*CapillaryEquilibration Option*)
 		Example[
 			{Options,CapillaryEquilibration,"CapillaryEquilibration is resolved based on the resolved AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				CapillaryEquilibration
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][CapillaryEquilibration]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output -> Options];
+			Lookup[options, CapillaryEquilibration],
+			Download[Lookup[options, AnalysisMethod], CapillaryEquilibration],
+			Variables :> {options}
 		],
 		(*EquilibrationVoltage Option*)
 		Example[
 			{Options,EquilibrationVoltage,"EquilibrationVoltage is resolved based on the resolved AnalysisMethod if CapillaryEquilibration is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				EquilibrationVoltage
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][EquilibrationVoltage]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, EquilibrationVoltage],
+			Download[Lookup[options, AnalysisMethod], EquilibrationVoltage],
+			Variables :> {options}
 		],
 		(*EquilibrationTime Option*)
 		Example[
 			{Options,EquilibrationTime,"EquilibrationVoltage is resolved based on the resolved AnalysisMethod if CapillaryEquilibration is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				EquilibrationTime
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][EquilibrationTime]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, EquilibrationTime],
+			Download[Lookup[options, AnalysisMethod], EquilibrationTime],
+			Variables :> {options}
 		],
 		(*PreMarkerRinse Option*)
 		Example[
 			{Options,PreMarkerRinse,"PreMarkerRinse is resolved based on the resolved AnalysisMethod if NumberOfPreMarkerRinses is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				PreMarkerRinse
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][PreMarkerRinse]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, PreMarkerRinse],
+			Download[Lookup[options, AnalysisMethod], PreMarkerRinse],
+			Variables :> {options}
 		],
 		Example[
 			{Options,PreMarkerRinse,"PreMarkerRinse is True if NumberOfPreMarkerRinses is set to a Number:"},
@@ -400,64 +409,43 @@ DefineTests[ExperimentFragmentAnalysis,
 		(*NumberOfPreMarkerRinses Option*)
 		Example[
 			{Options,NumberOfPreMarkerRinses,"NumberOfPreMarkerRinses is resolved based on AnalysisMethod if PreMarkerRinse is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				NumberOfPreMarkerRinses
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][NumberOfPreMarkerRinses]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, NumberOfPreMarkerRinses],
+			Download[Lookup[options, AnalysisMethod], NumberOfPreMarkerRinses],
+			Variables :> {options}
 		],
 		(*MarkerInjection Option*)
 		Example[
 			{Options,MarkerInjection,"MarkerInjection is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				MarkerInjection
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][MarkerInjection]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, MarkerInjection],
+			Download[Lookup[options, AnalysisMethod], MarkerInjection],
+			Variables :> {options}
 		],
 		(*MarkerInjectionTime Option*)
 		Example[
 			{Options,MarkerInjectionTime,"MarkerInjectionTime is resolved based on AnalysisMethod if MarkerInjection is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				MarkerInjectionTime
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][MarkerInjectionTime]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, MarkerInjectionTime],
+			Download[Lookup[options, AnalysisMethod], MarkerInjectionTime],
+			Variables :> {options}
 		],
 		(*MarkerInjectionVoltage Option*)
 		Example[
 			{Options,MarkerInjectionVoltage,"MarkerInjectionVoltage is resolved based on AnalysisMethod if MarkerInjection is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				MarkerInjectionVoltage
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][MarkerInjectionVoltage]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, MarkerInjectionVoltage],
+			Download[Lookup[options, AnalysisMethod], MarkerInjectionVoltage],
+			Variables :> {options}
 		],
 		(*PreSampleRinse Option*)
 		Example[
 			{Options,PreSampleRinse,"PreSampleRinse is resolved based on the resolved AnalysisMethod if NumberOfPreSampleRinses is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				PreSampleRinse
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][PreSampleRinse]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, PreSampleRinse],
+			Download[Lookup[options, AnalysisMethod], PreSampleRinse],
+			Variables :> {options}
 		],
-
 		Example[
 			{Options,PreSampleRinse,"PreSampleRinse is True if NumberOfPreSampleRinses is set to a Number:"},
 			Lookup[
@@ -477,278 +465,186 @@ DefineTests[ExperimentFragmentAnalysis,
 		(*NumberOfPreSampleRinses Option*)
 		Example[
 			{Options,NumberOfPreSampleRinses,"NumberOfPreSampleRinses is resolved based on AnalysisMethod if PreSampleRinse is Automatic:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				NumberOfPreSampleRinses
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][NumberOfPreSampleRinses]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, NumberOfPreSampleRinses],
+			Download[Lookup[options, AnalysisMethod], NumberOfPreSampleRinses],
+			Variables :> {options}
 		],
 		(*SampleInjectionTime Option*)
 		Example[
 			{Options,SampleInjectionTime,"SampleInjectionTime is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleInjectionTime
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleInjectionTime]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleInjectionTime],
+			Download[Lookup[options, AnalysisMethod], SampleInjectionTime],
+			Variables :> {options}
 		],
 		(*SampleInjectionVoltage Option*)
 		Example[
 			{Options,SampleInjectionVoltage,"SampleInjectionVoltage is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleInjectionVoltage
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleInjectionVoltage]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleInjectionVoltage],
+			Download[Lookup[options, AnalysisMethod], SampleInjectionVoltage],
+			Variables :> {options}
 		],
 		(*SeparationTime Option*)
 		Example[
 			{Options,SeparationTime,"SeparationTime is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SeparationTime
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SeparationTime]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SeparationTime],
+			Download[Lookup[options, AnalysisMethod], SeparationTime],
+			Variables :> {options}
 		],
 		(*SeparationVoltage Option*)
 		Example[
 			{Options,SeparationVoltage,"SeparationVoltage is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SeparationVoltage
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SeparationVoltage]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SeparationVoltage],
+			Download[Lookup[options, AnalysisMethod], SeparationVoltage],
+			Variables :> {options}
 		],
 		(*Blank Option*)
 		Example[
 			{Options,Blank,"Blank is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				Blank
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][Blank]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, Blank],
+			Download[Lookup[options, AnalysisMethod], Blank],
+			Variables :> {options}
 		],
 		(*BlankRunningBuffer Option*)
 		Example[
 			{Options,Blank,"BlankRunningBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				BlankRunningBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][BlankRunningBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, BlankRunningBuffer],
+			Download[Lookup[options, AnalysisMethod], BlankRunningBuffer],
+			Variables :> {options}
 		],
 		(*BlankMarker Option*)
 		Example[
 			{Options,Blank,"BlankMarker is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				BlankMarker
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][BlankMarker]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, BlankMarker],
+			Download[Lookup[options, AnalysisMethod], BlankMarker],
+			Variables :> {options}
 		],
 		(*SeparationGel Option*)
 		Example[
 			{Options,SeparationGel,"SeparationGel is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SeparationGel
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SeparationGel]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SeparationGel],
+			Download[Lookup[options, AnalysisMethod], SeparationGel],
+			Variables :> {options}
 		],
 		(*Dye Option*)
 		Example[
 			{Options,Dye,"Dye is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				Dye
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][Dye]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, Dye],
+			Download[Lookup[options, AnalysisMethod], Dye],
+			Variables :> {options}
 		],
 		(*ConditioningSolution Option*)
 		Example[
 			{Options,ConditioningSolution,"ConditioningSolution is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				ConditioningSolution
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][ConditioningSolution]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, ConditioningSolution],
+			Download[Lookup[options, AnalysisMethod], ConditioningSolution],
+			Variables :> {options}
 		],
 		(*PreMarkerRinseBuffer Option*)
 		Example[
 			{Options,PreMarkerRinseBuffer,"PreMarkerRinseBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				PreMarkerRinseBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][PreMarkerRinseBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, PreMarkerRinseBuffer],
+			Download[Lookup[options, AnalysisMethod], PreMarkerRinseBuffer],
+			Variables :> {options}
 		],
 		(*PreSampleRinseBuffer Option*)
 		Example[
 			{Options,PreSampleRinseBuffer,"PreSampleRinseBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				PreSampleRinseBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][PreSampleRinseBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, PreSampleRinseBuffer],
+			Download[Lookup[options, AnalysisMethod], PreSampleRinseBuffer],
+			Variables :> {options}
 		],
 		(*Ladder Option*)
 		Example[
 			{Options,Ladder,"Ladder is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				Ladder
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][Ladder]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, Ladder],
+			Download[Lookup[options, AnalysisMethod], Ladder],
+			Variables :> {options}
 		],
 		(*LadderLoadingBuffer Option*)
 		Example[
 			{Options,LadderLoadingBuffer,"LadderLoadingBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				LadderLoadingBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][LadderLoadingBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, LadderLoadingBuffer],
+			Download[Lookup[options, AnalysisMethod], LadderLoadingBuffer],
+			Variables :> {options}
 		],
 		(*LadderLoadingBufferVolume Option*)
 		Example[
 			{Options,LadderLoadingBufferVolume,"LadderLoadingBufferVolume is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				LadderLoadingBufferVolume
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][LadderLoadingBufferVolume]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, LadderLoadingBufferVolume],
+			Download[Lookup[options, AnalysisMethod], LadderLoadingBufferVolume],
+			Variables :> {options}
 		],
 		(*LadderRunningBuffer Option*)
 		Example[
 			{Options,LadderRunningBuffer,"LadderRunningBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				LadderRunningBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][LadderRunningBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, LadderRunningBuffer],
+			Download[Lookup[options, AnalysisMethod], LadderRunningBuffer],
+			Variables :> {options}
 		],
 		(*LadderMarker Option*)
 		Example[
 			{Options,LadderMarker,"LadderMarker is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				LadderMarker
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][LadderMarker]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, LadderMarker],
+			Download[Lookup[options, AnalysisMethod], LadderMarker],
+			Variables :> {options}
 		],
 		(*SampleVolume Option*)
 		Example[
 			{Options,SampleVolume,"SampleVolume is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleVolume
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][TargetSampleVolume]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleVolume],
+			Download[Lookup[options, AnalysisMethod], TargetSampleVolume],
+			Variables :> {options}
 		],
 		(*SampleLoadingBuffer Option*)
 		Example[
 			{Options,SampleLoadingBuffer,"SampleLoadingBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleLoadingBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleLoadingBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleLoadingBuffer],
+			Download[Lookup[options, AnalysisMethod], SampleLoadingBuffer],
+			Variables :> {options}
 		],
 		(*SampleLoadingBufferVolume Option*)
 		Example[
 			{Options,SampleLoadingBufferVolume,"SampleLoadingBufferVolume is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleLoadingBufferVolume
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleLoadingBufferVolume]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleLoadingBufferVolume],
+			Download[Lookup[options, AnalysisMethod], SampleLoadingBufferVolume],
+			Variables :> {options}
 		],
 		(*SampleRunningBuffer Option*)
 		Example[
 			{Options,SampleRunningBuffer,"SampleRunningBuffer is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleRunningBuffer
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleRunningBuffer]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleRunningBuffer],
+			Download[Lookup[options, AnalysisMethod], SampleRunningBuffer],
+			Variables :> {options}
 		],
 		(*SampleMarker Option*)
 		Example[
 			{Options,SampleMarker,"SampleMarker is resolved based on AnalysisMethod:"},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				SampleMarker
-			],
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options],
-				AnalysisMethod
-			][SampleMarker]
+			options = ExperimentFragmentAnalysis[Object[Sample, "Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"  <> $SessionUUID], Output->Options];
+			Lookup[options, SampleMarker],
+			Download[Lookup[options, AnalysisMethod], SampleMarker],
+			Variables :> {options}
 		],
 
 		(*MarkerPlateStorageCondition Option*)
@@ -838,6 +734,89 @@ DefineTests[ExperimentFragmentAnalysis,
 		],
 
 		(*===Messages===*)
+		
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFragmentAnalysis[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFragmentAnalysis[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFragmentAnalysis[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFragmentAnalysis[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{
+						{100 Nanogram / Microliter, Model[Molecule, Oligomer, "ExperimentFragmentAnalysis 80mer DNA Model Molecule" <> $SessionUUID]},
+						{100 Nanogram / Microliter, Model[Molecule, Oligomer, "ExperimentFragmentAnalysis 400mer DNA Model Molecule" <> $SessionUUID]}
+					},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFragmentAnalysis[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{
+						{100 Nanogram / Microliter, Model[Molecule, Oligomer, "ExperimentFragmentAnalysis 80mer DNA Model Molecule" <> $SessionUUID]},
+						{100 Nanogram / Microliter, Model[Molecule, Oligomer, "ExperimentFragmentAnalysis 400mer DNA Model Molecule" <> $SessionUUID]}
+					},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFragmentAnalysis[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[
 			{Messages,"AnalysisMethodAnalysisStrategyMismatchWarning","If the AnalysisMethod selected is not optimal for Quantitative Analysis and AnalysisStrategy is Quantitative, throw a Warning:"},
 			Lookup[ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis RNA Low Concentration"<>$SessionUUID],AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - High Sensitivity (pg/uL) - Qualitative, Short"],AnalysisStrategy->Quantitative,Output->Options],AnalysisStrategy],
@@ -951,10 +930,11 @@ DefineTests[ExperimentFragmentAnalysis,
 			Messages :> {
 				Warning::AnalysisMethodOptionsMismatch,
 				Warning::AnalysisMethodLadderOptionsMismatch,
+				Warning::AnalysisMethodBlankOptionsMismatch,
 				Warning::AnalysisMethodSampleOptionsMismatch
 			}
 		],
-		Example[{Messages, "BlankRunningBufferMismatch", "If Blank is Not Null and BlankRunningBuffer is Null, throw an error."},
+		Example[{Messages, "BlankRunningBufferMismatchError", "If Blank is Not Null and BlankRunningBuffer is Null, throw an error."},
 			Lookup[ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 				AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
 				BlankRunningBuffer->Null,
@@ -964,39 +944,40 @@ DefineTests[ExperimentFragmentAnalysis,
 			],
 			Null,
 			Messages :> {
-				Error::BlankRunningBufferMismatch,
+				Error::BlankRunningBufferMismatchError,
+				Warning::AnalysisMethodBlankOptionsMismatch,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "BlankRunningBufferMismatch", "If Blank is Null and BlankRunningBuffer is not Null, throw an error."},
-			Lookup[ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
-				AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-				Blank->Null,
-				BlankRunningBuffer->Model[Sample,StockSolution,"1x Running Buffer for ExperimentFragmentAnalysis"],
-				Output->Options
-			],
+		Example[{Messages, "BlankRunningBufferMismatchError", "If Blank is Null and BlankRunningBuffer is not Null, throw an error."},
+			Lookup[
+				ExperimentFragmentAnalysis[
+					Object[Container,Plate,"PreparedSamplePlate for ExperimentFragmentAnalysis tests" <> $SessionUUID],
+					BlankRunningBuffer->Model[Sample,StockSolution,"1x Running Buffer for ExperimentFragmentAnalysis"],
+					PreparedPlate->True,
+					Output->Options
+				],
 				Blank
 			],
 			Null,
 			Messages :> {
-				Error::BlankRunningBufferMismatch,
-				Error::NotEnoughSolutionsForInjection,
+				Error::BlankRunningBufferMismatchError,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "BlankMarkerMismatch", "If Blank is Null and BlankMarker is not Null, throw an error."},
-			Lookup[ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
-				AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-				Blank->Null,
-				BlankMarker->Model[Sample,"35 bp and 5000 bp Markers for ExperimentFragmentAnalysis"],
-				Output->Options
-			],
+		Example[{Messages, "BlankMarkerMismatchError", "If Blank is Null and BlankMarker is not Null, throw an error."},
+			Lookup[
+				ExperimentFragmentAnalysis[
+					Object[Container,Plate,"PreparedSamplePlate for ExperimentFragmentAnalysis tests" <> $SessionUUID],
+					BlankMarker->Model[Sample,"35 bp and 5000 bp Markers for ExperimentFragmentAnalysis"],
+					PreparedPlate->True,
+					Output->Options
+				],
 				Blank
 			],
 			Null,
 			Messages :> {
-				Error::BlankMarkerMismatch,
-				Error::NotEnoughSolutionsForInjection,
+				Error::BlankMarkerMismatchError,
 				Error::InvalidOption
 			}
 		],
@@ -1070,7 +1051,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "MarkerInjectionOptionsMismatchErrors", "If MarkerInjection is False and any of MarkerInjectionTime and MarkerInjectionVoltage is Not Null OR If MarkerInjection is True and any of MarkerInjectionTime and MarkerInjectionVoltage is Null, throw an error."},
+		Example[{Messages, "MarkerInjectionOptionsMismatchErrors", "If MarkerInjection is True and any of MarkerInjectionTime and MarkerInjectionVoltage is Null, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1085,30 +1066,12 @@ DefineTests[ExperimentFragmentAnalysis,
 				Warning::AnalysisMethodOptionsMismatch,
 				Error::MarkerInjectionOptionsMismatchErrors,
 				Warning::AnalysisMethodLadderOptionsMismatch,
+				Warning::AnalysisMethodBlankOptionsMismatch,
 				Warning::AnalysisMethodSampleOptionsMismatch,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "MarkerInjectionOptionsMismatchErrors", "If MarkerInjection is False and any of MarkerInjectionTime and MarkerInjectionVoltage is Not Null OR If MarkerInjection is True and any of MarkerInjectionTime and MarkerInjectionVoltage is Null, throw an error."},
-			Lookup[
-				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
-					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-					MarkerInjection->True,
-					MarkerInjectionTime->Null,
-					MarkerInjectionVoltage->Null,
-					Output->Options],
-				{MarkerInjection,MarkerInjectionTime,MarkerInjectionVoltage}
-			],
-			{True,Null,Null},
-			Messages :> {
-				Warning::AnalysisMethodOptionsMismatch,
-				Error::MarkerInjectionOptionsMismatchErrors,
-				Warning::AnalysisMethodLadderOptionsMismatch,
-				Warning::AnalysisMethodSampleOptionsMismatch,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "MarkerInjectionOptionsMismatchErrors", "If MarkerInjection is False and any of MarkerInjectionTime and MarkerInjectionVoltage is Not Null OR If MarkerInjection is True and any of MarkerInjectionTime and MarkerInjectionVoltage is Null, throw an error."},
+		Example[{Messages, "MarkerInjectionOptionsMismatchErrors", "If MarkerInjection is False and any of MarkerInjectionTime and MarkerInjectionVoltage is Not Null, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1125,7 +1088,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "MarkerInjectionPreparedMarkerPlateMismatchErrors", "If MarkerInjection is False and PreparedMarkerPlate is Not Null, throw an error."},
+		Example[{Messages, "MarkerInjectionPreparedMarkerPlateMismatchError", "If MarkerInjection is False and PreparedMarkerPlate is Not Null, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[
 					Object[Sample, "Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],
@@ -1178,7 +1141,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderPreparedPlateMismatchError", "If PreparedPlate is True and Ladder is an object OR if PreparedPlate is False and Ladder is a WellPosition, throw an error."},
+		Example[{Messages, "LadderPreparedPlateMismatchError", "If PreparedPlate is True and Ladder is an object, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1328,7 +1291,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderRunningBufferMismatchError", "If Ladder is specified and LadderRunningBuffer is Null OR If Ladder is Null and LadderRunningBuffer is specified, throw an error."},
+		Example[{Messages, "LadderRunningBufferMismatchError", "For non-prepared plate, if Ladder is specified and LadderRunningBuffer is Null, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1343,7 +1306,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderRunningBufferMismatchError", "If Ladder is specified and LadderRunningBuffer is Null OR If Ladder is Null and LadderRunningBuffer is specified, throw an error."},
+		Example[{Messages, "LadderRunningBufferMismatchError", "For non-prepared plate, if Ladder is Null and LadderRunningBuffer is specified, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1360,7 +1323,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderRunningBufferMismatchError", "If Ladder is specified and LadderRunningBuffer is Null OR If Ladder is Null and LadderRunningBuffer is specified, throw an error."},
+		Example[{Messages, "LadderRunningBufferMismatchError", "For prepared plate, If Ladder is specified and LadderRunningBuffer is Null, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1380,11 +1343,12 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderRunningBufferMismatchError", "If Ladder is specified and LadderRunningBuffer is Null OR If Ladder is Null and LadderRunningBuffer is specified, throw an error."},
+		Example[{Messages, "LadderRunningBufferMismatchError", "For prepared plate, if Ladder is Null and LadderRunningBuffer is specified, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
 					PreparedPlate->True,
+					Ladder->Null,
 					LadderRunningBuffer->Model[Sample,StockSolution,"1x Running Buffer for ExperimentFragmentAnalysis"],
 					Output->Options],
 				{LadderRunningBuffer}
@@ -1398,7 +1362,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderMarkerMismatchError", "If the determined AnalysisMethod optimized for one or more of the sample(s) does not match the final resolvedAnalysisMethod, throw a warning"},
+		Example[{Messages, "LadderMarkerMismatchError", "If the Ladder is Null but the LadderMarker is NOT Null, throw a error"},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],
 					Ladder->Null,
@@ -1414,7 +1378,7 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "LadderMarkerMismatchError", "If the determined AnalysisMethod optimized for one or more of the sample(s) does not match the final resolvedAnalysisMethod, throw a warning"},
+		Example[{Messages, "LadderMarkerMismatchError", "If the Ladder is Null but the LadderMarker is NOT Null, throw a error"},
 			Lookup[
 				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],
 					PreparedPlate->True,
@@ -1429,6 +1393,19 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::PreparedPlateModelError,
 				Error::NotEnoughSolutionsForInjection,
 				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "AnalysisMethodBlankOptionsMismatch", "For PreparedPlate is False, if the indicated values for the blank-related options are not the same as the corresponding field values in the AnalysisMethod, throw a Warning."},
+			Lookup[
+				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],
+					BlankRunningBuffer->Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"],
+					BlankMarker->Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"],
+					Output->Options],
+				{BlankRunningBuffer,BlankMarker}
+			],
+			{ObjectP[Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"]],ObjectP[Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"]]},
+			Messages :> {
+				Warning::AnalysisMethodBlankOptionsMismatch
 			}
 		],
 		Example[{Messages, "AnalysisMethodLadderOptionsMismatch", "For PreparedPlate is False, if the indicated values for the ladder-related options are not the same as the corresponding field values in the AnalysisMethod, throw a Warning."},
@@ -1462,6 +1439,18 @@ DefineTests[ExperimentFragmentAnalysis,
 				Error::PreparedPlateModelError,
 				Warning::AnalysisMethodLadderOptionsMismatch,
 				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "AnalysisMethodBlankMismatch", "If the indicated Blank not the same as the corresponding field value in the AnalysisMethod, throw a Warning."},
+			Lookup[
+				ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],
+					Blank->Model[Sample,"15-200 nt RNA HS Ladder for ExperimentFragmentAnalysis"],
+					Output->Options],
+				{Blank}
+			],
+			{ObjectP[Model[Sample,"15-200 nt RNA HS Ladder for ExperimentFragmentAnalysis"]]},
+			Messages :> {
+				Warning::AnalysisMethodBlankMismatch
 			}
 		],
 		Example[{Messages, "AnalysisMethodLadderMismatch", "If the indicated Ladder not the same as the corresponding field value in the AnalysisMethod, throw a Warning."},
@@ -1564,7 +1553,7 @@ DefineTests[ExperimentFragmentAnalysis,
 			}
 		],
 		Example[{Messages, "SampleOptionsPreparedPlateMismatchError", "If PreparedPlate is True, SampleDilution must be False and sample-related options (SampleDiluent,SampleVolume,SampleDiluentVolume,SampleLoadingBuffer,SampleLoadingBufferVolume) must be Null. If not, throw an error."},
-			ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],96],
+			ExperimentFragmentAnalysis[Object[Container, Plate, "PreparedSamplePlate for ExperimentFragmentAnalysis tests" <> $SessionUUID],
 				PreparedPlate->True,
 				SampleDilution->True,
 				SampleVolume->2 Microliter,
@@ -1575,7 +1564,6 @@ DefineTests[ExperimentFragmentAnalysis,
 			,
 			$Failed,
 			Messages :> {
-				Error::PreparedPlateModelError,
 				Error::SampleOptionsPreparedPlateMismatchError,
 				Error::InvalidOption
 			}
@@ -1692,80 +1680,50 @@ DefineTests[ExperimentFragmentAnalysis,
 		],
 		Example[{Messages, "AnalysisMethodSampleOptionsMismatch", "For PreparedPlate is True, if the indicated values for the sample-related options are not the same as the corresponding field values in the AnalysisMethod, throw a Warning."},
 			Lookup[
-				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],96],
+				ExperimentFragmentAnalysis[Object[Container, Plate,"PreparedSamplePlate for ExperimentFragmentAnalysis tests" <> $SessionUUID],
 					PreparedPlate->True,
-					SampleRunningBuffer->Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"],
-					SampleMarker->Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"],
+					SampleRunningBuffer->Model[Sample,"Milli-Q water"],
+					SampleMarker->Model[Sample,"Milli-Q water"],
 					Output->Options],
 				{SampleVolume,SampleLoadingBuffer,SampleLoadingBufferVolume,SampleRunningBuffer,SampleMarker}
 			],
-			{Null,Null,Null,ObjectP[Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"]],ObjectP[Model[Sample,"Loading Buffer with 1 bp and 1500 bp DNA Markers for ExperimentFragmentAnalysis"]]},
+			{Null,Null,Null,ObjectP[Model[Sample,"Milli-Q water"]],ObjectP[Model[Sample,"Milli-Q water"]]},
 			Messages :> {
-				Error::PreparedPlateModelError,
-				Warning::AnalysisMethodSampleOptionsMismatch,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "AllOrNothingMarkerError", "For all samples, Ladder or Blank that are not Null, SampleMarker, LadderMarker and BlankMarker must be either all Null OR all Objects or Models. Otherwise, throw an error."},
-			Lookup[
-				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType DNA" <> $SessionUUID],94],
-					AnalysisMethod->Object[Method,FragmentAnalysis,"dsDNA (35 -5000 bp) - Standard Sensitivity (ng/uL) - Short"],
-					BlankMarker->Null,
-					Output->Options],
-				BlankMarker
-			],
-			Null,
-			Messages :> {
-				Error::AllOrNothingMarkerError,
-				Error::InvalidOption
-			}
-		],
-		Example[{Messages, "FragmentAnalysisTooManySamples", "If number of SamplesIn is greater than 96, throw an error."},
-			Lookup[
-				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],97],
-					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-					Output->Options],
-				NumberOfCapillaries
-			],
-			96,
-			Messages :> {
-				Error::InvalidInput,
-				Error::FragmentAnalysisTooManySamples,
-				Warning::AnalysisMethodLadderMismatch,
-				Warning::AnalysisMethodLadderOptionsMismatch
+				Warning::AnalysisMethodSampleOptionsMismatch
 			}
 		],
 		Example[{Messages, "TooManySolutionsForInjection", "If PreparedPlate is False and the total number of SamplesIn + Ladder + Blank is greater than 96, throw an error."},
 			Lookup[
-				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],96],
+				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],85],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-					Ladder->Model[Sample,"200-6000 nt RNA Ladder for ExperimentFragmentAnalysis"],
+					Ladder->Model[Sample,StockSolution,"200-6000 nt RNA Ladder for ExperimentFragmentAnalysis (Single Use)"],
 					Output->Options],
 				Ladder
 			],
-			ObjectP[Model[Sample,"200-6000 nt RNA Ladder for ExperimentFragmentAnalysis"]],
+			ObjectP[Model[Sample,StockSolution,"200-6000 nt RNA Ladder for ExperimentFragmentAnalysis (Single Use)"]],
 			Messages :> {
 				Error::TooManySolutionsForInjection,
 				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "NotEnoughSolutionsForInjection", "If PreparedPlate is False and the total number of SamplesIn + Ladder + Blank is less than 96, throw an error."},
-			Lookup[ExperimentFragmentAnalysis[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
+			Lookup[ExperimentFragmentAnalysis[
+				Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],
 				AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
-				Blank->Null,
+				Blank->{Model[Sample, "Blank Solution for Quantitative (Small Fragment, Small Fragment HS, Large Fragment HS, NGS HS, Genomic, RNA and Small RNA) ExperimentFragmentAnalysis"]},
 				Output->Options
 			],
 				Blank
 			],
-			Null,
+			{ObjectP[]},
 			Messages :> {
 				Error::NotEnoughSolutionsForInjection,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "BlankPreparedPlateMismatchError", "If PreparedPlate is True and Blank is an object OR if PreparedPlate is False and Blank is a WellPosition, throw an error."},
+		Example[{Messages, "BlankPreparedPlateMismatchError", "If PreparedPlate is False and Blank is a WellPosition, throw an error."},
 			Lookup[
-				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],95],
+				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],84],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
 					Blank->"H12",
 					Output->Options],
@@ -1773,12 +1731,13 @@ DefineTests[ExperimentFragmentAnalysis,
 			],
 			{False,"H12"},
 			Messages :> {
-				Error::BlankPreparedPlateMisMatchError,
-				Error::TooManySolutionsForInjection,
+				Warning::AnalysisMethodBlankMismatch,
+				Error::BlankPreparedPlateMismatchError,
+				Error::NotEnoughSolutionsForInjection,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "BlankPreparedPlateMismatchError", "If PreparedPlate is True and Blank is an object OR if PreparedPlate is False and Blank is a WellPosition, throw an error."},
+		Example[{Messages, "BlankPreparedPlateMismatchError", "If PreparedPlate is True and Blank is an object, throw an error."},
 			Lookup[
 				ExperimentFragmentAnalysis[Table[Object[Sample,"Test Sample for ExperimentFragmentAnalysis SampleAnalyteType RNA" <> $SessionUUID],95],
 					AnalysisMethod->Object[Method,FragmentAnalysis,"RNA (200 - 6000 nt) - Standard Sensitivity (ng/uL) - Qualitative, Short"],
@@ -1790,8 +1749,7 @@ DefineTests[ExperimentFragmentAnalysis,
 			{True,ObjectP[Model[Sample,"1x Tris-EDTA (TE) Buffer for ExperimentFragmentAnalysis"]]},
 			Messages :> {
 				Error::PreparedPlateModelError,
-				Error::BlankPreparedPlateMisMatchError,
-				Error::NotEnoughSolutionsForInjection,
+				Error::BlankPreparedPlateMismatchError,
 				Error::InvalidOption
 			}
 		],
@@ -1890,6 +1848,7 @@ DefineTests[ExperimentFragmentAnalysis,
 			Messages :> {
 				Error::PreparedRunningBufferPlateModelError,
 				Warning::AnalysisMethodLadderOptionsMismatch,
+				Warning::AnalysisMethodBlankOptionsMismatch,
 				Warning::AnalysisMethodSampleOptionsMismatch,
 				Error::InvalidOption
 			}
@@ -1908,6 +1867,7 @@ DefineTests[ExperimentFragmentAnalysis,
 			Messages :> {
 				Error::PreparedMarkerPlateModelError,
 				Warning::AnalysisMethodLadderOptionsMismatch,
+				Warning::AnalysisMethodBlankOptionsMismatch,
 				Warning::AnalysisMethodSampleOptionsMismatch,
 				Error::InvalidOption
 				
@@ -2616,11 +2576,6 @@ DefineTests[ExperimentFragmentAnalysis,
 
 				Upload[<|Object->sample1,Status->Discarded|>];
 
-				Upload[<|
-					Object->#,
-					DeveloperObject->False
-				|>]&/@{testInstrumentObject,testCapillaryArrayObject}
-
 			]
 		]
 	),
@@ -3227,11 +3182,6 @@ DefineTests[
 
 				Upload[<|Object->sample1,Status->Discarded|>];
 
-				Upload[<|
-					Object->#,
-					DeveloperObject->False
-				|>]&/@{testInstrumentObject,testCapillaryArrayObject}
-
 			]
 		]
 	),
@@ -3824,11 +3774,6 @@ DefineTests[ValidExperimentFragmentAnalysisQ,
 
 				Upload[<|Object->sample1,Status->Discarded|>];
 
-				Upload[<|
-					Object->#,
-					DeveloperObject->False
-				|>]&/@{testInstrumentObject,testCapillaryArrayObject}
-
 			]
 		]
 	),
@@ -4411,11 +4356,6 @@ DefineTests[
 				], ObjectP[]]];
 
 				Upload[<|Object->sample1,Status->Discarded|>];
-
-				Upload[<|
-					Object->#,
-					DeveloperObject->False
-				|>]&/@{testInstrumentObject,testCapillaryArrayObject}
 
 			]
 		]

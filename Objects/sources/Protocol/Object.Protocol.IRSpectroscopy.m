@@ -50,7 +50,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
     BlankContainerPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "For each member of SamplesIn, instructions specifying the transfers of blanking solution onto the measurement apparatus in order to subtract from the sample spectrum.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -59,7 +59,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
       Description -> "For each member of SamplesIn, the specific subprotocol performed to transfer the blanking solution onto the measurement apparatus in order to subtract from the sample spectrum.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -85,7 +85,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
     SampleContainerPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "For each member of SamplesIn, instructions each specifying the transfer of samples onto the measurement apparatus.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -94,7 +94,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
       Description -> "For each member of SamplesIn, the specific subprotocol performed to transfer samples onto the measurement apparatus.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -119,7 +119,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
     SuspensionSolutionPrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "For each member of SamplesIn, instructions specifying the transfer of solution onto the sample to mix into a slurry prior to measurement.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -128,7 +128,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
       Description -> "For each member of SamplesIn, the specific subprotocol performed to transfer a solution onto the sample to mix into a slurry prior to measurement.",
       Category -> "Sample Preparation",
       IndexMatching -> SamplesIn
@@ -249,7 +249,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
     RecoupSamplePrimitives -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> (Null|SampleManipulationP),
+      Pattern :> (SampleManipulationP|SamplePreparationP),
       Description -> "For each member of SamplesIn,instructions specifying the transfer of the sample back into the origin container after measurement.",
       Category -> "Sample Post-Processing",
       IndexMatching -> SamplesIn
@@ -258,7 +258,7 @@ DefineObjectType[Object[Protocol,IRSpectroscopy],{
       Format -> Multiple,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Object[Protocol],
+      Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
       Description -> "For each member of SamplesIn, the specific subprotocol performed to transfer the sample back into the origin container after measurement.",
       Category -> "Sample Post-Processing",
       IndexMatching -> SamplesIn

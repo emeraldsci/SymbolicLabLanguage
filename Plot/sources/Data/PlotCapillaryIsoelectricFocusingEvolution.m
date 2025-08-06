@@ -95,6 +95,8 @@ DefineOptions[PlotCapillaryIsoelectricFocusingEvolution,
 
 Warning::InvalidFramesToPlot="The data packet in index (`1`) does not contain data collected for frame `2` (data is present for `3` frames). Please make sure to specify a valid value. Defaulting FramesToPlot option to All.";
 Warning::InvalidDuration="The data packet (`1`) was collected over `3`, while `2` was specified as Duration.";
+Error::NoCapillaryIsoelectricFocusingDataToPlot = "The protocol object does not contain any associated capillary isoelectric focusing data.";
+Error::CapillaryIsoelectricFocusingProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotCapillaryIsoelectricFocusingEvolution or PlotObject on an individual data object to identify the missing values.";
 
 (* Raw Definition *)
 PlotCapillaryIsoelectricFocusingEvolution[primaryData:rawPlotInputP,inputOptions:OptionsPattern[]]:=
@@ -105,6 +107,77 @@ PlotCapillaryIsoelectricFocusingEvolution[primaryData:rawPlotInputP,inputOptions
 		|>;
 
 		PlotCapillaryIsoelectricFocusingEvolution[nullPacket, inputOptions]
+];
+
+(* Protocol Overload *)
+PlotCapillaryIsoelectricFocusingEvolution[
+	obj: ObjectP[Object[Protocol, CapillaryIsoelectricFocusing]],
+	ops: OptionsPattern[PlotCapillaryIsoelectricFocusingEvolution]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotCapillaryIsoelectricFocusingEvolution, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, CapillaryIsoelectricFocusing]]..}],
+		Message[Error::NoCapillaryIsoelectricFocusingDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotCapillaryIsoelectricFocusingEvolution[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotCapillaryIsoelectricFocusingEvolution[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::CapillaryIsoelectricFocusingProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
 ];
 
 (* Packet Definition *)
@@ -268,7 +341,7 @@ PlotCapillaryIsoelectricFocusingEvolution[infs:ListableP[ObjectP[Object[Data,Cap
 		{dataObjects,dataDuration,durationFromDataObjects}
 	];
 
-	(* Warn if the user specified duration is not copacetic with the duration in the object *)
+	(* Warn if the user specified duration is not compatible with the duration in the object *)
 	If[Length[Flatten@invalidSpecifiedDuration]>0,
 		Message[Warning::InvalidDuration,invalidSpecifiedDuration[[All,1]],invalidSpecifiedDuration[[All,2]],invalidSpecifiedDuration[[All,3]]]
 	];
@@ -278,11 +351,11 @@ PlotCapillaryIsoelectricFocusingEvolution[infs:ListableP[ObjectP[Object[Data,Cap
 		Which[
 			(* a value was specified for Duration and data is raw*)
 			MatchQ[specifiedDuration,Except[Automatic]]&&rawDataQ,specifiedDuration,
-			(* a value was specified for Duration and is copacetic with what we have *)
+			(* a value was specified for Duration and is compatible with what we have *)
 			MatchQ[specifiedDuration,Except[Automatic]]&&!rawDataQ&&specifiedDuration==presentDuration,specifiedDuration,
-			(* a value was specified for Duration and it is not copacetic with what we have*)
+			(* a value was specified for Duration and it is not compatible with what we have*)
 			MatchQ[specifiedDuration,Except[Automatic]]&&!rawDataQ&&specifiedDuration!=presentDuration,specifiedDuration,
-			(* Automatic was specified for Duration and there is a value from the data object,resolve to duration in teh data object *)
+			(* Automatic was specified for Duration and there is a value from the data object,resolve to duration in the data object *)
 			MatchQ[specifiedDuration,Automatic]&&MatchQ[presentDuration,Except[Null]],presentDuration,
 			True,Null
 		]],

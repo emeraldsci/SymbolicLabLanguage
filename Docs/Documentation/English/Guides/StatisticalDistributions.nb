@@ -1,3 +1,467 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:346b500dfa05888091d9757deb4e6a99a5f3ee6da6203ea4423717cc6493688c
-size 17999
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     17799,        457]
+NotebookOptionsPosition[     13105,        368]
+NotebookOutlinePosition[     14736,        408]
+CellTagsIndexPosition[     14693,        405]
+WindowTitle->StatisticalDistributions
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "67c2cb91-8ae8-47b2-9ede-0675d270da23"]
+        }],ExpressionUUID->"76b216d4-8b84-4b74-9641-7d1163e45f70"],
+        StripOnInput->False], {"\<\"ConfidenceInterval\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/ConfidenceInterval"], "\<\"DistributionP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/DistributionP"], "\<\"DistributionQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/DistributionQ"], \
+"\<\"EmpiricalDistributionJoin\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EmpiricalDistributionJoin"], \
+"\<\"EmpiricalDistributionP\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EmpiricalDistributionP"], \
+"\<\"EmpiricalDistributionPoints\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EmpiricalDistributionPoints"], \
+"\<\"EmpiricalDistributionQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EmpiricalDistributionQ"], \
+"\<\"PropagateUncertainty\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/PropagateUncertainty"], \
+"\<\"QuantityDistributionP\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityDistributionP"], \
+"\<\"QuantityDistributionQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityDistributionQ"], \
+"\<\"SampleFromDistribution\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/SampleFromDistribution"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "ca3c93eb-6232-4e7e-b209-91026feaeecb"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "2cfb30c9-1698-42c8-b7ae-b3d5be9527e1"]
+        }],ExpressionUUID->"4639bfa8-566a-4d1d-a2cf-e986935187b0"],
+        StripOnInput->False], {"\<\"Numerics\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/Numerics"], "\<\"UnitManipulation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/UnitManipulation"], "\<\"UnitPatterns\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/UnitPatterns"], "\<\"UnitProperties\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/UnitProperties"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "0d63a533-2299-431b-b25d-f02341ad9bc5"]
+    }], "AnchorBar",ExpressionUUID->"2f804842-da1a-447e-8113-e69943acd7d9"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"34bbc9dd-bb91-4858-8979-bc383c24936a"],
+
+Cell["Statistical Distributions", "GuideTitle",
+ CellID->191258794,ExpressionUUID->"3e71600e-0919-45b8-9af9-31df756df657"],
+
+Cell["\<\
+Collection of functions for analyzing statistical distributions.\
+\>", "GuideAbstract",
+ CellID->1851014846,ExpressionUUID->"f9298535-eaa0-4762-bb1f-54b6877eb530"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1558406280,ExpressionUUID->"54c295f7-b4c7-4f45-ace5-265620cabd3e"],
+
+Cell["Distribution Functions", "GuideFunctionsSubsection",
+ CellID->1423789148,ExpressionUUID->"ce0efaad-176c-4144-9424-751b048735b1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PropagateUncertainty"]], 
+    "paclet:Analysis/ref/PropagateUncertainty"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2064d92b-3930-4b32-be30-6777456df51b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the propagate uncertainty in the provided expression using the \
+specified parameters and distributions."
+}], "GuideText",
+ CellID->213931915,ExpressionUUID->"3f9490c4-6b90-4ed4-bda1-69e8680ef183"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SampleFromDistribution"]], 
+    "paclet:Analysis/ref/SampleFromDistribution"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd4c9039-2791-4b69-a503-4b0215751d4d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates the specified number of sample values from the provided \
+distribution."
+}], "GuideText",
+ CellID->666070327,ExpressionUUID->"e5b223e9-d1f0-4c2e-819a-b9bb8bacbd72"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmpiricalDistributionJoin"]], 
+    "paclet:EmeraldUnits/ref/EmpiricalDistributionJoin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5cfe3ced-2b21-423a-b110-37d50c6c7856"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins the provided empirical distributions into a single empirical \
+distribution."
+}], "GuideText",
+ CellID->1959217725,ExpressionUUID->"936f4231-0ec9-4c68-a0e0-a27d555190a9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmpiricalDistributionPoints"]], 
+    "paclet:EmeraldUnits/ref/EmpiricalDistributionPoints"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0b53992b-811b-4f13-97f0-4a881d379aaf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Extracts the data points from an empirical distribution."
+}], "GuideText",
+ CellID->1205544624,ExpressionUUID->"9e3403fc-b4f7-449b-9914-af06a044605e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ConfidenceInterval"]], 
+    "paclet:Analysis/ref/ConfidenceInterval"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "de6a4452-27fc-4692-a9d0-6d702301aa5b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the 95% confidence interval for the provided distribution."
+}], "GuideText",
+ CellID->80286123,ExpressionUUID->"126b54a0-e3da-4447-9b18-7fc88f90122b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->749138945,ExpressionUUID->"7d9941e9-19a6-498d-945c-ae22f6a06e64"],
+
+Cell["Distribution Patterns", "GuideFunctionsSubsection",
+ CellID->81626254,ExpressionUUID->"d9b3b588-f372-4aca-9dc6-d6e402fda51d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DistributionQ"]], "paclet:EmeraldUnits/ref/DistributionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d48be431-872e-4c84-93a1-29787128b2bf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a valid distribution."
+}], "GuideText",
+ CellID->1797884192,ExpressionUUID->"2a441eb0-968b-444c-ab09-342770e5dfae"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DistributionP"]], "paclet:EmeraldUnits/ref/DistributionP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6f458645-7cce-4dfd-96f8-c99f6bd75e49"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches valid distributions."
+}], "GuideText",
+ CellID->1944701654,ExpressionUUID->"42696e7e-facd-4b1c-8924-b4ee0b5a8763"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmpiricalDistributionQ"]], 
+    "paclet:EmeraldUnits/ref/EmpiricalDistributionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "50040ac7-55cf-4754-a546-1ecb60ba1d1d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a valid empirical distribution."
+}], "GuideText",
+ CellID->2047075085,ExpressionUUID->"0fd3c634-2537-4cba-9120-a7b9daede81b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmpiricalDistributionP"]], 
+    "paclet:EmeraldUnits/ref/EmpiricalDistributionP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "747a1b0c-878f-4ced-bf77-80e6d2dd0137"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches valid empirical distributions."
+}], "GuideText",
+ CellID->355445008,ExpressionUUID->"80ccfd96-871c-45ee-bdd4-f57e4dd8e7fa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityDistributionQ"]], 
+    "paclet:EmeraldUnits/ref/QuantityDistributionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0b0f8c7c-2d9e-4247-a329-643d908e4b1c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a valid quantity distribution."
+}], "GuideText",
+ CellID->1812227149,ExpressionUUID->"08893266-cfb0-410e-a160-5c6c3bda2f0c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityDistributionP"]], 
+    "paclet:EmeraldUnits/ref/QuantityDistributionP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "95534e67-82ba-4943-86c8-94b7d8988c89"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches valid quantity distributions."
+}], "GuideText",
+ CellID->341127842,ExpressionUUID->"e3ea32c5-57af-46e3-85bc-1dbdc6c8057d"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1701786651,ExpressionUUID->"bf72defb-dd9f-48d4-a71e-ce11fb3095fa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"5613bb87-8cfe-4d59-b4ac-4034225401cb"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1741032611,ExpressionUUID->"979cee5b-c995-47ae-86a9-50d748700a2f"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->2070402702,ExpressionUUID->"2c2192b2-af88-4d53-bf95-6f704b098463"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Numerics"]], "paclet:Docs/guide/Numerics"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1580680173,ExpressionUUID->"4f4750e0-e212-4f55-a1fb-9632f0ceab14"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UnitManipulation"]], "paclet:Docs/guide/UnitManipulation"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->2118954221,ExpressionUUID->"45f392a3-1d4b-48f2-9c51-63d9425908e2"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UnitPatterns"]], "paclet:Docs/guide/UnitPatterns"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1542274146,ExpressionUUID->"ba702571-3622-4bbc-add0-583ec0467e76"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UnitProperties"]], "paclet:Docs/guide/UnitProperties"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->873952532,ExpressionUUID->"4e5c877a-2621-43b6-bf92-e635efe7c5fb"],
+
+Cell["", "FooterCell",
+ CellID->1879543491,ExpressionUUID->"220568e2-1ac0-4947-ab3c-74775541635a"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"StatisticalDistributions",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:09:35", "context" -> "Docs`", 
+    "keywords" -> {
+     "PropagateUncertainty", "SampleFromDistribution", 
+      "EmpiricalDistributionJoin", "EmpiricalDistributionPoints", 
+      "ConfidenceInterval", "DistributionQ", "DistributionP", 
+      "EmpiricalDistributionQ", "EmpiricalDistributionP", 
+      "QuantityDistributionQ", "QuantityDistributionP"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for analyzing statistical distributions.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "StatisticalDistributions", "title" -> "StatisticalDistributions", "type" -> 
+    "Guide", "uri" -> "Docs/guide/StatisticalDistributions", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"24113615-acec-4919-82b1-4164cfa46bf7"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[596, 21, 4517, 104, 58, "AnchorBarGrid",ExpressionUUID->"34bbc9dd-bb91-4858-8979-bc383c24936a",
+ CellID->1],
+Cell[5116, 127, 122, 1, 45, "GuideTitle",ExpressionUUID->"3e71600e-0919-45b8-9af9-31df756df657",
+ CellID->191258794],
+Cell[5241, 130, 173, 3, 30, "GuideAbstract",ExpressionUUID->"f9298535-eaa0-4762-bb1f-54b6877eb530",
+ CellID->1851014846],
+Cell[5417, 135, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"54c295f7-b4c7-4f45-ace5-265620cabd3e",
+ CellID->1558406280],
+Cell[5534, 138, 134, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"ce0efaad-176c-4144-9424-751b048735b1",
+ CellID->1423789148],
+Cell[5671, 141, 536, 14, 51, "GuideText",ExpressionUUID->"3f9490c4-6b90-4ed4-bda1-69e8680ef183",
+ CellID->213931915],
+Cell[6210, 157, 508, 14, 57, "GuideText",ExpressionUUID->"e5b223e9-d1f0-4c2e-819a-b9bb8bacbd72",
+ CellID->666070327],
+Cell[6721, 173, 520, 14, 37, "GuideText",ExpressionUUID->"936f4231-0ec9-4c68-a0e0-a27d555190a9",
+ CellID->1959217725],
+Cell[7244, 189, 498, 13, 37, "GuideText",ExpressionUUID->"9e3403fc-b4f7-449b-9914-af06a044605e",
+ CellID->1205544624],
+Cell[7745, 204, 485, 13, 37, "GuideText",ExpressionUUID->"126b54a0-e3da-4447-9b18-7fc88f90122b",
+ CellID->80286123],
+Cell[8233, 219, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"7d9941e9-19a6-498d-945c-ae22f6a06e64",
+ CellID->749138945],
+Cell[8349, 222, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"d9b3b588-f372-4aca-9dc6-d6e402fda51d",
+ CellID->81626254],
+Cell[8483, 225, 462, 12, 31, "GuideText",ExpressionUUID->"2a441eb0-968b-444c-ab09-342770e5dfae",
+ CellID->1797884192],
+Cell[8948, 239, 455, 12, 37, "GuideText",ExpressionUUID->"42696e7e-facd-4b1c-8924-b4ee0b5a8763",
+ CellID->1944701654],
+Cell[9406, 253, 495, 13, 37, "GuideText",ExpressionUUID->"0fd3c634-2537-4cba-9120-a7b9daede81b",
+ CellID->2047075085],
+Cell[9904, 268, 487, 13, 37, "GuideText",ExpressionUUID->"80ccfd96-871c-45ee-bdd4-f57e4dd8e7fa",
+ CellID->355445008],
+Cell[10394, 283, 492, 13, 37, "GuideText",ExpressionUUID->"08893266-cfb0-410e-a160-5c6c3bda2f0c",
+ CellID->1812227149],
+Cell[10889, 298, 484, 13, 37, "GuideText",ExpressionUUID->"e3ea32c5-57af-46e3-85bc-1dbdc6c8057d",
+ CellID->341127842],
+Cell[11376, 313, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"bf72defb-dd9f-48d4-a71e-ce11fb3095fa",
+ CellID->1701786651],
+Cell[11486, 316, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"979cee5b-c995-47ae-86a9-50d748700a2f",
+ CellID->1741032611],
+Cell[11882, 330, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"2c2192b2-af88-4d53-bf95-6f704b098463",
+ CellID->2070402702],
+Cell[11992, 333, 241, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"4f4750e0-e212-4f55-a1fb-9632f0ceab14",
+ CellID->1580680173],
+Cell[12236, 341, 257, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"45f392a3-1d4b-48f2-9c51-63d9425908e2",
+ CellID->2118954221],
+Cell[12496, 349, 249, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"ba702571-3622-4bbc-add0-583ec0467e76",
+ CellID->1542274146],
+Cell[12748, 357, 252, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"4e5c877a-2621-43b6-bf92-e635efe7c5fb",
+ CellID->873952532],
+Cell[13003, 365, 98, 1, 40, "FooterCell",ExpressionUUID->"220568e2-1ac0-4947-ab3c-74775541635a",
+ CellID->1879543491]
+}
+]
+*)
+
+(* End of internal cache information *)
+

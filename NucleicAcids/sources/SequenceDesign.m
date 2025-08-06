@@ -360,7 +360,7 @@ FoldingSequences[sequence:SequenceP,k:GreaterP[0,1],Span[min:GreaterP[0,1],max:G
 	(* Determine the polymer type *)
 	type=PolymerType[sequence,PassOptions[FoldingSequences,PolymerType,ops]];
 
-	(* determine the lenght of the sequence *)
+	(* determine the length of the sequence *)
 	length=SequenceLength[sequence,Polymer->type,PassOptions[FoldingSequences,SequenceLength,ops]];
 
 	(* Break the sequence into all relivent subsequences at level k *)
@@ -420,7 +420,7 @@ FoldingSequences[sequence:SequenceP,range:Span[GreaterP[0,1],GreaterP[0,1]],ops:
 		Flatten[recursiveFolds]
 	];
 
-	(* now return teh folding sequence typed as requested *)
+	(* now return the folding sequence typed as requested *)
 	ExplicitlyType[sequence,folds,PassOptions[FoldingSequences,ExplicitlyType,Polymer->type,ops]]
 
 ]/;OptionValue[FastTrack]
@@ -717,7 +717,7 @@ FoldsQ[subseqs:{SequenceP..},testSeq:SequenceP,ops:OptionsPattern[]]:=Module[{ty
 	(* Stripe the type from the sub sequences *)
 	untyped=UnTypeSequence[subseqs];
 
-	(* Check to see if the ReverseComplementSequence of teh testSeq shows up anywhere in the subsequence list *)
+	(* Check to see if the ReverseComplementSequence of the testSeq shows up anywhere in the subsequence list *)
 	MemberQ[untyped,revTest]
 
 ]/;OptionValue[FastTrack]
@@ -922,7 +922,7 @@ RepeatingSequences[sequence:SequenceP,k:GreaterP[0,1],Span[min:GreaterP[0,1],max
 	(* Determine the polymer type *)
 	type=PolymerType[sequence,PassOptions[RepeatingSequences,PolymerType,ops]];
 
-	(* determine the lenght of the sequence *)
+	(* determine the length of the sequence *)
 	length=SequenceLength[sequence,Polymer->type,PassOptions[RepeatingSequences,SequenceLength,ops]];
 
 	(* Break the sequence into all relivent subsequences at level k *)
@@ -1210,7 +1210,7 @@ RepeatsQ[subsequences:{SequenceP..},testSequence:SequenceP,ops:OptionsPattern[]]
 	(* Strip the type of the subsequences *)
 	untyped=UnTypeSequence[subsequences];
 
-	(* strip the type of teh test sequences *)
+	(* strip the type of the test sequences *)
 	untypedTest=UnTypeSequence[testSequence];
 
 	(* Return true if the test sequences shows up *)
@@ -1644,7 +1644,7 @@ subsequencesQ[subSequences:{SequenceP..},ops:OptionsPattern[subsequencesQ]]:=Mod
 	(* Extract the type of the subsequences *)
 	type=PolymerType[subSequences,Map->False,PassOptions[subsequencesQ,PolymerType,ops]];
 
-	(* Determine the lenght of all the subsequences *)
+	(* Determine the length of all the subsequences *)
 	lengths=SequenceLength[subSequences,Polymer->type,PassOptions[subsequencesQ,SequenceLength,ops]];
 
 	(* Return true if all lengths are the same number *)
@@ -1750,10 +1750,10 @@ NextSubsequences[sequence:SequenceP,subsequences:{SequenceP..},ops:OptionsPatter
 		(* Extract the type of the polymer *)
 		type=PolymerType[sequence,PassOptions[NextSubsequences,PolymerType,ops]];
 
-		(* Determine the lenght of the starting sequence *)
+		(* Determine the length of the starting sequence *)
 		seedLength=SequenceLength[sequence,Polymer->type,PassOptions[NextSubsequences,SequenceLength,ops]];
 
-		(* Determine teh length of the subsequences *)
+		(* Determine the length of the subsequences *)
 		subLength=SequenceLength[First[subsequences],Polymer->type,PassOptions[NextSubsequences,SequenceLength,ops]];
 
 		(* OK to continue if either the sequence is an edge (same length) or a node (one less than length) *)
@@ -1791,7 +1791,7 @@ nextSubsequencesQ[sequenceA:SequenceP,sequenceB:SequenceP,ops:OptionsPattern[nex
 	(* Determine the type of polymer in B *)
 	typeB=PolymerType[sequenceB,PassOptions[nextSubsequencesQ,PolymerType,ops]];
 
-	(* Short circuit evaluation: if the types dont match that nextSubsequencesQ should be false *)
+	(* Short circuit evaluation: if the types don't match that nextSubsequencesQ should be false *)
 	If[MatchQ[typeA,typeB],
 		Module[{nodeA,nodeB},
 
@@ -1805,7 +1805,7 @@ nextSubsequencesQ[sequenceA:SequenceP,sequenceB:SequenceP,ops:OptionsPattern[nex
 			If[OptionValue[Degeneracy],
 				Module[{useA,monoA,monoB,degenerateA,degenerateB,matching},
 
-					(* Since we can receive either a node or a sequence as an origin point, take whichever is teh same length: the sequence or the node to compare to the landing node *)
+					(* Since we can receive either a node or a sequence as an origin point, take whichever is the same length: the sequence or the node to compare to the landing node *)
 					useA=Which[
 						SequenceLength[sequenceA]==SequenceLength[nodeB],UnTypeSequence[sequenceA],
 						SequenceLength[nodeA]==SequenceLength[nodeB],nodeA,
@@ -1919,10 +1919,10 @@ previousSubsequences[sequence:SequenceP,subsequences:{SequenceP..},ops:OptionsPa
 		(* Extract the type of the polymer *)
 		type=PolymerType[sequence,PassOptions[previousSubsequences,PolymerType,ops]];
 
-		(* Determine the lenght of the starting sequence *)
+		(* Determine the length of the starting sequence *)
 		seedLength=SequenceLength[sequence,Polymer->type,PassOptions[previousSubsequences,SequenceLength,ops]];
 
-		(* Determine teh length of the subsequences *)
+		(* Determine the length of the subsequences *)
 		subLength=SequenceLength[First[subsequences],Polymer->type,PassOptions[previousSubsequences,SequenceLength,ops]];
 
 		(* OK to continue if either the sequence is an edge (same length) or a node (one less than length) *)
@@ -1957,7 +1957,7 @@ previousSubsequencesQ[sequenceA:SequenceP,sequenceB:SequenceP,ops:OptionsPattern
 	(* Determine the type of polymer in B *)
 	typeB=PolymerType[sequenceB,PassOptions[previousSubsequencesQ,PolymerType,ops]];
 
-	(* Short circuit evaluation: if the types dont match that nextSubsequencesQ should be false *)
+	(* Short circuit evaluation: if the types don't match that nextSubsequencesQ should be false *)
 	If[MatchQ[typeA,typeB],
 		Module[{nodeA,nodeB},
 
@@ -1971,7 +1971,7 @@ previousSubsequencesQ[sequenceA:SequenceP,sequenceB:SequenceP,ops:OptionsPattern
 			If[OptionValue[Degeneracy],
 				Module[{useA,monoA,monoB,degenerateA,degenerateB,matching},
 
-					(* Since we can receive either a node or a sequence as an origin point, take whichever is teh same length: the sequence or the node to compare to the landing node *)
+					(* Since we can receive either a node or a sequence as an origin point, take whichever is the same length: the sequence or the node to compare to the landing node *)
 					useA=Which[
 						SequenceLength[sequenceA]==SequenceLength[nodeB],UnTypeSequence[sequenceA],
 						SequenceLength[nodeA]==SequenceLength[nodeB],nodeA,
@@ -2315,7 +2315,7 @@ AllPalindromes[length:GreaterP[-1,1],ops:OptionsPattern[]]:=Module[
 	(* Generate all sequence's half the size of the palindromes reuested. *)
 	seqs=AllSequences[length/2,Polymer->type,ExplicitlyTyped->False,FastTrack->True,PassOptions[AllPalindromes,AllSequences,safeOps]];
 
-	(* Generate ReverseSequence comps of all teh sequences *)
+	(* Generate ReverseSequence comps of all the sequences *)
 	revComps=ReverseComplementSequence[seqs,Polymer->type,ExplicitlyTyped->False,FastTrack->True,PassOptions[AllPalindromes,ReverseComplementSequence,safeOps]];
 
 	(* Fuse the ReverseSequence comps and the sequences togeather *)

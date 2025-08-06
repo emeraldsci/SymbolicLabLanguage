@@ -173,11 +173,12 @@ DefineObjectType[Object[UnitOperation, TreatCells],{
 				Model[Instrument, FumeHood],
 				Model[Instrument, GloveBox],
 				Model[Container, Bench],
-
+				Model[Container, Enclosure],
 				Object[Instrument, BiosafetyCabinet],
 				Object[Instrument, FumeHood],
 				Object[Instrument, GloveBox],
-				Object[Container, Bench]
+				Object[Container, Bench],
+				Object[Container, Enclosure]
 			],
 			Description -> "The instrument that will be used to contain all of the materials during the transfer.",
 			Category -> "Method Information"

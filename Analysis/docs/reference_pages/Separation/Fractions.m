@@ -42,11 +42,7 @@ DefineUsageWithCompanions[AnalyzeFractions,
 						Description -> "Chromatography protocol.",
 						Widget -> Widget[
 							Type -> Object,
-							Pattern :> ObjectP[{Object[Protocol,HPLC],Object[Protocol,FPLC]}],
-							Dereference -> {
-								Object[Protocol,HPLC] -> Field[Data],
-								Object[Protocol,FPLC] -> Field[Data]
-							}
+							Pattern :> ObjectP[{Object[Protocol,HPLC],Object[Protocol,FPLC]}]
 						]
 					},
 					IndexName -> "Input Data"
@@ -93,10 +89,7 @@ DefineUsageWithCompanions[AnalyzeFractions,
 		"ParseHPLC"
 	},
 	Author -> {
-		"alice",
-		"brad",
-		"Jenny",
-		"robert"
+		"scicomp"
 	},
 	Preview->True,
 	PreviewOptions -> {"Domain","Include","Exclude"},

@@ -17,6 +17,14 @@ DefineObjectType[Object[Maintenance, InstallGasCylinder], {
 			Description -> "Indicates the area of the lab in which this maintenance occurs.",
 			Category -> "General"
 		},
+		Building -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Building],
+			Description -> "The building that the gas storage room is located in.",
+			Category -> "General"
+		},
 		PressureSensor -> {
 			Format -> Single,
 			Class -> Link,
@@ -136,6 +144,30 @@ DefineObjectType[Object[Maintenance, InstallGasCylinder], {
 			Relation -> Object[Container, GasCylinder],
 			Description -> "Gas cylinders/tanks that did not have their pressure built high enough for use in the installation.",
 			Category -> "General"
+		},
+		CryogenicFreezer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, CryogenicFreezer],
+			Description -> "Cryogenic Freezer connected to the cylinder being replaced.",
+			Category -> "Sensor Information"
+		},
+		LiquidLevelSensor -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sensor, LiquidLevel],
+			Description -> "The built-in sensor that monitors the level of liquid nitrogen in a cryogenic freezer.",
+			Category -> "Sensor Information"
+		},
+		CurrentCryogenicFreezerNitrogenLevel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Maintenance],
+			Description -> "The amount of liquid nitrogen in a Cryogenic Freezer.",
+			Category -> "Sensor Information"
 		}
 	}
 }];

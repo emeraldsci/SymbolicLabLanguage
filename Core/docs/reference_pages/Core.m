@@ -96,7 +96,7 @@ DefineUsage[FastImport,
 			"ImportCloudFile",
 			"FastExport"
 		},
-		Author -> {"hanming.yang", "steven"}
+		Author -> {"xu.yi", "hanming.yang", "steven"}
 	}];
 
 
@@ -319,9 +319,7 @@ DefineUsage[Repeat,
 			"RepeatedQ",
 			"Repeated"
 		},
-		Author -> {
-			"frezza"
-		}
+		Author -> {"xu.yi", "frezza"}
 	}];
 
 
@@ -463,7 +461,7 @@ DefineUsage[PickList,
 			"Pick",
 			"Select"
 		},
-		Author -> {"hanming.yang", "steven"}
+		Author -> {"xu.yi", "hanming.yang", "steven"}
 	}];
 
 
@@ -486,7 +484,7 @@ DefineUsage[UnsortedComplement,
 		},
 		Behaviors->{},
 		SeeAlso->{"PickList","PartitionRemainder","Complement"},
-		Author->{"hanming.yang", "thomas", "gokay.yamankurt"}
+		Author->{"xu.yi", "hanming.yang", "thomas", "gokay.yamankurt"}
 	}
 ];
 
@@ -498,19 +496,20 @@ DefineUsage[UnsortedComplement,
 DefineUsage[UnsortedIntersection,
 	{
 		BasicDefinitions->{
-			{"UnsortedIntersection[expression1,expression2]","outputExpression","returns the elements that are in expression1 and in expression2, in the order they are present in expression1."}
+			{"UnsortedIntersection[expression1, expression2, ..., expressioni]","outputExpression","returns the elements that are common to 'expression1', 'expression2', ... and 'expressioni', in the order they are present in 'expression1'."}
 		},
 		MoreInformation->{},
 		Input:>{
-			{"expression1",_,"The list from which to return elements that are also in expression2."},
-			{"expression2",_,"The list of elements to check for in expression1."}
+			{"expression1",_,"The 1st expression to check and dictates the order of elements that are common to expression2, ... and expressioni."},
+			{"expression2",_,"The 2nd expression of elements to check for common elements."},
+			{"expressioni",_,"The ith expression of elements to check for common elements."}
 		},
 		Output:>{
-			{"outputList",_,"The list of elements that are in expression1 and in expression2."}
+			{"outputExpression",_,"The list of elements that are in expression1 and in expression2."}
 		},
 		Behaviors->{},
 		SeeAlso->{"Intersection", "UnsortedComplement","Complement"},
-		Author->{"hanming.yang", "steven"}
+		Author->{"xu.yi", "hanming.yang", "steven"}
 	}
 ];
 
@@ -842,7 +841,7 @@ DefineUsage[SafeBinaryReadFile,
 		},
 		Behaviors -> {},
 		SeeAlso -> {"FastImport"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 

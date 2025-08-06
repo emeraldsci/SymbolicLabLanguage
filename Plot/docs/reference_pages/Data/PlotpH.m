@@ -13,7 +13,7 @@ DefineUsage[PlotpH,
     BasicDefinitions -> {
       {
         Definition -> {"PlotpH[pHData]", "plot"},
-        Description -> "generates a graphical plot of the data stored in the pH data object.",
+        Description -> "generates a graphical 'plot' of the data stored in the pH data object.",
         Inputs :> {
           IndexMatching[
             {
@@ -29,6 +29,26 @@ DefineUsage[PlotpH,
             OutputName -> "plot",
             Description -> "A graphical representation of the spectra.",
             Pattern :> _Graphics
+          }
+        }
+      },
+      {
+        Definition -> {"PlotpH[protocol]", "plot"},
+        Description -> "generates a graphical 'plot' of the pH data found in the Data field of 'protocol'.",
+        Inputs :> {
+          {
+            InputName -> "protocol",
+            Description -> "The protocol object containing pH data objects.",
+            Widget -> Alternatives[
+              Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, MeasurepH]]]
+            ]
+          }
+        },
+        Outputs :> {
+          {
+            OutputName -> "plot",
+            Description -> "The figure generated from data found in the MeasurepH protocol.",
+            Pattern :> ValidGraphicsP[]
           }
         }
       }

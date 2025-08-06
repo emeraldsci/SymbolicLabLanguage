@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Subsection::Closed:: *)
@@ -181,16 +181,6 @@ DefineTests[containerToSampleOptions,
 				{MixType -> {Invert, Pipette, Pipette}}
 			}
 		],
-		Example[{Additional,"Expands options index matched to container that specified in PrepratoryPrimitives:"},
-			ExperimentIncubate[{"A1", "My Container"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "My Container",Container ->Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],Amount -> 1 Milliliter, Destination -> {"My Container", "A1"}]
-				},
-				Time -> 2 Hour, Temperature -> 80 Celsius
-			],
-			ObjectP[Object[Protocol, Incubate]]
-		],
 		Example[{Additional,"Can specify only one single {Position,Container} as the input. "},
 			containerToSampleOptions[
 				ExperimentIncubate,
@@ -260,8 +250,7 @@ DefineTests[containerToSampleOptions,
 			],
 			{
 				{Object[Sample, "resolveExperimentOptions 2mL tube sample 1"],Object[Sample, "id:L8kPEjnwq7JW"], Object[Sample,"id:wqW9BP7RrpPV"], Object[Sample, "id:n0k9mG8xErAw"]},
-				{GradientA->{{0 Minute,10 Percent},{5 Minute, 10 Percent},{50 Minute,100 Percent},{50.1 Minute,0 Percent},{55 Minute, 0 Percent}}},
-				{}
+				{GradientA->{{0 Minute,10 Percent},{5 Minute, 10 Percent},{50 Minute,100 Percent},{50.1 Minute,0 Percent},{55 Minute, 0 Percent}}}
 			}
 		],
 
@@ -277,8 +266,7 @@ DefineTests[containerToSampleOptions,
 			containerToSampleOptions[ExperimentMeasureWeight,{Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"],Object[Sample, "resolveExperimentOptions 2mL tube sample 1"],Object[Container, Vessel, "resolveExperimentOptions empty container"]}, {Aliquot->{True,True,False}},EmptyContainers->True],
 			{
 				{Object[Sample, "id:L8kPEjnwq7JW"], Object[Sample,"id:wqW9BP7RrpPV"], Object[Sample, "id:n0k9mG8xErAw"],Object[Sample, "resolveExperimentOptions 2mL tube sample 1"],Object[Container, Vessel, "resolveExperimentOptions empty container"]},
-				{Aliquot->{True,True,True,True,False}},
-				{}
+				{Aliquot->{True,True,True,True,False}}
 			}
 		],
 
@@ -317,16 +305,6 @@ DefineTests[containerToSampleOptions,
 			},
 			Messages:>{Error::ContainerEmptyWells}
 		],
-		Example[{Messages,"EmptyWells","Catch empty wells for PreparatoryPrimitives: "},
-			ExperimentIncubate[{"A1", "My Container"},
-				PreparatoryPrimitives -> {Define[Name -> "My Container",
-					Container ->Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],Amount -> 1 Milliliter, Destination -> {"My Container", "A2"}]},
-				Time -> 2 Hour, Temperature -> 80 Celsius
-			],
-			$Failed,
-			Messages:>{Error::ContainerEmptyWells}
-		],
 		Example[{Messages,"EmptyWells","If the input was specified as {Position, Container} but the position is empty on tht plate, the function will still return a fake sample and pass the information of this sample as the cache if the sample doest not has Simulation option: "},
 			containerToSampleOptions[ExperimentMassSpectrometry,
 				{
@@ -348,8 +326,7 @@ DefineTests[containerToSampleOptions,
 				{
 					InfusionFlowRate -> {10 Microliter / Minute,10 Microliter / Minute,10 Microliter / Minute},
 					SampleVolume -> {2 Microliter, 1.5 Microliter, 1 Microliter}
-				},
-				{PacketP[]..}
+				}
 			},
 			Messages:>{Error::ContainerEmptyWells}
 		],
@@ -410,21 +387,9 @@ DefineTests[containerToSampleOptions,
 				},
 				{
 					InfusionFlowRate -> {Quantity[10, ("Microliters")/("Minutes")], Quantity[10, ("Microliters")/("Minutes")], Quantity[10, ("Microliters")/("Minutes")]},
-					SampleVolume -> {Quantity[2, "Microliters"],Quantity[1.5, "Microliters"], Quantity[1, "Microliters"]}},
-				{PacketP[]..}
+					SampleVolume -> {Quantity[2, "Microliters"],Quantity[1.5, "Microliters"], Quantity[1, "Microliters"]}
+				}
 			},
-			Messages:>{Error::WellDoesNotExist}
-		],
-		Example[{Messages,"WellNotOnThePlate","Catch WellNotOnThePlate for PreparatoryPrimitives:"},
-			ExperimentIncubate[{"Z1", "My Container"},
-				PreparatoryPrimitives -> {Define[Name -> "My Container",
-					Container ->
-						Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 1 Milliliter, Destination -> {"My Container", "A1"}]},
-				Time -> 2 Hour, Temperature -> 80 Celsius
-			],
-			$Failed,
 			Messages:>{Error::WellDoesNotExist}
 		],
 		Example[{Messages,"WellNotOnThePlate","Experiment funcitons with container to sample options will catch WellNotOnThePlate error (Test No. 1):."},
@@ -494,8 +459,7 @@ DefineTests[containerToSampleOptions,
 						Quantity[10, ("Microliters")/("Minutes")],
 						Quantity[10, ("Microliters")/("Minutes")]
 					}
-				},
-				{PacketP[]..}
+				}
 			},
 			Messages:>{Error::ContainerEmptyWells,Error::WellDoesNotExist,Warning::DuplicateContainersSpecified}
 		],
@@ -619,8 +583,7 @@ DefineTests[containerToSampleOptions,
 			],
 			{
 				{Object[Sample, "resolveExperimentOptions 2mL tube sample 1"],Object[Sample, "id:L8kPEjnwq7JW"], Object[Sample,"id:wqW9BP7RrpPV"], Object[Sample, "id:n0k9mG8xErAw"]},
-				{BlankInjectionVolume->{10 Microliter,10 Microliter}},
-				{}
+				{BlankInjectionVolume->{10 Microliter,10 Microliter}}
 			}
 		],
 
@@ -645,8 +608,7 @@ DefineTests[containerToSampleOptions,
 			],
 			{
 				{Object[Sample, "id:L8kPEjnwq7JW"], Object[Sample,"id:wqW9BP7RrpPV"], Object[Sample, "id:n0k9mG8xErAw"],Model[Sample, "Milli-Q water"],Model[Sample, "Milli-Q water"]},
-				{BlockingBuffer->Model[Sample, "Milli-Q water"],PrimaryAntibodyDiluentVolume->{5 Microliter,5 Microliter,5 Microliter,10 Microliter,15 Microliter}},
-				{}
+				{BlockingBuffer->Model[Sample, "Milli-Q water"],PrimaryAntibodyDiluentVolume->{5 Microliter,5 Microliter,5 Microliter,10 Microliter,15 Microliter}}
 			}
 		]
 	}
@@ -1518,6 +1480,7 @@ DefineTests[resolveAliquotOptions,
 			],
 			{_Rule..},
 			Messages:>{
+				Warning::AliquotRequired,
 				Error::AliquotSampleLabelConflict,
 				Error::InvalidOption
 			},
@@ -1807,6 +1770,7 @@ DefineTests[resolveAliquotOptions,
 			],
 			{_Rule..},
 			Messages:>{
+				Warning::AliquotRequired,
 				Error::AliquotContainers,
 				Error::InvalidOption
 			},
@@ -1919,6 +1883,66 @@ DefineTests[resolveAliquotOptions,
 				Cache->Download[{Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.5 mL)"],Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.8 mL)"]}]
 			],
 			{_Rule..},
+			SetUp:>($CreatedObjects={}),
+			TearDown:>(
+				EraseObject[$CreatedObjects,Force->True,Verbose->False];
+				Unset[$CreatedObjects]
+			)
+		],
+		Example[{Messages, "AliquotOptionMismatch", "If given RequiredAliquotContainers when AliquotContainers is already specified by the user, an error is thrown:"},
+			resolveAliquotOptions[
+				ExperimentHPLC,
+				{Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.5 mL)"],Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.8 mL)"]},
+				{Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.5 mL)"],Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.8 mL)"]},
+				{
+					Incubate -> {False, False},
+					IncubationTemperature -> {Null, Null},
+					IncubationTime -> {Null, Null}, Mix -> {Null, Null},
+					MixType -> {Null, Null}, MixUntilDissolved -> {Null, Null},
+					MaxIncubationTime -> {Null, Null},
+					IncubationInstrument -> {Null, Null}, AnnealingTime -> {Null, Null},
+					IncubateAliquotContainer -> {Null, Null},
+					IncubateAliquot -> {Null, Null}, Centrifuge -> {False, False},
+					CentrifugeInstrument -> {Null, Null},
+					CentrifugeIntensity -> {Null, Null}, CentrifugeTime -> {Null, Null},
+					CentrifugeTemperature -> {Null, Null},
+					CentrifugeAliquotContainer -> {Null, Null},
+					CentrifugeAliquot -> {Null, Null}, Filtration -> {False, False},
+					FiltrationType -> {Null, Null}, FilterInstrument -> {Null, Null},
+					Filter -> {Null, Null}, FilterMaterial -> {Null, Null},
+					PrefilterMaterial -> {Null, Null}, FilterPoreSize -> {Null, Null},
+					PrefilterPoreSize -> {Null, Null}, FilterSyringe -> {Null, Null},
+					FilterHousing -> {Null, Null}, FilterIntensity -> {Null, Null},
+					FilterTime -> {Null, Null}, FilterTemperature -> {Null, Null},
+					FilterContainerOut -> {Null, Null},
+					FilterAliquotContainer -> {Null, Null},
+					FilterAliquot -> {Null, Null},
+					FilterSterile -> {Null, Null},
+					Aliquot -> {Automatic, Automatic},
+					AliquotSampleLabel -> {Automatic, Automatic},
+					AliquotAmount -> {Automatic, Automatic},
+					TargetConcentration -> {Automatic, Automatic},
+					TargetConcentrationAnalyte -> {Automatic, Automatic},
+					AssayVolume -> {Automatic, Automatic},
+					AliquotContainer -> {Null, Automatic},
+					DestinationWell -> {Automatic, Null},
+					ConcentratedBuffer -> {Automatic, Automatic},
+					BufferDilutionFactor -> {Automatic, Automatic},
+					BufferDiluent -> {Automatic, Automatic},
+					AssayBuffer -> {Automatic, Automatic},
+					AliquotSampleStorageCondition -> {Automatic, Automatic},
+					ConsolidateAliquots -> Automatic,
+					AliquotPreparation -> Automatic
+				},
+				RequiredAliquotAmounts->Null,
+				RequiredAliquotContainers->{Model[Container,Vessel,"id:bq9LA0dBGGR6"],Model[Container,Vessel,"id:bq9LA0dBGGR6"]},
+				Cache->Download[{Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.5 mL)"],Object[Sample,"resolveAliquotOptions New Test Chemical 1 (1.8 mL)"]}]
+			],
+			{_Rule..},
+			Messages:>{
+				Error::AliquotOptionMismatch,
+				Error::InvalidOption
+			},
 			SetUp:>($CreatedObjects={}),
 			TearDown:>(
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
@@ -2122,7 +2146,7 @@ DefineTests[resolveAliquotOptions,
 					]
 				];
 
-				dscAliquotTestCache=simulatedCache={<|Object->Object[Sample,"id:o1k9jAGqPe34"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:XnlV5jK8XYM3"],Contents,2,"dORYzZ9MR5qp"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"4pO6dM8GO915"],Position->"A1",Name->"PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"1ZA60vKqAN9M"],ThawTime->Null,ThawTemperature->Null,ID->"id:o1k9jAGqPe34"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"XnlV5j9ElDN3"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"eGakld5MaXlx"],Name->"2mL tube 1 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:o1k9jAGqPe34"],Container,"54n6evNAnze7"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:XnlV5jK8XYM3"],ID->"id:XnlV5jK8XYM3",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},TransportWarmed->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Tablet->False,TabletWeight->Null,Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportWarmed->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportWarmed->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:o1k9jAGqPe34"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:XnlV5jK8XYM3"],Contents,2,"dORYzZ9MR5qp"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"4pO6dM8GO915"],Position->"A1",Name->"PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"1ZA60vKqAN9M"],ThawTime->Null,ThawTemperature->Null,ID->"id:o1k9jAGqPe34"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"XnlV5j9ElDN3"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"eGakld5MaXlx"],Name->"2mL tube 1 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:o1k9jAGqPe34"],Container,"54n6evNAnze7"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:XnlV5jK8XYM3"],ID->"id:XnlV5jK8XYM3",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportWarmed->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportWarmed->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,TabletWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportWarmed->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>};
+				dscAliquotTestCache=simulatedCache={<|Object->Object[Sample,"id:o1k9jAGqPe34"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:XnlV5jK8XYM3"],Contents,2,"dORYzZ9MR5qp"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"4pO6dM8GO915"],Position->"A1",Name->"PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"1ZA60vKqAN9M"],ThawTime->Null,ThawTemperature->Null,ID->"id:o1k9jAGqPe34"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"XnlV5j9ElDN3"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"eGakld5MaXlx"],Name->"2mL tube 1 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:o1k9jAGqPe34"],Container,"54n6evNAnze7"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:XnlV5jK8XYM3"],ID->"id:XnlV5jK8XYM3",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},TransportTemperature->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Tablet->False,SolidUnitWeight->Null,Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportTemperature->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportTemperature->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:o1k9jAGqPe34"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:XnlV5jK8XYM3"],Contents,2,"dORYzZ9MR5qp"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"4pO6dM8GO915"],Position->"A1",Name->"PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"1ZA60vKqAN9M"],ThawTime->Null,ThawTemperature->Null,ID->"id:o1k9jAGqPe34"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"XnlV5j9ElDN3"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"eGakld5MaXlx"],Name->"2mL tube 1 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:o1k9jAGqPe34"],Container,"54n6evNAnze7"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:XnlV5jK8XYM3"],ID->"id:XnlV5jK8XYM3",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportTemperature->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportTemperature->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>,<|Object->Object[Sample,"id:zGj91a7P0z1b"],Type->Object[Sample],Status->Available,Container->Link[Object[Container,Vessel,"id:qdkmxzqOa474"],Contents,2,"wqW9BPKMWvBJ"],Count->Null,Volume->Quantity[0.0002`,"Liters"],Concentration->Null,MassConcentration->Null,Model->Link[Model[Sample,"id:GmzlKjPXRRDM"],Objects,"8qZ1VW9lZPVA"],Position->"A1",Name->"DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetry error",Mass->Null,Sterile->Null,StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"jLq9jXbMqZjz"],ThawTime->Null,ThawTemperature->Null,ID->"id:zGj91a7P0z1b"|>,<|Model->Link[Model[Container,Vessel,"id:3em6Zv9NjjN8"],Objects,"1ZA60vKqANPq"],StorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"],"Z1lqpMLkldEW"],Name->"2mL tube 2 for ExperimentDifferentialScanningCalorimetry error",Contents->{{"A1",Link[Object[Sample,"id:zGj91a7P0z1b"],Container,"n0k9mGbMk4Ln"]}},TareWeight->Null,Sterile->Null,Status->Available,Object->Object[Container,Vessel,"id:qdkmxzqOa474"],ID->"id:qdkmxzqOa474",Type->Object[Container,Vessel]|>,<|Name->"Test PNA oligomer for DifferentialScanningCalorimetry 1",Deprecated->Null,Sterile->Null,LiquidHandlerIncompatible->Null,State->Null,Tablet->Null,SolidUnitWeight->Null,Products->{},Dimensions->Null,IncompatibleMaterials->{},PolymerType->PNA,TransportTemperature->Null,MolecularWeight->Null,ThawTime->Null,ThawTemperature->Null,Object->Model[Sample,"id:GmzlKjPXRRDM"],ID->"id:GmzlKjPXRRDM",Type->Model[Sample]|>};
 			),
 			TearDown:>(
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
@@ -2603,10 +2627,10 @@ DefineTests[resolveAliquotOptions,
 
 			Upload[Flatten[{
 				<|Object->#,DeveloperObject->True|>&/@allObjs,
-				<|Object -> sample3, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]]},{5 Millimolar,Link[Model[Molecule,"Uracil"]]}}|>,
-				<|Object -> sample5, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]]},{3 Millimolar,Link[Model[Molecule,"Uracil"]]}}|>,
-				<|Object -> sample6, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]]},{3*(Milligram/Milliliter),Link[Model[Molecule,"Uracil"]]}}|>,
-				<|Object -> sample7, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]]},{3*(Milligram/Milliliter),Link[Model[Molecule,"Uracil"]]}}|>,
+				<|Object -> sample3, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{5 Millimolar,Link[Model[Molecule,"Uracil"]],Now}}|>,
+				<|Object -> sample5, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{3 Millimolar,Link[Model[Molecule,"Uracil"]],Now}}|>,
+				<|Object -> sample6, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{3*(Milligram/Milliliter),Link[Model[Molecule,"Uracil"]],Now}}|>,
+				<|Object -> sample7, Replace[Composition] -> {{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{3*(Milligram/Milliliter),Link[Model[Molecule,"Uracil"]],Now}}|>,
 				<|Type -> Object[Protocol, HPLC], Name -> "HPLC parent", DeveloperObject -> True|>
 			}]];
 			UploadSampleStatus[sample13, Discarded, FastTrack -> True]
@@ -2684,7 +2708,7 @@ DefineTests[populateSamplePrepFieldsPooled,
 			],
 			<|Replace[AliquotSamplePreparation] -> {_Association, _Association, _Association, _Association, _Association, _Association}, ConsolidateAliquots -> False, AliquotPreparation -> Null|>
 		],
-		Example[{Basic,"If samples are not pooled, functions the same as populateSamplePrepFieldsPooled, which returns a list of sample preperation fields to include in the Object[Protocol], based on the sample prep options present in the resolved options:"},
+		Example[{Basic,"If samples are not pooled, functions the same as populateSamplePrepFieldsPooled, which returns a list of sample preparation fields to include in the Object[Protocol], based on the sample prep options present in the resolved options:"},
 			populateSamplePrepFieldsPooled[
 				{Object[Sample,"Test water sample for populateSamplePrepFieldsPooled unit test "<>$SessionUUID],Object[Sample,"Test water sample for populateSamplePrepFieldsPooled unit test "<>$SessionUUID]},
 				{
@@ -3053,7 +3077,7 @@ DefineTests[populateSamplePrepFieldsPooled,
 
 DefineTests[populateSamplePrepFields,
 	{
-		Example[{Basic,"Returns a list of sample preperation fields to include in the Object[Protocol], based on the sample prep options present in the resolved options:"},
+		Example[{Basic,"Returns a list of sample preparation fields to include in the Object[Protocol], based on the sample prep options present in the resolved options:"},
 			populateSamplePrepFields[
 				{Object[Sample,"Test water sample for populateSamplePrepFields unit test "<>$SessionUUID],Object[Sample,"Test water sample for populateSamplePrepFields unit test "<>$SessionUUID]},
 				{
@@ -3152,7 +3176,7 @@ DefineTests[populateSamplePrepFields,
 				}
 			]
 		],
-		Example[{Basic,"Sample preperation parameters are spaced with Null/False values for replicate samples:"},
+		Example[{Basic,"Sample preparation parameters are spaced with Null/False values for replicate samples:"},
 			populateSamplePrepFields[
 				{Object[Sample,"Test water sample for populateSamplePrepFields unit test "<>$SessionUUID],Object[Sample,"Test water sample for populateSamplePrepFields unit test "<>$SessionUUID]},
 				{
@@ -3723,7 +3747,7 @@ DefineTests[populateSamplePrepFields,
 
 DefineTests[resolvePooledSamplePrepOptions,
 	{
-		Example[{Basic,"Simulate the preperation of two samples that are being aliquoted:"},
+		Example[{Basic,"Simulate the preparation of two samples that are being aliquoted:"},
 			resolvePooledSamplePrepOptions[
 				ExperimentDifferentialScanningCalorimetry,
 				{waterSample1,{waterSample2}},
@@ -3824,7 +3848,7 @@ DefineTests[resolvePooledSamplePrepOptions,
 
 DefineTests[resolveSamplePrepOptions,
 	{
-		Example[{Basic,"Simulate the preperation of two samples that are being aliquoted:"},
+		Example[{Basic,"Simulate the preparation of two samples that are being aliquoted:"},
 			resolveSamplePrepOptions[
 				ExperimentIncubate,
 				{Object[Sample, "Test sample 1 for resolveSamplePrepOptions tests" <> $SessionUUID],Object[Sample, "Test sample 2 for resolveSamplePrepOptions tests" <> $SessionUUID]},
@@ -3879,7 +3903,7 @@ DefineTests[resolveSamplePrepOptions,
 				{_Association..}
 			}
 		],
-		Example[{Basic,"Simulate the preperation of two samples (with no sample prep or aliquot):"},
+		Example[{Basic,"Simulate the preparation of two samples (with no sample prep or aliquot):"},
 			resolveSamplePrepOptions[
 				ExperimentHPLC,
 				{Object[Sample, "Test sample 1 for resolveSamplePrepOptions tests" <> $SessionUUID],Object[Sample, "Test sample 2 for resolveSamplePrepOptions tests" <> $SessionUUID]},
@@ -4075,7 +4099,7 @@ DefineTests[resolveSamplePrepOptions,
 			{{True,True},{False,False},{False,False}},
 			Messages:>{}
 		],
-		Example[{Additional,"Simulate the preperation of two samples (solids that are being aliquotted):"},
+		Example[{Additional,"Simulate the preparation of two samples (solids that are being aliquoted):"},
 			{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[
 				ExperimentHPLC,
 				{Object[Sample, "Test sample 5 (solid) for resolveSamplePrepOptions tests" <> $SessionUUID],Object[Sample, "Test sample 6 (solid) for resolveSamplePrepOptions tests" <> $SessionUUID]},
@@ -4589,7 +4613,7 @@ DefineTests[resolveSamplePrepOptions,
 
 DefineTests[simulateSamplePreparation,
 	{
-		Example[{Basic,"Simulate the preperation of one sample that is not being aliquoted:"},
+		Example[{Basic,"Simulate the preparation of one sample that is not being aliquoted:"},
 			simulateSamplePreparation[
 				{waterSample1},
 				{Instrument->{Model[Instrument,Centrifuge,"id:pZx9jo8WA4z0"]},Intensity->{Quantity[546.78`,"StandardAccelerationOfGravity"]},Template->Null,Confirm->False,Name->Null,IncubateAliquotContainer->Automatic,FilterAliquotContainer->Automatic,ImageSample->False,SamplesInStorageCondition->Null,Temperature->{Ambient},Time->{Quantity[5,"Minutes"]},AliquotAmount->Null,TargetConcentration->Null,AssayVolume->Null,AliquotContainer->Null,ConcentratedBuffer->Null,BufferDilutionFactor->Null,BufferDiluent->Null,AssayBuffer->Null,AliquotSampleStorageCondition->Null,Aliquot->False,ConsolidateAliquots->False,AliquotPreparation->Null,Incubate->Automatic,IncubationTemperature->Automatic,IncubationTime->Automatic,Mix->Automatic,MixType->Automatic,MixUntilDissolved->Automatic,MaxIncubationTime->Automatic,IncubationInstrument->Automatic,AnnealingTime->Automatic,Filtration->Automatic,FiltrationType->Automatic,FilterInstrument->Automatic,Filter->Automatic,FilterMaterial->Automatic,FilterPoreSize->Automatic,FilterSyringe->Automatic,FilterHousing->Automatic,FilterIntensity->Automatic,FilterTime->Automatic,FilterTemperature->Automatic,FilterSterile->Automatic,FilterContainerOut->Automatic},
@@ -4597,7 +4621,7 @@ DefineTests[simulateSamplePreparation,
 			],
 			{{waterSample1},{}}
 		],
-		Example[{Basic,"Simulate the preperation of one sample that is being aliquoted:"},
+		Example[{Basic,"Simulate the preparation of one sample that is being aliquoted:"},
 			simulateSamplePreparation[
 				{waterSample1},
 				{Instrument->{Model[Instrument,Centrifuge,"id:pZx9jo8WA4z0"]},Intensity->{Quantity[546.78`,"StandardAccelerationOfGravity"]},Template->Null,Confirm->False,Name->Null,IncubateAliquotContainer->Automatic,FilterAliquotContainer->Automatic,ImageSample->False,SamplesInStorageCondition->Null,Temperature->{Ambient},Time->{Quantity[5,"Minutes"]},AliquotAmount->Null,TargetConcentration->Null,AssayVolume->1 Milliliter,AliquotContainer->Model[Container,Vessel,"id:3em6Zv9NjjN8"],ConcentratedBuffer->Null,BufferDilutionFactor->Null,BufferDiluent->Null,AssayBuffer->Null,AliquotSampleStorageCondition->Null,Aliquot->False,ConsolidateAliquots->False,AliquotPreparation->Null,Incubate->Automatic,IncubationTemperature->Automatic,IncubationTime->Automatic,Mix->Automatic,MixType->Automatic,MixUntilDissolved->Automatic,MaxIncubationTime->Automatic,IncubationInstrument->Automatic,AnnealingTime->Automatic,Filtration->Automatic,FiltrationType->Automatic,FilterInstrument->Automatic,Filter->Automatic,FilterMaterial->Automatic,FilterPoreSize->Automatic,FilterSyringe->Automatic,FilterHousing->Automatic,FilterIntensity->Automatic,FilterTime->Automatic,FilterTemperature->Automatic,FilterSterile->Automatic,FilterContainerOut->Automatic},
@@ -4605,7 +4629,7 @@ DefineTests[simulateSamplePreparation,
 			],
 			{{ObjectP[Object[Sample]]},{}}
 		],
-		Example[{Basic,"Simulate the preperation of one sample that is having its mass aliquoted:"},
+		Example[{Basic,"Simulate the preparation of one sample that is having its mass aliquoted:"},
 			simulateSamplePreparation[
 				{waterSample1},
 				{AssayAmount->10 Gram,Instrument->{Model[Instrument,Centrifuge,"id:pZx9jo8WA4z0"]},Intensity->{Quantity[546.78`,"StandardAccelerationOfGravity"]},Template->Null,Confirm->False,Name->Null,IncubateAliquotContainer->Automatic,FilterAliquotContainer->Automatic,ImageSample->False,SamplesInStorageCondition->Null,Temperature->{Ambient},Time->{Quantity[5,"Minutes"]},AliquotAmount->Null,TargetConcentration->Null,AssayVolume->1 Milliliter,AliquotContainer->Model[Container,Vessel,"id:3em6Zv9NjjN8"],ConcentratedBuffer->Null,BufferDilutionFactor->Null,BufferDiluent->Null,AssayBuffer->Null,AliquotSampleStorageCondition->Null,Aliquot->False,ConsolidateAliquots->False,AliquotPreparation->Null,Incubate->Automatic,IncubationTemperature->Automatic,IncubationTime->Automatic,Mix->Automatic,MixType->Automatic,MixUntilDissolved->Automatic,MaxIncubationTime->Automatic,IncubationInstrument->Automatic,AnnealingTime->Automatic,Filtration->Automatic,FiltrationType->Automatic,FilterInstrument->Automatic,Filter->Automatic,FilterMaterial->Automatic,FilterPoreSize->Automatic,FilterSyringe->Automatic,FilterHousing->Automatic,FilterIntensity->Automatic,FilterTime->Automatic,FilterTemperature->Automatic,FilterSterile->Automatic,FilterContainerOut->Automatic},
@@ -4664,93 +4688,6 @@ DefineTests[simulateSamplePreparation,
 
 DefineTests[simulateSamplePreparationPackets,
 	{
-		Example[{Basic,"The new version of the function returns a simulation when doing SP:"},
-			simulateSamplePreparationPacketsNew[
-				ExperimentMeasureConductivity,
-				{"My Buffer"},
-				{
-					PreparatoryUnitOperations->{
-						LabelContainer[
-							Label->"My Buffer",
-							Container->Model[Container,Vessel,"Amber Glass Bottle 4 L"]
-						],
-						Transfer[
-							Source->Model[Sample, "Milli-Q water"],
-							Destination->"My Buffer",
-							Amount->2 Liter
-						],
-						Transfer[
-							Source->Model[Sample,"Heptafluorobutyric acid"],
-							Destination->"My Buffer",
-							Amount->1 Milliliter
-						]
-					}
-				}
-			],
-			{_List, _List, SimulationP},
-			TimeConstraint -> 1000
-		],
-		Example[{Basic,"The new version of the function returns a simulation when doing SM:"},
-			simulateSamplePreparationPacketsNew[
-				ExperimentMeasureConductivity,
-				{"My Buffer"},
-				{
-					PreparatoryPrimitives->{
-						Define[
-							Name->"My Buffer",
-							Sample->{Model[Container,Vessel,"Amber Glass Bottle 4 L"],"A1"}
-						],
-						Transfer[
-							Source->Model[Sample, "Milli-Q water"],
-							Destination->"My Buffer",
-							Amount->1999 Milliliter
-						],
-						Transfer[
-							Source->Model[Sample,"Heptafluorobutyric acid"],
-							Destination->"My Buffer",
-							Amount->1 Milliliter
-						]
-					}
-				}
-			],
-			{_List, _List, SimulationP},
-			TimeConstraint -> 1000
-		],
-		Test["If given a simulation as the input options, don't include that simulation in the output; instead, include it with the other simulation generated:",
-			Module[{objects, options, newSimulation},
-				{objects, options, newSimulation} = simulateSamplePreparationPacketsNew[
-					ExperimentMeasureConductivity,
-					{"My Buffer"},
-					{
-						PreparatoryUnitOperations->{
-							LabelContainer[
-								Label->"My Buffer",
-								Container->Model[Container,Vessel,"Amber Glass Bottle 4 L"]
-							],
-							Transfer[
-								Source->Model[Sample, "Milli-Q water"],
-								Destination->"My Buffer",
-								Amount->2 Liter
-							],
-							Transfer[
-								Source->Model[Sample,"Heptafluorobutyric acid"],
-								Destination->"My Buffer",
-								Amount->1 Milliliter
-							]
-						},
-						Simulation -> Simulation[<|Object -> Object[User, Emerald, Developer, "id:testdev"], CakePreference -> "Test Cheesecake"|>]
-					}
-				];
-				{
-					Lookup[options, Simulation],
-					Download[Object[User, Emerald, Developer, "id:testdev"], CakePreference, Simulation -> newSimulation]
-				}
-			],
-			{
-				_?MissingQ,
-				"Test Cheesecake"
-			}
-		],
 		Test["If given cache as the input options, don't include that cache in the output; instead, include it with the other cache generated:",
 			Module[{objects, options, newCache},
 				{objects, options, newCache} = simulateSamplePreparationPackets[
@@ -4785,32 +4722,6 @@ DefineTests[simulateSamplePreparationPackets,
 				_?MissingQ,
 				"Test Cheesecake"
 			}
-		],
-		Example[{Basic,"The old version of the function returns a cache when doing SM:"},
-			simulateSamplePreparationPackets[
-				ExperimentMeasureConductivity,
-				{"My Buffer"},
-				{
-					PreparatoryPrimitives->{
-						Define[
-							Name->"My Buffer",
-							Sample->{Model[Container,Vessel,"Amber Glass Bottle 4 L"],"A1"}
-						],
-						Transfer[
-							Source->Model[Sample, "Milli-Q water"],
-							Destination->"My Buffer",
-							Amount->1999 Milliliter
-						],
-						Transfer[
-							Source->Model[Sample,"Heptafluorobutyric acid"],
-							Destination->"My Buffer",
-							Amount->1 Milliliter
-						]
-					}
-				}
-			],
-			{_List, _List, _List},
-			TimeConstraint -> 1000
 		],
 		Example[{Basic,"The old version of the function returns a cache when doing SP:"},
 			simulateSamplePreparationPackets[
@@ -4874,7 +4785,8 @@ DefineTests[simulateSamplePreparationPackets,
 			];
 			Download[protocol, PreparatoryUnitOperations],
 			{SamplePreparationP..},
-			Variables :> {protocol}
+			Variables :> {protocol},
+			TimeConstraint -> 900
 		],
 		Example[{Basic,"Providing an invalid option for PreparatoryUnitOperations cleanly returns $Failed:"},
 			ExperimentIncubate[
@@ -4884,26 +4796,13 @@ DefineTests[simulateSamplePreparationPackets,
 					Transfer[Source->Model[Sample,"Milli-Q water"],Amount->10 Milliliter,Destination->"My Container"]
 				},
 				Time-> 2 Hour,
-				Temperature->80 Celsius
+				Temperature -> 80 Celsius
 			],
 			$Failed,
 			Messages:>{
 				Error::InvalidUnitOperationHeads,
 				Error::InvalidInput
 			}
-		],
-		Example[{Basic,"Backwards compatible with PreparatoryPrimitives:"},
-			ExperimentIncubate[
-				"My Container",
-				PreparatoryPrimitives->{
-					Define[Name->"My Container",Container->Model[Container,Vessel,"50mL Tube"]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Amount->10 Milliliter,Destination->"My Container"]
-				},
-				Time-> 2 Hour,
-				Temperature->80 Celsius
-			],
-			ObjectP[Object[Protocol]],
-			Messages:>{}
 		],
 		Example[{Basic,"Simulate an incubation with prepared samples in the options and in the input:"},
 			ExperimentIncubate[
@@ -4930,22 +4829,6 @@ DefineTests[simulateSamplePreparationPackets,
 			],
 			ObjectP[Object[Protocol, Autoclave]],
 			TimeConstraint -> 1000
-		],
-		Example[{Messages,"ConflictingPreparatoryUnitOperationsAndPrimitives","Providing both the PreparatoryUnitOperations and PreparatoryPrimitives options results in an error:"},
-			ExperimentIncubate[
-				{"My Container"},
-				PreparatoryPrimitives->{
-					Define[Name->"My Container",Container->Model[Container,Vessel,"50mL Tube"]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Amount->10 Milliliter,Destination->"My Container"]
-				},
-				PreparatoryUnitOperations->{
-					LabelContainer[Label->"My Container",Container->Model[Container,Vessel,"50mL Tube"]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Amount->10 Milliliter,Destination->"My Container"]
-				}
-			],
-			$Failed,
-			Messages:>{Error::ConflictingPreparatoryUnitOperationsAndPrimitives, Error::InvalidOption},
-			TimeConstraint -> 1000
 		]
 	},
 	SymbolSetUp:>(
@@ -4964,7 +4847,665 @@ DefineTests[simulateSamplePreparationPackets,
 	),
 	Stubs :> {
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
-	}
+	},
+	HardwareConfiguration -> HighRAM
+];
+
+(* ::Subsection::Closed:: *)
+(*simulateSamplePreparationPacketsNew*)
+
+
+DefineTests[simulateSamplePreparationPacketsNew,
+	{
+		Example[{Basic, "The new version of the function returns a simulation when doing SP:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentMeasureConductivity,
+				{"My Buffer"},
+				{
+					PreparatoryUnitOperations->{
+						LabelContainer[
+							Label->"My Buffer",
+							Container->Model[Container,Vessel,"Amber Glass Bottle 4 L"]
+						],
+						Transfer[
+							Source->Model[Sample, "Milli-Q water"],
+							Destination->"My Buffer",
+							Amount->2 Liter
+						],
+						Transfer[
+							Source->Model[Sample,"Heptafluorobutyric acid"],
+							Destination->"My Buffer",
+							Amount->1 Milliliter
+						]
+					}
+				}
+			],
+			{_List, _List, SimulationP},
+			TimeConstraint -> 1000
+		],
+		Example[{Basic, "When the input is a list of Model[Sample]s, returns a list of simulated Object[Sample]s and populates ModelInputOptions and PreparatoryUnitOperations:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Milli-Q water"]},
+				{Output -> Options}
+			],
+			{
+				{ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[1 Milliliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Vessel, "2mL Tube"]],
+					PreparatoryUnitOperations -> {ManualSamplePreparation[_LabelSample]}
+				}],
+				SimulationP
+			}
+		],
+		Example[{Basic, "When the input is a list of Object[Sample]s, populates ModelInputOptions as Null:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Object[Sample, "resolveExperimentOptions 2mL tube sample 1"]},
+				{Output -> Options}
+			],
+			{
+				{ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> Null,
+					PreparedModelContainer -> Null
+				}],
+				SimulationP
+			}
+		],
+		Example[{Basic, "When the input is a list of containers with its location position, populates ModelInputOptions as Null:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{
+					{"A2", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]},
+					{"B8", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]},
+					{"Z1", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]}
+				},
+				{Output -> Options}
+			],
+			{
+				_List,
+				KeyValuePattern[{
+					PreparedModelAmount -> Null,
+					PreparedModelContainer -> Null
+				}],
+				SimulationP
+			}
+		],
+		Example[{Basic, "When the input is a mix of Model[Sample], Object[Sample] and container, populates ModelInputOptions in the corresponding position:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{
+					{"A2", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]},
+					Model[Sample, "Milli-Q water"],
+					{"Z1", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]},
+					Object[Sample, "resolveExperimentOptions 2mL tube sample 1"]
+				},
+				{Output -> Options}
+			],
+			{
+				_List,
+				KeyValuePattern[{
+					PreparedModelAmount -> {Null, EqualP[1 Milliliter], Null, Null},
+					PreparedModelContainer -> {Null, ObjectP[Model[Container, Vessel, "2mL Tube"]], Null, Null},
+					PreparatoryUnitOperations -> {ManualSamplePreparation[_LabelSample]}
+				}],
+				SimulationP
+			}
+		],
+		Example[{Basic, "When the input is nested indexmaching with Model[Sample], populates ModelInputOptions in the corresponding position:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentSolidPhaseExtraction,
+				{
+					{
+						Object[Sample, "resolveExperimentOptions 2mL tube sample 1"],
+						Model[Sample, StockSolution, "NaCl Solution in Water"]
+					},
+					{
+						{"A2", Object[Container, Plate, "resolveExperimentOptions 3-Sample Plate"]},
+						Model[Sample, StockSolution, "NaCl Solution in Water"]
+					}
+				},
+				{Output -> Options}
+			],
+			{
+				_List,
+				KeyValuePattern[{
+					PreparedModelAmount -> {{Null, EqualP[1 Milliliter]}, {Null, EqualP[1 Milliliter]}},
+					PreparedModelContainer -> {{Null, ObjectP[Model[Container, Vessel, "2mL Tube"]]}, {Null, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
+					PreparatoryUnitOperations -> {ManualSamplePreparation[_LabelSample]}
+				}],
+				SimulationP
+			}
+		],
+		Test["When the input is a Model[Sample] and Sample(Container)Label is specified, populates ModelInputOptions and PreparatoryUnitOperations with the specified Sample(Container)Label as Label:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Milli-Q water"]},
+				{SampleLabel -> "my water resource", SampleContainerLabel -> "my water tank", Output -> Options}
+			],
+			{
+				{ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[1 Milliliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Vessel, "2mL Tube"]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Milli-Q water"]]},
+									Label -> {"my water resource"},
+									ContainerLabel -> {"my water tank"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When the inputs are multiple Model[Sample]s in the same plate and the plate label is specified, populates PreparatoryUnitOperations with the specified SampleContainerLabel as ContainerLabel:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentCircularDichroism,
+				{Model[Sample, "Methanol"], Model[Sample, "Methanol"]},
+				{
+					PreparedModelContainer -> Model[Container, Plate, "Hellma Black Quartz Microplate"],
+					PreparedModelAmount -> 200 Microliter,
+					SampleContainerLabel -> {"my quartz plate", "my quartz plate"}
+				}
+			],
+			{
+				{ObjectP[Object[Sample]], ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[200 Microliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Plate, "Hellma Black Quartz Microplate"]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Methanol"]], ObjectP[Model[Sample, "Methanol"]]},
+									Well -> {"A1", "B1"},
+									ContainerLabel -> {"my quartz plate", "my quartz plate"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When the input are multiple Model[Sample]s in 1-well plate model, partitioned samples to multiple plates and populate PreparatoryUnitOperations:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentCircularDichroism,
+				{Model[Sample, "Methanol"], Model[Sample, "Methanol"], Model[Sample, "Methanol"]},
+				{
+					PreparedModelContainer -> Model[Container, Plate, "Omni Tray Sterile Media Plate"],
+					PreparedModelAmount -> 200 Microliter
+				}
+			],
+			{
+				{ObjectP[Object[Sample]], ObjectP[Object[Sample]], ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[200 Microliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Plate, "Omni Tray Sterile Media Plate"]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Methanol"]], ObjectP[Model[Sample, "Methanol"]], ObjectP[Model[Sample, "Methanol"]]},
+									Well -> {"A1", "A1", "A1"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When the input are multiple Model[Sample]s in different vessels and the container labels are specified, populates PreparatoryUnitOperations with the specified SampleContainerLabel as ContainerLabel:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentCircularDichroism,
+				{Model[Sample, "Methanol"], Model[Sample, "Methanol"], Model[Sample, "Methanol"]},
+				{
+					PreparedModelContainer -> {Model[Container, Plate, "Hellma Black Quartz Microplate"], Model[Container, Plate, "Hellma Black Quartz Microplate"], Model[Container, Vessel, "2mL Tube"]},
+					PreparedModelAmount -> 200 Microliter,
+					SampleContainerLabel -> {"my quartz plate1", "my quartz plate2", "my tube"}
+				}
+			],
+			{
+				{ObjectP[Object[Sample]], ObjectP[Object[Sample]], ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[200 Microliter],
+					PreparedModelContainer -> {ObjectP[Model[Container, Plate, "Hellma Black Quartz Microplate"]], ObjectP[Model[Container, Plate, "Hellma Black Quartz Microplate"]], ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Methanol"]], ObjectP[Model[Sample, "Methanol"]], ObjectP[Model[Sample, "Methanol"]]},
+									Well -> {"A1", "A1", "A1"},
+									ContainerLabel -> {"my quartz plate1", "my quartz plate2", "my tube"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When the input is a list of Model[Sample]s and Source(Container)Labels are specified, populates ModelInputOptions and PreparatoryUnitOperations with the specified Source(Container)Label as Label:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentAliquot,
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				{SourceLabel -> {"my water resource1", "my water resource2"}, SourceContainerLabel -> {"my water tank1", "my water tank2"}, Output -> Options}
+			],
+			{
+				{ObjectP[Object[Sample]], ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> ListableP[EqualP[1 Milliliter]],
+					PreparedModelContainer -> ListableP[ObjectP[Model[Container, Vessel, "2mL Tube"]]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, "Milli-Q water"]]},
+									Label -> {"my water resource1", "my water resource2"},
+									ContainerLabel -> {"my water tank1", "my water tank2"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When using framework experiment and Model[Sample]s as samples for the first unit operation and passed to downstream unit operations, ResolvedUnitOperationInput has the specified SampleLabel as 2nd unit operation input:",
+			Module[{protocol},
+				protocol = ExperimentManualCellPreparation[
+					{
+						Incubate[
+							Sample -> Model[Sample, "Ecoli 25922-GFP Cell Line"],
+							Thaw -> True,
+							ThawTemperature -> 40 Celsius,
+							SampleLabel -> "my cell",
+							SampleContainerLabel -> "my cell container"
+						],
+						InoculateLiquidMedia[
+							Sample -> "my cell",
+							DestinationMedia -> Model[Sample, Media, "LB (Liquid)"],
+							DestinationMediaContainer -> Model[Container, Vessel, "125mL Erlenmeyer Flask"],
+							SampleOutLabel -> "sample in flask",
+							ContainerOutLabel -> "my flask"
+						]
+					}
+				];
+				Download[protocol, {FutureLabeledObjects, ResolvedUnitOperationInputs}]
+			],
+			{
+				{
+					"my cell" -> _LabelField,
+					"my cell container" -> _LabelField,
+					"sample in flask" -> _LabelField,
+					"my flask" -> _LabelField
+				},
+				{{ObjectP[Model[Sample, "Ecoli 25922-GFP Cell Line"]]}, {"my cell"}}
+			}
+		],
+		Test["When using Model[Sample]s as samples for a standalone experiment, PreparedSamples field is populated:",
+			Module[{protocol},
+				protocol = ExperimentIncubate[
+					Model[Sample, "Ecoli 25922-GFP Cell Line"],
+					Thaw -> True,
+					ThawTemperature -> 40 Celsius,
+					SampleLabel -> "my cell",
+					SampleContainerLabel -> "my cell container"
+				];
+				Download[protocol, PreparedSamples]
+			],
+			{
+				{"my cell", SamplesIn, ___},
+				{"my cell container", ContainersIn, ___}
+			}
+		],
+		Test["When using Model[Sample]s as samples and add PreparatoryUnitOperations as the input again, don't duplicate LabelSample UOs:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentAliquot,
+				{Model[Sample, "Milli-Q water"]},
+				{
+					SourceLabel -> {"my water sample"},
+					PreparatoryUnitOperations -> {ManualSamplePreparation[
+						LabelSample[Sample -> Model[Sample, "Milli-Q water"], Label -> "my water sample", Amount -> 1 Milliliter, Container -> Model[Container, Vessel, "2mL Tube"]]]
+					}
+				}
+			],
+			{
+				{ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[1 Milliliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Vessel, "2mL Tube"]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Milli-Q water"]]},
+									Label -> {"my water sample"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["When using the same Model[Sample]s both as input sample and another non-input sample, both exist in LabelSample UO:",
+			simulateSamplePreparationPacketsNew[
+				ExperimentAliquot,
+				{Model[Sample, "Milli-Q water"]},
+				{
+					SourceLabel -> {"my water sample"},
+					PreparatoryUnitOperations -> {ManualSamplePreparation[
+						LabelSample[Sample -> Model[Sample, "Milli-Q water"], Label -> "my back up water sample", Amount -> 1 Milliliter, Container -> Model[Container, Vessel, "2mL Tube"], Well -> "A1"]]
+					}
+				}
+			],
+			{
+				{ObjectP[Object[Sample]]},
+				KeyValuePattern[{
+					PreparedModelAmount -> EqualP[1 Milliliter],
+					PreparedModelContainer -> ObjectP[Model[Container, Vessel, "2mL Tube"]],
+					PreparatoryUnitOperations -> {
+						ManualSamplePreparation[
+							LabelSample[
+								KeyValuePattern[{
+									Sample -> {ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, "Milli-Q water"]]},
+									Label -> {"my back up water sample", "my water sample"}
+								}]
+							]
+						]
+					}
+				}],
+				SimulationP
+			}
+		],
+		Test["If given a simulation as the input options, don't include that simulation in the output; instead, include it with the other simulation generated:",
+			Module[{objects, options, newSimulation},
+				{objects, options, newSimulation} = simulateSamplePreparationPacketsNew[
+					ExperimentMeasureConductivity,
+					{"My Buffer"},
+					{
+						PreparatoryUnitOperations->{
+							LabelContainer[
+								Label->"My Buffer",
+								Container->Model[Container,Vessel,"Amber Glass Bottle 4 L"]
+							],
+							Transfer[
+								Source->Model[Sample, "Milli-Q water"],
+								Destination->"My Buffer",
+								Amount->2 Liter
+							],
+							Transfer[
+								Source->Model[Sample,"Heptafluorobutyric acid"],
+								Destination->"My Buffer",
+								Amount->1 Milliliter
+							]
+						},
+						Simulation -> Simulation[<|Object -> Object[User, Emerald, Developer, "id:testdev"], CakePreference -> "Test Cheesecake"|>]
+					}
+				];
+				{
+					Lookup[options, Simulation],
+					Download[Object[User, Emerald, Developer, "id:testdev"], CakePreference, Simulation -> newSimulation]
+				}
+			],
+			{
+				_?MissingQ,
+				"Test Cheesecake"
+			}
+		],
+		Example[{Options, DefaultPreparedModelContainer, "If a model is specified as the input to the function, DefaultPreparedModelContainer is default to 2mL Tube:"},
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Milli-Q water"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius}
+			];
+			Lookup[resolvedOptions, PreparedModelContainer],
+			ObjectP[Model[Container, Vessel, "2mL Tube"]],
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Example[{Options, DefaultPreparedModelAmount, "If a model is specified as the input to the function, DefaultPreparedModelAmount is default to 1mL:"},
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Milli-Q water"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius}
+			],
+			Lookup[resolvedOptions, PreparedModelAmount],
+			EqualP[1 Milliliter],
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Example[{Options, DefaultPreparedModelAmount, "DefaultPreparedModelAmount can be specified in the format of MassP:"},
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Sodium Chloride"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius},
+				DefaultPreparedModelAmount -> 1 Gram
+			],
+			Lookup[resolvedOptions, PreparedModelAmount],
+			EqualP[1 Gram],
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Example[{Options, DefaultPreparedModelAmount, "DefaultPreparedModelAmount can be specified in the format of CountP:"},
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Nootropic Sachets"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius},
+				DefaultPreparedModelAmount -> 1
+			],
+			Lookup[resolvedOptions, PreparedModelAmount],
+			EqualP[1],
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Example[{Options, DefaultPreparedModelAmount, "DefaultPreparedModelAmount can be specified as All and the entire amount from its product is used in LabelSample:"},
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Ecoli 25922-GFP Cell Line"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius},
+				DefaultPreparedModelAmount -> All
+			],
+			{
+				Lookup[resolvedOptions, PreparedModelAmount],
+				Lookup[resolvedOptions, PreparatoryUnitOperations]
+			},
+			{
+				All,
+				{
+					ManualCellPreparation[
+						LabelSample[
+							KeyValuePattern[
+								Sample -> ObjectP[Model[Sample, "Ecoli 25922-GFP Cell Line"]],
+								Container -> ObjectP[],
+								Amount -> 0.5 Gram
+							]
+						]
+					]
+				}
+			},
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Test["If DefaultPreparatoryModelAmount is specified to All, for water model or stock solution model still resolve to 1ml for PreparedModelAmount:",
+			{simSamples, resolvedOptions, outputSim} = simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Milli-Q water"], Model[Sample, StockSolution, "NaCl Solution in Water"], Model[Sample, "Ecoli 25922-GFP Cell Line"]},
+				{Thaw -> True, ThawTemperature -> 40 Celsius},
+				DefaultPreparedModelAmount -> All
+			];
+			Lookup[resolvedOptions, {PreparedModelAmount, PreparatoryUnitOperations}],
+			{
+				All,
+				{
+					ManualCellPreparation[
+						LabelSample[
+							KeyValuePattern[{
+								Sample -> {ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, StockSolution, "NaCl Solution in Water"]], ObjectP[Model[Sample, "Ecoli 25922-GFP Cell Line"]]},
+								Container -> {ObjectP[]..},
+								Amount -> {EqualP[1 Milliliter], EqualP[1 Milliliter], EqualP[0.5 Gram]}
+							}]
+						]
+					]
+				}
+			},
+			Variables :> {simSamples, resolvedOptions, outputSim}
+		],
+		Example[{Additional, "If a model is specified as the input to the function, PreparatoryModelContainer and PreparatoryModelAmount are specified to indicate what container and amount the model should have:"},
+			options = ExperimentFilter[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 20 Milliliter,
+				Output -> Options
+			];
+			preparatoryUnitOperations = Lookup[options, PreparatoryUnitOperations];
+			labelSample = preparatoryUnitOperations[[1, 1]];
+			prepContainer = labelSample[Container];
+			prepAmount = labelSample[Amount];
+			{prepContainer, prepAmount},
+			{{ObjectP[Model[Container, Vessel, "50mL Tube"]]}, {EqualP[20 Milliliter]}},
+			Variables :> {options, preparatoryUnitOperations, prepContainer, prepAmount}
+		],
+		Test["If preparing 3 models, and then we re-run the resolver with the resolved-from-the-first-time prep unit operations, we properly re-use the labels and don't just make more (and the scrambling order doesn't mess up the sample labeling):",
+			inputModels = Download[{Model[Sample, "Milli-Q water"], Model[Sample, "Acetone, Reagent Grade"], Model[Sample, "Milli-Q water"]}, Object];
+			options1 = ExperimentFilter[
+				inputModels,
+				PreparedModelContainer -> {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "15mL Tube"]},
+				PreparedModelAmount -> {20 Milliliter, 1 Milliliter, 5 Milliliter},
+				Output -> Options
+			];
+			{sampleLabels1, prepUOs1} = Lookup[options1, {SampleLabel, PreparatoryUnitOperations}];
+			labelSample1 = prepUOs1[[1, 1]];
+			labelToInputRules1 = MapThread[
+				#1 -> #2&,
+				{labelSample1[Label], labelSample1[Sample]}
+			];
+
+			options2 = ExperimentFilter[
+				inputModels,
+				PreparedModelContainer -> {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "15mL Tube"]},
+				PreparedModelAmount -> {20 Milliliter, 1 Milliliter, 5 Milliliter},
+				PreparatoryUnitOperations -> prepUOs1,
+				Output -> Options
+			];
+			{sampleLabels2, prepUOs2} = Lookup[options2, {SampleLabel, PreparatoryUnitOperations}];
+
+			labelSample2 = prepUOs2[[1, 1]];
+			labelToInputRules2 = MapThread[
+				#1 -> #2&,
+				{labelSample2[Label], labelSample2[Sample]}
+			];
+			(* the labels, even if scrambled in the PreparatoryUnitOperations, are unscrambled in the SampleLabel option (both first and second time running it) *)
+			{
+				sampleLabels1 /. labelToInputRules1,
+				sampleLabels2 /. labelToInputRules2
+			},
+			{inputModels, inputModels},
+			Variables :> {inputModels, options1, sampleLabels1, prepUOs1, labelSample1, labelToInputRules1, options2, sampleLabels2, prepUOs2, labelSample2, labelToInputRules2},
+			TimeConstraint -> 600
+		],
+		Example[{Messages, "PreparedModelAmountOrContainerMismatchedLength", "PreparedModelContainer and PreparedModelAmount must be index matched properly with the specified model(s):"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentFilter,
+				{Model[Sample, "Milli-Q water"]},
+				{PreparedModelContainer -> {Model[Container, Vessel, "50mL Tube"]}, PreparedModelAmount -> {10 Milliliter, 20 Milliliter}}
+			],
+			_,
+			Messages :> {
+				Error::PreparedModelAmountOrContainerMismatchedLength,
+				Error::InvalidOption
+			}
+		],
+		Test["Immediately return $Failed in the experiment function when premature return is encountered:",
+			ExperimentFilter[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> {Model[Container, Vessel, "50mL Tube"]},
+				PreparedModelAmount -> {10 Milliliter, 20 Milliliter}
+			],
+			$Failed,
+			Messages :> {
+				Error::PreparedModelAmountOrContainerMismatchedLength,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "PreparedModelMissingProduct", "When PreparedModelAmount is All and PreparedModelContainer is 15ml tube but no such product is found:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{Model[Sample, "Ecoli 25922-GFP Cell Line"]},
+				{PreparedModelAmount -> All, PreparedModelContainer -> Model[Container, Vessel, "15mL Tube"]}
+			],
+			_,
+			Messages :> {
+				Error::PreparedModelMissingProduct,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "NoPreparatoryUnitOperationsWithItems", "When the input is an item and PreparatoryUnitOperation is specified, throw an error:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentAutoclave,
+				{Object[Item, Septum, "Test Septum for simulateSamplePreparationPacketsNew" <> $SessionUUID]},
+				{
+					PreparatoryUnitOperations -> {
+						LabelSample[Sample -> Model[Sample, "Milli-Q water"], Label -> "water 1"]
+					}
+				}
+			],
+			_,
+			SetUp :> (
+				$CreatedObjects = {};
+				If[!DatabaseMemberQ[Object[Item, Septum, "Test Septum for simulateSamplePreparationPacketsNew" <> $SessionUUID]],
+					Upload[<|
+						Type -> Object[Item, Septum],
+						DeveloperObject -> True,
+						Name -> "Test Septum for simulateSamplePreparationPacketsNew" <> $SessionUUID,
+						Model -> Link[Model[Item, Septum, "PTFE/Silicon 30mm Septum"], Objects]
+					|>]
+				]
+			),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+				Unset[$CreatedObjects]
+			),
+			Messages :> {
+				Error::NoPreparatoryUnitOperationsWithItems,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "MissingDefineNames", "When prepared samples have not defined in PreparatoryUnitOperations option, throw an error:"},
+			simulateSamplePreparationPacketsNew[
+				ExperimentIncubate,
+				{"new sample"},
+				{}
+			],
+			_,
+			Messages :> {
+				Error::MissingDefineNames,
+				Error::InvalidInput
+			}
+		]
+	},
+	SymbolSetUp:>(
+		Off[Warning::DeprecatedProduct];
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+
+		$CreatedObjects={};
+	),
+	SymbolTearDown:>(
+		On[Warning::DeprecatedProduct];
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+
+		EraseObject[$CreatedObjects, Force->True]
+	),
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	},
+	HardwareConfiguration -> HighRAM
 ];
 
 (* ::Subsection::Closed:: *)
@@ -4972,28 +5513,187 @@ DefineTests[simulateSamplePreparationPackets,
 
 DefineTests[populateWorkingAndAliquotSamples,
 	{
-		Example[{Basic,"Populate the working samples of a parent protocol after a filter:"},
+		Example[{Basic,"If SamplesIn/ContainersIn are populated but WorkingSamples/WorkingContainers are not, propagate those:"},
 			Download[
-				populateWorkingAndAliquotSamples[Object[Protocol, Incubate, "id:bq9LA0JMWeZm"]],
+				populateWorkingAndAliquotSamples[Object[Protocol, Incubate, "Test Incubate sub 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
 				{WorkingSamples, WorkingContainers}
 			],
 			{
 				{
-					ObjectP[Object[Sample, "id:n0k9mG8BLBEW"]],
-					ObjectP[Object[Sample, "id:01G6nvwEAE4m"]]
+					ObjectP[Object[Sample, "Test sample 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
+					ObjectP[Object[Sample, "Test sample 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]]
 				},
 				{
-					ObjectP[Object[Container, Vessel, "id:9RdZXv1al9Zl"]],
-					ObjectP[Object[Container, Vessel, "id:pZx9jo8eP09p"]]
+					ObjectP[Object[Container, Vessel, "Test container 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
+					ObjectP[Object[Container, Vessel, "Test container 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]]
+				}
+			}
+		],
+		Example[{Basic,"If SamplesIn/ContainersIn and WorkingSamples are populated, propagate the WorkingSamples to AliquotSamples of both the protocol and the corresopnding unit operation:"},
+			Download[
+				populateWorkingAndAliquotSamples[Object[Protocol, Incubate, "Test Incubate sub 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
+				{AliquotSamples, ParentProtocol[OutputUnitOperations][[1]][AliquotSamples]}
+			],
+			{
+				{
+					ObjectP[Object[Sample, "Test sample 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
+					ObjectP[Object[Sample, "Test sample 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]]
+				},
+				{
+					ObjectP[Object[Sample, "Test sample 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]],
+					ObjectP[Object[Sample, "Test sample 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]]
 				}
 			}
 		]
 	},
 	SymbolSetUp:>(
-		$CreatedObjects={};
+		Block[{$DeveloperUpload = True},
+			Module[{objs, existingObjs},
+				objs = {
+					Object[Container, Bench, "Test bench for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Protocol, Incubate, "Test Incubate sub 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Protocol, Incubate, "Test Incubate sub 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Protocol, Filter, "Test Filter parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 3 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 4 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Sample, "Test sample 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 3 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 4 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[Container, Vessel, "Test container 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+					Object[UnitOperation, Incubate, "Test Incubate unit operation 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]
+				};
+				existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+				EraseObject[existingObjs, Force -> True]
+			];
+			Module[
+				{
+					testBench,
+					container1, container2, container3, container4, container5, container6,
+					sample1, sample2, sample3, sample4, sample5, sample6,
+					parentFilter1, parentMSP1, incubateSub1, incubateSub2, incubateUO1
+				},
+
+				testBench = Upload[<|Type -> Object[Container, Bench], Name -> "Test bench for populateWorkingAndAliquotSamples tests " <> $SessionUUID, Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects]|>];
+
+				{
+					container1,
+					container2,
+					container3,
+					container4,
+					container5,
+					container6
+				} = UploadSample[
+					ConstantArray[Model[Container, Vessel, "2mL Tube"], 6],
+					ConstantArray[{"Work Surface", testBench}, 6],
+					Name -> Table["Test container " <> ToString[i] <> " for populateWorkingAndAliquotSamples tests " <> $SessionUUID, {i, 6}],
+					FastTrack -> True
+				];
+				{
+					sample1,
+					sample2,
+					sample3,
+					sample4,
+					sample5,
+					sample6
+				} = UploadSample[
+					ConstantArray[Model[Sample, "Milli-Q water"], 6],
+					Map[
+						{"A1", #}&,
+						{
+							container1,
+							container2,
+							container3,
+							container4,
+							container5,
+							container6
+						}
+					],
+					Name -> Table["Test sample " <> ToString[i] <> " for populateWorkingAndAliquotSamples tests " <> $SessionUUID, {i, 6}],
+					InitialAmount -> 1 Milliliter,
+					FastTrack -> True
+				];
+
+				{
+					parentFilter1,
+					parentMSP1,
+					incubateSub1,
+					incubateSub2,
+					incubateUO1
+				} = CreateID[{
+					Object[Protocol, Filter],
+					Object[Protocol, ManualSamplePreparation],
+					Object[Protocol, Incubate],
+					Object[Protocol, Incubate],
+					Object[UnitOperation, Incubate]
+				}];
+
+				Upload[{
+					<|
+						Object -> parentFilter1,
+						Name -> "Test Filter parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID
+					|>,
+					<|
+						Object -> parentMSP1,
+						Name -> "Test MSP parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID,
+						Replace[OutputUnitOperations] -> Link[incubateUO1, Protocol]
+					|>,
+					<|
+						Object -> incubateUO1,
+						Name -> "Test Incubate unit operation 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID,
+						Subprotocol -> Link[incubateSub2]
+					|>,
+					<|
+						Object -> incubateSub1,
+						Name -> "Test Incubate sub 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID,
+						ParentProtocol -> Link[parentFilter1, Subprotocols],
+						Replace[SamplesIn] -> {Link[sample1, Protocols], Link[sample2, Protocols]},
+						Replace[ContainersIn] -> {Link[container1, Protocols], Link[container2, Protocols]}
+					|>,
+					<|
+						Object -> incubateSub2,
+						Name -> "Test Incubate sub 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID,
+						ParentProtocol -> Link[parentMSP1, Subprotocols],
+						Replace[SamplesIn] -> {Link[sample3, Protocols], Link[sample4, Protocols]},
+						Replace[ContainersIn] -> {Link[container3, Protocols], Link[container4, Protocols]},
+						Replace[WorkingSamples] -> {Link[sample5], Link[sample6]},
+						Replace[WorkingContainers] -> {Link[container5], Link[container6]}
+					|>
+				}];
+			]
+		]
 	),
 	SymbolTearDown:>(
-		EraseObject[$CreatedObjects, Force->True]
+		Module[{objs, existingObjs},
+			objs = {
+				Object[Container, Bench, "Test bench for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Protocol, Incubate, "Test Incubate sub 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Protocol, Incubate, "Test Incubate sub 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Protocol, Filter, "Test Filter parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test MSP parent 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 3 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 4 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Sample, "Test sample 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for populateWorkingAndAliquotSamples tests " <> $SessionUUID],
+				Object[UnitOperation, Incubate, "Test Incubate unit operation 1 for populateWorkingAndAliquotSamples tests " <> $SessionUUID]
+			};
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True]
+		]
 	),
 	Stubs :> {
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
@@ -5006,22 +5706,6 @@ DefineTests[populateWorkingAndAliquotSamples,
 
 DefineTests[populateWorkingSamples,
 	{
-		Example[{Basic,"Populate the working samples of a parent protocol after a filter:"},
-			Download[
-				populateWorkingSamples[Object[Protocol, Incubate, "id:bq9LA0JMWeZm"]],
-				{WorkingSamples, WorkingContainers}
-			],
-			{
-				{
-					ObjectP[Object[Sample, "id:n0k9mG8BLBEW"]],
-					ObjectP[Object[Sample, "id:01G6nvwEAE4m"]]
-				},
-				{
-					ObjectP[Object[Container, Vessel, "id:9RdZXv1al9Zl"]],
-					ObjectP[Object[Container, Vessel, "id:pZx9jo8eP09p"]]
-				}
-			}
-		],
 		Example[{Basic,"Populate the working samples of a parent protocol after an aliquot:"},
 			Download[
 				populateWorkingSamples[Object[Protocol, AbsorbanceSpectroscopy, "Test AbsSpec ParentProtocol for populateWorkingSamples" <> $SessionUUID]],
@@ -5315,7 +5999,7 @@ DefineTests[resolvePostProcessingOptions,
 				ImageSample->Automatic,
 				MeasureVolume->Automatic,
 				MeasureWeight->Automatic,
-				ParentProtocol->Object[Protocol,SampleManipulation,"resolvePostProcessingOptions test parent protocol"]
+				ParentProtocol->Object[Protocol,ManualSamplePreparation,"resolvePostProcessingOptions test parent protocol"]
 			}],
 			{
 				ImageSample->False,
@@ -5332,6 +6016,85 @@ DefineTests[resolvePostProcessingOptions,
 			{
 				ImageSample->True,
 				MeasureVolume->True,
+				MeasureWeight->False
+			}
+		],
+		Example[{Options,Sterile,"If samples are expected to be Sterile, Automatics will default to False:"},
+			resolvePostProcessingOptions[
+				{
+					ImageSample->False,
+					MeasureVolume->Automatic,
+					MeasureWeight->False
+				},
+				Sterile->True
+			],
+			{
+				ImageSample->False,
+				MeasureVolume->False,
+				MeasureWeight->False
+			}
+		],
+		Example[{Options,Living,"If samples are expected to be Living, Automatics will default to False:"},
+			resolvePostProcessingOptions[
+				{
+					ImageSample->Automatic,
+					MeasureVolume->False,
+					MeasureWeight->False
+				},
+				Living->True
+			],
+			{
+				ImageSample->False,
+				MeasureVolume->False,
+				MeasureWeight->False
+			}
+		],
+		Example[{Messages,"Warning::PostProcessingSterileSamples","If samples are expected to be Sterile but there is post-processing option specified to be True, a warning will be thrown:"},
+			resolvePostProcessingOptions[
+				{
+					ImageSample->True,
+					MeasureVolume->False,
+					MeasureWeight->False
+				},
+				Sterile->True
+			],
+			{
+				ImageSample->True,
+				MeasureVolume->False,
+				MeasureWeight->False
+			},
+			Messages:>{Warning::PostProcessingSterileSamples}
+		],
+		Example[{Messages,"Error::PostProcessingLivingSamples","If samples are expected to be Living but there is post-processing option specified to be True, an error will be thrown:"},
+			resolvePostProcessingOptions[
+				{
+					ImageSample->True,
+					MeasureVolume->False,
+					MeasureWeight->False
+				},
+				Living->True
+			],
+			{
+				ImageSample->$Failed,
+				MeasureVolume->False,
+				MeasureWeight->False
+			},
+			Messages:>{Error::PostProcessingLivingSamples}
+		],
+		Example[{Messages,"Error::PostProcessingLivingSamples","If running in Engine and samples are expected to be Sterile while there is post-processing option specified to be True, no message will be thrown:"},
+			Block[{$ECLApplication=Engine},
+				resolvePostProcessingOptions[
+					{
+						ImageSample->True,
+						MeasureVolume->False,
+						MeasureWeight->False
+					},
+					Sterile->True
+				]
+			],
+			{
+				ImageSample->True,
+				MeasureVolume->False,
 				MeasureWeight->False
 			}
 		],
@@ -5394,7 +6157,7 @@ DefineTests[resolvePostProcessingOptions,
 				MeasureWeight->True
 			|>,
 			<|
-				Type->Object[Protocol,SampleManipulation],
+				Type->Object[Protocol,ManualSamplePreparation],
 				Name->"resolvePostProcessingOptions test parent protocol",
 				ParentProtocol->Link[hplcProtocol,Subprotocols],
 				ImageSample->True,
@@ -5458,6 +6221,13 @@ DefineTests[populatePreparedSamples,
 			],
 			True,
 			Variables:>{samplesIn,containersIn,workingSamples,workingContainers}
+		],
+		Example[{Additional,"","Update NestedIndexMatchingSamplesIn when we can:"},
+			Download[
+				populatePreparedSamples[Object[Protocol,ImageCells,"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID]],
+				NestedIndexMatchingSamplesIn
+			],
+			{{ObjectReferenceP[]}}
 		]
 		(* TODO: Add more tests once define correctly points at a sample and not a container. Right now, our tests are limited to preparing inputs. *)
 	},
@@ -5470,11 +6240,14 @@ DefineTests[populatePreparedSamples,
 				Object[Container,Vessel,"Test container 1 for populatePreparedSamples" <> $SessionUUID],
 				Object[Container,Vessel,"Test container 2 for populatePreparedSamples" <> $SessionUUID],
 				Object[Container,Vessel,"Test container 3 for populatePreparedSamples" <> $SessionUUID],
+				Object[Container,Vessel,"Test container 4 for populatePreparedSamples" <> $SessionUUID],
 				Object[Sample,"Test sample 1 for populatePreparedSamples" <> $SessionUUID],
 				Object[Sample,"Test sample 2 for populatePreparedSamples" <> $SessionUUID],
 				Object[Sample,"Test sample 3 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample,"Test sample 4 for populatePreparedSamples" <> $SessionUUID],
 				Object[Protocol,Incubate,"Fake incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID],
-				Object[Protocol,Incubate,"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID]
+				Object[Protocol,Incubate,"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol,ImageCells,"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID]
 			};
 
 			EraseObject[
@@ -5484,10 +6257,13 @@ DefineTests[populatePreparedSamples,
 			];
 		];
 
-		Module[{emptyContainer1,emptyContainer2,emptyContainer3,sample1,sample2,sample3,incubateProtocol1,incubateProtocol2,samplePreparationProtocol},
+		Module[{
+			emptyContainer1,emptyContainer2,emptyContainer3,sample1,sample2,sample3,incubateProtocol1,
+			incubateProtocol2,samplePreparationProtocol,emptyContainer4,sample4
+			,imageCellsProtocol1},
 
 			(* Create our container with a sample in it. *)
-			{emptyContainer1,emptyContainer2,emptyContainer3}=Upload[{
+			{emptyContainer1,emptyContainer2,emptyContainer3,emptyContainer4}=Upload[{
 				<|
 					Type->Object[Container,Vessel],
 					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
@@ -5508,12 +6284,20 @@ DefineTests[populatePreparedSamples,
 					Name->"Test container 3 for populatePreparedSamples" <> $SessionUUID,
 					DeveloperObject->True,
 					Site -> Link[$Site]
+				|>,
+				<|
+					Type->Object[Container,Vessel],
+					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
+					Name->"Test container 4 for populatePreparedSamples" <> $SessionUUID,
+					DeveloperObject->True,
+					Site -> Link[$Site]
 				|>
 			}];
 
 			(* Create our sample. *)
-			{sample1,sample2,sample3}=ECL`InternalUpload`UploadSample[
+			{sample1,sample2,sample3,sample4}=ECL`InternalUpload`UploadSample[
 				{
+					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"]
@@ -5521,13 +6305,15 @@ DefineTests[populatePreparedSamples,
 				{
 					{"A1",emptyContainer1},
 					{"A1",emptyContainer2},
-					{"A1",emptyContainer3}
+					{"A1",emptyContainer3},
+					{"A1",emptyContainer4}
 				},
-				InitialAmount->{49 Milliliter,49 Milliliter,49 Milliliter},
+				InitialAmount->{49 Milliliter,49 Milliliter,49 Milliliter,49 Milliliter},
 				Name->{
 					"Test sample 1 for populatePreparedSamples" <> $SessionUUID,
 					"Test sample 2 for populatePreparedSamples" <> $SessionUUID,
-					"Test sample 3 for populatePreparedSamples" <> $SessionUUID
+					"Test sample 3 for populatePreparedSamples" <> $SessionUUID,
+					"Test sample 4 for populatePreparedSamples" <> $SessionUUID
 				}
 			];
 
@@ -5556,6 +6342,16 @@ DefineTests[populatePreparedSamples,
 				]
 			];
 
+			imageCellsProtocol1=Quiet[
+				ExperimentImageCells[
+					"my sample",
+					PreparatoryUnitOperations->{ManualSamplePreparation[ECL`LabelSample[<|ECL`Sample -> {ECL`Model[ECL`Sample, "id:O81aEBZnWMRO"]}, ECL`Sterile -> {True}, ECL`Amount -> {Quantity[1, "Milliliters"]}, ECL`Container -> {ECL`Model[ECL`Container, ECL`Plate, "id:eGakld01zzLx"]}, Label -> {"my sample"}|>]]},
+					SamplingPattern->Grid,
+					SamplingNumberOfRows->4,
+					SamplingNumberOfColumns->4
+				]
+			];
+
 			(* Create a sample manipulation protocol with DefinedObjects of "my container". *)
 			samplePreparationProtocol=Upload[<|
 				Type->Object[Protocol,ManualSamplePreparation],
@@ -5577,7 +6373,13 @@ DefineTests[populatePreparedSamples,
 					Object->incubateProtocol2,
 					Name->"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID,
 					Append[SamplePreparationProtocols]->Link[samplePreparationProtocol]
+				|>,
+				<|
+					Object->imageCellsProtocol1,
+					Name->"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
+					Append[SamplePreparationProtocols]->Link[samplePreparationProtocol]
 				|>
+
 			}];
 
 			(* Make all of the objects created developer objects *)
@@ -5647,6 +6449,34 @@ DefineTests[fastAssocLookup,
 			fastPackets = makeFastAssocFromCache[Flatten[packets]];
 			fastAssocLookup[fastPackets, Object[Sample, "fastAssocLookup test sample 2"<> $SessionUUID], {Analytes, Name}],
 			{"Water", "Ethanol"},
+			Variables:>{packets, fastPackets}
+		],
+		Test["One can specify the part spec for any multiple fields using the Field[fieldName[[n]]] notation:",
+			packets = Download[Object[Sample, "fastAssocLookup test sample 2"<> $SessionUUID], {Packet[Analytes], Packet[Analytes[{Name}]]}];
+			fastPackets = makeFastAssocFromCache[Flatten[packets]];
+			fastAssocLookup[fastPackets, Object[Sample, "fastAssocLookup test sample 2"<> $SessionUUID], {Field[Analytes[[1]]], Name}],
+			"Water",
+			Variables:>{packets, fastPackets}
+		],
+		Test["One can specify the part spec for any multiple fields using the Field[fieldName[[n]]] notation at any complexity:",
+			packets = Download[Object[Container, Vessel, "fastAssocLookup test container 2" <> $SessionUUID], {Packet[Contents[[All, 2]][Analytes]], Packet[Contents[[All, 2]][Analytes][Name]], Packet[Contents]}];
+			fastPackets = makeFastAssocFromCache[Flatten[packets]];
+			fastAssocLookup[fastPackets, Object[Container, Vessel, "fastAssocLookup test container 2" <> $SessionUUID], {Field[Contents[[All, 2]]], Field[Analytes[[1]]], Name}],
+			{"Water"},
+			Variables:>{packets, fastPackets}
+		],
+		Test["Function supports Repeated[field name] notation to go through certain link field repeatedly:",
+			packets = Download[Object[Sample, "fastAssocLookup test sample 2"<> $SessionUUID], {Packet[Container, Name], Packet[Container[Container, Name]], Packet[Container[Container][Container, Name]]}];
+			fastPackets = makeFastAssocFromCache[Flatten[packets]];
+			fastAssocLookup[fastPackets, Object[Sample, "fastAssocLookup test sample 2"<> $SessionUUID], {Repeated[Container], Name}],
+			{"fastAssocLookup test container 2" <> $SessionUUID, "Bench for fastAssocLookup tests" <> $SessionUUID},
+			Variables:>{packets, fastPackets}
+		],
+		Test["Function supports more complicated Repeated[Field[fieldName[[part]]]] notation to repeatedly go through liked fields:",
+			packets = Quiet[Download[Object[Container, Bench, "Bench for fastAssocLookup tests" <> $SessionUUID], {Packet[Contents, Name], Packet[Repeated[Contents[[All, 2]]][Contents, Name]]}]];
+			fastPackets = makeFastAssocFromCache[DeleteCases[Flatten[packets], $Failed]];
+			fastAssocLookup[fastPackets, Object[Container, Bench, "Bench for fastAssocLookup tests" <> $SessionUUID], {Repeated[Field[Contents[[1, 2]]]], Name}],
+			{"fastAssocLookup test container 1" <> $SessionUUID, "fastAssocLookup test sample 1" <> $SessionUUID},
 			Variables:>{packets, fastPackets}
 		]
 	},
@@ -5760,6 +6590,233 @@ DefineTests[fastAssocLookup,
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		]
 	)
+];
+
+(* ::Subsection::Closed:: *)
+(*fetchPacketFromFastAssoc*)
+
+DefineTests[fetchPacketFromFastAssoc,
+	{
+		Test["Function fetches packet from fastAssoc:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], fastPacs],
+			PacketP[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID]],
+			Variables:>{fastPacs, pacs}
+		],
+		Test["If packets are not available from fastAssoc, return {}:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Container, Vessel, "fetchPacketFromFastAssoc test container 1" <> $SessionUUID], fastPacs],
+			{},
+			Variables:>{fastPacs, pacs}
+		],
+		Test["Function allows the third input Packet[fields...], in which case only fields specified will appear in the output packet:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], fastPacs, Packet[Container, Status, Name]],
+			AssociationMatchP[<|
+				Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+				Type -> Object[Sample],
+				ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+				Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+				Status -> Available,
+				Container -> LinkP[Object[Container, Vessel, "fetchPacketFromFastAssoc test container 1" <> $SessionUUID]]
+			|>],
+			Variables:>{fastPacs, pacs}
+		],
+		Test["When the third input is provided, Object, Type, ID, Name fields will always present in the packet:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], fastPacs, Packet[Status]],
+			AssociationMatchP[<|
+				Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+				Type -> Object[Sample],
+				ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+				Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+				Status -> Available
+			|>],
+			Variables:>{fastPacs, pacs}
+		],
+		Test["When the third input is provided, any fields not found in the full packet defaults to $Failed:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], fastPacs, Packet[Contents]],
+			AssociationMatchP[<|
+				Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+				Type -> Object[Sample],
+				ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+				Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+				Contents -> $Failed
+			|>],
+			Variables:>{fastPacs, pacs}
+		],
+		Test["When the third input is provided, a forth input can also be specified to indicate the default value of fields if it's not found:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], fastPacs, Packet[Contents], Null],
+			AssociationMatchP[<|
+				Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+				Type -> Object[Sample],
+				ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+				Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+				Contents -> Null
+			|>],
+			Variables:>{fastPacs, pacs}
+		],
+		Test["Function works on a list of objects:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}, fastPacs],
+			{PacketP[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID]], PacketP[Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]]},
+			Variables:>{fastPacs, pacs}
+		],
+		Test["Function works on a list of objects with 3 entries:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}, fastPacs, Packet[Status, Contents]],
+			{
+				AssociationMatchP[<|
+					Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+					Type -> Object[Sample],
+					ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+					Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+					Contents -> $Failed,
+					Status -> Available
+				|>],
+				AssociationMatchP[<|
+					Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID], Object],
+					Type -> Object[Sample],
+					ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID], ID],
+					Name -> "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID,
+					Contents -> $Failed,
+					Status -> Available
+				|>]
+			},
+			Variables:>{fastPacs, pacs}
+		],
+		Test["Function works on a list of objects with 4 entries:",
+			pacs = Download[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}];
+			fastPacs = makeFastAssocFromCache[Flatten[pacs]];
+			fetchPacketFromFastAssoc[{Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]}, fastPacs, Packet[Status, Contents], Null],
+			{
+				AssociationMatchP[<|
+					Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], Object],
+					Type -> Object[Sample],
+					ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID], ID],
+					Name -> "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+					Contents -> Null,
+					Status -> Available
+				|>],
+				AssociationMatchP[<|
+					Object -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID], Object],
+					Type -> Object[Sample],
+					ID -> Download[Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID], ID],
+					Name -> "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID,
+					Contents -> Null,
+					Status -> Available
+				|>]
+			},
+			Variables:>{fastPacs, pacs}
+		]
+	},
+	SymbolSetUp :> {
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Bench for fetchPacketFromFastAssoc tests" <> $SessionUUID],
+					Object[Container, Vessel, "fetchPacketFromFastAssoc test container 1" <> $SessionUUID],
+					Object[Container, Vessel, "fetchPacketFromFastAssoc test container 2" <> $SessionUUID],
+					Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID],
+					Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Module[
+			{fakeBench, container, container2, sample, sample2},
+
+			fakeBench = Upload[
+				<|
+					Type -> Object[Container, Bench],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Bench for fetchPacketFromFastAssoc tests" <> $SessionUUID,
+					DeveloperObject -> True,
+					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+				|>
+			];
+
+			(* set up containers *)
+			{
+				container,
+				container2
+			} = UploadSample[
+				{
+					Model[Container, Vessel, "2mL Tube"],
+					Model[Container, Vessel, "2mL Tube"]
+				},
+				{
+					{"Work Surface", fakeBench},
+					{"Work Surface", fakeBench}
+				},
+				Status -> Available,
+				Name -> {
+					"fetchPacketFromFastAssoc test container 1" <> $SessionUUID,
+					"fetchPacketFromFastAssoc test container 2" <> $SessionUUID
+				}
+			];
+
+			(*set up samples*)
+			{
+				sample,
+				sample2
+			} = UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, StockSolution, "70% Ethanol"]
+				},
+				{
+					{"A1", container},
+					{"A1", container2}
+				},
+				InitialAmount -> {
+					1 Milliliter,
+					1 Milliliter
+				},
+				Name -> {
+					"fetchPacketFromFastAssoc test sample 1" <> $SessionUUID,
+					"fetchPacketFromFastAssoc test sample 2" <> $SessionUUID
+				}
+			];
+
+			Upload[Flatten[{
+				<|
+					Object -> sample2,
+					Replace[Analytes] -> {
+						Link[Model[Molecule, "Water"]],
+						Link[Model[Molecule, "Ethanol"]]
+					}
+				|>,
+				<|Object -> #, DeveloperObject -> True|> & /@ Cases[Flatten[{container, container2, sample, sample2}], ObjectP[]]
+			}]];
+		]
+	},
+	SymbolTearDown :> Module[{objs, existingObjs},
+		objs = Quiet[Cases[
+			Flatten[{
+				Object[Container, Bench, "Bench for fetchPacketFromFastAssoc tests" <> $SessionUUID],
+				Object[Container, Vessel, "fetchPacketFromFastAssoc test container 1" <> $SessionUUID],
+				Object[Container, Vessel, "fetchPacketFromFastAssoc test container 2" <> $SessionUUID],
+				Object[Sample, "fetchPacketFromFastAssoc test sample 1" <> $SessionUUID],
+				Object[Sample, "fetchPacketFromFastAssoc test sample 2" <> $SessionUUID]
+			}],
+			ObjectP[]
+		]];
+		existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+		EraseObject[existingObjs, Force -> True, Verbose -> False]
+	]
 ];
 
 
@@ -6082,21 +7139,32 @@ DefineTests[
 			{
 				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, SampleHandling, Composition,
 				Analytes, Solvent, MassConcentration, Concentration, Volume, Mass, Count, Status, Model, Position,
-				Container, Sterile, StorageCondition, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
-				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportWarmed, TransportChilled, Tablet, TabletWeight,
+				Container, Living, Sterile, StorageCondition, MeltingPoint, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
+				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Sachet, SolidUnitWeight,
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
-				BiosafetyHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
+				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
-				AluminumFoil, Parafilm, Anhydrous
+				AluminumFoil, Parafilm, Anhydrous, ExtinctionCoefficients
+			}
+		],
+		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with a Model[Sample] input:"},
+			SamplePreparationCacheFields[Model[Sample]],
+			{
+				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts, MixedBatchProducts,
+				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
+				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
+				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
+				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
+				Parafilm, AluminumFoil, Living
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[Container] input:"},
 			SamplePreparationCacheFields[Object[Container]],
 			{
 				Type, Object, Name, Status, Model, Container, Contents, Container, Sterile, TareWeight, StorageCondition, RequestedResources, KitComponents, Site,
-				Ampoule, Hermetic, MaxTemperature, MaxVolume, MinTemperature, Opaque, RNaseFree, Squeezable, InertHandling,
+				Ampoule, Hermetic, MaxTemperature, MaxVolume, MinTemperature, Opaque, RNaseFree, Squeezable, InertHandling, AsepticHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, TransferTemperature, TransportCondition, Ventilated,
-				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil,Parafilm
+				PreviousCover, Cover, Septum, KeepCovered, AluminumFoil, Parafilm
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Model[Container] input:"},
@@ -6109,9 +7177,9 @@ DefineTests[
 				LiquidHandlerAdapter,WellPositionDimensions,WellDiameters,WellDepths,ContainerMaterials,WellBottom,NozzleHeight,
 				NozzleOffset,SkirtHeight, RecommendedFillVolume,Immobile,RentByDefault,CoverFootprints,
 				AluminumFoil, Ampoule, BuiltInCover, CoverTypes, Counterweights, EngineDefault, Hermetic, Opaque, Parafilm,
-				RequestedResources, Reusability, RNaseFree, Squeezable, StorageBuffer, StorageBufferVolume,
+				RequestedResources, Reusable, RNaseFree, Squeezable, StorageBuffer, StorageBufferVolume,
 				TareWeight, VolumeCalibrations, Columns,HorizontalPitch,LiquidHandlerPrefix, MultiProbeHeadIncompatible, VerticalPitch, MaxPressure,
-				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MixedBatchProducts
+				DestinationContainerModel,RetentateCollectionContainerModel,ConnectionType, KitProducts, Products, MixedBatchProducts, MaxOverheadMixRate
 			}
 		],
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[User] input:"},
@@ -6121,4 +7189,1013 @@ DefineTests[
 	}
 ];
 
+
+
+
+(* ::Subsubsection::Closed:: *)
+(*resolveManualFrameworkFunction*)
+
+
+DefineTests[
+	resolveManualFrameworkFunction,
+	{
+		Example[{Basic, "If Preparation is Manual and any sample contains living material, return ExperimentManualCellPreparation:"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Sample, "Sample 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Packet[Container[Contents]],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualCellPreparation
+		],
+		Example[{Basic, "If Preparation is Manual and no samples contain living material, return ExperimentManualSamplePreparation:"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Sample, "Sample 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Packet[Container[Contents]],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualSamplePreparation
+		],
+		Example[{Basic, "If Preparation is Manual and no samples contain living material, return ExperimentManualSamplePreparation (Model[Sample] input):"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Model[Sample, "Milli-Q water"]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualSamplePreparation
+		],
+		Example[{Basic, "If Preparation is Manual and some samples contain living material, return ExperimentManualCellPreparation (Model[Sample] input):"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualCellPreparation
+		],
+		Example[{Basic, "If Output -> Type, return the Type corresponding to the resolved experiment function:"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Sample, "Sample 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Packet[Container[Contents]],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache, Output -> Type]
+			],
+			Object[Protocol, ManualSamplePreparation]
+		],
+		Example[{Basic, "If Preparation is Manual and any sample contains living material, return ExperimentManualCellPreparation (Object[Container] input):"},
+			Module[
+				{samples, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Container, Plate, "Plate 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				downloadStuff = Quiet[
+					Download[
+						{
+							samples
+						},
+						{
+							Packet[Contents],
+							Packet[Contents[[All, 2]][{Living, Sterile, CellType, Composition}]]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualCellPreparation
+		],
+		Example[{Basic, "If Preparation is Manual and no sample contains living material, return ExperimentManualSamplePreparation (Object[Container] input):"},
+			Module[
+				{samples, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				downloadStuff = Quiet[
+					Download[
+						{
+							samples
+						},
+						{
+							Packet[Contents],
+							Packet[Contents[[All, 2]][{Living, Sterile, CellType, Composition}]]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> cache]
+			],
+			ExperimentManualSamplePreparation
+		],
+		Example[{Basic, "If Preparation is Manual and no sample contains living material, But SterileTechnique is True, return ExperimentManualCellPreparation:"},
+			Module[
+				{samples, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				downloadStuff = Quiet[
+					Download[
+						{
+							samples
+						},
+						{
+							Packet[Contents],
+							Packet[Contents[[All, 2]][{Living, Sterile, CellType, Composition}]]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> True}, Cache -> cache]
+			],
+			ExperimentManualCellPreparation
+		],
+		Example[{Additional, "If the cache and simulation are missing any sample information, the necessary information is downloaded from the database:"},
+			Module[
+				{samples, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Container, Plate, "Plate 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				};
+
+				(* Spoof an incomplete cache *)
+				downloadStuff = Quiet[
+					Download[
+						{
+							{Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID]}
+						},
+						{
+							Packet[Contents],
+							Packet[Contents[[All, 2]][{Living, Sterile, CellType, Composition}]]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolveManualFrameworkFunction[samples, {SterileTechnique -> Automatic}, Cache -> {}, Simulation -> Simulation[]]
+			],
+			ExperimentManualCellPreparation
+		]
+	},
+	Stubs :> {
+		$DeveloperSearch = True
+	},
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Module[{namedObjects, existingObjs},
+			$CreatedObjects = {};
+			namedObjects = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Test bench for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Model[Cell, Bacteria, "Bacterial cell for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Model[Sample, "Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Object[Container, Vessel, "Tube 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 4 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Item, Tips, "Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Item, Tips, "Non-Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 5 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 6 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 7 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 8 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 9 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 10 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				}],
+				ObjectP[]
+			]];
+
+			existingObjs = PickList[namedObjects, DatabaseMemberQ[namedObjects]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+
+		];
+		Block[{$DeveloperUpload = True, $AllowPublicObjects = True},
+			Module[
+				{
+					testBench, modelCell1, modelSample1,
+					tube1, tube2, tube3, tube4, plate1, plate2, plate3, sterileTips, nonsterileTips,
+					sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10
+				},
+
+				(* Create a test bench *)
+				testBench = Upload[<|
+					Type -> Object[Container, Bench],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Test bench for resolveManualFrameworkFunction tests " <> $SessionUUID,
+					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+					Site -> Link[$Site]
+				|>];
+
+				(* Make a test bacterial cell model. *)
+				modelCell1 = UploadBacterialCell[
+					"Bacterial cell for resolveManualFrameworkFunction tests " <> $SessionUUID,
+					Morphology -> Cocci,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension
+				];
+
+				(* Make a test Model[Sample] *)
+				modelSample1 = UploadSampleModel[
+					"Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID,
+					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					Expires -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					State -> Liquid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension,
+					Living -> True
+				];
+
+				(* Generate sample containers and tip objects. *)
+				{
+					tube1,
+					tube2,
+					tube3,
+					tube4,
+					plate1,
+					plate2,
+					plate3,
+					sterileTips,
+					nonsterileTips
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Item, Tips, "200 uL tips, sterile"],
+						Model[Item, Tips, "200 uL tips, non-sterile"]
+					},
+					ConstantArray[{"Work Surface", testBench}, 9],
+					Name -> {
+						"Tube 1 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Tube 2 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Tube 3 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Tube 4 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Plate 1 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Plate 3 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Non-Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID
+					}
+				];
+
+				(* Generate samples *)
+				{
+					(* in tubes *)
+					sample1,
+					sample2,
+					sample3,
+					sample4,
+					(* in plates *)
+					sample5,
+					sample6,
+					sample7,
+					sample8,
+					sample9,
+					sample10
+				} = UploadSample[
+					{
+						(* in tubes *)
+						modelSample1,
+						modelSample1,
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						(* in plates *)
+						modelSample1,
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"]
+					},
+					{
+						(* in tubes *)
+						{"A1", tube1},
+						{"A1", tube2},
+						{"A1", tube3},
+						{"A1", tube4},
+						(* in plates *)
+						{"A1", plate1},
+						{"A2", plate1},
+						{"A1", plate2},
+						{"A2", plate2},
+						{"A1", plate3},
+						{"A2", plate3}
+					},
+					InitialAmount -> ConstantArray[1 Milliliter, 10],
+					Living -> {
+						True,
+						True,
+						False,
+						False,
+						True,
+						False,
+						False,
+						False,
+						False,
+						False
+					},
+					CellType -> {
+						Bacterial,
+						Bacterial,
+						Null,
+						Null,
+						Bacterial,
+						Null,
+						Null,
+						Null,
+						Null,
+						Null
+					},
+					State -> Liquid,
+					Name -> {
+						"Sample 1 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 2 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 3 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 4 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 5 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 6 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 7 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 8 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 9 for resolveManualFrameworkFunction tests " <>$SessionUUID,
+						"Sample 10 for resolveManualFrameworkFunction tests " <>$SessionUUID
+					}
+				];
+
+			];
+		]
+	),
+	SymbolTearDown :> (
+		Module[{namedObjects, allObjects, existingObjs},
+			On[Warning::SamplesOutOfStock];
+			namedObjects = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Test bench for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Model[Cell, Bacteria, "Bacterial cell for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Model[Sample, "Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID],
+					Object[Container, Vessel, "Tube 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 4 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Item, Tips, "Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Item, Tips, "Non-Sterile Tips for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 1 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 3 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 5 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 6 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 7 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 8 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 9 for resolveManualFrameworkFunction tests " <>$SessionUUID],
+					Object[Sample, "Sample 10 for resolveManualFrameworkFunction tests " <>$SessionUUID]
+				}],
+				ObjectP[]
+			]];
+
+			allObjects = Quiet[Cases[
+				Flatten[{
+					$CreatedObjects,
+					namedObjects
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[allObjects, DatabaseMemberQ[allObjects]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+			Unset[$CreatedObjects];
+		];
+	)
+];
+(* ::Subsubsection::Closed:: *)
+(*resolvePotentialWorkCells*)
+
+
+DefineTests[
+	resolvePotentialWorkCells,
+	{
+		Example[{Basic, "If Preparation is Robotic and any sample contains living material, return CellPreparation work cells:"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Sample, "Sample 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolvePotentialWorkCells tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Packet[Container[Contents]],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolvePotentialWorkCells[samples, {Preparation -> Robotic}, Cache -> cache]
+			],
+			{microbioSTAR|bioSTAR..}
+		],
+		Example[{Basic, "If input is Object[Container], the samples in its contents are checked for living materials and cell types for potential workcell resolution:"},
+			Module[
+				{container, objectFields, containerFields, downloadStuff, cache},
+				container = Object[Container, Plate, "Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID];
+
+				(* Spoof a cache *)
+				{objectFields, containerFields} = SamplePreparationCacheFields /@ {Object[Sample], Object[Container]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							container[Contents][[All,2]],
+							{container}
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Evaluate[Packet @@ containerFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* The helper should be able to download the contents and sample info if no cache is fed *)
+				(* Plate 1 contains a microbial sample and a water sample, therefore should resolve to microbioSTAR *)
+				resolvePotentialWorkCells[
+					container,
+					{Preparation -> Robotic},
+					Cache -> cache
+				]
+			],
+			{microbioSTAR}
+		],
+		Example[{Basic, "If input is a position in Object[Container], only the sample at this position of the container is checked for living materials and cell types for potential workcell resolution:"},
+			(* Because potential aliquot sample prep might be included that is out of the scope of this function, we do not want to screen out workcells prematurely *)
+			Module[
+				{container, objectFields, containerFields, downloadStuff, cache, potentialWorkCells},
+				container = Object[Container, Plate, "Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID];
+
+				(* Spoof a cache *)
+				{objectFields, containerFields} = SamplePreparationCacheFields /@ {Object[Sample], Object[Container]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							container[Contents][[All,2]],
+							{container}
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Evaluate[Packet @@ containerFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* The helper should be able to download the contents and sample info if no cache is fed *)
+				(* Plate 1 contains a microbial sample and a water sample, therefore should resolve to microbioSTAR *)
+				potentialWorkCells = resolvePotentialWorkCells[
+					{"A2", container},(* water is at this position *)
+					{Preparation -> Robotic},
+					Cache -> cache
+				];
+
+				MemberQ[potentialWorkCells, #]& /@{STAR, bioSTAR, microbioSTAR}
+			],
+			{True..}
+		],
+		Example[{Basic, "If input is simply an Automatic, all work cells are allowed:"},
+			Module[{potentialWorkCells},
+				potentialWorkCells = resolvePotentialWorkCells[
+					Automatic,
+					{Preparation -> Robotic}
+				];
+				MemberQ[potentialWorkCells, #]& /@{STAR, bioSTAR, microbioSTAR}
+			],
+			{True..}
+		],
+		Example[{Basic, "If Preparation is Robotic and no samples contain living material, return STAR ast one of the potential work cells:"},
+			Module[
+				{samples, objectFields, modelFields, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Sample, "Sample 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolvePotentialWorkCells tests " <>$SessionUUID]
+				};
+
+				(* Spoof a cache *)
+				{objectFields, modelFields} = SamplePreparationCacheFields /@ {Object[Sample], Model[Sample]};
+				downloadStuff = Quiet[
+					Download[
+						{
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Object[Sample]]],
+							Cases[samples, ObjectP[Model[Sample]]]
+						},
+						{
+							Evaluate[Packet @@ objectFields],
+							Packet[Container[Contents]],
+							Evaluate[Packet @@ modelFields]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolvePotentialWorkCells[samples, {Preparation -> Robotic}, Cache -> cache]
+			],
+			{___, STAR, ___}
+		],
+		Example[{Additional, "If the cache and simulation are missing any sample information, the necessary information is downloaded from the database:"},
+			Module[
+				{samples, downloadStuff, cache},
+
+				(* Download some information and generate the fastAssoc from it. *)
+				samples = {
+					Object[Container, Plate, "Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolvePotentialWorkCells tests " <>$SessionUUID]
+				};
+
+				(* Spoof an incomplete cache *)
+				downloadStuff = Quiet[
+					Download[
+						{
+							{Object[Container, Plate, "Plate 2 for resolvePotentialWorkCells tests " <>$SessionUUID]}
+						},
+						{
+							Packet[Contents],
+							Packet[Contents[[All, 2]][{Living, Sterile, CellType, Composition}]]
+						}
+					],
+					{Download::FieldDoesntExist}
+				];
+				cache = Experiment`Private`FlattenCachePackets[downloadStuff];
+
+				(* Run the helper. *)
+				resolvePotentialWorkCells[samples, {Preparation -> Robotic}, Cache -> cache, Simulation -> Simulation[]]
+			],
+			{WorkCellP..}
+		]
+	},
+	Stubs :> {
+		$DeveloperSearch = True
+	},
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Module[{namedObjects, existingObjs},
+			$CreatedObjects = {};
+			namedObjects = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Test bench for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Model[Cell, Bacteria, "Bacterial cell for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Model[Sample, "Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Object[Container, Vessel, "Tube 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 4 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Item, Tips, "Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Item, Tips, "Non-Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 5 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 6 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 7 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 8 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 9 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 10 for resolvePotentialWorkCells tests " <>$SessionUUID]
+				}],
+				ObjectP[]
+			]];
+
+			existingObjs = PickList[namedObjects, DatabaseMemberQ[namedObjects]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+
+		];
+		Block[{$DeveloperUpload = True, $AllowPublicObjects = True},
+			Module[
+				{
+					testBench, modelCell1, modelSample1,
+					tube1, tube2, tube3, tube4, plate1, plate2, plate3, sterileTips, nonsterileTips,
+					sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10
+				},
+
+				(* Create a test bench *)
+				testBench = Upload[<|
+					Type -> Object[Container, Bench],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Test bench for resolvePotentialWorkCells tests " <> $SessionUUID,
+					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+					Site -> Link[$Site]
+				|>];
+
+				(* Make a test bacterial cell model. *)
+				modelCell1 = UploadBacterialCell[
+					"Bacterial cell for resolvePotentialWorkCells tests " <> $SessionUUID,
+					Morphology -> Cocci,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension
+				];
+
+				(* Make a test Model[Sample] *)
+				modelSample1 = UploadSampleModel[
+					"Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID,
+					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					Expires -> False,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					State -> Liquid,
+					BiosafetyLevel -> "BSL-1",
+					Flammable -> False,
+					MSDSRequired -> False,
+					IncompatibleMaterials -> {None},
+					CellType -> Bacterial,
+					CultureAdhesion -> Suspension,
+					Living -> True
+				];
+
+				(* Generate sample containers and tip objects. *)
+				{
+					tube1,
+					tube2,
+					tube3,
+					tube4,
+					plate1,
+					plate2,
+					plate3,
+					sterileTips,
+					nonsterileTips
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Item, Tips, "200 uL tips, sterile"],
+						Model[Item, Tips, "200 uL tips, non-sterile"]
+					},
+					ConstantArray[{"Work Surface", testBench}, 9],
+					Name -> {
+						"Tube 1 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Tube 2 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Tube 3 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Tube 4 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Plate 2 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Plate 3 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Non-Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID
+					}
+				];
+
+				(* Generate samples *)
+				{
+					(* in tubes *)
+					sample1,
+					sample2,
+					sample3,
+					sample4,
+					(* in plates *)
+					sample5,
+					sample6,
+					sample7,
+					sample8,
+					sample9,
+					sample10
+				} = UploadSample[
+					{
+						(* in tubes *)
+						modelSample1,
+						modelSample1,
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						(* in plates *)
+						modelSample1,
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"]
+					},
+					{
+						(* in tubes *)
+						{"A1", tube1},
+						{"A1", tube2},
+						{"A1", tube3},
+						{"A1", tube4},
+						(* in plates *)
+						{"A1", plate1},
+						{"A2", plate1},
+						{"A1", plate2},
+						{"A2", plate2},
+						{"A1", plate3},
+						{"A2", plate3}
+					},
+					InitialAmount -> ConstantArray[1 Milliliter, 10],
+					Living -> {
+						True,
+						True,
+						False,
+						False,
+						True,
+						False,
+						False,
+						False,
+						False,
+						False
+					},
+					CellType -> {
+						Bacterial,
+						Bacterial,
+						Null,
+						Null,
+						Bacterial,
+						Null,
+						Null,
+						Null,
+						Null,
+						Null
+					},
+					State -> Liquid,
+					Name -> {
+						"Sample 1 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 2 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 3 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 4 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 5 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 6 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 7 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 8 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 9 for resolvePotentialWorkCells tests " <>$SessionUUID,
+						"Sample 10 for resolvePotentialWorkCells tests " <>$SessionUUID
+					}
+				];
+
+			];
+		]
+	),
+	SymbolTearDown :> (
+		Module[{namedObjects, allObjects, existingObjs},
+			On[Warning::SamplesOutOfStock];
+			namedObjects = Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Test bench for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Model[Cell, Bacteria, "Bacterial cell for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Model[Sample, "Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID],
+					Object[Container, Vessel, "Tube 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Vessel, "Tube 4 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Container, Plate, "Plate 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Item, Tips, "Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Item, Tips, "Non-Sterile Tips for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 1 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 2 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 3 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 4 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 5 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 6 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 7 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 8 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 9 for resolvePotentialWorkCells tests " <>$SessionUUID],
+					Object[Sample, "Sample 10 for resolvePotentialWorkCells tests " <>$SessionUUID]
+				}],
+				ObjectP[]
+			]];
+
+			allObjects = Quiet[Cases[
+				Flatten[{
+					$CreatedObjects,
+					namedObjects
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[allObjects, DatabaseMemberQ[allObjects]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False];
+			Unset[$CreatedObjects];
+		];
+	)
+];
+
+
+DefineTests[
+	FlattenCachePacketsSimulation,
+	{
+		Test["The field gets updated with the merged cache:",
+			cache = {<|Object -> Object[Sample, "id: 1234"], Volume -> 1 Milliliter, Status -> Liquid|>, <|Object -> Object[Sample, "id: 1234"], Volume -> 0.5 Milliliter|>};
+			newCache = FlattenCachePacketsSimulation[cache];
+			Download[
+				Object[Sample, "id: 1234"],
+				Volume,
+				Cache -> newCache
+			],
+			EqualP[0.5 Milliliter],
+			Variables :> {cache, newCache}
+		],
+		Test["The delayed rule is preserved and not evaluated:",
+			notEvaluate := "evaluated";
+			cache = {<|Object -> Object[Sample, "id: 1234"], Volume -> 1 Milliliter, Status -> Liquid, Appearance :> notEvaluate|>, <|Object -> Object[Sample, "id: 1234"], Volume -> 0.5 Milliliter|>};
+			newCache = FlattenCachePacketsSimulation[cache];
+			Count[Flatten[Normal[#, Association]& /@ newCache], Verbatim[RuleDelayed][_, _]],
+			1,
+			Variables :> {notEvaluate, cache, newCache}
+		]
+	}
+];
 

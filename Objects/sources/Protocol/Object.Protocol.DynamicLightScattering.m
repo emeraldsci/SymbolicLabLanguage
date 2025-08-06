@@ -62,17 +62,22 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
     PlatePreparationUnitOperations->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>SampleManipulationP|SamplePreparationP,
       Description->"A set of unit operations specifying the transfers and dilutions of the input samples in the SampleLoadingPlate (when AssayFormFactor is Capillary) or AssayContainer (when AssayFormFactor is Plate).",
       Category->"Sample Loading",
       Developer->True
     },
     PlatePreparation->{
-      Format->Single,
+      Format->Multiple,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,ManualSamplePreparation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,SampleManipulation],(*TODO: sort this out at some point*)
-      Description->"A sample preparation protocol used to transfer and dilute the input samples in the SampleLoadingPlate (when AssayFormFactor is Capillary) or AssayContainer(when AssayFormFactor is Plate).",
+      Relation->Alternatives[
+        Object[Protocol, ManualSamplePreparation],
+        Object[Protocol,RoboticSamplePreparation],
+        Object[Protocol,SampleManipulation],
+        Object[Notebook, Script]
+      ],
+      Description->"A sample preparation protocol or protocols used to transfer and dilute the input samples in the SampleLoadingPlate (when AssayFormFactor is Capillary) or AssayContainer (when AssayFormFactor is Plate).",
       Category->"Sample Loading"
     },
     WellCover->{
@@ -138,6 +143,13 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Description->"Indicates if static light scattering (SLS) data are collected along with DLS data.",
       Category->"Light Scattering"
     },
+    CalibratePlate->{
+      Format->Single,
+      Class->Boolean,
+      Pattern:>BooleanP,
+      Description->"Indicates whether the AssayContainer should be calibrated by measuring the scattered light intensities of a series of dilutions of a standard sample before any other data collection.",
+      Category->"Light Scattering"
+    },
     NumberOfAcquisitions->{
       Format->Single,
       Class->Integer,
@@ -172,9 +184,9 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
     DiodeAttenuation->{
       Format->Single,
       Class->Real,
-      Pattern:>GreaterP[0*Percent],
+      Pattern:>GreaterEqualP[0*Percent],
       Units->Percent,
-      Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators.",
+      Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators (in Capillary-type assays) or the percent of scattered signal that is prevented from reaching the avalanche photodiode mediated by diode attenuators (in Plate-type assays).",
       Category->"Light Scattering"
     },
     DLSRunTime->{
@@ -231,7 +243,8 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
         Targets->Link,
         TargetRow->Expression,
         FirstWell->Expression,
-        NumberOfWells->Expression
+        NumberOfWells->Expression,
+        TargetPositions -> Expression
       },
       Pattern:>{
         Sources->_Link,
@@ -239,7 +252,8 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
         Targets->_Link,
         TargetRow->_String,
         FirstWell->_String,
-        NumberOfWells->_String
+        NumberOfWells->_String,
+        TargetPositions -> _String
       },
       Relation->{
         Sources->Alternatives[
@@ -257,7 +271,8 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
         ],
         TargetRow->Null,
         FirstWell->Null,
-        NumberOfWells->Null
+        NumberOfWells->Null,
+        TargetPositions -> Null
       },
       Description->"The pipetting instructions used to manually load samples onto assay capillaries manually. This plate is set for loading using an 8-channel multichannel pipette.",
       Category->"Sample Loading",
@@ -318,7 +333,7 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
     CapillaryPlatePreparationUnitOperations->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>SamplePreparationP,
       Description->"When AssayFormFactor is Capillary, a set of unit operations specifying the loading of the AssayContainers with the input samples, diluted input samples, and BlankBuffers from the SampleLoadingPlate.",
       Category->"Sample Loading"
     },
@@ -382,6 +397,90 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Developer->True,
       Headers->{"Object to Place","Placement Tree"}
     },
+    CalibrationStandard->{
+      Format->Single,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Sample]|Model[Sample],
+      Description->"When CalibratePlate is True, the standard sample which is used to calibrate the scattered light intensity of the AssayContainer.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    CalibrationStandardDiluent->{
+      Format->Single,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Sample]|Model[Sample],
+      Description->"When CalibratePlate is True, the diluent used to dilute the standard sample which is used to calibrate the scattered light intensity of the AssayContainer.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    CalibrationWells->{
+      Format->Multiple,
+      Class->String,
+      Pattern:>_String,
+      Description->"When CalibratePlate is true, the wells in the AssayContainer which contain the standard sample solution used to calibrate the scattered light intensity of the AssayContainer.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    CalibrationStandardCertificate->{
+      Format->Single,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Report, Certificate, Analysis],
+      Description->"The manufacturer-supplied document of quality assurance documentation and data of the calibration standard.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    CalibrationStandardSecondVirialCoefficientString->{
+      Format->Single,
+      Class->String,
+      Pattern:>_String,
+      Description->"The certified static light scattering second virial coefficient (A2) of the calibration standard when dissolved in water, expressed in scientific notation.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    SolventOffsetSolvents->{
+      Format->Multiple,
+      Class->String,
+      Pattern:>_String,
+      Description->"The solvents whose static light scattering is measured as a baseline for a particular calibrated plate.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    SolventOffsetWells->{
+      Format->Multiple,
+      Class->String,
+      Pattern:>_String,
+      Description->"The positions in the AssayContainer of the solvents whose static light scattering is measured as a baseline for a particular calibrated plate.",
+      Category->"Sample Loading",
+      Developer->True
+    },
+    SolventNames->{
+      Format->Multiple,
+      Class->String,
+      Pattern:>_String,
+      Description->"For each member of SamplesIn, the names of the solvents in which the SamplesIn are dissolved.",
+      Category->"Sample Loading",
+      IndexMatching->SamplesIn
+    },
+    SolventViscosities->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>GreaterP[0*Centipoise],
+      Units->Centipoise,
+      Description->"For each member of SamplesIn, the viscosities of the solvents in which the SamplesIn are dissolved.",
+      Category->"Sample Loading",
+      IndexMatching->SamplesIn
+    },
+    SolventRefractiveIndices->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>RangeP[1,3],
+      Description->"For each member of SamplesIn, the refractive indices of the solvents in which the SamplesIn are dissolved.",
+      Category->"Sample Loading",
+      IndexMatching->SamplesIn
+    },
     (* Sample Dilution and ColloidalStability Fields (mostly mirroring MeasureSurfaceTension *)
     ColloidalStabilityParameterType->{
       Format->Single,
@@ -390,14 +489,6 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Description->"When AssayFormFactor is Capillary and AssayType is ColloidalStability, the parameter(s) calculated to measure attraction and/or repulsion between analytes in solution. B22 and kD are used when the mass concentration of the analyte is below 20 mg/mL, while G22 is used when the mass concentration of the analyte is above 20 mg/mL.",
       Category->"Sample Loading",
       Developer->True
-    },
-    ColloidalStabilityParametersPerSample->{
-      Format->Single,
-      Class->Integer,
-      Pattern:>GreaterP[0,1],
-      Units->None,
-      Description->"The number of dilution concentrations made for, and thus independent B22/A2 and kD or G22 parameters calculated from, each input sample.",
-      Category->"Sample Dilution"
     },
     DilutionSampleVolumes->{
       Format->Multiple,
@@ -436,6 +527,15 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Category->"Sample Dilution",
       IndexMatching->SamplesIn,
       Developer->True
+    },
+    AnalyteRefractiveIndexIncrements->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>GreaterEqualP[0*Milliliter/Gram],
+      Units->(Milliliter/Gram),
+      IndexMatching->SamplesIn,
+      Description->"For each member of SamplesIn, the known or estimated refractive index increment (also known as dn/dc) of the Analyte.",
+      Category->"Sample Dilution"
     },
     ReplicateDilutionCurve->{(*todo: double check this is not being used as a shortcut, but this should not be here*)
       Format->Single,
@@ -492,15 +592,6 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Description->"The method used to mix the SampleLoadingPlate or AssayContainer used for dilution.",
       Category->"Sample Dilution"
     },
-    DilutionMixVolumes->{
-      Format->Multiple,
-      Class->Real,
-      Pattern:>GreaterEqualP[0 Microliter],
-      Units->Microliter,
-      Description->"For each member of SamplesIn, the volume that is pipetted up and down from the dilution to mix the sample with the Buffer to make the mixture homogeneous.",
-      IndexMatching->SamplesIn,
-      Category->"Sample Dilution"
-    },
     DilutionNumberOfMixes->{
       Format->Multiple,
       Class->Integer,
@@ -514,7 +605,7 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Class->Real,
       Pattern:>GreaterP[0*Microliter/Second],
       Units->Microliter/Second,
-      Description->"For each member of SamplesIn, the speed at which the DilutionMixVolume is pipetted out of and into the dilution to mix the sample with the Diluent to make the DilutionCurve.",
+      Description->"For each member of SamplesIn, the speed at which the dilution sample is pipetted out of and into the dilution to mix the sample with the Diluent to make the DilutionCurve.",
       IndexMatching->SamplesIn,
       Category->"Sample Dilution"
     },
@@ -522,7 +613,10 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->MixInstrumentModelP,
+      Relation->Alternatives[
+        Model[Instrument],
+        Object[Instrument]
+      ],
       Description->"The instrument used to mix the dilutions in the SampleLoadingPlate or AssayContainer used for dilution.",
       Category->"Sample Dilution"
     },
@@ -764,6 +858,39 @@ DefineObjectType[Object[Protocol,DynamicLightScattering],{
         Relation->Object[Analysis][Reference],
         Description->"Analyses that determine properly loaded dynamic light scattering samples, to account for the difficulty in loading samples into capillaries for multimode spectrophotometers.",
         Category->"Analysis & Reports"
+    },
+    ColloidalStabilityData->{
+      Format->Multiple,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Data][Protocol],
+      Description->"For ColloidalStability assays, data objects that describe the experiment results of dynamic light scattering assays as functions of analyte mass concentration.",
+      Category->"Analysis & Reports"
+    },
+    SLSCalibrationRSquared->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>RangeP[0,1],
+      Units->None,
+      Description->"For SLS plate calibrations, the R-squared value of each series of calibrations as functions of concentration. A single value represents the R-squared value at the specified DiodeAttenuation. Multiple values represent the R-squared values at each of 0.0%, 50.0%, 75.0%, 90.0%, and 99.0% attenuations.",
+      Category->"Analysis & Reports"
+    },
+    SLSCalibrationRSquaredCheck->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>RangeP[0,1],
+      Units->None,
+      Description->"For SLS plate calibrations, a check for correct entry of the R-squared value of each series of calibrations as functions of concentration.",
+      Developer->True,
+      Category->"Analysis & Reports"
+    },
+    RetrySLSCalibration->{
+      Format->Single,
+      Class->Boolean,
+      Pattern:>BooleanP,
+      Description->"Indicates whether the SLS plate calibration is retried.",
+      Developer->True,
+      Category->"Analysis & Reports"
     }
   }
 }];

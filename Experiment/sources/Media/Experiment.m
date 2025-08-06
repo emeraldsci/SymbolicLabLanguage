@@ -1,10 +1,7 @@
 (* ::Package:: *)
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
-(* Gelling agents lookup list *)
-gellingAgentsLookupList = {
-	Model[Sample,"Agar"]
-};
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
+
 
 DefineOptions[ExperimentMedia,
 	Options:>{
@@ -46,7 +43,15 @@ DefineOptions[ExperimentMedia,
 							],
 							"Supplement"->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+								Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+								OpenPaths->{
+									{
+										Object[Catalog,"Root"],
+										"Materials",
+										"Cell Culture",
+										"Media Components"
+									}
+								}
 							]
 						}
 					],
@@ -109,7 +114,16 @@ DefineOptions[ExperimentMedia,
 							],
 							"GellingAgent"->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+								Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+								OpenPaths->{
+									{
+										Object[Catalog,"Root"],
+										"Materials",
+										"Cell Culture",
+										"Media Components",
+										"Gelling Agents"
+									}
+								}
 							]
 						}
 					],
@@ -118,7 +132,7 @@ DefineOptions[ExperimentMedia,
 						Pattern:>Alternatives[None,Automatic]
 					]
 				],
-				ResolutionDescription->"Automatically set to {Model[Sample, \"Agar\"], 20*Gram/Liter} if MediaPhase is set to Solid. If any GellingAgent is detected in the Formula field of Model[Sample,Media], it will be removed from the Formula and ."
+				ResolutionDescription->"Automatically set to {Model[Sample, \"Agar\"], 20*Gram/Liter} if MediaPhase is set to Solid and there is no GellingAgent present in the Formula field. If any GellingAgent is detected in the Formula field of Model[Sample,Media] and the GellingAgents option has been specified, the former will be removed from the Formula and replaced with GellingAgents."
 			},
 			{
 				OptionName->MediaPhase,
@@ -398,7 +412,7 @@ DefineOptions[ExperimentMedia,
 				AllowNull -> True,
 				Description -> "Indicates which model stir bar to be inserted to mix the stock solution prior to autoclave when HeatSensitiveReagents is not Null.",
 				Widget -> Widget[Type->Object,
-					Pattern :> ObjectP[Model[Part,StirBar],Object[Part,StirBar]],
+					Pattern :> ObjectP[{Model[Part,StirBar],Object[Part,StirBar]}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -895,6 +909,18 @@ DefineOptions[ExperimentMedia,
 				Category->"Storage Information"
 			},
 			{
+				OptionName -> DiscardThreshold,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0 Percent, 100 Percent], Units -> {1, {Percent, {Percent}}}
+				],
+				Description -> "Indicates when samples of this media are automatically discarded. Specifically, gives the percentage of the total initial volume below which samples of the media will automatically be marked as AwaitingDisposal. For instance, if DiscardThreshold is set to 5% and the initial volume of the media was set to 100 mL, that media sample is automatically marked as AwaitingDisposal once its volume is below 5mL. Set DiscardThreshold -> 0 Percent if you never wish to auto-discard this media.",
+				ResolutionDescription -> "Automatically set to 5 Percent if generating a new media model from formula input, or to Null if preparing an existing media model.",
+				Category -> "Storage Information"
+			},
+			{
 				OptionName->DefaultStorageCondition,
 				Default->Automatic,
 				AllowNull->True,
@@ -910,27 +936,14 @@ DefineOptions[ExperimentMedia,
 				Category->"New Formulation"
 			},
 			{
-				OptionName->TransportChilled,
+				OptionName->TransportTemperature,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[
-					Type->Enumeration,
-					Pattern:>BooleanP
+				Widget -> Alternatives[
+					"Transport Cold" -> Widget[Type -> Quantity, Pattern :> RangeP[-86 Celsius, 10 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
+					"Transport Warmed" -> Widget[Type -> Quantity, Pattern :> RangeP[27 Celsius, 105 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}]
 				],
-				Description->"Indicates if media prepared according to the provided formula should be refrigerated during transport when used in experiments.",
-				ResolutionDescription->"Automatically set to True if the new media's DefaultStorageCondition set to Refrigerator or Freezer, or False for AmbientStorage, unless TransportWarmed is specified, whereupon it set to Null. If preparing an existing media model, set to Null.",
-				Category->"Storage Information"
-			},
-			{
-				OptionName->TransportWarmed,
-				Default->Null,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern:>RangeP[27*Celsius,105*Celsius],
-					Units->{1,{Celsius,{Celsius,Fahrenheit,Kelvin}}}
-				],
-				Description->"Indicates the temperature by which media prepared according to the provided formula should be heated during transport when used in experiments.",
+				Description->"Indicates the temperature by which media prepared according to the provided formula should be heated or chilled during transport when used in experiments.",
 				Category->"Storage Information"
 			},
 
@@ -1044,7 +1057,10 @@ DefineOptions[ExperimentMedia,
 				OptionName->IncompatibleMaterials,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+				Widget->Alternatives[
+					With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+					Widget[Type->Enumeration, Pattern:>Alternatives[{None}]]
+				],
 				Description->"A list of materials that would be damaged if contacted by this formulation.",
 				ResolutionDescription->"Automatically set to None if generating a new media model from formula input, or to Null if preparing an existing media model.",
 				Category->"Compatibility"
@@ -1299,7 +1315,7 @@ DefineOptions[ExperimentMedia,
 		},
 		(* --- Shared Standard Protocol Options --- *)
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOption,
 		SubprotocolDescriptionOption,
 		PriorityOption,
@@ -1316,7 +1332,7 @@ ExperimentMedia[myMediaModel:ObjectP[Model[Sample,Media]],myOptions:OptionsPatte
 ExperimentMedia[
 	myMediaModels:{ObjectP[Model[Sample,Media]]..},
 	myOptions:OptionsPattern[ExperimentMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsMediaWithNames,safeOptionsMediaTests,safeOptionsMedia,fastTrack,upload,unresolvedOptionsMedia,validLengths,validLengthTests,stockSolutionHiddenOptionNames,stockSolutionNonHiddenOptionNames,stockSolutionNonHiddenOptions,collapsedStockSolutionNonHiddenOptions,allUploadMediaOptionNames,allExperimentMediaOptionNames,stockSolutionHiddenMediaOptions,unresolvedUploadMediaOptions,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedMediaInputs,resolvedUploadMediaOptions,resolvedUploadMediaTests,mediaName,resolvedUploadMediaOptionsWithMediaName,partiallyResolvedExperimentMediaOptions,applyTemplateOptionTests,unresolvedTemplatedOptionsMedia,expandedUnresolvedTemplatedOptionsExperimentMedia,experimentMediaResult,experimentMediaOptions},
+]:=Module[{outputSpecification,listedOutput,gatherTests,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsMediaWithNames,safeOptionsMediaTests,safeOptionsMedia,fastTrack,upload,unresolvedOptionsMedia,validLengths,validLengthTests,stockSolutionHiddenOptionNames,stockSolutionNonHiddenOptionNames,stockSolutionNonHiddenOptions,collapsedStockSolutionNonHiddenOptions,allUploadMediaOptionNames,allExperimentMediaOptionNames,stockSolutionHiddenMediaOptions,unresolvedUploadMediaOptions,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedMediaInputs,resolvedUploadMediaOptions,resolvedUploadMediaTests,mediaName,resolvedUploadMediaOptionsWithMediaName,partiallyResolvedExperimentMediaOptions,applyTemplateOptionTests,unresolvedTemplatedOptionsMedia,expandedUnresolvedTemplatedOptionsExperimentMedia,experimentMediaResult,experimentMediaOptions,formulaOnlyOptionNames,formulaOnlyOptionWarnings, sanitizedMediaModels},
 
 	(* Determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]],OptionValue::nodef];
@@ -1335,8 +1351,7 @@ ExperimentMedia[
 	];
 
 	(* Replace the objects referenced by name to IDs *)
-	safeOptionsMedia = sanitizeInputs[safeOptionsMediaWithNames];
-	{fastTrack,upload} = Lookup[safeOptionsMedia,{FastTrack,Upload}];
+	{sanitizedMediaModels, safeOptionsMedia} = sanitizeInputs[mediaModelsWithoutTemporalLinks, safeOptionsMediaWithNames, Simulation->Lookup[safeOptionsMediaWithNames, Simulation, Null]];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptionsMedia, $Failed],
@@ -1349,10 +1364,12 @@ ExperimentMedia[
 		}]
 	];
 
+	{fastTrack,upload} = Lookup[safeOptionsMedia,{FastTrack,Upload}];
+
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentMedia, {mediaModelsWithoutTemporalLinks}, safeOptionsMedia, Output->{Result, Tests}],
-		{ValidInputLengthsQ[ExperimentMedia, {mediaModelsWithoutTemporalLinks}, safeOptionsMedia], {}}
+		ValidInputLengthsQ[ExperimentMedia, {sanitizedMediaModels}, safeOptionsMedia, Output->{Result, Tests}],
+		{ValidInputLengthsQ[ExperimentMedia, {sanitizedMediaModels}, safeOptionsMedia], {}}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -1368,13 +1385,13 @@ ExperimentMedia[
 
 	(* Set a local variable with the user-provided options in list form; make sure to gather tests from here *)
 	{unresolvedOptionsMedia,applyTemplateOptionTests} = If[gatherTests,
-		ApplyTemplateOptions[ExperimentMedia,{mediaModelsWithoutTemporalLinks},safeOptionsMedia,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentMedia,{mediaModelsWithoutTemporalLinks},safeOptionsMedia],{}}
+		ApplyTemplateOptions[ExperimentMedia,{sanitizedMediaModels},safeOptionsMedia,Output->{Result,Tests}],
+		{ApplyTemplateOptions[ExperimentMedia,{sanitizedMediaModels},safeOptionsMedia],{}}
 	];
 
 	unresolvedTemplatedOptionsMedia = ReplaceRule[safeOptionsMedia,unresolvedOptionsMedia];
 
-	expandedUnresolvedTemplatedOptionsExperimentMedia = Last[ExpandIndexMatchedInputs[ExperimentMedia,{mediaModelsWithoutTemporalLinks},unresolvedTemplatedOptionsMedia]];
+	expandedUnresolvedTemplatedOptionsExperimentMedia = Last[ExpandIndexMatchedInputs[ExperimentMedia,{sanitizedMediaModels},unresolvedTemplatedOptionsMedia]];
 
 	(* Split the expanded options into shared options for UploadMedia & everything else, so that we can resolve the UploadMedia options first *)
 	stockSolutionNonHiddenOptions = RemoveHiddenOptions[ExperimentStockSolution,expandedUnresolvedTemplatedOptionsExperimentMedia];
@@ -1429,44 +1446,84 @@ ExperimentMedia[
 		KeyDrop[
 			ReplaceRule[
 				stockSolutionHiddenMediaOptions,
-				Flatten[{resolvedUploadMediaOptionsWithMediaName,{Type->Media, Autoclave->True}}]
+				Flatten[{resolvedUploadMediaOptionsWithMediaName,{Type->Media, Autoclave->True, MeasureVolume->False}}]
 			],
 			{UltrasonicIncompatible, PreferredContainers, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxpHingAdditionVolume, MaxNumberOfpHingCycles}
 		],
 		Association
 	];
 
-	{experimentMediaResult,experimentMediaOptions} = Module[{stockSolutionOptions,result,stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes,trimmedSSOptions},
+	(* We have an interesting situation here wherein if we're going to pass ExperimentStockSolution a media model, formula-specific options will be dropped. *)
+	(* However, some of these will have gotten populated from resolvedUploadMediaOptionsWithMediaName. We want to drop only those (because ExpSS will refill them) *)
+	(* but let the user know that we'll be ignoring options that came from them. *)
+	formulaOnlyOptionNames = {
+		StockSolutionName, Synonyms, LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
+		TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
+		IncompatibleMaterials
+	};
+
+	(* Then, warn about options set that are only accessible by the formula overload *)
+	formulaOnlyOptionWarnings = If[!fastTrack,
+		Module[{optionValues, optionSetBools, warning},
+
+			(* get the option values for each of these formula-only options *)
+			optionValues = Lookup[safeOptionsMedia, #]& /@ formulaOnlyOptionNames;
+
+			(* all of these are set if they are not Automatic; EXCEPT Density/StockSolutionName/ExtinctionCoefficients/TransportTemperature, which starts at Null *)
+			optionSetBools = MapThread[
+				If[MatchQ[#1, Density | StockSolutionName |  ExtinctionCoefficients],
+					MatchQ[#2, Except[Null]],
+					MatchQ[#2, Except[Automatic]]
+				]&,
+				{formulaOnlyOptionNames, optionValues}
+			];
+
+			(* make warnings for all of these options; pretty ridiculous to make one warning per *)
+			warning = If[gatherTests,
+				Warning["Options that are only used with the formula input definition are not set if stock solution models are provided as input.",
+					MemberQ[optionSetBools, True],
+					False
+				],
+				Nothing
+			];
+
+			(* yell about these (warn) *)
+			If[Not[gatherTests]&& MemberQ[optionSetBools, True] && Not[MatchQ[$ECLApplication, Engine]],
+				Message[Warning::FormulaOptionsUnused, PickList[formulaOnlyOptionNames, optionSetBools]]
+			];
+
+			(* return the warning we made for accumulation later *)
+			{warning}
+		],
+
+		(* don't bother if on FastTrack *)
+		{}
+	];
+
+	Module[{stockSolutionOptions,result,stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes,trimmedSSOptions},
 
 		(* Now we combine back our hidden and non-hidden options *)
-		stockSolutionOptions = ReplaceRule[collapsedStockSolutionNonHiddenOptions,partiallyResolvedExperimentMediaOptions];
+		stockSolutionOptions = ReplaceRule[collapsedStockSolutionNonHiddenOptions,ReplaceRule[partiallyResolvedExperimentMediaOptions,{Output->outputSpecification}]];
 
 		(* UploadMedia adds some options that don't exist in ExperimentStockSolution - drop those before passing to SS *)
 		trimmedSSOptions = CollapseIndexMatchedOptions[
 			ExperimentStockSolution,
-			Normal@KeyDrop[stockSolutionOptions,{Author,Composition,FulfillmentScale,NominalpH,Preparable,Resuspension,VolumeIncrements,StockSolutionTemplate,UltrasonicIncompatible, PreferredContainers, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxpHingAdditionVolume, MaxNumberOfpHingCycles}]
+			Normal@KeyDrop[
+				stockSolutionOptions,
+				Flatten[{
+					Author,Composition,FulfillmentScale,NominalpH,Preparable,Resuspension,VolumeIncrements,StockSolutionTemplate,UltrasonicIncompatible, PreferredContainers,
+					MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxpHingAdditionVolume, MaxNumberOfpHingCycles,Type,
+					If[MatchQ[resolvedMediaInputs,{ObjectP[Model[Sample,Media]]..}],formulaOnlyOptionNames,Nothing]
+				}]
+			]
 		];
-		result = If[MatchQ[resolvedMediaInputs,{ObjectP[Model[Sample,Media]]..}],
+		If[MatchQ[resolvedMediaInputs,{ObjectP[Model[Sample,Media]]..}],
 			ExperimentStockSolution[resolvedMediaInputs,trimmedSSOptions],
 
 			{stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes} = Transpose[resolvedMediaInputs];
 			ExperimentStockSolution[stockSolutionInputs, stockSolutionSolvents, stockSolutionTotalVolumes, trimmedSSOptions]
-		];
-		Which[
-			MemberQ[listedOutput,Result]&&MemberQ[listedOutput,Options],
-			result,
-
-			MemberQ[listedOutput,Result]&&!MemberQ[listedOutput,Options],
-			{result,$Failed},
-
-			!MemberQ[listedOutput,Result]&&MemberQ[listedOutput,Options],
-			{$Failed,result},
-
-			True,
-			{$Failed,$Failed}
 		]
-	];
-	outputSpecification/.{Result->experimentMediaResult,Options->experimentMediaOptions}
+	]
 ];
 
 (* Singleton formula Overload with FillToVolumeSolvent & FillToVolume *)
@@ -1486,7 +1543,17 @@ ExperimentMedia[
 	mySolvents:{ObjectP[Model[Sample]]..},
 	myFinalVolumes:{VolumeP..},
 	myOptions:OptionsPattern[ExperimentMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsMediaWithNames,safeOptionsMediaTests,safeOptionsMedia,fastTrack,cache,validLengths,validLengthTests,unresolvedOptionsMedia,applyTemplateOptionTests,unresolvedTemplatedOptionsMedia,expandedUnresolvedTemplatedOptionsExperimentMedia,stockSolutionHiddenOptionNames,stockSolutionNonHiddenOptionNames,stockSolutionNonHiddenOptions,collapsedStockSolutionNonHiddenOptions,allUploadMediaOptionNames,allExperimentMediaOptionNames,stockSolutionHiddenMediaOptions,unresolvedUploadMediaOptions,templateMediaModels,resolvedUploadMediaOptionsResult,resolvedMediaInputs,resolvedUploadMediaOptions,resolvedUploadMediaTests,partiallyResolvedExperimentMediaOptions,experimentMediaOptions,experimentMediaResult},
+]:=Module[
+	{
+		outputSpecification,listedOutput,gatherTests,formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,
+		optionsWithoutTemporalLinks,safeOptionsMediaWithNames,safeOptionsMediaTests,safeOptionsMedia,fastTrack,cache,
+		validLengths,validLengthTests,unresolvedOptionsMedia,applyTemplateOptionTests,unresolvedTemplatedOptionsMedia,
+		expandedUnresolvedTemplatedOptionsExperimentMedia,stockSolutionHiddenOptionNames,stockSolutionNonHiddenOptionNames,
+		stockSolutionNonHiddenOptions,collapsedStockSolutionNonHiddenOptions,allUploadMediaOptionNames,allExperimentMediaOptionNames,
+		stockSolutionHiddenMediaOptions,unresolvedUploadMediaOptions,templateMediaModels,resolvedUploadMediaOptionsResult,
+		resolvedMediaInputs,resolvedUploadMediaOptions,resolvedUploadMediaTests,partiallyResolvedExperimentMediaOptions,
+		experimentMediaOptions,experimentMediaResult,formulaOnlyOptionNames,formulaOnlyOptionWarnings,ssResult
+	},
 
 	(* Determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]],OptionValue::nodef];
@@ -1505,8 +1572,7 @@ ExperimentMedia[
 	];
 
 	(* Replace the objects referenced by name to IDs, and expand the index-matched options *)
-	safeOptionsMedia = sanitizeInputs[safeOptionsMediaWithNames];
-	{fastTrack,cache} = Lookup[safeOptionsMedia,{FastTrack,Cache}];
+	safeOptionsMedia = sanitizeInputs[safeOptionsMediaWithNames, Simulation->Lookup[safeOptionsMediaWithNames, Simulation, Null]];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptionsMedia, $Failed],
@@ -1518,6 +1584,8 @@ ExperimentMedia[
 			Simulation->Null
 		}]
 	];
+
+	{fastTrack,cache} = Lookup[safeOptionsMedia,{FastTrack,Cache}];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests} = If[gatherTests,
@@ -1554,6 +1622,7 @@ ExperimentMedia[
 
 	allUploadMediaOptionNames = Keys[SafeOptions[UploadMedia]];
 	stockSolutionHiddenMediaOptions = UnsortedComplement[expandedUnresolvedTemplatedOptionsExperimentMedia,stockSolutionNonHiddenOptions];
+	stockSolutionHiddenOptionNames = Keys[stockSolutionHiddenMediaOptions];
 	unresolvedUploadMediaOptions = Normal@KeyTake[stockSolutionHiddenMediaOptions,allUploadMediaOptionNames];
 
 	templateMediaModels = ConstantArray[Null,Length[myFormulaSpecs]];
@@ -1569,20 +1638,34 @@ ExperimentMedia[
 
 	partiallyResolvedExperimentMediaOptions = ReplaceRule[stockSolutionHiddenMediaOptions,resolvedUploadMediaOptions];
 
-	{experimentMediaResult,experimentMediaOptions} = Module[{stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes,stockSolutionOptions,trimmedSSOptions},
+	formulaOnlyOptionNames = {
+		StockSolutionName, Synonyms, LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
+		TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
+		IncompatibleMaterials
+	};
+
+	Module[{stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes,stockSolutionOptions,trimmedSSOptions},
 		stockSolutionOptions = ReplaceRule[collapsedStockSolutionNonHiddenOptions,
-			ReplaceRule[partiallyResolvedExperimentMediaOptions,
+			ReplaceRule[Normal@KeyTake[partiallyResolvedExperimentMediaOptions,stockSolutionHiddenOptionNames],
 				{
 					Type->Media,
 					Autoclave->True,
-					Output->{Result, Options}
+					MeasureVolume->False,
+					Output->outputSpecification
 				}
 			]
 		];
 		(* UploadMedia adds some options that don't exist in ExperimentStockSolution - drop those before passing to SS *)
 		trimmedSSOptions = CollapseIndexMatchedOptions[
 			ExperimentStockSolution,
-			Normal@KeyDrop[stockSolutionOptions,{Author,Composition,FulfillmentScale,NominalpH,Preparable,Resuspension,VolumeIncrements,StockSolutionTemplate,UltrasonicIncompatible, PreferredContainers, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxpHingAdditionVolume, MaxNumberOfpHingCycles}]
+			Normal@KeyDrop[
+				stockSolutionOptions,
+				Flatten[{
+					Author,Composition,FulfillmentScale,NominalpH,Preparable,Resuspension,VolumeIncrements,StockSolutionTemplate,UltrasonicIncompatible, PreferredContainers,
+					MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxpHingAdditionVolume, MaxNumberOfpHingCycles, Type,
+					If[MatchQ[resolvedMediaInputs,{ObjectP[Model[Sample,Media]]..}],formulaOnlyOptionNames,Nothing]
+				}]
+			]
 		];
 		If[MatchQ[resolvedMediaInputs,{ObjectP[Model[Sample,Media]]..}],
 			ExperimentStockSolution[resolvedMediaInputs,trimmedSSOptions],
@@ -1590,7 +1673,264 @@ ExperimentMedia[
 			{stockSolutionInputs,stockSolutionSolvents,stockSolutionTotalVolumes} = Transpose[resolvedMediaInputs];
 			ExperimentStockSolution[stockSolutionInputs, stockSolutionSolvents, stockSolutionTotalVolumes, trimmedSSOptions]
 		]
+	]
+];
+
+(* --- SISTER FUNCTIONS ---*)
+
+(* ::Subsubsection:: *)
+(*ExperimentMediaOptions*)
+
+DefineOptions[ExperimentMediaOptions,
+	Options:>{
+		{
+			OptionName -> OutputFormat,
+			Default -> Table,
+			AllowNull -> False,
+			Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[Table, List]],
+			Description -> "Determines whether the function returns a table or a list of the options."
+		}
+	},
+	SharedOptions:>{ExperimentMedia}
+];
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ExperimentMediaOptions[myMediaModel:ObjectP[Model[Sample, Media]], myOptions:OptionsPattern[ExperimentMediaOptions]]:=ExperimentMediaOptions[{myMediaModel}, myOptions];
+
+(* Overload 2: List of media models *)
+ExperimentMediaOptions[myMediaModels:{ObjectP[Model[Sample, Media]]..}, myOptions:OptionsPattern[ExperimentMediaOptions]]:=Module[
+	{listedOptions, noOutputOptions, options},
+
+	(* get the options as a list *)
+	listedOptions = ToList[myOptions];
+
+	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
+
+	(* return only the options for ExperimentNMR *)
+	options = ExperimentMedia[myMediaModels, Append[noOutputOptions, Output -> Options]];
+
+	(* Return the option as a list or table *)
+	If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
+		LegacySLL`Private`optionsToTable[options, ExperimentMedia],
+		options
+	]
+
+];
+
+(* Overload 3: Single formula (pass to Overload 4) *)
+ExperimentMediaOptions[
+	myFormulaSpec:{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample], Object[Sample]}]}..},
+	mySolvent:ObjectP[{Model[Sample]}],
+	myFinalVolume:VolumeP,
+	myOptions:OptionsPattern[ExperimentMediaOptions]
+]:=ExperimentMediaOptions[{myFormulaSpec}, {mySolvent}, {myFinalVolume}, myOptions];
+
+(* Overload 4: Listable formulas *)
+ExperimentMediaOptions[
+	myFormulaSpecs:{{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample],Object[Sample]}]}..}..},
+	mySolvents:{ObjectP[Model[Sample]]..},
+	myFinalVolumes:{VolumeP..},
+	myOptions:OptionsPattern[ExperimentMediaOptions]
+]:=Module[
+	{listedOptions, noOutputOptions, options},
+
+	(* get the options as a list *)
+	listedOptions = ToList[myOptions];
+
+	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
+
+	(* return only the options for ExperimentNMR *)
+	options = ExperimentMedia[myFormulaSpecs, mySolvents, myFinalVolumes, Append[noOutputOptions, Output -> Options]];
+
+	(* Return the option as a list or table *)
+	If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
+		LegacySLL`Private`optionsToTable[options, ExperimentMedia],
+		options
+	]
+
+];
+
+(* ::Subsubsection:: *)
+(*ValidExperimentMediaQ*)
+
+DefineOptions[ValidExperimentMediaQ,
+	Options:>{
+		VerboseOption,
+		OutputFormatOption
+	},
+	SharedOptions:>{ExperimentMedia}
+];
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ValidExperimentMediaQ[myMediaModel:ObjectP[Model[Sample, Media]], myOptions:OptionsPattern[ValidExperimentMediaQ]]:=ValidExperimentMediaQ[{myMediaModel}, myOptions];
+
+(* Overload 2: List of media models *)
+ValidExperimentMediaQ[myMediaModels:{ObjectP[Model[Sample, Media]]..}, myOptions:OptionsPattern[ValidExperimentMediaQ]]:=Module[
+	{listedOptions,optionsWithoutOutput,tests,initialTestDescription,allTests,verbose,outputFormat},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* since Output option is in UploadStockSolution options, we want to ignore that if present somehow *)
+	optionsWithoutOutput=DeleteCases[listedOptions,(OutputFormat->_)|(Output->_)|(Verbose->_)];
+
+	(* add back in explicitly just the Tests Output option for passing to core function to get just tests *)
+	tests = ExperimentMedia[myMediaModels,Append[optionsWithoutOutput,Output->Tests]];
+
+	(* define the general test description *)
+	initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
+
+	(* make a list of all the tests, including the blanket test *)
+	allTests = If[MatchQ[tests, $Failed],
+		{Test[initialTestDescription, False, True]},
+		Module[
+			{initialTest, validObjectBooleans, voqWarnings},
+
+			(* generate the initial test, which we know will pass if we got this far (?) *)
+			initialTest = Test[initialTestDescription, True, True];
+
+			(* create warnings for invalid objects *)
+			validObjectBooleans = ValidObjectQ[DeleteCases[ToList[myMediaModels], _String], OutputFormat -> Boolean];
+			voqWarnings = MapThread[
+				Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
+					#2,
+					True
+				]&,
+				{DeleteCases[ToList[myMediaModels], _String], validObjectBooleans}
+			];
+
+			(* get all the tests/warnings *)
+			Flatten[{initialTest, tests, voqWarnings}]
+		]
 	];
 
-	outputSpecification/.{Result->experimentMediaResult,Options->experimentMediaOptions}
+	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
+	{verbose, outputFormat} = Quiet[OptionDefault[OptionValue[{Verbose, OutputFormat}]], OptionValue::nodef];
+
+	(* Run the tests as requested *)
+	Lookup[RunUnitTest[<|"ValidExperimentMediaQ"->allTests|>,OutputFormat->outputFormat,Verbose->verbose],"ValidExperimentMediaQ"]
 ];
+
+(* Overload 3: Single formula (pass to Overload 4) *)
+ValidExperimentMediaQ[
+	myFormulaSpec:{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample], Object[Sample]}]}..},
+	mySolvent:ObjectP[{Model[Sample]}],
+	myFinalVolume:VolumeP,
+	myOptions:OptionsPattern[ValidExperimentMediaQ]
+]:=ValidExperimentMediaQ[{myFormulaSpec}, {mySolvent}, {myFinalVolume}, myOptions];
+
+(* Overload 4: Listable formulas *)
+ValidExperimentMediaQ[
+	myFormulaSpecs:{{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample],Object[Sample]}]}..}..},
+	mySolvents:{ObjectP[Model[Sample]]..},
+	myFinalVolumes:{VolumeP..},
+	myOptions:OptionsPattern[ValidExperimentMediaQ]
+]:=Module[
+	{listedOptions,optionsWithoutOutput,tests,initialTestDescription,verbose,outputFormat},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* since Output option is in UploadStockSolution options, we want to ignore that if present somehow *)
+	optionsWithoutOutput=DeleteCases[listedOptions,(OutputFormat->_)|(Output->_)|(Verbose->_)];
+
+	(* add back in explicitly just the Tests Output option for passing to core function to get just tests *)
+	tests = ExperimentMedia[myFormulaSpecs,mySolvents,myFinalVolumes,Append[optionsWithoutOutput,Output->Tests]];
+
+	(* define the general test description *)
+	initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
+
+	(* make a list of all the tests, including the blanket test *)
+	allTests = If[MatchQ[tests, $Failed],
+		{Test[initialTestDescription, False, True]},
+		Module[
+			{initialTest, samplesFromFormula, validObjectBooleans, voqWarnings},
+
+			(* generate the initial test, which we know will pass if we got this far (?) *)
+			initialTest = Test[initialTestDescription, True, True];
+
+			samplesFromFormula = Cases[Flatten[{myFormulaSpecs, mySolvents}],ObjectP[{Object[Sample],Model[Sample]}],{}];
+
+			(* create warnings for invalid objects *)
+			validObjectBooleans = ValidObjectQ[samplesFromFormula, OutputFormat -> Boolean];
+			voqWarnings = MapThread[
+				Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
+					#2,
+					True
+				]&,
+				{samplesFromFormula, validObjectBooleans}
+			];
+
+			(* get all the tests/warnings *)
+			Flatten[{initialTest, tests, voqWarnings}]
+		]
+	];
+
+	(* determine the Verbose and OutputFormat options *)
+	{verbose,outputFormat}=OptionValue[{Verbose,OutputFormat}];
+
+	(* Run the tests as requested *)
+	Lookup[RunUnitTest[<|"ValidExperimentMediaQ"->allTests|>,OutputFormat->outputFormat,Verbose->verbose],"ValidExperimentMediaQ"]
+];
+
+(* ::Subsubsection:: *)
+(*ExperimentMediaPreview*)
+
+DefineOptions[ExperimentMediaPreview,
+	SharedOptions:>{ExperimentMedia}
+];
+
+(* --- Overloads --- *)
+
+(* Overload 1: Singleton media model (pass to Overload 2) *)
+ExperimentMediaPreview[myMediaModel:ObjectP[Model[Sample, Media]], myOptions:OptionsPattern[ExperimentMediaPreview]]:=ExperimentMediaPreview[{myMediaModel}, myOptions];
+
+(* Overload 2: List of media models *)
+ExperimentMediaPreview[myMediaModels:{ObjectP[Model[Sample, Media]]..}, myOptions:OptionsPattern[ExperimentMediaPreview]]:=Module[
+	{listedOptions,noOutputOptions},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
+	noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+	(* add back in explicitly just the Preview Output option for passing to core function to get just preview *)
+	ExperimentMedia[myMediaModels,Append[noOutputOptions,Output->Preview]]
+];
+
+(* Overload 3: Single formula (pass to Overload 4) *)
+ExperimentMediaPreview[
+	myFormulaSpec:{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample], Object[Sample]}]}..},
+	mySolvent:ObjectP[{Model[Sample]}],
+	myFinalVolume:VolumeP,
+	myOptions:OptionsPattern[ExperimentMediaPreview]
+]:=ExperimentMediaPreview[{myFormulaSpec}, {mySolvent}, {myFinalVolume}, myOptions];
+
+(* Overload 4: Listable formulas *)
+ExperimentMediaPreview[
+	myFormulaSpecs:{{{MassP|VolumeP|GreaterP[0,1.],ObjectP[{Model[Sample],Object[Sample]}]}..}..},
+	mySolvents:{ObjectP[Model[Sample]]..},
+	myFinalVolumes:{VolumeP..},
+	myOptions:OptionsPattern[ExperimentMediaPreview]
+]:=Module[
+	{listedOptions,noOutputOptions},
+
+	(* get the options as a list *)
+	listedOptions=ToList[myOptions];
+
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
+	noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+	(* add back in explicitly just the Preview Output option for passing to core function to get just preview *)
+	ExperimentMedia[myFormulaSpecs, mySolvents, myFinalVolumes, Append[noOutputOptions,Output->Preview]]
+];
+
+
+

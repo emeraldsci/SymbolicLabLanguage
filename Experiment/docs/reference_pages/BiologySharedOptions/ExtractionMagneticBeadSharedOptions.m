@@ -94,7 +94,7 @@ DefineUsage[preResolveMagneticBeadSeparationSharedOptions,
               Description->"The map thread version of the experiment options of the parent function (the function calling preResolveMagneticBeadSeparationSharedOptions) that contains the magnetic bead separation shared options.",
               Widget->Widget[
                 Type -> Expression,
-                Pattern :> {_Rule..},
+                Pattern :> {_Association..},
                 Size -> Line
               ],
               Expandable->False

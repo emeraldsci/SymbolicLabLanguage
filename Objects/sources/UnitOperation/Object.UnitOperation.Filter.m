@@ -289,7 +289,7 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> Alternatives[Filtrate, Retentate],
-			Description -> "For each member of SampleLink, indicates if the filtrate smaples or retentate samples should populate SamplesOut.  Note that if set to Retentate, Filtrate will still be collected as well, just not populated in SamplesOut.",
+			Description -> "For each member of SampleLink, indicates if the filtrate samples or retentate samples should populate SamplesOut.  Note that if set to Retentate, Filtrate will still be collected as well, just not populated in SamplesOut.",
 			Category -> "General",
 			IndexMatching -> SampleLink
 		},

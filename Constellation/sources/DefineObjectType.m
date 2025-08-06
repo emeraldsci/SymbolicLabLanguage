@@ -317,6 +317,11 @@ mergeParentIntoType[parentDef:TypeDefinitionP, typeDef:TypeDefinitionP]:={
 
 autoFieldReverseHead[Object]:=Model;
 autoFieldReverseHead[Model]:=Object;
+
+
+(* Authors definition for Constellation`Private`autoFieldReverseMatchQ *)
+Authors[Constellation`Private`autoFieldReverseMatchQ]:={"melanie.reschke"};
+
 autoFieldReverseMatchQ[t:typeP, head_]:=False/;Length[t] == 0;
 autoFieldReverseMatchQ[Object[], Object]:=True;
 autoFieldReverseMatchQ[Model[], Model]:=True;
@@ -489,7 +494,7 @@ addAutoFields[fields_List, type:typeP]:=With[
 					Class -> Link,
 					Pattern :> _Link,
 					Description -> "Notebook this object belongs to.",
-					Relation -> Object[LaboratoryNotebook][Objects],
+					Relation -> Object[LaboratoryNotebook],
 					Category -> "Organizational Information",
 					Units -> None,
 					PatternDescription -> "An object of that matches ObjectP[Object[LaboratoryNotebook]]."
@@ -972,6 +977,13 @@ validObjectTypeFormatFieldTests[type:typeP]:=Module[
 							_Missing,
 							Category -> "Field Definitions"
 						]
+					],
+
+					(* Field cannot be AdminViewOnly and AdminWriteOnly *)
+					Test[ToString[#[[1]]]<>" - If AdminViewOnly is True, AdminWriteOnly is not also True, as AdminViewOnly encompasses AdminWriteOnly:",
+						!And[Lookup[#[[2]], AdminViewOnly, False], Lookup[#[[2]], AdminWriteOnly, False]],
+						True,
+						Category -> "Field Definitions"
 					],
 
 					(* Indexed fields must have headers *)

@@ -95,7 +95,7 @@ validMaintenanceQTests[packet:PacketP[Object[Maintenance]]]:= Module[
 				{InCart,_,Null},
 				{Backlogged,_,Null},
 				{Canceled,_,Null},
-				{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, Troubleshooting], Except[Null]},
+				{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, ScientificSupport], Except[Null]},
 				(* a protocol is allowed to have DateStarted populated if in ShippingMaterials (or even Backlogged) (could have been started but then needed to wait) *)
 				{ShippingMaterials, _, _},
 				{Backlogged,_,_},
@@ -136,9 +136,9 @@ validMaintenanceQTests[packet:PacketP[Object[Maintenance]]]:= Module[
 
 	(* CHILD/PARENT PROTOCOLS *)
 		Test[
-			"If the maintenance is OperationStatus->Troubleshooting, its parent protocol must be OperationStatus->Troubleshooting as well:",
+			"If the maintenance is OperationStatus->ScientificSupport, its parent protocol must be OperationStatus->ScientificSupport as well:",
 			{Lookup[packet, ParentProtocol], parentProtocolOperationStatus, Lookup[packet, OperationStatus]},
-			{ObjectP[], Troubleshooting, Troubleshooting} | {NullP, NullP, Troubleshooting} | {_, _, Except[Troubleshooting]}
+			{ObjectP[], ScientificSupport, ScientificSupport} | {NullP, NullP, ScientificSupport} | {_, _, Except[ScientificSupport]}
 		],
 
 		Test[
@@ -162,7 +162,7 @@ validMaintenanceQTests[packet:PacketP[Object[Maintenance]]]:= Module[
 
 		(* EXECUTION FIELDS *)
 		Test[
-			"If the maintenance has not been started, the following fields must be Null: Data, Figures, and Troubleshooting Reports:",
+			"If the maintenance has not been started, the following fields must be Null: Data, Figures, and UserCommunications:",
 			Lookup[packet, {Status, Data, UserCommunications}],
 			Alternatives[
 				{Alternatives[InCart, Canceled], {}, {}},
@@ -190,16 +190,16 @@ validMaintenanceQTests[packet:PacketP[Object[Maintenance]]]:= Module[
 
 	(* OPERATION STATUS *)
 		Test[
-			"If the maintenance Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, Troubleshooting, or OperatorReady. If the control Status is not running, OperationStatus must be Null or None:",
+			"If the maintenance Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, ScientificSupport, or OperatorReady. If the control Status is not running, OperationStatus must be Null or None:",
 			Lookup[packet, {Status, OperationStatus}],
 			Alternatives[
-				{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|Troubleshooting},
+				{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|ScientificSupport},
 				{Except[Processing],NullP|None}
 			]
 		],
 
 		(* TROUBLESHOOTING *)
-		Test["If a protocol is not currently executing, the Troubleshooting fields are not informed:",
+		Test["If a protocol is not currently executing, the ScientificSupport fields are not informed:",
 			Lookup[packet,{Status,CartResources,CartInstruments}],
 			{Processing,___}|{Except[(Processing)],{},{}}
 		],
@@ -293,6 +293,23 @@ validMaintenanceTrainInternalRobotArmPositionQTests[packet:PacketP[Object[Mainte
 		True
 	]
 };
+
+(* ::Subsection::Closed:: *)
+(*validMaintenanceTreatWasteQTests*)
+
+validMaintenanceTreatWasteQTests[packet:PacketP[Object[Maintenance,TreatWaste]]]:={
+
+	(* Fields filled in *)
+	NotNullFieldTest[packet,
+		{
+			Model,WashBin
+		}
+	],
+
+	RequiredTogetherTest[packet,{Instrument,ContainersToBleach,BatchedTreatmentParameters,WasteBin}],
+
+	RequiredTogetherTest[packet,{ContainersToSeal,AutoclaveTape}]
+}
 
 (* ::Subsection::Closed:: *)
 (*validMaintenanceAutoclaveQTests*)
@@ -526,9 +543,16 @@ validMaintenanceCalibrateNMRShimQTests[packet:PacketP[Object[Maintenance,Calibra
 		{
 			Model,
 			Target,
-			ShimmingStandard,
-			NMRTubePlacements,
-			NMRTubeRackPlacements
+			ShimmingStandard
+		}
+	],
+
+	RequiredWhenCompleted[packet,
+		{
+			StickerSheet,
+			UnrackedNMRTubeStickerPositions,
+			UnrackedNMRTubePlacements,
+			UnrackedNMRTubeLoadingPlacements
 		}
 	]
 
@@ -733,35 +757,6 @@ validMaintenanceCalibrateWeightQTests[packet:PacketP[Object[Maintenance,Calibrat
 
 
 (* ::Subsection::Closed:: *)
-(*validMaintenanceCellBleachQTests*)
-
-
-validMaintenanceCellBleachQTests[packet:PacketP[Object[Maintenance,CellBleach]]]:={
-	(* Shared Fields which should be null *)
-	NullFieldTest[packet,Target],
-	(* Programs and Unresolved/ResolvedOptions are shaped to Null, but these fields are deprecated and will soon cease to exist *)
-
-(* Fields filled in *)
-	NotNullFieldTest[packet,
-		{
-			Model,
-			DateConfirmed,
-			SamplesToBleach,
-			ContainersToBleach,
-			CellBleachProgram,
-			Bleach,
-			BleachTime,
-			BleachVolume,
-			AspirationVolume
-		}
-	],
-
-	(* Sensible Volume Transfers *)
-	FieldComparisonTest[packet,{BleachVolume,AspirationVolume},LessEqual]
-};
-
-
-(* ::Subsection::Closed:: *)
 (*validMaintenanceCleanQTests*)
 
 
@@ -774,6 +769,19 @@ validMaintenanceCleanQTests[packet:PacketP[Object[Maintenance,Clean]]]:={
 			Target
 		}
 	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validMaintenanceCleanViscometerQTests*)
+
+
+validMaintenanceCleanViscometerQTests[packet:PacketP[Object[Maintenance,Clean,Viscometer]]]:={
+	
+	NotNullFieldTest[packet,{
+		PistonCleaningSolution,
+		PistonCleaningWipes
+	}]
+	
 };
 
 
@@ -931,23 +939,6 @@ validMaintenanceCleanPlateWasherQTests[packet:PacketP[Object[Maintenance,Clean,P
 
 };
 
-
-(* ::Subsection::Closed:: *)
-(*validMaintenanceCreateHamiltonLabwareQTests*)
-
-
-validMaintenanceCreateHamiltonLabwareQTests[packet:PacketP[Object[Maintenance,CreateHamiltonLabware]]]:={
-
-	(* Fields filled in *)
-	NotNullFieldTest[packet,
-		{
-			ParameterizationModels,
-			Containers
-		}
-	]
-};
-
-
 (* ::Subsection::Closed:: *)
 (*validMaintenanceHandwashQTests*)
 
@@ -1070,13 +1061,20 @@ validMaintenanceDecontaminateLiquidHandlerQTests[packet:PacketP[Object[Maintenan
 
 
 validMaintenanceDecontaminateIncubatorQTests[packet:PacketP[Object[Maintenance,Decontaminate,Incubator]]]:= {
+};
 
+
+(* ::Subsection::Closed:: *)
+(*validMaintenanceDecontaminateWaterPurifierQTests*)
+
+
+validMaintenanceDecontaminateWaterPurifierQTests[packet:PacketP[Object[Maintenance,Decontaminate,WaterPurifier]]]:= {
 	(* Fields filled in *)
 	NotNullFieldTest[packet,
 		{
-			(* shared field *)
-			Model,
-			Target
+			MembraneCleaningSlot,
+			DecontaminatingReagent,
+			Tweezers
 		}
 	]
 };
@@ -1378,8 +1376,7 @@ validMaintenanceRefillReservoirNMRQTests[packet:PacketP[Object[Maintenance,Refil
 			FillLiquidContainer,
 			FillLiquid,
 			HeatSinkExhaustPlacement,
-			HeatSinkFillPlacement,
-			GasCylinderPlacement
+			HeatSinkFillPlacement
 		}
 	]
 };
@@ -1639,6 +1636,43 @@ validMaintenanceReplaceVacuumPumpQTests[packet:PacketP[Object[Maintenance,Replac
 	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validMaintenanceReplaceWasteContainerQTests*)
+
+
+validMaintenanceReplaceWasteContainerQTests[packet : PacketP[Object[Maintenance, Replace, WasteContainer]]] := {
+	NotNullFieldTest[packet, {
+		Target,
+		CheckedWasteContainers,
+		PercentFull,
+		WasteType,
+		ReplacementContainerModel,
+		WasteLabel,
+		WasteModel,
+		WasteContainerModel,
+		MaxWasteAccumulationTime,
+		LongAccumulatedWaste,
+		EmptiedContainerCabinet,
+		FullContainerCabinets,
+		Funnel,
+		HazardousWasteLabel,
+		Printer,
+		WasteRoomSuppliesCabinet,
+		RinsateWasteContainer
+	}],
+	RequiredWhenCompleted[packet, ReplaceWasteContainersQ],
+	If[
+		MemberQ[Lookup[packet, ReplaceWasteContainersQ], True],
+		NotNullFieldTest[packet, {
+			ReplacedWasteContainers,
+			PickedSamplePlacements,
+			AccumulationStartDate,
+			WasteLabelFilePaths
+		}],
+		Nothing
+	]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validMaintenanceReplaceGasFilterQTests*)
@@ -1653,7 +1687,7 @@ validMaintenanceReplaceGasFilterQTests[packet:PacketP[Object[Maintenance,Replace
 
 
 (* ::Subsection::Closed:: *)
-(*validMaintenanceReplaceVacuumPumpQTests*)
+(*validMaintenanceReplaceSensorQTests*)
 
 
 validMaintenanceReplaceSensorQTests[packet:PacketP[Object[Maintenance,Replace,Sensor]]]:={
@@ -1693,7 +1727,20 @@ validMaintenanceCalibrateMeltingPointApparatusQTests[packet:PacketP[Object[Maint
 		AdjustmentMethod,
 		Desiccate,
 		Grind
-	}]
+	}],
+
+	Test[
+		"DesiccationMethod is Null if Desiccate is False; or DesiccationMethod is informed if Desiccate is True.",
+		Which[
+			MatchQ[Lookup[packet, Desiccate], False],
+				NullQ[Lookup[packet, DesiccationMethod]],
+			MatchQ[Lookup[packet, Desiccate], True],
+				!NullQ[Lookup[packet, DesiccationMethod]],
+			True,
+				False
+		],
+		True
+	]
 };
 
 
@@ -1788,6 +1835,15 @@ validMaintenanceAuditGasCylindersQTests[packet:PacketP[Object[Maintenance, Audit
 			Positions,
 			EmptyTankPosition
 		}
+	],
+	RequiredTogetherTest[packet,
+		{
+			AmbiguousTanks,
+			AmbiguousTankPositions
+		}
+	],
+	If[!NullQ[AmbiguousTanks],
+		RequiredWhenCompleted[ClarifiedTankPositions]
 	]
 };
 
@@ -1821,8 +1877,8 @@ registerValidQTestFunction[Object[Maintenance, CalibrateRelativeHumidity], valid
 registerValidQTestFunction[Object[Maintenance, CalibrateTemperature], validMaintenanceCalibrateTemperatureQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateVolume], validMaintenanceCalibrateVolumeQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateWeight], validMaintenanceCalibrateWeightQTests];
-registerValidQTestFunction[Object[Maintenance, CellBleach], validMaintenanceCellBleachQTests];
 registerValidQTestFunction[Object[Maintenance, Clean], validMaintenanceCleanQTests];
+registerValidQTestFunction[Object[Maintenance, Clean,Viscometer], validMaintenanceCleanViscometerQTests];
 registerValidQTestFunction[Object[Maintenance, Clean, DifferentialScanningCalorimeter],validMaintenanceCleanDSCQTests];
 registerValidQTestFunction[Object[Maintenance, Clean, Dispenser],validMaintenanceCleanDispenserQTests];
 registerValidQTestFunction[Object[Maintenance, Clean, ESISource],validMaintenanceCleanESISourceQTests];
@@ -1831,10 +1887,10 @@ registerValidQTestFunction[Object[Maintenance, Clean,OperatorCart],validMaintena
 registerValidQTestFunction[Object[Maintenance, Clean,PeptideSynthesizer], validMaintenanceCleanPeptideSynthesizerQTests];
 registerValidQTestFunction[Object[Maintenance, Clean,pHDetector], validMaintenanceCleanpHDetectorQTests];
 registerValidQTestFunction[Object[Maintenance, Clean,PlateWasher], validMaintenanceCleanPlateWasherQTests];
-registerValidQTestFunction[Object[Maintenance, CreateHamiltonLabware], validMaintenanceCreateHamiltonLabwareQTests];
 registerValidQTestFunction[Object[Maintenance, Decontaminate], validMaintenanceDecontaminateQTests];
 registerValidQTestFunction[Object[Maintenance, Decontaminate,Incubator], validMaintenanceDecontaminateIncubatorQTests];
 registerValidQTestFunction[Object[Maintenance, Decontaminate,LiquidHandler], validMaintenanceDecontaminateLiquidHandlerQTests];
+registerValidQTestFunction[Object[Maintenance, Decontaminate,WaterPurifier], validMaintenanceDecontaminateWaterPurifierQTests];
 registerValidQTestFunction[Object[Maintenance, Defrost], validMaintenanceDefrostQTests];
 registerValidQTestFunction[Object[Maintenance, Dishwash], validMaintenanceDishwashQTests];
 registerValidQTestFunction[Object[Maintenance, Flush], validMaintenanceFlushQTests];
@@ -1859,9 +1915,11 @@ registerValidQTestFunction[Object[Maintenance, Replace, Lamp],validMaintenanceRe
 registerValidQTestFunction[Object[Maintenance, Replace, GasFilter],validMaintenanceReplaceGasFilterQTests];
 registerValidQTestFunction[Object[Maintenance, Replace, Sensor],validMaintenanceReplaceSensorQTests];
 registerValidQTestFunction[Object[Maintenance, Replace, VacuumPump],validMaintenanceReplaceVacuumPumpQTests];
+registerValidQTestFunction[Object[Maintenance, Replace, WasteContainer],validMaintenanceReplaceWasteContainerQTests];
 registerValidQTestFunction[Object[Maintenance, StorageUpdate],validMaintenanceStorageUpdateQTests];
 registerValidQTestFunction[Object[Maintenance, Shipping],validMaintenanceShippingQTests];
-registerValidQTestFunction[Object[Maintenance,TrainInternalRobotArm], validMaintenanceTrainInternalRobotArmPositionQTests];
+registerValidQTestFunction[Object[Maintenance, TrainInternalRobotArm], validMaintenanceTrainInternalRobotArmPositionQTests];
+registerValidQTestFunction[Object[Maintenance, TreatWaste],validMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Object[Maintenance, UpdateLiquidHandlerDeckAccuracy],validMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
 
 (*End*)

@@ -19,14 +19,28 @@ DefineUsage[ExperimentSerialDilute,
 						{
 							InputName -> "samples",
 							Description -> "The samples to be iteratively diluted.",
-							Widget ->
-										Widget[
-											Type -> Object,
-											Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-											Dereference -> {
-												Object[Container] -> Field[Contents[[All, 2]]]
-												}
-										],
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
+							],
 
 							Expandable -> False
 						},

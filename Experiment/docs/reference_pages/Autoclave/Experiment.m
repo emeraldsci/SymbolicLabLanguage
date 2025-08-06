@@ -19,9 +19,26 @@ DefineUsage[ExperimentAutoclave,
 						{
 							InputName->"Inputs",
 							Description->"The sample(s)/container(s) to be autoclaved.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}],
+									ObjectTypes -> {Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -52,18 +69,12 @@ DefineUsage[ExperimentAutoclave,
 			"ValidExperimentAutoclaveQ",
 			"ExperimentAutoclaveOptions",
 			"ExperimentStockSolution",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{
-			"clayton.schwarz",
-			"awixtrom",
-			"wyatt",
-			"spencer.clark",
-			"paul"
-		}
+		Author->{"yanzhe.zhu", "clayton.schwarz", "awixtrom", "wyatt", "spencer.clark", "paul"}
 	}
 ];
 
@@ -79,9 +90,20 @@ DefineUsage[ExperimentAutoclaveOptions,
 						{
 							InputName->"Inputs",
 							Description->"The sample(s)/container(s) to be autoclaved.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}],
+									ObjectTypes -> {Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -106,12 +128,7 @@ DefineUsage[ExperimentAutoclaveOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{
-			"clayton.schwarz",
-			"awixtrom",
-			"wyatt",
-			"spencer.clark"
-		}
+		Author->{"yanzhe.zhu", "clayton.schwarz", "awixtrom", "wyatt", "spencer.clark"}
 	}
 ];
 
@@ -128,9 +145,20 @@ DefineUsage[ExperimentAutoclavePreview,
 								{
 									InputName->"Inputs",
 									Description->"The sample(s)/container(s) to be autoclaved.",
-									Widget->Widget[
-										Type->Object,
-										Pattern:>ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]
+									Widget->Alternatives[
+										"Sample or Container"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}],
+											ObjectTypes -> {Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]},
+											Dereference -> {
+												Object[Container] -> Field[Contents[[All, 2]]]
+											}
+										],
+										"Model Sample"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Model[Sample]],
+											ObjectTypes -> {Model[Sample]}
+										]
 									],
 									Expandable->False
 								},
@@ -155,12 +183,7 @@ DefineUsage[ExperimentAutoclavePreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{
-			"clayton.schwarz",
-			"awixtrom",
-			"wyatt",
-			"spencer.clark"
-		}
+		Author->{"yanzhe.zhu", "clayton.schwarz", "awixtrom", "wyatt", "spencer.clark"}
 	}
 ];
 
@@ -177,9 +200,20 @@ DefineUsage[ValidExperimentAutoclaveQ,
 								{
 									InputName->"Inputs",
 									Description->"The sample(s)/container(s) to be autoclaved.",
-									Widget->Widget[
-										Type->Object,
-										Pattern:>ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]
+									Widget->Alternatives[
+										"Sample or Container"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}],
+											ObjectTypes -> {Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]},
+											Dereference -> {
+												Object[Container] -> Field[Contents[[All, 2]]]
+											}
+										],
+										"Model Sample"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Model[Sample]],
+											ObjectTypes -> {Model[Sample]}
+										]
 									],
 									Expandable->False
 								},
@@ -204,11 +238,6 @@ DefineUsage[ValidExperimentAutoclaveQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{
-			"clayton.schwarz",
-			"awixtrom",
-			"wyatt",
-			"spencer.clark"
-		}
+		Author->{"yanzhe.zhu", "clayton.schwarz", "awixtrom", "wyatt", "spencer.clark"}
 	}
 ];

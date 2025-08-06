@@ -234,7 +234,11 @@ DefineTests[PlotDistribution,{
     "Setting Output to {Result,Options} plots the distribution and returns all resolved options:",
     PlotDistribution[NormalDistribution[0,1],Output->{Result,Options}],
     output_List/;MatchQ[First@output,_?ValidGraphicsQ]&&MatchQ[Last@output,OptionsPattern[PlotDistribution]]
-    ]
+    ],
+	Test["No error for single empirical point:",
+		PlotDistribution[EmpiricalDistribution[{3.5}]],
+		_?ValidGraphicsQ
+	]
 
 }];
 

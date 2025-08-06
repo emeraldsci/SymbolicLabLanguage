@@ -48,7 +48,7 @@ constellationImage[32]:=Set[
 
 constellationImage[___]:=Set[
 	constellationImage[___],
-	Import[FileNameJoin[{PackageDirectory["Constellation`"], "resources", "ConstellationIcon32x32.png"}], "PNG"]
+	Import[FileNameJoin[{PackageDirectory["Constellation`"], "resources", "ConstellationIcon128x128.png"}], "PNG"]
 ];
 
 bookmarkImage[___]:=Set[
@@ -68,7 +68,7 @@ constellationPin[32]:=Set[
 
 constellationPin[___]:=Set[
 	constellationPin[___],
-	Import[FileNameJoin[{PackageDirectory["Constellation`"], "resources", "ConstellationPin24x24.png"}], "PNG"]
+	Import[FileNameJoin[{PackageDirectory["Constellation`"], "resources", "ConstellationPin128x128.png"}], "PNG"]
 ];
 
 (* set $CurrentUploadTransactions stack *)
@@ -738,7 +738,10 @@ Download[input:{{downloadInputP...}...}, ops:OptionsPattern[]]:=TraceExpression[
 	];
 
 	If[unknownTypes =!= {},
-		Message[Download::UnknownType, DeleteDuplicates[unknownTypes]]
+		(
+			Echo[requests, "Download requests:"];
+			Message[Download::UnknownType, DeleteDuplicates[unknownTypes]]
+		)
 	];
 
 	(* TODO: Can this be combined with downloadRules? *)
@@ -1760,7 +1763,7 @@ downloadRules[inputs:{(downloadInputP -> downloadRuleValueP)...}, ops:OptionsPat
 	];
 
 	(* get the missing field messages for real *)
-	(* need to do some wacky shit because if the object doesn't actually exist or there's a type mismatch, we are going to cross wires where Download above would have thought we were going to be $Failed when really we're not *)
+	(* need to do some wacky stuff because if the object doesn't actually exist or there's a type mismatch, we are going to cross wires where Download above would have thought we were going to be $Failed when really we're not *)
 	groupedMissingFields=If[Length[missingFields] > 0,
 		With[
 			{grouped=Merge[
@@ -1832,7 +1835,7 @@ downloadRules[inputs:{(downloadInputP -> downloadRuleValueP)...}, ops:OptionsPat
 		FirstOrDefault[existingMissingCacheFields, {}]
 	];
 	(* delete duplicates because it always duplicates things since these objects get Sown within FixedPoint, which runs again on the output until nothing changes (and thus the error gets sown twice) *)
-	(* also only throw this message if we are a developer because we don't want users to see this or for it to fuck up protocols in the lab *)
+	(* also only throw this message if we are a developer because we don't want users to see this or for it to mess up protocols in the lab *)
 	(* note that this WILL throw errors if a developer is running a protocol.  we are deciding that is ok because if that is happening you're testing anyway and want to find the bugs*)
 	If[Length[noSimulationMissingCacheFields] > 0 && MatchQ[$PersonID, ObjectP[Object[User, Emerald, Developer]]],
 		Message[Download::MissingCacheField, DeleteDuplicates[noSimulationMissingCacheFields[[All, 2]]], DeleteDuplicates[noSimulationMissingCacheFields[[All, 1]]]];
@@ -2253,7 +2256,10 @@ generateFieldRequests[inputsWithIds_, dates_]:=Module[{inputsWithIdsAndDates, in
 	]];
 
 	If[invalidTypes =!= {},
-		Message[Download::UnknownType, invalidTypes]
+		(
+			Echo[fieldRequests, "Download requests:"];
+			Message[Download::UnknownType, invalidTypes]
+		)
 	];
 
 	fieldRequestsNoInvalidTypes=ReplacePart[fieldRequestsNoInvalidFields,
@@ -2380,6 +2386,21 @@ validUploadField[((Append | Replace)[field:_Symbol]) -> value:_, definition:_Ass
 			<|"error" -> "FieldStoragePattern", "field" -> field|>
 		];
 
+(*
+  Until Oct 2024, the Notebook field on root Object[] and Model[] types was a two-way link (with a backlink on Objects).
+  Due to issues related to object contention + permissions, this is changed so that the Notebook field is a one-way link,
+  with the Object[LaboratoryNotebook][Objects] field now a computable field that fetches the objects by a Search.
+  For backwards compatibility reasons, we permit making Upload calls for the Notebook field using the the 2-way-link
+  pattern LinkP[Object[LaboratoryNotebook], Objects] by adding this overload (the backlink is ignored by the server).
+  Once all Upload calls have been suitably updated, this overload can be deleted, and the Transfer[Notebook] overload
+  below can be suitably updated by removing the first pattern, LinkP[Object[LaboratoryNotebook], Objects].
+*)
+validUploadField[Notebook -> value:_, _]:=
+	If[MatchQ[value, LinkP[Object[LaboratoryNotebook], Objects] | LinkP[Object[LaboratoryNotebook]] | Null],
+		Nothing,
+		<|"error" -> "BadTransfer", "field" -> Notebook, "value" -> value|>
+	];
+
 validUploadField[field:_Symbol -> value:_, definition:_Association | _List]:=
 		If[fieldValueMatchesPatternQ[value, definition],
 			Nothing,
@@ -2392,7 +2413,11 @@ validUploadField[Transfer[field:Except[Notebook]] -> value:_, _]:=
 
 
 validUploadField[Transfer[Notebook] -> value:_, _]:=
-		If[MatchQ[value, LinkP[Object[LaboratoryNotebook], Objects] | Null],
+		If[MatchQ[value,
+			(*The first pattern is for backwards compatibility reasons.  See comment above*)
+			LinkP[Object[LaboratoryNotebook], Objects]
+				| LinkP[Object[LaboratoryNotebook]]
+				| Null],
 			Nothing,
 			<|"error" -> "BadTransfer", "field" -> Notebook, "value" -> value|>
 		];
@@ -2443,10 +2468,6 @@ uploadPacketErrors[packet:_Association, {position:_Integer}]:=With[
 		],
 		If[!KeyMemberQ[packet, Object] && KeyMemberQ[packet, (Erase | EraseCases)[_Symbol]],
 			<|"error" -> "NoObject", "position" -> position, "field" -> First@Keys@KeySelect[packet, MatchQ[#,(Erase | EraseCases)[_Symbol]] &]|>,
-			Nothing
-		],
-		If[type === Object[LaboratoryNotebook] && KeyMemberQ[packet, Objects | (Append | Replace | Erase | EraseCases)[Objects]],
-			<|"error" -> "ObjectsField", "position" -> position|>,
 			Nothing
 		],
 		If[KeyMemberQ[packet, Object] && FailureQ[type],
@@ -2874,7 +2895,8 @@ GetNumOwnedObjects[object:Object[ECL`Team, ECL`Financing, _String], ops:OptionsP
 
 GetNumOwnedObjects[financingTeams:{Object[ECL`Team, ECL`Financing, _String]..}, ops:OptionsPattern[]]:=Module[
 	{financingTeamObjects, uniqueFinancingTeamObjects, dateOption, response, options},
-	financingTeamObjects=ToList[financingTeams];
+	(*Convert financingTeamObjects to IDs - ConstellationRequest does not work if Name form of the financingTeam is passed onto it*)
+	financingTeamObjects=Download[ToList[financingTeams],Object];
 
 	uniqueFinancingTeamObjects=DeleteDuplicates[financingTeamObjects];
 
@@ -2976,7 +2998,8 @@ DatabaseMemberQ[objects:{(objectP | modelP | linkP | _Association)..}, ops:Optio
 	];
 
 	(* Convert all objects into ID format. *)
-	objectsWithoutNames=Download[objects, Object, Simulation -> explicitSimulation];
+	(* if the object doesn't exist, we really don't want the message; the point of this function is to return True or False, not throw an error here *)
+	objectsWithoutNames=Quiet[Download[objects, Object, Simulation -> explicitSimulation], Download::ObjectDoesNotExist];
 
 	(* Look at our explicit and global simulation as well. *)
 	explicitSimulationMemberQ=If[MatchQ[explicitSimulation, SimulationP],

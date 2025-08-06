@@ -49,9 +49,8 @@ DefineObjectType[Object[Item, Cap], {
 		},
 
 		(* Fields that linked to different Instrument, this is unique for aspiration cap *)
-
 		HPLC -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
@@ -59,7 +58,11 @@ DefineObjectType[Object[Item, Cap], {
 				Object[Instrument, HPLC][BufferBCap],
 				Object[Instrument, HPLC][BufferCCap],
 				Object[Instrument, HPLC][BufferDCap],
-				Object[Instrument, HPLC][NeedleWashCap]
+				Object[Instrument, HPLC][NeedleWashCap],
+				Object[Instrument, HPLC][SecondaryNeedleWashCap],
+				Object[Instrument, HPLC][TertiaryNeedleWashCap],
+				Object[Instrument, HPLC][SealWashCap],
+				Object[Instrument, HPLC][FluidicsWashCap]
 			],
 			Description -> "The HPLC instrument that is connected to this cap.",
 			Category -> "Instrument Specifications"
@@ -70,7 +73,13 @@ DefineObjectType[Object[Item, Cap], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Instrument, FPLC][BufferACap],
-				Object[Instrument, FPLC][BufferBCap]
+				Object[Instrument, FPLC][BufferBCap],
+				Object[Instrument, FPLC][BufferCCap],
+				Object[Instrument, FPLC][BufferDCap],
+				Object[Instrument, FPLC][BufferECap],
+				Object[Instrument, FPLC][BufferFCap],
+				Object[Instrument, FPLC][BufferGCap],
+				Object[Instrument, FPLC][BufferHCap]
 			],
 			Description -> "The FPLC instrument that is connected to this cap.",
 			Category -> "Instrument Specifications"
@@ -98,7 +107,8 @@ DefineObjectType[Object[Item, Cap], {
 				Object[Instrument, IonChromatography][BufferBCap],
 				Object[Instrument, IonChromatography][BufferCCap],
 				Object[Instrument, IonChromatography][BufferDCap],
-				Object[Instrument, IonChromatography][NeedleWashSolutionCap]
+				Object[Instrument, IonChromatography][NeedleWashSolutionCap],
+				Object[Instrument, IonChromatography][SealWashCap]
 			],
 			Description -> "The Ion Chromatography instrument that is connected to this cap.",
 			Category -> "Instrument Specifications"
@@ -110,6 +120,8 @@ DefineObjectType[Object[Item, Cap], {
 			Relation -> Alternatives[
 				Object[Instrument, SupercriticalFluidChromatography][NeedleWashCap],
 				Object[Instrument, SupercriticalFluidChromatography][ExternalNeedleWashCap],
+				Object[Instrument, SupercriticalFluidChromatography][SealWashCap],
+				Object[Instrument, SupercriticalFluidChromatography][SecondarySealWashCap],
 				Object[Instrument, SupercriticalFluidChromatography][CosolventACap],
 				Object[Instrument, SupercriticalFluidChromatography][CosolventBCap],
 				Object[Instrument, SupercriticalFluidChromatography][CosolventCCap],
@@ -132,6 +144,17 @@ DefineObjectType[Object[Item, Cap], {
 			Description -> "The plate washer instrument that is connected to this cap.",
 			Category -> "Instrument Specifications"
 		},
+		MassSpectrometer -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, MassSpectrometer][WashBufferCap],
+				Object[Instrument, MassSpectrometer][LockMassCap]
+			],
+			Description -> "The MassSpectrometer that is connected to this cap.",
+			Category -> "Instrument Specifications"
+		},
 		ConnectedLocation -> {
 			Format -> Single,
 			Class -> Link,
@@ -142,6 +165,17 @@ DefineObjectType[Object[Item, Cap], {
 			],
 			Description -> "The nearest object of known location to which this plumbing component is connected, either directly or indirectly.",
 			Category -> "Plumbing Information"
+		},
+		pHTitrator -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, pHTitrator][AcidContainerCap],
+				Object[Instrument, pHTitrator][BaseContainerCap]
+			],
+			Description -> "The pHTitrator instrument that is connected to this cap.",
+			Category -> "Instrument Specifications"
 		}
 
 	}

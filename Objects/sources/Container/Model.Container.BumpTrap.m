@@ -74,14 +74,6 @@ DefineObjectType[Model[Container, BumpTrap], {
 			Relation -> Model[Container, Rack],
 			Description -> "Model of a rack that can be used to image this container on a sample imager instrument.",
 			Category -> "Compatibility"
-		},
-		Stocked->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if the empty containers of this model are kept in stock for use on demand in experiments.",
-			Abstract->True,
-			Category -> "Container Specifications"
 		}
 	}
 }];

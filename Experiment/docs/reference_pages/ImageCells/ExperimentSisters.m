@@ -19,12 +19,19 @@ DefineUsage[ExperimentImageCellsPreview,
 						{
 							InputName->"Samples",
 							Description->"The sample(s) to be imaged.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -66,12 +73,19 @@ DefineUsage[ExperimentImageCellsOptions,
 						{
 							InputName->"Samples",
 							Description->"The sample(s) to be imaged.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -116,12 +130,19 @@ DefineUsage[ValidExperimentImageCellsQ,
 						{
 							InputName->"Samples",
 							Description->"The sample(s) to be imaged.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True

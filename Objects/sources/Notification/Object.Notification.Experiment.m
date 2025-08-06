@@ -41,7 +41,7 @@ DefineObjectType[Object[Notification, Experiment], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Troubleshooting, Report] | Object[SupportTicket, UserCommunication],
+			Relation -> Object[SupportTicket, UserCommunication],
 			Description -> "The underlying report providing the information being sent in this notification.",
 			Abstract -> True,
 			Category -> "Notification Information"

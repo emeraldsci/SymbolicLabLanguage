@@ -108,7 +108,7 @@ DefineTests[UploadArrayCard,
 	TearDown:>(
 		(* doing this because a primary cause of flaky tests is these Irregular plates showing up momentarily in other searches, and then them subsequently trying to Download from them but you can't because they've been erased already.  So just don't erase them and it'll be fine *)
 		EraseObject[DeleteCases[$CreatedObjects, ObjectP[Model[Container, Plate, Irregular]]],Force->True,Verbose->False];
-		Upload[<|Object -> #, Name -> Null|>& /@ Cases[$CreatedObjects, ObjectP[Model[Container, Plate, Irregular]]]]
+		Upload[<|Object -> #, Name -> Null|>& /@ Cases[$CreatedObjects, ObjectP[Model[Container, Plate, Irregular]]]];
 		Unset[$CreatedObjects]
 	),
 
@@ -231,9 +231,9 @@ DefineTests[UploadArrayCardOptions,
 		Example[{Basic,"Returns the options in table form:"},
 			UploadArrayCardOptions[
 				{
-					{Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1"],Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1"]}
+				{Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1 " <> $SessionUUID]}
 			],
 			_Grid,
 			Stubs:>{
@@ -243,9 +243,9 @@ DefineTests[UploadArrayCardOptions,
 		Example[{Options,OutputFormat,"If OutputFormat -> List, returns the options as a list of rules:"},
 			UploadArrayCardOptions[
 				{
-					{Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1"],Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1"]},
+				{Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1 " <> $SessionUUID]},
 				OutputFormat->List
 			],
 			{(_Rule|_RuleDelayed)..},
@@ -267,9 +267,9 @@ DefineTests[UploadArrayCardOptions,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1"]
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -285,17 +285,17 @@ DefineTests[UploadArrayCardOptions,
 				(*Gather all the created objects*)
 				allObjects={
 					(*Detection reagents*)
-					Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1"],
-					Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1"],
-					Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1"]
+					Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1 " <> $SessionUUID]
 				};
 
 				(*Make some detection reagents*)
 				UploadOligomer[
 					{
-						"UploadArrayCardOptions test forward primer 1",
-						"UploadArrayCardOptions test reverse primer 1",
-						"UploadArrayCardOptions test probe 1"
+						"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID,
+						"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID,
+						"UploadArrayCardOptions test probe 1 " <> $SessionUUID
 					},
 					PolymerType->DNA,
 					MolecularWeight->5 Kilogram/Mole,
@@ -320,9 +320,9 @@ DefineTests[UploadArrayCardOptions,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1"]
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardOptions test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -344,9 +344,9 @@ DefineTests[UploadArrayCardPreview,
 		Example[{Basic,"No preview is currently available for UploadArrayCard:"},
 			UploadArrayCardPreview[
 				{
-					{Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1"],Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1"]}
+				{Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1 " <> $SessionUUID]}
 			],
 			Null,
 			Stubs:>{
@@ -367,9 +367,9 @@ DefineTests[UploadArrayCardPreview,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1"]
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -385,17 +385,17 @@ DefineTests[UploadArrayCardPreview,
 				(*Gather all the created objects*)
 				allObjects={
 					(*Detection reagents*)
-					Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1"],
-					Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1"],
-					Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1"]
+					Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1 " <> $SessionUUID]
 				};
 
 				(*Make some detection reagents*)
 				UploadOligomer[
 					{
-						"UploadArrayCardPreview test forward primer 1",
-						"UploadArrayCardPreview test reverse primer 1",
-						"UploadArrayCardPreview test probe 1"
+						"UploadArrayCardPreview test forward primer 1 " <> $SessionUUID,
+						"UploadArrayCardPreview test reverse primer 1 " <> $SessionUUID,
+						"UploadArrayCardPreview test probe 1 " <> $SessionUUID
 					},
 					PolymerType->DNA,
 					MolecularWeight->5 Kilogram/Mole,
@@ -420,9 +420,9 @@ DefineTests[UploadArrayCardPreview,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1"],
-				Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1"]
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"UploadArrayCardPreview test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -444,9 +444,9 @@ DefineTests[ValidUploadArrayCardQ,
 		Example[{Basic,"Returns a Boolean indicating the validity of an array card:"},
 			ValidUploadArrayCardQ[
 				{
-					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]}
+				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]}
 			],
 			True,
 			Stubs:>{
@@ -456,9 +456,9 @@ DefineTests[ValidUploadArrayCardQ,
 		Example[{Options,Verbose,"If Verbose -> True, returns the passing and failing tests:"},
 			ValidUploadArrayCardQ[
 				{
-					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]},
+				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]},
 				Verbose->True
 			],
 			True,
@@ -469,9 +469,9 @@ DefineTests[ValidUploadArrayCardQ,
 		Example[{Options,OutputFormat,"If OutputFormat -> TestSummary, returns a test summary instead of a Boolean:"},
 			ValidUploadArrayCardQ[
 				{
-					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"]}
+					{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID]}
 				},
-				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]},
+				{Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]},
 				OutputFormat->TestSummary
 			],
 			_EmeraldTestSummary,
@@ -493,9 +493,9 @@ DefineTests[ValidUploadArrayCardQ,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"],
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -511,17 +511,17 @@ DefineTests[ValidUploadArrayCardQ,
 				(*Gather all the created objects*)
 				allObjects={
 					(*Detection reagents*)
-					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],
-					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"],
-					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]
+					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID],
+					Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]
 				};
 
 				(*Make some detection reagents*)
 				UploadOligomer[
 					{
-						"ValidUploadArrayCardQ test forward primer 1",
-						"ValidUploadArrayCardQ test reverse primer 1",
-						"ValidUploadArrayCardQ test probe 1"
+						"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID,
+						"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID,
+						"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID
 					},
 					PolymerType->DNA,
 					MolecularWeight->5 Kilogram/Mole,
@@ -546,9 +546,9 @@ DefineTests[ValidUploadArrayCardQ,
 			(*Gather all the objects created in SymbolSetUp*)
 			allObjects={
 				(*Detection reagents*)
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1"],
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1"],
-				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1"]
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test forward primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test reverse primer 1 " <> $SessionUUID],
+				Model[Molecule,Oligomer,"ValidUploadArrayCardQ test probe 1 " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)

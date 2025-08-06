@@ -22,12 +22,20 @@ DefineUsage[ExperimentTotalProteinQuantificationPreview,
             {
               InputName->"Samples",
               Description->"The samples to be run in an absorbance- or fluorescence-based total protein concentration determination assay. The concentration of proteins present in the samples is determined by change in absorbance or fluorescence of a dye at a specific wavelength.",
-              Widget->Widget[
-                Type->Object,
-                Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -52,7 +60,7 @@ DefineUsage[ExperimentTotalProteinQuantificationPreview,
     Tutorials->{
       "Sample Preparation"
     },
-    Author->{"andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
+    Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
   }
 ];
 
@@ -71,12 +79,20 @@ DefineUsage[ExperimentTotalProteinQuantificationOptions,
             {
               InputName->"Samples",
               Description->"The samples to be run in an absorbance- or fluorescence-based total protein concentration determination assay. The concentration of proteins present in the samples is determined by change in absorbance or fluorescence of a dye at a specific wavelength.",
-              Widget->Widget[
-                Type->Object,
-                Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -101,7 +117,7 @@ DefineUsage[ExperimentTotalProteinQuantificationOptions,
     Tutorials->{
       "Sample Preparation"
     },
-    Author->{"andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
+    Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
   }
 ];
 
@@ -120,12 +136,20 @@ DefineUsage[ValidExperimentTotalProteinQuantificationQ,
             {
               InputName->"Samples",
               Description->"The samples to be run in an absorbance- or fluorescence-based total protein concentration determination assay. The concentration of proteins present in the samples is determined by change in absorbance or fluorescence of a dye at a specific wavelength.",
-              Widget->Widget[
-                Type->Object,
-                Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -150,6 +174,6 @@ DefineUsage[ValidExperimentTotalProteinQuantificationQ,
     Tutorials->{
       "Sample Preparation"
     },
-    Author->{"andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
+    Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "kstepurska", "eqian", "spencer.clark"}
   }
 ];

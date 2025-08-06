@@ -20,14 +20,27 @@ DefineUsage[ExperimentDilute,
 						{
 							InputName -> "Sample",
 							Description -> "The sample to be diluted.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable -> False
 						},
@@ -38,7 +51,7 @@ DefineUsage[ExperimentDilute,
 					{
 						OutputName -> "Protocol",
 						Description -> "A protocol containing instructions for completion of the requested sample dilution.",
-						Pattern :> ObjectP[{Object[Protocol, ManualSamplePreparation],Object[Protocol, RoboticSamplePreparation]}]
+						Pattern :> ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			}
@@ -58,7 +71,7 @@ DefineUsage[ExperimentDilute,
 			"Mix",
 			"Aliquot"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];
 
@@ -77,13 +90,21 @@ DefineUsage[ExperimentDiluteOptions,
 						{
 							InputName -> "Objects",
 							Description-> "The sample to be diluted.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -112,7 +133,7 @@ DefineUsage[ExperimentDiluteOptions,
 			"Mix",
 			"Aliquot"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];
 
@@ -130,13 +151,21 @@ DefineUsage[ExperimentDilutePreview,
 						{
 							InputName -> "Objects",
 							Description-> "The sample to be diluted.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -163,7 +192,7 @@ DefineUsage[ExperimentDilutePreview,
 			"Mix",
 			"Aliquot"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];
 
@@ -181,13 +210,21 @@ DefineUsage[ValidExperimentDiluteQ,
 						{
 							InputName -> "Objects",
 							Description-> "The sample to be diluted.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -214,6 +251,6 @@ DefineUsage[ValidExperimentDiluteQ,
 			"Mix",
 			"Aliquot"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "cgullekson", "steven"}
 	}
 ];

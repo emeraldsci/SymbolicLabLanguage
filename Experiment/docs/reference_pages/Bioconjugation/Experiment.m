@@ -21,14 +21,27 @@ DefineUsage[ExperimentBioconjugation,
 						{
 							InputName -> "SamplePools",
 							Description -> "The samples to be chemically linked together into a pool.",
-							Widget ->
-									Widget[
-										Type -> Object,
-										Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-										Dereference -> {
-											Object[Container] -> Field[Contents[[All, 2]]]
+							Widget -> Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
 										}
-									],
+									}
+								]
+							],
 							Expandable -> False,
 							NestedIndexMatching->True
 						},
@@ -55,7 +68,7 @@ DefineUsage[ExperimentBioconjugation,
 			}
 		},
 		MoreInformation -> {
-			"ExperimentSampleManipulation is used to accomplish all experiment transfers and incubations."
+			"ExperimentSamplePreparation is used to accomplish all experiment transfers and incubations."
 		},
 		SeeAlso -> {
 			"ValidExperimentBioconjguationQ",

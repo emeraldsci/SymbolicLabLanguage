@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Section:: *)
@@ -10,7 +10,6 @@
 
 (* ::Subsection:: *)
 (*ExperimentWashCells Options and Messages*)
-
 
 DefineOptions[ExperimentWashCells,
   Options :> {
@@ -63,7 +62,7 @@ DefineOptions[ExperimentWashCells,
           Type -> Enumeration,
           Pattern :> Alternatives[Suspension, Adherent]
         ],
-        Description -> "Indicates how the cell sample physically interacts with its container prior to washing cells/changing media. Options include Adherent and Suspension (including any microbial liquid media).",
+        Description -> "Indicates how the cell sample physically interacts with its container. Options include Adherent and Suspension (including any microbial liquid media).",
         ResolutionDescription -> "Automatically set to the CultureAdhesion specified in Object[Sample].",
         Category -> "General"
       },
@@ -74,7 +73,7 @@ DefineOptions[ExperimentWashCells,
           Type -> Enumeration,
           Pattern :> CellIsolationTechniqueP (* CellIsolationTechniqueP:Pellet | Aspirate *)
         ],
-        Description -> "The technique used to remove impurities, debris, and media from cell samples prior to washing cells or changing media. Suspension cells are centrifuged to separate the cells from the media or buffer. Adherent cells remain attached to the bottom of the culture plate whereas the media can be removed via aspiration.",
+        Description -> "The technique used to remove impurities, debris, and media from cell samples. Suspension cells are centrifuged to separate the cells from the media or buffer. Adherent cells remain attached to the bottom of the culture plate whereas the media can be removed via aspiration.",
         ResolutionDescription -> "If CultureAdhesion is Adherent, then set to Aspirate. If CultureAdhesion is set to Suspension and any of the Pellet Options not Null, automatically set to Pellet.",
         AllowNull -> False,
         Category -> "General"
@@ -90,7 +89,7 @@ DefineOptions[ExperimentWashCells,
             {Object[Catalog, "Root"], "Instruments", "Centrifugation", "Centrifuges"}
           }
         ],
-        Description -> "The instrument used to isolate the cell sample prior to washing cells or changing media. Centrifuging separates cells from media, forming a cell pellet. The supernatant is removed or harvested, leaving the cell pellet in the container.",
+        Description -> "The instrument used to isolate the cell sample. Centrifuging separates cells from media, forming a cell pellet. The supernatant is removed or harvested, leaving the cell pellet in the container.",
         ResolutionDescription -> "Automatically set to robotic integrated centrifuge, Model[Instrument, Centrifuge, \"HiG4\"] if CellIsolationTechnique is set to Pellet.",
         AllowNull -> True,
         Category -> "General"
@@ -109,7 +108,7 @@ DefineOptions[ExperimentWashCells,
             Pattern :> Alternatives[All]
           ]
         ],
-        Description -> "Indicates how much media to remove from an input sample of cells prior to washing cell or changing media when isolating with Aspriate or Pellet.",
+        Description -> "Indicates how much media to remove from an input sample of cells when isolating with Aspriate or Pellet.",
         ResolutionDescription -> "Automatically set to aspirate off the majority of the sample volume, leaving the smaller of 5% of the container's capacity or 100 Microliter.",
         AllowNull -> False,
         Category -> "Media Aspiration"
@@ -122,7 +121,7 @@ DefineOptions[ExperimentWashCells,
           Pattern :> RangeP[0 Minute, $MaxExperimentTime],
           Units -> Alternatives[Second, Minute, Hour]
         ],
-        Description -> "The amount of time to centrifuge the cell samples prior to washing cells or changing media. Centrifuging is intended to separate cells from media.",
+        Description -> "The amount of time to centrifuge the cell samples. Centrifuging is intended to separate cells from media.",
         ResolutionDescription -> "Automatically set to 5 min if CellIsolationTechnique is set to Pellet.",
         AllowNull -> True,
         Category -> "Media Aspiration"
@@ -131,7 +130,7 @@ DefineOptions[ExperimentWashCells,
       {
         OptionName -> CellPelletContainer,
         Default -> Automatic,
-        Description -> "The container to hold the cell samples in centrifugation prior to washing cells or changing media.",
+        Description -> "The container to hold the cell samples in centrifugation.",
         ResolutionDescription -> "Automatically set to the deep-well plate whose WorkingVolume is larger than the sample volume if CellIsolationTechnique is set to Pellet.", (*Table for choosing container based on sample volume*)
         AllowNull -> True,
         Widget -> Alternatives[
@@ -207,7 +206,7 @@ DefineOptions[ExperimentWashCells,
           Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
           PatternTooltip -> "Enumeration must be any well from A1 to P24."
         ],
-        Description -> "The well of the container into which the cell sample is transfered into for centrifugation in cell wash experiment or change media experiment.",
+        Description -> "The well of the container into which the cell sample is transferred into for centrifugation.",
         ResolutionDescription -> "Automatically set to the first empty well in CellPelletContainer.",
         Category -> "Hidden"
       },
@@ -226,7 +225,7 @@ DefineOptions[ExperimentWashCells,
             Units -> Alternatives[GravitationalAcceleration]
           ]
         ],
-        Description -> "The rotational speed or force applied to the cell sample by centrifugation prior to washing cells or changing media. Centrifuging is intended to separate cells from media, forming a cell pellet.",
+        Description -> "The rotational speed or force applied to the cell sample by centrifugation. Centrifuging is intended to separate cells from media, forming a cell pellet.",
         ResolutionDescription -> "If CellIsolationTechnique is set to Pellet, automatically set to " <> ToString[$LivingMammalianCentrifugeIntensity] <> " if CellType is Mammalian, " <> ToString[$LivingBacterialCentrifugeIntensity] <> " if CellType is Bacterial, " <> ToString[$LivingYeastCentrifugeIntensity] <> " if CellType is Yeast.",
         AllowNull -> True,
         Category -> "Media Aspiration"
@@ -240,7 +239,7 @@ DefineOptions[ExperimentWashCells,
           Pattern :> RangeP[0 AngularDegree, $MaxRoboticAspirationAngle],
           Units -> Alternatives[AngularDegree]
         ],
-        Description -> "Indicates the tilting angle of the adherent cell culture plate when aspirating off the input sample media. See figure XXX.", (*show a figure*)
+        Description -> "Indicates the tilting angle of the adherent cell culture plate when aspirating off the input sample media. See figure 2 of the documentation page.",
         ResolutionDescription -> "Automatically set 10 AngularDegree if CellIsolationTechnique is Aspirate.",
         AllowNull -> True,
         Category -> "Media Aspiration"
@@ -252,7 +251,7 @@ DefineOptions[ExperimentWashCells,
         Default -> Automatic,
         AllowNull -> False,
         Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-        Description -> "Indicates if sample of source media is collected for future analysis prior to washing.",
+        Description -> "Indicates if sample of source media is collected for future analysis.",
         ResolutionDescription -> "Automatically set to True if any source media options (AliquotMediaVolume, AliquotMediaContainer,...) are not Null.",
         Category -> "Media Aspiration"
       },
@@ -270,7 +269,7 @@ DefineOptions[ExperimentWashCells,
             Pattern :> Alternatives[All]
           ]
         ],
-        Description -> "The amount of media to collect for analysis after pelleting the cells prior to washing.",
+        Description -> "The amount of media to collect for analysis after pelleting the cells.",
         ResolutionDescription -> "Automatically set to the same as CellAspirationVolume if AliquotSourceMedia is True.",
         AllowNull -> True,
         Category -> "Media Aspiration"
@@ -278,7 +277,7 @@ DefineOptions[ExperimentWashCells,
       {
         OptionName -> AliquotMediaContainer,
         Default -> Automatic,
-        Description -> "The container used to collect the source media from Media Removal prior to washing.",
+        Description -> "The container used to collect the source media from Media Removal.",
         ResolutionDescription -> "Automatically set to the same container as the input sample if AliquotSourceMedia is True. ",
         AllowNull -> True,
         Widget -> Alternatives[
@@ -354,7 +353,7 @@ DefineOptions[ExperimentWashCells,
           Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
           PatternTooltip -> "Enumeration must be any well from A1 to P24."
         ],
-        Description -> "The well of the container into which the source media from Media Removal in transfered prior to washing.",
+        Description -> "The well of the container into which the source media from Media Removal is transferred into.",
         ResolutionDescription -> "Automatically set to the first empty well in AliquotMediaContainer.",
         Category -> "Hidden"
       },
@@ -434,7 +433,7 @@ DefineOptions[ExperimentWashCells,
           "Temperature" -> Widget[Type -> Quantity, Pattern :> RangeP[$MinRoboticIncubationTemperature, $MaxRoboticIncubationTemperature], Units :> Alternatives[Celsius, Fahrenheit]],
           "Ambient" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
         ],
-        Description -> "The temperature of the wash solution in cell wash experiment.",
+        Description -> "The temperature of the wash solution.",
         ResolutionDescription -> "If NumberOfWashes is not 0, automatically set to Ambient.",
         Category -> "Washing"
       },
@@ -459,7 +458,7 @@ DefineOptions[ExperimentWashCells,
           Pattern :> RangeP[0 Milliliter, $MaxRoboticTransferVolume],
           Units -> {1, {Milliliter, {Microliter, Milliliter, Liter}}}
         ],
-        Description -> "The amount of WashSolution used for washing the cells.",
+        Description -> "The amount of WashSolution used.",
         ResolutionDescription -> "Automatically set to be the same as CellAspirationVolume.",
         AllowNull -> True,
         Category -> "Washing"
@@ -484,7 +483,7 @@ DefineOptions[ExperimentWashCells,
         Widget -> Widget[
           Type -> Object,
           Pattern :> ObjectP[{Model[Instrument, Shaker], Object[Instrument, Shaker]}],
-          OpenPaths :> {{Object[Catalog, "Root"], "Instruments", "Mixing Devices"}}
+          OpenPaths -> {{Object[Catalog, "Root"], "Instruments", "Mixing Devices"}}
         ],
         Description -> "The instrument used to mix the cell sample with WashSolution via Shake.",
         ResolutionDescription -> "Automatically set to Model[Instrument, Shaker,\"Inheco ThermoshakeAC\"] if the WashMixType is set to Shake.",
@@ -676,7 +675,7 @@ DefineOptions[ExperimentWashCells,
           Units -> Alternatives[Second, Minute, Hour]
         ],
         Description -> "Indicates the ResuspensionMedia is incubated at ResuspensionMediaTemperature for at least this amount of time prior to resuspending the cell sample.",
-        ResolutionDescription -> "Automatically set to 10 Minute if ResuspenionMedia is not None.",
+        ResolutionDescription -> "Automatically set to 10 Minute if ResuspensionMedia is not None.",
         AllowNull -> True,
         Category -> "Media Replenishment"
       },
@@ -732,7 +731,7 @@ DefineOptions[ExperimentWashCells,
         Widget -> Widget[
           Type -> Object,
           Pattern :> ObjectP[{Model[Instrument, Shaker], Object[Instrument, Shaker]}],
-          OpenPaths :> {{Object[Catalog, "Root"], "Instruments", "Mixing Devices"}}
+          OpenPaths -> {{Object[Catalog, "Root"], "Instruments", "Mixing Devices"}}
         ],
         Description -> "The instrument used to resuspend the cell sample with ResuspensionMedia.",
         ResolutionDescription -> "Automatically set to Model[Instrument, Shaker,\"Inheco ThermoshakeAC\"] if ResuspensionMixType is Shake.",
@@ -928,7 +927,7 @@ DefineOptions[ExperimentWashCells,
         }
       ],
       Description -> "The instrument that transfers the sample and buffers between containers to execute the protocol.",
-      ResolutionDescription -> "Automatically set to Model[Instrument, LiquidHandler, \"bioSTAR\"] if CellType is Mamalian. Otherwise, set to Model[Instrument, LiquidHandler, \"microbioSTAR\"].",
+      ResolutionDescription -> "Automatically set to Model[Instrument, LiquidHandler, \"bioSTAR\"] if CellType is Mammalian. Otherwise, set to Model[Instrument, LiquidHandler, \"microbioSTAR\"].",
       Category -> "General"
     },
 
@@ -937,7 +936,7 @@ DefineOptions[ExperimentWashCells,
     (* RoboticInstrumentOption, *)
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
@@ -946,7 +945,28 @@ DefineOptions[ExperimentWashCells,
 ];
 
 DefineOptions[ExperimentChangeMedia,
-  Options :> {ExperimentWashCells}
+  Options :> {
+    ExperimentWashCells,
+    ModifyOptions[ExperimentWashCells,
+      {
+        OptionName -> Method,
+        Widget -> Alternatives[
+          "Custom" -> Widget[
+            Type -> Enumeration,
+            Pattern :> Alternatives[Custom],
+            PatternTooltip -> "Custom indicates that all reagents and conditions are individually selected by the user. Otherwise, select a method object describing media change."
+          ],
+          "Method Object" -> Widget[
+            Type -> Object,
+            Pattern :> ObjectP[Object[Method, ChangeMedia]],
+            PatternTooltip -> "A method object describing media change.",
+            OpenPaths -> {
+              {Object[Catalog, "Root"], "Materials", "Cell Culture"}
+            }
+          ]
+        ]
+      }]
+  }
 ];
 
 (* ::Subsection:: *)
@@ -991,8 +1011,8 @@ Error::ExtraneousMediaReplenishmentOptions = "The sample(s) `1` at indices `5` h
 
 Error::CellIsolationTechniqueConflictingOptions = "The sample(s) `1` at indices `7` have conflicting CellIsolationTechnique Options. CellIsolationTechnique is set to `2` but CellIsolationInstrument is set to `4`, CellIsolationTime is set to `5`, CellPelletIntensity is set to `6`, CellAspirationAngle is set to `3`. When CellIsolationTechnique is set to Pellet, CellAspirationAngle must be Null, CellIsolationInstrument, CellIsolationTime and CellPelletIntensity cannot be set to Null. When WashIsolationTechnique is set to Aspirate, CellAspirationAngle cannot be Null, CellIsolationInstrument, CellIsolationTime and CellPelletIntensity must be set to Null. Please fix these conflicting options to specify a valid experiment.";
 Error::WashIsolationTechniqueConflictingOptions = "The sample(s) `1` at indices `6` have conflicting CellIsolationTechnique Options. CellIsolationTechnique is set to `2` but WashIsolationTime is set to `3`, WashPelletIntensity is set to `4`, WashAspirationAngle is set to `5`. When CellIsolationTechnique is set to Pellet and NumberOfWashes is not 0, WashAspirationAngle must be Null, WashIsolationTime and WashPelletIntensity cannot be set to Null. When CellIsolationTechnique is set to Aspirate and NumberOfWashes is not 0, WashAspirationAngle cannot be Null, WashIsolationTime and WashPelletIntensity must be set to Null. Please fix these conflicting options to specify a valid experiment.";
-Error::WashMixTypeConflictingOptions = "The sample(s), `1`, at indicies `9`, have conflicting WashMixType Options. WashMixType is set to `2` but WashMixVolume is set to `3`, NumberOfWashMixes is set to `4`, WashMixInstrument is set to `5`, WashTemperature is set to `6`, WashMixTime is set to `7`, WashMixRate is set to `8`. When WashMixType is set to Shake, WashMixVolume and NumberOfWashMixes must be Null, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate cannot be set to Null. When WashMixType is set to Pipette, WashMixVolume and NumberOfWashMixes cannot be Null, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate must be set to Null. When WashMixType is set to None, WashMixVolume, NumberOfWashMixes, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate must be set to Null. Please fix these conflicting options to specify a valid experiment.";
-Error::ResuspensionMixTypeConflictingOptions = "The sample(s), `1`, at indicies `9`, have conflicting ResuspensionMixType Options. ResuspensionMixType is set to `2` but ResuspensionMixVolume is set to `3`, NumberOfResuspensionMixes is set to `4`, ResuspensionMixInstrument is set to `5`, ResuspensionTemperature is set to `6`, ResuspensionMixTime is set to `7`, ResuspensionMixRate is set to `8`. When ResuspensionMixType is set to Shake, ResuspensionMixVolume and NumberOfResuspensionMixes must be Null, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate cannot be set to Null. When ResuspensionMixType is set to Pipette, ResuspensionMixVolume and NumberOfResuspensionMixes cannot be Null, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate must be set to Null. When ResuspensionMixType is set to None, ResuspensionMixVolume, NumberOfResuspensionMixes, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate must be set to Null. Please fix these conflicting options to specify a valid experiment.";
+Error::WashMixTypeConflictingOptions = "The sample(s), `1`, at indices `9`, have conflicting WashMixType Options. WashMixType is set to `2` but WashMixVolume is set to `3`, NumberOfWashMixes is set to `4`, WashMixInstrument is set to `5`, WashTemperature is set to `6`, WashMixTime is set to `7`, WashMixRate is set to `8`. When WashMixType is set to Shake, WashMixVolume and NumberOfWashMixes must be Null, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate cannot be set to Null. When WashMixType is set to Pipette, WashMixVolume and NumberOfWashMixes cannot be Null, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate must be set to Null. When WashMixType is set to None, WashMixVolume, NumberOfWashMixes, WashMixInstrument, WashTemperature, WashMixTime and WashMixRate must be set to Null. Please fix these conflicting options to specify a valid experiment.";
+Error::ResuspensionMixTypeConflictingOptions = "The sample(s), `1`, at indices `9`, have conflicting ResuspensionMixType Options. ResuspensionMixType is set to `2` but ResuspensionMixVolume is set to `3`, NumberOfResuspensionMixes is set to `4`, ResuspensionMixInstrument is set to `5`, ResuspensionTemperature is set to `6`, ResuspensionMixTime is set to `7`, ResuspensionMixRate is set to `8`. When ResuspensionMixType is set to Shake, ResuspensionMixVolume and NumberOfResuspensionMixes must be Null, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate cannot be set to Null. When ResuspensionMixType is set to Pipette, ResuspensionMixVolume and NumberOfResuspensionMixes cannot be Null, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate must be set to Null. When ResuspensionMixType is set to None, ResuspensionMixVolume, NumberOfResuspensionMixes, ResuspensionMixInstrument, ResuspensionTemperature, ResuspensionMixTime and ResuspensionMixRate must be set to Null. Please fix these conflicting options to specify a valid experiment.";
 Error::ReplateCellsConflictingOption = "The sample(s) `1` at indices `2` have option ReplateCells set to True. This conflicts with cell culture adhesion. Only Suspension cells can be replated. Adherent cells need to use ExperimentSplitCells or ExperimentDissociateCells for replating. Please adjust this option to make it valid in order to submit a valid experiment.";
 Error::AspirationVolumeConflictingOption = "The sample(s) `1` at indices `5` have option(s) `2` set to `3`. This conflicts with the current sample volume, which is `4`. Please adjust this option to make it smaller than the current sample volume in order to submit a valid experiment.";
 Error::TotalVolumeConflictingOption = "The sample(s) `1` at indices `5` have option(s) `2` set to `3`. This makes the total volume exceed the container MaxVolume `4`. Please adjust this option to make it smaller than container MaxVolume in order to submit a valid experiment.";
@@ -1017,7 +1037,7 @@ ExperimentWashCells[myContainers : ListableP[ObjectP[{Object[Container], Object[
 
   (* Fetch the cache from listedOptions. *)
   cache = ToList[Lookup[listedOptions, Cache, {}]];
-  simulation = ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation = Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult = If[gatherTests,
@@ -1046,7 +1066,7 @@ ExperimentWashCells[myContainers : ListableP[ObjectP[{Object[Container], Object[
         Simulation -> simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -1101,7 +1121,7 @@ ExperimentWashCells[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : 
   ];
 
   (* Call sanitize-inputs to clean any objects referenced by Name; i.e., reference them by ID instead *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation->Lookup[listedOptions, Simulation, Null]];
 
   (* Call ValidInputLengthsQ to make sure all options are the right length *)
   {validLengths, validLengthTests} = If[gatherTests,
@@ -1385,6 +1405,7 @@ ExperimentWashCells[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : 
     {{$Failed, $Failed, $Failed}, {}},
     gatherTests,
     washCellsResourcePackets[
+      ExperimentWashCells,
       ToList[Download[mySamples, Object]],
       templatedOptions,
       resolvedOptions,
@@ -1395,6 +1416,7 @@ ExperimentWashCells[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : 
     True,
     {
       washCellsResourcePackets[
+        ExperimentWashCells,
         ToList[Download[mySamples, Object]],
         templatedOptions,
         resolvedOptions,
@@ -1476,6 +1498,7 @@ ExperimentWashCells[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : 
           Name -> Lookup[safeOps, Name],
           Upload -> Lookup[safeOps, Upload],
           Confirm -> Lookup[safeOps, Confirm],
+          CanaryBranch -> Lookup[safeOps, CanaryBranch],
           ParentProtocol -> Lookup[safeOps, ParentProtocol],
           Priority -> Lookup[safeOps, Priority],
           StartDate -> Lookup[safeOps, StartDate],
@@ -1518,13 +1541,13 @@ ExperimentChangeMedia[myContainers : ListableP[ObjectP[{Object[Container], Objec
 
   (* Fetch the cache from listedOptions. *)
   cache = ToList[Lookup[listedOptions, Cache, {}]];
-  simulation = ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation = Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult = If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
     {containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
-      ExperimentWashCells,
+      ExperimentChangeMedia,
       listedContainers,
       listedOptions,
       Output -> {Result, Tests, Simulation},
@@ -1540,14 +1563,14 @@ ExperimentChangeMedia[myContainers : ListableP[ObjectP[{Object[Container], Objec
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
       {containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
-        ExperimentWashCells,
+        ExperimentChangeMedia,
         listedContainers,
         listedOptions,
         Output -> {Result, Simulation},
         Simulation -> simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -1565,7 +1588,7 @@ ExperimentChangeMedia[myContainers : ListableP[ObjectP[{Object[Container], Objec
     {samples, sampleOptions} = containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentWashCells[samples, ReplaceRule[sampleOptions, Simulation -> simulation]]
+    ExperimentChangeMedia[samples, ReplaceRule[sampleOptions, Simulation -> simulation]]
   ]
 
 ];
@@ -1597,17 +1620,17 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 
   (* Call SafeOptions to make sure all options match pattern *)
   {safeOptions, safeOptionTests} = If[gatherTests,
-    SafeOptions[ExperimentWashCells, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
-    {SafeOptions[ExperimentWashCells, listedOptions, AutoCorrect -> False], {}}
+    SafeOptions[ExperimentChangeMedia, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
+    {SafeOptions[ExperimentChangeMedia, listedOptions, AutoCorrect -> False], {}}
   ];
 
   (* Call sanitize-inputs to clean any objects referenced by Name; i.e., reference them by ID instead *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation->Lookup[listedOptions, Simulation, Null]];
 
   (* Call ValidInputLengthsQ to make sure all options are the right length *)
   {validLengths, validLengthTests} = If[gatherTests,
-    ValidInputLengthsQ[ExperimentWashCells, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
-    {ValidInputLengthsQ[ExperimentWashCells, {listedSanitizedSamples}, listedSanitizedOptions], Null}
+    ValidInputLengthsQ[ExperimentChangeMedia, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
+    {ValidInputLengthsQ[ExperimentChangeMedia, {listedSanitizedSamples}, listedSanitizedOptions], Null}
   ];
 
   (* If the specified options don't match their patterns return $Failed *)
@@ -1634,8 +1657,8 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 
   (* Use any template options to get values for options not specified in myOptions *)
   {templatedOptions, templateTests} = If[gatherTests,
-    ApplyTemplateOptions[ExperimentWashCells, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
-    {ApplyTemplateOptions[ExperimentWashCells, {listedSanitizedSamples}, listedSanitizedOptions], Null}
+    ApplyTemplateOptions[ExperimentChangeMedia, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
+    {ApplyTemplateOptions[ExperimentChangeMedia, {listedSanitizedSamples}, listedSanitizedOptions], Null}
   ];
 
   (* Return early if the template cannot be used - will only occur if the template object does not exist. *)
@@ -1653,7 +1676,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
   inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
   (* Expand index-matching options *)
-  expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentWashCells, {listedSanitizedSamples}, inheritedOptions]];
+  expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentChangeMedia, {listedSanitizedSamples}, inheritedOptions]];
 
   (* Fetch the Cache and Simulation options. *)
   cache = Lookup[expandedSafeOps, Cache, {}];
@@ -1839,7 +1862,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
   ];
   (* Collapse the resolved options *)
   collapsedResolvedOptions = CollapseIndexMatchedOptions[
-    ExperimentWashCells,
+    ExperimentChangeMedia,
     resolvedOptions,
     Ignore -> ToList[myOptions],
     Messages -> False
@@ -1857,7 +1880,6 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
   (* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
   (* basically, if _not_ all the tests are passing, then we do need to return early *)
   returnEarlyQ = Which[
-    (* True, True, remove this line when the resolver is done *)
     MatchQ[resolvedOptionsResult, $Failed],
     True,
     gatherTests,
@@ -1875,7 +1897,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     Return[outputSpecification /. {
       Result -> $Failed,
       Tests -> Join[safeOptionTests, validLengthTests, templateTests, resolvedOptionsTests],
-      Options -> RemoveHiddenOptions[ExperimentWashCells, collapsedResolvedOptions],
+      Options -> RemoveHiddenOptions[ExperimentChangeMedia, collapsedResolvedOptions],
       Preview -> Null,
       Simulation -> Simulation[]
     }]
@@ -1887,6 +1909,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     {{$Failed, $Failed, $Failed}, {}},
     gatherTests,
     washCellsResourcePackets[
+      ExperimentChangeMedia,
       ToList[Download[mySamples, Object]],
       templatedOptions,
       resolvedOptions,
@@ -1897,6 +1920,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     True,
     {
       washCellsResourcePackets[
+        ExperimentChangeMedia,
         ToList[Download[mySamples, Object]],
         templatedOptions,
         resolvedOptions,
@@ -1924,7 +1948,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     Return[outputSpecification /. {
       Result -> Null,
       Tests -> Flatten[{safeOptionTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
-      Options -> RemoveHiddenOptions[ExperimentWashCells, collapsedResolvedOptions],
+      Options -> RemoveHiddenOptions[ExperimentChangeMedia, collapsedResolvedOptions],
       Preview -> Null,
       Simulation -> simulation,
       RunTime -> runTime
@@ -1946,25 +1970,25 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     True,
     Module[{primitive, nonHiddenOptions},
       (* Create our primitive to feed into RoboticCellPreparation. *)
-      primitive = WashCells @@ Join[
+      primitive = ChangeMedia @@ Join[
         {
           Sample -> Download[ToList[mySamples], Object]
         },
-        RemoveHiddenPrimitiveOptions[WashCells, ToList[myOptions]]
+        RemoveHiddenPrimitiveOptions[ChangeMedia, ToList[myOptions]]
       ];
 
 
       (* Remove any hidden options before returning. *)
-      nonHiddenOptions = RemoveHiddenOptions[ExperimentWashCells, collapsedResolvedOptions];
+      nonHiddenOptions = RemoveHiddenOptions[ExperimentChangeMedia, collapsedResolvedOptions];
 
 
-      (* Memoize the value of ExperimentWashCells so the framework doesn't spend time resolving it again. *)
-      Internal`InheritedBlock[{ExperimentWashCells, $PrimitiveFrameworkResolverOutputCache},
+      (* Memoize the value of ExperimentChangeMedia so the framework doesn't spend time resolving it again. *)
+      Internal`InheritedBlock[{ExperimentChangeMedia, $PrimitiveFrameworkResolverOutputCache},
         $PrimitiveFrameworkResolverOutputCache = <||>;
 
-        DownValues[ExperimentWashCells] = {};
+        DownValues[ExperimentChangeMedia] = {};
 
-        ExperimentWashCells[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
+        ExperimentChangeMedia[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
           (* Lookup the output specification the framework is asking for. *)
           frameworkOutputSpecification = Lookup[ToList[options], Output];
           frameworkOutputSpecification /. {
@@ -1981,6 +2005,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
           Name -> Lookup[safeOps, Name],
           Upload -> Lookup[safeOps, Upload],
           Confirm -> Lookup[safeOps, Confirm],
+          CanaryBranch -> Lookup[safeOps, CanaryBranch],
           ParentProtocol -> Lookup[safeOps, ParentProtocol],
           Priority -> Lookup[safeOps, Priority],
           StartDate -> Lookup[safeOps, StartDate],
@@ -1998,7 +2023,7 @@ ExperimentChangeMedia[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
   outputSpecification /. {
     Result -> protocolObject,
     Tests -> Flatten[{safeOptionTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
-    Options -> RemoveHiddenOptions[ExperimentWashCells, collapsedResolvedOptions],
+    Options -> RemoveHiddenOptions[ExperimentChangeMedia, collapsedResolvedOptions],
     Preview -> Null,
     Simulation -> simulation,
     RunTime -> runTime
@@ -2021,12 +2046,14 @@ DefineOptions[resolveWashCellsWorkCell,
 resolveWashCellsWorkCell[
   myContainersAndSamples : ListableP[Automatic | ObjectP[{Object[Sample], Object[Container]}]],
   myOptions : OptionsPattern[]
-] := Module[{mySamples, myContainers, samplePackets},
+] := Module[{mySamples, myContainers, simulation, samplePackets},
 
   mySamples = Cases[myContainersAndSamples, ObjectP[Object[Sample]], Infinity];
   myContainers = Cases[myContainersAndSamples, ObjectP[Object[Container]], Infinity];
 
-  samplePackets = Download[mySamples, Packet[CellType]];
+  simulation = Lookup[myOptions, Simulation, Null];
+
+  samplePackets = Download[mySamples, Packet[CellType], Simulation->simulation];
 
   (* NOTE: due to the mechanism by which the primitive framework resolves WorkCell, we can't just resolve it on our own and then tell *)
   (* the framework what to use. So, we resolve using the CellType option if specified, or the CellType field in the input sample(s). *)
@@ -2065,96 +2092,42 @@ DefineOptions[
 ];
 
 resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | ExperimentChangeMedia), mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentWashCellsOptions]] := Module[
-  {outputSpecification, output, gatherTests, messages, cache, listedOptions, currentSimulation, optionPrecisions, roundedExperimentOptions,
-    optionPrecisionTests, mapThreadFriendlyOptions, samplePacketFields, sampleFields,
-    sampleModelFields, sampleModelPacketFields, containerObjectFields, containerObjectPacketFields, containerModelFields, containerModelPacketFields, washCellsMethodFields, washCellsMethodPacketFields, instrumentFields, instrumentPacketFields, modelInstrumentFields, modelInstrumentPacketFields, sampleCompositionModelPackets, compositionModelFields, compositionModelPacketFields,
-    samplePackets,
-    sampleModelPackets,
-    sampleContainerPackets,
-    sampleContainerModelPackets,
-    containerModelPackets,
-    containerModelFromObjectPackets,
-    washCellsMethodPackets,
-    instrumentPackets,
-    modelInstrumentPackets,
-    samplePacketsWithConvertedCompositions,
-    cacheBall, fastAssoc, discardedSamplePackets, discardedInvalidInputs, discardedTest, deprecatedSamplePackets, deprecatedInvalidInputs, deprecatedTest,
-    solidMediaInvalidInputs, solidMediaTest, invalidInputs, invalidOptions,
-
-    resolvedWorkCell, resolvedRoboticInstrument,
-    resolvedMethod,
-    resolvedCellType,
-    resolvedCultureAdhesion,
-    resolvedCellIsolationTechnique,
-    resolvedCellIsolationInstrument,
-    resolvedCellAspirationVolume,
-    resolvedCellIsolationTime,
-    resolvedCellPelletIntensity,
-    resolvedCellAspirationAngle,
-    resolvedAliquotSourceMedia,
-    resolvedAliquotMediaLabel,
-    resolvedAliquotMediaVolume,
-    resolvedAliquotMediaStorageCondition,
-    resolvedNumberOfWashes,
-    resolvedWashSolution,
-    resolvedWashSolutionTemperature,
-    resolvedWashSolutionEquilibrationTime,
-    resolvedWashVolume,
-    resolvedWashMixType,
-    resolvedWashMixInstrument,
-    resolvedWashMixTime,
-    resolvedWashMixRate,
-    resolvedNumberOfWashMixes,
-    resolvedWashMixVolume,
-    resolvedWashTemperature,
-    resolvedWashAspirationVolume,
-    resolvedWashIsolationTime,
-    resolvedWashPelletIntensity,
-    resolvedWashAspirationAngle,
-    resolvedResuspensionMedia,
-    resolvedResuspensionMediaTemperature,
-    resolvedResuspensionMediaEquilibrationTime,
-    resolvedResuspensionMediaVolume,
-    resolvedResuspensionMixType,
-    resolvedResuspensionTemperature,
-    resolvedResuspensionMixInstrument,
-    resolvedResuspensionMixTime,
-    resolvedResuspensionMixRate,
-    resolvedNumberOfResuspensionMixes,
-    resolvedResuspensionMixVolume,
-    resolvedReplateCells,
-    resolvedSampleOutLabel,
-
+  {
+    outputSpecification, output, gatherTests, messages, cache, listedOptions, currentSimulation, optionPrecisions, roundedExperimentOptions,
+    optionPrecisionTests, mapThreadFriendlyOptions, samplePacketFields, sampleFields, sampleModelFields, sampleModelPacketFields,
+    containerObjectFields, containerObjectPacketFields, containerModelFields, containerModelPacketFields, washCellsMethodFields,
+    washCellsMethodPacketFields, instrumentFields, instrumentPacketFields, modelInstrumentFields, modelInstrumentPacketFields,
+    sampleCompositionModelPackets, compositionModelFields, compositionModelPacketFields, samplePackets, sampleModelPackets,
+    sampleContainerPackets, sampleContainerModelPackets, containerModelPackets, containerModelFromObjectPackets,
+    methodPackets, instrumentPackets, modelInstrumentPackets, samplePacketsWithConvertedCompositions,
+    cacheBall, fastAssoc, discardedSamplePackets, discardedInvalidInputs, discardedTest, deprecatedSamplePackets,
+    deprecatedInvalidInputs, deprecatedTest, solidMediaInvalidInputs, solidMediaTest, invalidInputs, invalidOptions,
+    resolvedWorkCell, resolvedRoboticInstrument, resolvedMethod, resolvedCellType, resolvedCultureAdhesion,
+    resolvedCellIsolationTechnique, resolvedCellIsolationInstrument, resolvedCellAspirationVolume,
+    resolvedCellIsolationTime, resolvedCellPelletIntensity, resolvedCellAspirationAngle, resolvedAliquotSourceMedia,
+    resolvedAliquotMediaLabel, resolvedAliquotMediaVolume, resolvedAliquotMediaStorageCondition, resolvedNumberOfWashes,
+    resolvedWashSolution, resolvedWashSolutionTemperature, resolvedWashSolutionEquilibrationTime, resolvedWashVolume,
+    resolvedWashMixType, resolvedWashMixInstrument, resolvedWashMixTime, resolvedWashMixRate, resolvedNumberOfWashMixes,
+    resolvedWashMixVolume, resolvedWashTemperature, resolvedWashAspirationVolume, resolvedWashIsolationTime,
+    resolvedWashPelletIntensity, resolvedWashAspirationAngle, resolvedResuspensionMedia, resolvedResuspensionMediaTemperature,
+    resolvedResuspensionMediaEquilibrationTime, resolvedResuspensionMediaVolume, resolvedResuspensionMixType,
+    resolvedResuspensionTemperature, resolvedResuspensionMixInstrument, resolvedResuspensionMixTime, resolvedResuspensionMixRate,
+    resolvedNumberOfResuspensionMixes, resolvedResuspensionMixVolume, resolvedReplateCells, resolvedSampleOutLabel,
     userSpecifiedLabels, resolvedPostProcessingOptions, email, resolvedOptions,
-
-    resolvedCellPelletContainer, resolvedCellPelletContainerWells, semiresolvedCellPelletContainerModel, semiresolvedSampleContainerModelAfterPelletPackets, semiresolvedAliquotMediaContainerModel,
+    resolvedCellPelletContainer, resolvedCellPelletContainerWells, semiresolvedCellPelletContainerModel,
+    semiresolvedSampleContainerModelAfterPelletPackets, semiresolvedAliquotMediaContainerModel,
     resolvedAliquotMediaContainer, resolvedAliquotMediaContainerWells, resolvedContainerOut, resolvedContainerOutWells,
     resolvedAliquotMediaContainerLabel, resolvedContainerOutLabel, semiresolvedContainerOutModel,
-
-    resolvedvolumeAfterAspiration,
-    resolvedvolumeInWashing,
-    resolvedvolumeAfterWashing,
-    resolvedvolumeLimitWashing,
+    resolvedvolumeAfterAspiration, resolvedvolumeInWashing, resolvedvolumeAfterWashing, resolvedvolumeLimitWashing,
     resolvedvolumeInResuspension,
-
     (*Conflict Options *)
-    extraneousWashingOptionsCases, extraneousWashingOptionsTest,
-    extraneousMediaReplenishmentOptionsCases,
-    extraneousMediaReplenishmentOptionsTest,
-    cellIsolationTechniqueConflictingOptionsCases,
-    cellIsolationTechniqueConflictingOptionsTest,
-    washIsolationTechniqueConflictingOptionsCases,
-    washIsolationTechniqueConflictingOptionsTest,
-    washMixTypeConflictingOptionsCases,
-    washMixTypeConflictingOptionsTest,
-    resuspensionMixTypeConflictingOptionsCases,
-    resuspensionMixTypeConflictingOptionsTest,
-    replateCellsConflictingOptionCases,
-    replateCellsConflictingOptionTest,
-    aspirationVolumeConflictingOptionCases,
-    aspirationVolumeConflictingOptionTest,
-    totalVolumeConflictingOptionCases, totalVolumeConflictingOptionTest
-
+    extraneousWashingOptionsCases, extraneousWashingOptionsTest, extraneousMediaReplenishmentOptionsCases,
+    extraneousMediaReplenishmentOptionsTest, cellIsolationTechniqueConflictingOptionsCases, cellIsolationTechniqueConflictingOptionsTest,
+    washIsolationTechniqueConflictingOptionsCases, washIsolationTechniqueConflictingOptionsTest, washMixTypeConflictingOptionsCases,
+    washMixTypeConflictingOptionsTest, resuspensionMixTypeConflictingOptionsCases, resuspensionMixTypeConflictingOptionsTest,
+    replateCellsConflictingOptionCases, replateCellsConflictingOptionTest, aspirationVolumeConflictingOptionCases,
+    aspirationVolumeConflictingOptionTest, totalVolumeConflictingOptionCases, totalVolumeConflictingOptionTest,
+    methodType
   },
   (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -2234,6 +2207,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
   instrumentPacketFields = Packet @@ instrumentFields;
   modelInstrumentFields = DeleteDuplicates[{Name, MinTemperature, MaxTemperature, Positions}];
   modelInstrumentPacketFields = Packet @@ modelInstrumentFields;
+  methodType = If[MatchQ[myFunction,ExperimentWashCells],Object[Method,WashCells],Object[Method,ChangeMedia]];
 
   {
     (*1*)samplePackets,
@@ -2244,7 +2218,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
 
     containerModelPackets,
     containerModelFromObjectPackets,
-    washCellsMethodPackets,
+    methodPackets,
     instrumentPackets,
     modelInstrumentPackets
 
@@ -2262,7 +2236,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
           Flatten[Lookup[myOptions, {CellPelletContainer, AliquotMediaContainer, ContainerOut}]],
           ObjectP[Model[Container]]
         ],
-        PreferredContainer[All, LiquidHandlerCompatible -> True, Type -> All]
+        PreferredContainer[All, LiquidHandlerCompatible -> True, Sterile -> True, Type -> All]
       }],
       DeleteDuplicates@Cases[
         Flatten[Lookup[myOptions, {CellPelletContainer, AliquotMediaContainer, ContainerOut}]],
@@ -2270,8 +2244,10 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
       ],
       DeleteDuplicates@Flatten[{
         Cases[
-          Flatten[Lookup[myOptions, Method]], ObjectP[Object[Method, WashCells]]]}
-      ],
+          Flatten[Lookup[myOptions, Method]],
+          ObjectP[methodType]
+          ]
+      }],
       DeleteDuplicates@Flatten[{
         Cases[
           Flatten[Lookup[myOptions, $WashCellsInstrumentOptions]], ObjectP[Object[Instrument]]]}
@@ -2314,7 +2290,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
     sampleCompositionModelPackets,
     containerModelPackets,
     containerModelFromObjectPackets,
-    washCellsMethodPackets,
+    methodPackets,
     instrumentPackets,
     modelInstrumentPackets
   } = Flatten /@ {
@@ -2325,7 +2301,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
     sampleCompositionModelPackets,
     containerModelPackets,
     containerModelFromObjectPackets,
-    washCellsMethodPackets,
+    methodPackets,
     instrumentPackets,
     modelInstrumentPackets
   };
@@ -2338,7 +2314,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
     sampleCompositionModelPackets,
     containerModelPackets,
     containerModelFromObjectPackets,
-    washCellsMethodPackets,
+    methodPackets,
     instrumentPackets,
     modelInstrumentPackets
   }];
@@ -2459,13 +2435,13 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
   ];
 
   (* Convert our options into a MapThread friendly version. *)
-  mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentWashCells, roundedExperimentOptions];
+  mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[myFunction, roundedExperimentOptions];
 
 
   (*-- RESOLVE EXPERIMENT OPTIONS --*)
 
   (* resolveWashCellsWorkCell[mySamples] return {WorkCell} *)
-  resolvedWorkCell = First[resolveWashCellsWorkCell[mySamples]];
+  resolvedWorkCell = First[resolveWashCellsWorkCell[mySamples, Simulation -> currentSimulation]];
 
   resolvedRoboticInstrument = Which[
     (* If user-set, then use set value. *)
@@ -2875,17 +2851,17 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
           Which[
             (* If none of the Compositions is cellConcentrationCompatibleP, return Null *)
             MatchQ[cellCompositions, {}],
-            Null,
+              Null,
             (* If only one of them has the cellConcentrationCompatibleP, use that as majorityCellModel *)
             MatchQ[Length[cellCompositions], 1],
-            Last[First[cellCompositions]],
+              First[cellCompositions][[2]],
             (* If there are multiple components, and they have same unit, use the max one as majorityCellModel *)
             SameQ @@ Units[cellCompositions[[All, 1]]],
-            Last[FirstCase[cellCompositions, {EqualP[Max[cellCompositions[[All, 1]]]], ObjectP[]}]],
+              FirstCase[cellCompositions, {EqualP[Max[cellCompositions[[All, 1]]]], ObjectP[]}][[2]],
 
             (* Otherwise, just take the first cell model from the first cell composition entry. *)
             True,
-            Last[First[cellCompositions]]
+              First[cellCompositions][[2]]
           ]
         ];
         cellModelPacket = If[
@@ -2938,7 +2914,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
           MatchQ[Lookup[sampleContainerModelPacket, Footprint], Plate],
           Null,
           True,
-          PreferredContainer[Lookup[samplePacket, Volume], LiquidHandlerCompatible -> True, Type -> Plate]
+          PreferredContainer[Lookup[samplePacket, Volume], LiquidHandlerCompatible -> True, Sterile -> True, Type -> Plate]
         ];
         sampleContainerModelAfterPelletPacket = Which[
           MatchQ[cellPelletContainerModel, Except[Null]],
@@ -3496,6 +3472,8 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
         resolvedResuspensionMixRate},
       (* number of replicates for the experiment *)
       NumberOfReplicates -> 1,
+      Sterile -> True,
+      LiquidHandlerCompatible -> True,
       (* highest container index specified by the user *)
       FirstNewContainerIndex -> highestUserSpecifiedCellPelletContainerIndex + 1
     ]
@@ -3541,6 +3519,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
       postresolvedAliquotMediaVolume, (* minimum required volumes for the aliquot containers *)
       resolvedAliquotMediaStorageCondition, (* a list (or a list of lists) of experiment parameters to group by *)
       NumberOfReplicates -> 1, (* number of replicates for the experiment *)
+      Sterile -> True,
       FirstNewContainerIndex -> highestUserSpecifiedAliquotMediaContainerIndex + 1 (* highest container index specified by the user *)
     ]
   ];
@@ -3617,6 +3596,8 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
       ContainerOutQ,
       postresolvedvolumeInResuspension,
       resolvedResuspensionTemperature,
+      Sterile -> True,
+      LiquidHandlerCompatible -> True,
       NumberOfReplicates -> 1,
       FirstNewContainerIndex -> highestUserSpecifiedContainerOutIndex + 1]
   ];
@@ -3667,7 +3648,7 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
   ];
 
   (* Resolve Post Processing Options *)
-  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Living->True];
 
   (* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
   email = Which[
@@ -4609,6 +4590,11 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
     If[MatchQ[Length[totalVolumeConflictingOptionCases], GreaterP[0]],
       {WashVolume, ResuspensionMediaVolume},
       {}
+    ],
+    (* For experiments that teh developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
+    If[MemberQ[Values[resolvedPostProcessingOptions],$Failed],
+      PickList[Keys[resolvedPostProcessingOptions],Values[resolvedPostProcessingOptions],$Failed],
+      {}
     ]
   }]];
 
@@ -4635,7 +4621,11 @@ resolveExperimentWashCellsOptions[myFunction : (ExperimentWashCells | Experiment
       resuspensionMixTypeConflictingOptionsTest,
       replateCellsConflictingOptionTest,
       aspirationVolumeConflictingOptionTest,
-      totalVolumeConflictingOptionTest
+      totalVolumeConflictingOptionTest,
+      If[gatherTests,
+        postProcessingTests[resolvedPostProcessingOptions],
+        Nothing
+      ]
     }]
   }
 
@@ -4653,7 +4643,7 @@ DefineOptions[
   Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
-washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTemplatedOptions : {(_Rule | _RuleDelayed)...}, myResolvedOptions : {(_Rule | _RuleDelayed)..}, ops : OptionsPattern[]] := Module[
+washCellsResourcePackets[myFunction:(ExperimentWashCells|ExperimentChangeMedia),mySamples : ListableP[ObjectP[Object[Sample]]], myTemplatedOptions : {(_Rule | _RuleDelayed)...}, myResolvedOptions : {(_Rule | _RuleDelayed)..}, ops : OptionsPattern[]] := Module[
   {
     expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests,
     messages, inheritedCache, samplePackets, mapThreadFriendlyOptions,
@@ -4673,7 +4663,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
   resolvedPreparation = Lookup[myResolvedOptions, Preparation];
 
   (* expand the resolved options if they weren't expanded already *)
-  {expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentWashCells, {mySamples}, myResolvedOptions];
+  {expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[myFunction, {mySamples}, myResolvedOptions];
 
 
   (* determine which objects in the simulation are simulated and make replace rules for those *)
@@ -4703,8 +4693,8 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
 
   (* Get the resolved collapsed index matching options that don't include hidden options *)
   resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
-    ExperimentWashCells,
-    RemoveHiddenOptions[ExperimentWashCells, myResolvedOptions],
+    myFunction,
+    RemoveHiddenOptions[myFunction, myResolvedOptions],
     Ignore -> myTemplatedOptions,
     Messages -> False
   ];
@@ -4736,7 +4726,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
 
   (* Get our map thread friendly options. *)
   mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[
-    ExperimentWashCells,
+    myFunction,
     myResolvedOptions
   ];
   (* Get all of the user specified labels *)
@@ -4759,7 +4749,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
       resuspensionMediaContainerLabels, washSolutionContainerLabels,
 
       equilibrationUnitOperations, mediaAspirationUnitOperation, washSamplesUnitOperations, resuspensionUnitOperations,
-      replateCellsUnitOperations, sampleOutLabelUnitOperations
+      replateCellsUnitOperations, sampleOutLabelUnitOperations, unitOperationHead
     },
 
 
@@ -4767,12 +4757,12 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
     mapThreadFriendlyOptionsToResuspend = PickList[mapThreadFriendlyOptions, Lookup[myResolvedOptions, ResuspensionMedia], ObjectP[]];
 
     washSolutionContainerLabels = Table[
-      CreateUniqueLabel["ExperimentWashCells WashSolutionContainer", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
+      CreateUniqueLabel[ToString[myFunction]<>" WashSolutionContainer", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
       {x, 1, Length[mapThreadFriendlyOptionsToWash]}
     ];
 
     resuspensionMediaContainerLabels = Table[
-      CreateUniqueLabel["ExperimentWashCells ResuspensionMediaContainer", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
+      CreateUniqueLabel[ToString[myFunction]<>" ResuspensionMediaContainer", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
       {x, 1, Length[mapThreadFriendlyOptionsToResuspend]}
     ];
 
@@ -4785,7 +4775,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
         {
           LabelContainer[
             Label -> washSolutionContainerLabels,
-            Container -> (PreferredContainer[#, LiquidHandlerCompatible -> True, Type -> Vessel]&/@ (Lookup[mapThreadFriendlyOptionsToWash, WashVolume] * Max[Lookup[mapThreadFriendlyOptionsToWash, NumberOfWashes]]))
+            Container -> (PreferredContainer[#, LiquidHandlerCompatible -> True, Sterile -> True, Type -> Plate]&/@ (Lookup[mapThreadFriendlyOptionsToWash, WashVolume] * Max[Lookup[mapThreadFriendlyOptionsToWash, NumberOfWashes]]))
           ],
           Transfer[
             Source -> Lookup[mapThreadFriendlyOptionsToWash, WashSolution],
@@ -4799,7 +4789,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
         {
           LabelContainer[
             Label -> resuspensionMediaContainerLabels,
-            Container -> (PreferredContainer[#, LiquidHandlerCompatible -> True, Type -> Vessel]& /@ Lookup[mapThreadFriendlyOptionsToResuspend, ResuspensionMediaVolume])
+            Container -> (PreferredContainer[#, LiquidHandlerCompatible -> True, Sterile -> True, Type -> Plate]& /@ Lookup[mapThreadFriendlyOptionsToResuspend, ResuspensionMediaVolume])
           ],
           Transfer[
             Source -> Lookup[mapThreadFriendlyOptionsToResuspend, ResuspensionMedia],
@@ -4847,9 +4837,9 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
 
     (* Media Aspiration Unit Operation *)
     mediaAspirationUnitOperation = Module[
-      {mapThreadFriendlyOptionsToPellet, mapThreadFriendlyOptionsToAspirate, mapThreadFriendlyOptionsToPelletTransfer,
-        pelletSamplesAndLabels,
-        pelletSourceMediaLabels, aspirateSourceMediaLabels,
+      {
+        mapThreadFriendlyOptionsToPellet, mapThreadFriendlyOptionsToAspirate, mapThreadFriendlyOptionsToPelletTransfer,
+        pelletSamplesAndLabels, pelletSourceMediaLabels, aspirateSourceMediaLabels,
         labelPelletSourceMediaUnitOperations, labelAspirateSourceMediaUnitOperations,
         pelletTransferCellUnitOperations, pelletCellUnitOperations, aspirateCellUnitOperations
       },
@@ -4862,11 +4852,11 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
 
       (* Waste Containers *)
       pelletSourceMediaLabels = Table[
-        CreateUniqueLabel["ExperimentWashCells pellet source media", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
+        CreateUniqueLabel[ToString[myFunction]<>" pellet source media", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
         {x, 1, Length[mapThreadFriendlyOptionsToPellet]}
       ];
       aspirateSourceMediaLabels = Table[
-        CreateUniqueLabel["ExperimentWashCells aspirate source media", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
+        CreateUniqueLabel[ToString[myFunction]<>" aspirate source media", Simulation -> currentSimulation, UserSpecifiedLabels -> userSpecifiedLabels],
         {x, 1, Length[mapThreadFriendlyOptionsToAspirate]}
       ];
 
@@ -4875,7 +4865,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
         {
           LabelContainer[
             Label -> pelletSourceMediaLabels,
-            Container -> PreferredContainer[Max[Lookup[samplePackets, Volume]], LiquidHandlerCompatible -> True, Type -> Vessel]
+            Container -> PreferredContainer[Max[Lookup[samplePackets, Volume]], LiquidHandlerCompatible -> True, Sterile -> True, Type -> Vessel]
           ]
         },
         Nothing
@@ -4884,7 +4874,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
         {
           LabelContainer[
             Label -> aspirateSourceMediaLabels,
-            Container -> PreferredContainer[Max[Lookup[samplePackets, Volume]], LiquidHandlerCompatible -> True, Type -> Vessel]
+            Container -> PreferredContainer[Max[Lookup[samplePackets, Volume]], LiquidHandlerCompatible -> True, Sterile -> True, Type -> Vessel]
           ]
         },
         Nothing
@@ -5046,7 +5036,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
                           AspirationAngle -> Lookup[samplesToAspirateAndWash, WashAspirationAngle],
                           Amount -> Lookup[samplesToAspirateAndWash, WashAspirationVolume],
                           (*give a new container, Waste is a manual step*)
-                          Destination -> ConstantArray[Model[Container, Plate, "id:E8zoYveRllM7"], Length[samplesToAspirateAndWash]] (* "48-well Pyramid Bottom Deep Well Plate" *)
+                          Destination -> ConstantArray[Model[Container, Plate, "id:P5ZnEjx9Zllk"], Length[samplesToAspirateAndWash]] (* "48-well Pyramid Bottom Deep Well Plate, Sterile" *)
                         ]
                       },
                       Nothing
@@ -5139,7 +5129,7 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
     $WashCellsUnitOperations = primitives;
 
     (* Get our robotic unit operation packets. *)
-    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} =
+    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
         ExperimentRoboticCellPreparation[
           primitives,
           UnitOperationPackets -> True,
@@ -5156,22 +5146,24 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
           StartDate -> Lookup[expandedResolvedOptions, StartDate],
           HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
           QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
-          CoverAtEnd -> False(*,
-          Debug -> True*)
-        ];
+          CoverAtEnd -> False
+        ],
+      Warning::ConflictingSourceAndDestinationAsepticHandling
+    ];
 
     subRoboticUnitOperations = Download[Cases[Flatten[Lookup[roboticUnitOperationPackets, Replace[RoboticUnitOperations]]], ObjectP[]], Object];
     roboticUnitOperationsToUse = Select[roboticUnitOperationPackets, Not[MatchQ[#, ObjectP[subRoboticUnitOperations]]]&];
 
+    unitOperationHead = If[MatchQ[myFunction,ExperimentWashCells],WashCells,ChangeMedia];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
     outputUnitOperationPacket = UploadUnitOperation[
       Module[{nonHiddenOptions},
-        (* Only include non-hidden options from WashCells. *)
-        nonHiddenOptions = allowedKeysForUnitOperationType[Object[UnitOperation, WashCells]];
+        (* Only include non-hidden options from WashCells/ChangeMedia. *)
+        nonHiddenOptions = allowedKeysForUnitOperationType[Object[UnitOperation, unitOperationHead]];
 
         (* Override any options with resource. *)
-        WashCells@Join[
+        unitOperationHead@Join[
           Cases[Normal[expandedResolvedOptionsWithLabels, Association], Verbatim[Rule][Alternatives @@ nonHiddenOptions, _]],
           {
             Sample -> samplesInResources,
@@ -5191,6 +5183,12 @@ washCellsResourcePackets[mySamples : ListableP[ObjectP[Object[Sample]]], myTempl
     roboticSimulation = UpdateSimulation[
       roboticSimulation,
       Simulation[<|Object -> Lookup[outputUnitOperationPacket, Object], Sample -> (Link /@ mySamples)|>]
+    ];
+
+    (* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+    roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+      roboticSimulation,
+      updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
     ];
 
     (* Return back our packets and simulation. *)

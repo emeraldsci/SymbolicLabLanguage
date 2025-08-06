@@ -21,16 +21,16 @@ DefineTests[
 		(* ---basic tests--- *)
 		Example[{Basic,"Acquire image from a sample object:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			ObjectP[Object[Protocol,ImageCells]]
 		],
 		Example[{Basic,"Acquire images from multiple sample objects:"},
 			ExperimentImageCells[
 				{
-					Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-					Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-					Object[Sample,"Fake cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
+					Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+					Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+					Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
 				}
 			],
 			ObjectP[Object[Protocol,ImageCells]]
@@ -39,9 +39,9 @@ DefineTests[
 			ExperimentImageCells[
 				{
 					{
-						Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
+						Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
 					},
 					{
 						Object[Sample,"Hemocytometer sample 1 for ExperimentImageCells tests"<> $SessionUUID]
@@ -52,35 +52,99 @@ DefineTests[
 		],
 		Test["Acquire images from samples in a plate:",
 			ExperimentImageCells[
-				{Object[Container,Plate,"Fake plate 1 for ExperimentImageCells tests"<> $SessionUUID]}
+				{Object[Container,Plate,"Test plate 1 for ExperimentImageCells tests"<> $SessionUUID]}
 			],
 			ObjectP[Object[Protocol,ImageCells]]
 		],
 		Test["Accepts a combination of samples and containers as inputs:",
 			ExperimentImageCells[
 				{
-					{Object[Container,Plate,"Fake plate 2 for ExperimentImageCells tests"<> $SessionUUID]},
+					{Object[Container,Plate,"Test plate 2 for ExperimentImageCells tests"<> $SessionUUID]},
 					{
-						Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 3 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID]
+						Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID]
 					}
 				}
 			],
 			ObjectP[Object[Protocol,ImageCells]]
 		],
+		Example[{Basic,"Acquire image from a sample model:"},
+			ExperimentImageCells[
+				Model[Sample,"Test mammalian cell for "<>"ExperimentImageCells"<>" tests"<> $SessionUUID]
+			],
+			ObjectP[Object[Protocol,ImageCells]],
+			(* We need to create product here for resource to not bug out since it is unable to search out the developer objects created for this test and will complain about insufficientTotalVolume and InvalidInput, which we cannot just turn it off. *)
+			SetUp :> (
+				Block[{$DeveloperUpload = True},
+					UploadProduct[
+						Name -> "Test mammalian cell product for "<>"ExperimentImageCells"<>" tests" <> $SessionUUID,
+						Packaging -> Single,
+						SampleType -> Plate,
+						ProductModel -> Model[Sample,"Test mammalian cell for "<>"ExperimentImageCells"<>" tests"<> $SessionUUID],
+						NumberOfItems -> 1,
+						Amount ->500 Microliter,
+						CatalogNumber -> "88888",
+						Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
+						Price -> 188.88` USD,
+						CatalogDescription -> "Test mammalian cell product"
+					]
+				]
+			),
+			TearDown :> (EraseObject[
+				{Object[Product, "Test mammalian cell product for "<>"ExperimentImageCells"<>" tests" <> $SessionUUID]},
+				Force->True,
+				Verbose->False
+			])
+		],
+		Example[{Basic,"Acquire images from multiple sample pools with mixed models and objects:"},
+			ExperimentImageCells[
+				{
+					{
+						Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
+					},
+					{
+						Model[Sample,"Test mammalian cell for "<>"ExperimentImageCells"<>" tests"<> $SessionUUID]
+					}
+				}
+			],
+			ObjectP[Object[Protocol,ImageCells]],
+			SetUp :> (
+				Block[{$DeveloperUpload = True},
+					UploadProduct[
+						Name -> "Test mammalian cell product for "<>"ExperimentImageCells"<>" tests" <> $SessionUUID,
+						Packaging -> Single,
+						SampleType -> Plate,
+						ProductModel -> Model[Sample,"Test mammalian cell for "<>"ExperimentImageCells"<>" tests"<> $SessionUUID],
+						NumberOfItems -> 1,
+						Amount ->500 Microliter,
+						CatalogNumber -> "88888",
+						Supplier -> Object[Company, Supplier, "Sigma Aldrich"],
+						Price -> 188.88` USD,
+						CatalogDescription -> "Test mammalian cell product"
+					]
+				]
+			),
+			TearDown :> (EraseObject[
+				{Object[Product, "Test mammalian cell product for "<>"ExperimentImageCells"<>" tests" <> $SessionUUID]},
+				Force->True,
+				Verbose->False
+			])
+		],
 
 		(* manual primitive support *)
 		Example[{Basic,"Output an updated simulation packet when Output is set to Simulation:"},
 			output=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SampleLabel->"ImageCells primitive test sample",
 				Output->Simulation
 			];
 			Lookup[Association@@output,Labels],
 			(* Second label is for SampleContainerLabel *)
-			{"ImageCells primitive test sample"->ObjectP[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]],___},
+			{"ImageCells primitive test sample"->ObjectP[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]],___},
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
 			Variables:>{output},
 			TimeConstraint->300
@@ -88,14 +152,15 @@ DefineTests[
 		Example[{Basic,"Output a Script notebook with a set of primitives:"},
 			Experiment[{
 				ImageCells[
-					Sample->Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+					Sample->Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 					SampleLabel->"Test Sample",
 					SampleContainerLabel -> "Test Container"
 				],
 				Cover[Sample -> "Test Container"],
 				IncubateCells[
 					Sample->"Test Container",
-					Time->5 Minute
+					Time->6 Minute,
+					Preparation->Manual
 				]
 			}],
 			ObjectP[{Object[Protocol,ManualCellPreparation], Object[Notebook, Script]}],
@@ -106,11 +171,28 @@ DefineTests[
 		(* messages *)
 		Example[{Messages,"ImageCellsInstrumentModelNotFound","If Instrument is not given, instrument model that can support specified options must be available:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				MicroscopeOrientation->Upright
 			],
 			$Failed,
 			Messages:>{Error::ImageCellsInstrumentModelNotFound}
+		],
+		Example[{Messages,"ImageCellsInstrumentModelNotFound","If CultureHandling is not compatible with the other given options, an error is thrown:"},
+			ExperimentImageCells[
+				Object[Sample,"Bacteria sample for ExperimentImageCells tests"<> $SessionUUID],
+				ObjectiveMagnification -> 20,
+				Preparation -> Robotic
+			],
+			$Failed,
+			Messages:>{Error::ImageCellsInstrumentModelNotFound,Error::InvalidOption},
+			SetUp:>{Upload[<|
+				Object->Model[Container, Plate, "id:L8kPEjno5XoE"], (* Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"] *)
+				MetaXpressPrefix->"Temp Prefix"
+			|>]},
+			TearDown:>{Upload[<|
+				Object->Model[Container, Plate, "id:L8kPEjno5XoE"], (* Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"] *)
+				MetaXpressPrefix->""
+			|>]}
 		],
 		Example[{Messages,"DiscardedSamples","If the given samples are discarded, they cannot be imaged:"},
 			ExperimentImageCells[Object[Sample,"Discarded sample for ExperimentImageCells tests"<> $SessionUUID]],
@@ -128,10 +210,10 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages,"MicroscopeOrientationMismatch","The Orientation of the specified Instrument and MicroscopeOrientation option value must be copacetic:"},
+		Example[{Messages,"MicroscopeOrientationMismatch","The Orientation of the specified Instrument and MicroscopeOrientation option value must be compatible:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				MicroscopeOrientation->Upright
 			],
 			$Failed,
@@ -140,13 +222,13 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Download[Model[Maintenance,CalibrateMicroscope,"Fake Model Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]];
+				Download[Model[Maintenance,CalibrateMicroscope,"Test Model Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]];
 			)
 		],
 		Example[{Messages,"InvalidMicroscopeStatus","Specified Instrument object must not be retired:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			$Failed,
 			Messages:>{
@@ -154,16 +236,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],Status->Retired|>];
+				Upload[<|Object->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],Status->Retired|>];
 			),
 			TearDown:>(
-				Upload[<|Object->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],Status->Available|>];
+				Upload[<|Object->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],Status->Available|>];
 			)
 		],
 		Test["Specified Instrument model must not be deprecated:",
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			$Failed,
 			Messages:>{
@@ -171,16 +253,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],Deprecated->True|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],Deprecated->True|>];
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],Deprecated->Null|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],Deprecated->Null|>];
 			)
 		],
 		Example[{Messages,"MicroscopeCalibrationNotAllowed","If ReCalibrateMicroscope is True, the selected Instrument must allow performing calibration by running a maintenance:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True
 			],
 			$Failed,
@@ -191,10 +273,10 @@ DefineTests[
 		],
 		Example[{Messages,"MicroscopeCalibrationMismatch","If ReCalibrateMicroscope is False, MicroscopeCalibration must be Null:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->False,
-				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]
+				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			$Failed,
 			Messages:>{
@@ -204,7 +286,7 @@ DefineTests[
 		],
 		Test["If ReCalibrateMicroscope is True, MicroscopeCalibration cannot be Null:",
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True,
 				MicroscopeCalibration->Null
 			],
@@ -216,8 +298,8 @@ DefineTests[
 		],
 		Example[{Messages,"MicroscopeCalibrationNotFound","If ReCalibrateMicroscope is True and Instrument allows calibration, MicroscopeCalibration option must be specified with or successfully resolved to Object[Maintenance,CalibrationMicroscope]:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True
 			],
 			$Failed,
@@ -227,23 +309,23 @@ DefineTests[
 			},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+					Object->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 					Replace[MaintenanceFrequency]->{}
 				|>];
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
-					Replace[MaintenanceFrequency]->{Link[Model[Maintenance,CalibrateMicroscope,"Fake Model Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],Targets],Null}
+					Object->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+					Replace[MaintenanceFrequency]->{Link[Model[Maintenance,CalibrateMicroscope,"Test Model Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],Targets],Null}
 				|>];
 			)
 		],
 		Example[{Messages,"InvalidMicroscopeCalibration","If ReCalibrateMicroscope is True and Instrument allows calibration, the Target of MicroscopeCalibration option must not conflict with the Instrument option:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True,
-				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]
+				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			$Failed,
 			Messages:>{
@@ -252,21 +334,21 @@ DefineTests[
 			},
 			SetUp:>(
 				Upload[<|
-					Object->Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
-					Target->Link[Object[Instrument,Microscope,"Fake High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID]]
+					Object->Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
+					Target->Link[Object[Instrument,Microscope,"Test High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID]]
 				|>];
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
-					Target->Link[Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID]]
+					Object->Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
+					Target->Link[Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID]]
 				|>];
 			)
 		],
 		Example[{Messages,"InvalidMicroscopeTemperature","Temperature must be within range supported by the Instrument:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				Temperature->30 Celsius
 			],
 			$Failed,
@@ -277,8 +359,8 @@ DefineTests[
 		],
 		Example[{Messages,"CO2IncompatibleMicroscope","If CarbonDioxide is True, the Instrument must support carbon dioxide incubation:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				CarbonDioxide->True
 			],
 			$Failed,
@@ -289,8 +371,8 @@ DefineTests[
 		],
 		Example[{Messages,"CarbonDioxideOptionsMismatch","If CarbonDioxide is False, CarbonDioxidePercentage cannot be specified:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				CarbonDioxide->False,
 				CarbonDioxidePercentage->10 Percent
 			],
@@ -303,7 +385,7 @@ DefineTests[
 		Example[{Messages,"ImageCellsMismatchedContainers","Samples in the same sample pool must be in containers with the same model:"},
 			ExperimentImageCells[
 				{
-					{Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]}
+					{Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]}
 				}
 			],
 			$Failed,
@@ -315,7 +397,7 @@ DefineTests[
 		Example[{Messages,"ImageCellsIncompatibleContainer","Samples must be in valid containers that can fit into 'Sample Slot' of the instrument:"},
 			ExperimentImageCells[
 				Object[Sample,"Sample with incompatible container for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID]
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID]
 			],
 			$Failed,
 			Messages:>{
@@ -333,7 +415,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidContainerOrientation","Samples in plates cannot be imaged upside-down:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ContainerOrientation->UpsideDown
 			],
 			$Failed,
@@ -344,7 +426,7 @@ DefineTests[
 		],
 		Example[{Messages,"MismatchedCoverslipThickness","Throw a warning message when specified CoverslipThickness option does not match value stored in sample's container model:"},
 			ExperimentImageCells[
-				Object[Container,MicroscopeSlide,"Fake microscope slide for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Container,MicroscopeSlide,"Test microscope slide for ExperimentImageCells tests"<> $SessionUUID],
 				CoverslipThickness->0.2 Millimeter
 			],
 			ObjectP[Object[Protocol,ImageCells]],
@@ -352,7 +434,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidCoverslipThickness","Throw an error message if CoverslipThickness is not Null when samples are not on microscope slides:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				CoverslipThickness->0.2 Millimeter
 			],
 			$Failed,
@@ -362,7 +444,7 @@ DefineTests[
 			}
 		],
 		Example[{Messages,"ImageCellsNegativePlateBottomThickness","Throw an error message when calculated plate bottom thickness is a negative value:"},
-			ExperimentImageCells[Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]],
+			ExperimentImageCells[Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]],
 			$Failed,
 			Messages:>{
 				Error::ImageCellsNegativePlateBottomThickness,
@@ -383,7 +465,7 @@ DefineTests[
 		],
 		Example[{Messages,"MismatchedPlateBottomThickness","Throw a warning message when specified PlateBottomThickness option does not match value calculated from the sample's container model:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
 				PlateBottomThickness->2 Millimeter
 			],
 			ObjectP[Object[Protocol,ImageCells]],
@@ -402,8 +484,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidObjectiveMagnification","The specified objective magnification must be supported by the instrument:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ObjectiveMagnification->100
 			],
 			$Failed,
@@ -414,8 +496,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidPixelBinning","The specified PixelBinning must be supported by the instrument:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				PixelBinning->5
 			],
 			$Failed,
@@ -426,7 +508,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsTimelapseIntervalNotAllowed","The specified TimelapseInterval must be Null when Timelaspe is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->False,
 				TimelapseInterval->5 Second
 			],
@@ -438,7 +520,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsTimelapseDurationNotAllowed","The specified TimelapseDuration must be Null when Timelaspe is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->False,
 				TimelapseDuration->5 Hour
 			],
@@ -450,7 +532,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsNumberOfTimepointsNotAllowed","The specified NumberOfTimepoints must be Null when Timelaspe is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->False,
 				NumberOfTimepoints->5
 			],
@@ -462,7 +544,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsContinuousTimelapseImagingNotAllowed","The specified TimelapseDuration cannot be True when Timelaspe is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->False,
 				ContinuousTimelapseImaging->True
 			],
@@ -474,7 +556,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsTimelapseAcquisitionOrderNotAllowed","The specified TimelapseAcquisitionOrder must be Null when Timelaspe is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->False,
 				TimelapseAcquisitionOrder->ColumnByColumn
 			],
@@ -486,8 +568,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsUnsupportedTimelapseImaging","Timelapse option cannot be set to True when the selected instrument does not support timelapse imaging:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True
 			],
 			$Failed,
@@ -496,15 +578,15 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],TimelapseImaging->Null|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],TimelapseImaging->Null|>];
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],TimelapseImaging->True|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],TimelapseImaging->True|>];
 			)
 		],
 		Example[{Messages,"ImageCellsInvalidTimelapseDefinition","When Timelapse is set to True at least one of the following options must be left to be set automatically: TimelapseInterval, NumberOfTimepoints, TimelapseDuration:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				TimelapseInterval->10 Second,
 				TimelapseDuration->1 Hour,
@@ -518,7 +600,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidContinuousTimelapseImaging","When ContinuousTimelapseImaging is set to True, TimelapseInterval must be less than 1 Hour:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				ContinuousTimelapseImaging->True,
 				TimelapseInterval->5 Hour
@@ -531,8 +613,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsUnsupportedZStackImaging","ZStack option cannot be set to True when the selected instrument does not support z-stack imaging:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True
 			],
 			$Failed,
@@ -541,15 +623,15 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],ZStackImaging->Null|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],ZStackImaging->Null|>];
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],ZStackImaging->True|>];
+				Upload[<|Object->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],ZStackImaging->True|>];
 			)
 		],
 		Example[{Messages,"ImageCellsInvalidZStackDefinition","When ZStack is set to True at least one of the following options must be left to be set automatically: ZStepSize, NumberOfZSteps, ZStackSpan:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStepSize->1 Micrometer,
 				NumberOfZSteps->5,
@@ -563,7 +645,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsZStepSizeNotAllowed","The specified ZStepSize must be Null when ZStack is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->False,
 				ZStepSize->1 Micrometer
 			],
@@ -575,7 +657,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsNumberOfZStepsNotAllowed","The specified NumberOfZSteps must be Null when ZStack is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->False,
 				NumberOfZSteps->5
 			],
@@ -587,7 +669,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsZStackSpanNotAllowed","The specified ZStackSpan must be Null when ZStack is False:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->False,
 				ZStackSpan->Span[-10 Micrometer,10 Micrometer]
 			],
@@ -599,8 +681,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidZStackSpan","The specified ZStackSpan must be within the instrument's max allowed distance on the z-axis:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStackSpan->Span[-9000 Micrometer,9000 Micrometer]
 			],
@@ -612,8 +694,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidZStepSizeNumberOfZSteps","The product of ZStepSize and NumberOfZSteps option values must be within the instrument's max allowed distance on the z-axis:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStepSize->150 Micrometer,
 				NumberOfZSteps->100
@@ -626,8 +708,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidZStepSize","The specified ZStepSize must be smaller than the distance on the z-axis defined by the ZStackSpan option:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStepSize->200 Micrometer,
 				ZStackSpan->Span[-50 Micrometer,50 Micrometer]
@@ -640,7 +722,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidAcquireImagePrimitive","Throw an error message if AcquireImage primitive specified as Images option is invalid:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->False,
 				Images->{
 					AcquireImage[ZStackImageCollection->True]
@@ -657,12 +739,12 @@ DefineTests[
 			ExperimentImageCells[
 				{
 					{
-						Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
+						Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
 					}
 				},
-				AdjustmentSample->{Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]}
+				AdjustmentSample->{Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID]}
 			],
 			$Failed,
 			Messages:>{
@@ -673,10 +755,10 @@ DefineTests[
 		Example[{Messages,"ImageCellsMultipleContainersForAdjustmentSample","The AdjustmentSample option can only be set to sample if the given sample pool has a single sample container:"},
 			ExperimentImageCells[
 				{{
-					Object[Container,Plate,"Fake plate 1 for ExperimentImageCells tests"<> $SessionUUID],
-					Object[Container,Plate,"Fake plate 5 for ExperimentImageCells tests"<> $SessionUUID]
+					Object[Container,Plate,"Test plate 1 for ExperimentImageCells tests"<> $SessionUUID],
+					Object[Container,Plate,"Test plate 5 for ExperimentImageCells tests"<> $SessionUUID]
 				}},
-				AdjustmentSample->{Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]}
+				AdjustmentSample->{Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]}
 			],
 			$Failed,
 			Messages:>{
@@ -686,8 +768,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsUnsupportedSamplingPattern","The specified SamplingPattern must be supported by the instrument:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Coordinates
 			],
 			$Failed,
@@ -698,7 +780,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingCoordinatesNotAllowed","SamplingCoordinates must be Null when SamplingPattern is set to Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingCoordinates->{{1 Micrometer,2 Micrometer}}
 			],
@@ -710,7 +792,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingRowSpacingMismatch","SamplingRowSpacing must be Null when SamplingNumberOfRows is set to 1:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfRows->1,
 				SamplingRowSpacing->100 Micrometer
@@ -723,7 +805,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingRowSpacingNotSpecified","SamplingRowSpacing cannot be Null when SamplingNumberOfRows is higher than 1:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfRows->5,
 				SamplingRowSpacing->Null
@@ -737,7 +819,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingColumnSpacingMismatch","SamplingColumnSpacing must be Null when SamplingNumberOfColumns is set to 1:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfColumns->1,
 				SamplingColumnSpacing->100 Micrometer
@@ -750,7 +832,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingColumnSpacingNotSpecified","SamplingColumnSpacing cannot be Null when SamplingNumberOfColumns is higher than 1:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfColumns->5,
 				SamplingColumnSpacing->Null
@@ -764,7 +846,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsGridDefinedAsSinglePoint","Both SamplingNumberOfColumns and SamplingNumberOfRows cannot be set to 1 when SamplingPattern is Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfColumns->1,
 				SamplingNumberOfRows->1
@@ -777,7 +859,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsCannotDetermineImagingSites","SamplingPattern, SamplingNumberOfColumns, SamplingNumberOfRows, SamplingColumnSpacing, SamplingRowSpacing cannot be Null when SamplingPattern is Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfColumns->Null
 			],
@@ -789,7 +871,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidGridDefinition","Imaging sites calculated from SamplingNumberOfColumns, SamplingNumberOfRows, SamplingColumnSpacing, SamplingRowSpacing must fit inside each sample's container when SamplingPattern is Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfRows->30,
 				SamplingNumberOfColumns->30,
@@ -804,7 +886,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidAdaptiveExcitationWaveLength","AdaptiveExcitationWaveLength must match one of the ExcitationWavelengths specified in Images option:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveExcitationWaveLength->500 Nanometer
 			],
@@ -816,7 +898,7 @@ DefineTests[
 		],
 		Test["AdaptiveExcitationWaveLength cannot be Null when SamplingPattern is Adaptive:",
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveExcitationWaveLength->Null
 			],
@@ -828,7 +910,7 @@ DefineTests[
 		],
 		Example[{Messages,"FirstWavelengthNotUsedForAdaptive","Throw a warning message if the specified AdaptiveExcitationWaveLength does not match the ExcitationWavelength of the first AcquireImage primitive in the Images option:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveExcitationWaveLength->638 Nanometer
 			],
@@ -837,7 +919,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveNumberOfCellsNotSpecified","AdaptiveNumberOfCells cannot be Null when SamplingPattern is Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveNumberOfCells->Null
 			],
@@ -849,7 +931,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveMinNumberOfImagesNotSpecified","AdaptiveMinNumberOfImages cannot be Null when SamplingPattern is Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveMinNumberOfImages->Null
 			],
@@ -861,7 +943,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsTooManyAdaptiveImagingSites","AdaptiveMinNumberOfImages must not exceed total number of imageable sites for each sample:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveMinNumberOfImages->25
 			],
@@ -873,7 +955,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveCellWidthNotSpecified","AdaptiveCellWidth cannot be Null when SamplingPattern is Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveCellWidth->Null
 			],
@@ -885,7 +967,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveIntensityThresholdNotSpecified","AdaptiveIntensityThreshold cannot be Null when SamplingPattern is Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveIntensityThreshold->Null
 			],
@@ -897,8 +979,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidAdaptiveIntensityThreshold","AdaptiveIntensityThreshold must not exceed the instrument's maximum gray level:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveIntensityThreshold->65000
 			],
@@ -910,7 +992,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveExcitationWaveLengthNotAllowed","If specified, AdaptiveExcitationWaveLength must be Null when SamplingPattern is not Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				AdaptiveExcitationWaveLength->477 Nanometer
 			],
@@ -922,7 +1004,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveNumberOfCellsNotAllowed","If specified, AdaptiveNumberOfCells must be Null when SamplingPattern is not Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				AdaptiveNumberOfCells->20
 			],
@@ -934,7 +1016,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveMinNumberOfImagesNotAllowed","If specified, AdaptiveMinNumberOfImages must be Null when SamplingPattern is not Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				AdaptiveMinNumberOfImages->20
 			],
@@ -946,7 +1028,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveCellWidthNotAllowed","If specified, AdaptiveCellWidth must be Null when SamplingPattern is not Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				AdaptiveCellWidth->Span[5 Micrometer,10 Micrometer]
 			],
@@ -958,7 +1040,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsAdaptiveIntensityThresholdNotAllowed","If specified, AdaptiveIntensityThreshold must be Null when SamplingPattern is not Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				AdaptiveIntensityThreshold->200
 			],
@@ -970,7 +1052,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingNumberOfRowsNotAllowed","If specified, SamplingNumberOfRows must be Null when SamplingPattern is not Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingNumberOfRows->5
 			],
@@ -982,7 +1064,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingNumberOfColumnsNotAllowed","If specified, SamplingNumberOfColumns must be Null when SamplingPattern is not Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingNumberOfColumns->5
 			],
@@ -994,7 +1076,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingRowSpacingNotAllowed","If specified, SamplingRowSpacing must be Null when SamplingPattern is not Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingRowSpacing->10 Micrometer
 			],
@@ -1006,7 +1088,7 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingColumnSpacingNotAllowed","If specified, SamplingColumnSpacing must be Null when SamplingPattern is not Grid or Adaptive:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingColumnSpacing->10 Micrometer
 			],
@@ -1018,8 +1100,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsInvalidSamplingCoordinates","SamplingCoordinates must be within each sample's well or position when SamplingPatten is Coordinates:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Coordinates,
 				SamplingCoordinates->{{1 Micrometer,1 Micrometer},{3482 Micrometer,3482 Micrometer}}
 			],
@@ -1031,7 +1113,7 @@ DefineTests[
 		],
 		Test["SamplingCoordinates must be {0 \[Mu]m,0 \[Mu]m} when SamplingPatten is SinglePoint:",
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingCoordinates->{{0 Micrometer,1 Micrometer}}
 			],
@@ -1043,8 +1125,8 @@ DefineTests[
 		],
 		Example[{Messages,"ImageCellsSamplingCoordinatesNotSpecified","SamplingCoordinates cannot be Null when SamplingPattern is Coordinates:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test Inverted Microscope Model for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Coordinates,
 				SamplingCoordinates->Null
 			],
@@ -1056,7 +1138,7 @@ DefineTests[
 		],
 		Test["SamplingCoordinates cannot be Null when SamplingPattern is SinglePoint:",
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->SinglePoint,
 				SamplingCoordinates->Null
 			],
@@ -1066,30 +1148,90 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"ImageCellsInvalidCellType","Input samples must not contain any live yeast or bacterial cells:"},
-			ExperimentImageCells[
-				{
-					{Object[Sample,"Yeast sample for ExperimentImageCells tests"<> $SessionUUID],Object[Sample,"Bacteria sample for ExperimentImageCells tests"<> $SessionUUID]}
-				}
-			],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentImageCells[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages:>{
-				Error::ImageCellsInvalidCellType,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
 		],
-		Example[{Messages,"ImageCellsObjectDoesNotExist","Specified objects must exist in the database:"},
-			ExperimentImageCells[Object[Sample,"This sample does not exist"]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentImageCells[Object[Container, Vessel, "Nonexistent container"]],
 			$Failed,
-			Messages:>{
-				Error::ImageCellsObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentImageCells[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentImageCells[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Plate, "id:E8zoYveRlldX"],(* 24-well clear bottom *)
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Test mammalian cell with GFP for ExperimentImageCells tests"<> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 200 Microliter,
+					SampleHandling -> Liquid,
+					CellType -> Mammalian,
+					CultureAdhesion -> Adherent
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentImageCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Plate, "id:E8zoYveRlldX"],(* 24-well clear bottom *)
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Test mammalian cell with GFP for ExperimentImageCells tests"<> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 200 Microliter,
+					SampleHandling -> Liquid,
+					CellType -> Mammalian,
+					CultureAdhesion -> Adherent
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentImageCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		],
 		Example[{Messages,"ImageCellsIncompatibleContainerThickness","Sample container's thickness must be smaller than the working distance of the objective:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test High Content Imager Model for ExperimentImageCells tests"<> $SessionUUID],
 				ObjectiveMagnification->20
 			],
 			$Failed,
@@ -1101,7 +1243,7 @@ DefineTests[
 		],
 		Example[{Messages,"ConflictingImageCellsMethodRequirements","Throw an error if preparation is set to Robotic but cannot be performed that way:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 5 for ExperimentImageCells tests"<> $SessionUUID],
 				Instrument->Model[Instrument,Microscope,"Ti-E Inverted Microscope"],
 				Preparation->Robotic
 			],
@@ -1111,20 +1253,38 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"ImageCellsCultureHandlingMismatch","Throw an error if the CultureHandling of the input samples is not allowed on the Instrument:"},
+			ExperimentImageCells[
+				Object[Sample,"Bacteria sample for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument -> Model[Instrument, Microscope, "id:n0k9mG8pj9BW"] (* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 20X, 60X Confocal, Mammalian"] *)
+			],
+			$Failed,
+			Messages :> {
+				Error::ImageCellsCultureHandlingMismatch,
+				Error::InvalidOption
+			}
+		],
+		Test["Mammalian cells are allowed on a microbial microscope",
+			ExperimentImageCells[
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument -> Model[Instrument, Microscope, "id:XnlV5jN97nnM"] (*Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Microbial"]*)
+			],
+			ObjectP[Object[Protocol,ImageCells]]
+		],
 		(* ---options--- *)
 		Example[{Options,Instrument,"The instrument that should be used to acquire images from the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Object[Instrument,Microscope,"Fake High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,Instrument],
-			ObjectP[Object[Instrument,Microscope,"Fake High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID]],
+			ObjectP[Object[Instrument,Microscope,"Test High Content Imager Object for ExperimentImageCells tests"<> $SessionUUID]],
 			Variables:>{options}
 		],
 		Example[{Options,MicroscopeOrientation,"Specify the microscope orientation:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				MicroscopeOrientation->Inverted,
 				Output->Options
 			];
@@ -1134,9 +1294,9 @@ DefineTests[
 		],
 		Example[{Options,ReCalibrateMicroscope,"Indicates if the optical components of the microscope should be adjusted before imaging the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True,
-				Instrument->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,ReCalibrateMicroscope],
@@ -1145,19 +1305,19 @@ DefineTests[
 		],
 		Example[{Options,"MicroscopeCalibration","A calibration object that specifies a set of parameters used to adjust optical components of the microscope:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ReCalibrateMicroscope->True,
-				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
+				MicroscopeCalibration->Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,MicroscopeCalibration],
-			ObjectP[Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]],
+			ObjectP[Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for ExperimentImageCells tests"<> $SessionUUID]],
 			Variables:>{options}
 		],
 		Example[{Options,Temperature,"Set the temperature of the stage where the sample container is placed during imaging:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Temperature->30 Celsius,
 				Output->Options
 			];
@@ -1168,7 +1328,7 @@ DefineTests[
 		],
 		Example[{Options,CarbonDioxide,"Indicates if the sample will be incubated with CO2 during imaging:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				CarbonDioxide->True,
 				Output->Options
 			];
@@ -1178,7 +1338,7 @@ DefineTests[
 		],
 		Example[{Options,CarbonDioxidePercentage,"Indicates percentage of CO2 in the gas mixture that will be provided to the sample during imaging:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				CarbonDioxide->True,
 				CarbonDioxidePercentage->6 Percent,
 				Output->Options
@@ -1190,7 +1350,7 @@ DefineTests[
 		],
 		Example[{Options,EquilibrationTime,"Indicates the amount of time for which the samples are placed on the stage of the microscope before the first image is acquired:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				EquilibrationTime->10 Minute,
 				Output->Options
 			];
@@ -1201,7 +1361,7 @@ DefineTests[
 		],
 		Example[{Options,ContainerOrientation,"The orientation of the sample container when placed on the microscope stage for imaging:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ContainerOrientation->RightSideUp,
 				Output->Options
 			];
@@ -1222,7 +1382,7 @@ DefineTests[
 		],
 		Example[{Options,PlateBottomThickness,"Specifies the thickness of the sample's plate bottom:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				PlateBottomThickness->0.21 Millimeter,
 				Output->Options
 			];
@@ -1233,7 +1393,7 @@ DefineTests[
 		],
 		Example[{Options,ObjectiveMagnification,"Specifies the objective lens magnification:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				ObjectiveMagnification->20,
 				Output->Options
 			];
@@ -1244,7 +1404,7 @@ DefineTests[
 		],
 		Example[{Options,PixelBinning,"Specifies the pixel binning of the acquired images:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				PixelBinning->8,
 				Output->Options
 			];
@@ -1255,7 +1415,7 @@ DefineTests[
 		],
 		Example[{Options,Images,"Specifies the AcquireImage primitive containing parameters that are used to image the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Images->{
 					AcquireImage[
 						Mode->ConfocalFluorescence,
@@ -1272,21 +1432,21 @@ DefineTests[
 			options=ExperimentImageCells[
 				{
 					{
-						Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
-						Object[Sample,"Fake cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
+						Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+						Object[Sample,"Test cell sample 3 for ExperimentImageCells tests"<> $SessionUUID]
 					}
 				},
-				AdjustmentSample->Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				AdjustmentSample->Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,AdjustmentSample],
-			ObjectP[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]],
+			ObjectP[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID]],
 			Variables:>{options}
 		],
 		Example[{Options,SamplingPattern,"Specifies the pattern of images that will be acquired from the samples:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				Output->Options
 			];
@@ -1296,7 +1456,7 @@ DefineTests[
 		],
 		Example[{Options,SamplingNumberOfRows,"The number of rows which will be acquired for each sample if the Grid SamplingPattern is selected:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfRows->3,
 				Output->Options
@@ -1308,7 +1468,7 @@ DefineTests[
 		],
 		Example[{Options,SamplingNumberOfColumns,"The number of columns which will be acquired for each sample if the Grid SamplingPattern is selected:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingNumberOfColumns->3,
 				Output->Options
@@ -1320,7 +1480,7 @@ DefineTests[
 		],
 		Example[{Options,SamplingRowSpacing,"The distance between each row of images to be acquired:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingRowSpacing->10 Percent,
 				Output->Options
@@ -1331,7 +1491,7 @@ DefineTests[
 		],
 		Example[{Options,SamplingColumnSpacing,"The distance between each column of images to be acquired:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Grid,
 				SamplingColumnSpacing->10 Percent,
 				Output->Options
@@ -1342,8 +1502,8 @@ DefineTests[
 		],
 		Example[{Options,SamplingCoordinates,"Specifies the positions at which images are acquired:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				Instrument->Object[Instrument,Microscope,"Fake Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Instrument->Object[Instrument,Microscope,"Test Inverted Microscope Object for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Coordinates,
 				SamplingCoordinates->{{-10 Micrometer,10 Micrometer},{-5 Micrometer,20 Micrometer}},
 				Output->Options
@@ -1354,7 +1514,7 @@ DefineTests[
 		],
 		Example[{Options,AdaptiveExcitationWaveLength,"Specifies the excitation wavelength used to determine the number of cells in each field of view for the Adaptive SamplingPattern:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveExcitationWaveLength->477 Nanometer,
 				Output->Options
@@ -1366,7 +1526,7 @@ DefineTests[
 		],
 		Example[{Options,AdaptiveNumberOfCells,"Specifies the minimum cell count per well that the instrument will work to satisfy by acquiring images from multiple regions before moving to the next sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveNumberOfCells->25,
 				Output->Options
@@ -1378,7 +1538,7 @@ DefineTests[
 		],
 		Example[{Options,AdaptiveMinNumberOfImages,"The minimum number of regions that must be acquired when using the adpative sampling, even if the specified cell count (AdaptiveNumberOfCells) is already reached:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveNumberOfCells->25,
 				AdaptiveMinNumberOfImages->10,
@@ -1391,7 +1551,7 @@ DefineTests[
 		],
 		Example[{Options,AdaptiveCellWidth,"Specifies the expected range of cell size in the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveCellWidth->5 Micrometer;;20 Micrometer,
 				Output->Options
@@ -1402,7 +1562,7 @@ DefineTests[
 		],
 		Example[{Options,AdaptiveIntensityThreshold,"Specifies the intensity above local background value that a putative cell needs to have in order to be counted.:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplingPattern->Adaptive,
 				AdaptiveIntensityThreshold->250,
 				Output->Options
@@ -1414,7 +1574,7 @@ DefineTests[
 		],
 		Example[{Options,Timelapse,"Indicates if the sample will be imaged at multiple time points:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				Output->Options
 			];
@@ -1424,7 +1584,7 @@ DefineTests[
 		],
 		Example[{Options,TimelapseInterval,"Indicates the amount of time between the start of an acquisition at one time point and the start of an acquisition at the next time point:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				TimelapseInterval->10 Second,
 				Output->Options
@@ -1436,7 +1596,7 @@ DefineTests[
 		],
 		Example[{Options,TimelapseDuration,"Indicates the total amount of time that the Timelapse images will be acquired for the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				TimelapseDuration->10 Minute,
 				Output->Options
@@ -1448,7 +1608,7 @@ DefineTests[
 		],
 		Example[{Options,NumberOfTimepoints,"Indicates the number of images that will be acquired from the sample in during the course of Timelapse imaging:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->10,
 				Output->Options
@@ -1460,7 +1620,7 @@ DefineTests[
 		],
 		Example[{Options,ContinuousTimelapseImaging,"Indicates if images from multiple time points should be acquired from the samples in a single imaging session:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				ContinuousTimelapseImaging->True,
 				Output->Options
@@ -1471,7 +1631,7 @@ DefineTests[
 		],
 		Example[{Options,TimelapseAcquisitionOrder,"Indicates the order in which the time-series images are acquired with respect to the sample's location in the plate:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				TimelapseAcquisitionOrder->RowByRow,
 				Output->Options
@@ -1482,7 +1642,7 @@ DefineTests[
 		],
 		Example[{Options,TimelapseAcquisitionOrder,"Indicates the order in which the time-series images are acquired with respect to the sample's location in the plate:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Timelapse->True,
 				TimelapseAcquisitionOrder->RowByRow,
 				Output->Options
@@ -1493,7 +1653,7 @@ DefineTests[
 		],
 		Example[{Options,ZStack,"Indicates if a series of images at multiple z-axis positions will be acquired for the sample:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				Output->Options
 			];
@@ -1503,7 +1663,7 @@ DefineTests[
 		],
 		Example[{Options,ZStepSize,"Indicates the distance between each image plane in the Z-Stack:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStepSize->5 Micrometer,
 				Output->Options
@@ -1515,7 +1675,7 @@ DefineTests[
 		],
 		Example[{Options,NumberOfZSteps,"Indicates the total number of image planes that will be acquired in the Z-stack:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				NumberOfZSteps->5,
 				Output->Options
@@ -1527,7 +1687,7 @@ DefineTests[
 		],
 		Example[{Options,ZStackSpan,"Indicates the range of Z-heights that the microscope will acquire images from in a Z-Stack:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				ZStack->True,
 				ZStackSpan->(-10 Micrometer;;30 Micrometer),
 				Output->Options
@@ -1544,10 +1704,10 @@ DefineTests[
 				PreparatoryUnitOperations -> {
 					LabelContainer[
 						Label -> "my sample",
-						Container -> Model[Container, Plate, "id:L8kPEjno5XoE"]
+						Container -> Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"]
 					],
 					Transfer[
-						Source -> Object[Sample, "Fake cell sample 1 for ExperimentImageCells tests" <> $SessionUUID],
+						Source -> Object[Sample, "Test cell sample 1 for ExperimentImageCells tests" <> $SessionUUID],
 						Destination -> "my sample",
 						Amount -> 100 Microliter
 					]
@@ -1559,14 +1719,14 @@ DefineTests[
 		],
 		Example[{Options,Name,"Name of the output protocol object can be specified:"},
 			ExperimentImageCells[
-				Object[Sample,"Fake cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for ExperimentImageCells tests"<> $SessionUUID],
 				Name->"ExperimentImageCells name test protocol"<> $SessionUUID
 			],
 			Object[Protocol,ImageCells,"ExperimentImageCells name test protocol"<> $SessionUUID]
 		],
 		Example[{Options,Template,"Template can be specified to inherit specified options from the parent protocol:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				Template->Object[Protocol,ImageCells,"ExperimentImageCells template test protocol"<> $SessionUUID],
 				Output->Options
 			];
@@ -1577,7 +1737,7 @@ DefineTests[
 		],
 		Example[{Options,SamplesInStorageCondition,"SamplesInStorageCondition can be specified:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				SamplesInStorageCondition->Refrigerator,
 				Output->Options
 			];
@@ -1587,35 +1747,29 @@ DefineTests[
 		],
 
 		(* post-processing options *)
-		Example[{Options,MeasureWeight,"Set the MeasureWeight option:"},
-			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				MeasureWeight->True,
-				Output->Options
-			];
-			Lookup[options,MeasureWeight],
-			True,
-			Variables:>{options}
+		Example[{Options,MeasureWeight,"Set the MeasureWeight option to True will cause an error because we expect the samples for post processing will be Living->True:"},
+			ExperimentImageCells[
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				MeasureWeight->True
+			],
+			$Failed,
+			Messages:> {Error::PostProcessingLivingSamples,Error::InvalidOption}
 		],
-		Example[{Options,MeasureVolume,"Set the MeasureVolume option:"},
-			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				MeasureVolume->True,
-				Output->Options
-			];
-			Lookup[options,MeasureVolume],
-			True,
-			Variables:>{options}
+		Example[{Options,MeasureVolume,"Set the MeasureVolume option to True will cause an error because we expect the samples for post processing will be Living->True:"},
+			ExperimentImageCells[
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				MeasureVolume->True
+			],
+			$Failed,
+			Messages:> {Error::PostProcessingLivingSamples,Error::InvalidOption}
 		],
-		Example[{Options,ImageSample,"Set the ImageSample option:"},
-			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
-				ImageSample->True,
-				Output->Options
-			];
-			Lookup[options,ImageSample],
-			True,
-			Variables:>{options}
+		Example[{Options,ImageSample,"Set the ImageSample option to True will cause an error because we expect the samples for post processing will be Living->True:"},
+			ExperimentImageCells[
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				ImageSample->True
+			],
+			$Failed,
+			Messages:> {Error::PostProcessingLivingSamples,Error::InvalidOption}
 		],
 
 		(* ---shared sample prep options--- *)
@@ -1637,40 +1791,40 @@ DefineTests[
 
 		(* incubate options tests *)
 		Example[{Options,Incubate,"Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Incubate->True,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Incubate->True,Output->Options];
 			Lookup[options,Incubate],
 			True,
 			Variables:>{options}
 		],
 		Example[{Options,IncubationTime,"Duration for which SamplesIn should be incubated at the IncubationTemperature, prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationTime->40*Minute,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationTime->40*Minute,Output->Options];
 			Lookup[options,IncubationTime],
 			40*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,MaxIncubationTime,"Maximum duration of time for which the samples will be mixed while incubated in an attempt to dissolve any solute, if the MixUntilDissolved option is chosen: This occurs prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],MaxIncubationTime->40*Minute,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],MaxIncubationTime->40*Minute,Output->Options];
 			Lookup[options,MaxIncubationTime],
 			40*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,IncubationTemperature,"Temperature at which the SamplesIn should be incubated for the duration of the IncubationTime prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationTemperature->40*Celsius,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationTemperature->40*Celsius,Output->Options];
 			Lookup[options,IncubationTemperature],
 			40*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,IncubationInstrument,"The instrument used to perform the Mix and/or Incubation, prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationInstrument->Model[Instrument,HeatBlock,"id:WNa4ZjRDVw64"],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubationInstrument->Model[Instrument,HeatBlock,"id:WNa4ZjRDVw64"],Output->Options];
 			Lookup[options,IncubationInstrument],
 			ObjectP[Model[Instrument,HeatBlock,"id:WNa4ZjRDVw64"]],
 			Variables:>{options}
 		],
 		Example[{Options,AnnealingTime,"Minimum duration for which the SamplesIn should remain in the incubator allowing the system to settle to room temperature after the IncubationTime has passed but prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],AnnealingTime->40*Minute,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],AnnealingTime->40*Minute,Output->Options];
 			Lookup[options,AnnealingTime],
 			40*Minute,
 			EquivalenceFunction->Equal,
@@ -1678,7 +1832,7 @@ DefineTests[
 		],
 		Example[{Options,IncubateAliquot,"The amount of each sample that should be transferred from the SamplesIn into the IncubateAliquotContainer when performing an aliquot before incubation:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],
 				IncubateAliquot->100*Microliter,
 				IncubateAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				Output->Options
@@ -1689,19 +1843,19 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,IncubateAliquotContainer,"The desired type of container that should be used to prepare and house the incubation samples which should be used in lieu of the SamplesIn for the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubateAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubateAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],Output->Options];
 			Lookup[options,IncubateAliquotContainer],
 			{1,ObjectP[Model[Container,Plate,"id:L8kPEjno5XoE"]]},
 			Variables:>{options}
 		],
 		Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubateAliquotDestinationWell->"A1",IncubateAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],IncubateAliquotDestinationWell->"A1",IncubateAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],Output->Options];
 			Lookup[options,IncubateAliquotDestinationWell],
 			"A1",
 			Variables:>{options}
 		],
 		Example[{Options,Mix,"Indicates if this sample should be mixed while incubated, prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Mix->True,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 1 for ExperimentImageCells tests"<> $SessionUUID],Mix->True,Output->Options];
 			Lookup[options,Mix],
 			True,
 			Variables:>{options}
@@ -1733,41 +1887,41 @@ DefineTests[
 
 		(* centrifuge options tests *)
 		Example[{Options,Centrifuge,"Indicates if the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Centrifuge->True,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Centrifuge->True,Output->Options];
 			Lookup[options,Centrifuge],
 			True,
 			Variables:>{options}
 		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeTime->5*Minute,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeTime->5*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
 			5*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,CentrifugeTemperature,"The temperature at which the centrifuge chamber should be held while the samples are being centrifuged prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeTemperature->30*Celsius,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeTemperature->30*Celsius,Output->Options];
 			Lookup[options,CentrifugeTemperature],
 			30*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,CentrifugeIntensity,"The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeIntensity->1000*RPM,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeIntensity->1000*RPM,Output->Options];
 			Lookup[options,CentrifugeIntensity],
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Avanti J-15R"],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Avanti J-15R"],Output->Options];
 			Lookup[options,CentrifugeInstrument],
 			ObjectP[Model[Instrument,Centrifuge,"Avanti J-15R"]],
 			Variables:>{options}
 		],
 		Example[{Options,CentrifugeAliquot,"The amount of each sample that should be transferred from the SamplesIn into the CentrifugeAliquotContainer when performing an aliquot before centrifugation:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				CentrifugeAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				CentrifugeAliquot->0.1*Milliliter,
 				Output->Options
@@ -1780,7 +1934,7 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeAliquotContainer,"The desired type of container that should be used to prepare and house the centrifuge samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				CentrifugeAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				Output->Options
 			];
@@ -1791,7 +1945,7 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeAliquotDestinationWell,"Indicates the desired position in the corresponding CentrifugeAliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				CentrifugeAliquotContainer->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				CentrifugeAliquotDestinationWell->"A1",
 				Output->Options
@@ -1805,7 +1959,7 @@ DefineTests[
 		(* filter options *)
 		Example[{Options,Filtration,"Indicates if the SamplesIn should be filtered prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				Filtration->True,
 				Output->Options];
@@ -1816,43 +1970,43 @@ DefineTests[
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"id:L8kPEjno5XoE"],
-				FiltrationType->Syringe,
+				FiltrationType->Centrifuge,
 				Output->Options
 			];
 			Lookup[options,FiltrationType],
-			Syringe,
+			Centrifuge,
 			Variables:>{options},
 			TimeConstraint->240
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"id:L8kPEjno5XoE"],
-				FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],
+				FilterInstrument->Model[Instrument, Centrifuge, "id:eGakldJEz14E"], (* Model[Instrument, Centrifuge, "Eppendorf 5920R"] *)
 				Output->Options
 			];
 			Lookup[options,FilterInstrument],
-			ObjectP[Model[Instrument,SyringePump,"NE-1010 Syringe Pump"]],
+			ObjectP[Model[Instrument, Centrifuge, "id:eGakldJEz14E"]],
 			Variables:>{options},
 			TimeConstraint->240
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"id:L8kPEjno5XoE"],
-				Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],
+				Filter->Model[Container, Vessel, Filter, "id:O81aEBZmlN61"], (* Model[Container, Vessel, Filter, "Centrifuge Filter, PES, 0.22um, 5mL filter"] *)
 				Output->Options
 			];
 			Lookup[options,Filter],
-			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
+			ObjectP[Model[Container, Vessel, Filter, "id:O81aEBZmlN61"]],
 			Variables:>{options},
 			TimeConstraint->240
 		],
 		Example[{Options,FilterMaterial,"The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"id:L8kPEjno5XoE"],
 				FilterMaterial->PES,
 				Output->Options
@@ -1868,6 +2022,7 @@ DefineTests[
 				Object[Sample,"Sample in 50mL tube for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"6-well Tissue Culture Plate"],
 				PrefilterMaterial->GxF,
+				FilterSterile->False,
 				Output->Options
 			];
 			Lookup[options,PrefilterMaterial],
@@ -1894,6 +2049,7 @@ DefineTests[
 				FilterContainerOut->Model[Container,Plate,"6-well Tissue Culture Plate"],
 				PrefilterPoreSize->1.*Micrometer,
 				FilterMaterial->PTFE,
+				FilterSterile->False,
 				Output->Options
 			];
 			Lookup[options,PrefilterPoreSize],
@@ -1907,6 +2063,7 @@ DefineTests[
 				FilterContainerOut->Model[Container,Plate,"6-well Tissue Culture Plate"],
 				FiltrationType->Syringe,
 				FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],
+				FilterSterile->False,
 				Output->Options
 			];
 			Lookup[options,FilterSyringe],
@@ -1915,14 +2072,14 @@ DefineTests[
 			TimeConstraint->240
 		],
 		Example[{Options,FilterHousing,"FilterHousing option resolves to Null because it can't be used reasonably for volumes we would use in this experiment:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Output->Options];
 			Lookup[options,FilterHousing],
 			Null,
 			Variables:>{options}
 		],
 		Example[{Options,FilterTime,"The amount of time for which the samples will be centrifuged during filtration:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				FilterContainerOut->Model[Container,Plate,"6-well Tissue Culture Plate"],
 				FiltrationType->Centrifuge,
 				FilterTime->20*Minute,
@@ -2020,7 +2177,7 @@ DefineTests[
 		],
 		Example[{Options,Aliquot,"Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment: Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times: Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				Aliquot->True,
 				Output->Options
 			];
@@ -2030,7 +2187,7 @@ DefineTests[
 		],
 		Example[{Options,AliquotAmount,"The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				AliquotAmount->50*Microliter,
 				Output->Options
 			];
@@ -2041,7 +2198,7 @@ DefineTests[
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				AssayVolume->50*Microliter,
 				Output->Options
 			];
@@ -2052,7 +2209,7 @@ DefineTests[
 		],
 		Example[{Options,TargetConcentration,"The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 10 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 10 for ExperimentImageCells tests"<> $SessionUUID],
 				TargetConcentration->5*Micromolar,
 				Output->Options
 			];
@@ -2063,7 +2220,7 @@ DefineTests[
 		],
 		Example[{Options,TargetConcentrationAnalyte,"Set the TargetConcentrationAnalyte option:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 10 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 10 for ExperimentImageCells tests"<> $SessionUUID],
 				TargetConcentration->1*Micromolar,
 				TargetConcentrationAnalyte->Model[Molecule,"id:qdkmxzqabxnV"],
 				Output->Options
@@ -2074,7 +2231,7 @@ DefineTests[
 		],
 		Example[{Options,ConcentratedBuffer,"The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->100*Microliter,
 				AssayVolume->200*Microliter,
@@ -2086,7 +2243,7 @@ DefineTests[
 		],
 		Example[{Options,BufferDilutionFactor,"The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				BufferDilutionFactor->10,
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->100*Microliter,
@@ -2100,7 +2257,7 @@ DefineTests[
 		],
 		Example[{Options,BufferDiluent,"The buffer used to dilute the concentration of the ConcentratedBuffer by BufferDilutionFactor; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				BufferDiluent->Model[Sample,"Milli-Q water"],
 				BufferDilutionFactor->10,
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
@@ -2114,7 +2271,7 @@ DefineTests[
 		],
 		Example[{Options,AssayBuffer,"The buffer that should be added to any aliquots requiring dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				AssayBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->100*Microliter,
 				AssayVolume->200*Microliter,
@@ -2125,39 +2282,39 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,AliquotSampleStorageCondition,"The non-default conditions under which any aliquot samples generated by this experiment should be stored after the protocol is completed:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],AliquotSampleStorageCondition->Refrigerator,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],AliquotSampleStorageCondition->Refrigerator,Output->Options];
 			Lookup[options,AliquotSampleStorageCondition],
 			Refrigerator,
 			Variables:>{options}
 		],
 		Example[{Options,ConsolidateAliquots,"Indicates if identical aliquots should be prepared in the same container/position:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Aliquot->True,ConsolidateAliquots->True,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Aliquot->True,ConsolidateAliquots->True,Output->Options];
 			Lookup[options,ConsolidateAliquots],
 			True,
 			Variables:>{options}
 		],
 		Example[{Options,AliquotPreparation,"Indicates the desired scale at which liquid handling used to generate aliquots will occur:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Aliquot->True,AliquotPreparation->Manual,Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],Aliquot->True,AliquotPreparation->Manual,Output->Options];
 			Lookup[options,AliquotPreparation],
 			Manual,
 			Variables:>{options}
 		],
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],AliquotContainer->Model[Container,Plate,"6-well Tissue Culture Plate"],Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],AliquotContainer->Model[Container,Plate,"6-well Tissue Culture Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"6-well Tissue Culture Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "6-well Tissue Culture Plate"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
-			options=ExperimentImageCells[Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],DestinationWell->"A1",Output->Options];
+			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		(* -- Labels -- *)
 		Example[{Options, SampleLabel, "Specify the a label for the sample:"},
 			options = ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				SampleLabel -> "a fancy sample",
 				Output -> Options
 			];
@@ -2167,7 +2324,7 @@ DefineTests[
 		],
 		Example[{Options, SampleContainerLabel, "Specify the a label for the sample container:"},
 			options = ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				SampleContainerLabel -> "a fancy sample container",
 				Output -> Options
 			];
@@ -2177,29 +2334,29 @@ DefineTests[
 		],
 		Example[{Options, AliquotSampleLabel, "Specify the a label for the aliquot:"},
 			options = ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				Aliquot->True,
 				AliquotSampleLabel -> "a fancy aliquot of cells",
 				Output -> Options
 			];
 			Lookup[options, AliquotSampleLabel],
-			"a fancy aliquot of cells",
+			{"a fancy aliquot of cells"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotSampleLabel, "Specify the a label for the aliquot:"},
 			options = ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				Aliquot->True,
 				AliquotSampleLabel -> "a fancy aliquot sample",
 				Output -> Options
 			];
 			Lookup[options, AliquotSampleLabel],
-			"a fancy aliquot sample",
+			{"a fancy aliquot sample"},
 			Variables :> {options}
 		],
 		Example[{Options, Preparation, "Specify the if the imaging should be done robotically:"},
 			options = ExperimentImageCells[
-				Object[Sample,"Fake cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
 				Preparation->Manual,
 				Output -> Options
 			];
@@ -2234,51 +2391,51 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 	Module[{allObjects,existingObjects},
 		allObjects=Quiet[Cases[
 			Flatten[{
-				(*fake bench for creating containers*)
-				Object[Container,Bench,"Fake bench for "<>funcStringName<>" tests"<> $SessionUUID],
+				(*test bench for creating containers*)
+				Object[Container,Bench,"Test bench for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(*test containers*)
-				Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 7 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Vessel,"Fake 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Hemocytometer,"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,MicroscopeSlide,"Fake microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Vessel,"Fake 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 7 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Vessel,"Test 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Hemocytometer,"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,MicroscopeSlide,"Test microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Vessel,"Test 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(*identity models*)
-				Model[Molecule,Protein,"Fake GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Molecule,Protein,"Fake dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Molecule,Protein,"Fake iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Cell,Mammalian,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Cell,Mammalian,"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Cell,Mammalian,"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Molecule,Protein,"Test GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Molecule,Protein,"Test dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Molecule,Protein,"Test iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Cell,Mammalian,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Cell,Mammalian,"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Cell,Mammalian,"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(*sample models*)
-				Model[Sample,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Sample,"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Sample,"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Sample,"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Sample,"Fake mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Sample,"Fake trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Sample,"Test trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(*test samples*)
-				Object[Sample,"Fake cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Sample,"Fake cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID],
 				Object[Sample,"Discarded sample for "<>funcStringName<>" tests"<> $SessionUUID],
 				Object[Sample,"Containerless sample for "<>funcStringName<>" tests"<> $SessionUUID],
 				Object[Sample,"Sample with incompatible container for "<>funcStringName<>" tests"<> $SessionUUID],
@@ -2291,18 +2448,18 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				Object[Sample,"Sample in 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(* objective *)
-				Model[Part,Objective,"Fake 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Part,Objective,"Fake 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Part,Objective,"Fake 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Part,Objective,"Fake 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Part,Objective,"Test 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Part,Objective,"Test 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Part,Objective,"Test 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Part,Objective,"Test 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(* Instrument *)
-				Model[Instrument,Microscope,"Fake High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Instrument,Microscope,"Fake High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Instrument,Microscope,"Fake Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Instrument,Microscope,"Fake Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID],
-				Model[Maintenance,CalibrateMicroscope,"Fake Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Instrument,Microscope,"Test High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Instrument,Microscope,"Test High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Instrument,Microscope,"Test Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Instrument,Microscope,"Test Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID],
+				Model[Maintenance,CalibrateMicroscope,"Test Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
 
 				(* protocol *)
 				Object[Protocol,ImageCells,funcStringName<>" template test protocol"<> $SessionUUID],
@@ -2334,19 +2491,19 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				maintModelPacket,maintObjectPacket,invertedObjectUpdatePacket
 			},
 
-			(* set up fake bench as a location for the vessel *)
+			(* set up test bench as a location for the vessel *)
 			fakeBenchPacket=<|
 				Type->Object[Container,Bench],
 				Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
-				Name->"Fake bench for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test bench for "<>funcStringName<>" tests"<> $SessionUUID,
 				StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]]
 			|>;
 
-			(* create fake objective lenses *)
+			(* create test objective lenses *)
 			objectivePackets={
 				<|
 					Object->CreateID[Model[Part,Objective]],
-					Name->"Fake 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
+					Name->"Test 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
 					Magnification->4,
 					MinWorkingDistance->20 Millimeter,
 					MaxWorkingDistance->20 Millimeter,
@@ -2355,7 +2512,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				|>,
 				<|
 					Object->CreateID[Model[Part,Objective]],
-					Name->"Fake 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
+					Name->"Test 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
 					Magnification->10,
 					MinWorkingDistance->4 Millimeter,
 					MaxWorkingDistance->4 Millimeter,
@@ -2364,7 +2521,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				|>,
 				<|
 					Object->CreateID[Model[Part,Objective]],
-					Name->"Fake 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
+					Name->"Test 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
 					Magnification->20,
 					MinWorkingDistance->900 Micrometer,
 					MaxWorkingDistance->990 Micrometer,
@@ -2373,7 +2530,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				|>,
 				<|
 					Object->CreateID[Model[Part,Objective]],
-					Name->"Fake 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
+					Name->"Test 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID,
 					Magnification->60,
 					MinWorkingDistance->280 Micrometer,
 					MaxWorkingDistance->310 Micrometer,
@@ -2385,7 +2542,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* create an instrument model packet for high content imager *)
 			instModelPacket=<|
 				Object->CreateID[Model[Instrument,Microscope]],
-				Name->"Fake High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID,
 				Deprecated->Null,
 				Replace[Positions]->{<|Name->"Sample Slot",Footprint->Plate,MaxWidth->0.13 Meter,MaxDepth->0.09 Meter,MaxHeight->0.0196 Meter|>},
 				ActiveHumidityControl->False,
@@ -2434,7 +2591,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 
 			invertedModelPacket=<|
 				Object->CreateID[Model[Instrument,Microscope]],
-				Name->"Fake Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID,
 				Replace[Positions]->{<|Name->"Sample Slot",Footprint->Open,MaxWidth->0.2794 Meter,MaxDepth->0.3048 Meter,MaxHeight->Null|>},
 				ActiveHumidityControl->False,
 				Autofocus->True,
@@ -2480,7 +2637,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			instObjectPacket=<|
 				Type->Object[Instrument,Microscope],
 				Model->Link[Lookup[instModelPacket,Object],Objects],
-				Name->"Fake High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID,
 				DeveloperObject->True,
 				Status->Available,
 				Site -> Link[$Site]
@@ -2489,7 +2646,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			invertedObjectPacket=<|
 				Type->Object[Instrument,Microscope],
 				Model->Link[Lookup[invertedModelPacket,Object],Objects],
-				Name->"Fake Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID,
 				DeveloperObject->True,
 				Status->Available,
 				Site -> Link[$Site]
@@ -2498,9 +2655,9 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* create fluorescent protein identity models *)
 			{proteinPacket1,proteinPacket2,proteinPacket3}=UploadProtein[
 				{
-					"Fake GFP for "<>funcStringName<>" tests"<> $SessionUUID,
-					"Fake dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
-					"Fake iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID
+					"Test GFP for "<>funcStringName<>" tests"<> $SessionUUID,
+					"Test dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
+					"Test iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID
 				},
 				State->Solid,
 				BiosafetyLevel->"BSL-1",
@@ -2532,7 +2689,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* create maintenance model calibrate microscope *)
 			maintModelPacket=<|
 				Object->CreateID[Model[Maintenance,CalibrateMicroscope]],
-				Name->"Fake Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID,
 				Replace[Authors]->Link[$PersonID],
 				Replace[Targets]->Link[invertedModel,MaintenanceFrequency,1],
 				CalibrateCondenserHeight->True,
@@ -2545,7 +2702,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* create maintenance calibrate microscope *)
 			maintObjectPacket=<|
 				Object->CreateID[Object[Maintenance,CalibrateMicroscope]],
-				Name->"Fake Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID,
+				Name->"Test Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID,
 				Model->Link[Lookup[maintModelPacket,Object],Objects],
 				Target->Link[invertedObject],
 				Status->Completed,
@@ -2569,7 +2726,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				CurrentMicroscopeCalibration->{Today,Link[Lookup[maintObjectPacket,Object]],Link[Lookup[maintModelPacket,Object]]}
 			|>;
 
-			(* set up fake containers for our samples *)
+			(* set up test containers for our samples *)
 			containerPackets=UploadSample[
 				{
 					(*1*)Model[Container,Plate,"id:L8kPEjno5XoE"],(* 96-well clear bottom *)
@@ -2614,18 +2771,18 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 					(*12*)Available
 				},
 				Name->{
-					(*1*)"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*2*)"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*3*)"Fake plate 3 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*4*)"Fake plate 4 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*5*)"Fake 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*6*)"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*7*)"Fake plate 5 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*8*)"Fake plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*9*)"Fake microscope slide for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*10*)"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*11*)"Fake 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*10*)"Fake plate 7 for "<>funcStringName<>" tests"<> $SessionUUID
+					(*1*)"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*2*)"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*3*)"Test plate 3 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*4*)"Test plate 4 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*5*)"Test 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*6*)"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*7*)"Test plate 5 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*8*)"Test plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*9*)"Test microscope slide for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*10*)"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*11*)"Test 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*10*)"Test plate 7 for "<>funcStringName<>" tests"<> $SessionUUID
 				},
 				FastTrack->True,
 				Upload->False
@@ -2639,10 +2796,10 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				cellIdentityModelPacket4
 			}=UploadMammalianCell[
 				{
-					"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID,
-					"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID,
-					"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
-					"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID
+					"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID,
+					"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID,
+					"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
+					"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID
 				},
 				(*CellType->Adherent,*)
 				Morphology->Epithelial,
@@ -2679,19 +2836,19 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* create default sample models *)
 			{sampleModel1,sampleModel2,sampleModel3,sampleModel4,sampleModel5,sampleModel6}=UploadSampleModel[
 				{
-					(*1*)"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*2*)"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*3*)"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*4*)"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*5*)"Fake mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*6*)"Fake trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID
+					(*1*)"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*2*)"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*3*)"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*4*)"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*5*)"Test mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*6*)"Test trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID
 				},
 				Composition->{
-					(*1*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID]}},
-					(*2*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID]}},
-					(*3*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID]}},
-					(*4*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID]}},
-					(*5*){{98.8 VolumePercent,Model[Cell,Mammalian,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID]},{0.2 VolumePercent,Model[Molecule,"id:qdkmxzqabxnV"]}},(* with 0.2% trypan blue *)
+					(*1*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID]}},
+					(*2*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID]}},
+					(*3*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID]}},
+					(*4*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID]}},
+					(*5*){{98.8 VolumePercent,Model[Cell,Mammalian,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID]},{0.2 VolumePercent,Model[Molecule,"id:qdkmxzqabxnV"]}},(* with 0.2% trypan blue *)
 					(*6*){{100 VolumePercent,Model[Molecule,"id:vXl9j57PmP5D"]},{10 Micromolar,Model[Molecule,"id:qdkmxzqabxnV"]}} (* with trypan blue *)
 
 				},
@@ -2712,7 +2869,7 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 				Living -> {True,True,True,True,True,False}
 			];
 
-			(* set up fake samples to test *)
+			(* set up test samples to test *)
 			{
 				(*1*)sample1,
 				(*2*)sample2,
@@ -2758,26 +2915,26 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 					(*20*)sampleModel6
 				},
 				{
-					(*1*){"A1",Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*2*){"B1",Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*3*){"C1",Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*4*){"D1",Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*5*){"A2",Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*6*){"B2",Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*7*){"C2",Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*8*){"D2",Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*9*){"A1",Object[Container,Plate,"Fake plate 3 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*10*){"A1",Object[Container,Plate,"Fake plate 4 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*11*){"A1",Object[Container,Vessel,"Fake 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*12*){"A1",Object[Container,Hemocytometer,"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*13*){"A2",Object[Container,Hemocytometer,"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*14*){"A1",Object[Container,Plate,"Fake plate 5 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*15*){"A1",Object[Container,Plate,"Fake plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*16*){"A1",Object[Container,MicroscopeSlide,"Fake microscope slide for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*17*){"A1",Object[Container,Plate,"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*18*){"A2",Object[Container,Plate,"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*19*){"A1",Object[Container,Vessel,"Fake 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID]},
-					(*20*){"A1",Object[Container,Plate,"Fake plate 7 for "<>funcStringName<>" tests"<> $SessionUUID]}
+					(*1*){"A1",Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*2*){"B1",Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*3*){"C1",Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*4*){"D1",Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*5*){"A2",Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*6*){"B2",Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*7*){"C2",Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*8*){"D2",Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*9*){"A1",Object[Container,Plate,"Test plate 3 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*10*){"A1",Object[Container,Plate,"Test plate 4 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*11*){"A1",Object[Container,Vessel,"Test 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*12*){"A1",Object[Container,Hemocytometer,"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*13*){"A2",Object[Container,Hemocytometer,"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*14*){"A1",Object[Container,Plate,"Test plate 5 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*15*){"A1",Object[Container,Plate,"Test plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*16*){"A1",Object[Container,MicroscopeSlide,"Test microscope slide for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*17*){"A1",Object[Container,Plate,"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*18*){"A2",Object[Container,Plate,"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*19*){"A1",Object[Container,Vessel,"Test 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID]},
+					(*20*){"A1",Object[Container,Plate,"Test plate 7 for "<>funcStringName<>" tests"<> $SessionUUID]}
 				},
 				InitialAmount->{
 					(*1*)200 Microliter,
@@ -2802,26 +2959,26 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 					(*20*)200 Microliter
 				},
 				Name->{
-					(*1*)"Fake cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*2*)"Fake cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*3*)"Fake cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*4*)"Fake cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*5*)"Fake cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*6*)"Fake cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*7*)"Fake cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*8*)"Fake cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*1*)"Test cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*2*)"Test cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*3*)"Test cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*4*)"Test cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*5*)"Test cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*6*)"Test cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*7*)"Test cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*8*)"Test cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*9*)"Discarded sample for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*10*)"Containerless sample for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*11*)"Sample with incompatible container for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*12*)"Hemocytometer sample 1 for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*13*)"Hemocytometer sample 2 for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*14*)"Fake cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID,
+					(*14*)"Test cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*15*)"Sample with opaque container for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*16*)"Microscope slide sample 1 for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*17*)"Yeast sample for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*18*)"Bacteria sample for "<>funcStringName<>" tests"<> $SessionUUID,
 					(*19*)"Sample in 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID,
-					(*20*)"Fake cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID
+					(*20*)"Test cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID
 				},
 				SampleHandling->{
 					(*1*)Liquid,
@@ -2873,23 +3030,23 @@ setUpImageCellsTestObjects[funcStringName_String]:=Module[{},
 			(* make lists of samples/containers *)
 			sampleList={sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11,sample12,sample13,sample14,sample15,sample16,sample17,sample18,sample19,sample20};
 			containerList={
-				Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Vessel,"Fake 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Hemocytometer,"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Microscope,"Fake microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Vessel,"Fake 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
-				Object[Container,Plate,"Fake plate 7 for "<>funcStringName<>" tests"<> $SessionUUID]
+				Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Vessel,"Test 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Hemocytometer,"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Microscope,"Test microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Vessel,"Test 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Container,Plate,"Test plate 7 for "<>funcStringName<>" tests"<> $SessionUUID]
 			};
 
 			(*Generate a test protocol for the template test*)
 			templateTestProtocol=ExperimentImageCells[
-				Object[Sample,"Fake cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
 				Name->funcStringName<>" template test protocol"<> $SessionUUID,
 				Instrument->instModel,
 				ObjectiveMagnification->20
@@ -2932,51 +3089,51 @@ tearDownImageCellsTestObjects[funcStringName_String]:=Module[{allObjects,existin
 		Flatten[{
 			$CreatedObjects,
 
-			(*fake bench for creating containers*)
-			Object[Container,Bench,"Fake bench for "<>funcStringName<>" tests"<> $SessionUUID],
+			(*test bench for creating containers*)
+			Object[Container,Bench,"Test bench for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(*test containers*)
-			Object[Container,Plate,"Fake plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate 7 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Vessel,"Fake 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Hemocytometer,"Fake Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Plate,"Fake plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,MicroscopeSlide,"Fake microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Container,Vessel,"Fake 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 2 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 3 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 4 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 5 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 6 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate 7 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Vessel,"Test 2mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Hemocytometer,"Test Hemocytometer for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Plate,"Test plate with opaque well for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,MicroscopeSlide,"Test microscope slide for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Container,Vessel,"Test 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(*identity models*)
-			Model[Molecule,Protein,"Fake GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Molecule,Protein,"Fake dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Molecule,Protein,"Fake iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Cell,Mammalian,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Cell,Mammalian,"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Cell,Mammalian,"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Molecule,Protein,"Test GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Molecule,Protein,"Test dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Molecule,Protein,"Test iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Cell,Mammalian,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Cell,Mammalian,"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Cell,Mammalian,"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(*sample models*)
-			Model[Sample,"Fake mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Sample,"Fake mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Sample,"Fake mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Sample,"Fake mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Sample,"Fake mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Sample,"Fake trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test mammalian cell for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test mammalian cell with GFP for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test mammalian cell with dsRed for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test mammalian cell with GFP/dsRed/iRFP670 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test mammalian cell with Trypan Blue for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Sample,"Test trypan blue solution for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(*test samples*)
-			Object[Sample,"Fake cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Sample,"Fake cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 1 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 2 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 3 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 4 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 5 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 6 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 7 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 8 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 9 for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Sample,"Test cell sample 10 for "<>funcStringName<>" tests"<> $SessionUUID],
 			Object[Sample,"Discarded sample for "<>funcStringName<>" tests"<> $SessionUUID],
 			Object[Sample,"Containerless sample for "<>funcStringName<>" tests"<> $SessionUUID],
 			Object[Sample,"Sample with incompatible container for "<>funcStringName<>" tests"<> $SessionUUID],
@@ -2989,18 +3146,18 @@ tearDownImageCellsTestObjects[funcStringName_String]:=Module[{allObjects,existin
 			Object[Sample,"Sample in 50mL tube for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(* objective *)
-			Model[Part,Objective,"Fake 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Part,Objective,"Fake 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Part,Objective,"Fake 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Part,Objective,"Fake 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Part,Objective,"Test 4x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Part,Objective,"Test 10x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Part,Objective,"Test 20x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Part,Objective,"Test 60x Objective Model for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(* Instrument *)
-			Model[Instrument,Microscope,"Fake High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Instrument,Microscope,"Fake High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Instrument,Microscope,"Fake Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Instrument,Microscope,"Fake Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID],
-			Model[Maintenance,CalibrateMicroscope,"Fake Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
-			Object[Maintenance,CalibrateMicroscope,"Fake Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Instrument,Microscope,"Test High Content Imager Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Instrument,Microscope,"Test High Content Imager Object for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Instrument,Microscope,"Test Inverted Microscope Model for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Instrument,Microscope,"Test Inverted Microscope Object for "<>funcStringName<>" tests"<> $SessionUUID],
+			Model[Maintenance,CalibrateMicroscope,"Test Model Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
+			Object[Maintenance,CalibrateMicroscope,"Test Object Maintenance Microscope Calibration for "<>funcStringName<>" tests"<> $SessionUUID],
 
 			(* protocol *)
 			Object[Protocol,ImageCells,funcStringName<>" template test protocol"<> $SessionUUID],
@@ -3031,13 +3188,13 @@ DefineTests[ImageCells,
 	{
 		Example[{Basic, "Make ImageCell Unit operations with a single sample:"},
 			ImageCells[
-				Sample -> Object[Sample, "Fake cell sample 1 for ImageCells tests"<> $SessionUUID]
+				Sample -> Object[Sample, "Test cell sample 1 for ImageCells tests"<> $SessionUUID]
 			],
 			_ImageCells
 		],
 		Example[{Basic,"Make imageCell unit operations with sample labeling:"},
 			ImageCells[
-				Sample -> Object[Sample, "Fake cell sample 1 for ImageCells tests"<> $SessionUUID],
+				Sample -> Object[Sample, "Test cell sample 1 for ImageCells tests"<> $SessionUUID],
 				SampleLabel -> "Test sample"
 			],
 			_ImageCells
@@ -3045,17 +3202,17 @@ DefineTests[ImageCells,
 		Example[{Basic,"Make ImageCell unit operations with multiple samples:"},
 			ImageCells[
 				Sample -> {
-					Object[Sample, "Fake cell sample 1 for ImageCells tests"<> $SessionUUID],
-					Object[Sample, "Fake cell sample 2 for ImageCells tests"<> $SessionUUID]
+					Object[Sample, "Test cell sample 1 for ImageCells tests"<> $SessionUUID],
+					Object[Sample, "Test cell sample 2 for ImageCells tests"<> $SessionUUID]
 				},
 				SampleLabel -> "Test sample"
 			],
 			_ImageCells
 		],
 		Test["Generate ManualCellPreparation protocol using ImageCells unit operations:",
-			Experiment[{
+			ExperimentManualCellPreparation[{
 				ImageCells[
-					Sample -> Object[Sample, "Fake cell sample 1 for ImageCells tests"<> $SessionUUID],
+					Sample -> Object[Sample, "Test cell sample 1 for ImageCells tests"<> $SessionUUID],
 					SampleLabel -> "Test sample",
 					SampleContainerLabel->"Test container"
 				],

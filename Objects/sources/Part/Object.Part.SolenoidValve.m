@@ -20,7 +20,7 @@ DefineObjectType[Object[Part, SolenoidValve],
         Format -> Single,
         Class -> Date,
         Pattern :> _?DateObjectQ,
-        Description -> "Date the part was last serviced while in use in teh current instrument.",
+        Description -> "Date the part was last serviced while in use in the current instrument.",
         Category -> "Organizational Information"
       },
       ServiceLog -> {

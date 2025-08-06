@@ -102,10 +102,7 @@ DefineUsage[EmeraldFrameTicks,
 			"ErrorBar",
 			"AxisLines"
 		},
-		Author -> {
-			"Frezza",
-			"brad"
-		}
+		Author -> {"xu.yi", "Frezza", "brad"}
 	}];
 
 
@@ -182,9 +179,7 @@ DefineUsage[fillingFade,
 			"ColorQ",
 			"ColorFade"
 		},
-		Author -> {
-			"frezza"
-		}
+		Author -> {"xu.yi", "frezza"}
 	}];
 
 
@@ -208,9 +203,7 @@ DefineUsage[fractionEpilog,
 			"PeakEpilog",
 			"secondYEpilog"
 		},
-		Author -> {
-			"frezza"
-		}
+		Author -> {"xu.yi", "frezza"}
 	}];
 
 
@@ -265,9 +258,7 @@ DefineUsage[secondYEpilog,
 			"PeakEpilog",
 			"fractionEpilog"
 		},
-		Author -> {
-			"frezza"
-		}
+		Author -> {"xu.yi", "frezza"}
 	}];
 
 
@@ -376,7 +367,7 @@ DefineUsage[Zoomable,
 			"Unzoomable"
 		},
 		Author -> {
-			"SciComp",
+			"scicomp",
 			"robert"
 		}
 	}];

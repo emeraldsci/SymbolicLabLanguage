@@ -89,7 +89,16 @@ DefineOptions[ExperimentBioconjugation,
       Widget -> Adder[
          Adder[
           Adder[
-            Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample], Object[Sample]}]]
+            Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials"
+                }
+              }
+            ]
           ]
         ]
       ],
@@ -102,7 +111,16 @@ DefineOptions[ExperimentBioconjugation,
         Default -> Automatic,
         AllowNull -> True,
         Widget -> Alternatives[
-          Widget[Type -> Object, Pattern :> ObjectP[{Object[Container], Model[Container]}]],
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Object[Container], Model[Container]}],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers"
+              }
+            }
+          ],
           {
             "Index" -> Widget[
               Type -> Number,
@@ -111,7 +129,13 @@ DefineOptions[ExperimentBioconjugation,
             "Container" -> Widget[
               Type -> Object,
               Pattern :> ObjectP[{Model[Container], Object[Container]}],
-              ObjectTypes -> {Model[Container], Object[Container]}
+              ObjectTypes -> {Model[Container], Object[Container]},
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Containers"
+                }
+              }
             ]
           }
         ],
@@ -184,7 +208,19 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "Automatically set to 1x PBS if PreWash is True. Otherwise, set to Null.",
         AllowNull -> True,
         Category -> "PreWash",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents",
+              "Buffers",
+              "Biological Buffers"
+            }
+          }
+        ],
         NestedIndexMatching -> True
       },
       {
@@ -261,18 +297,52 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PreWashInstrument,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock],
-          Model[Instrument, PeristalticPump],
-          Object[Instrument, PeristalticPump],
-          Model[Instrument, VacuumPump],
-          Object[Instrument, VacuumPump],
-          Model[Instrument, Centrifuge],
-          Object[Instrument, Centrifuge],
-          Model[Instrument, SyringePump],
-          Object[Instrument, SyringePump]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock],
+            Model[Instrument, PeristalticPump],
+            Object[Instrument, PeristalticPump],
+            Model[Instrument, VacuumPump],
+            Object[Instrument, VacuumPump],
+            Model[Instrument, Centrifuge],
+            Object[Instrument, Centrifuge],
+            Model[Instrument, SyringePump],
+            Object[Instrument, SyringePump]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Pumps",
+              "Vacuum Pumps"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Centrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Microcentrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Robotic Compatible Microcentrifuges"
+            }
+          }
+        ],
         Description -> "The instrument that should be used to perform the PreWash.",
         ResolutionDescription -> "Will automatically resolve to an instrument appropriate for the PreWashMethod.",
         Category -> "PreWash",
@@ -282,11 +352,26 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PreWashFilter,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Plate, Filter], Object[Container, Plate, Filter],
-          Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
-          Model[Item, Filter], Object[Item, Filter]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Plate, Filter], Object[Container, Plate, Filter],
+            Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
+            Model[Item, Filter], Object[Item, Filter]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Filters"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Labware",
+              "Filters"
+            }
+          }
+        ],
         Description -> "The filter that should be used to remove impurities from the sample.",
         ResolutionDescription -> "Automatically set to a filter appropriate for the filtration type and instrument if PreWashMethod is Filter.",
         Category -> "PreWash",
@@ -305,7 +390,13 @@ DefineOptions[ExperimentBioconjugation,
             Type -> Object,
             Pattern :> ObjectP[Model[StorageCondition]],
             PreparedSample -> False,
-            PreparedContainer -> False
+            PreparedContainer -> False,
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Storage Conditions"
+              }
+            }
           ]
         ],
         Description -> "The conditions under which any filters used for PreWash should be stored after the wash is completed.",
@@ -366,10 +457,20 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PreWashFiltrationSyringe,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Syringe],
-          Object[Container, Syringe]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Syringe],
+            Object[Container, Syringe]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Syringes"
+            }
+          }
+        ],
         Description -> "The syringe used to force that sample through a filter.",
         ResolutionDescription -> "Resolves to an syringe appropriate to the volume of sample being filtered.",
         Category -> "PreWash",
@@ -388,12 +489,22 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PreWashFilterHousing,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterHousing],
-          Object[Instrument, FilterHousing],
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterHousing],
+            Object[Instrument, FilterHousing],
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            }
+          }
+        ],
         Description -> "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane, or a filter plate for vacuum filtration..",
         ResolutionDescription -> "Resolves to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used, or a filter plate for vacuum filtration..",
         Category -> "PreWash",
@@ -442,7 +553,15 @@ DefineOptions[ExperimentBioconjugation,
           Pattern:>ObjectP[{
             Model[Container, Rack],
             Object[Container, Rack]
-          }]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Magnetic Bead Separation",
+              "Magnetization Racks"
+            }
+          }
         ],
         Description->"The magnetized rack that the source/intermediate container will be placed in during the PreWash.",
         Category->"PreWash",
@@ -488,7 +607,17 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "Automatically set to 1xPBS if PreWashResuspension is True. Otherwise, set to Null.",
         AllowNull -> True,
         Category -> "PreWash",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
+        ],
         NestedIndexMatching -> True
       },
       {
@@ -654,7 +783,14 @@ DefineOptions[ExperimentBioconjugation,
         Category -> "Activation",
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
         ],
         NestedIndexMatching -> True
       },
@@ -674,7 +810,16 @@ DefineOptions[ExperimentBioconjugation,
         Default -> Null,
         AllowNull -> True,
         Widget -> Alternatives[
-          Widget[Type -> Object, Pattern :> ObjectP[{Object[Container], Model[Container]}]],
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Object[Container], Model[Container]}],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers"
+              }
+            }
+          ],
           {
             "Index" -> Widget[
               Type -> Number,
@@ -683,7 +828,13 @@ DefineOptions[ExperimentBioconjugation,
             "Container" -> Widget[
               Type -> Object,
               Pattern :> ObjectP[{Model[Container], Object[Container]}],
-              ObjectTypes -> {Model[Container], Object[Container]}
+              ObjectTypes -> {Model[Container], Object[Container]},
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Containers"
+                }
+              }
             ]
           }
         ],
@@ -824,7 +975,19 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "Automatically set to 1X PBS if PostActivationWash is True. Otherwise, set to Null.",
         AllowNull -> True,
         Category -> "Activation",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents",
+              "Buffers",
+              "Biological Buffers"
+            }
+          }
+        ],
         NestedIndexMatching -> True
       },
       {
@@ -901,18 +1064,52 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostActivationWashInstrument,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock],
-          Model[Instrument, PeristalticPump],
-          Object[Instrument, PeristalticPump],
-          Model[Instrument, VacuumPump],
-          Object[Instrument, VacuumPump],
-          Model[Instrument, Centrifuge],
-          Object[Instrument, Centrifuge],
-          Model[Instrument, SyringePump],
-          Object[Instrument, SyringePump]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock],
+            Model[Instrument, PeristalticPump],
+            Object[Instrument, PeristalticPump],
+            Model[Instrument, VacuumPump],
+            Object[Instrument, VacuumPump],
+            Model[Instrument, Centrifuge],
+            Object[Instrument, Centrifuge],
+            Model[Instrument, SyringePump],
+            Object[Instrument, SyringePump]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Pumps",
+              "Vacuum Pumps"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Centrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Microcentrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Robotic Compatible Microcentrifuges"
+            }
+          }
+        ],
         Description -> "The instrument that should be used to perform the PostActivationWash.",
         ResolutionDescription -> "Will automatically resolve to an instrument appropriate for the PostActivationWashMethod.",
         Category -> "Activation",
@@ -922,11 +1119,25 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostActivationWashFilter,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Plate, Filter], Object[Container, Plate, Filter],
-          Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
-          Model[Item, Filter], Object[Item, Filter]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Plate, Filter], Object[Container, Plate, Filter],
+            Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
+            Model[Item, Filter], Object[Item, Filter]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Filters"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Labware",
+              "Filters"
+            }
+          }],
         Description -> "The filter that should be used to remove impurities from the sample.",
         ResolutionDescription -> "Automatically set to a filter appropriate for the filtration type and instrument if PostActivationWashType is Filter.",
         Category -> "Activation",
@@ -945,7 +1156,13 @@ DefineOptions[ExperimentBioconjugation,
             Type -> Object,
             Pattern :> ObjectP[Model[StorageCondition]],
             PreparedSample -> False,
-            PreparedContainer -> False
+            PreparedContainer -> False,
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Storage Conditions"
+              }
+            }
           ]
         ],
         Description -> "The conditions under which any filters used for PostActivationWash should be stored after the wash is completed.",
@@ -1006,10 +1223,20 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostActivationWashFiltrationSyringe,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Syringe],
-          Object[Container, Syringe]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Syringe],
+            Object[Container, Syringe]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Syringes"
+            }
+          }
+        ],
         Description -> "The syringe used to force that sample through a filter.",
         ResolutionDescription -> "Resolves to an syringe appropriate to the volume of sample being filtered.",
         Category -> "Activation",
@@ -1028,12 +1255,22 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostActivationWashFilterHousing,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterHousing],
-          Object[Instrument, FilterHousing],
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterHousing],
+            Object[Instrument, FilterHousing],
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            }
+          }
+        ],
         Description -> "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane, or a filter plate for vacuum filtration..",
         ResolutionDescription -> "Resolves to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used, or a filter plate for vacuum filtration..",
         Category -> "Activation",
@@ -1082,7 +1319,15 @@ DefineOptions[ExperimentBioconjugation,
           Pattern:>ObjectP[{
             Model[Container, Rack],
             Object[Container, Rack]
-          }]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Magnetic Bead Separation",
+              "Magnetization Racks"
+            }
+          }
         ],
         Description->"The magnetized rack that the source/intermediate container will be placed in during the PostActivationWash.",
         Category->"Activation",
@@ -1128,7 +1373,17 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "Automatically set to 1X PBS if PostActivationWash is True. Otherwise, set to Null.",
         AllowNull -> True,
         Category -> "Activation",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
+        ],
         NestedIndexMatching -> True
       },
       {
@@ -1251,7 +1506,16 @@ DefineOptions[ExperimentBioconjugation,
         Description -> "Indicates the reagent used to dilute or resuspend the conjugate sample during the conjugation reaction.",
         AllowNull -> True,
         Category -> "Conjugation",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]]
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }]
       },
       {
         OptionName -> ConjugationReactionBufferVolume,
@@ -1268,7 +1532,19 @@ DefineOptions[ExperimentBioconjugation,
         Description -> "Indicates the concentrated reagent used to dilute or resuspend the conjugate sample during the conjugation reaction.",
         AllowNull -> True,
         Category -> "Conjugation",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]]
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents",
+              "Buffers",
+              "Biological Buffers"
+            }
+          }
+        ]
       },
       {
         OptionName -> ConcentratedConjugationReactionBufferDilutionFactor,
@@ -1286,7 +1562,17 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "If ConcentratedConjugationReactionBuffer is specified, automatically resolves to 1x PBS.",
         AllowNull -> True,
         Category -> "Conjugation",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]]
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
+        ]
       },
       {
         OptionName -> ConjugationDiluentVolume,
@@ -1396,10 +1682,26 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PredrainInstrument,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, Centrifuge],
-          Object[Instrument, Centrifuge]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, Centrifuge],
+            Object[Instrument, Centrifuge]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Centrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Microcentrifuges"
+            }
+          }],
         Description -> "The instrument that should be used to perform the PredrainReactionReagents.",
         ResolutionDescription -> "Will automatically resolve to an instrument appropriate for the PredrainMethod.",
         Category -> "Quenching"
@@ -1447,7 +1749,15 @@ DefineOptions[ExperimentBioconjugation,
           Pattern:>ObjectP[{
             Model[Container, Rack],
             Object[Container, Rack]
-          }]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Magnetic Bead Separation",
+              "Magnetization Racks"
+            }
+          }
         ],
         Description->"The magnetized rack that the source/intermediate container will be placed in during the PredrainReactionMixture.",
         Category->"Quenching"
@@ -1593,7 +1903,17 @@ DefineOptions[ExperimentBioconjugation,
         Description -> "Indicates the reagent used to process the sample after the conjugation and quenching reactions are complete.",
         AllowNull -> True,
         Category -> "Post-Conjugation Workup",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]]
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
+        ]
       },
       {
         OptionName -> PostConjugationWorkupBufferVolume,
@@ -1680,18 +2000,52 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostConjugationWorkupInstrument,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock],
-          Model[Instrument, PeristalticPump],
-          Object[Instrument, PeristalticPump],
-          Model[Instrument, VacuumPump],
-          Object[Instrument, VacuumPump],
-          Model[Instrument, Centrifuge],
-          Object[Instrument, Centrifuge],
-          Model[Instrument, SyringePump],
-          Object[Instrument, SyringePump]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock],
+            Model[Instrument, PeristalticPump],
+            Object[Instrument, PeristalticPump],
+            Model[Instrument, VacuumPump],
+            Object[Instrument, VacuumPump],
+            Model[Instrument, Centrifuge],
+            Object[Instrument, Centrifuge],
+            Model[Instrument, SyringePump],
+            Object[Instrument, SyringePump]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Pumps",
+              "Vacuum Pumps"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Centrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Microcentrifuges"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Centrifugation",
+              "Robotic Compatible Microcentrifuges"
+            }
+          }
+        ],
         Description -> "The instrument that should be used to perform the PostConjugationWorkup.",
         ResolutionDescription -> "Will automatically resolve to an instrument appropriate for the PostConjugationWorkupMethod.",
         Category -> "Post-Conjugation Workup"
@@ -1700,11 +2054,26 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostConjugationFilter,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Plate, Filter], Object[Container, Plate, Filter],
-          Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
-          Model[Item, Filter], Object[Item, Filter]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Plate, Filter], Object[Container, Plate, Filter],
+            Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
+            Model[Item, Filter], Object[Item, Filter]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Filters"
+            },
+            {
+              Object[Catalog, "Root"],
+              "Labware",
+              "Filters"
+            }
+          }
+        ],
         Description -> "The filter that should be used to remove impurities from the sample.",
         ResolutionDescription -> "Will automatically resolve to a filter appropriate for the filtration type and instrument.",
         Category -> "Post-Conjugation Workup"
@@ -1722,7 +2091,13 @@ DefineOptions[ExperimentBioconjugation,
             Type -> Object,
             Pattern :> ObjectP[Model[StorageCondition]],
             PreparedSample -> False,
-            PreparedContainer -> False
+            PreparedContainer -> False,
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Storage Conditions"
+              }
+            }
           ]
         ],
         Description -> "The conditions under which any filters used by this experiment should be stored after the protocol is completed.",
@@ -1777,10 +2152,20 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostConjugationFiltrationSyringe,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Container, Syringe],
-          Object[Container, Syringe]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Container, Syringe],
+            Object[Container, Syringe]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers",
+              "Syringes"
+            }
+          }
+        ],
         Description -> "The syringe used to force that sample through a filter.",
         ResolutionDescription -> "Resolves to an syringe appropriate to the volume of sample being filtered.",
         Category -> "Post-Conjugation Workup"
@@ -1797,12 +2182,22 @@ DefineOptions[ExperimentBioconjugation,
         OptionName -> PostConjugationFilterHousing,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
-          Model[Instrument, FilterHousing],
-          Object[Instrument, FilterHousing],
-          Model[Instrument, FilterBlock],
-          Object[Instrument, FilterBlock]
-        }]],
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{
+            Model[Instrument, FilterHousing],
+            Object[Instrument, FilterHousing],
+            Model[Instrument, FilterBlock],
+            Object[Instrument, FilterBlock]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Instruments",
+              "Dead-End Filtering Devices"
+            }
+          }
+        ],
         Description -> "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane, or a filter plate for vacuum filtration.",
         ResolutionDescription -> "Resolves to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used, or a filter plate for vacuum filtration.",
         Category -> "Post-Conjugation Workup"
@@ -1857,7 +2252,15 @@ DefineOptions[ExperimentBioconjugation,
           Pattern:>ObjectP[{
             Model[Container, Rack],
             Object[Container, Rack]
-          }]
+          }],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Magnetic Bead Separation",
+              "Magnetization Racks"
+            }
+          }
         ],
         Description->"The magnetized rack that the source/intermediate container will be placed in during the PostConjugationWorkup.",
         Category->"Post-Conjugation Workup"
@@ -1878,7 +2281,17 @@ DefineOptions[ExperimentBioconjugation,
         ResolutionDescription -> "Automatically set to 1X PBS if PostConjugationResuspension is True. Otherwise, set to Null.",
         AllowNull -> True,
         Category -> "Post-Conjugation Workup",
-        Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]]
+        Widget -> Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Reagents"
+            }
+          }
+        ]
       },
       {
         OptionName -> PostConjugationResuspensionDiluentVolume,
@@ -1999,7 +2412,20 @@ DefineOptions[ExperimentBioconjugation,
     ],
     (*===Shared Options===*)
     SimulationOption,
-    FuntopiaSharedOptionsNestedIndexMatching,
+    ModifyOptions[
+      ModelInputOptions,
+      {
+        {
+          OptionName -> PreparedModelAmount,
+          NestedIndexMatching -> True
+        },
+        {
+          OptionName -> PreparedModelContainer,
+          NestedIndexMatching -> True
+        }
+      }
+    ],
+    NonBiologyFuntopiaSharedOptionsNestedIndexMatching,
     SubprotocolDescriptionOption,
     SamplesOutStorageOptions,
     MeasureWeightOption,
@@ -2064,19 +2490,19 @@ Warning::UnknownProductStoichiometry = "The following samples do not have define
 
 (* Overload for mixed input like {s1,{s2,s3}} -> We assume the first sample is going to be inside a pool and turn this into {{s1},{s2,s3}} *)
 
-ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]],myOptions:OptionsPattern[]]:=Module[
-  {listedContainers, emptyContainers, listedOptions, listedInputs,
+ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}],_String]]], myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]],myOptions:OptionsPattern[]]:=Module[
+  {
+    listedContainers, emptyContainers, listedOptions, listedInputs,
     outputSpecification, output, gatherTests, containerToSampleResult,
     containerToSampleOutput, containerToSampleTests, samples,
     sampleOptions, validSamplePreparationResult,
     mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-    samplePreparationCache, updatedCache, listedInputsNoTemporalLinks,
-    defineAssociations, definedContainerRules, sampleCache,labelContainerPrimitives, prepUnitOperations,
-    updatedSimulation, prepPrim, contentsPerDefinedContainerObject,
-    uniqueSampleTransfersPerDefinedContainer,
+    updatedCache, listedInputsNoTemporalLinks,
+    definedContainerRules,labelContainerPrimitives, prepUnitOperations,
+    updatedSimulation,
     totalSampleCountsPerDefinedContainerRules,
-    totalSampleCountsPerDefinedContainer, identityModels, sampleObjects,
-    identityModelExistQs},
+    totalSampleCountsPerDefinedContainer, identityModels
+  },
 
   (* Determine the requested return value from the function *)
   outputSpecification=Quiet[OptionValue[Output]];
@@ -2085,60 +2511,21 @@ ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[Obj
   (* Determine if we should keep a running list of tests *)
   gatherTests=MemberQ[output,Tests];
 
-  (* check if our identity models exist in the database *)
-  identityModelExistQs=DatabaseMemberQ[ToList[myNewIdentityModels]];
-
-  (*Return early if identity model does not exist *)
-  If[Not[And@@identityModelExistQs],
-    Message[Error::ObjectDoesNotExist,PickList[ToList[myNewIdentityModels],identityModelExistQs,False]];
-    Return[$Failed]
-  ];
-
-  (*--Check for empty containers--*)
-
-  (* put all containers specified as inputs into a list *)
-  listedContainers=Cases[Flatten@ToList[mySemiPooledInputs],ObjectP[Object[Container]]];
-
-  (* get container that doesn't have a content *)
-  emptyContainers=If[MatchQ[listedContainers,{}],
-    {},
-    PickList[listedContainers,Download[listedContainers,Contents],{}]
-  ];
-
-  (*Return early if empty containers*)
-  If[Length[emptyContainers]>0,
-    Message[Error::EmptyBioconjugationSampleContainer,emptyContainers];
-    Return[$Failed]
-  ];
-
   (* in the next step we will be wrapping a list around any single sample inputs except plates. in order to not pool all the samples in a Defined container that has more than one sample, we need to get the containers for the defined inputs and wrap a list only around ones that do not have more than one sample in them.*)
-  prepPrim = Lookup[ToList[myOptions],PreparatoryPrimitives];
-  defineAssociations = Cases[prepPrim, DefineP]/. Define -> Sequence;
-
   prepUnitOperations = Lookup[ToList[myOptions],PreparatoryUnitOperations];
   labelContainerPrimitives = If[MatchQ[prepUnitOperations, _List],
     Cases[prepUnitOperations, _LabelContainer],
     {}
   ];
 
-  definedContainerRules = Join[
-    If[MatchQ[defineAssociations,{}|Null],
-      {},
-      MapThread[#1->#2&,{Lookup[defineAssociations,Name],Lookup[defineAssociations,Container]}]
-    ],
-    If[MatchQ[labelContainerPrimitives,{}|Null],
-      {},
-      MapThread[#1->#2&,{Lookup[labelContainerPrimitives[[All,1]],Label],Lookup[labelContainerPrimitives[[All,1]],Container]}]
-    ]
+  definedContainerRules = If[MatchQ[labelContainerPrimitives,{}|Null],
+    {},
+    MapThread[#1->#2&,{Lookup[labelContainerPrimitives[[All,1]],Label],Lookup[labelContainerPrimitives[[All,1]],Container]}]
   ];
 
-  contentsPerDefinedContainerObject = Association@Thread[
+  totalSampleCountsPerDefinedContainerRules = Association@Thread[
     PickList[Keys[definedContainerRules],Values[definedContainerRules],ObjectP[Object[Container]]] -> Length/@Download[Cases[Values[definedContainerRules],ObjectP[Object[Container]]],Contents]
   ];
-
-  uniqueSampleTransfersPerDefinedContainer = Counts@DeleteDuplicates[Cases[Flatten[Lookup[Cases[prepPrim, _?Patterns`Private`transferQ] /. Transfer -> Sequence, Destination], 1], {_String, WellP}]][[All, 1]];
-
-  totalSampleCountsPerDefinedContainerRules = Normal@Merge[{contentsPerDefinedContainerObject,uniqueSampleTransfersPerDefinedContainer},Total];
 
   totalSampleCountsPerDefinedContainer = ToList[mySemiPooledInputs]/.totalSampleCountsPerDefinedContainerRules;
 
@@ -2167,14 +2554,31 @@ ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[Obj
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
   ];
 
   (* If we are given MissingDefineNames, InvalidInput, InvalidOption error messages, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
     (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
+  ];
+
+  (*--Check for empty containers--*)
+
+  (* put all containers specified as inputs into a list *)
+  listedContainers=Cases[Flatten@ToList[mySemiPooledInputs],ObjectP[Object[Container]]];
+
+  (* get container that doesn't have a content *)
+  emptyContainers=If[MatchQ[listedContainers,{}],
+    {},
+    PickList[listedContainers,Download[listedContainers,Contents,Simulation->updatedSimulation],{}](*This download seems unavoidable*)
+  ];
+
+  (*Return early if empty containers*)
+  If[Length[emptyContainers]>0,
+    Message[Error::EmptyBioconjugationSampleContainer,emptyContainers];
+    Return[$Failed]
   ];
 
   (* For each group, map containerToSampleOptions over each sample or simulated sample group to get the object samples from the contents of the container *)
@@ -2234,7 +2638,7 @@ ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[Obj
 
     (* take the samples from the mapped containerToSampleOptions, and the options from expandedOptions *)
     (* this way we'll end up index matching each grouping to an option *)
-    identityModels = Flatten@Download[myNewIdentityModels,Object];
+    identityModels = Flatten@ToList[myNewIdentityModels];
 
     ExperimentBioconjugationCore[samples,identityModels,ReplaceRule[sampleOptions, {Cache -> updatedCache, Simulation->updatedSimulation}]]
   ]
@@ -2242,11 +2646,11 @@ ExperimentBioconjugation[mySemiPooledInputs:ListableP[ListableP[Alternatives[Obj
 
 (*--- SAMPLE OVERLOAD ---*)
 (* This is the core function taking only clean pooled lists of samples in the form -> {{s1},{s2},{s3,s4},{s5,s6,s7}} *)
-ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]],myOptions:OptionsPattern[ExperimentBioconjugation]]:=Module[
-  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,mySamplesWithPreparedSamples,updatedSimulation,safeOpsNamed,
+ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myUnsanitizedNewIdentityModels:ListableP[ObjectP[IdentityModelTypes]],myOptions:OptionsPattern[ExperimentBioconjugation]]:=Module[
+  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,mySamplesWithPreparedSamples,mySamplesWithPreparedSamplesAndNewIdentityModels,myNewIdentityModels,updatedSimulation,safeOpsNamed,
     myOptionsWithPreparedSamples,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,
     templateTests,inheritedOptions,expandedSafeOps,allPackets,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,
-    collapsedResolvedOptions,protocolObject,sampleManipulationContainerModels,sampleManipulationSampleModels,upload,confirm,
+    collapsedResolvedOptions,protocolObject,sampleManipulationContainerModels,sampleManipulationSampleModels,upload,confirm,canaryBranch,
     fastTrack,parentProtocol,cache,preferredContainers,resourcePacketTests,resourcePackets,listedPooledSamples,preferredActivationReagents,
     preferredWashReagents,preferredConjugationReagents,preferredQuenchReagents,semiExpandedSafeOps,aliquotContainerOptions,
     expandedAliquotContainerOptions,
@@ -2275,7 +2679,7 @@ ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]].
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
@@ -2292,13 +2696,7 @@ ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]].
   ];
 
   (* Call sanitize-inputs to clean any named objects *)
-  {mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentBioconjugation,{mySamplesWithPreparedSamples,myNewIdentityModels},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentBioconjugation,{mySamplesWithPreparedSamples,myNewIdentityModels},myOptionsWithPreparedSamples],{}}
-  ];
+  {mySamplesWithPreparedSamplesAndNewIdentityModels,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[{mySamplesWithPreparedSamplesNamed,myUnsanitizedNewIdentityModels},safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -2309,6 +2707,14 @@ ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]].
       Preview->Null,
       Simulation -> Null
     }]
+  ];
+
+  {mySamplesWithPreparedSamples,myNewIdentityModels} = mySamplesWithPreparedSamplesAndNewIdentityModels;
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentBioconjugation,{mySamplesWithPreparedSamples,myNewIdentityModels},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentBioconjugation,{mySamplesWithPreparedSamples,myNewIdentityModels},myOptionsWithPreparedSamples],{}}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -2343,13 +2749,13 @@ ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]].
   inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
   (* get assorted hidden options *)
-  {upload,confirm,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+  {upload,confirm,canaryBranch,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
   (* Expand index-matching options *)
-  (* For some very odd reason the helper function does not properly expand the DestinationWell and AliquotContainer options (does not indexmatch to samples just to pools). This leads to downstream issues in resolvePooledAliquotOptions.*)
+  (* For some very odd reason the helper function does not properly expand the DestinationWell, AliquotContainer and AliquotSampleLabel options (does not indexmatch to samples just to pools). This leads to downstream issues in resolvePooledAliquotOptions.*)
   (* We must therefore expand here and check that the options are properly indexmatched if specified. *)
   semiExpandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentBioconjugation,{mySamplesWithPreparedSamples, myNewIdentityModels},inheritedOptions]];
-  aliquotContainerOptions = FilterRules[semiExpandedSafeOps,{DestinationWell, AliquotContainer}];
+  aliquotContainerOptions = FilterRules[semiExpandedSafeOps,{DestinationWell, AliquotContainer,AliquotSampleLabel}];
 
   Error::NestedIndexMatchingAliquotOption = "The option `1` is not index-matched to the input samples. Please ensure that each input sample within the pool has a corresponding value for the option `1` and the option format matches the pooled sample format.";
   expandedAliquotContainerOptions = Module[{expandedAutomaticOptions, expandedNullOptions, specifiedIndexMatchError},
@@ -2542,6 +2948,7 @@ ExperimentBioconjugationCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]].
       resourcePackets,
       Upload->upload,
       Confirm->confirm,
+      CanaryBranch->canaryBranch,
       ParentProtocol->parentProtocol,
       Priority->Lookup[inheritedOptions,Priority],
       StartDate->Lookup[inheritedOptions,StartDate],
@@ -2711,7 +3118,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
   flatSamplePrepOptions = Thread[Keys[samplePrepOptions]->flatSamplePrepOptionValues];
 
   (* Resolve our sample prep options *)
-  (* We want the sample prep to happen on each sample not the conjugation pools. We are not using aliquoting sample prep to pool samples. So we need to give resoleSamplePrepOptions a flat list of options/smaples.*)
+  (* We want the sample prep to happen on each sample not the conjugation pools. We are not using aliquoting sample prep to pool samples. So we need to give resoleSamplePrepOptions a flat list of options/samples.*)
   {{flatSimulatedSamples,flatResolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
     resolveSamplePrepOptionsNew[ExperimentBioconjugation,Flatten@myPooledSamples,flatSamplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
     {resolveSamplePrepOptionsNew[ExperimentBioconjugation,Flatten@myPooledSamples,flatSamplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
@@ -4767,7 +5174,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
             (*If Activate is True set defaults as below*)
             {0.5*Milliliter,1*Milligram/Milliliter,1*Milligram/Milliliter,15*Minute,Ambient,True},
 
-            (*Otherise set all to Null*)
+            (*Otherwise set all to Null*)
             ConstantArray[Null,6]
           ];
 
@@ -4804,16 +5211,18 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
           (*Then find the concentration - if there is more than one analyte just pick the first analyte with a non-Null concentration*)
           (*If the sample has been prewashed and resuspended the use the resuspension volume to calculate an approx concentration after prewashing*)
           samplePattern = If[MatchQ[Flatten@sampleAnalytes,{}], ObjectP[{Model[Molecule,Protein],Model[Molecule,Oligomer],Model[Resin]}], ObjectP[Flatten@sampleAnalytes]];
-          {sampleAnalyteConcentration,sampleAnalyteObject} = If[MatchQ[resolvedPreWashResuspension,True],
-           {
-             First[Flatten[FirstCase[Lookup[samplePacket,Composition], {Except[Null], samplePattern},{}]]/.{}->{{},{}}]*Lookup[samplePacket,Volume]/resolvedPreWashResuspensionDiluentVolume,
-             Last[Flatten[FirstCase[Lookup[samplePacket,Composition], {Except[Null], samplePattern},{}]]/.{}->{{},{}}]
-           },
-            Flatten[FirstCase[Lookup[samplePacket,Composition], {Except[Null], samplePattern},{}]]/.{}->{{},{}}
+          {sampleAnalyteConcentration,sampleAnalyteObject} = Module[{analyteCompositionComponent, analyteConcentration, analyteIdentity},
+            analyteCompositionComponent = Flatten[FirstCase[Lookup[samplePacket, Composition], {Except[Null], samplePattern, Null|_?DateObjectQ},{}]]/.{}->{{},{},{}};
+            (* Remove the last date element *)
+            {analyteConcentration, analyteIdentity} = Most[analyteCompositionComponent];
+            If[MatchQ[resolvedPreWashResuspension, True],
+              {analyteConcentration*Lookup[samplePacket,Volume]/resolvedPreWashResuspensionDiluentVolume, Download[analyteIdentity, Object]},
+              {analyteConcentration, Download[analyteIdentity, Object]}
+            ]
           ];
 
           activationReagentPattern = If[MatchQ[Flatten@activationReagentAnalytes,{}], ObjectP[], ObjectP[Flatten@activationReagentAnalytes]];
-          {activationReagentAnalyteConcentration,activationReagentAnalyteObject} = If[MatchQ[resolvedActivationReagent,ObjectP[]],Flatten@FirstCase[Flatten[Lookup[activationReagentPacket,Composition],1], {Except[Null], activationReagentPattern},{}]/.{}->{{},{}}, {{},{}}];
+          {activationReagentAnalyteConcentration,activationReagentAnalyteObject} = If[MatchQ[resolvedActivationReagent,ObjectP[]],Flatten@FirstCase[Flatten[Lookup[activationReagentPacket,Composition],1], {Except[Null], activationReagentPattern, Null|_?DateObjectQ},{}]/.{}->{{},{}}, {{},{}}];
 
           (*find the desired sample volume*)
           convertedSampleConcentration = Switch[{MassConcentrationQ[resolvedTargetActivationSampleConcentration],MassConcentrationQ[sampleAnalyteConcentration],VolumePercentQ[sampleAnalyteConcentration],MassPercentQ[sampleAnalyteConcentration]},
@@ -5300,12 +5709,13 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
   (* If there are no manipulations to simulate return the simulated cache*)
   activatedSamplesSimulation = If[MatchQ[Flatten@{prewashFilterPrimitive, prewashPelletPrimitive, prewashMagneticTransferPrimitive, prewashTransferPrimitive, consolidatePrimitives}, {}],
     updatedSimulation,
-    Quiet@ExperimentSamplePreparation[
+    ExperimentSamplePreparation[
       Flatten@{definePrimitives, prewashFilterPrimitive, prewashPelletPrimitive, prewashMagneticTransferPrimitive, prewashTransferPrimitive, consolidatePrimitives},
       Cache -> simulatedCache,
       Simulation->updatedSimulation,
       Output->Simulation
-    ]];
+    ]
+  ];
 
   (* make sure there's a way to escape without bugging out if ExperimentSamplPreparation isnt happy*)
   {simulatedActivatedSamples, defineLookup} = If[MatchQ[activatedSamplesSimulation, _Simulation],
@@ -5447,7 +5857,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
         invalidPostConjugationResuspensionMixVolume, invalidAnalyteConcentration, invalidReactionVessel,resolvedProductCoefficient, unknownProductCoefficient,defaultProductCoefficient,calculatedConjugationAmounts,postConjugationSampleVolume,
 
         (*Defaults*)
-        defaultConjugationReactionVolume,sampleAnalytes,sampleAnalyteConcentration, sampleAnalyteObject,convertedSampleAnalyeConcentration,sampleConjugationAmount,prewashConcentrationAdjustment,activationConcentrationAdjustment,postActivationConcentrationAdjustment,
+        defaultConjugationReactionVolume,sampleAnalytes,sampleAnalyteConcentration, sampleAnalyteObject,convertedSampleAnalyteConcentration,sampleConjugationAmount,prewashConcentrationAdjustment,activationConcentrationAdjustment,postActivationConcentrationAdjustment,
         updatedAnalyteConcentration,defaultTargetSampleConcentration,defaultConjugationReactionBufferVolume,defaultConcentratedConjugationReactionBufferDilutionFactor,defaultConjugationReactionBufferDiluent,conjugationDiluentVolume,defaultConjugationTime, defaultConjugationTemperature,
         defaultConjugationMixType,defaultConjugationMixVolume, defaultConjugationNumberOfMixes,defaultConjugatonMixRate,defaultQuenchBoolean,defaultQuenchReagent, defaultQuenchReagentDilutionFactor, defaultQuenchTime,defaultQuenchTemperature,defaultQuenchMix,
         defaultQuenchReactionVolume, defaultQuenchReagentVolume,defaultQuenchMixType,defaultQuenchMixVolume, defaultQuenchNumberOfMixes,defaultQuenchMixRate,defaultPredrainMethod,defaultPostConjugationWorkupMethod,defaultPostConjugationMix,defaultPostConjugationWorkupMixType,
@@ -5501,27 +5911,28 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
 
         (*Set the target concentration default to the value of concentration* sample volume/conjugation reaction volume*)
         (*First we must find or calculate the sample concentration*)
-        (*First find all the anaylte objects*)
+        (*First find all the analyte objects*)
         sampleAnalytes = Map[
           If[MatchQ[Download[Lookup[#,Analytes],Object], {}],
-            Download[FirstCase[Lookup[#,Composition],{Except[Null], ObjectP[{Model[Molecule,Protein],Model[Molecule,Oligomer], Model[Molecule, Polymer], Model[Resin], Model[ProprietaryFormulation]}]},{Null,Null}][[2]],Object],
+            Download[FirstCase[Lookup[#,Composition],{Except[Null], ObjectP[{Model[Molecule,Protein],Model[Molecule,Oligomer], Model[Molecule, Polymer], Model[Resin], Model[ProprietaryFormulation]}], Null|_?DateObjectQ},{Null,Null,Null}][[2]],Object],
             Download[Lookup[#,Analytes],Object]
           ]&,
           Flatten[samplePoolPacket]
         ];
 
+        (* Remove the date 3rd element from composition entry *)
         {sampleAnalyteConcentration, sampleAnalyteObject} = Transpose@MapThread[
-          Flatten[
+          Most@Flatten[
             FirstCase[
               Lookup[#1,Composition],
-              {Except[Null], ObjectP[Flatten[{#2}]]},
+              {Except[Null], ObjectP[Flatten[{#2}]], Null|_?DateObjectQ},
               {}
-            ]/.{}->{Null,Null}
+            ]/.{}->{Null,Null,Null}
           ]&,
           {Flatten@samplePoolPacket,sampleAnalytes}
         ];
 
-        convertedSampleAnalyeConcentration =MapThread[
+        convertedSampleAnalyteConcentration =MapThread[
           Switch[{MassConcentrationQ[#1],MassPercentQ[#1],VolumePercentQ[#1],MassQ[#1]},
           (*If given a mass concentration convert using the molecular weight*)
             {True, False, False,False}, Convert[#1/Lookup[Cases[DeleteDuplicates@Flatten@#2, KeyValuePattern[Object->Download[#3,Object]]],MolecularWeight], Micromolar],
@@ -5531,7 +5942,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
           {sampleAnalyteConcentration,samplePoolIMPacket,sampleAnalyteObject}
         ];
 
-        invalidAnalyteConcentration = If[QuantityQ[#],False,True]&/@Flatten[convertedSampleAnalyeConcentration];
+        invalidAnalyteConcentration = If[QuantityQ[#],False,True]&/@Flatten[convertedSampleAnalyteConcentration];
 
         (*Look up what the ConjugationAmount is*)
         sampleConjugationAmount = Lookup[samplePoolOptions,ConjugationAmount];
@@ -5544,7 +5955,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
         (*make the necessary concentration adjustments from the previous steps*)
         updatedAnalyteConcentration = MapThread[
           #1*Times[Cases[{#2,#3,#4},NumberP]/.List->Sequence]&,
-          {convertedSampleAnalyeConcentration,prewashConcentrationAdjustment,activationConcentrationAdjustment,postActivationConcentrationAdjustment}
+          {convertedSampleAnalyteConcentration,prewashConcentrationAdjustment,activationConcentrationAdjustment,postActivationConcentrationAdjustment}
         ];
 
         (*set the default target sample concentration*)
@@ -6111,7 +6522,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
 
           (*create postWashMagTransferSamplePackets*)
           (*first get compositions and destination+wells*)
-          compositions = Map[#[Composition] &, postActivationWashMagneticTransferPrimitive[Source]];
+          compositions = Map[#[Composition][[All,{1,2}]] &, postActivationWashMagneticTransferPrimitive[Source]];
           destinationsAndWells = Map[Prepend[{Lookup[#,Object]},"A1"]&,containerPacket[[1;;numOfSources]]];
 
           (*create UploadSample packets for actual destination of postActivationWashMagneticTransferPrimitive *)
@@ -6175,7 +6586,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
             updatedWashTransferSim = UpdateSimulation[updatedWashTransferSim,Simulation[containerPacket]];
 
             (*get packet information of source for UploadSampleTransfer*)
-            packetWithSourceModelSample=UploadSample[source[Composition],{"A1",Lookup[containerPacket[[1]],Object]},Simulation->updatedWashTransferSim,Upload->False,SimulationMode -> True];
+            packetWithSourceModelSample=UploadSample[source[Composition][[All,{1,2}]],{"A1",Lookup[containerPacket[[1]],Object]},Simulation->updatedWashTransferSim,Upload->False,SimulationMode -> True];
 
             (*source sample*)
             sourceSample=Select[DeleteDuplicates[packetWithSourceModelSample[Object]],MatchQ[#,ObjectP[Object[Sample]]]&][[1]];
@@ -7413,6 +7824,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
         Flatten@simulatedSamples,
         flatAliquotOptionSet,
         Cache->simulatedCache,
+        Simulation->Simulation[simulatedCache],
         AllowSolids->True,
         RequiredAliquotAmounts->Null,
         RequiredAliquotContainers->targetContainers,
@@ -7424,6 +7836,7 @@ resolveExperimentBioconjugationOptions[myPooledSamples:ListableP[{ObjectP[Object
         Flatten@simulatedSamples,
         flatAliquotOptionSet,
         Cache->simulatedCache,
+        Simulation->Simulation[simulatedCache],
         AllowSolids->True,
         RequiredAliquotAmounts->Null,
         RequiredAliquotContainers->targetContainers,
@@ -7790,7 +8203,7 @@ experimentBioconjugationResourcePackets[myPooledSamples : ListableP[{ObjectP[Obj
   inheritedCache = Lookup[ToList[ops], Cache];
   simulation=Lookup[ToList[ops],Simulation, Null];
 
-  (* determine the pool lenghts*)
+  (* determine the pool lengths*)
   poolLengths = Map[Length[#]&, myPooledSamples];
 
   (* -- Expand inputs and index-matched options to take into account the NumberOfReplicates option -- *)
@@ -8259,7 +8672,7 @@ experimentBioconjugationResourcePackets[myPooledSamples : ListableP[{ObjectP[Obj
     Instrument->If[MatchQ[#2,Null],#2,Link[#2]],
     Intensity->#3,
     Time->If[MatchQ[#4,Null],#4, SafeRound[Convert[#4,Minute],1Second]],
-    Temperature->If[MatchQ[#5,Null|Ambient], #5, SafeRound[Convert[#5,Celsius],0.1Celsius]]
+    Temperature->If[MatchQ[#5,Null|Ambient], Ambient, SafeRound[Convert[#5,Celsius],0.1Celsius]]
   |>&,Join[{flatPreWashPelletBooleans},flatPreWashPelletOptions]];
 
   (*PreWash resuspension*)
@@ -8350,7 +8763,7 @@ experimentBioconjugationResourcePackets[myPooledSamples : ListableP[{ObjectP[Obj
     Instrument->If[MatchQ[#2,Null],#2,Link[#2]],
     Intensity->#3,
     Time->If[MatchQ[#4,Null],#4, SafeRound[Convert[#4,Minute],1Second]],
-    Temperature->If[MatchQ[#5,Null|Ambient], #5, SafeRound[Convert[#5,Celsius],0.1Celsius]]
+    Temperature->If[MatchQ[#5,Null|Ambient], Ambient, SafeRound[Convert[#5,Celsius],0.1Celsius]]
   |>&, Join[{flatPostActivationWashPelletBooleans},flatPostActivationWashPelletOptions]];
 
   (*PostActivationWash resuspension*)
@@ -8585,17 +8998,17 @@ experimentBioconjugationResourcePackets[myPooledSamples : ListableP[{ObjectP[Obj
   ];
 
 
-  activationCheckpoint = {"Activation", preWashTotalTime + activationTotalTime + postActivationWashTotalTime, "Pre-conjugation sample preparation such as prewashing, activation, and post-activation washing are performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> preWashTotalTime + activationTotalTime + postActivationWashTotalTime]]};
+  activationCheckpoint = {"Activation", preWashTotalTime + activationTotalTime + postActivationWashTotalTime, "Pre-conjugation sample preparation such as prewashing, activation, and post-activation washing are performed.", Link[Resource[Operator -> $BaselineOperator, Time -> preWashTotalTime + activationTotalTime + postActivationWashTotalTime]]};
 
   conjugationTotalTime = Total[Flatten@{calculateRunTime[conjugationTime,processingOrder,processingBatchSize]}/.Null->Nothing];
 
   quenchingTotalTime = Total[(calculateRunTime[#,processingOrder,processingBatchSize]&/@{predrainCentrifugationTime, predrainMagnetizationTime, quenchTime})/.Null->Nothing];
 
-  quenchingCheckpoint = {"Quenching", quenchingTotalTime, "Post-conjugation reaction termination by sample reaction mixture draining and quenching are performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> quenchingTotalTime]]};
+  quenchingCheckpoint = {"Quenching", quenchingTotalTime, "Post-conjugation reaction termination by sample reaction mixture draining and quenching are performed.", Link[Resource[Operator -> $BaselineOperator, Time -> quenchingTotalTime]]};
 
   postConjugationTotalTime = Total[(calculateRunTime[#,processingOrder,processingBatchSize]&/@{postConjugationTime, postConjugationCentrifugationTime, postConjugationResuspensionTime})/.Null->Nothing];
 
-  postConjugationCheckpoint =  {"Post-Conjugation Workup", postConjugationTotalTime, "Post-conjugation sample processing including incubation, filtering, pelleting, and magnetic separation are performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> postConjugationTotalTime]]};
+  postConjugationCheckpoint =  {"Post-Conjugation Workup", postConjugationTotalTime, "Post-conjugation sample processing including incubation, filtering, pelleting, and magnetic separation are performed.", Link[Resource[Operator -> $BaselineOperator, Time -> postConjugationTotalTime]]};
 
   (* --- Generate the protocol packet --- *)
   protocolPacket = <|
@@ -8696,14 +9109,14 @@ experimentBioconjugationResourcePackets[myPooledSamples : ListableP[{ObjectP[Obj
 
     (*Additional tracking fields*)
     Replace[Checkpoints] -> {
-      {"Preparing Samples", 15 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-      {"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
+      {"Preparing Samples", 15 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+      {"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
       activationCheckpoint,
-      {"Conjugation", conjugationTotalTime, "Samples are chemically linked through incubation.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> conjugationTotalTime]]},
+      {"Conjugation", conjugationTotalTime, "Samples are chemically linked through incubation.", Link[Resource[Operator -> $BaselineOperator, Time -> conjugationTotalTime]]},
       quenchingCheckpoint,
       postConjugationCheckpoint,
-      {"Sample Post-Processing", 10 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-      {"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
+      {"Sample Post-Processing", 10 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+      {"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
     }/.{}->Nothing
 |>;
 

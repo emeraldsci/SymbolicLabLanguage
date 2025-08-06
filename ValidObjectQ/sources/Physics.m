@@ -52,7 +52,8 @@ validPhysicsOligomerQTests[myPacket:PacketP[Model[Physics,Oligomer]]]:=
 validPhysicsModificationQTests[myPacket:PacketP[Model[Physics,Modification]]]:=Module[
   {
     maxEmissionWavelength=Lookup[myPacket,MaxEmissionWavelength],
-    lambdaMax=Lookup[myPacket,LambdaMax]
+    lambdaMax=Lookup[myPacket,LambdaMax],
+    molecule=Lookup[myPacket,Molecule]
   },
   {
     NotNullFieldTest[
@@ -61,6 +62,25 @@ validPhysicsModificationQTests[myPacket:PacketP[Model[Physics,Modification]]]:=M
     ],
     Test["If MaxEmissionWavelength is informed, then LambdaMax should also be informed:",
       If[!MatchQ[maxEmissionWavelength, Null]&&MatchQ[lambdaMax, Null], False, True],
+      True
+    ],
+
+    Test["Molecule is populated with a molecule recognized by Mathematica or Null:",
+      Or[
+        NullQ[molecule],
+        And[
+          MatchQ[molecule,_Molecule],
+          Or[
+            (* if we have gotten an error here, we have a legit Molecule blob, return True here *)
+            (* MM can not peer inside a proper Molecule[] structure so for any real Molecule we expect to get a Part error here *)
+            With[{checkResult=Quiet@Check[molecule[[1]],True]},TrueQ[checkResult]],
+            (* try to construct the Molecule based on whatever was in the field and fail if we can't *)
+            (* with incorrect entry (like Molecule["shady entry"]), we can get the inside string and will get a message from Molecule:: *)
+            (* if we got the message - fail, if we somehow didn't get a message - we can return True once we have the Molecule blob *)
+            With[{checkResult=Quiet@Check[Molecule[molecule[[1]]],False]},MatchQ[checkResult,_Molecule]]
+          ]
+        ]
+      ],
       True
     ]
   }

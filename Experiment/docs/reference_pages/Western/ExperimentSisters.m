@@ -12,12 +12,38 @@ DefineUsage[ExperimentWesternOptions,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based western blot. Western blot is an analytical method used to detect specific proteins in a tissue-derived mixture.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -53,7 +79,7 @@ DefineUsage[ExperimentWesternOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"clayton.schwarz", "axu"}
+		Author->{"lige.tonggu", "clayton.schwarz", "axu"}
 	}
 ];
 
@@ -71,12 +97,38 @@ DefineUsage[ExperimentWesternPreview,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based western blot. Western blot is an analytical method used to detect specific proteins in a tissue-derived mixture.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -112,7 +164,7 @@ DefineUsage[ExperimentWesternPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"clayton.schwarz", "axu"}
+		Author->{"lige.tonggu", "clayton.schwarz", "axu"}
 	}
 ];
 
@@ -131,12 +183,38 @@ DefineUsage[ValidExperimentWesternQ,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based western blot. Western blot is an analytical method used to detect specific proteins in a tissue-derived mixture.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -172,6 +250,6 @@ DefineUsage[ValidExperimentWesternQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"clayton.schwarz", "axu"}
+		Author->{"lige.tonggu", "clayton.schwarz", "axu"}
 	}
 ];

@@ -14,8 +14,16 @@ DefineTests[PlotSensor,
 			PlotSensor[Object[Data, RelativeHumidity, "id:O81aEB4zD4wj"]],
 			_?ValidGraphicsQ
 		],
+		Example[{Basic, "Plot reed switch data object:"},
+			PlotSensor[Object[Data, ReedSwitch, "id:Y0lXejrPZ47a"]],
+			_?ValidGraphicsQ
+		],
 		Example[{Basic, "Plot sensor data info packet:"},
 			PlotSensor[Download[Object[Data, RelativeHumidity, "id:O81aEB4zD4wj"]]],
+			_?ValidGraphicsQ
+		],
+		Example[{Basic, "Plot reed switch data info object:"},
+			PlotSensor[Download[Object[Data, ReedSwitch, "id:Y0lXejrPZ47a"]]],
 			_?ValidGraphicsQ
 		],
 		Example[{Messages, "InvalidDataObject", "Plot data object that does not exist:"},
@@ -31,9 +39,17 @@ DefineTests[PlotSensor,
 			PlotSensor[Download[{Object[Data, RelativeHumidity, "id:O81aEB4zD4wj"],Object[Data, RelativeHumidity, "id:4pO6dMWK1Wzo"]}]],
 			{_?ValidGraphicsQ,_?ValidGraphicsQ }
 		],
+		Example[{Basic, "Plot a list of reed switch data packets:"},
+			PlotSensor[Download[{Object[Data, ReedSwitch, "id:Y0lXejrPZ47a"], Object[Data, ReedSwitch, "id:pZx9joOl50JP"]}]],
+			{_?ValidGraphicsQ, _?ValidGraphicsQ}
+		],
 		Example[{Basic, "Plot a list of data object:"},
 			PlotSensor[{Object[Data, RelativeHumidity, "id:4pO6dMWK1Wzo"], Object[Data, RelativeHumidity, "id:4pO6dMWK1Wzo"]}],
 			{_?ValidGraphicsQ,_?ValidGraphicsQ }
+		],
+		Example[{Basic, "Plot a list of reed switch data objects:"},
+			PlotSensor[{Object[Data, ReedSwitch, "id:Y0lXejrPZ47a"], Object[Data, ReedSwitch, "id:pZx9joOl50JP"]}],
+			{_?ValidGraphicsQ, _?ValidGraphicsQ}
 		],
 		Example[{Options,PlotRange,"Set the plot range in {{xmin,xmax},{ymin,ymax}} format:"},
 			PlotSensor[Download[Object[Data, RelativeHumidity, "id:O81aEB4zD4wj"]],PlotRange->{All,{20,25}}],

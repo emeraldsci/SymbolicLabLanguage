@@ -427,12 +427,14 @@ DefineOptions[ExperimentPAGE,
 			],
 			Category->"Sample Storage"
 		},
-		FuntopiaSharedOptions,
-		ModifyOptions[FuntopiaSharedOptions, Template, Widget -> Alternatives[
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[NonBiologyFuntopiaSharedOptions, Template, Widget -> Alternatives[
 			Widget[Type->Object,Pattern:>ObjectP[Object[Protocol,PAGE]],ObjectTypes->{Object[Protocol,PAGE]}],
 			Widget[Type -> FieldReference,Pattern :>FieldReferenceP[Types[Object[Protocol,PAGE]], {UnresolvedOptions, ResolvedOptions}]]
 		]],
-		SamplesInStorageOptions
+		SamplesInStorageOptions,
+		SimulationOption
 	}
 ];
 
@@ -466,11 +468,11 @@ Error::TooMuchPAGEWasteVolume="The experiment is expected to generate `1` of was
 (* ExperimentPAGE (container input)*)
 
 
-ExperimentPAGE[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentPAGE[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,samples,sampleCache,
-		sampleOptions,containerToSampleTests,containerToSampleOutput,listedInputs,
+		sampleOptions,containerToSampleTests,containerToSampleOutput,listedInputs,updatedSimulation,
 		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,updatedCache},
+		containerToSampleSimulation},
 
 (* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -486,31 +488,31 @@ ExperimentPAGE[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Contai
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentPAGE,
-			ToList[myInputs],
-			ToList[myOptions]
+			listedInputs,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentPAGE,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -521,23 +523,17 @@ ExperimentPAGE[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Contai
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentPAGE,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -548,11 +544,11 @@ ExperimentPAGE[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Contai
 			Options -> $Failed,
 			Preview -> Null
 		},
-	(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentPAGE[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentPAGE[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -565,20 +561,20 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	{
 		listedOptions,listedSamples,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,pageOptionsAssociation,
 		suppliedInstrument,numberOfReplicates,name,suppliedGel,suppliedLadder,suppliedLoadingBuffer,suppliedReservoirBuffer,suppliedGelBuffer,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
-		safeOpsNamed,suppliedStainingSolution,suppliedRinsingSolution,suppliedPrewashingSolution,suppliedLadderLoadingBuffer,ladderLoadingBufferDownloadFields,samplePreparationCacheNamed,
+		safeOpsNamed,suppliedStainingSolution,suppliedRinsingSolution,suppliedPrewashingSolution,suppliedLadderLoadingBuffer,ladderLoadingBufferDownloadFields,
 		gelDownloadOption,ladderDownloadOption,loadingBufferDownloadOption,reservoirBufferDownloadOption,gelBufferDownloadOption,stainingSolutionDownloadOption,rinsingSolutionDownloadOption,
 		gelDownloadFields,ladderDownloadFields,loadingBufferDownloadFields,reservoirBufferDownloadFields,gelBufferDownloadFields,stainingSolutionDownloadFields,rinsingSolutionDownloadFields,
 		prewashingSolutionDownloadOption,prewashingSolutionDownloadFields,ladderLoadingBufferDownloadOption,
 		instrumentDownloadOption,instrumentDownloadFields,allPolyacrylamideGels,
 		objectSamplePacketFields,modelSamplePacketFields,objectContainerFields,modelContainerFields,
-		modelContainerPacketFields,samplesContainerModelPacketFields,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,liquidHandlerContainers,
+		modelContainerPacketFields,samplesContainerModelPacketFields, updatedSimulation,
+		optionsWithObjects,userSpecifiedObjects,liquidHandlerContainers,
 		listedSampleContainerPackets,listedModelInstrumentPackets,listedGelOptionPackets,listedLadderOptionPackets,
 		listedLoadingBufferOptionPackets,listedReservoirBufferPackets,listedGelBufferOptionPackets,listedStainingSolutionPackets,listedRinsingSolutionPackets,
 		listedPrewashingSolutionPackets,listedLadderLoadingBufferPackets,allPolyacrylamideGelPackets,
 		sampleObjectsInOrder,liquidHandlerContainerPackets,cacheBall,sampleObjects,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
-		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache
+		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleSimulation
 	},
 
 	(* Determine the requested return value from the function *)
@@ -594,13 +590,13 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentPAGE,
 			ToList[mySamples],
 			ToList[listedOptions]
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -616,15 +612,9 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	];
 
 	(* Sanitize the samples and options using sanitizInput funciton*)
-	{mySamplesWithPreparedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation->updatedSimulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentPAGE,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentPAGE,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
 			Result -> $Failed,
@@ -632,6 +622,12 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentPAGE,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentPAGE,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -867,38 +863,6 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 		ObjectP[]
 	];
 
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Lookup[
-		(*Quiet extra errors when sample does not exist, which we will scream about later*)
-		Quiet[fetchPacketFromCache[#,samplePreparationCache]],
-		Simulated,
-		False
-	]&/@userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* - All liquid handler compatible containers (for resources and Aliquot) - *)
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
@@ -951,21 +915,22 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 				{Packet[Object]},
 				{modelContainerPacketFields}
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache->Lookup[expandedSafeOps,Cache,{}],
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::MissingCacheField}
 	];
 
 	(* Flatten the lists of packets *)
-	cacheBall=FlattenCachePackets[
-     {
-			 samplePreparationCache,listedSampleContainerPackets,listedModelInstrumentPackets,listedGelOptionPackets,listedLadderOptionPackets,
-			 listedLoadingBufferOptionPackets,listedReservoirBufferPackets,listedGelBufferOptionPackets,listedStainingSolutionPackets,
-			 listedPrewashingSolutionPackets,listedRinsingSolutionPackets,allPolyacrylamideGelPackets,
-			 listedLadderLoadingBufferPackets,liquidHandlerContainerPackets
-		 }
-	 ];
+	cacheBall = FlattenCachePackets[
+		{
+			listedSampleContainerPackets, listedModelInstrumentPackets, listedGelOptionPackets, listedLadderOptionPackets,
+			listedLoadingBufferOptionPackets, listedReservoirBufferPackets, listedGelBufferOptionPackets, listedStainingSolutionPackets,
+			listedPrewashingSolutionPackets, listedRinsingSolutionPackets, allPolyacrylamideGelPackets,
+			listedLadderLoadingBufferPackets, liquidHandlerContainerPackets
+		}
+	];
 
 	(* Get a list of the input samples by ID in order to pass into the helper functions *)
 	sampleObjects=Lookup[Flatten[sampleObjectsInOrder],Object];
@@ -973,7 +938,7 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentPAGEOptions[sampleObjects,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentPAGEOptions[sampleObjects,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -983,7 +948,7 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentPAGEOptions[sampleObjects,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentPAGEOptions[sampleObjects,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1009,8 +974,8 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		pageResourcePackets[sampleObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{pageResourcePackets[sampleObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+		pageResourcePackets[sampleObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation, Output->{Result,Tests}],
+		{pageResourcePackets[sampleObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation, Output->Result],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1029,13 +994,14 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,PAGE],
-			Cache->samplePreparationCache
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -1056,13 +1022,13 @@ ExperimentPAGE[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 DefineOptions[
 	resolveExperimentPAGEOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentPAGEOptions]]:=Module[
 	{
 		outputSpecification,output,gatherTests,messages,notInEngine,cache,samplePrepOptions,PAGENewOptions,simulatedSamples,
-		resolvedSamplePrepOptions,simulatedCache,samplePrepTests,pageOptionsAssociation,listedModelInstrumentPackets,suppliedInstrument,
+		resolvedSamplePrepOptions,samplePrepTests,pageOptionsAssociation,listedModelInstrumentPackets,suppliedInstrument,
 		numberOfReplicates,name,suppliedGel,suppliedDenaturingGel,suppliedLadder,suppliedLoadingBuffer,suppliedReservoirBuffer,suppliedGelBuffer,suppliedStainingSolution,suppliedRinsingSolution,
 		suppliedLadderStorageCondition,suppliedSamplesInStorageCondition,suppliedPrewashingSolution,suppliedLadderLoadingBuffer,suppliedLadderVolume,
 		suppliedSampleDenaturing,
@@ -1120,7 +1086,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		invalidDenaturingGelOptions,denaturingGelOptionTests,
 		invalidPostStainMismatchOptions,invalidStainingOptionsTests,invalidMaxWellVolumeOptions,invalidSampleLoadingVolumeGelTests,
 		numberOfGels,totalWasteVolume,invalidWasteVolumeOptions,invalidWasteVolumeTests,
-		requiredAliquotContainers,
+		requiredAliquotContainers, updatedSimulation, simulation,
 		invalidInputs,invalidOptions,resolvedOptions,resolvedAliquotOptions,aliquotTests,email,resolvedPostProcessingOptions
 	},
 
@@ -1141,17 +1107,18 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation,{}];
 
-	(* Seperate out our PAGENew options from our Sample Prep options. *)
+	(* Separate out our PAGENew options from our Sample Prep options. *)
 	{samplePrepOptions,PAGENewOptions}=splitPrepOptions[myOptions];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	pageOptionsAssociation = Association[PAGENewOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentPAGE,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentPAGE,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentPAGE,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentPAGE,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->Result],{}}
 	];
 
 	(* ---Make our one big Download call --- *)
@@ -1373,7 +1340,8 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 				{ladderLoadingBufferDownloadFields},
 				{modelContainerPacketFields}
 			},
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -1437,7 +1405,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* If there are discarded invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1445,12 +1413,12 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["The input samples "<>ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs], Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1460,8 +1428,8 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Check to see if the SamplesInStorageCondition is valid *)
 	{validSamplesInStorageBools,samplesInStorageTests}=If[gatherTests,
-		ValidContainerStorageConditionQ[simulatedSamples,suppliedSamplesInStorageCondition,Cache->simulatedCache,Output->{Result,Tests}],
-		{ValidContainerStorageConditionQ[simulatedSamples, suppliedSamplesInStorageCondition, Output -> Result, Cache -> simulatedCache], {}}
+		ValidContainerStorageConditionQ[simulatedSamples,suppliedSamplesInStorageCondition,Simulation -> updatedSimulation,Cache -> cache, Output->{Result,Tests}],
+		{ValidContainerStorageConditionQ[simulatedSamples, suppliedSamplesInStorageCondition,Simulation -> updatedSimulation,Cache -> cache, Output -> Result], {}}
 	];
 
 	(* Set the invalid options variable *)
@@ -1561,8 +1529,8 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	(* ---Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument --- *)
 	(* call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[suppliedInstrument,simulatedSamples,Cache->simulatedCache,Output->{Result,Tests}],
-		{CompatibleMaterialsQ[suppliedInstrument,simulatedSamples,Cache->simulatedCache,Messages->messages],{}}
+		CompatibleMaterialsQ[suppliedInstrument,simulatedSamples,Simulation -> updatedSimulation,Cache -> cache, Output->{Result,Tests}],
+		{CompatibleMaterialsQ[suppliedInstrument,simulatedSamples,Simulation -> updatedSimulation,Cache -> cache, Messages->messages],{}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
@@ -1864,26 +1832,26 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		(* If the preferredAnalyteType is Oligomer, resolve Gel based on the suppliedDenaturingGel *)
 		(* Only resolve to the Native gel if the user has supplied the DenaturingGel option as False *)
 		{Automatic,Oligomer,False,_,_},
-			Model[Item, Gel, "10% polyacrylamide TBE cassette, 20 channel"],
+			Model[Item, Gel, "id:vXl9j57j6W0e"], (* Model[Item, Gel, "10% polyacrylamide TBE cassette, 20 channel"], *)
 		{Automatic,Oligomer,_,_,_},
-			Model[Item, Gel, "10% polyacrylamide TBE-Urea cassette, 20 channel"],
+			Model[Item, Gel, "id:Vrbp1jK1WqZo"], (* Model[Item, Gel, "10% polyacrylamide TBE-Urea cassette, 20 channel"], *)
 
 		(* If the preferredAnalyteType is Protein, resolve the Gel based on the suppliedDenaturingGel and the averageProtienMolecularWeight *)
 		(* If user has specified DenaturingGel as False, resolve to one of the Tris/Glycine gels *)
 		{Automatic,Protein,False,_,LessP[200*(Kilogram/Mole)]},
-			Model[Item,Gel,"12% polyacrylamide Tris-Glycine cassette, 20 channel"],
+			Model[Item, Gel, "id:E8zoYvNa5PMB"], (* Model[Item,Gel,"12% polyacrylamide Tris-Glycine cassette, 20 channel"] *)
 		{Automatic,Protein,False,_,_},
-			Model[Item,Gel,"7% polyacrylamide Tris-Glycine cassette, 20 channel"],
+			Model[Item, Gel, "id:pZx9jo8D3ao4"], (* Model[Item,Gel,"7% polyacrylamide Tris-Glycine cassette, 20 channel"] *)
 
 		(* If user has not specified DenaturingGel as False, resolve to one of the Tris/Glycine/SDS gels *)
 		{Automatic,Protein,_,_,LessP[200*(Kilogram/Mole)]},
-			Model[Item,Gel,"12% polyacrylamide Tris-Glycine-SDS cassette, 20 channel"],
+			Model[Item, Gel, "id:aXRlGn6MDqwx"], (* Model[Item,Gel,"12% polyacrylamide Tris-Glycine-SDS cassette, 20 channel"] *)
 		{Automatic,Protein,_,_,_},
-			Model[Item,Gel,"7% polyacrylamide Tris-Glycine-SDS cassette, 20 channel"],
+			Model[Item, Gel, "id:pZx9jo8D3ak4"], (* Model[Item,Gel,"7% polyacrylamide Tris-Glycine-SDS cassette, 20 channel"] *)
 
 		(* Catch all which should never occur, default to denaturing TBE-Urea gel *)
 		{_,_,_,_,_},
-			Model[Item, Gel, "10% polyacrylamide TBE-Urea cassette, 20 channel"]
+			Model[Item, Gel, "id:Vrbp1jK1WqZo"] (* Model[Item, Gel, "10% polyacrylamide TBE-Urea cassette, 20 channel"] *)
 	];
 
 	(* - Get information out of the resolved Gel - *)
@@ -1910,10 +1878,11 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		},
 
 		(* ELSE, get the values from the cache packet of the gel we have resolved to *)
+		(* we know we have the gels we could resolve to in the cache from before *)
 		Lookup[
 			Experiment`Private`fetchPacketFromCache[
 				resolvedGel,
-				simulatedCache
+				cache
 			],
 			{
 				NumberOfLanes,
@@ -2717,7 +2686,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidGelMaterialOptions]==0,
 				Nothing,
-				Test["The supplied Gel, "<>ObjectToString[suppliedGel]<>", is not a Polyacrylamide Gel:",True,False]
+				Test["The supplied Gel, "<>ObjectToString[suppliedGel, Simulation->updatedSimulation]<>", is not a Polyacrylamide Gel:",True,False]
 			];
 
 			passingTest=If[Length[invalidGelMaterialOptions]>0,
@@ -2747,7 +2716,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidNumberOfGelLanesOptions]==0,
 				Nothing,
-				Test["The supplied Gel, "<>ObjectToString[suppliedGel]<>", does not have a NumberOfLanes of 10 or 20:",True,False]
+				Test["The supplied Gel, "<>ObjectToString[suppliedGel, Simulation->updatedSimulation]<>", does not have a NumberOfLanes of 10 or 20:",True,False]
 			];
 
 			passingTest=If[Length[invalidNumberOfGelLanesOptions]>0,
@@ -2791,11 +2760,11 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidUnsupportedInstrumentOption]==0,
 				Nothing,
-				Test["The Instrument option "<>ObjectToString[suppliedInstrument,Cache->simulatedCache]<>" is of the Model Model[Instrument,Electrophoresis,\"Ranger\"]",True,False]
+				Test["The Instrument option "<>ObjectToString[suppliedInstrument,Simulation -> updatedSimulation]<>" is of the Model Model[Instrument,Electrophoresis,\"Ranger\"]",True,False]
 			];
 			passingTest=If[Length[invalidUnsupportedInstrumentOption]>0&&MatchQ[suppliedInstrument,Except[Automatic]],
 				Nothing,
-				Test["The Instrument option "<>ObjectToString[suppliedInstrument,Cache->simulatedCache]<>" is of the Model Model[Instrument,Electrophoresis,\"Ranger\"]",True,True]
+				Test["The Instrument option "<>ObjectToString[suppliedInstrument,Simulation -> updatedSimulation]<>" is of the Model Model[Instrument,Electrophoresis,\"Ranger\"]",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2862,7 +2831,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* If the Gel option was given as a list of Objects, and they are not all the same Model, throw an error *)
 	If[gelListQ&&Length[invalidMultipleGelObjectModelOptions]>0&&messages,
-		Message[Error::MoreThanOnePAGEGelModel,ObjectToString[resolvedGel,Cache->simulatedCache],ObjectToString[gelOptionModels,Cache->simulatedCache]]
+		Message[Error::MoreThanOnePAGEGelModel,ObjectToString[resolvedGel,Simulation -> updatedSimulation],ObjectToString[gelOptionModels,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2900,7 +2869,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* If the Gel option was given as a list of Objects, and there are any duplicates, throw an error *)
 	If[gelListQ&&Length[invalidDuplicateGelOptions]>0&&messages,
-		Message[Error::DuplicatePAGEGelObjects,ObjectToString[resolvedGel,Cache->simulatedCache]]
+		Message[Error::DuplicatePAGEGelObjects,ObjectToString[resolvedGel,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2954,7 +2923,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		}
 	];
 
-	(* Set an invalid option variable if the number of samples isn't copacetic with the Gel option *)
+	(* Set an invalid option variable if the number of samples isn't compatible with the Gel option *)
 	invalidNumberOfGelsOptions=Which[
 
 		(* Case where the Gel is Model, no need to check *)
@@ -2973,7 +2942,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* If the Gel option was given as an Object or list of Objects, and there aren't the right number of Samples throw an error *)
 	If[objectGelQ&&Length[invalidNumberOfGelsOptions]>0&&messages,
-		Message[Error::InvalidNumberOfPAGEGels,numberOfSamples,ObjectToString[resolvedGel,Cache->simulatedCache],minimumSampleLanes,maximumSampleLanes]
+		Message[Error::InvalidNumberOfPAGEGels,numberOfSamples,ObjectToString[resolvedGel,Simulation -> updatedSimulation],minimumSampleLanes,maximumSampleLanes]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3080,20 +3049,20 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw an error if there are any invalidNotEnoughVolumeOptions and we are throwing messages  *)
 	If[notEnoughVolumeErrorQ&&messages,
-		Message[Error::NotEnoughVolumeToLoadPAGE,ObjectToString[failingSampleAndBufferLoadingVolumeSamples,Cache->simulatedCache],totalFailingVolumes,resolvedSampleLoadingVolume]
+		Message[Error::NotEnoughVolumeToLoadPAGE,ObjectToString[failingSampleAndBufferLoadingVolumeSamples,Simulation -> updatedSimulation],totalFailingVolumes,resolvedSampleLoadingVolume]
 	];
 
 	(* Define the variable for the tests that we will return *)
 	sampleLoadingBufferVolumeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[notEnoughVolumeErrorQ,
-				Test["The sum of the SampleVolume and LoadingBufferVolume, "<>ToString[totalFailingVolumes]<>", is less than the SampleLoadingVolume, "<>ToString[resolvedSampleLoadingVolume]<>", for the following samples, "<>ObjectToString[failingSampleAndBufferLoadingVolumeSamples,Cache->simulatedCache]<>":",True,False],
+				Test["The sum of the SampleVolume and LoadingBufferVolume, "<>ToString[totalFailingVolumes]<>", is less than the SampleLoadingVolume, "<>ToString[resolvedSampleLoadingVolume]<>", for the following samples, "<>ObjectToString[failingSampleAndBufferLoadingVolumeSamples,Simulation -> updatedSimulation]<>":",True,False],
 				Nothing
 			];
 
 			passingTest=If[Length[passingSampleAndBufferLoadingVolumeSamples]==0,
 				Nothing,
-				Test["The sum of the SampleVolume and LoadingBufferVolume is greater than the SampleLoadingVolume for the following samples "<>ObjectToString[passingSampleAndBufferLoadingVolumeSamples,Cache->simulatedCache]<>":",True,True]
+				Test["The sum of the SampleVolume and LoadingBufferVolume is greater than the SampleLoadingVolume for the following samples "<>ObjectToString[passingSampleAndBufferLoadingVolumeSamples,Simulation -> updatedSimulation]<>":",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -3117,14 +3086,14 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw an error if there are any invalidLadderLoadingBufferOptions and we are throwing messages  *)
 	If[Length[invalidLadderLoadingBufferOptions]>0&&messages,
-		Message[Error::ConflictingPAGELadderLoadingBufferOptions,ObjectToString[resolvedLadderLoadingBuffer,Cache->simulatedCache],resolvedLadderLoadingBufferVolume]
+		Message[Error::ConflictingPAGELadderLoadingBufferOptions,ObjectToString[resolvedLadderLoadingBuffer,Simulation -> updatedSimulation],resolvedLadderLoadingBufferVolume]
 	];
 
 	(* Define the variable for the tests that we will return *)
 	conflictingLadderLoadingBufferTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidLadderLoadingBufferOptions]>0,
-				Test["The LadderLoadingBuffer, "<>ObjectToString[resolvedLadderLoadingBuffer,Cache->simulatedCache]<>", and the LadderLoadingBufferVolume, "<>ToString[resolvedLadderLoadingBufferVolume]<>", are in conflict. Either both options must be specified, or both options must be Null:",True,False],
+				Test["The LadderLoadingBuffer, "<>ObjectToString[resolvedLadderLoadingBuffer,Simulation -> updatedSimulation]<>", and the LadderLoadingBufferVolume, "<>ToString[resolvedLadderLoadingBufferVolume]<>", are in conflict. Either both options must be specified, or both options must be Null:",True,False],
 				Nothing
 			];
 
@@ -3192,7 +3161,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw an error if there are any invalidDenaturingGelOptions and we are throwing messages  *)
 	If[Length[invalidDenaturingGelOptions]>0&&messages,
-		Message[Error::ConflictingPAGEDenaturingGelOptions,ObjectToString[resolvedGel,Cache->simulatedCache],gelDenaturingField,resolvedDenaturingGel]
+		Message[Error::ConflictingPAGEDenaturingGelOptions,ObjectToString[resolvedGel,Simulation -> updatedSimulation],gelDenaturingField,resolvedDenaturingGel]
 	];
 
 	(* Define the variable for the tests that we will return *)
@@ -3451,7 +3420,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw an error if there are any invalidMaxWellVolumeOptions and we are throwing messages  *)
 	If[Length[invalidMaxWellVolumeOptions]>0&&messages,
-		Message[Error::ConflictingPAGESampleLoadingVolumeGelOptions,resolvedSampleLoadingVolume,ObjectToString[resolvedGel,Cache->simulatedCache],maxWellVolume]
+		Message[Error::ConflictingPAGESampleLoadingVolumeGelOptions,resolvedSampleLoadingVolume,ObjectToString[resolvedGel,Simulation -> updatedSimulation],maxWellVolume]
 	];
 
 	(* Define the variable for the tests that we will return *)
@@ -3459,7 +3428,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidMaxWellVolumeOptions]==0,
 				Nothing,
-				Test["The SampleLoadingVolume option, "<>ToString[resolvedSampleLoadingVolume]<>", is in conflict with the Gel option "<>ObjectToString[resolvedGel,Cache->simulatedCache]<>", which has a MaxWellVolume of "<>ToString[maxWellVolume]<>". The SampleLoadingVolume cannot be larger than the MaxWellVolume of the Gel option:",True,False]
+				Test["The SampleLoadingVolume option, "<>ToString[resolvedSampleLoadingVolume]<>", is in conflict with the Gel option "<>ObjectToString[resolvedGel,Simulation -> updatedSimulation]<>", which has a MaxWellVolume of "<>ToString[maxWellVolume]<>". The SampleLoadingVolume cannot be larger than the MaxWellVolume of the Gel option:",True,False]
 			];
 
 			passingTest=If[Length[invalidMaxWellVolumeOptions]!=0,
@@ -3569,7 +3538,8 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[allOptionsRounded, resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3581,7 +3551,8 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[allOptionsRounded, resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache->cache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotAmounts,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3616,7 +3587,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&messages,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3695,7 +3666,7 @@ resolveExperimentPAGEOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 DefineOptions[
 	pageResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 (* Private function to generate the list of protocol packets containing resource blobs *)
@@ -3724,14 +3695,14 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		uniquePreferredContainerObjectResourceReplaceRules,ladderLoadingBufferResource,prewashingSolutionResource,
 		rinsingSolutionResource,
 		gelBufferPerGel,gelBufferResource,reservoirBufferResource,instrumentResource,
-		primaryPipettteTipsResource,secondaryPipetteTipsResource,
+		primaryPipetteTipsResource,secondaryPipetteTipsResource,
 		gelBufferTransferVesselResource,reservoirBufferTransferVesselResource,wasteReservoirResource,secondaryWasteReservoirResource,
 		stainReservoirResource,rinseReservoirResource,secondaryRinseReservoirResource,
 		ladderResource,liquidHandlerContainers,
 		preferredContainers,preferredSterileContainers,preferredContainerDownload,preferredSterileContainerDownload,loadingBufferResource,pageID,author,gelMaterial,gelPercentage,crosslinkerRatio,gelModel,
 		protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,
 		excitationWavelength,excitationBandwidth,emissionWavelength,emissionBandwidth,
-		previewRule,optionsRule,testsRule,resultRule
+		previewRule,optionsRule,testsRule,resultRule, simulation
 	},
 
 	(* Expand the resolved options *)
@@ -3755,6 +3726,7 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 
 	(* Get the cache *)
 	inheritedCache=Lookup[ToList[myResourceOptions],Cache];
+	simulation=Lookup[ToList[myResourceOptions], Simulation];
 
 	(* Pull out relevant info from the resolved options *)
 	{
@@ -3809,7 +3781,7 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 			{gelDownloadFields},
 			{Sterile}
 		},
-
+		Simulation->simulation,
 		Cache->inheritedCache,
 		Date->Now
 	],Download::FieldDoesntExist];
@@ -3927,7 +3899,7 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		(* THEN the amount of staining solution we need is the StainVolume times the number of Gels times 1.25 for some extra *)
 		numberOfGels*(stainVolume+10*Milliliter),
 
-		(* ELSE we dont need any *)
+		(* ELSE we don't need any *)
 		Null
 	];
 
@@ -4087,7 +4059,7 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	(* --- Make resources for all the other fields in question ---*)
 	(* Make resources for the pipette tips, this is a list for reasons I don't understand yet but hopefully will by the time anyone reads this *)
 	(* Make resources for the pipette tips - making two separate resources so that users don't ALWAYS buy tips for the Ranger if none are needed *)
-	primaryPipettteTipsResource=Link[Resource[
+	primaryPipetteTipsResource=Link[Resource[
 		Sample -> Model[Item,Tips,"300 uL Hamilton barrier tips, sterile"],
 		Amount->96
 	]];
@@ -4226,7 +4198,7 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 				LadderLoadingBufferVolume->ladderLoadingBufferVolume,
 				NumberOfLanes->numberOfLanes,
 				NumberOfGels->numberOfGels,
-				PrimaryPipetteTips->primaryPipettteTipsResource,
+				PrimaryPipetteTips->primaryPipetteTipsResource,
 				SecondaryPipetteTips->secondaryPipetteTipsResource,
 				GelBufferTransferVessel->gelBufferTransferVesselResource,
 				ReservoirBufferTransferVessel->reservoirBufferTransferVesselResource,
@@ -4269,15 +4241,15 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 
 				(* check points, no checkpoint estimates *)
 				Replace[Checkpoints] -> {
-					{"Preparing Samples", 2 Hour, "Preprocessing, such as mixing, centrifuging, thermal incubation, filtration, and aliquoting, is performed. Samples and ladders are prepared for loading into the gel.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 2Hour]]},
-					{"Running the Gel", (separationTime+2*Hour), "Samples are separated according to their electrophoretic mobility.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> (separationTime+2*Hour)]]},
-					{"Returning Materials", 30 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]}
+					{"Preparing Samples", 2 Hour, "Preprocessing, such as mixing, centrifuging, thermal incubation, filtration, and aliquoting, is performed. Samples and ladders are prepared for loading into the gel.", Link[Resource[Operator -> $BaselineOperator, Time -> 2Hour]]},
+					{"Running the Gel", (separationTime+2*Hour), "Samples are separated according to their electrophoretic mobility.", Link[Resource[Operator -> $BaselineOperator, Time -> (separationTime+2*Hour)]]},
+					{"Returning Materials", 30 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]}
 				}
 			|>;
 
 
 	(* Generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -4291,8 +4263,8 @@ pageResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache,Simulation->simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache,Simulation->simulation],Null}
 	];
 
 	(* --- Output --- *)

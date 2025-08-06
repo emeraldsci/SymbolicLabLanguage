@@ -31,6 +31,15 @@ DefineObjectType[Object[Timesheet], {
 			Description -> "Current status of the timesheet (whether its recording is complete or incomplete).",
 			Category -> "Organizational Information"
 		},
+		Site->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Container,Site],
+			Description->"The Emerald facility where the work represented in this timesheet is being done.",
+			Category->"Company Information",
+			Abstract->True
+		},
 		ShiftTime -> {
 			Format -> Single,
 			Class -> Expression,

@@ -20,10 +20,20 @@ DefineUsage[ExperimentqPCR,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -56,10 +66,20 @@ DefineUsage[ExperimentqPCR,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -97,7 +117,7 @@ DefineUsage[ExperimentqPCR,
 			"ExperimentqPCRPreview",
 			"ValidExperimentqPCRQ"
 			},
-		Author->{"andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
+		Author->{"lei.tian", "andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
 	}
 ];
 
@@ -118,10 +138,20 @@ DefineUsage[ExperimentqPCROptions,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -154,10 +184,20 @@ DefineUsage[ExperimentqPCROptions,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -188,7 +228,7 @@ DefineUsage[ExperimentqPCROptions,
 			"ExperimentqPCRPreview",
 			"ValidExperimentqPCRQ"
 			},
-		Author->{"andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
+		Author->{"lei.tian", "andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
 	}
 ];
 
@@ -209,10 +249,20 @@ DefineUsage[ExperimentqPCRPreview,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -245,10 +295,20 @@ DefineUsage[ExperimentqPCRPreview,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -279,7 +339,7 @@ DefineUsage[ExperimentqPCRPreview,
 			"ExperimentqPCROptions",
 			"ValidExperimentqPCRQ"
 		},
-		Author->{"andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
+		Author->{"lei.tian", "andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
 	}
 ];
 
@@ -300,10 +360,20 @@ DefineUsage[ValidExperimentqPCRQ,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -336,10 +406,20 @@ DefineUsage[ValidExperimentqPCRQ,
 						{
 							InputName->"Samples",
 							Description->"The samples containing nucleic acid templates from which the target sequences will be amplified.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -370,6 +450,6 @@ DefineUsage[ValidExperimentqPCRQ,
 			"ExperimentqPCROptions",
 			"ExperimentqPCRPreview"
 			},
-		Author->{"andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
+		Author->{"lei.tian", "andrey.shur", "robert", "weiran.wang", "eqian", "ben"}
 	}
 ]

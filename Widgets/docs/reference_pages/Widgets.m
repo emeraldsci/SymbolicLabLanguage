@@ -27,7 +27,7 @@ DefineUsage[ValidWidgetQ,
 			{"boolean",BooleanP,"A boolean that indicates if 'myWidget' is a valid Widget."}
 		},
 		SeeAlso->{"DefineOptions","DefineUsage","ValidDocumentationQ"},
-		Author->{"kelmen.low", "taylor.hochuli", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "kelmen.low", "taylor.hochuli", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -52,7 +52,7 @@ DefineUsage[Widget,
 			{"myWidget",WidgetP,"A widget that is consistent with the sequence of inputs given in mySequence."}
 		},
 		SeeAlso->{"DefineOptions","DefineUsage","ValidDocumentationQ","ValidWidgetQ"},
-		Author->{"kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -72,7 +72,7 @@ DefineUsage[Adder,
 			{"adderWidget",AdderWidgetP,"An adder widget that allows the user to input a list of one or more singleton widgets."}
 		},
 		SeeAlso->{"Widget","ValidWidgetQ","GenerateInputPattern"},
-		Author->{"kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -93,7 +93,7 @@ DefineUsage[WidgetTypeQ,
 			{"isWidgetType",BooleanP,"A boolean that indicates if the given symbol 'widgetType' is a known widget type."}
 		},
 		SeeAlso->{"Widget","ValidWidgetQ","GenerateInputPattern"},
-		Author->{"kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -130,7 +130,7 @@ DefineUsage[GenerateInputPattern,
 			{"pattern",_,"A pattern that is consistent with the information provided in the input."}
 		},
 		SeeAlso->{"DefineOptions","DefineUsage","ValidDocumentationQ","ValidWidgetQ"},
-		Author->{"kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "josh.kenchel", "thomas"}
 	}
 ];
 

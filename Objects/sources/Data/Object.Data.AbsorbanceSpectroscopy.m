@@ -19,6 +19,24 @@ DefineObjectType[Object[Data, AbsorbanceSpectroscopy], {
 			Category -> "General",
 			Abstract -> True
 		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
 		SpectralBandwidth ->{
 			Format->Single,
 			Class->Real,
@@ -221,6 +239,22 @@ DefineObjectType[Object[Data, AbsorbanceSpectroscopy], {
 			Description -> "The temperature in the instrument's sample compartment at each wavelength as it was recorded.",
 			Category -> "Experimental Results"
 		},
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Nanometer,Percent}],
+			Units -> {Meter Nano, Percent},
+			Description -> "The oxygen level in the instrument's sample compartment at each wavelength as it was recorded.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Nanometer,Percent}],
+			Units -> {Meter Nano, Percent},
+			Description -> "The carbon dioxide level in the instrument's sample compartment at each wavelength as it was recorded.",
+			Category -> "Experimental Results"
+		},
 		UnblankedAbsorbanceSpectrum -> {
 			Format -> Single,
 			Class -> QuantityArray,
@@ -352,6 +386,13 @@ DefineObjectType[Object[Data, AbsorbanceSpectroscopy], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates that this absorbance data was created using data obtained from only a single microfluidic chip cuvette, when multiple cuvettes should have been read. This may indicate that the data in this read is less accurate than normal.",
+			Category -> "Analysis & Reports"
+		},
+		AbsorbanceSaturated -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates that the absorbance reading is unavailable, likely due to detector over-saturation. For the Lunatic plate reader, absorbance values above the limit (range 30 mAU to 275 AU) are not reported, and nearby wavelength readings are close to the detection limit, suggesting over-saturation. For BMG plate readers, the instrument displays an \"overflow\" value if the absorbance exceeds the limit (range 0 AU to 3.5 AU). It is recommended to dilute the sample for re-measurement.",
 			Category -> "Analysis & Reports"
 		},
 		QuantificationAnalyses -> {

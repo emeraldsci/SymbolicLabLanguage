@@ -365,7 +365,7 @@ RequiredTogetherTest[myPacket:PacketP[],myFields:{_Symbol..},myOptions:OptionsPa
 	Test[
 		"Fields required together ("<>StringTrim[ToString[myFields],"{"|"}"]<>") are either all informed or all Null or {}:",
 		Equal@@Map[
-			MatchQ[#,Null|{}]&,
+			MatchQ[#,NullP|{}]&,
 			Lookup[myPacket,myFields]
 		],
 		True,
@@ -373,6 +373,27 @@ RequiredTogetherTest[myPacket:PacketP[],myFields:{_Symbol..},myOptions:OptionsPa
 		Message->Lookup[ToList[myOptions],Message,Null],
 		MessageArguments->Lookup[ToList[myOptions],MessageArguments,{}]
 	];
+
+
+(* ::Subsubsection:: *)
+(*RequiredTogetherIndexMatchingTest*)
+
+
+RequiredTogetherIndexMatchingTest[myPacket:PacketP[], myFields:{_Symbol..}, myOptions:OptionsPattern[]] := Test[
+	"At each index, the index-matching fields required together ("<>StringTrim[ToString[myFields], "{" | "}"]<>") are either all informed or all Null or {}:",
+	Equal @@ MapThread[
+		Equal @@ Map[
+			Function[{element},
+				MatchQ[element, NullP | {}]
+			],
+			{##}
+		]&,
+		Lookup[myPacket, myFields]
+	],
+	True,
+	Message -> Lookup[ToList[myOptions], Message, Null],
+	MessageArguments -> Lookup[ToList[myOptions], MessageArguments, {}]
+];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -638,6 +659,69 @@ UniquelyInformedTest[myPacket:PacketP[],myFields:{_Symbol..},myOptions:OptionsPa
 				True
 			] == 1,
 			True
+		],
+		True,
+
+		Message->Lookup[ToList[myOptions],Message,Null],
+		MessageArguments->Lookup[ToList[myOptions],MessageArguments,{}]
+	]
+
+];
+
+(* Overload for a parent field symbol matching criteria *)
+UniquelyInformedTest[myPacket:PacketP[], myFields:{_Symbol..}, myParentField_Symbol, myParentFieldPattern_Alternatives, myOptions:OptionsPattern[]]:=Module[
+	{
+		parentFieldValues, fieldValues, parentFieldPositions, fieldValuesAtPositions, comparisonBools
+	},
+
+	(* Lookup the values for the fields of interest *)
+	parentFieldValues = Lookup[myPacket, myParentField];
+	fieldValues=Lookup[myPacket, myFields];
+
+	(* Filter*)
+	parentFieldPositions = Position[parentFieldValues, myParentFieldPattern];
+	fieldValuesAtPositions = Extract[#, parentFieldPositions]& /@ fieldValues;
+	Test[
+		"At indices where " <> ToString[myParentField] <> " is (" <>StringTrim[ToString[List @@ myParentFieldPattern],"{"|"}"]<>"), only one of the fields ("<>StringTrim[ToString[myFields],"{"|"}"]<>") is informed:",
+		Which[
+			(* In the trivial case where there is something to compare return True *)
+			MatchQ[fieldValuesAtPositions, {{}, {}..}],
+			True,
+			(* Otherwise.. *)
+			True,
+			(* Check which indices are informed *)
+			comparisonBools = Map[!MatchQ[#, Null|{}]&, Transpose[fieldValuesAtPositions], {2}];
+			(* Check that each index has only one informed field *)
+			MatchQ[(Count[#, True]& /@ comparisonBools), {1..., 1}]
+		],
+		True,
+
+		Message->Lookup[ToList[myOptions],Message,Null],
+		MessageArguments->Lookup[ToList[myOptions],MessageArguments,{}]
+	]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*UniquelyInformedIndexTest*)
+
+
+UniquelyInformedIndexTest[myPacket:PacketP[],myFields:{_Symbol..},myOptions:OptionsPattern[]]:=Module[
+	{
+		fieldValues, comparisonBools
+	},
+
+	fieldValues=Lookup[myPacket,myFields];
+	Test[
+		"At each index, only one of the index-matched multiple fields ("<>StringTrim[ToString[myFields],"{"|"}"]<>") is informed:",
+		Which[
+			(* If the fields are not index-matched, return false prior to transposing field values of different length *)
+			!SameLengthQ @@ fieldValues, False,
+			(* Otherwise, *)
+			True,
+			(* Check which indices are informed *)
+			comparisonBools= Map[!MatchQ[#, Null|{}]&, Transpose[fieldValues], {2}];
+			(* Check that each index has only one informed field *)
+			MatchQ[(Count[#, True]& /@ comparisonBools), {1..., 1}]
 		],
 		True,
 

@@ -160,7 +160,7 @@ SmoothingInputDataTypes = {
 	{Object[Data, PAGE], OptimalLaneIntensity},
 	{Object[Data, Western], MassSpectrum},
 	{Object[Data, TLC], Intensity},
-	{Object[Data, XRayDiffraction], DiffractionSpectrum},
+	{Object[Data, XRayDiffraction], BlankedDiffractionPattern},
 	{Object[Data, IRSpectroscopy], AbsorbanceSpectrum},
 	{Object[Data, DifferentialScanningCalorimetry], HeatingCurves}
 };
@@ -630,13 +630,13 @@ resolveAnalyzeSmoothingOptions[myInputs: SmoothingInputP,combinedOptions: {(_Rul
       Function[{myInput,dataSet,inputIndex,equalSpacing},
         If[!MatchQ[dataSet,Null|{}],
           Which[
+            !equalSpacing,
+            {dataSet,warningOrNull[collectTestsBoolean,dataSetsEqualSpacingTestDescription,True]},
+
             equalSpaced[dataSet],
             {dataSet,warningOrNull[collectTestsBoolean,dataSetsEqualSpacingTestDescription,True]},
 
-            !equalSpaced[dataSet] && !equalSpacing,
-            {dataSet,warningOrNull[collectTestsBoolean,dataSetsEqualSpacingTestDescription,True]},
-
-            !equalSpaced[dataSet] && equalSpacing,
+            True,
             Message[Warning::NonEqualSpacedDataSet,inputIndex];
             {makeEqualSpaced[dataSet],warningOrNull[collectTestsBoolean,dataSetsEqualSpacingTestDescription,False]}
           ],
@@ -1032,12 +1032,13 @@ resolveCutoffFrequency[dataSet: (CoordinatesP|QuantityCoordinatesP[]|Distributio
 ];
 
 (* checkRadius: checks whether the Radius is within the proper bound *)
+(* Relies on the data being in ascending (or descending) order *)
 (* Input:
 	dataSet - a list of coordinates or quantity array
   radius - the Radius provided by the user
 *)
 checkRadius[dataSet: (CoordinatesP|QuantityCoordinatesP[]|DistributionCoordinatesP|listOfQuantityDistributionsP), radius: (_?NumericQ|_Quantity)]:=Module[
-  {xMeans,domainRange,interDistance,quantityRadius},
+  {xVals,domainRange,interDistance,quantityRadius},
 
   (* If we have only one data point *)
   If[Length[dataSet]==1,Return[False]];
@@ -1050,8 +1051,9 @@ checkRadius[dataSet: (CoordinatesP|QuantityCoordinatesP[]|DistributionCoordinate
 
   (* The range of x-coordinate based on the input dataset *)
   domainRange = MinMax[xVals] /. {x_,y_} :> y-x;
-  (* The distance between the data points *)
-  interDistance = Mean[Abs[Differences[xVals]]];
+  (* The distance between the data points. Since the data is in ascending order we can calculate the
+  mean distance using the first and last data points *)
+  interDistance = Abs[Last[xVals] - First[xVals]] / (Length[xVals] - 1);
 
   (* The proper units for the radius should be selected based on the pair of the interDistance and radius *)
   quantityRadius = Switch[{radius,interDistance},
@@ -1261,7 +1263,7 @@ AnalyzeSmoothingOptions[myInputs: SmoothingInputP, myOptions: OptionsPattern[Ana
 
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = AnalyzeSmoothing[myInputs,Append[noOutputOptions,Output->Options]];

@@ -87,7 +87,7 @@ DefineObjectType[Object[Instrument, FPLC], {
 			Description -> "The length of tubing between the detector and the fraction collector.",
 			Category -> "Instrument Specifications"
 		},
-		FlowCell -> {
+		DefaultFlowCell -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -435,6 +435,127 @@ DefineObjectType[Object[Instrument, FPLC], {
 			Description -> "The aspiration cap used to uptake buffer B from buffer container to the instrument pump.",
 			Category -> "Instrument Specifications"
 		},
+		BufferCCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer C from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+		BufferDCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer D from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+		BufferECap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer E from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+		BufferFCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer F from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+		BufferGCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer G from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+		BufferHCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Cap][FPLC],
+			Description -> "The aspiration cap used to uptake buffer H from buffer container to the instrument pump.",
+			Category -> "Instrument Specifications"
+		},
+
+		StorageBufferA -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line A is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferB -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line B is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line C is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line D is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferE -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line E is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferF -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line F is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferG -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line G is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferH -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line H is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
 
 
 		(* Sensors *)
@@ -652,6 +773,14 @@ DefineObjectType[Object[Instrument, FPLC], {
 			Pattern :> _Link,
 			Relation -> Object[Sensor, Volume],
 			Description -> "The ultrasonic liquid level sensor used to assess Sample 5 volumes in bottles.",
+			Category -> "Sensor Information"
+		},
+		ColumnPositionCamera -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part, Camera],
+			Description -> "The camera monitoring the column position of this instrument.",
 			Category -> "Sensor Information"
 		}
 	}

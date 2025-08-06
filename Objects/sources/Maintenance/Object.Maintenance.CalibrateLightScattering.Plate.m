@@ -2,7 +2,7 @@
 (*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
 
 DefineObjectType[Object[Maintenance, CalibrateLightScattering, Plate], {
-  Description->"A maintenance protocol to generate a calibration converting a sensor's raw output to pH measurements.",
+  Description->"A maintenance protocol to generate a calibration for SLS measurements on a target plate.",
   CreatePrivileges->None,
   Cache->Session,
   Fields->{

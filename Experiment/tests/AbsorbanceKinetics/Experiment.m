@@ -43,6 +43,11 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			ObjectP[Object[Protocol, AbsorbanceKinetics]],
 			Messages:>{Warning::SinglePlateRequired}
 		],
+		Test["If an object does not exist, then throw an error and return $Failed cleanly:",
+			ExperimentAbsorbanceKinetics[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages, "DiscardedSamples", "Throw an error if one or multiple of the input samples are discarded:"},
 			ExperimentAbsorbanceKinetics[{Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (200 uL)" <> $SessionUUID], Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (Discarded)" <> $SessionUUID]}],
 			$Failed,
@@ -56,7 +61,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentAbsorbanceKinetics 1",
+			{"Test Label for ExperimentAbsorbanceKinetics 1"},
 			Variables:>{options}
 		],
 		Example[{Options, Preparation, "Set whether to use the liquid handlers or manual pipettes to perform this aliquot:"},
@@ -179,6 +184,13 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Processing|ShippingMaterials|Backlogged,
 			Variables :> {protocol}
 		],
+		Test["Specify the CanaryBranch on which the protocol is run:",
+			protocol = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"];
+			Download[protocol, CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Variables :> {protocol},
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Temperature,"Specify the temperature at which the plates should be read in the plate reader:"},
 			protocol = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID],Temperature -> 45*Celsius];
 			Download[protocol, Temperature],
@@ -238,6 +250,21 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			EquivalenceFunction -> Equal,
 			Messages :> {Warning::InstrumentPrecision},
 			Variables :> {options, protocol}
+		],
+		Example[{Options, Instrument, "Instrument is automatically set to Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] if TargetCarbonDioxideLevel/TargetOxygenLevel is set:"},
+			Lookup[
+				ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID], TargetCarbonDioxideLevel -> 5 * Percent, Output -> Options],
+				Instrument
+			],
+			ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]
+		],
+		Example[{Options, TargetCarbonDioxideLevel, "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			Lookup[
+				ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics Test Mammalian Sample, no model" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], Output -> Options],
+				TargetCarbonDioxideLevel
+			],
+			Messages :> {Warning::ExtCoeffNotFound},
+			5 * Percent
 		],
 		Example[{Options,NumberOfReadings,"Indicate that 50 flashes should be performed in order to gather 50 measurements which are averaged together to produce a single reading:"},
 			ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID],NumberOfReadings->50][NumberOfReadings],
@@ -657,7 +684,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			{0.1*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			protocol = ExperimentAbsorbanceKinetics[
@@ -669,7 +696,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified resolve BlankVolumes to the volume of the corresponding sample:"},
 			protocol = ExperimentAbsorbanceKinetics[
@@ -700,7 +727,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Download[protocol, BlankVolumes],
 			{0.1111*Milliliter},
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample:"},
@@ -714,7 +741,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			0.1*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "Indicate the volume of blank to use for each sample, using multiple samples:"},
 			options = ExperimentAbsorbanceKinetics[
@@ -727,7 +754,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			{0.1*Milliliter, 0.15*Milliliter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options, protocol},
-			Messages :> {Warning::NotEqualBlankVolumesWarning}
+			Messages :> {Warning::NotEqualBlankVolumes}
 		],
 		Example[{Options, BlankVolumes, "If BlankAbsorbance -> True, BlankVolumes is not specified resolve BlankVolumes to the volume of the corresponding sample:"},
 			options = ExperimentAbsorbanceKinetics[
@@ -761,7 +788,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Lookup[options, BlankVolumes],
 			0.1111*Milliliter,
 			EquivalenceFunction -> Equal,
-			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumesWarning},
+			Messages :> {Warning::InstrumentPrecision,Warning::NotEqualBlankVolumes},
 			Variables :> {options, protocol}
 		],
 		Example[{Options,PlateReaderMix,"Set PlateReaderMix to True to shake the input plate in the reader before the assay begins:"},
@@ -1083,8 +1110,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 					Preparation -> Robotic
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages:>{Warning::InsufficientVolume}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 		Test["Generate an AbsorbanceKinetics protocol object based on a single primitive with Preparation->Manual:",
 			Experiment[{
@@ -1105,8 +1131,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 					PrimaryInjectionTime->10 Minute
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages:>{Warning::InsufficientVolume}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 		Test["Generate a RoboticSamplePreparation protocol object based on a primitive with multiple samples and Preparation->Robotic:",
 			Experiment[{
@@ -1118,15 +1143,40 @@ DefineTests[ExperimentAbsorbanceKinetics,
 					Preparation -> Robotic
 				]
 			}],
-			ObjectP[Object[Protocol,RoboticSamplePreparation]],
-			Messages :> {Warning::InsufficientVolume}
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
 
-	(* sample prep tests *)
+		(* sample prep tests *)
 		Example[{Additional, "Perform all sample prep experiments on one sample:"},
 			ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (15 mL)" <> $SessionUUID], Incubate -> True, Mix -> True, Centrifuge -> True, Filtration -> True, Aliquot -> True],
 			ObjectP[Object[Protocol, AbsorbanceKinetics]],
 			TimeConstraint -> 2000
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAbsorbanceKinetics[
+				(* Red food dye *)
+				{Model[Sample, "id:BYDOjvG9z6Jl"], Model[Sample, "id:BYDOjvG9z6Jl"]},
+				(* UV-Star Plate*)
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},
 			protocol = ExperimentAbsorbanceKinetics[
@@ -1140,19 +1190,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			{SamplePreparationP..},
 			Variables :> {protocol}
 		],
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to create test standards prior to running the experiment:"},
-			protocol = ExperimentAbsorbanceKinetics[
-				"red dye sample",
-				PreparatoryPrimitives -> {
-					Define[Name -> "red dye sample", Container -> Model[Container, Plate, "96-well UV-Star Plate"]],
-					Transfer[Source -> Model[Sample, "Red Food Dye"], Amount -> 200*Microliter, Destination -> {"red dye sample","A1"}]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-		],
-	(* incubate options *)
+		(* incubate options *)
 		Example[{Options, Incubate, "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], Incubate -> True, Output -> Options];
 			Lookup[options, Incubate],
@@ -1437,7 +1475,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 		Example[{Options, DestinationWell, "Indicates the position in the AliquotContainer that we want to move the sample into:"},
 			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1516,7 +1554,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, Wavelength, "When the Wavelength option is a span that specified as low;;high values, the MinWavelength and MaxWavelength are resolved correctly:"},
@@ -1742,7 +1780,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Blanks -> Model[Sample, "Milli-Q water"],
 				BlankVolumes -> 200 Microliter],{Warning::SinglePlateRequired}],
 			ObjectP[Object[Protocol,AbsorbanceKinetics]],
-			Messages:>{Warning::NotEqualBlankVolumesWarning}
+			Messages:>{Warning::NotEqualBlankVolumes}
 		],
 		Example[{Messages,"InvalidSimultaneousInjections","Print a message and returns $Failed if subsequent injections are set to occur at the same time using same pump or unsupported plate reader:"},
 			ExperimentAbsorbanceKinetics[
@@ -1761,6 +1799,82 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				QuaternaryInjectionSample -> Model[Sample, "id:GmzlKjY5E0ke"]],
 			$Failed,
 			Messages:>{Error::InvalidSimultaneousInjections,Error::InvalidOption}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAbsorbanceKinetics[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAbsorbanceKinetics[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAbsorbanceKinetics[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAbsorbanceKinetics[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceKinetics[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::AliquotRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAbsorbanceKinetics[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::AliquotRequired}
 		]
 	},
 	(* every time a test is run reset $CreatedObjects and erase things at the end *)
@@ -1790,6 +1904,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Object[Container, Vessel, "Fake container 9 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 				Object[Container, Plate, "Fake container 10 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 11 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
+				Object[Container, Plate, "Test container 12 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -1804,7 +1919,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 2" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 3" <> $SessionUUID],
-
+				Object[Sample, "ExperimentAbsorbanceKinetics Test Mammalian Sample, no model" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceKinetics Injection 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics Injection 2" <> $SessionUUID],
@@ -1825,8 +1940,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				{
 					fakeBench,
 					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11,
-					container12, container13, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
-					sample13, sample14, sample15, plateSamples, allObjs
+					container12, container13, container14, sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12,
+					sample13, sample14, sample15, sample16, plateSamples, allObjs
 				},
 
 				fakeBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Fake bench for ExperimentAbsorbanceKinetics tests" <> $SessionUUID,DeveloperObject->True|>];
@@ -1843,7 +1958,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 					container10,
 					container11,
 					container12,
-					container13
+					container13,
+					container14
 				}=UploadSample[
 					{
 						Model[Container, Plate, "96-well UV-Star Plate"],
@@ -1858,9 +1974,11 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Vessel, "50mL Tube"],
 						Model[Container, Plate, "96-well UV-Star Plate"],
+						Model[Container, Plate, "96-well UV-Star Plate"],
 						Model[Container, Plate, "96-well UV-Star Plate"]
 					},
 					{
+						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
 						{"Work Surface",fakeBench},
@@ -1888,7 +2006,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						"Fake container 8 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID,
 						"Fake container 9 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID,
 						"Fake container 10 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID,
-						"Test container 11 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID
+						"Test container 11 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID,
+						"Test container 12 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID
 					}
 				];
 				{
@@ -1906,7 +2025,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 					sample12,
 					sample13,
 					sample14,
-					sample15
+					sample15,
+					sample16
 				}=UploadSample[
 					{
 						Model[Sample,"Milli-Q water"],
@@ -1923,7 +2043,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						Model[Sample,"Milli-Q water"],
 						Model[Sample,"Milli-Q water"],
 						Model[Sample,"Milli-Q water"],
-						Model[Sample,"Milli-Q water"]
+						Model[Sample,"Milli-Q water"],
+						{{1000 * EmeraldCell / Milliliter, Model[Cell, Mammalian, "id:eGakldJvLvzq"]}, {100 * VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]}}
 					},
 					{
 						{"A1",container},
@@ -1940,7 +2061,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						{"A1",container10},
 						{"A1",container11},
 						{"A1",container12},
-						{"A2",container}
+						{"A3",container},
+						{"A1",container14}
 					},
 					InitialAmount->{
 						200*Microliter,
@@ -1957,7 +2079,8 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						20 Milliliter,
 						20 Milliliter,
 						20 Milliliter,
-						220*Microliter
+						220*Microliter,
+						200*Microliter
 					},
 					Name->{
 						"ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID,
@@ -1974,8 +2097,10 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						"ExperimentAbsorbanceKinetics Injection 2" <> $SessionUUID,
 						"ExperimentAbsorbanceKinetics Blank Buffer 1" <> $SessionUUID,
 						"ExperimentAbsorbanceKinetics Blank Buffer 2" <> $SessionUUID,
-						"ExperimentAbsorbanceKinetics Blank Buffer 3" <> $SessionUUID
-					}
+						"ExperimentAbsorbanceKinetics Blank Buffer 3" <> $SessionUUID,
+						"ExperimentAbsorbanceKinetics Test Mammalian Sample, no model" <> $SessionUUID
+					},
+					Living -> False
 				];
 
 				plateSamples=UploadSample[
@@ -2015,7 +2140,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 						},
 						UnresolvedOptions -> {EquilibrationTime -> 46*Minute}
 					|>,
-					<|Object -> Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]]}}|>
+					<|Object -> Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>
 				}]];
 				UploadSampleStatus[sample4, Discarded, FastTrack -> True]
 
@@ -2042,8 +2167,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Object[Container, Vessel, "Fake container 9 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 				Object[Container, Plate, "Fake container 10 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 				Object[Container, Plate, "Test container 11 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
-
-
+				Object[Container, Plate, "Test container 12 for ExperimentAbsorbanceKinetics tests" <> $SessionUUID],
 
 				Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (200 uL)" <> $SessionUUID],
@@ -2060,6 +2184,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 2" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceKinetics Blank Buffer 3" <> $SessionUUID],
+				Object[Sample, "ExperimentAbsorbanceKinetics Test Mammalian Sample, no model" <> $SessionUUID],
 
 				Object[Protocol, AbsorbanceKinetics, "Old Absorbance Kinetics Protocol with 1 Hour of equilibration time" <> $SessionUUID]
 

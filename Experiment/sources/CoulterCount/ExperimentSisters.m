@@ -20,7 +20,7 @@ DefineOptions[ValidExperimentCoulterCountQ,
 ];
 
 
-ValidExperimentCoulterCountQ[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions:OptionsPattern[ValidExperimentCoulterCountQ]] := Module[
+ValidExperimentCoulterCountQ[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions:OptionsPattern[ValidExperimentCoulterCountQ]] := Module[
 	{listedOptions, preparedOptions, experimentCoulterCountTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* Get the options as a list *)
@@ -87,7 +87,7 @@ DefineOptions[ExperimentCoulterCountOptions,
 ];
 
 
-ExperimentCoulterCountOptions[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions:OptionsPattern[ExperimentCoulterCountOptions]] := Module[
+ExperimentCoulterCountOptions[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions:OptionsPattern[ExperimentCoulterCountOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -118,7 +118,7 @@ DefineOptions[ExperimentCoulterCountPreview,
 ];
 
 
-ExperimentCoulterCountPreview[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions:OptionsPattern[ExperimentCoulterCountPreview]] := Module[
+ExperimentCoulterCountPreview[mySamples:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions:OptionsPattern[ExperimentCoulterCountPreview]] := Module[
 	{listedOptions},
 
 	listedOptions = ToList[myOptions];

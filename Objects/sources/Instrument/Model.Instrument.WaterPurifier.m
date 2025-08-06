@@ -68,7 +68,7 @@ DefineObjectType[Model[Instrument, WaterPurifier], {
 		MinTotalOrganicContent -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Percent],
+			Pattern :> GreaterEqualP[0*PPB],
 			Units -> PPB,
 			Description -> "Minimum total organic content the purified water can reach.",
 			Category -> "Operating Limits"
@@ -76,7 +76,7 @@ DefineObjectType[Model[Instrument, WaterPurifier], {
 		MaxTotalOrganicContent -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Percent],
+			Pattern :> GreaterP[0*PPB],
 			Units -> PPB,
 			Description -> "Maximum acceptable total organic content of the purified water.",
 			Category -> "Operating Limits"
@@ -96,6 +96,13 @@ DefineObjectType[Model[Instrument, WaterPurifier], {
 			Units -> (Gram Nano)/(Liter Milli),
 			Description -> "Maximum concentration of RNase the pure water should contain.",
 			Category -> "Operating Limits"
+		},
+		QRCode -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether this model of instrument can display a scannable quick response code summary of the quality report it generates while dispensing water.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

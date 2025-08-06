@@ -480,7 +480,18 @@ validInstrumentAutoclaveQTests[packet:PacketP[Object[Instrument,Autoclave]]]:={
 	(* Shared fields which should be null *)
 		Decks,
 		WasteContainer
-	}]
+	}],
+
+	NotNullFieldTest[packet, PostAutoclaveCoolingArea],
+
+	Test["The instrument has PostAutoclaveCoolingArea at the same site:",
+		MatchQ[
+			(* The field is in the form of {position, Object[Container]} if populated *)
+			Download[FirstCase[Lookup[packet,PostAutoclaveCoolingArea],ObjectP[],Null],
+				Site],
+			ObjectP[Lookup[packet,Site]]],
+		True
+	]
 };
 
 
@@ -585,6 +596,23 @@ validInstrumentpHMeterQTests[packet:PacketP[Object[Instrument,pHMeter]]]:={
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validInstrumentpHTitratorQTests*)
+
+Authors[validInstrumentpHTitratorQTests]:={"xu.yi"};
+
+validInstrumentpHTitratorQTests[packet:PacketP[Object[Instrument,pHTitrator]]]:={
+
+	(* Shared fields which should be not be null *)
+	NotNullFieldTest[packet,
+		{
+			IP,
+			PDU,
+			MixInstrument,
+			pHMeter
+		}
+	]
+};
 
 (* ::Subsection::Closed:: *)
 (*validInstrumentConductivityMeterQTests*)
@@ -709,7 +737,86 @@ validInstrumentBiosafetyCabinetQTests[packet:PacketP[Object[Instrument,Biosafety
 		ArgonValve
 	}],
 
-	NotNullFieldTest[packet, WasteContainer],
+	NotNullFieldTest[packet, {
+		BiosafetyWasteBin
+	}],
+
+	Test["The BiosafetyWasteBin field matches the BiosafetyWasteBin that are stored under the instrument:",
+		And[
+			ContainsAll[
+				Download[
+					Cases[Flatten[Quiet[Download[Lookup[packet, Object], Repeated[Contents[[All,2]]]]]], ObjectP[Object[Container, WasteBin]]],
+					Object
+				],
+				{Download[Lookup[packet, BiosafetyWasteBin], Object]}
+			],
+			ContainsAll[
+				Download[
+					Cases[Flatten[Download[Lookup[packet, BiosafetyWasteBin], StoragePositions]], ObjectP[]],
+					Object
+				],
+				{Lookup[packet, Object]}
+			]
+		],
+		True
+	],
+
+	Test["The Pipettes field matches the Pipettes that are inside of the instrument:",
+		ContainsAll[
+			Download[
+				Cases[Flatten[Quiet[Download[Lookup[packet, Object], Repeated[Contents[[All,2]]]]]], ObjectP[Object[Instrument, Pipette]]],
+				Object
+			],
+			Download[Lookup[packet, Pipettes], Object]
+		],
+		True
+	]
+};
+
+
+
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentHandlingStationBiosafetyCabinetQTests*)
+
+
+validInstrumentHandlingStationBiosafetyCabinetQTests[packet:PacketP[Object[Instrument,HandlingStation,BiosafetyCabinet]]]:={
+	(* Shared fields which should be null *)
+	NullFieldTest[packet, {
+		IP,
+		PDU,
+		DataFilePath,
+		MethodFilePath,
+		Software,
+		Decks,
+		ArgonPressureSensor,
+		CO2PressureSensor,
+		ArgonValve
+	}],
+
+	NotNullFieldTest[packet, {
+		BiosafetyWasteBin
+	}],
+
+	Test["The BiosafetyWasteBin field matches the BiosafetyWasteBin that are stored under the instrument:",
+		And[
+			ContainsAll[
+				Download[
+					Cases[Flatten[Quiet[Download[Lookup[packet, Object], Repeated[Contents[[All,2]]]]]], ObjectP[Object[Container, WasteBin]]],
+					Object
+				],
+				{Download[Lookup[packet, BiosafetyWasteBin], Object]}
+			],
+			ContainsAll[
+				Download[
+					Cases[Flatten[Download[Lookup[packet, BiosafetyWasteBin], StoragePositions]], ObjectP[]],
+					Object
+				],
+				{Lookup[packet, Object]}
+			]
+		],
+		True
+	],
 
 	Test["The Pipettes field matches the Pipettes that are inside of the instrument:",
 		ContainsAll[
@@ -729,6 +836,38 @@ validInstrumentBiosafetyCabinetQTests[packet:PacketP[Object[Instrument,Biosafety
 
 
 validInstrumentGloveBoxQTests[packet:PacketP[Object[Instrument,GloveBox]]]:={
+	(* Shared fields which should be null *)
+	NullFieldTest[packet, {
+		IP,
+		PDU,
+		DataFilePath,
+		MethodFilePath,
+		Software,
+		Decks,
+		ArgonPressureSensor,
+		CO2PressureSensor,
+		ArgonValve
+	}],
+
+	Test["The Pipettes field matches the Pipettes that are inside of the instrument:",
+		ContainsAll[
+			Download[
+				Cases[Flatten[Quiet[Download[Lookup[packet, Object], Repeated[Contents[[All,2]]]]]], ObjectP[Object[Instrument, Pipette]]],
+				Object
+			],
+			Download[Lookup[packet, Pipettes], Object]
+		],
+		True
+	]
+};
+
+
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentHandlingStationGloveBoxQTests*)
+
+
+validInstrumentHandlingStationGloveBoxQTests[packet:PacketP[Object[Instrument,HandlingStation,GloveBox]]]:={
 	(* Shared fields which should be null *)
 	NullFieldTest[packet, {
 		IP,
@@ -1465,7 +1604,6 @@ validInstrumentDesiccatorQTests[packet:PacketP[Object[Instrument,Desiccator]]]:=
 	NullFieldTest[
 		packet,
 		{
-			Decks,
 			IP,
 			PDU,
 			DataFilePath,
@@ -1480,14 +1618,13 @@ validInstrumentDesiccatorQTests[packet:PacketP[Object[Instrument,Desiccator]]]:=
 			NitrogenValve
 		}
 	],
-	NotNullFieldTest[packet, {Desiccant, SampleType}],
-
-	(* RequiredTogetherTest[packet,{Vacuumable,VacuumPump}] *)
+	NotNullFieldTest[packet, {Desiccant, SampleType, DrierDeck}],
 
 	(* tests for the Vacuum pump *)
 	Test[
-		"If Vacuumable is True, VacuumPump must informed:",
-		If[TrueQ[Lookup[packet,Vacuumable]],
+		"If Vacuumable is True, VacuumPump must be informed:",
+		If[
+			TrueQ[Lookup[packet,Vacuumable]],
 			!NullQ[Lookup[packet,VacuumPump]],
 			True
 		],
@@ -1519,17 +1656,36 @@ validInstrumentDesiccatorQTests[packet:PacketP[Object[Instrument,Desiccator]]]:=
 
 	(*Requirements when SampleType is set to Open:*)
 	Test["if SampleType is set to Open, Cameras must be informed:",
-		If[MatchQ[Lookup[packet,SampleType],Open],
+		If[
+			MatchQ[Lookup[packet,SampleType],Open],
 			!MatchQ[Lookup[packet,Cameras],NullP|{}],
 			True
 		],
 		True
 	],
 
-
 	Test["if SampleType is set to Open, PressureSensor must be informed:",
-		If[MatchQ[Lookup[packet,SampleType],Open],
+		If[
+			MatchQ[Lookup[packet,SampleType],Open],
 			!MatchQ[Lookup[packet,PressureSensor],NullP|{}],
+			True
+		],
+		True
+	],
+
+	Test["if SampleType is set to Open, SampleDeck must be informed:",
+		If[
+			MatchQ[Lookup[packet,SampleType],Open],
+			!MatchQ[Lookup[packet,SampleDeck],NullP|{}],
+			True
+		],
+		True
+	],
+
+	Test["if SampleType is set to Open, Lid must be informed:",
+		If[
+			MatchQ[Lookup[packet,SampleType],Open],
+			!MatchQ[Lookup[packet,Lid],NullP|{}],
 			True
 		],
 		True
@@ -1541,7 +1697,16 @@ validInstrumentDesiccatorQTests[packet:PacketP[Object[Instrument,Desiccator]]]:=
 (*validInstrumentDiffractometerQTests*)
 
 
-validInstrumentDiffractometerQTests[packet:PacketP[Object[Instrument,Diffractometer]]]:={};
+validInstrumentDiffractometerQTests[packet:PacketP[Object[Instrument,Diffractometer]]]:={
+	(* Shared fields which should NOT be null *)
+	NotNullFieldTest[
+		packet,
+		{
+			SystemInterfaceVersion,
+			InstrumentSoftware
+		}
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -2004,6 +2169,29 @@ validInstrumentPortableCoolerQTests[packet:PacketP[Object[Instrument,PortableCoo
 			ArgonValve,
 			NitrogenValve
 		}
+	],
+
+	If[
+		MatchQ[Lookup[packet, Model], ObjectP[Model[Instrument, PortableCooler, "Brooks CryoPod Portable Cryogenic Freezer"]]],
+
+		(* tests for portable cryogenic freezers *)
+		{
+			(* Fields to be filled out*)
+			NotNullFieldTest[packet,
+				{
+					HighTemperatureAlarm
+				}
+			],
+
+			(* Alarm comparisons *)
+			FieldComparisonTest[packet, {LowLevelAlarm, HighLevelAlarm}, Less],
+			Test["ProvidedStorageCondition is informed if status is not retired:",
+				Lookup[packet, {Status, ProvidedStorageCondition}],
+				{Except[Retired], Except[Null]} | {Retired, _}
+			]
+		},
+
+		Nothing
 	]
 };
 
@@ -2039,6 +2227,31 @@ validInstrumentPortableHeaterQTests[packet:PacketP[Object[Instrument,PortableHea
 
 
 validInstrumentFumeHoodQTests[packet:PacketP[Object[Instrument,FumeHood]]]:={
+	(* Shared fields which should be null *)
+	NullFieldTest[
+		packet,
+		{
+			PDU,
+			DataFilePath,
+			MethodFilePath,
+			Software,
+			Decks,
+			WasteContainer,
+			CO2PressureSensor
+		}
+	],
+
+	NotNullFieldTest[packet,{
+		NitrogenPressureSensor
+	}]
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentHandlingStationFumeHoodQTests*)
+
+
+validInstrumentHandlingStationFumeHoodQTests[packet:PacketP[Object[Instrument,HandlingStation,FumeHood]]]:={
 	(* Shared fields which should be null *)
 	NullFieldTest[
 		packet,
@@ -2158,7 +2371,8 @@ validInstrumentGasFlowSwitchQTests[packet:PacketP[Object[Instrument,GasFlowSwitc
 		{
 			IP,
 			RightCylinder,
-			LeftCylinder
+			LeftCylinder,
+			TurnsToOpen
 		}
 	],
 
@@ -2196,6 +2410,19 @@ validInstrumentGravityRackQTests[packet:PacketP[Object[Instrument,GravityRack]]]
 		}
 	]
 };
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentHandlingStationQTests*)
+
+
+validInstrumentHandlingStationQTests[packet:PacketP[Object[Instrument,HandlingStation]]]:={};
+
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentHandlingStationAmbientQTests*)
+
+
+validInstrumentHandlingStationAmbientQTests[packet:PacketP[Object[Instrument,HandlingStation,Ambient]]]:={};
 
 
 (* ::Subsection::Closed:: *)
@@ -2329,7 +2556,6 @@ validInstrumentGrinderQTests[packet:PacketP[Object[Instrument,Grinder]]]:={
 		{
 			Decks,
 			IP,
-			ComputerIP,
 			DataFilePath,
 			MethodFilePath,
 			Software,
@@ -2357,7 +2583,9 @@ validInstrumentGrinderQTests[packet:PacketP[Object[Instrument,Grinder]]]:={
 (*validInstrumentLiquidHandlerQTests*)
 
 
-validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandler]]]:={
+validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandler]]]:=Module[{manufacturer},
+	manufacturer = First@ToList@Download[Lookup[packet,{Model}], Manufacturer];
+	{
 	(* Shared fields which should NOT be null *)
 	NotNullFieldTest[
 		packet,
@@ -2392,7 +2620,7 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 			],
 
 			Test["If the instrument is a Hamilton, must have MethodFilePath and DataFilePath populated:",
-				If[MatchQ[Download[Lookup[packet,{Model}], Manufacturer], ObjectP[Object[Company, Supplier, "id:vXl9j5qErxNJ"]]],
+				If[MatchQ[manufacturer, ObjectP[Object[Company, Supplier, "id:vXl9j5qErxNJ"]]],
 					Not[NullQ[Lookup[packet, MethodFilePath]]] && Not[NullQ[Lookup[packet, DataFilePath]]],
 					True
 				],
@@ -2400,7 +2628,7 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 			],
 
 			Test["If the instrument is a Hamilton, the Model of the Deck must match the Model of the Deck in the Instrument Model:",
-				If[MatchQ[Download[Lookup[packet,{Model}], Manufacturer], ObjectP[Object[Company, Supplier, "id:vXl9j5qErxNJ"]]],
+				If[MatchQ[manufacturer, ObjectP[Object[Company, Supplier, "id:vXl9j5qErxNJ"]]],
 					MatchQ[
 						Download[Lookup[packet,Decks][[1]],Model[Object]],
 						Download[Lookup[packet,Model],Deck[Object]]
@@ -2410,7 +2638,7 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 				True
 			],
 
-			Test["All individual integrated instruments are popluated in the IntegratedInstruments field:",
+			Test["All individual integrated instruments are populated in the IntegratedInstruments field:",
 				SubsetQ[
 					Download[Lookup[packet,IntegratedInstruments],Object],
 					DeleteDuplicates@DeleteCases[
@@ -2422,13 +2650,33 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 										IntegratedCentrifuge, IntegratedIncubator, IntegratedPressureManifold,
 										IntegratedShakers, IntegratedHeatBlocks, IntegratedPlateTilters,
 										IntegratedPlateSealer, IntegratedThermocyclers, IntegratedMicroscopes,
-										IntegratedPlateReader, IntegratedNephelometer, IntegratedPlateWasher
+										IntegratedPlateReader, IntegratedNephelometer, IntegratedPlateWasher,
+										IntegratedExternalRobotArm
 									}
 								]
 							],
 							Object
 						],
-						Null
+						Null|{}
+					]
+				],
+				True
+			],
+
+			Test["Models of the IntegratedInstruments match what is populated in the current instrument Model:",
+				With[{
+					modelIntegratedInstruments=Download[Lookup[packet,Model],IntegratedInstruments[Object]],
+					integratedInstrumentModels=Download[Lookup[packet,IntegratedInstruments],Model[Object]]
+				},
+					(* integrated instruments of the object must be populated, otherwise we don't care *)
+					Or[
+						MatchQ[Lookup[packet,IntegratedInstruments],Null|{}],
+						And[
+							!MatchQ[modelIntegratedInstruments,Null],
+							(* both length and the count of each model have to match *)
+							Length[modelIntegratedInstruments]==Length[integratedInstrumentModels],
+							MatchQ[Sort@modelIntegratedInstruments,Sort@integratedInstrumentModels]
+						]
 					]
 				],
 				True
@@ -2491,10 +2739,33 @@ validInstrumentLiquidHandlerQTests[packet:PacketP[Object[Instrument,LiquidHandle
 					{scale,organicWashSolutionScale}=Lookup[packet,{Scale,OrganicWashSolutionScale}]
 				],
 				{MacroLiquidHandling,Except[Null]}|{MicroLiquidHandling,Null}
+			],
+
+			Test[
+				"If informed, all members of the OffDeckHeaterShakers of Hamilton must be in IntegratedShakers as well:",
+				And[
+					!MatchQ[Lookup[packet,OffDeckHeaterShakers],{}|Null],
+					Equal[
+						Length[Intersection[Download[Lookup[packet,OffDeckHeaterShakers],Object],Download[Lookup[packet,IntegratedShakers],Object]]],
+						Length[Lookup[packet,OffDeckHeaterShakers]]]
+				],
+				True
+			],
+
+			Test["Hamilton robotic liquid handlers should have TopLight and VideoCaptureComputer informed:",
+				If[MatchQ[manufacturer,ObjectP[Object[Company,Supplier,"id:vXl9j5qErxNJ"]]],
+					And[
+						!NullQ[Lookup[packet,TopLight]],
+						!NullQ[Lookup[packet,VideoCaptureComputer]]
+					],
+					True
+				],
+				True
 			]
 		}
 	]
-};
+}
+	];
 
 
 
@@ -2625,13 +2896,8 @@ validInstrumentIncubatorQTests[packet:PacketP[Object[Instrument,Incubator]]]:={
 	NotNullFieldTest[packet,{Decks,NominalCellType,Temperature}],
 
 	Test["Integrations should NOT be null if the incubator uses robotic access. Integrations should be null if the incubator uses manual access:",
-		(MatchQ[Lookup[packet,Mode],Auto] && !NullQ[Lookup[packet,IntegratedLiquidHandler]]) || (MatchQ[Lookup[packet,Mode],Manual] && NullQ[Lookup[packet,IntegratedLiquidHandler]]),
+		(MatchQ[Lookup[packet,Mode],Robotic] && !NullQ[Lookup[packet,IntegratedLiquidHandler]]) || (MatchQ[Lookup[packet,Mode],Manual] && NullQ[Lookup[packet,IntegratedLiquidHandler]]),
 		True
-	],
-
-	Test["ProvidedStorageCondition is informed if status is not retired:",
-		Lookup[packet,{Status,ProvidedStorageCondition}],
-		{Except[Retired],Except[Null]}|{Retired,_}
 	]
 };
 
@@ -3188,6 +3454,22 @@ validInstrumentPlateImagerQTests[packet:PacketP[Object[Instrument,PlateImager]]]
 };
 
 
+(* ::Subsection:: *)
+(*validInstrumentNephelometerQTests*)
+
+
+validInstrumentNephelometerQTests[packet:PacketP[Object[Instrument, Nephelometer]]] := {
+	(* shared fields not null *)
+	NotNullFieldTest[
+		packet,
+		{
+			Software
+		}
+	]
+};
+
+
+
 (* ::Subsection::Closed:: *)
 (*validInstrumentPlateReaderQTests*)
 
@@ -3205,8 +3487,6 @@ validInstrumentPlateReaderQTests[packet:PacketP[Object[Instrument,PlateReader]]]
 		packet,
 		{
 			ArgonPressureSensor,
-			CO2PressureSensor,
-			NitrogenPressureSensor,
 			ArgonValve
 		}
 	],
@@ -4733,6 +5013,7 @@ registerValidQTestFunction[Object[Instrument, PeristalticPump],validInstrumentPe
 registerValidQTestFunction[Object[Instrument, PressureManifold],validInstrumentPressureManifoldQTests];
 registerValidQTestFunction[Object[Instrument, PlatePourer],validInstrumentPlatePourerQTests];
 registerValidQTestFunction[Object[Instrument, pHMeter],validInstrumentpHMeterQTests];
+registerValidQTestFunction[Object[Instrument, pHTitrator],validInstrumentpHTitratorQTests];
 registerValidQTestFunction[Object[Instrument, Pipette],validInstrumentPipetteQTests];
 registerValidQTestFunction[Object[Instrument, PlateImager],validInstrumentPlateImagerQTests];
 registerValidQTestFunction[Object[Instrument, PlateReader],validInstrumentPlateReaderQTests];
@@ -4785,3 +5066,9 @@ registerValidQTestFunction[Object[Instrument, MultimodeSpectrophotometer],validI
 registerValidQTestFunction[Object[Instrument, ProteinCapillaryElectrophoresis],validInstrumentProteinCapillaryElectrophoresisQTests];
 registerValidQTestFunction[Object[Instrument, Dehydrator],validInstrumentDehydratorQTests];
 registerValidQTestFunction[Object[Instrument,GravityRack],validInstrumentGravityRackQTests];
+registerValidQTestFunction[Object[Instrument,HandlingStation],validInstrumentHandlingStationQTests];
+registerValidQTestFunction[Object[Instrument, HandlingStation, Ambient], validInstrumentHandlingStationAmbientQTests];
+registerValidQTestFunction[Object[Instrument, HandlingStation, BiosafetyCabinet], validInstrumentHandlingStationBiosafetyCabinetQTests];
+registerValidQTestFunction[Object[Instrument, HandlingStation, FumeHood], validInstrumentHandlingStationFumeHoodQTests];
+registerValidQTestFunction[Object[Instrument, HandlingStation, GloveBox], validInstrumentHandlingStationGloveBoxQTests];
+registerValidQTestFunction[Object[Instrument, Nephelometer], validInstrumentNephelometerQTests];

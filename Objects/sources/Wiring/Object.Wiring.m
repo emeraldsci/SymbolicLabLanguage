@@ -291,27 +291,6 @@ DefineObjectType[Object[Wiring], {
 			Category -> "Wiring Information"
 		},
 
-		(* --- Physical Properties --- *)
-		Count->{
-			Format -> Single,
-			Class -> Integer,
-			Pattern :> GreaterEqualP[0,1],
-			Units -> None,
-			Description -> "The current number of individual items that are part of this wiring component.",
-			Category -> "Physical Properties"
-		},
-		
-		CountLog->{
-			Format -> Multiple,
-			Class -> {Date, Integer, Link},
-			Pattern :> {_?DateObjectQ, GreaterEqualP[0,1], _Link},
-			Relation -> {Null, Null, Object[Protocol] | Object[Maintenance] | Object[Qualification] | Object[Product] | Object[User]},
-			Units -> {None, None, None},
-			Description -> "A historical record of the count of the wiring component.",
-			Category -> "Physical Properties",
-			Headers ->{"Date","Count","Responsible Party"}
-		},
-		
 		(* --- Inventory --- *)
 		SerialNumber -> {
 			Format -> Single,
@@ -472,6 +451,14 @@ DefineObjectType[Object[Wiring], {
 			Relation -> {Null, Null, Object[Container][ContentsLog, 3] | Object[Instrument][ContentsLog, 3], Null, Object[User] | Object[Protocol] | Object[Qualification] | Object[Maintenance]},
 			Description -> "The location history of the wiring component.",
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
+			Category -> "Storage Information"
+		},
+
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how this wiring component is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
 		

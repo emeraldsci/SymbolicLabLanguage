@@ -301,10 +301,9 @@ DefineOptions[ExperimentMeasureContactAngle,
 			}
 		],
 		PreparatoryUnitOperationsOption,
-		Experiment`Private`PreparatoryPrimitivesOption,
 		ProtocolOptions,
 		SimulationOption,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		PreparationOption,
 		SamplesInStorageOption
 	}
@@ -335,12 +334,11 @@ ExperimentMeasureContactAngle[
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
-		outputSpecification,output,gatherTests,listedSamplesNamed,listedOptionsNamed,
-		validSamplePreparationResult,allPreparedSamples,myOptionsWithPreparedSamplesNamed,updatedSimulation,
-		mySamplesWithPreparedSamplesNamed,myWettingLiquidsWithPreparedSamplesNamed,safeOpsNamed,safeOpsTests,
-		combinedNamedSamples,combinedSamples,safeOps,myOptionsWithPreparedSamples,
+		outputSpecification,output,gatherTests,listedFiberSamples,listedOptions,listedLiquidSamples,
+		validSamplePreparationResult,allPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation,
+		safeOpsNamed,safeOpsTests,combinedSamples,safeOps,myOptionsWithPreparedSamples,
 		mySamplesWithPreparedSamples,myWettingLiquidsWithPreparedSamples,validLengths,validLengthTests,
-		templatedOptions,templateTests,inheritedOptions,upload,confirm,fastTrack,parentProtocol,cache,
+		templatedOptions,templateTests,inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,
 		expandedSafeOps,expandedFiberSamples,expandedWettingLiquids,
 		(* Download *)
 		immersionContainerOption,immersionContainerObjects,immersionContainerModels,
@@ -357,21 +355,20 @@ ExperimentMeasureContactAngle[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Make sure we're working with a list of options and samples, and remove all temporal links *)
-	{listedSamplesNamed,listedOptionsNamed}=removeLinks[ToList[mySolidSamples],ToList[myOptions]];
+	{listedFiberSamples,listedOptions}=removeLinks[ToList[mySolidSamples],ToList[myOptions]];
+	listedLiquidSamples=First[removeLinks[ToList[myWettingLiquids],{}]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{allPreparedSamples,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{allPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureContactAngle,
-			Join[listedSamplesNamed,ToList[myWettingLiquids]],
-			listedOptionsNamed
+			Join[listedFiberSamples,listedLiquidSamples],
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
-
-	{mySamplesWithPreparedSamplesNamed,myWettingLiquidsWithPreparedSamplesNamed}=TakeDrop[allPreparedSamples,Length[listedSamplesNamed]];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
@@ -382,26 +379,12 @@ ExperimentMeasureContactAngle[
 
 	(* Call SafeOptions to make sure all options match pattern *)
 	{safeOpsNamed,safeOpsTests}=If[gatherTests,
-		SafeOptions[ExperimentMeasureContactAngle,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentMeasureContactAngle,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
+		SafeOptions[ExperimentMeasureContactAngle,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
+		{SafeOptions[ExperimentMeasureContactAngle,listedOptions,AutoCorrect->False],{}}
 	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOpsNamed,$Failed],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->safeOpsTests,
-			Options->$Failed,
-			Preview->Null,
-			Simulation->Null
-		}]
-	];
-
-	(* Combined the samples to be sent to the sanitizeInput function*)
-	combinedNamedSamples=Join[mySamplesWithPreparedSamplesNamed,myWettingLiquidsWithPreparedSamplesNamed];
 
 	(* Replace all objects referenced by Name to ID *)
-	{combinedSamples,{safeOps,myOptionsWithPreparedSamples}}=sanitizeInputs[combinedNamedSamples,{safeOpsNamed,myOptionsWithPreparedSamplesNamed}];
+	{combinedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[allPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -415,7 +398,7 @@ ExperimentMeasureContactAngle[
 	];
 
 	(* Separate them into fiber and wetting liquid samples*)
-	{mySamplesWithPreparedSamples,myWettingLiquidsWithPreparedSamples}=TakeList[combinedSamples,{Length[mySamplesWithPreparedSamplesNamed],Length[myWettingLiquidsWithPreparedSamplesNamed]}];
+	{mySamplesWithPreparedSamples,myWettingLiquidsWithPreparedSamples}=TakeList[combinedSamples,{Length[listedFiberSamples],Length[listedLiquidSamples]}];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -455,7 +438,7 @@ ExperimentMeasureContactAngle[
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Expand index-matching options and secondary input (the primary antibodies) *)
 	{{expandedFiberSamples,expandedWettingLiquids},expandedSafeOps}=ExpandIndexMatchedInputs[ExperimentMeasureContactAngle,{mySamplesWithPreparedSamples,myWettingLiquidsWithPreparedSamples},inheritedOptions];
@@ -658,6 +641,7 @@ ExperimentMeasureContactAngle[
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,MeasureContactAngle],
 			Simulation->updatedSimulation
@@ -679,8 +663,13 @@ ExperimentMeasureContactAngle[
 	myWettingLiquidContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myOptions:OptionsPattern[]
 ]:=Module[
-	{listedFiberContainers,listedLiquidContainers,listedOptions,outputSpecification,output,gatherTests,validFiberSamplePreparationResult,validLiquidSamplePreparationResult,myFiberSamplesWithPreparedSamples,myLiquidSamplesWithPreparedSamples,myOptionsWithPreparedFiberSamples,myOptionsWithPreparedLiquidSamples,
-		updatedSimulation,containerToFiberSampleResult,containerToLiquidSampleResult,containerToFiberSampleOutput,containerToLiquidSampleOutput,containerToLiquidSampleTests,fiberSamples,wettingLiquids,sampleOptions,containerToFiberSampleTests},
+	{
+		outputSpecification,output,gatherTests,listedFiberContainers,listedLiquidContainers,listedOptions,validSamplePreparationResult,
+		myCombinedSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamples,samplesFiberWithPreparedSamples,samplesLiquidWithPreparedSamples,
+		updatedSimulation,containerToFiberSampleResult,containerToFiberSimulation,containerToLiquidSampleResult,containerToFiberSampleOutput,
+		containerToLiquidSampleSimulation,containerToLiquidSampleOutput,containerToLiquidSampleTests,fiberSamples,wettingLiquids,
+		sampleOptions,containerToFiberSampleTests
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -690,47 +679,46 @@ ExperimentMeasureContactAngle[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedFiberContainers,listedOptions}=removeLinks[ToList[myFiberSampleContainers],ToList[myOptions]];
-	{listedLiquidContainers,listedOptions}=removeLinks[ToList[myWettingLiquidContainers],ToList[myOptions]];
+	{
+		listedFiberContainers,
+		listedLiquidContainers,
+		listedOptions
+	}={
+		ToList[myFiberSampleContainers],
+		ToList[myWettingLiquidContainers],
+		ToList[myOptions]
+	};
 
 	(* First, simulate our sample preparation. *)
-	validFiberSamplePreparationResult=Check[
+	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{myFiberSamplesWithPreparedSamples,myOptionsWithPreparedFiberSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{myCombinedSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureContactAngle,
-			listedFiberContainers,
+			Join[listedFiberContainers,listedLiquidContainers],
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
-	];
-
-	validLiquidSamplePreparationResult=Check[
-		(* Simulate sample preparation. *)
-		{myLiquidSamplesWithPreparedSamples,myOptionsWithPreparedLiquidSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
-			ExperimentMeasureContactAngle,
-			listedLiquidContainers,
-			listedOptions
-		],
-		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validFiberSamplePreparationResult,$Failed]||MatchQ[validLiquidSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
 		Return[$Failed]
 	];
 
+	(* Separate them into fiber and wetting liquid samples*)
+	{samplesFiberWithPreparedSamples,samplesLiquidWithPreparedSamples}=TakeList[myCombinedSamplesWithPreparedSamplesNamed,{Length[listedFiberContainers],Length[listedLiquidContainers]}];
+
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToFiberSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToFiberSampleOutput,containerToFiberSampleTests}=containerToSampleOptions[
+		{containerToFiberSampleOutput,containerToFiberSampleTests,containerToFiberSimulation}=containerToSampleOptions[
 			ExperimentMeasureContactAngle,
-			myFiberSamplesWithPreparedSamples,
-			myOptionsWithPreparedFiberSamples,
-			Output->{Result,Tests},
+			samplesFiberWithPreparedSamples,
+			myOptionsWithPreparedSamples,
+			Output->{Result,Tests,Simulation},
 			Simulation->updatedSimulation
 		];
 
@@ -742,25 +730,27 @@ ExperimentMeasureContactAngle[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToFiberSampleOutput=containerToSampleOptions[
+			{containerToFiberSampleOutput,containerToFiberSimulation}=containerToSampleOptions[
 				ExperimentMeasureContactAngle,
-				myFiberSamplesWithPreparedSamples,
-				myOptionsWithPreparedFiberSamples,
-				Output->Result,
+				samplesFiberWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output->{Result,Simulation},
 				Simulation->updatedSimulation
 			],
 			$Failed,
-			{Error::EmptyContainer}
+			{Error::EmptyContainers,Error::ContainerEmptyWells,Error::WellDoesNotExist}
 		]
 	];
 
+	updatedSimulation=UpdateSimulation[updatedSimulation,containerToFiberSimulation];
+
 	containerToLiquidSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToLiquidSampleOutput,containerToLiquidSampleTests}=containerToSampleOptions[
+		{containerToLiquidSampleOutput,containerToLiquidSampleTests,containerToLiquidSampleSimulation}=containerToSampleOptions[
 			ExperimentMeasureContactAngle,
-			myLiquidSamplesWithPreparedSamples,
-			myOptionsWithPreparedLiquidSamples,
-			Output->{Result,Tests},
+			samplesLiquidWithPreparedSamples,
+			myOptionsWithPreparedSamples,
+			Output->{Result,Tests,Simulation},
 			Simulation->updatedSimulation
 		];
 
@@ -772,17 +762,19 @@ ExperimentMeasureContactAngle[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToLiquidSampleOutput=containerToSampleOptions[
+			{containerToLiquidSampleOutput,containerToLiquidSampleSimulation}=containerToSampleOptions[
 				ExperimentMeasureContactAngle,
-				myLiquidSamplesWithPreparedSamples,
-				myOptionsWithPreparedLiquidSamples,
-				Output->Result,
+				samplesLiquidWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output->{Result,Simulation},
 				Simulation->updatedSimulation
 			],
 			$Failed,
-			{Error::EmptyContainer}
+			{Error::EmptyContainers,Error::ContainerEmptyWells,Error::WellDoesNotExist}
 		]
 	];
+
+	updatedSimulation=UpdateSimulation[updatedSimulation,containerToLiquidSampleSimulation];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToFiberSampleResult,$Failed]||MatchQ[containerToLiquidSampleResult,$Failed],
@@ -795,7 +787,7 @@ ExperimentMeasureContactAngle[
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
 		{fiberSamples,sampleOptions}=containerToFiberSampleOutput;
-		{wettingLiquids,sampleOptions}=containerToLiquidSampleOutput;
+		wettingLiquids=First@containerToLiquidSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
 		ExperimentMeasureContactAngle[fiberSamples,wettingLiquids,ReplaceRule[sampleOptions,Simulation->updatedSimulation]]
@@ -930,6 +922,7 @@ resolveExperimentMeasureContactAngleOptions[
 		uploadOption,
 		nameOption,
 		confirmOption,
+		canaryBranchOption,
 		parentProtocolOption,
 		fastTrackOption,
 		templateOption,
@@ -1630,7 +1623,7 @@ resolveExperimentMeasureContactAngleOptions[
 							SameQ[Lookup[immersionContainerPacket,Name],"Kruss SV10 glass sample vessel"],12 Milliliter
 						];
 						(* Minimal required volume could be calculated from max immersion depth and container diameter on top of base volume. *)
-						minRequiredVolume=mtResolvedEndImmersionDepth*(Lookup[immersionContainerPacket,InternalDiameter]/2)^2*Pi+baseVolume;
+						minRequiredVolume=SafeRound[mtResolvedEndImmersionDepth*(Lookup[immersionContainerPacket,InternalDiameter]/2)^2*Pi+baseVolume,1 Milliliter];
 						{minRequiredVolume,mtUnresolvedImmersionContainer}
 					),
 					(* 4 *)
@@ -1643,7 +1636,7 @@ resolveExperimentMeasureContactAngleOptions[
 							SameQ[Lookup[immersionContainerPacket,Name],"Kruss SV10 glass sample vessel"],12 Milliliter
 						];
 						(* Minimal required volume could be calculated from max immersion depth and container diameter on top of base volume. *)
-						minRequiredVolume=mtResolvedEndImmersionDepth*(Lookup[immersionContainerPacket,InternalDiameter]/2)^2*Pi+baseVolume;
+						minRequiredVolume=SafeRound[mtResolvedEndImmersionDepth*(Lookup[immersionContainerPacket,InternalDiameter]/2)^2*Pi+baseVolume, 1 Milliliter];
 						If[mtUnresolvedVolume>minRequiredVolume,
 							{mtUnresolvedVolume,mtUnresolvedImmersionContainer},
 							notEnoughLiquidError==True;{mtUnresolvedVolume,mtUnresolvedImmersionContainer}
@@ -1725,6 +1718,7 @@ resolveExperimentMeasureContactAngleOptions[
 		uploadOption,
 		nameOption,
 		confirmOption,
+		canaryBranchOption,
 		parentProtocolOption,
 		fastTrackOption,
 		templateOption,
@@ -1741,6 +1735,7 @@ resolveExperimentMeasureContactAngleOptions[
 			Upload,
 			Name,
 			Confirm,
+			CanaryBranch,
 			ParentProtocol,
 			FastTrack,
 			Template,
@@ -1826,6 +1821,7 @@ resolveExperimentMeasureContactAngleOptions[
 				Upload->uploadOption,
 				Name->nameOption,
 				Confirm->confirmOption,
+				CanaryBranch->canaryBranchOption,
 				ParentProtocol->parentProtocolOption,
 				FastTrack->fastTrackOption,
 				Template->templateOption,
@@ -1866,38 +1862,25 @@ experimentMeasureContactAngleResourcePackets[
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
-		expandedSampleInputs,expandedWettingLiquidInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,
-		sampleDownload,sampleContainerDownload,wettingLiquidDownload,sampleContainerDownloadWithNumReplicates,samplePackets,wettingLiquidPackets,sampleContainerObjects,
-
-		expandedSampleLabel,
-		expandedSampleContainerLabel,
-		instrument,
-		numberOfReplicates,
-		expandedWettedLengthMeasurement,
-		expandedNumberOfCycles,
-		expandedContactDetectionSpeed,
-		expandedContactDetectionSensitivity,
-		expandedMeasuringSpeed,
-		expandedAcquisitionStep,
-		expandedStartImmersionDepth,
-		expandedEndImmersionDepth,
-		expandedStartImmersionDelay,
-		expandedEndImmersionDelay,
-		expandedTemperature,
-		expandedVolume,
-		expandedImmersionContainer,
-		expandedWettedLengthMeasurementLiquids,
-		expandedFiberSampleHolder,
-
-		contactDetectionSensitivityAdjustmentLog,expandedSamplesWithNumReplicates,expandedSampleContainerWithNumReplicates,expandedOptionsWithNumReplicates,expandedWettingLiquidWithNumReplicates,
+		safeOps,expandedSampleInputs,expandedWettingLiquidInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,
+		output,gatherTests,messages,inheritedCache,inheritedSimulation,sampleDownload,sampleContainerDownload,wettingLiquidDownload,
+		sampleContainerDownloadWithNumReplicates,samplePackets,wettingLiquidPackets,sampleContainerObjects,expandedSampleLabel,
+		expandedSampleContainerLabel,instrument,numberOfReplicates,expandedWettedLengthMeasurement,expandedNumberOfCycles,
+		expandedContactDetectionSpeed,expandedContactDetectionSensitivity,expandedMeasuringSpeed,expandedAcquisitionStep,
+		expandedStartImmersionDepth,expandedEndImmersionDepth,expandedStartImmersionDelay,expandedEndImmersionDelay,
+		expandedTemperature,expandedVolume,expandedImmersionContainer,expandedWettedLengthMeasurementLiquids,
+		expandedFiberSampleHolder,contactDetectionSensitivityAdjustmentLog,expandedSamplesWithNumReplicates,
+		expandedSampleContainerWithNumReplicates,expandedOptionsWithNumReplicates,expandedWettingLiquidWithNumReplicates,
 		sampleResourceReplaceRules,samplesInResources,containerResourceReplaceRules,containersInResources,
-		wettingLiquidContainerVolumeCombination,uniqueWettingLiquidContainerVolumeCombination,liquidResourceReplaceRules,wettingLiquidResources,
-		immersionContainerModel,expandedWettedLengthMeasurementContainer,expandedWettedLengthMeasurementVolume,wettedLengthMeasurementLiquidResources,fiberSampleHolderResources,tweezerResource,
-		wettedLengthMeasurementTime,contactAngleMeasurementTime,setUpTearDownTime,instrumentTime,instrumentResource,
-
-		protocolPacket,sharedFieldPacket,finalizedPacket,
-		allResourceBlobs,fulfillable,frqTests,testsRule,resultRule
+		wettingLiquidContainerVolumeCombination,uniqueWettingLiquidContainerVolumeCombination,liquidResourceReplaceRules,
+		wettingLiquidResources,immersionContainerModel,expandedWettedLengthMeasurementContainer,expandedWettedLengthMeasurementVolume,
+		wettedLengthMeasurementLiquidResources,fiberSampleHolderResources,tweezerResource,wettedLengthMeasurementTime,
+		contactAngleMeasurementTime,setUpTearDownTime,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,
+		finalizedPacket,allResourceBlobs,fulfillable,frqTests,testsRule,resultRule
 	},
+
+	(* Get the safe options for this function *)
+	safeOps=SafeOptions[experimentMeasureContactAngleResourcePackets,ToList[myOptions]];
 
 	(* expand the resolved options if they weren't expanded already *)
 	{{expandedSampleInputs,expandedWettingLiquidInputs},expandedResolvedOptions}=ExpandIndexMatchedInputs[ExperimentMeasureContactAngle,{mySamples,myWettingLiquids},myResolvedOptions];
@@ -1911,7 +1894,7 @@ experimentMeasureContactAngleResourcePackets[
 	];
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=OptionDefault[OptionValue[Output]];
+	outputSpecification=Lookup[safeOps,Output];
 	output=ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests to return to the user. *)
@@ -1919,7 +1902,7 @@ experimentMeasureContactAngleResourcePackets[
 	messages=Not[gatherTests];
 
 	(* Get the inherited cache *)
-	inheritedCache=Lookup[ToList[myOptions],Cache];
+	{inheritedCache,inheritedSimulation}=Lookup[safeOps,{Cache,Simulation}];
 
 	(* Expand our samples and options according to NumberOfReplicates. *)
 	{expandedSamplesWithNumReplicates,expandedOptionsWithNumReplicates}=expandNumberOfReplicates[ExperimentMeasureContactAngle,mySamples,expandedResolvedOptions];
@@ -1947,7 +1930,8 @@ experimentMeasureContactAngleResourcePackets[
 				Packet[Name,Status,State]
 			}
 		},
-		Cache->inheritedCache
+		Cache->inheritedCache,
+		Simulation->inheritedSimulation
 	];
 
 	(* Flatten the downloaded packets *)
@@ -2148,7 +2132,7 @@ experimentMeasureContactAngleResourcePackets[
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache,Simulation->inheritedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -2160,8 +2144,8 @@ experimentMeasureContactAngleResourcePackets[
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache,Simulation->inheritedSimulation],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache,Simulation->inheritedSimulation],Null}
 	];
 
 	(* generate the tests rule *)

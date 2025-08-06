@@ -14,6 +14,7 @@
 		"SummaryBoxes`"
 	],
 	"sources":[
+		"AstraClient.m",
 		"AsyncUpload.m",
 		"EmeraldCloudFile.m",
 		"Init.m",
@@ -32,7 +33,8 @@
 		"Search.m",
 		"Upload.m",
 		"BigQuantityArraySpan.m",
-		"PollObject.m"
+		"PollObject.m",
+		"PyECL.m"
 	],
 	"conflictSymbols":[
 		"Headers"
@@ -54,6 +56,7 @@
 		"ByteLimit",
 		"Cache",
 		"CAS",
+		"CallAstra",
 		"Category",
 		"CheckServer",
 		"Class",
@@ -128,6 +131,7 @@
 		"FilePathP",
 		"Financing",
 		"FinancingTeams",
+		"FlatTable",
 		"Force",
 		"GetNumOwnedObjects",
 		"HaltingCondition",
@@ -208,6 +212,7 @@
 		"ProductionQ",
 		"PublicObjects",
 		"Published",
+		"PyECLRequest",
 		"QuietDomainChange",
 		"ReferenceWithIdP",
 		"ReferenceWithNameP",
@@ -215,6 +220,7 @@
 		"Remember",
 		"RemoveLinkID",
 		"Required",
+		"Retries",
 		"RevisionHistory",
 		"Rfc3339ToDateObject",
 		"SameObjectQ",
@@ -289,6 +295,7 @@
 		"$PersonID",
 		"$RequiredSearchName",
 		"$SearchMaxDateCreated",
+		"$SimulatedCreatedObjects",
 		"$Simulation"
 	]
 }

@@ -41,6 +41,26 @@ DefineUsage[PlotCircularDichroism,
 				}
 			},
 			{
+				Definition -> {"PlotCircularDichroism[protocol]", "plot"},
+				Description -> "creates a 'plot' of spectra in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing circular dichroism data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, CircularDichroism]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the circular dichroism protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotCircularDichroism[spectrum]","plot"},
 				Description->"provides a graphical plot of the provided spectrum.",
 
@@ -67,7 +87,7 @@ DefineUsage[PlotCircularDichroism,
 			"PlotNMR",
 			"PlotAbsorbanceSpectroscopy"
 		},
-		Author -> {"jihan.kim", "lige.tonggu", "weiran.wang"},
+		Author -> {"melanie.reschke", "jihan.kim", "lige.tonggu", "weiran.wang"},
 		Preview->True
 	}
 ];

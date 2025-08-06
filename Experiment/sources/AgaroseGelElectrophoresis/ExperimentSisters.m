@@ -21,7 +21,7 @@ DefineOptions[ValidExperimentAgaroseGelElectrophoresisQ,
 ];
 
 (* --- Source code --- *)
-ValidExperimentAgaroseGelElectrophoresisQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentAgaroseGelElectrophoresisQ]]:=Module[
+ValidExperimentAgaroseGelElectrophoresisQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentAgaroseGelElectrophoresisQ]]:=Module[
   {listedOptions, preparedOptions, agaroseTests,initialTestDescription, allTests, verbose,outputFormat},
 
   (* get the options as a list *)
@@ -87,7 +87,7 @@ DefineOptions[ExperimentAgaroseGelElectrophoresisOptions,
 ];
 
 (* --- Source code --- *)
-ExperimentAgaroseGelElectrophoresisOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAgaroseGelElectrophoresisOptions]]:=Module[
+ExperimentAgaroseGelElectrophoresisOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentAgaroseGelElectrophoresisOptions]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
@@ -117,7 +117,7 @@ DefineOptions[ExperimentAgaroseGelElectrophoresisPreview,
 
 
 (* --- Source code --- *)
-ExperimentAgaroseGelElectrophoresisPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinQuantificationPreview]]:=Module[
+ExperimentAgaroseGelElectrophoresisPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinQuantificationPreview]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* get the options as a list *)

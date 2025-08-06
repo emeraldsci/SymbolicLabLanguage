@@ -19,15 +19,28 @@ DefineUsage[ExperimentLyophilize,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that will be freeze-dried.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample],Object[Container]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes -> {Object[Sample],Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							Expandable -> False
 						},
 						IndexName -> "experiment samples"
 					]
@@ -55,11 +68,7 @@ DefineUsage[ExperimentLyophilize,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {
-			"clayton.schwarz",
-			"axu",
-			"wyatt"
-		}
+		Author -> {"steven", "clayton.schwarz", "axu", "wyatt"}
 	}
 ];
 
@@ -79,15 +88,22 @@ DefineUsage[ValidExperimentLyophilizeQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that will be freeze-dried.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample],Object[Container]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes -> {Object[Sample],Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							Expandable -> False
 						},
 						IndexName -> "experiment samples"
 					]
@@ -134,15 +150,22 @@ DefineUsage[ExperimentLyophilizeOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that will be freeze-dried.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample],Object[Container]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes -> {Object[Sample],Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							Expandable -> False
 						},
 						IndexName -> "experiment samples"
 					]
@@ -188,15 +211,22 @@ DefineUsage[ExperimentLyophilizePreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples that will be freeze-dried.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample],Object[Container]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes -> {Object[Sample],Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							Expandable -> False
 						},
 						IndexName -> "experiment samples"
 					]

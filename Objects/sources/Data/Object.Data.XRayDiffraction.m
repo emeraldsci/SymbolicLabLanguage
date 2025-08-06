@@ -16,7 +16,7 @@ DefineObjectType[Object[Data, XRayDiffraction], {
 			Description -> "The resolved crystal structure analysis using this diffraction pattern as source data.",
 			Category -> "Analysis & Reports"
 		},
-		DiffractionSpectrum -> {
+		DiffractionPattern -> {
 			Format -> Single,
 			Class -> QuantityArray,
 			Pattern :> QuantityCoordinatesP[{AngularDegree,ArbitraryUnit}],
@@ -24,7 +24,7 @@ DefineObjectType[Object[Data, XRayDiffraction], {
 			Description -> "The diffraction pattern of a powder X-ray diffraction experiment.",
 			Category -> "Experimental Results"
 		},
-		BlankedDiffractionSpectrum -> {
+		BlankedDiffractionPattern -> {
 			Format -> Single,
 			Class -> QuantityArray,
 			Pattern :> QuantityCoordinatesP[{AngularDegree,ArbitraryUnit}],

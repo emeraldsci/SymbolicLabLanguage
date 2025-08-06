@@ -441,7 +441,7 @@ DefineTests[SampleUsage,
 			_Pane,
 			Messages :> {Warning::SamplesNotOwned}
 		],
-		Example[{Messages, "InsufficientAmount", "Throw a warning message for any input primitive that contains samples with insufficient amount to undergo all the specified manipulations:"},
+		Example[{Messages, "InsufficientSampleAmount", "Throw a warning message for any input primitive that contains samples with insufficient amount to undergo all the specified manipulations:"},
 			SampleUsage[
 				{
 					Transfer[
@@ -458,7 +458,7 @@ DefineTests[SampleUsage,
 				InventoryComparison -> True
 			],
 			_Pane,
-			Messages :> {Warning::InsufficientAmount}
+			Messages :> {Warning::InsufficientSampleAmount}
 		]
 	},
 	SymbolSetUp :> (

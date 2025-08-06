@@ -132,7 +132,7 @@ DefineObjectType[Model[Container, Vessel], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*GravitationalAcceleration],
 			Units -> GravitationalAcceleration,
-			Description -> "The maxiumum relative centrifugal force this vessel is capable of withstanding.",
+			Description -> "The maximum relative centrifugal force this vessel is capable of withstanding.",
 			Category -> "Operating Limits"
 		},
 		ProductsContained -> {
@@ -218,14 +218,6 @@ DefineObjectType[Model[Container, Vessel], {
 			Abstract->True,
 			Category -> "Container Specifications"
 		},
-		Stocked->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if the empty containers of this model are kept in stock for use on demand in experiments.",
-			Abstract->True,
-			Category -> "Container Specifications"
-		},
 		LiquidHandlerRackID->{
 			Format->Single,
 			Class->String,
@@ -286,6 +278,31 @@ DefineObjectType[Model[Container, Vessel], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if this vessel has a permanently attached cap.",
 			Category -> "Physical Properties"
+		},
+		MaxOverheadMixRate -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 RPM],
+			Units -> RPM,
+			Description -> "The maximum allowable mixing rate this container can be used utilizing impeller on an overhead stirrer without inducing overflow or spillage.",
+			Category -> "Compatibility"
+		},
+		GraduationTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Labeled, Short, Long],
+			Description -> "For each member of Graduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations
+		},
+		GraduationLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of Graduations, if GraduationTypes is Labeled, exactly matches the labeling text. Otherwise, Null.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations,
+			Developer -> True
 		}
 	}
 }];

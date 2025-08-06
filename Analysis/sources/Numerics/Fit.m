@@ -580,7 +580,11 @@ resolveAnalyzeFitOptions[xyMags_, expr_, inputUnit_, outputUnit_, firstOpsSet_, 
 	(* --- Check if Name existed in DB --- *)
 	name = Lookup[myOptions, Name];
 	nameTestDescription="Check if the given Name already existed in the database:";
-	nameTest = FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, Length[Search[Object[Analysis, Fit], Name=name]] == 0 || NullQ[name]];
+	nameTest = If[StringQ[name],
+		FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, Length[Search[Object[Analysis, Fit], Name=name]] == 0 ],
+		FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, True]
+	];
+
 
 	resolvedOptions = ReplaceRule[myOptions,
 		{
@@ -1855,7 +1859,7 @@ transformFunctionY[f_Function,yscale_?NumericQ,yshift_?NumericQ]:=
  ProjectSemiPositiveDefinite[A_?MatrixQ] := Module[{values, vectors,positiveValues, ANew},
 	{values,vectors} = Eigensystem[N[A]];
 
-	(*Mathematica sucks and returns eigenvectors \[UndirectedEdge] values in a non-traditional order - see http://mathematica.stackexchange.com/questions/6420/how-do-i-keep-the-right-ordering-of-eigenvalues-using-eigensystem god damn it mathematica*)
+	(*Mathematica isn't cool and returns eigenvectors \[UndirectedEdge] values in a non-traditional order - see http://mathematica.stackexchange.com/questions/6420/how-do-i-keep-the-right-ordering-of-eigenvalues-using-eigensystem *)
 
 	values = Reverse[values];
 	vectors = Transpose[Reverse[vectors]];
@@ -2061,7 +2065,7 @@ AnalyzeFitOptions[xy:analyzeFitDataP,expr:_Symbol|_Function,ops:OptionsPattern[]
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = AnalyzeFit[xy,expr,Append[noOutputOptions,Output->Options]];

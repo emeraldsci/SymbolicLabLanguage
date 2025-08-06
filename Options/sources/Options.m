@@ -585,7 +585,7 @@ defineOption[mySymbol_Symbol,Hold[myOptionsList:List[(_Rule|_RuleDelayed)..]],al
 	myAssociation=Association[myOptionsList];
 
 	(* Define a list of valid keys that can exist in this options list. *)
-	validKeys={OptionName,Default,AllowNull,Description,ResolutionDescription,Category,IndexMatchingInput,IndexMatchingParent,IndexMatchingOptions,IndexMatching,Expandable,Pattern,PatternTooltip,SingletonPattern,Widget,Pooled,Required,UnitOperation,NestedIndexMatching};
+	validKeys={OptionName,Default,AllowNull,Description,ResolutionDescription,Category,IndexMatchingInput,IndexMatchingParent,IndexMatchingOptions,IndexMatching,Expandable,Pattern,PatternTooltip,SingletonPattern,Widget,Pooled,Required,UnitOperation,NestedIndexMatching,HideNull};
 
 	(* Get the set difference between the valid keys and the keys in the given options list. This gives us the invalid keys in the association. *)
 	invalidKeys=Complement[Keys[myAssociation],validKeys];
@@ -769,6 +769,9 @@ defineOption[mySymbol_Symbol,Hold[myOptionsList:List[(_Rule|_RuleDelayed)..]],al
 
 			(* AllowNull defaults to True. *)
 			"AllowNull"->Lookup[myAssociation,AllowNull,True],
+
+			(* AllowNull defaults to True. *)
+			"HideNull"->Lookup[myAssociation,HideNull,True],
 
 			(* IndexMatching is a list of strings and symbols. This is an optional key so default it to Null. *)
 			"IndexMatching"->If[MatchQ[Lookup[myAssociation,Key[IndexMatching],Null],Null],
@@ -1112,7 +1115,8 @@ OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}]:=OptionDefa
 OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}, myOutputOption:Rule[Output, ListableP[Result|Tests]]]:=Module[
 	{defaults,stringOptions,definition, unknownOptions, unknownOptionTests, opsNames, opsHeldPatterns, opsPatterns,
 		opsHeads, opsDefaults, messages, optionValuesWithMissing, incorrectPatternOptions, patternMatchesTests,
-		heldOptionValues, allOptions, resultRule, testsRule, output, outputSpecification},
+		heldOptionValues, allOptions, resultRule, testsRule, output, outputSpecification, optionMatchesPatternQs,
+		optionMissingQs},
 
 	(* get the value of the Output option; can't use ToList because it's not below in the dependency tree *)
 	outputSpecification = Lookup[myOutputOption, Output];
@@ -1177,15 +1181,26 @@ OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}, myOutputOpt
 		opsNames
 	];
 
+	(* determine if we are _Missing and also if we're matching the pattern *)
+	(* doing it this way trades one potentially expensive error check here for two below *)
+	optionMissingQs = Map[
+		MatchQ[#1, _Missing]&,
+		optionValuesWithMissing
+	];
+	optionMatchesPatternQs = MapThread[
+		Not[#3] && MatchQ[#1, #2]&,
+		{optionValuesWithMissing, opsPatterns, optionMissingQs}
+	];
+
 	(* get the options with the incorrect patterns as a set of ordered quadruples *)
 	incorrectPatternOptions = MapThread[
-		Function[{value, pattern, name, heldPattern, default},
-			If[MatchQ[value, pattern|_Missing],
+		Function[{value, name, heldPattern, default, optionMatchesPatternQ, optionMissingQ},
+			If[optionMatchesPatternQ || optionMissingQ,
 				Nothing,
 				{value, heldPattern, name, default}
 			]
 		],
-		{optionValuesWithMissing, opsPatterns, opsNames, opsHeldPatterns, opsDefaults}
+		{optionValuesWithMissing, opsNames, opsHeldPatterns, opsDefaults, optionMatchesPatternQs, optionMissingQs}
 	];
 
 	(* make a list of tests indicating whether the patterns match; ONLY do this if Tests is specified in the options; otherwise, definitely don't do this because we will make recursion errors since Warning calls OptionDefaults and we will hit issues *)
@@ -1193,8 +1208,8 @@ OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}, myOutputOpt
 	patternMatchesTests = If[messages,
 		{},
 		MapThread[
-			Function[{value, pattern, name, heldPattern},
-				If[MatchQ[value, _Missing],
+			Function[{value, pattern, name, heldPattern, optionMissingQ},
+				If[optionMissingQ,
 					Nothing,
 					Warning[StringJoin["The specified value for the ", ToString[name], " option for the ", ToString[mySymbol], " function matches the pattern ", heldPatternToString[heldPattern], ":"],
 						MatchQ[value, pattern|_Missing],
@@ -1202,7 +1217,7 @@ OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}, myOutputOpt
 					]
 				]
 			],
-			{optionValuesWithMissing, opsPatterns, opsNames, opsHeldPatterns}
+			{optionValuesWithMissing, opsPatterns, opsNames, opsHeldPatterns, optionMissingQs}
 		]
 	];
 
@@ -1213,14 +1228,14 @@ OptionDefaults[mySymbol_Symbol, myOptions:{(_Rule|_RuleDelayed)...}, myOutputOpt
 
 	(* get the correct held option value *)
 	heldOptionValues = MapThread[
-		Function[{value, pattern, default},
-			(* this Except is important, because sometimes option patterns are just _ and so _Missing won't get caught here *)
-			If[MatchQ[value, Except[_Missing, pattern]],
+		Function[{value, default, optionMatchesPatternQ, optionMissingQ},
+			(* this two-part logic is important, because sometimes option patterns are just _ and so _Missing won't get caught here *)
+			If[Not[optionMissingQ] && optionMatchesPatternQ,
 				Hold[value],
 				default
 			]
 		],
-		{optionValuesWithMissing, opsPatterns, opsDefaults}
+		{optionValuesWithMissing, opsDefaults, optionMatchesPatternQs, optionMissingQs}
 	];
 
 	(* get all the options together as a list of rules; doing the weird Prepend/Apply shenanigans to remove the Holds *)

@@ -94,7 +94,7 @@ DefineUsage[preResolveLiquidLiquidExtractionSharedOptions,
               Description->"The map thread version of the experiment options of the parent function (the function calling preResolveLiquidLiquidExtractionSharedOptions) that contains the liquid-liquid extraction shared options.",
               Widget->Widget[
                 Type -> Expression,
-                Pattern :> {_Rule..},
+                Pattern :> {_Association..},
                 Size -> Line
               ],
               Expandable->False

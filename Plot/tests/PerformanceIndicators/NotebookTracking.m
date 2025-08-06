@@ -8,21 +8,6 @@
 (*Source Code*)
 
 (* ::Subsection::Closed:: *)
-(* computeContainerCoverNotebookMismatches *)
-DefineTests[computeContainerCoverNotebookMismatches,
-	{
-
-	},
-	SymbolSetUp:>Module[{},
-		$CreatedObjects={}
-	],
-	SymbolTearDown:>Module[{},
-		EraseObject[$CreatedObjects,Force->True,Verbose->False];
-		Unset[$CreatedObjects];
-	]
-];
-
-(* ::Subsection::Closed:: *)
 (* PlotContainerCoverNotebookMismatches *)
 DefineTests[PlotContainerCoverNotebookMismatches,
 	{	Example[{Basic,"Given a specific date, return that date and the total number of containers that were created before that date, along with the following container/cover notebook categories: Null container notebook with populated cover notebook, populated container notebook with Null cover notebook, mismatching populated notebooks, matching populated notebooks, mismatching populated notebooks that have conflicting financers."},
@@ -70,13 +55,14 @@ DefineTests[PlotContainerCoverNotebookMismatches,
 			TimeConstraint -> 5000
 
 		],
-		Example[{Options, OutputFormat,"If OutputFormat is set to Plot and given a specific date, return a bar chart with the following container/cover notebook categories: Null container notebook with populated cover notebook, populated container notebook with Null cover notebook, mismatching populated notebooks, matching populated notebooks, mismatching populated notebooks that have conflicting financers. Additionally, return a table with the specific containers and covers that have notebooks with conflicing financers."},
+		Example[{Options, OutputFormat,"If OutputFormat is set to Plot and given a specific date, return a bar chart with the following container/cover notebook categories: Null container notebook with populated cover notebook, populated container notebook with Null cover notebook, mismatching populated notebooks, matching populated notebooks, mismatching populated notebooks that have conflicting financers. Additionally, return a table with the specific containers and covers that have notebooks with conflicting financers."},
 			Quiet[
-				PlotContainerCoverNotebookMismatches[DateObject[{2021, 11, 30, 17, 14, 54.1652125}, "Instant", "Gregorian", -7.], OutputFormat->Plot],
+				PlotContainerCoverNotebookMismatches[Now, OutputFormat->Plot],
 				{Download::SomeMetaDataUnavailable}
 			],
 			{_?ValidGraphicsQ, _},
-			TimeConstraint -> 5000
+			TimeConstraint -> 5000,
+			Stubs :> {Search[{Object[Container,Vessel],Object[Container,Plate]},_]=Search[{Object[Container,Vessel],Object[Container,Plate]},Status==(Available|Stocked)&&DateCreated>=Now-1Month]}
 		],
 		Example[{Options, OutputFormat,"If OutputFormat is set to Plot but no containers were found to exist on the specified date, return a message indicating so."},
 			Quiet[
@@ -98,9 +84,56 @@ DefineTests[PlotContainerCoverNotebookMismatches,
 			TimeConstraint -> 5000
 		]
 	},
+
+
 	SymbolSetUp:> {
-		Module[{allObjects, existingObjects, testData, filePath, newCloudFile},
+		Module[{notebook1, notebook2, team1, team2, tubePacket, capPacket, tube,cap, allObjects, existingObjects, testData, filePath, newCloudFile},
 			$CreatedObjects = {};
+			{notebook1,notebook2}= Upload[
+				{
+					<|
+						Type -> Object[LaboratoryNotebook],
+						Name -> "Test Notebook 1 for PlotContainerCoverNotebookMismatches " <>$SessionUUID
+					|>,
+					<|
+						Type -> Object[LaboratoryNotebook],
+						Name -> "Test Notebook 2 for PlotContainerCoverNotebookMismatches " <>$SessionUUID
+					|>}
+			];
+
+
+			{team1,team2} = Upload[
+				{
+					<|
+						Type -> Object[Team,Financing],
+						Name -> "Test Financing Team 1 for PlotContainerCoverNotebookMismatches " <>$SessionUUID,
+						Replace[NotebooksFinanced] -> Link[notebook1,Financers]
+					|>,
+					<|
+						Type -> Object[Team,Financing],
+						Name -> "Test Financing Team 2 for PlotContainerCoverNotebookMismatches " <>$SessionUUID,
+						Replace[NotebooksFinanced] -> Link[notebook2,Financers]
+					|>}];
+
+			tubePacket = <|
+				Type -> Object[Container,Vessel],
+				Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
+				Name -> "Test Container for PlotContainerCoverNotebookMismatches " <>$SessionUUID,
+				Status -> Available
+			|>;
+
+			capPacket = <|
+				Type -> Object[Item,Cap],
+				Model -> Link[Model[Item,Cap,"2 mL tube cap, standard"],Objects],
+				Name -> "Test Cover for PlotContainerCoverNotebookMismatches " <>$SessionUUID,
+				Status -> Available
+			|>;
+
+			{tube,cap} = Upload[{tubePacket,capPacket}];
+
+			ECL`InternalUpload`UploadCover[tube,Cover -> cap];
+
+			ECL`InternalUpload`UploadNotebook[{tube,cap}, {notebook1,notebook2},Force ->True];
 
 			allObjects = {
 				Object[EmeraldCloudFile, "Container-Cover Mismatches Per Day"]
@@ -127,9 +160,23 @@ DefineTests[PlotContainerCoverNotebookMismatches,
 			];
 		]
 	},
-		SymbolTearDown :> Module[{},
-			EraseObject[$CreatedObjects,Force->True,Verbose->False];
-			Unset[$CreatedObjects];
+		SymbolTearDown :> Module[{allObjects, existingObjects},
+			(* Make a list of all of the fake objects we uploaded for these tests *)
+			allObjects = {
+				Object[LaboratoryNotebook, "Test Notebook 1 for PlotContainerCoverNotebookMismatches " <> $SessionUUID],
+				Object[LaboratoryNotebook, "Test Notebook 2 for PlotContainerCoverNotebookMismatches " <> $SessionUUID],
+				Object[Team,Financing, "Test Financing Team 1 for PlotContainerCoverNotebookMismatches " <>$SessionUUID],
+				Object[Team,Financing, "Test Financing Team 2 for PlotContainerCoverNotebookMismatches " <>$SessionUUID],
+				Object[Container,Vessel, "Test Container for PlotContainerCoverNotebookMismatches " <> $SessionUUID],
+				Object[Item, Cap, "Test Cover for PlotContainerCoverNotebookMismatches " <> $SessionUUID]
+			};
+
+			(*Check whether the created objects and models exist in the database*)
+			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects]];
+
+			(*Erase all the created objects and models*)
+			Quiet[EraseObject[existingObjects, Force -> True, Verbose -> False]]
 		]
 
 ];
+

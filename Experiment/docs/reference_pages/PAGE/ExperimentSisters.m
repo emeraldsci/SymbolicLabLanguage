@@ -10,49 +10,75 @@
 
 (* ExperimentPAGEOptions *)
 DefineUsage[ExperimentPAGEOptions,
-  {
-    BasicDefinitions->{
-      {
-        Definition->{"ExperimentPAGEOptions[inputs]","ResolvedOptions"},
-        Description->"outputs the resolved options of ExperimentPAGE with the provided inputs and specified options.",
-        Inputs:> {
-          IndexMatching[
+    {
+        BasicDefinitions -> {
             {
-              InputName -> "inputs",
-              Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
-              Widget ->
-                  Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                    Dereference->{
-                      Object[Container]->Field[Contents[[All,2]]]
+                Definition -> {"ExperimentPAGEOptions[inputs]", "ResolvedOptions"},
+                Description -> "outputs the resolved options of ExperimentPAGE with the provided inputs and specified options.",
+                Inputs :> {
+                    IndexMatching[
+                        {
+                            InputName -> "Samples",
+                            Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
+                            Widget -> Alternatives[
+                                "Sample or Container" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                                    ObjectTypes -> {Object[Sample], Object[Container]},
+                                    Dereference -> {
+                                        Object[Container] -> Field[Contents[[All, 2]]]
+                                    }
+                                ],
+                                "Container with Well Position" -> {
+                                    "Well Position" -> Alternatives[
+                                        "A1 to P24" -> Widget[
+                                            Type -> Enumeration,
+                                            Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                                            PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                                        ],
+                                        "Container Position" -> Widget[
+                                            Type -> String,
+                                            Pattern :> LocationPositionP,
+                                            PatternTooltip -> "Any valid container position.",
+                                            Size -> Line
+                                        ]
+                                    ],
+                                    "Container" -> Widget[
+                                        Type -> Object,
+                                        Pattern :> ObjectP[{Object[Container]}]
+                                    ]
+                                },
+                                "Model Sample" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[Model[Sample]],
+                                    ObjectTypes -> {Model[Sample]}
+                                ]
+                            ],
+                            Expandable -> False
+                        },
+                        IndexName -> "experiment samples"
+                    ]
+                },
+                Outputs :> {
+                    {
+                        OutputName -> "ResolvedOptions",
+                        Description -> "Resolved options when ExperimentPAGE is called on the input sample(s).",
+                        Pattern :> {Rule[_Symbol, Except[Automatic | $Failed]] | RuleDelayed[_Symbol, Except[Automatic | $Failed]]...}
                     }
-                  ],
-              Expandable -> False
+                }
+            }
+        },
+        SeeAlso ->
+            {
+                "ExperimentPAGE",
+                "ExperimentPAGEPreview",
+                "ValidExperimentPAGEQ"
             },
-            IndexName -> "experiment samples"
-          ]
+        Tutorials -> {
+            "Sample Preparation"
         },
-        Outputs:>{
-          {
-            OutputName->"ResolvedOptions",
-            Description->"Resolved options when ExperimentPAGE is called on the input sample(s).",
-            Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
-          }
-        }
-      }
-    },
-    SeeAlso->
-        {
-          "ExperimentPAGE",
-          "ExperimentPAGEPreview",
-          "ValidExperimentPAGEQ"
-        },
-    Tutorials->{
-      "Sample Preparation"
-    },
-    Author->{"hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
-  }
+        Author -> {"ryan.bisbey", "hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
+    }
 ];
 
 (* ExperimentPAGEPreview *)
@@ -64,22 +90,29 @@ DefineUsage[ExperimentPAGEPreview,
             Definition->{"ExperimentPAGEPreview[inputs]","Preview"},
             Description->"currently ExperimentPAGE does not have a preview.",
             Inputs:> {
-              IndexMatching[
-                {
-                  InputName -> "inputs",
-                  Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
-                  Widget ->
-                      Widget[
-                        Type -> Object,
-                        Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                        Dereference->{
-                          Object[Container]->Field[Contents[[All,2]]]
-                        }
-                      ],
-                  Expandable -> False
-                },
-                IndexName -> "experiment samples"
-              ]
+                IndexMatching[
+                    {
+                        InputName -> "Samples",
+                        Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
+                        Widget -> Alternatives[
+                            "Sample or Container"->Widget[
+                                Type -> Object,
+                                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                                ObjectTypes -> {Object[Sample], Object[Container]},
+                                Dereference -> {
+                                    Object[Container] -> Field[Contents[[All, 2]]]
+                                }
+                            ],
+                            "Model Sample"->Widget[
+                                Type -> Object,
+                                Pattern :> ObjectP[Model[Sample]],
+                                ObjectTypes -> {Model[Sample]}
+                            ]
+                        ],
+                        Expandable -> False
+                    },
+                    IndexName -> "experiment samples"
+                ]
             },
             Outputs:>{
               {
@@ -99,7 +132,7 @@ DefineUsage[ExperimentPAGEPreview,
     Tutorials->{
       "Sample Preparation"
     },
-    Author->{"hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
+    Author->{"ryan.bisbey", "hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
   }
 ];
 
@@ -112,22 +145,29 @@ DefineUsage[ValidExperimentPAGEQ,
             Definition->{"ValidExperimentPAGEQ[inputs]","Boolean"},
             Description->"checks whether the provided inputs and specified options are valid for calling ExperimentPAGE.",
             Inputs:> {
-              IndexMatching[
-                {
-                  InputName -> "inputs",
-                  Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
-                  Widget ->
-                      Widget[
-                        Type -> Object,
-                        Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                        Dereference->{
-                          Object[Container]->Field[Contents[[All,2]]]
-                        }
-                      ],
-                  Expandable -> False
-                },
-                IndexName -> "experiment samples"
-              ]
+                IndexMatching[
+                    {
+                        InputName -> "Samples",
+                        Description -> "The samples to be run through polyacrylamide gel electrophoresis.",
+                        Widget -> Alternatives[
+                            "Sample or Container"->Widget[
+                                Type -> Object,
+                                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                                ObjectTypes -> {Object[Sample], Object[Container]},
+                                Dereference -> {
+                                    Object[Container] -> Field[Contents[[All, 2]]]
+                                }
+                            ],
+                            "Model Sample"->Widget[
+                                Type -> Object,
+                                Pattern :> ObjectP[Model[Sample]],
+                                ObjectTypes -> {Model[Sample]}
+                            ]
+                        ],
+                        Expandable -> False
+                    },
+                    IndexName -> "experiment samples"
+                ]
             },
             Outputs->{
               {
@@ -147,6 +187,6 @@ DefineUsage[ValidExperimentPAGEQ,
     Tutorials->{
       "Sample Preparation"
     },
-    Author->{"hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
+    Author->{"ryan.bisbey", "hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
   }
 ];

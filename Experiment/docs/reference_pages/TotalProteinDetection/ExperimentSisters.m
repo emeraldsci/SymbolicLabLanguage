@@ -12,12 +12,38 @@ DefineUsage[ExperimentTotalProteinDetectionOptions,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based total protein labeling and detection assay. Proteins present in the input samples are separated by size, labeled with biotin, then treated with a streptavidin-HRP conjugate. The presence of this conjugate is detected by chemiluminescence.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -41,7 +67,7 @@ DefineUsage[ExperimentTotalProteinDetectionOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu"}
+		Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "axu"}
 	}
 ];
 
@@ -59,12 +85,38 @@ DefineUsage[ExperimentTotalProteinDetectionPreview,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based total protein labeling and detection assay. Proteins present in the input samples are separated by size, labeled with biotin, then treated with a streptavidin-HRP conjugate. The presence of this conjugate is detected by chemiluminescence.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -88,7 +140,7 @@ DefineUsage[ExperimentTotalProteinDetectionPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu"}
+		Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "axu"}
 	}
 ];
 
@@ -107,12 +159,38 @@ DefineUsage[ValidExperimentTotalProteinDetectionQ,
 						{
 							InputName->"Samples",
 							Description->"The samples to be run through a capillary electrophoresis-based total protein labeling and detection assay. Proteins present in the input samples are separated by size, labeled with biotin, then treated with a streptavidin-HRP conjugate. The presence of this conjugate is detected by chemiluminescence.",
-							Widget->Widget[
-								Type->Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -136,6 +214,6 @@ DefineUsage[ValidExperimentTotalProteinDetectionQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu"}
+		Author->{"jireh.sacramento", "andrey.shur", "lei.tian", "jihan.kim", "axu"}
 	}
 ];

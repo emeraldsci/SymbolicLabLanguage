@@ -11,6 +11,21 @@ DefineObjectType[Object[Protocol, StockSolution], {
 	Fields -> {
 
 		(* --- Method Information --- *)
+		MaxNumberOfOverfillingRepreparations -> {
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The maximum number of times the StockSolution protocol can be repeated in the event of target volume overfilling in the FillToVolume step of the stock solution preparation. When a repreparation is triggered, the same inputs and options are used.",
+			Category->"General"
+		},
+		OverfillingRepreparations -> {
+			Format->Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol,StockSolution]],
+			Description->"The repeat StockSolution protocol that is automatically enqueued when target volume overfilling occurs during the FillToVolume step of the stock solution preparation. The new protocol uses the same inputs and options as the original.",
+			Category->"General"
+		},
 		StockSolutionModels -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -139,11 +154,20 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Description -> "The sample preparation primitives that should be used to create the stock solution.",
 			Category -> "Sample Preparation"
 		},
+		PreparationProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, ManualSamplePreparation],
+			Description -> "The sample preparation protocol that was used to create the stock solution.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
 		UnitOperations -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> ManualSamplePreparationP,
-			Description -> "The sample preparation Uni tOperations that should be used to create the stock solution.",
+			Description -> "The sample preparation UnitOperations that should be used to create the stock solution.",
 			Category -> "Sample Preparation"
 		},
 		FillToVolumePrimitives -> {
@@ -163,20 +187,20 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Developer -> True,
 			Category -> "Sample Preparation"
 		},
-		RentManipulationContainers -> {
-			Format -> Multiple,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			IndexMatching -> PreparatoryUnitOperations,
-			Description -> "For each member of PreparatoryUnitOperations, indicates if any reusable containers picked as part of performing the manipulation are intermediate and should be rented.",
-			Category -> "Sample Preparation",
-			Developer -> True
-		},
 		ContainerPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|ManualSamplePreparationP,
 			Description -> "The set of instructions specifying the transfers of the final volumes of the stock solutions into their final containers.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		ContainerTransferSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "The stock solution samples that are transfered into their final containers.",
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
@@ -255,6 +279,15 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Description -> "For each member of FillToVolumeSamples, the method by which to add the Solvent to the bring the stock solution up to the TotalVolume.",
 			Category -> "Fill to Volume"
 		},
+		FillToVolumeProtocols -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol],
+			Description -> "The protocols containing method information to add the Solvent to bring the stock solution up to the TotalVolume.",
+			Category -> "Filtration",
+			Developer -> True
+		},
 		DensityScouts -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -275,6 +308,14 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Description -> "The protocol object used to prepare a small volume of a stock solution to have its density measured.",
 			Category -> "Fill to Volume",
 			Developer -> True
+		},
+		TargetVolumeToleranceAchieved -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> FillToVolumeSamples,
+			Description -> "For each member of FillToVolumeSamples, indicates if the final measured volume of the sample after FillToVolume exceeds the specified TotalVolume + Tolerance in the FillToVolume protocol.",
+			Category -> "Fill to Volume"
 		},
 
 		(* --- Mixing --- *)
@@ -847,6 +888,15 @@ DefineObjectType[Object[Protocol, StockSolution], {
 			Description -> "For each member of StockSolutionModels, the resource in the parent protocol that is fulfilled by preparing a sample of the stock solution model.",
 			Category -> "Resources",
 			Developer -> True
+		},
+		MeniscusImages -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			IndexMatching -> PreparatorySamples,
+			Description -> "For each member of PreparatorySamples, the cloud file that stores the images of the filled volumetric flasks, if the sample is not fulfilled by Volumetric FillToVolume method, the corresponding value will be Null.",
+			Category -> "Sample Post-Processing"
 		}
 	}
 }];

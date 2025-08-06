@@ -285,7 +285,7 @@ DefineTests[
         ],
         {TransferContainer,AliquotContainer}
       ],
-      {Null,{1,ObjectP[Model[Container,Vessel,"id:bq9LA0dBGGR6"]]}}
+      {Null,{{1,ObjectP[Model[Container,Vessel,"id:bq9LA0dBGGR6"]]}}}
     ],
 		Example[{Options,TransferContainer,"If the sample is in a container with no TareWeight, do not use TransferContainer if TareWeight of the model container is informed:"},
 			Lookup[ExperimentMeasureWeight[
@@ -413,11 +413,117 @@ DefineTests[
 			Refrigerator,
 			Variables:>{options}
 		],
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation - label automatically applied:"},
+			Lookup[ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID], Output -> Options], SampleLabel],
+			"measure weight sample" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation:"},
+			Lookup[ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID], SampleLabel -> "my sample", Output -> Options], SampleLabel],
+			"my sample"
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation: - label automatically applied:"},
+			Lookup[ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID], Output -> Options], SampleContainerLabel],
+			"measure weight container" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation:"},
+			Lookup[ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID], SampleContainerLabel -> "my container", Output -> Options], SampleContainerLabel],
+			"my container"
+		],
+		Example[{Options, OptionsResolverOnly, "If OptionsResolverOnly -> True and Output -> Options, skip the resource packets and simulation functions:"},
+			ExperimentMeasureWeight[
+				Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
+				Output -> Options,
+				OptionsResolverOnly -> True
+			],
+			{__Rule},
+			(* stubbing to be False so that we return $Failed if we get here; the point of the option though is that we don't get here *)
+			Stubs :> {Resources`Private`fulfillableResourceQ[___]:=(Message[Error::ShouldntGetHere];False)}
+		],
+		Test["ExperimentMeasureWeight returns a simulation blob if Output -> Simulation:",
+			ExperimentMeasureWeight[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID], Output -> Simulation],
+			SimulationP
+		],
 
 		(* === Error messages === *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureWeight[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureWeight[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureWeight[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureWeight[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureWeight[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureWeight[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"InputContainsTemporalLinks","A Warning is thrown if any inputs or options contain temporal links:"},
 			ExperimentMeasureWeight[
-				Link[Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],Now]
+				Link[Object[Container,Vessel,"50ml container 1 for ExperimentMeasureWeight testing"<> $SessionUUID],Now]
 			],
 			ObjectP[Object[Protocol,MeasureWeight]],
 			Messages :> {
@@ -580,6 +686,8 @@ DefineTests[
 			$Failed,
 			Messages:>{Error::VentilatedSamples,Error::InvalidInput}
 		],
+
+
 
 		(* === Test that the batching fields are populated properly === *)
 
@@ -802,6 +910,19 @@ DefineTests[
 			}
     ],
 
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentMeasureWeight[Object[Sample,"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{
+				$EmailEnabled=False,
+				GitBranchExistsQ[___] = True,
+				$PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]
+			}
+		],
+
     Example[{Options,Name,"Give the protocol to be created a unique identifier which can be used instead of its ID:"},
       Download[
         ExperimentMeasureWeight[Object[Sample,"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],Name->"My Favorite Weight Measurement Protocol"<> $SessionUUID],
@@ -903,43 +1024,56 @@ DefineTests[
 		],
 
 
-    (* SHARED SAMPLE PREP TESTS *)
+		(* SHARED SAMPLE PREP TESTS *)
 
-    (* Note that for most of these the sample needs to be liquid and for most tests requires Volume to be informed and above 1.5*Milliliter *)
-    (* Relevant fields for Centrifuge are Footprint in Model[Container], the function CentrifugeDevices, the field MinTemperature/MaxTemperature in Centrifuge *)
-    (* Useful for Filter is to run ExperimentFilter with Output->Options and see what the Automatic resolves to for your particualr container / volume *)
+		(* Note that for most of these the sample needs to be liquid and for most tests requires Volume to be informed and above 1.5*Milliliter *)
+		(* Relevant fields for Centrifuge are Footprint in Model[Container], the function CentrifugeDevices, the field MinTemperature/MaxTemperature in Centrifuge *)
+		(* Useful for Filter is to run ExperimentFilter with Output->Options and see what the Automatic resolves to for your particualr container / volume *)
 
-    (* THIS TEST IS TURNS ON ALL THE BOOLEAN MASTER SWITCHES -> AUTOMATIC RESOLUTION *)
-    Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
-      options=ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], Incubate->True, Centrifuge->True, Filtration->True, Aliquot->True, Output -> Options];
-      {Lookup[options, Incubate],Lookup[options, Centrifuge],Lookup[options, Filtration],Lookup[options, Aliquot]},
-      {True,True,True,True},
-      Variables :> {options},
-			TimeConstraint->600
-    ],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentMeasureWeight:"},
-			Download[ExperimentMeasureWeight["My NestedIndexMatching Sample"<> $SessionUUID,
-				PreparatoryPrimitives-> {
-					Define[
-						Name->"My NestedIndexMatching Sample"<> $SessionUUID,
-						Container->Model[Container,Vessel,"2mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Isopropanol"],
-						Amount->30*Microliter,
-						Destination->{"My NestedIndexMatching Sample"<> $SessionUUID}
-					],
-					Transfer[
-						Source->Model[Sample, "Milli-Q water"],
-						Amount->30*Microliter,
-						Destination->{"My NestedIndexMatching Sample"<> $SessionUUID}
-					]
-				}
-			],{PreparedSamples,PreparatoryPrimitives}],
+		(* THIS TEST IS TURNS ON ALL THE BOOLEAN MASTER SWITCHES -> AUTOMATIC RESOLUTION *)
+		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
+		  options=ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], Incubate->True, Centrifuge->True, Filtration->True, Aliquot->True, Output -> Options];
+		  {Lookup[options, Incubate],Lookup[options, Centrifuge],Lookup[options, Filtration],Lookup[options, Aliquot]},
+		  {True,True,True,True},
+		  Variables :> {options},
+				TimeConstraint->600
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentMeasureWeight[
+				(* Caffeine *)
+				{Model[Sample, "id:L8kPEjNLDDBP"], Model[Sample, "id:L8kPEjNLDDBP"]},
+				PreparedModelAmount -> 500 Milligram,
+				(* 2mL Tube *)
+				PreparedModelContainer -> Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
 			{
-				{{"My NestedIndexMatching Sample"<> $SessionUUID, SamplesIn,1,Null,"A1"},{"My NestedIndexMatching Sample"<> $SessionUUID, ContainersIn,1,Null,Null},{"My NestedIndexMatching Sample"<> $SessionUUID, ContainersInExpanded, 1, Null, Null}, {"My NestedIndexMatching Sample"<> $SessionUUID,Batching, 1, ContainerIn, Null}},
-				{_Define,_Transfer,_Transfer}
-			}
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Caffeine *)
+				{ObjectP[Model[Sample, "id:L8kPEjNLDDBP"]]..},
+				(* 2mL Tube *)
+				{ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+				{EqualP[500 Milligram]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureWeight[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, MeasureWeight]]
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentMeasureWeight:"},
 			Download[ExperimentMeasureWeight["My NestedIndexMatching Sample"<> $SessionUUID,
@@ -1037,7 +1171,7 @@ DefineTests[
 		Example[{Options, DestinationWell, "Indicates the desired position in the corresponding DestinationWell in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options, Mix, "Indicates if this sample should be mixed while incubated, prior to starting the experiment:"},
@@ -1315,7 +1449,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureWeight[Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -1352,6 +1486,237 @@ DefineTests[
 			],
 			$Failed,
 			Messages:>{Error::ImmobileSamples,Error::InvalidInput}
+		],
+		(*If there is Living sample in the input that has a disposable cover, and it does not have a parent protocol, throw a warning*)
+		Example[{Messages,"LivingOrSterileSamplesQueuedForMeasureWeight","Queueing living samples that has a disposable cover will cause a warning, but a protocol can still be generated:"},
+			Download[ExperimentMeasureWeight[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <>
+						$SessionUUID]],
+				{Object, ContainersIn}
+			],
+			{
+				ObjectP[Object[Protocol,MeasureWeight]],
+				{ObjectP[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container]]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesQueuedForMeasureWeight},
+			SetUp:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Living -> True|>,
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container][Object], Cover -> Link[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], CoveredContainer]|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> False|>
+			}]),
+			TearDown:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Living -> Null|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> Null|>
+			}];
+			EraseLink[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID][CoveredContainer]])
+		],
+		(*If there is living/sterile sample in the input that has a disposable cover , and it does not have a parent protocol, throw a warning*)
+		Example[{Messages,"LivingOrSterileSamplesQueuedForMeasureWeight","Queueing sterile samples that has a disposable cover will cause a warning, but a protocol can still be generated:"},
+			Download[ExperimentMeasureWeight[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <>
+					$SessionUUID]],
+				{Object, ContainersIn}
+			],
+			{
+				ObjectP[Object[Protocol,MeasureWeight]],
+				{ObjectP[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container]]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesQueuedForMeasureWeight},
+			SetUp:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> True|>,
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container][Object], Cover -> Link[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], CoveredContainer]|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> False|>
+			}]),
+			TearDown:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> Null|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> Null|>
+			}];
+			EraseLink[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID][CoveredContainer]])
+		],
+		(*If there is sterile/sterile sample in the input that has a reusable cover , and it does not have a parent protocol, throw a warning*)
+		Test["Queueing sterile samples that has a reusable cover will not cause a warning and a protocol will be generated:",
+			Download[ExperimentMeasureWeight[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <>
+					$SessionUUID]],
+				{Object, ContainersIn}
+			],
+			{
+				ObjectP[Object[Protocol,MeasureWeight]],
+				{ObjectP[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container]]}
+			},
+			SetUp:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> True|>,
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container][Object], Cover -> Link[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], CoveredContainer]|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> True|>
+			}]),
+			TearDown:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> Null|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> Null|>
+			}];
+			EraseLink[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID][CoveredContainer]])
+		],
+		(*If there is Living sample in the input with a disposable cover, and it has a parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test["Living samples that has a disposable cover will be filtered out without a warning if there is a parent protocol:",
+			ExperimentMeasureWeight[Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <>
+					$SessionUUID],
+				ParentProtocol->Object[Protocol,HPLC,"HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID]
+			],
+			$Failed,
+			SetUp:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Living -> True|>,
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container][Object], Cover -> Link[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], CoveredContainer]|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> False|>
+			}]),
+			TearDown:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Living -> Null|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> Null|>
+			}];
+			EraseLink[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID][CoveredContainer]])
+		],
+		(*If there is Sterile sample in the input with a disposable cover, and it has a parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test["Sterile samples that has a disposable cover will be filtered out without a warning if there is a parent protocol:",
+			Download[
+				ExperimentMeasureWeight[
+					{Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID],
+						Object[Sample, "Available liquid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID]},
+				ParentProtocol->Object[Protocol,HPLC,"HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID]
+			], {Object, ContainersIn}],
+			{
+				ObjectP[Object[Protocol,MeasureWeight]],
+				{ObjectP[Object[Sample, "Available liquid sample 2 for ExperimentMeasureWeight testing" <> $SessionUUID][Container]]}
+			},
+			SetUp:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> True|>,
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID][Container][Object], Cover -> Link[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], CoveredContainer]|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> False|>
+			}]),
+			TearDown:>(Upload[{
+				<|Object -> Object[Sample, "Available liquid sample 1 for ExperimentMeasureWeight testing" <> $SessionUUID], Sterile -> Null|>,
+				<|Object -> Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID], Reusable -> Null|>
+			}];
+			EraseLink[Object[Item, Cap, "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID][CoveredContainer]])
+		],
+		Test["Simulation function properly transfers samples to TransferContainers if all inputs require a transfer:",
+			Module[{mySamples,protocol,simulation,beforeMasses, simulatedMasses, expectedTransferContainerModels, simulatedTransferContainerModels},
+				mySamples = {
+					Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available counted sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available counted sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID]
+				};
+				{protocol,simulation} = ExperimentMeasureWeight[
+					mySamples,
+					Output -> {Result,Simulation}
+				];
+				beforeMasses = Download[mySamples,Mass];
+				simulatedMasses = Download[mySamples,Mass,Simulation->simulation];
+				expectedTransferContainerModels=Download[protocol,Batching[[All,TransferContainer]][Object]];
+				simulatedTransferContainerModels= Flatten[Download[mySamples,TransfersOut[[All,3]][Container][Model][Object],Simulation->simulation]];
+				{
+					beforeMasses,
+					simulatedMasses,
+					expectedTransferContainerModels,
+					simulatedTransferContainerModels
+				}
+			],
+			{
+				{EqualP[2.5 Gram]..},
+				{EqualP[0 Gram]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..}
+			}
+		],
+		Test["Simulation function properly transfers samples to TransferContainers if transfer containers are objects:",
+			Module[{mySamples,protocol,simulation,beforeMasses, simulatedMasses, expectedTransferContainerModels, simulatedTransferContainerModels},
+				mySamples = {
+					Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<>$SessionUUID],
+					Object[Sample,"Available solid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID]
+				};
+				{protocol,simulation} = ExperimentMeasureWeight[
+					mySamples,
+					TransferContainer -> {
+						Null,
+						Automatic,
+						Object[Container,Vessel,"Empty 50ml container for ExperimentMeasureWeight testing"<> $SessionUUID]
+					},
+					Output -> {Result,Simulation}
+				];
+				beforeMasses = Download[mySamples,Mass];
+				simulatedMasses = Download[mySamples,Mass,Simulation->simulation];
+				expectedTransferContainerModels=Download[protocol,Batching[[All,TransferContainer]][Object]];
+				simulatedTransferContainerModels= Flatten[Download[mySamples,TransfersOut[[All,3]][Container][Model][Object],Simulation->simulation]];
+				{
+					beforeMasses,
+					simulatedMasses,
+					expectedTransferContainerModels,
+					simulatedTransferContainerModels
+				}
+			],
+			{
+				{EqualP[2.5 Gram],EqualP[2.5 Gram],EqualP[2.5 Gram]},
+				{EqualP[2.5 Gram],EqualP[0 Gram],EqualP[0 Gram]},
+				{OrderlessPatternSequence[Null,ObjectP[Model[Container, Vessel, "50mL Tube"]],ObjectP[Object[Container,Vessel,"Empty 50ml container for ExperimentMeasureWeight testing"<> $SessionUUID]]]},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]],ObjectP[Model[Container, Vessel, "Model container without tare weight for ExperimentMeasureWeight testing" <> $SessionUUID]]}
+			}
+		],
+		Test["Simulation function properly transfers samples to TransferContainers if some inputs require a transfer:",
+			Module[{mySamples,protocol,simulation,beforeMasses, simulatedMasses, expectedTransferContainerModels, simulatedTransferContainerModels},
+				mySamples = {
+					Object[Sample,"Sample without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID],
+					Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<>$SessionUUID],
+					Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available counted sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],
+					Object[Sample,"Available counted sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID]
+				};
+				{protocol,simulation} = ExperimentMeasureWeight[
+					mySamples,
+					Output -> {Result,Simulation}
+				];
+				beforeMasses = Download[mySamples,Mass];
+				simulatedMasses = Download[mySamples,Mass,Simulation->simulation];
+				expectedTransferContainerModels=Download[protocol,Batching[[All,TransferContainer]][Object]];
+				simulatedTransferContainerModels= Flatten[Download[mySamples,TransfersOut[[All,3]][Container][Model][Object],Simulation->simulation]];
+				{
+					beforeMasses,
+					simulatedMasses,
+					expectedTransferContainerModels,
+					simulatedTransferContainerModels
+				}
+			],
+			{
+				{EqualP[2.5 Gram]..},
+				{EqualP[2.5 Gram],EqualP[0 Gram],EqualP[2.5 Gram],EqualP[0 Gram],EqualP[0 Gram],EqualP[0 Gram]},
+				{OrderlessPatternSequence[Null,ObjectP[Model[Container, Vessel, "50mL Tube"]],ObjectP[Model[Container, Vessel, "50mL Tube"]],ObjectP[Model[Container, Vessel, "50mL Tube"]],ObjectP[Model[Container, Vessel, "50mL Tube"]],Null]},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..}
+			}
+		],
+		Test["Simulation function returns properly if no inputs require a transfer to a TransferContainer:",
+			Module[{mySamples,protocol,simulation,beforeMasses, simulatedMasses, expectedTransferContainerModels, simulatedTransferContainerModels},
+				mySamples = {
+					Object[Sample,"Sample without PreferredBalance for ExperimentMeasureWeight testing" <> $SessionUUID],
+					Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<>$SessionUUID]
+				};
+				{protocol,simulation} = ExperimentMeasureWeight[
+					mySamples,
+					Output -> {Result,Simulation}
+				];
+				beforeMasses = Download[mySamples,Mass];
+				simulatedMasses = Download[mySamples,Mass,Simulation->simulation];
+				expectedTransferContainerModels=Download[protocol,Batching[[All,TransferContainer]][Object]];
+				simulatedTransferContainerModels= Flatten[Download[mySamples,TransfersOut[[All,3]][Container][Model][Object],Simulation->simulation]];
+				{
+					beforeMasses,
+					simulatedMasses,
+					expectedTransferContainerModels,
+					simulatedTransferContainerModels
+				}
+			],
+			{
+				{EqualP[2.5 Gram],EqualP[2.5 Gram]},
+				{EqualP[2.5 Gram],EqualP[2.5 Gram]},
+				{Null,Null},
+				{}
+			}
 		]
 	},
 	SymbolSetUp:> (
@@ -1426,6 +1791,7 @@ DefineTests[
 				 Object[Instrument,Balance,"Fake Balance 2 Testing MeasureWeight"<> $SessionUUID],
 				 Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Object[User,Emerald,"Operator for ExperimentMeasureWeight testing"<> $SessionUUID],
+				 Object[Item,Cap,"Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID],
 				 (* model *)
 				 Model[Container,Vessel,"Model container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID],
 				 Model[Container,Vessel,"Model container without tare weight for ExperimentMeasureWeight testing"<> $SessionUUID]
@@ -1714,7 +2080,10 @@ DefineTests[
 						DeveloperObject -> True|>,
 					<|Type -> Object[Protocol, HPLC],
 						Name -> "HPLC Parent for ExperimentMeasureWeight testing"<> $SessionUUID,
-						DeveloperObject -> True|>
+						DeveloperObject -> True|>,
+					<|Type -> Object[Item, Cap],
+						Name -> "Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID,
+					DeveloperObject -> True|>
 				}];
 
 
@@ -1809,7 +2178,7 @@ DefineTests[
 						<|Object->Object[Sample,"Available solid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
 						<|Object->Object[Sample,"Special liquid sample without a model for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Model->Null|>,
 						<|Object->Object[Sample,"Available liquid sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->2*Milliliter,Concentration->1*Millimolar|>,
-						<|Object->Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->50*Milliliter,Replace[Composition]->{{1Molar,Link[Model[Molecule,"Ethanol"]]}}|>,
+						<|Object->Object[Sample,"Available liquid sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->50*Milliliter,Replace[Composition]->{{1Molar,Link[Model[Molecule,"Ethanol"]], Now}}|>,
 						<|Object->Object[Sample,"Available counted sample 1 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
 						<|Object->Object[Sample,"Available counted sample 2 for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram|>,
 						<|Object->Object[Sample,"Discarded sample for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Discarded,Mass->2.5*Gram|>,
@@ -1821,7 +2190,7 @@ DefineTests[
 						<|Object->Object[Sample,"Sample in Microcontainer with Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->0.01*Gram,Replace[MassLog]->{{Now,0.01*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
 						<|Object->Object[Sample,"Sample in Microcontainer with Non-Trusted Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->0.01*Gram|>,
 						<|Object->Object[Sample,"Sample in 50ml container with super-heavy Mass for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->4000*Gram,Replace[MassLog]->{{Now,4000*Gram,Link[Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<>$SessionUUID]],UserSpecified}}|>,
-						<|Object->Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->2*Milliliter,Concentration->1*Millimolar,Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]]}, {99 MassPercent, Link[Model[Molecule, "Water"]]}}|>,
+						<|Object->Object[Sample,"Sample in 50ml container with model TareWeight for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True,Status->Available,Mass->2.5*Gram,Volume->2*Milliliter,Concentration->1*Millimolar,Replace[Composition] -> {{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}, {99 MassPercent, Link[Model[Molecule, "Water"]], Now}}|>,
 						<|Object->Object[Sample,"Sample in immobile container for ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
 						<|Object->Object[Sample,"Sample on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
 						<|Object->Object[Sample,"Sample in rack on balance for InSitu ExperimentMeasureWeight testing"<> $SessionUUID],DeveloperObject->True|>,
@@ -1903,6 +2272,7 @@ DefineTests[
 				Object[Instrument,Balance,"Fake Balance 2 Testing MeasureWeight"<> $SessionUUID],
 				Object[Maintenance,ReceiveInventory,"Receiving protocol for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Object[User,Emerald,"Operator for ExperimentMeasureWeight testing"<> $SessionUUID],
+				Object[Item,Cap,"Test Cover for ExperimentMeasureWeight testing" <> $SessionUUID],
 				(* model *)
 				Model[Container,Vessel,"Model container without PreferredBalance for ExperimentMeasureWeight testing"<> $SessionUUID],
 				Model[Container,Vessel,"Model container without tare weight for ExperimentMeasureWeight testing"<> $SessionUUID]
@@ -2304,6 +2674,161 @@ DefineTests[
 
 
 
+
+(* ::Subsubsection:: *)
+(* MeasureWeight *)
+DefineTests[MeasureWeight,
+	{
+		Example[{Basic,"Form an MeasureWeight unit operation:"},
+			MeasureWeight[
+				Sample -> Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+				CalibrateContainer -> True
+			],
+			MeasureWeightP
+		],
+		Example[{Basic,"Specifying a key incorrectly will not form a unit operation:"},
+			primitive = MeasureWeight[
+				Sample -> Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+				TransferContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				CalibrateContainer -> True
+			];
+			MatchQ[primitive, SamplePreparationP],
+			False,
+			Variables -> {primitive}
+		],
+		Example[{Basic,"A protocol is generated when the unit op is inside an MSP:"},
+			ExperimentManualSamplePreparation[
+				{
+					MeasureWeight[
+						Sample -> Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID]
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the unit op is given labels as input:"},
+			ExperimentManualSamplePreparation[
+				{
+					LabelSample[
+						Sample -> Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+						Label -> "my sample"
+					],
+					MeasureWeight[
+						Sample -> "my sample"
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the output of the measure weight is passed to another unit op using a label:"},
+			ExperimentManualSamplePreparation[
+				{
+					MeasureWeight[
+						Sample -> Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+						TransferContainer -> Null,
+						SampleLabel -> "my weighed sample"
+					],
+					Transfer[
+						Source -> "my weighed sample",
+						Destination -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 0.01 Gram
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		]
+	},
+	SymbolSetUp:>{
+		Module[{allObjects,existingObjects,testBench,numberOfSamples,testContainers,testSamples},
+
+			ClearMemoization[];
+
+			Off[Warning::SamplesOutOfStock];
+			Off[Warning::InstrumentUndergoingMaintenance];
+
+			(*Gather all the objects and models created in SymbolSetUp*)
+			allObjects={
+				Object[Container,Bench,"Bench for MeasureWeight testing "<>$SessionUUID],
+
+				Object[Container,Vessel,"Vial 1 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 2 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 3 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 4 for MeasureWeight testing "<>$SessionUUID],
+
+				Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 2 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 3 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 4 for MeasureWeight testing "<>$SessionUUID]
+			};
+
+			(*Check whether the names we want to give below already exist in the database*)
+			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
+
+			(*Erase any test objects and models that we failed to erase in the last unit test*)
+			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+
+			(* Create the test bench *)
+			testBench=Upload[
+				<|
+					Type->Object[Container,Bench],
+					Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
+					Name->"Bench for MeasureWeight testing "<>$SessionUUID,
+					DeveloperObject->True
+				|>
+			];
+
+			(* Set the number of test containers and samples to create *)
+			numberOfSamples=4;
+
+			(* Create the test containers *)
+			testContainers=UploadSample[
+				Array[Model[Container,Vessel,"2mL Glass CE Vials"]&,numberOfSamples],
+				Array[{"Work Surface",testBench}&,numberOfSamples],
+				Name->Array["Vial "<>ToString[#]<>" for MeasureWeight testing "<>$SessionUUID&,numberOfSamples],
+				Status->Available
+			];
+
+			(* Create the test samples *)
+			testSamples=UploadSample[
+				Array[Model[Sample,"Sodium Chloride"]&,numberOfSamples],
+				Map[{"A1",#}&,testContainers],
+				Name->Array["Sample "<>ToString[#]<>" for MeasureWeight testing "<>$SessionUUID&,numberOfSamples],
+				InitialAmount->Array[#*100 Milligram&,numberOfSamples],
+				Status->Available
+			];
+		];
+	},
+	SymbolTearDown:>{
+		Module[{allObjects,existingObjects},
+
+			(*Gather all the objects and models created in SymbolSetUp*)
+			allObjects={
+				Object[Container,Bench,"Bench for MeasureWeight testing "<>$SessionUUID],
+
+				Object[Container,Vessel,"Vial 1 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 2 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 3 for MeasureWeight testing "<>$SessionUUID],
+				Object[Container,Vessel,"Vial 4 for MeasureWeight testing "<>$SessionUUID],
+
+				Object[Sample,"Sample 1 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 2 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 3 for MeasureWeight testing "<>$SessionUUID],
+				Object[Sample,"Sample 4 for MeasureWeight testing "<>$SessionUUID]
+			};
+
+			(*Check whether the created objects and models exist in the database*)
+			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
+
+			(*Erase all the created objects and models*)
+			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+
+			On[Warning::SamplesOutOfStock];
+			On[Warning::InstrumentUndergoingMaintenance];
+
+			ClearMemoization[];
+		];
+	}
+]
 
 (* ::Section:: *)
 (*End Test Package*)

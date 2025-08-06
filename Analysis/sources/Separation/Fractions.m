@@ -161,7 +161,7 @@ resolveAnalyzeFractionsOptionsSingle[dataRef_, chromatogram_, safeOps_List, coll
 
 	exclude = Replace[Lookup[safeOps,Exclude],All->Range[Length[dataRef[Fractions]]]];
 
-	domains = Replace[Lookup[safeOps,Domain],All->MinMax[chromatogram[[;;,1]]]];
+	domains = Replace[Lookup[safeOps,Domain],All -> SafeRound[MinMax[chromatogram[[;;,1]]], 0.0001 Minute]];
 	domainTests = {fractionsTestOrNull[Domain, collectTestsBoolean, "Domains are valid intervals with left bound smaller than right bound.", TrueQ[Or[MatchQ[domains, All], domains[[1]] <= domains[[2]]]]]};
 
 	resolvedOps = ReplaceRule[safeOps, {

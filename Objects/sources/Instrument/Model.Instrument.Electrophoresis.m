@@ -86,7 +86,7 @@ DefineObjectType[Model[Instrument, Electrophoresis], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "The maximum number of lanes across all gels that can be run in a single PAGE experiment using this model of intrument.",
+			Description -> "The maximum number of lanes across all gels that can be run in a single PAGE experiment using this model of instrument.",
 			Category -> "Operating Limits"
 		},
 		ImageScale -> {

@@ -101,8 +101,20 @@ DefineObjectType[Object[Protocol, LCMS], {
 				Object[Item, Consumable],
 				Model[Item, Consumable]
 			],
-			Description -> "The syringe used to pull air and buffer from the buffer lines to clear them of air bubbles.",
+			Description -> "The syringe used to pull air and buffer from the buffer lines of the liquid chromatography instrument.",
 			Category -> "General",
+			Developer -> True
+		},
+		PrimingSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Consumable],
+				Model[Item, Consumable]
+			],
+			Description -> "The syringe used to pull air from the lockmass, calibrant, and wash solutions lines of the mass spectrometer.",
+			Category -> "Cleaning",
 			Developer -> True
 		},
 
@@ -1628,14 +1640,14 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Category -> "Sample Preparation"
 		},
 		PlateSeal -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Item],
 				Model[Item]
 			],
-			Description -> "The package of piercable, adhesive film used to cover plates of injection samples in this experiment in order to mitigate sample evaporation.",
+			Description -> "For each member of WorkingContainers, the piercable, adhesive film to cover plate(s) of injection sample(s) in this experiment in order to mitigate sample evaporation. For non-plate containers, the plate seal is Null.",
 			Category -> "Sample Preparation"
 		},
 
@@ -1741,6 +1753,14 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Units -> Celsius,
 			Description -> "For each member of SamplesIn, the nominal temperature of the column compartment during a run.",
 			IndexMatching -> SamplesIn,
+			Category -> "Gradient"
+		},
+		MaxPressure -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * PSI],
+			Units -> PSI,
+			Description -> "The upper limit of the pump pressure which if reached during the run will cause the current injection to be paused. At which point the team checks for any clogs in the lines, if found they are fixed and the protocol resumes with next injection. Otherwiset the protocol is aborted early, and it proceeds directly to flush and column storage.",
 			Category -> "Gradient"
 		},
 
@@ -1858,6 +1878,98 @@ DefineObjectType[Object[Protocol, LCMS], {
 				Object[Item, Needle]
 			],
 			Description -> "The needle used by the syringe in the calibration process for ESI-QQQ instrument.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		(* Calibrant Prime *)
+		CalibrantPrimeBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "Prior to calibration, the solvent or solution to use to flush the infusion tubing and ion source capillary.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to contain and inject the CalibrantPrimeBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description ->"The volume of CalibrantPrimeBuffer to aspirate into the CalibrantPrimeInfusionSyringe.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionSyringeNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle attached to the CalibrantPrimeInfusionSyringe to aid in aspirating CalibrantPrimeBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		(* Calibrant Flush *)
+		CalibrantFlushBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "After calibration, the solvent or solution to use to flush the infusion tubing and ion source capillary.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to contain and inject the CalibrantFlushBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description ->"The volume of CalibrantFlushBuffer to aspirate into the CalibrantFlushInfusionSyringe.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionSyringeNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle attached to the CalibrantFlushInfusionSyringe to aid in aspirating CalibrantFlushBuffer.",
 			Category -> "Mass Analysis",
 			Developer -> True
 		},
@@ -2140,23 +2252,23 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> {ListableP[(UnitsP[0Volt]|Null)]..},
-			Description -> "For each member of SamplesIn, the applied potential that accelerates ions into an inert gas for induced dissociation.",
+			Description -> "For each member of SamplesIn, the applied potential that accelerates ions into an inert gas for induced dissociation. If the corresponding AcquisitionMode is DataIndependent, this is the collision energy used for the low-fragmentation, precursor scan. Otherwise, it cannot be defined simultaneously with CollisionEnergyMassProfile.",
 			IndexMatching -> SamplesIn,
 			Category -> "Mass Analysis"
 		},
 		LowCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {(GreaterP[0Volt]|Null)..},
-			Description -> "For each member of SamplesIn, the lowest value of the linear function for applied potential as mapped to the MinMass.",
+			Pattern :> {(GreaterEqualP[0Volt]|Null)..},
+			Description -> "For each member of SamplesIn, the lowest value of the linear function for applied potential as mapped to the MinMass. If the corresponding AcquisitionMode is DataIndependent, this is the minimum voltage for collision energy linear ramp used for the fragmentation scan. If the corresponding AcquisitionMode is DataDependent, this is the minimum voltage for the low energy ramp.",
 			IndexMatching -> SamplesIn,
 			Category -> "Mass Analysis"
 		},
 		HighCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {(GreaterP[0Volt]|Null)..},
-			Description -> "For each member of SamplesIn, the highest value of the linear function for applied potential as mapped to the MinMass.",
+			Pattern :> {(GreaterEqualP[0Volt]|Null)..},
+			Description -> "For each member of SamplesIn, the highest value of the linear function for applied potential as mapped to the MinMass. If the corresponding AcquisitionMode is DataIndependent, this is the maximum voltage for collision energy linear ramp used for the fragmentation scan. If the corresponding AcquisitionMode is DataDependent, this is the maximum voltage for the low energy ramp.",
 			IndexMatching -> SamplesIn,
 			Category -> "Mass Analysis"
 		},
@@ -2164,7 +2276,7 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> {(GreaterP[0Volt]|Null)..},
-			Description -> "For each member of SamplesIn, at the end of the spectral scan, the lowest value of the linear function for applied potential as mapped to the MinMass.",
+			Description -> "For each member of SamplesIn, at the end of the spectral scan, the lowest value of the linear function for applied potential as mapped to the MinMass. If the corresponding AcquisitionMode is DataDependent, this is the minimum voltage for the high energy ramp.",
 			IndexMatching -> SamplesIn,
 			Category -> "Mass Analysis"
 		},
@@ -2172,7 +2284,7 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> {(GreaterP[0Volt]|Null)..},
-			Description -> "For each member of SamplesIn, at the end of the spectral scan, the highest value of the linear function for applied potential as mapped to the MinMass.",
+			Description -> "For each member of SamplesIn, at the end of the spectral scan, the highest value of the linear function for applied potential as mapped to the MinMass. If the corresponding AcquisitionMode is DataDependent, this is the maximum voltage for the high energy ramp.",
 			IndexMatching -> SamplesIn,
 			Category -> "Mass Analysis"
 		},
@@ -4906,6 +5018,31 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Relation -> Alternatives[Model[Instrument, MassSpectrometer], Object[Instrument, MassSpectrometer]],
 			Description -> "A field used to support cross-compatibility of LCMS and MassSpectrometry procedures. The field should link to the same mass spectrometer as the MassSpectrometryInstrument field.",
 			Category -> "Operations Information",
+			Developer -> True
+		},
+		CalibrationLog -> {
+			Format -> Multiple,
+			Class -> {String, Expression, Expression, Expression, Expression, Expression},
+			Pattern :> {MassSpectrometryCalibrationLogStringP, Alternatives[Positive, Negative], Alternatives[LockMass, Detector, Resolution, Sensitivity], Alternatives[MS, MSMS], Alternatives[Check, New],  Alternatives[Pass, Fail, Running, Unavailable]},
+			Description -> "Records the results from the IntelliStart calibration macros. Calibrations are unique to each mode of the mass spectrometer. The detector can operate in either Positive or Negative Ion Mode. A LockMass or DetectorCheck may be performed generally or Calibrations maybe be subdivided in Resolution or Sensitive Mode, and sub-divided furhter into MS or MSMS mode. Instead of running a new calibration, a check of the most recent calibration may be performed. Otherwise the prior calibration is cleared and a new calibration is made. The calibration macros can either Pass or Fail. If there was no Calibration to Check then the result may be recorded as Unavailable.",
+			Headers -> {"Calibration Profile", "Ion Mode", "LockMass, Detector, Resolution or Sensitivity", "Acquisition Mode", "Calibration Type", "Status"},
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		LoopCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "Records the number of times operators have attempted a looping procedure. Looping procedures include: \"Xevo G2-XS Run Lock Mass Check\", \"Xevo G2-XS Run Calibration Check\", \"Xevo G2-XS Create Calibration\".",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		CalibrationLoopCounts -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of UniqueCalibrants, the number of calibration voltage adjustment loops performed during the procedure.",
+			Category -> "General",
 			Developer -> True
 		}
 	}

@@ -15,7 +15,7 @@ DefineTests[
             (* Copy over all of the options from ExperimentMix -- except for the funtopia shared options (Cache, Upload, etc.) *)
             mixSharedOptions=UnsortedComplement[
               Options[ExperimentMix][[All, 1]],
-              Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "ExperimentFunction", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
+              Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
             ];
 
             mixNonIndexMatchingSharedOptions=UnsortedComplement[
@@ -132,7 +132,7 @@ DefineTests[
             (* Copy over all of the options from ExperimentMix -- except for the funtopia shared options (Cache, Upload, etc.) *)
             mixSharedOptions=UnsortedComplement[
               Options[ExperimentMix][[All, 1]],
-              Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "ExperimentFunction", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
+              Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
             ];
 
             mixNonIndexMatchingSharedOptions=UnsortedComplement[

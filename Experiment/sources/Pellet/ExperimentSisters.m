@@ -7,7 +7,7 @@ DefineOptions[ExperimentPelletPreview,
 	SharedOptions:>{ExperimentPellet}
 ];
 
-ExperimentPelletPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentPelletPreview]]:=Module[
+ExperimentPelletPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentPelletPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentPelletOptions,
 	SharedOptions :> {ExperimentPellet}
 ];
 
-ExperimentPelletOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentPelletOptions]]:=Module[
+ExperimentPelletOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentPelletOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -62,7 +62,7 @@ DefineOptions[ValidExperimentPelletQ,
 	SharedOptions:>{ExperimentPellet}
 ];
 
-ValidExperimentPelletQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentPelletQ]]:=Module[
+ValidExperimentPelletQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentPelletQ]]:=Module[
 	{listedOptions,preparedOptions,ExperimentPelletTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)

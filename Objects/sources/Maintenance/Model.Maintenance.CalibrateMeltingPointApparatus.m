@@ -32,6 +32,13 @@ DefineObjectType[Model[Maintenance, CalibrateMeltingPointApparatus], {
 			Description -> "Indicates if the sample is dried by removing water molecules from the sample via a desiccator before packing it into a melting point capillary and measuring its melting point.",
 			Category -> "Desiccation"
 		},
+		DesiccationMethod -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> DesiccationMethodP,
+			Description -> "Method of drying the sample (removing water or solvent molecules from the solid sample). Options include StandardDesiccant, Vacuum, and DesiccantUnderVacuum. StandardDesiccant involves utilizing a sealed bell jar desiccator that exposes the sample to a chemical desiccant that absorbs water molecules from the exposed sample. DesiccantUnderVacuum is similar to StandardDesiccant but includes creating a vacuum inside the bell jar via pumping out the air by a vacuum pump. Vacuum just includes creating a vacuum by a vacuum pump and desiccant is NOT used inside the desiccator.",
+			Category -> "Desiccation"
+		},
 		Grind -> {
 			Format -> Single,
 			Class -> Boolean,

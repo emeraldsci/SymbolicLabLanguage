@@ -76,7 +76,7 @@ Warning::ExpiredSamples="The following sample objects are marked expired: `1`.";
 Warning::SamplesWithDeprecatedModels="The following sample object(s) specified have models that are deprecated: `1`. Please check the Deprecated field for the models in question, or provide samples with alternative models.";
 Warning::DeprecatedSpecifiedModels="The following model object(s) specified are deprecated: `1`.  Please check the Deprecated field for the models in question, or provide non-deprecated models.";
 Warning::SamplesNotOwned="The following object(s) specified are not part of a Notebook financed by one of the current financing teams: `1`. Please check the Notebook field of these objects and the Financers field of that Notebook; if they are public, please purchase these items before directly requesting them in an Experiment.";
-Warning::InsufficientAmount="The amount of `1` is not sufficient to perform the manipulation at index `2` and all subsequent manipulations. Please check the sample in question, or provide a new sample with sufficient amount.";
+Warning::InsufficientSampleAmount="The amount of `1` is not sufficient to perform the manipulation at index `2` and all subsequent manipulations. Please check the sample in question, or provide a new sample with sufficient amount.";
 
 
 (* ::Subsubsection:: *)
@@ -273,7 +273,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 	primitivesWithConvertedResuspend=Map[
 		Switch[#,
 			(* get only the converted Transfer primitive which is at index 1 *)
-			_Resuspend, Experiment`Private`convertResuspendPrimitive[#][[1]],
+			_Resuspend, resuspendToTransferPrimitive[#][[1]],
 			_, #
 		]&,
 		primitivesWithExpandedAmount
@@ -283,7 +283,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 	(* ----------AMOUNT LENGTH VALIDATION CHECK---------- *)
 	(* -------------------------------------------------- *)
 
-	(* call convertTransferPrimitive as a mean to check matching amount length with Source or Destination *)
+	(* call toFormattedTransferPrimitive as a mean to check matching amount length with Source or Destination *)
 	(* convertTransfer works with all valid input format except Transfer primitive with amount length mismatch *)
 	(* we simply check if MapThread error message is thrown from convertTransfer primitive *)
 
@@ -291,7 +291,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 		Switch[#,
 			_Transfer,
 			Quiet[Check[
-				Experiment`Private`convertTransferPrimitive[#],
+				Experiment`Private`toFormattedTransferPrimitive[#],
 				$Failed,
 				{MapThread::mptc}
 			]],
@@ -693,10 +693,10 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 		Function[primitive,
 			Module[{convertedPrimitive, specifiedPrimitive, sourceSamples, transferAmounts, transferRules},
 				(* convert primitive to Transfer *)
-				convertedPrimitive=Experiment`Private`convertTransferPrimitive[primitive];
+				convertedPrimitive=Experiment`Private`toFormattedTransferPrimitive[primitive];
 				(* specify primitive to populate SourceSample key *)
-				specifiedPrimitive=Quiet[Check[Experiment`Private`specifyManipulation[convertedPrimitive, Cache -> newCache],
-					(* check if ObjectDoesNotExist error is thrown from specifyManipulation since primitives with samples that are not on database can reach this point *)
+				specifiedPrimitive=Quiet[Check[Experiment`Private`populateTransferKeys[convertedPrimitive, Cache -> newCache],
+					(* check if ObjectDoesNotExist error is thrown from populateTransferKeys since primitives with samples that are not on database can reach this point *)
 					(* we create a fake association here to make it when we lookup SourceSample and Amount below in this Map *)
 					<|SourceSample -> {{Null}}, Amount -> convertedPrimitive[Amount]|>,
 					Download::ObjectDoesNotExist
@@ -809,7 +809,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 	(* reverse key->value, and merge/join to make an association with all final object references as keys pointing to all possible define names *)
 	definedNameLookup=Merge[Map[Reverse, definedNameLookupRules], Join];
 
-	(* drop keys that are container models/objects since we only care about smaples *)
+	(* drop keys that are container models/objects since we only care about samples *)
 	definedNameLookupAssociation=KeyDrop[definedNameLookup, Cases[Keys[definedNameLookup], ObjectP[{Object[Container], Model[Container]}]]];
 
 	(* make defined name list that is index matched to object list to be displayed *)
@@ -1381,7 +1381,7 @@ SampleUsage[myPrimitives:{SampleManipulationP..}, ops:OptionsPattern[]]:=Module[
 	(* Throw a message for each sample that runs out in the course of the input manipulations *)
 	If[!MatchQ[positionsWithInsufficientSamples, {}],
 		Map[
-			Message[Warning::InsufficientAmount, First[#], Last[#]]&,
+			Message[Warning::InsufficientSampleAmount, First[#], Last[#]]&,
 			positionsWithInsufficientSamples
 		]
 	];
@@ -1520,3 +1520,144 @@ totalAmountLookup[packets:{PacketP[]..}, modelPacket_]:=Total[Map[
 	],
 	packets
 ]];
+
+
+(* ::Subsection::Closed:: *)
+(*resuspendToTransferPrimitive*)
+
+
+(* Convert any Resuspend primitive to Transfer primitives*)
+resuspendToTransferPrimitive[myPrimitive:SampleManipulationP]:=Module[
+	{resuspendAssoc, sample, volume, diluent, pipettingParameterNames, specifiedPipettingParameters, transferPrimitive,
+		incubatePrimitive, specifiedMixType, specifiedMixUntilDissolved, specifiedMixVolume, specifiedNumMixes,
+		specifiedMaxNumMixes, specifiedIncubationTime, specifiedMaxIncubationTime, specifiedIncubationInstrument,
+		specifiedIncubationTemperature, speciifedAnnealingTime, allAutomaticMixOptionValues, incubateQ,
+		allPrimitives},
+
+	(* if the primitive that we got in is anything but a resuspend primitive, just return it right here *)
+	(* returning as a list because that will help us on the other side*)
+	If[Not[MatchQ[myPrimitive, _Resuspend]],
+		Return[{myPrimitive}]
+	];
+
+	(* pull out the association form of the Resuspend primitive *)
+	resuspendAssoc = First[myPrimitive];
+
+	(* pull out the Volume, Sample, and Diluent from the Resuspend primitive *)
+	sample = Lookup[resuspendAssoc, Sample];
+	volume = Lookup[resuspendAssoc, Volume];
+	diluent = Lookup[resuspendAssoc, Diluent, Model[Sample, "Milli-Q water"]];
+
+	(* get all of the pipetting parameters that were specified as an association*)
+	pipettingParameterNames = Keys[SafeOptions[Experiment`Private`pipettingParameterOptions]];
+	specifiedPipettingParameters = KeyTake[resuspendAssoc, pipettingParameterNames];
+
+	(* generate the transfer primitive  *)
+	transferPrimitive = Transfer[Join[
+		<|
+			Source -> diluent,
+			Destination -> sample,
+			Amount -> volume
+		|>,
+		specifiedPipettingParameters
+	]];
+
+	(* pull out all the mix option values *)
+	allAutomaticMixOptionValues = Lookup[
+		resuspendAssoc,
+		{
+			MixType,
+			MixUntilDissolved,
+			MixVolume,
+			NumberOfMixes,
+			MaxNumberOfMixes,
+			IncubationTime,
+			MaxIncubationTime,
+			IncubationInstrument,
+			IncubationTemperature,
+			AnnealingTime
+		},
+		Automatic
+	];
+
+
+	(* determine if we are going to incubate or not *)
+	incubateQ = MemberQ[allAutomaticMixOptionValues, Except[Automatic|Null]];
+
+	(* split the mix options into their own variables the logic below to be more straightforward *)
+	{
+		specifiedMixType,
+		specifiedMixUntilDissolved,
+		specifiedMixVolume,
+		specifiedNumMixes,
+		specifiedMaxNumMixes,
+		specifiedIncubationTime,
+		specifiedMaxIncubationTime,
+		specifiedIncubationInstrument,
+		specifiedIncubationTemperature,
+		speciifedAnnealingTime
+	} = allAutomaticMixOptionValues;
+
+	(* generate the Incubate or Mix primitive *)
+	(* doing it in the association form so that Nothing works properly (i.e., Incubate[Sample -> blah, Nothing] doesn't collapse, but Incubate[<|Smaple -> blah, Nothing|>] does)*)
+	incubatePrimitive = If[incubateQ,
+		Incubate[<|
+			Sample -> sample,
+			If[MatchQ[specifiedMixType, Automatic|Null],
+				Nothing,
+				MixType -> specifiedMixType
+			],
+			If[MatchQ[specifiedMixUntilDissolved, Automatic|Null],
+				Nothing,
+				MixUntilDissolved -> specifiedMixUntilDissolved
+			],
+			If[MatchQ[specifiedMixVolume, Automatic|Null],
+				Nothing,
+				MixVolume -> specifiedMixVolume
+			],
+			If[MatchQ[specifiedNumMixes, Automatic|Null],
+				Nothing,
+				NumberOfMixes -> specifiedNumMixes
+			],
+			If[MatchQ[specifiedMaxNumMixes, Automatic|Null],
+				Nothing,
+				MaxNumberOfMixes -> specifiedMaxNumMixes
+			],
+			If[MatchQ[specifiedIncubationTime, Automatic|Null],
+				Nothing,
+				Time -> specifiedIncubationTime
+			],
+			If[MatchQ[specifiedMaxIncubationTime, Automatic|Null],
+				Nothing,
+				MaxTime -> specifiedMaxIncubationTime
+			],
+			If[MatchQ[specifiedIncubationInstrument, Automatic|Null],
+				Nothing,
+				Instrument -> specifiedIncubationInstrument
+			],
+			(* Add Ambient to the temperature if it's not specified because otherwise it will freak out*)
+			If[MatchQ[specifiedIncubationTemperature, Automatic|Null],
+				Temperature -> Ambient,
+				Temperature -> specifiedIncubationTemperature
+			],
+			If[MatchQ[speciifedAnnealingTime, Automatic|Null],
+				Nothing,
+				AnnealingTime -> speciifedAnnealingTime
+			]
+		|>],
+		Null
+	];
+
+	(* return the transfer and incubate primitives *)
+	allPrimitives = DeleteCases[Flatten[{transferPrimitive, incubatePrimitive}], Null];
+
+	allPrimitives
+
+];
+
+
+
+
+
+
+

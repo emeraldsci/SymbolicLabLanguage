@@ -200,17 +200,23 @@ DefineTests[CompatibleFootprintQ,
 
 DefineTests[AliquotContainers,
 	{
-		Example[{Basic, "Returns a list of containers that the sample can be aliquoted (considering the sample's volume) into to fit on a postion on the given instrument:"},
+		Example[{Basic, "Returns a list of containers that the sample can be aliquoted (considering the sample's volume) into to fit on a position on the given instrument:"},
 			AliquotContainers[Model[Instrument, Vortex, "id:dORYzZn0o45q"], Object[Sample, "Test sample in deep-well plate for AliquotContainers"]],
-			{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Plate, "id:E8zoYveRllM7"]}
+			{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Plate, "id:E8zoYveRllM7"],Model[Container,Plate,"id:lYq9jRqw70m4"],Model[Container,Plate,"id:AEqRl9qmr111"]}
 		],
-		Example[{Basic, "Returns a list of containers that the sample can be aliquoted (considering the sample's volume) into to fit on a postion on the given instrument:"},
+		Example[{Basic, "Returns a list of containers that the sample can be aliquoted (considering the sample's volume) into to fit on a position on the given instrument:"},
 			AliquotContainers[Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> False, MinWidth -> Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"][RollerSpacing]],
-			{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
+			{
+				Model[Container, Vessel, "id:zGj91aR3ddXJ"],
+				Model[Container, Vessel, "id:3em6Zv9Njjbv"],
+				Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+				Model[Container, Vessel, "id:mnk9jOkn6oMZ"],
+				Model[Container, Plate, "id:AEqRl9qmr111"]
+			}
 		],
 		Example[{Basic, "AliquotContainers is listable:"},
 			AliquotContainers[{Model[Instrument, Vortex, "id:dORYzZn0o45q"], Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"]}, Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> {True, False}, MinWidth -> {Null, Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"][RollerSpacing]}],
-			{{}, {Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:Vrbp1jG800Zm"]}}
+			{{Model[Container,Plate,"id:AEqRl9qmr111"]},{Model[Container,Vessel,"id:zGj91aR3ddXJ"],Model[Container,Vessel,"id:3em6Zv9Njjbv"],Model[Container,Vessel,"id:Vrbp1jG800Zm"],Model[Container,Vessel,"id:mnk9jOkn6oMZ"],Model[Container,Plate,"id:AEqRl9qmr111"]}}
 		],
 		Example[{Options, Tolerance, "Tolerance controls the tolerance between the measurement of the container and of the instrument's position. Since measurement is never perfect, this defaults to .5 Centimeters:"},
 			AliquotContainers[Model[Instrument, Vortex, "id:dORYzZn0o45q"], Object[Sample, "Test sample in deep-well plate for AliquotContainers"], Tolerance -> 0Meter],
@@ -218,7 +224,12 @@ DefineTests[AliquotContainers,
 		],
 		Example[{Options, Tolerance, "Tolerance controls the tolerance between the measurement of the container and of the instrument's position. Since measurement is never perfect, this defaults to .5 Centimeters:"},
 			AliquotContainers[Model[Instrument, Vortex, "id:dORYzZn0o45q"], Object[Sample, "Test sample in deep-well plate for AliquotContainers"]],
-			{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Plate, "id:E8zoYveRllM7"]}
+			{
+				Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Model[Container, Plate, "id:E8zoYveRllM7"],
+				Model[Container, Plate, "id:lYq9jRqw70m4"],
+				Model[Container, Plate, "id:AEqRl9qmr111"]
+			}
 		],
 		Example[{Options, ExactMatch, "When ExactMatch->True, an exact match between the container's dimensions and the model's position's dimensions is evaluated, given the set Tolerance allowed:"},
 			AliquotContainers[Model[Instrument, Vortex, "id:qdkmxz0A8YJm"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"]],
@@ -238,12 +249,32 @@ DefineTests[AliquotContainers,
 				Model[Container, Vessel, "id:aXRlGnZmOONB"],
 				Model[Container, Vessel, "id:zGj91aR3ddXJ"],
 				Model[Container, Vessel, "id:3em6Zv9Njjbv"],
-				Model[Container, Vessel, "id:Vrbp1jG800Zm"]
+				Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+				Model[Container, Vessel, "id:mnk9jOkn6oMZ"],
+				Model[Container, Plate, "id:AEqRl9qmr111"]
 			}
 		],
 		Example[{Options, MinWidth, "When there is a MinWidth for an instrument (spacing required between roller pins), it can be specified using the MinWidth option:"},
 			AliquotContainers[Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> False, MinWidth -> Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"][RollerSpacing]],
-			{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
+			{
+				Model[Container, Vessel, "id:zGj91aR3ddXJ"],
+				Model[Container, Vessel, "id:3em6Zv9Njjbv"],
+				Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+				Model[Container, Vessel, "id:mnk9jOkn6oMZ"],
+				Model[Container, Plate, "id:AEqRl9qmr111"]
+			}
+		],
+		Example[{Options, SelfStanding, "Use SelfStanding option to control if we are outputting container models that are SelfStanding only:"},
+			{
+				Download[AliquotContainers[Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> False, SelfStanding -> True], SelfStanding],
+				Download[AliquotContainers[Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> False, SelfStanding -> False], SelfStanding],
+				Download[AliquotContainers[Model[Instrument, BottleRoller, "id:lYq9jRzX330Y"], Object[Sample, "Test sample in 50mL tube for AliquotContainers"], ExactMatch -> False, SelfStanding -> Null], SelfStanding]
+			},
+			{
+				{True..},
+				{False..},
+				_?(ContainsAll[#, {True, False}]&)
+			}
 		]
 	},
 	SymbolSetUp :> (
@@ -348,14 +379,27 @@ DefineTests[RackFinder,
 		Example[{Options, ThermalConductiveRack, "Return the metallic rack for HIAC:"},
 			RackFinder[
 				{
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Container, Vessel, "15mL Tube"]
+					Model[Container, Vessel, "50mL Tube"]
 				},
 				ThermalConductiveRack->True
 			],
 			{
-				ObjectP[Model[Container, Rack, "50mL HIAC Tube Rack"]],
-				ObjectP[Model[Container, Rack, "15mL HIAC Tube Rack"]]
+				ObjectP[Model[Container, Rack, "HIAC 50 mL Tube Rack"]]
+			},
+			Stubs :> {
+				(* doing this because the HIAC rack is not DeveloperObject and is real and we want to see it *)
+				$DeveloperSearch = False
+			}
+		],
+		Example[{Options, MaxDepthMargin, "Return the metallic rack for HIAC:"},
+			RackFinder[
+				{
+					Model[Container, Vessel, "50mL Tube"]
+				},
+				MaxDepthMargin -> 1 Millimeter
+			],
+			{
+				ObjectP[Model[Container, Rack, "HIAC 50 mL Tube Rack"]]
 			},
 			Stubs :> {
 				(* doing this because the HIAC rack is not DeveloperObject and is real and we want to see it *)

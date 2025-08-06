@@ -10,6 +10,29 @@ DefineObjectType[Object[Protocol,AcousticLiquidHandling],{
 	Cache->Download,
 	Fields->{
 
+		Sources -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]},
+			Description -> "The user-specified sample that we aspirate out of during this transfer.",
+			Category -> "General"
+		},
+		Destinations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Container]}] | _String | {_Integer, ObjectP[Model[Container]]} | {LocationPositionP, _String | ObjectP[{Object[Container, Plate], Model[Container, Plate]}] | {_Integer, ObjectP[Model[Container]]}},
+			Description -> "The user-specified destinations samples or containers for each of our transfers.",
+			Category -> "General"
+		},
+		Amounts -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Nanoliter],
+			Description -> "The user-specified amount of that sample that is transferred to the corresponding SamplesOut. An Amount of Null indicates that all of the source is transferred to the destination.",
+			Category -> "General",
+			Units -> Nanoliter
+		},
+
 		(* ---------- Primitives Fields ---------- *)
 		Manipulations->{
 			Format->Multiple,
@@ -19,12 +42,13 @@ DefineObjectType[Object[Protocol,AcousticLiquidHandling],{
 			Category->"General",
 			Abstract->True
 		},
-		ResolvedManipulations->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Description->"A list of manipulations in the order they are performed with all models resolved to samples.",
-			Category->"General"
+		ResolvedManipulations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Transfer,
+			Description -> "A list of transfers with resolved source/destination/amount information. Importantly, transfers stored in this field only serve as bridges to pass source/destination/amount information between the main Experiment function and engine functions and are not meant to be inputs of ExperimentSamplePreparation.",
+			Category -> "General",
+			Developer -> True
 		},
 
 		(* ---------- Objects Fields ---------- *)

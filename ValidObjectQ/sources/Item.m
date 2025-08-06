@@ -123,25 +123,25 @@ validItemQTests[packet:PacketP[Object[Item]]]:=Module[
 
 		(* Location *)
 		Test["If Status is not Discarded, the sample has a location (Container, Position informed):",
-			If[MatchQ[Lookup[packet, Type], Alternatives@@Patterns`Private`coveringTypesObjects],
+			If[MatchQ[Lookup[packet, Type], Alternatives@@CoverObjectTypes],
 
-				(* caps that are on containers dont have location and thats ok *)
+				(* caps that are on containers don't have location and thats ok *)
 				If[MatchQ[Lookup[packet, CoveredContainer], Null],
 					MatchQ[Lookup[packet,{Status,Container,Position}], {Discarded,_,_}|{Except[Discarded],Except[NullP],Except[NullP]}],
 					True
 				],
 
-				(* we dont have a cap - do the normal test *)
+				(* we don't have a cap - do the normal test *)
 				MatchQ[Lookup[packet,{Status,Container,Position}], {Discarded,_,_}|{Except[Discarded],Except[NullP],Except[NullP]}]
 			],
 			True
 		],
 
-		(* dont check for location if the item is a cap/lid/seal that is on a container *)
+		(* don't check for location if the item is a cap/lid/seal that is on a container *)
 		Test["If Status is not Discarded, the sample has a location log:",
 			If[MatchQ[
 				Lookup[packet, {Type, CoveredContainer}],
-				{Alternatives@@Patterns`Private`coveringTypesObjects, ObjectP[]}
+				{Alternatives@@CoverObjectTypes, ObjectP[]}
 			],
 				True,
 				MatchQ[Lookup[packet,{Status,LocationLog}],{Discarded,_}|{Except[Discarded],Except[{}]}]
@@ -153,7 +153,7 @@ validItemQTests[packet:PacketP[Object[Item]]]:=Module[
 			If[
 				MatchQ[
 					Lookup[packet, {Type, CoveredContainer}],
-					{Alternatives@@Patterns`Private`coveringTypesObjects, ObjectP[]}
+					{Alternatives@@CoverObjectTypes, ObjectP[]}
 				],
 				True,
 				MatchQ[{#[[4]],#[[3]][Object]}&[Last[Lookup[packet, LocationLog]]], {Lookup[packet, Position],Lookup[packet, Container][Object]}]
@@ -254,6 +254,56 @@ validItemQTests[packet:PacketP[Object[Item]]]:=Module[
 				If[MatchQ[modelConnectors,{}],
 					MatchQ[objectConnectorNames,{}],
 					MatchQ[objectConnectorNames, {OrderlessPatternSequence @@ modelConnectorNames}]
+				]
+			],
+			True
+		],
+
+		(* If the Object has ConnectorGrips in its Model, then it must have corresponding entries in the Object's Connectors field *)
+		Test["All ConnectorGrips from this Object's Model have entries in the Object and vice versa:",
+			Module[{modelConnectorGrips, nonNullModelConnectorGrips, objectConnectorGrips, nonNullObjectConnectorGrips},
+				modelConnectorGrips = Lookup[modelPacket, ConnectorGrips, {}];
+				nonNullModelConnectorGrips = Cases[modelConnectorGrips, Except[Null]];
+
+				objectConnectorGrips = Lookup[packet, ConnectorGrips, {}];
+				nonNullObjectConnectorGrips = Cases[objectConnectorGrips, Except[Null]];
+
+				If[MatchQ[nonNullModelConnectorGrips, {}],
+					True,
+					MatchQ[nonNullObjectConnectorGrips, {OrderlessPatternSequence @@ nonNullModelConnectorGrips}]
+				]
+			],
+			True
+		],
+
+		(* The name for each non-Null ConnectorGrip entry matches the name of the index-matched Connector. *)
+		Test["The name of each non-Null ConnectorGrip matches that the name of the index-matched Connector:",
+			Module[{connectors, connectorGrips},
+				{connectors, connectorGrips} = Lookup[packet, {Connectors, ConnectorGrips}, {}];
+
+				If[MatchQ[connectorGrips, {}],
+					True,
+					(* Name is the first index of both Connectors and ConnectorGrips *)
+					And @@ (MatchQ[#[[1,1]], #[[2,1]]]& /@ PickList[Transpose[{connectors, connectorGrips}], connectorGrips, Except[Null]])
+				]
+			],
+			True
+		],
+
+		(* Min is less than Max for ConnectorGrip torque. *)
+		Test["Each ConnectorGrip Min Torque is less than or equal to its Max Torque:",
+			Module[{connectorGrips, minTorques, maxTorques},
+				connectorGrips = Cases[Lookup[packet, ConnectorGrips], {_, _, _, Except[Null], Except[Null]}];
+
+				If[MatchQ[connectorGrips, {}],
+					True,
+
+					(* Pull out the min and max torques for the field. *)
+					minTorques = connectorGrips[[All, 4]];
+					maxTorques = connectorGrips[[All, 5]];
+
+					(* Name is the first index of both Connectors and ConnectorGrips *)
+					And @@ MapThread[LessEqualQ[#1, #2]&, {minTorques, maxTorques}]
 				]
 			],
 			True
@@ -1441,6 +1491,14 @@ validItemCalibrationDistanceBlockQTests[packet:PacketP[Object[Item,CalibrationDi
 		PreciseDimensions
 	}]
 };
+
+
+(* ::Subsection:: *)
+(*validItemWasteLabelQTests*)
+
+validItemWasteLabelQTests[packet : PacketP[Object[Item, WasteLabel]]] := {};
+
+
 (* ::Subsection:: *)
 (*validItemWilhelmyPlateQTests*)
 
@@ -1529,10 +1587,9 @@ registerValidQTestFunction[Object[Item, DeliveryNeedle],validItemDeliveryNeedleQ
 registerValidQTestFunction[Object[Item, SupportRod],validItemSupportRodQTests];
 registerValidQTestFunction[Object[Item, Washer],validItemWasherQTests];
 registerValidQTestFunction[Object[Item, WilhelmyPlate],validItemWilhelmyPlateQTests];
-
 registerValidQTestFunction[Object[Item,Cap],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,PlateSeal],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,Septum],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,Lid],validCoverObjectsQTests];
 registerValidQTestFunction[Object[Item,Stopper],validCoverObjectsQTests];
-
+registerValidQTestFunction[Object[Item, WasteLabel], validItemWasteLabelQTests];

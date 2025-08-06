@@ -705,6 +705,11 @@ packetP[typePattern:_, objectPattern:_, rules:{_Rule...}]:=With[
 	KeyValuePattern[pattern]
 ];
 
+(* this pattern is used for cases where we are pattern matching against very large things and so pattern matching is slow *)
+(* this is most importantly used in the definition of the CacheOption, where we often have a very large list of packets, and every time we pattern match on it things get super slow *)
+(* this way, at least SafeOptions is much faster when we get a huge cache *)
+(* note that the difference here between fastPacketP[] and PacketP[] is that here we're not checking if the specified types or objects are properly defined in SLL *)
+fastPacketP[]:=KeyValuePattern[(Type -> (Object|Model)[__Symbol]) | (Object -> (Object|Model)[__Symbol, _String])];
 
 (* ::Subsubsection::Closed:: *)
 (*ObjectQ*)

@@ -218,6 +218,43 @@ DefineObjectType[Object[Maintenance, AuditGasCylinders], {
 			Pattern :> BooleanP,
 			Description -> "For each member of NewCylinders, indicates if pressure building successfully reached the target pressure for the tank.",
 			Category -> "General"
+		},
+		(* Temporary fields use for checking if tanks were scanned to multiple positions *)
+		DuplicatedPositionContentsQ -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if a tank or tanks was scanned to multiple positions in the RawPositionsContents field.",
+			Category -> "Retry",
+			Developer -> True
+		},
+		AmbiguousTanks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, GasCylinder],
+			Description -> "Tanks that were scanned into multiple positions during the initial auditing tasks and whose positions need clarified.",
+			Category -> "Retry",
+			Developer -> True
+		},
+		AmbiguousTankPositions -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {LocationPositionP -> ObjectP[Object[Container, Deck]], (LocationPositionP -> ObjectP[Object[Container, Deck]])..}, (*The pattern must match the pattern for Choice Options required by a multiple choice task.*)
+			Description -> "For each member of AmbiguousTanks, a list of the positions that each ambiguous tank is associated with.",
+			Category -> "Retry",
+			IndexMatching -> AmbiguousTanks,
+			Developer -> True
+		},
+		ClarifiedTankPositions -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Deck],
+			Description -> "For each member of AmbiguousTanks, the actual position of the tank.",
+			Category -> "Retry",
+			IndexMatching -> AmbiguousTanks,
+			Developer -> True
 		}
 	}
 }];

@@ -47,13 +47,14 @@ loadJavaFiles[] := If[$VersionNumber > 13.2 && javaFilesNotLoaded,
 DefineOptions[
 	PrintStickers,
 	Options :> {
-		{StickerSize -> Automatic, StickerSizeP | Automatic, "The size of sticker that will be printed, i.e. Small or Large. Small Destination stickers and all Large stickers require use of a different printer than is used for standard Small Object stickers."},
+		{StickerSize -> Automatic, StickerSizeP | Automatic, "The size of sticker that will be printed, i.e. Small, Large, Piggyback. Small Destination stickers and all Large stickers require use of a different printer than is used for standard Small Object stickers."},
 		{StickerModel -> Automatic, ObjectP[Model[Item, Sticker]] | Automatic, "Specifies what model of sticker will be printed, which determines the layout of each individual sticker and the layout of stickers on the printed sheets."},
 		{Print -> True, BooleanP, "Specifies whether to go through with the printing operation (Print->True) or leave the sticker sheet(s) open (Print->False)."},
 		{TextScaling -> Scale, Crop | Scale, "Specifies whether text that is too big for the sticker at the default size will be cropped or scaled."},
 		{Border -> False, BooleanP, "If True, a black border will be drawn to delimit the boundaries of the sticker."},
 		{FontFamily -> "Bitstream Vera Sans Mono", _String, "The font family that will be used for description text on printed stickers.", Category -> Hidden},
 		{Output -> Notebook, Notebook | Graphics, "Specifies whether to return a notebook object or a list of graphics objects of the created stickers.", Category -> Hidden},
+		{Interactive -> False, BooleanP,"Specifies whether the interactive printer selection pop up should appear.", Category -> Hidden},
 		FastTrackOption,
 		UploadOption,
 		CacheOption
@@ -65,6 +66,7 @@ PrintStickers::NoDestinations="Destination stickers have been requested, but one
 PrintStickers::StickerModelSizeMismatch="The specified StickerSize does not match the size of the specified StickerModel.";
 PrintStickers::InputDimensionMismatch="The dimensions of the provided object list do not match the dimensions of the provided position list.";
 PrintStickers::InvalidDestinations="The requested destinations `1` do not exist in the objects `2`. Please double check which positions or connectors you'd like to print stickers for.";
+PrintStickers::StickerSizeTypeMismatch="The specified Piggyback StickerSize cannot be used to print Destination stickers. Please print object stickers or use the Small or Large StickerSize.";
 
 
 (* ::Subsubsection::Closed:: *)
@@ -432,13 +434,16 @@ Authors[printStickersCore]:={"ben", "olatunde.olademehin"};
 printStickersCore[object:(ObjectP[]|BarcodeP), barcodeText_String?(StringLength[#1] > 0 &), stickerText:{Repeated[_String, {3}]}, ops:OptionsPattern[]]:=
 	printStickersCore[{object}, {barcodeText}, {stickerText}, ops];
 printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(StringLength[#1] > 0 &)..}, stickerTexts:{{Repeated[_String, {3}]}..}, ops:OptionsPattern[]]:=Module[
-	{stickerGraphics, stickerSheets, opsList, stickersPerSheet, optionsToPass, containerModels},
+	{stickerGraphics,stickerSheets,opsList,stickersPerSheet,optionsToPass,interactiveQ,containerModels,return},
 
 	opsList=ToList[ops];
 
 	stickersPerSheet=Lookup[OptionValue[StickerModel], StickersPerSheet];
 
 	optionsToPass=PassOptions[printStickersCore, drawSticker, opsList];
+
+	(* Pull out the interactive option *)
+	interactiveQ = OptionValue[Interactive];
 
 	(* Get the models of these objects, if they are an Object[Container]. This is because for Model[Container, Vessel, "2mL Tube"] we have to *)
 	(* move the right aligned text to the left since operators cut off the ends of the stickers to make them fit on the tube. *)
@@ -461,54 +466,12 @@ printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(Strin
 	Upload[If[MatchQ[#, ObjectP[]], <|Object->#, NewStickerPrinted->True|>, Nothing]&/@Download[objects, Object]];
 
 	(* Print and close sticker sheets and return Null if Print->True; otherwise, leave sheets open for examination *)
-	If[TrueQ[OptionValue[Print]],
-		(* Are we in Command Center? If so, we have to use a workaround to actually do our printing since *)
-		(* CDF and NW.js don't support printing natively. *)
-		(* Note that printing works fine in Engine since we are using a Wolfram Kernel instead of CDF/NW.js. *)
-		If[MatchQ[$ECLApplication, CommandCenter],
-			(* We are in CC. *)
-
-			(* Note: This is the same thing that PrintStickersCommandCenter and the front end do in conjunction -- *)
-			(* which is render the files to PNG and invoke a system command to do the printing. *)
-
-			Module[{images, exportPaths, exportPathsWithNewLines, textFile},
-				(* Take those graphics and rasterize them using DPI 300 *)
-				images=(Rasterize[#, ImageResolution -> 300, ImageSize -> {162, 23}, RasterSize -> 800]&) /@ stickerGraphics;
-
-				(* Create export paths for these images *)
-				exportPaths=(FileNameJoin[{$TemporaryDirectory, ToString[#]<>".png"}]&) /@ Range[Length[images]];
-
-				(* Export each of our images to these paths *)
-				MapThread[(Export[#1, #2]&), {exportPaths, images}];
-
-				(* Combine our export paths with new lines and write to a text file. *)
-				exportPathsWithNewLines=StringJoin[StringRiffle[exportPaths, "\n"]];
-				textFile=FileNameJoin[{$TemporaryDirectory, CreateUUID[]<>".txt"}];
-				Export[textFile, exportPathsWithNewLines];
-
-				(* Are we on windows or mac/linux? *)
-				If[MatchQ[$OperatingSystem, "Windows"],
-					(* We are on windows. *)
-					Module[{printerDriverFile},
-						(* Get the location of our printer driver application. *)
-						printerDriverFile=FileNameJoin[{Packager`PackageDirectory["ExternalInventory`"], "resources", "BasicPrinter-2018-08-27.exe"}];
-
-						(* Run this bad boy. *)
-						Run["\"\""<>printerDriverFile<>"\" \"--image-list\" \""<>textFile<>"\"\""]
-					],
-					(* Assume mac/linux. *)
-					Run["lp -o media=Custom.162x30 -o page-top=10 "<>StringJoin[StringRiffle[exportPaths, " "]]]
-				];
-
-				(* Close our sticker sheet notebooks. *)
-				NotebookClose /@ stickerSheets;
-			],
-			(* We're not in CC, do our normal printing. *)
+	return = If[TrueQ[OptionValue[Print]],
 			(
-				NotebookPrint /@ stickerSheets;
+				NotebookPrint[#,Interactive -> interactiveQ]& /@ stickerSheets;
 				NotebookClose /@ stickerSheets;
 			)
-		],
+		,
 		(* If Output\[Rule]Graphics, return the sticker graphics instead of the notebook. *)
 		If[SameQ[OptionValue[Output], Graphics],
 			stickerGraphics,
@@ -516,7 +479,13 @@ printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(Strin
 			(* Otherwise, return the notebook. *)
 			stickerSheets
 		]
-	]
+	];
+
+	(* we want to kill JLink` from the context path since it shadows some sother symbols used in SLL *)
+	Experiment`Private`deleteJLink[];
+
+	(* output whatever we were going to return *)
+	return
 ];
 
 
@@ -774,23 +743,39 @@ resolvePrintStickersOptions[
 
 	(* --- Resolve StickerSize --- *)
 
-	resolvedStickerSize=Switch[
-		{stickerSizeOption, stickerModelOption},
+	resolvedStickerSize=Module[{},
 
-		(* If StickerSize has been specified and model has not, go with specified sticker size *)
-		{Except[Automatic], Automatic}, stickerSizeOption,
 
-		(* If StickerSize is Automatic and StickerModel has been specified, resolve StickerType *)
-		{Automatic, Except[Automatic]}, Lookup[stickerModelPacket, StickerSize],
+		If[
+			(* If the StickerSize is Piggyback and the StickerType is Destination, throw an error and return $Failed *)
+			Or[
+				MatchQ[stickerSizeOption,Piggyback] && MatchQ[stickerType, Destination],
+				MatchQ[stickerModelPacket,Except[Null]] && MatchQ[Lookup[stickerModelPacket, StickerSize], Piggyback] && MatchQ[stickerType,Destination]
+			],
+			(
+				Message[PrintStickers::StickerSizeTypeMismatch];
+				$Failed
+			),
+			(* Otherwise, resolve the sticker size *)
+			Switch[
+				{stickerSizeOption, stickerModelOption},
 
-		(* If both StickerSize and StickerModel have been specified, verify that they match; if they don't, display a message and return $Failed *)
-		{Except[Automatic], Except[Automatic]}, If[!MatchQ[stickerSizeOption, Lookup[stickerModelPacket, StickerSize]],
-			(Message[PrintStickers::StickerModelSizeMismatch, stickerSizeOption, stickerModelOption];$Failed),
-			stickerSizeOption
-		],
+				(* If StickerSize has been specified and model has not, go with specified sticker size *)
+				{Except[Automatic], Automatic}, stickerSizeOption,
 
-		(* If both StickerSize and StickerModel are Automatic, default to Small stickers *)
-		{Automatic, Automatic}, Small
+				(* If StickerSize is Automatic and StickerModel has been specified, resolve StickerType *)
+				{Automatic, Except[Automatic]}, Lookup[stickerModelPacket, StickerSize],
+
+				(* If both StickerSize and StickerModel have been specified, verify that they match; if they don't, display a message and return $Failed *)
+				{Except[Automatic], Except[Automatic]}, If[!MatchQ[stickerSizeOption, Lookup[stickerModelPacket, StickerSize]],
+				(Message[PrintStickers::StickerModelSizeMismatch, stickerSizeOption, stickerModelOption];$Failed),
+				stickerSizeOption
+			],
+
+				(* If both StickerSize and StickerModel are Automatic, default to Small stickers *)
+				{Automatic, Automatic}, Small
+			]
+		]
 	];
 
 

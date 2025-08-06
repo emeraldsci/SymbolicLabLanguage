@@ -24,7 +24,11 @@ DefineUsage[ExperimentDNASynthesis,
 							InputName -> "OligomerModels",
 							Description -> "The oligomer models that will be synthesized.",
 							Widget -> Alternatives[
-								"Oligomer Model" -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample], Model[Molecule, Oligomer]}], ObjectTypes -> {Model[Sample], Model[Molecule, Oligomer]}],
+								"Oligomer Model" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Model[Sample], Model[Molecule, Oligomer]}],
+									ObjectTypes -> {Model[Sample], Model[Molecule, Oligomer]}
+								],
 								"Oligomer Strand" -> Widget[Type -> Expression, Pattern :> StrandP, Size -> Paragraph],
 								"Oligomer Structure" -> Widget[Type -> Expression, Pattern :> StructureP, Size -> Paragraph],
 								"Oligomer String" -> Widget[Type -> String, Pattern :> _?StringQ, Size -> Word]

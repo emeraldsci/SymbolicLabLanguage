@@ -60,7 +60,7 @@ DefineUsage[ExperimentPickColoniesOptions,
     BasicDefinitions->{
       {
         Definition->{"ExperimentPickColoniesOptions[Samples]","ResolvedOptions"},
-        Description->"returns the resolved options for ExperimentPickColonies when it is called on",
+        Description->"returns the resolved options for ExperimentPickColonies when it is called on.",
         Inputs:> {
           IndexMatching[
             {
@@ -134,5 +134,52 @@ DefineUsage[ValidExperimentPickColoniesQ,
       "ExperimentPickColoniesOptions"
     },
     Author->{"harrison.gronlund", "taylor.hochuli"}
+  }
+];
+
+(* ::Section:: *)
+(* ExperimentPickColoniesPreview *)
+DefineUsage[ExperimentPickColoniesPreview,
+  {
+    BasicDefinitions -> {
+      {
+        Definition -> {"ExperimentPickColoniesPreview[Samples]", "Preview"},
+        Description -> "generates a graphical 'Preview' for picking microbial colonies off of 'Samples'.",
+        Inputs:> {
+          IndexMatching[
+            {
+              InputName->"Samples",
+              Description->"The samples that colonies are picked from.",
+              Widget->Widget[
+                Type->Object,
+                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                Dereference->{
+                  Object[Container]->Field[Contents[[All,2]]]
+                }
+              ],
+              Expandable->False
+            },
+            IndexName->"experiment samples"
+          ]
+        },
+        Outputs :> {
+          {
+            OutputName -> "Preview",
+            Description -> "A graphical representation of the provided PickColonies experiment. This value is always Null.",
+            Pattern :> Null
+          }
+        }
+      }
+    },
+    MoreInformation -> {},
+    SeeAlso -> {
+      "ExperimentPickColonies",
+      "ExperimentPickColoniesOptions",
+      "ValidExperimentPickColoniesQ"
+    },
+    Tutorials -> {
+
+    },
+    Author -> {"harrison.gronlund"}
   }
 ];

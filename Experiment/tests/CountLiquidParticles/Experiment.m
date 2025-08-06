@@ -42,7 +42,7 @@ DefineTests[
 				Simulation -> simulation
 			];
 			{simulation, volumes},
-			{SimulationP, {EqualP[16.8 Milliliter], EqualP[16.8 Milliliter], EqualP[16.8 Milliliter]}},
+			{SimulationP, {EqualP[34.8 Milliliter], EqualP[34.8 Milliliter], EqualP[34.8 Milliliter]}},
 			Variables :> {simulation, volumes}
 		],
 		Example[{Options, Instrument, "Specify the instrument used to detect and count particles in a sample using light obscuration while flowing the sample through a flow cell:"},
@@ -768,7 +768,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, AliquotSampleLabel],
-			"Test Aliquot Label" <> $SessionUUID,
+			{"Test Aliquot Label" <> $SessionUUID},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "Specify the aliquot amount:"},
@@ -801,7 +801,7 @@ DefineTests[
 				AcquisitionMixType -> Stir
 			];
 			Download[protocol, SamplingHeights],
-			{31 Millimeter, 31 Millimeter, 31 Millimeter},
+			{16 Millimeter, 16 Millimeter, 16 Millimeter},
 			EquivalenceFunction -> Equal,
 			Variables :> {protocol}
 		],
@@ -848,7 +848,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotPreparation, "Indicates the desired scale at which liquid handling used to generate aliquots will occur:"},
@@ -869,7 +869,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, Preparation, "Specify indicates if this unit operation is carried out primarily robotically or manually. Manual unit operations are executed by a laboratory operator and robotic unit operations are executed by a liquid handling work cell. For now ExperimentCountLiquidParticles can be only done manually:"},
@@ -913,7 +913,31 @@ DefineTests[
 			"Test name for ExpCountLiqParticles" <> $SessionUUID,
 			Variables :> {protocol}
 		],
-		Example[{Options, PreparatoryUnitOperations, "Specify Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCountLiquidParticles[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 40 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+				{EqualP[40 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparatoryUnitOperations, "Specify Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			protocol = ExperimentCountLiquidParticles[
 				{
 					"CLP Sample 1",
@@ -944,32 +968,6 @@ DefineTests[
 			];
 			Download[protocol, PreparatoryUnitOperations],
 			{SamplePreparationP ..},
-			Variables :> {protocol}
-		],
-		Example[{Options, PreparatoryPrimitives, "Specify Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-			protocol = ExperimentCountLiquidParticles[
-				{
-					"Sample Vessel 1"
-				},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "Sample Vessel 1",
-						Container -> Model[Container, Vessel, "50mL Tube"]
-					],
-					Transfer[
-						Source -> Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-						Amount -> 100 Microliter,
-						Destination -> {"Sample Vessel 1", "A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 20 Milliliter,
-						Destination -> {"Sample Vessel 1", "A1"}
-					]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP ..},
 			Variables :> {protocol}
 		],
 		Example[{Options, Incubate, "Specify indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
@@ -1129,8 +1127,7 @@ DefineTests[
 			];
 			Lookup[options, IncubateAliquotDestinationWell],
 			{"A1", "B1", "C1"},
-			Variables :> {options},
-			Messages :> {Warning::AliquotRequired}
+			Variables :> {options}
 		],
 		Example[{Options, IncubateAliquot, "Specify the amount of each sample that should be transferred from the SamplesIn into the IncubateAliquotContainer when performing an aliquot before incubation:"},
 			options = ExperimentCountLiquidParticles[
@@ -1230,8 +1227,7 @@ DefineTests[
 			];
 			Lookup[options, CentrifugeAliquotContainer],
 			{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
-			Variables :> {options},
-			Messages :> {Warning::AliquotRequired}
+			Variables :> {options}
 		],
 		Example[{Options, CentrifugeAliquotDestinationWell, "Specify the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentCountLiquidParticles[
@@ -1298,8 +1294,7 @@ DefineTests[
 			];
 			Lookup[options, FilterInstrument],
 			ObjectP[Model[Instrument, VacuumPump, "Rocker 300 for Filtration, Non-sterile"]],
-			Variables :> {options},
-			Messages :> {Warning::AliquotRequired}
+			Variables :> {options}
 		],
 		Example[{Options, Filter, "Specify the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options = ExperimentCountLiquidParticles[
@@ -1381,12 +1376,12 @@ DefineTests[
 					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
 					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
 				},
-				FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"],
+				FilterSyringe -> Model[Container, Syringe, "50 mL Glass Luer-Lock Syringe"],
 				AliquotAmount -> 15 Milliliter,
 				Output -> Options
 			];
 			Lookup[options, FilterSyringe],
-			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
+			ObjectP[Model[Container, Syringe, "50 mL Glass Luer-Lock Syringe"]],
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "Specify the filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
@@ -1407,12 +1402,21 @@ DefineTests[
 		],
 		Example[{Options,FilterIntensity, "Specify the rotational speed or force at which the samples will be centrifuged during filtration:"},
 			options = ExperimentCountLiquidParticles[
-				{
-					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-				},
+				{"sample 1", "sample 2", "sample 3"},
 				FilterIntensity -> 1000 RPM,
+				PreparatoryUnitOperations -> {
+					(* we cannot really centrifuge anything larger than 25mL anyway, so we need to aliquot a small portion *)
+					Transfer[
+						Source -> {
+							Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles"<>$SessionUUID],
+							Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles"<>$SessionUUID],
+							Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles"<>$SessionUUID]
+						},
+						Destination -> {{1, Model[Container, Vessel, "2mL Tube"]}, {2, Model[Container, Vessel, "2mL Tube"]}, {3, Model[Container, Vessel, "2mL Tube"]}},
+						Amount -> 1.6 Milliliter,
+						DestinationLabel -> {"sample 1", "sample 2", "sample 3"}
+					]
+				},
 				Output -> Options
 			];
 			Lookup[options, FilterIntensity],
@@ -1516,8 +1520,7 @@ DefineTests[
 			];
 			Lookup[options, FilterSterile],
 			True,
-			Variables :> {options},
-			Messages :> {Warning::AliquotRequired}
+			Variables :> {options}
 		],
 		Example[{Options, Aliquot, "Specify indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment. Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times. Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
 			options = ExperimentCountLiquidParticles[
@@ -1711,13 +1714,86 @@ DefineTests[
 			Variables :> {protocol}
 		],
 		(*--- Messages ---*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCountLiquidParticles[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCountLiquidParticles[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCountLiquidParticles[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCountLiquidParticles[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 10 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCountLiquidParticles[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 10 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCountLiquidParticles[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "DiscardedSamples", "Discarded samples cannot be used:"},
 			ExperimentCountLiquidParticles[Download[Object[Sample, "Test discarded water sample for ExperimentCountLiquidParticles" <> $SessionUUID], Object]],
 			$Failed,
 			Messages :> {
 				Error::DiscardedSamples,
-				Error::InvalidInput,
-				Warning::AliquotRequired
+				Error::InvalidInput
 			}
 		],
 		Example[{Messages, "NonLiquidSample", "Solid samples cannot be used:"},
@@ -1725,8 +1801,7 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::SolidSamplesUnsupported,
-				Error::InvalidInput,
-				Warning::AliquotRequired
+				Error::InvalidInput
 			}
 		],
 		Example[{Messages, "SyringeAndSyringeSizeMismatchedForCountLiquidParticles", "Syringe and SyringeSize need to be consistent:"},
@@ -1764,7 +1839,7 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingCountLiduiqParticlesMethodRequirements", "Cannot specify Robotic as Preparation:"},
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "Cannot specify Robotic as Preparation:"},
 			ExperimentCountLiquidParticles[
 				{
 					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
@@ -1907,7 +1982,7 @@ DefineTests[
 			$Failed,
 			Messages :> {Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
 		],
-		Example[{Messages, "ConflictingCountLiquidParticlesMethodRequirements", "Dilution options need to be consistent in length:"},
+		Example[{Messages, "CountLiquidParticleDilutionContainerLengthMismatch", "Dilution options need to be consistent in length:"},
 			ExperimentCountLiquidParticles[
 				{
 					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
@@ -1988,15 +2063,9 @@ DefineTests[
 			Messages :> {Warning::CountLiquidParticlesDuplicateParticleSizes}
 		]
 	},
-	SetUp :> (
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-	),
 	SymbolSetUp :> (
 		CleanMemoization[];
 		CleanDownload[];
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
 		$CreatedObjects = {};
 		
 		(* Clean up test objects *)
@@ -2078,14 +2147,14 @@ DefineTests[
 					{"A1", emptyContainer4},
 					{"A1", emptyContainer5},
 					{"A1", emptyPlate1},
-					{"A1", emptyPlate1}
+					{"A2", emptyPlate1}
 				},
 				InitialAmount -> {
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter,
+					36 Milliliter,
+					36 Milliliter,
+					36 Milliliter,
+					36 Milliliter,
+					36 Milliliter,
 					1.5 Milliliter,
 					1 Gram
 				},
@@ -2171,11 +2240,10 @@ DefineTests[
 		]
 	),
 	SymbolTearDown :> (
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
 		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 		experimentCountLiquidParticlesCleanUp[];
 	),
+	TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::AliquotRequired},
 	Stubs :> {
 		$PersonID = Object[User, "Test user for notebook-less test protocols"],
 		$AllowPublicObjects = True
@@ -2372,9 +2440,9 @@ DefineTests[
 					{"A1", emptyContainer3}
 				},
 				InitialAmount -> {
-					18 Milliliter,
-					18 Milliliter,
-					18 Milliliter
+					36 Milliliter,
+					36 Milliliter,
+					36 Milliliter
 				},
 				Name -> {
 					"Test water sample 1 for CountLiquidParticles" <> $SessionUUID,

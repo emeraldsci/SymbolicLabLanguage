@@ -17,793 +17,989 @@
 
 
 DefineOptions[ExperimentAcousticLiquidHandling,
-	Options:>{
+	Options :> {
 		{
 			(* This Instrument option is a placeholder in case we have multiple acoustic liquid handlers in the future *)
-			OptionName->Instrument,
-			Default->Model[Instrument,LiquidHandler,AcousticLiquidHandler,"Labcyte Echo 650"],
-			AllowNull->False,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{Model[Instrument,LiquidHandler,AcousticLiquidHandler],Object[Instrument,LiquidHandler,AcousticLiquidHandler]}]
+			OptionName -> Instrument,
+			Default -> Model[Instrument, LiquidHandler, AcousticLiquidHandler, "Labcyte Echo 650"],
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Instrument, LiquidHandler, AcousticLiquidHandler], Object[Instrument, LiquidHandler, AcousticLiquidHandler]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Liquid Handling",
+						"Acoustic Liquid Handlers"
+					}
+				}
 			],
-			Description->"The acoustic liquid handler that is used to transfer, aliquot, or consolidate the samples.",
-			Category->"General"
+			Description -> "The acoustic liquid handler that is used to transfer, aliquot, or consolidate the samples.",
+			Category -> "General"
 		},
 		{
-			OptionName->OptimizePrimitives,
-			Default->OptimizeThroughput,
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>AcousticLiquidHandlingOptimizationTypeP
+			OptionName -> OptimizePrimitives,
+			Default -> OptimizeThroughput,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> AcousticLiquidHandlingOptimizationTypeP
 			],
-			Description->"Indicates that order of manipulations provided in the input liquid-handling primitives can be modified to be most efficient for the acoustic liquid handler executing the liquid transfers. Optimization will not modify the source(s), destination(s), and amount(s) of the primitives. OptimizeThroughput rearranges the manipulation sequence such that the overall throughput is maximized. SourcePlateCentric minimizes the number of times the source plates need to be changed in and out of the instrument during the course of transfer. DestinationPlateCentric minimizes the number of times the destination plates need to be changed in and out of the instrument during the course of transfer. PreserveTransferOrder leaves the original sequence of manipulations defined in the input primitives unchanged.",
-			Category->"General"
-		},
-		{
-			OptionName->ResolvedManipulations,
-			Default->Null,
-			AllowNull->True,
-			Widget->sampleManipulationWidget,
-			Description->"A hidden option to store the resolved input primitives to be used in resource packets.",
-			Category->"Hidden"
+			Description -> "Indicates that order of manipulations provided in the input liquid-handling primitives can be modified to be most efficient for the acoustic liquid handler executing the liquid transfers. Optimization will not modify the source(s), destination(s), and amount(s) of the primitives. OptimizeThroughput rearranges the manipulation sequence such that the overall throughput is maximized. SourcePlateCentric minimizes the number of times the source plates need to be changed in and out of the instrument during the course of transfer. DestinationPlateCentric minimizes the number of times the destination plates need to be changed in and out of the instrument during the course of transfer. PreserveTransferOrder leaves the original sequence of manipulations defined in the input primitives unchanged.",
+			Category -> "General"
 		},
 
-		(* These following options are IndexMatched to the input primitives *)
+		(* These following options are IndexMatched to the split transfer unit operations *)
 		IndexMatching[
-			IndexMatchingInput->"experiment primitives",
+			IndexMatchingInput -> "experiment samples",
+
+			{
+				OptionName -> ResolvedManipulations,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> UnitOperation,
+					Pattern :> _Transfer
+				],
+				Description -> "The split transfer unit operations to be executed in lab using sound waves.",
+				Category -> "Hidden"
+			},
 
 			(* ---------- Pre-processing Measurement Options ---------- *)
 			{
-				OptionName->FluidAnalysisMeasurement,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Enumeration,
-					Pattern:>Alternatives[Glycerol,DMSO,AcousticImpedance]
+				OptionName -> FluidAnalysisMeasurement,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> Alternatives[Glycerol, DMSO, AcousticImpedance]
 				],
-				Description->"Indicates if the Glycerol concentration, DMSO concentration, or Acoustic Impedance is measured from the source samples by an acoustic liquid handler. If Glycerol is selected the concentration of Glycerol in the sample will be measured as volume percent. If DMSO is selected the concentration of DMSO in the sample will be measured as volume percent. If AcousticImpedance is selected, the acoustic impedance of the sample will be measured in megaRayls.",
-				ResolutionDescription->"Will automatically set based on the FluidTypeCalibration Option value and the solvent the composition of the sample.",
-				Category->"Pre-processing Measurement"
+				Description -> "Indicates if the Glycerol concentration, DMSO concentration, or Acoustic Impedance is measured from the source samples by an acoustic liquid handler. If Glycerol is selected the concentration of Glycerol in the sample will be measured as volume percent. If DMSO is selected the concentration of DMSO in the sample will be measured as volume percent. If AcousticImpedance is selected, the acoustic impedance of the sample will be measured in megaRayls.",
+				ResolutionDescription -> "Will automatically set based on the FluidTypeCalibration Option value and the solvent the composition of the sample.",
+				Category -> "Pre-processing Measurement"
 			},
 
 			(* ---------- Instrument Setup ---------- *)
 			{
-				OptionName->FluidTypeCalibration,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Enumeration,
-					Pattern:>AcousticLiquidHandlerCalibrationTypeP
+				OptionName -> FluidTypeCalibration,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> AcousticLiquidHandlerCalibrationTypeP
 				],
-				Description->"Indicates the calibration type for each input primitive to be used by the acoustic liquid handler. DMSO is recommended for reagents with 70 - 100% DMSO. Glycerol is recommended for reagents with up to 50% glycerol that may contain DNA or proteins. AqueousWithSurfactant is recommended for reagents with surfactants such as Triton X-100, Tween-20, or SDS. AqueousWithoutSurfactant is recommended for any liquid sample without surfactants.",
-				ResolutionDescription->"Will automatically set to calibration based on the source plate's model and the composition of the sample.",
-				Category->"Dispensing"
+				Description -> "Indicates the calibration type for each input primitive to be used by the acoustic liquid handler. DMSO is recommended for reagents with 70 - 100% DMSO. Glycerol is recommended for reagents with up to 50% glycerol that may contain DNA or proteins. AqueousWithSurfactant is recommended for reagents with surfactants such as Triton X-100, Tween-20, or SDS. AqueousWithoutSurfactant is recommended for any liquid sample without surfactants.",
+				ResolutionDescription -> "Will automatically set to calibration based on the source plate's model and the composition of the sample.",
+				Category -> "Dispensing"
 			},
 			{
 				(* Lets the users choose whether the droplets transferred from different samples into the same destination well are spatially separated *)
-				OptionName->InWellSeparation,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Enumeration,
-					Pattern:>BooleanP
+				OptionName -> InWellSeparation,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
 				],
-				Description->"Indicates how the droplets of different samples are transferred into the same destination well. If True, the droplets are targeted to be spatially separated to avoid mixing with each other until additional volume is added to the well.",
-				ResolutionDescription->"Will automatically set based on the InWellSeparation Key in the input primitives if supplied by the user. Otherwise, will be set to False",
-				Category->"Dispensing"
+				Description -> "Indicates how the droplets of different samples are transferred into the same destination well. If True, the droplets are targeted to be spatially separated to avoid mixing with each other until additional volume is added to the well.",
+				ResolutionDescription -> "Will automatically set based on the InWellSeparation Key in the input primitives if supplied by the user. Otherwise, will be set to False",
+				Category -> "Dispensing"
 			}
 		],
 
 		IndexMatching[
-			IndexMatchingParent->SamplesIn,
+			IndexMatchingParent -> SamplesIn,
 
 			(* ---------- Helper Options to be used in option resolver ---------- *)
 			(* The user can specify SamplesIn and SamplesVolume if they so choose but will need to do thorough check with samples specified in the primitives *)
 			{
-				OptionName->SamplesIn,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->objectSpecificationWidgetPattern,
-				Description->"The samples that are specified as the source in the input primitives.",
-				Category->"Hidden"
+				OptionName -> SamplesIn,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Alternatives[
+					"Object" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+						Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+					],
+					"Position" -> {
+						"Well" -> Widget[
+							Type -> String,
+							Pattern :> WellPositionP,
+							Size -> Line,
+							PatternTooltip -> "A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+						],
+						"Container" -> Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Object[Container]]
+						]
+					}
+				],
+				Description -> "The conslidated samples that are specified as the sources.",
+				Category -> "Hidden"
 			},
 			{
-				OptionName->SamplesVolume,
-				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern:>GreaterP[0*Liter],
-					Units->Liter*Micro
+				OptionName -> SamplesVolume,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 * Liter],
+					Units -> Liter * Micro
 				],
-				Description->"The transfer amount of the samples that are specified as the source in the input primitives.",
-				Category->"Hidden"
+				Description -> "The total transfer amount of the consolidated samples that are specified as the sources.",
+				Category -> "Hidden"
 			},
 
 			(* Note: we need to define all sample prep options manually because we use SamplesIn hidden option as our index-matching parent *)
 			(* ----------Aliquot options---------- *)
 			{
-				OptionName->Aliquot,
-				Default->Automatic,
-				Description->"Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment. Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times. Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified).",
-				AllowNull->False,
-				Category->"Aliquoting",
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+				OptionName -> Aliquot,
+				Default -> Automatic,
+				Description -> "Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment. Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times. Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified).",
+				AllowNull -> False,
+				Category -> "Aliquoting",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			},
 			(* NOTE: This is only used in the primitive framework and is hidden in the standalone functions. *)
 			{
-				OptionName->AliquotSampleLabel,
-				Default->Automatic,
-				Description->"A user defined word or phrase used to identify the samples, after they are aliquotted, for use in downstream unit operations.",
-				AllowNull->True,
-				Category->"Hidden",
-				Widget->Widget[
-					Type->String,
-					Pattern:>_String,
-					Size->Line
+				OptionName -> AliquotSampleLabel,
+				Default -> Automatic,
+				Description -> "A user defined word or phrase used to identify the samples, after they are aliquotted, for use in downstream unit operations.",
+				AllowNull -> True,
+				Category -> "Hidden",
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
 				],
-				UnitOperation->True
+				UnitOperation -> True
 			},
 			{
-				OptionName->AliquotAmount,
-				Default->Automatic,
-				Description->"The amount of a sample that should be transferred from the input samples into aliquots.",
-				ResolutionDescription->"Automatically set as the smaller between the current sample volume and the maximum volume of the destination container if a liquid, or the current Mass or Count if a solid or counted item, respectively.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Alternatives[
-					"Volume"->Widget[
-						Type->Quantity,
-						Pattern:>RangeP[1 Microliter,20 Liter],
-						Units->{1,{Microliter,{Microliter,Milliliter,Liter}}}
+				OptionName -> AliquotAmount,
+				Default -> Automatic,
+				Description -> "The amount of a sample that should be transferred from the input samples into aliquots.",
+				ResolutionDescription -> "Automatically set as the smaller between the current sample volume and the maximum volume of the destination container if a liquid, or the current Mass or Count if a solid or counted item, respectively.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Alternatives[
+					"Volume" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 20 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 					],
-					"All"->Widget[
-						Type->Enumeration,
-						Pattern:>Alternatives[All]
+					"All" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
 					]
 				]
 			},
 			{
-				OptionName->TargetConcentration,
-				Default->Automatic,
-				Description->"The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment.",
-				ResolutionDescription->"Automatically calculated based on aliquot and buffer volumes.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Quantity,
-					Pattern:>GreaterP[0 Molar]|GreaterP[0 Gram/Liter],
-					Units->Alternatives[
-						{1,{Micromolar,{Micromolar,Millimolar,Molar}}},
+				OptionName -> TargetConcentration,
+				Default -> Automatic,
+				Description -> "The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment.",
+				ResolutionDescription -> "Automatically calculated based on aliquot and buffer volumes.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 Molar] | GreaterP[0 Gram / Liter],
+					Units -> Alternatives[
+						{1, {Micromolar, {Micromolar, Millimolar, Molar}}},
 						CompoundUnit[
-							{1,{Gram,{Gram,Microgram,Milligram}}},
-							{-1,{Liter,{Liter,Microliter,Milliliter}}}
+							{1, {Gram, {Gram, Microgram, Milligram}}},
+							{-1, {Liter, {Liter, Microliter, Milliliter}}}
 						]
 					]
 				]
 			},
 			{
-				OptionName->TargetConcentrationAnalyte,
-				Default->Automatic,
-				Description->"The substance whose final concentration is attained with the TargetConcentration option.",
-				ResolutionDescription->"Automatically set to the first value in the Analytes field of the input sample, or, if not populated, to the first analyte in the Composition field of the input sample, or if none exist, the first identity model of any kind in the Composition field.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Object,
-					Pattern:>ObjectP[IdentityModelTypes],
-					ObjectTypes->IdentityModelTypes,
-					PreparedSample->False,
-					PreparedContainer->False
+				OptionName -> TargetConcentrationAnalyte,
+				Default -> Automatic,
+				Description -> "The substance whose final concentration is attained with the TargetConcentration option.",
+				ResolutionDescription -> "Automatically set to the first value in the Analytes field of the input sample, or, if not populated, to the first analyte in the Composition field of the input sample, or if none exist, the first identity model of any kind in the Composition field.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[IdentityModelTypes],
+					ObjectTypes -> IdentityModelTypes,
+					PreparedSample -> False,
+					PreparedContainer -> False
 				]
 			},
 			{
-				OptionName->AssayVolume,
-				Default->Automatic,
-				Description->"The desired total volume of the aliquoted sample plus dilution buffer.",
-				ResolutionDescription->"Automatically determined based on Volume and TargetConcentration option values.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Quantity,
-					Pattern:>RangeP[1 Microliter,20 Liter],
-					Units->{Liter,{Microliter,Milliliter,Liter}}
+				OptionName -> AssayVolume,
+				Default -> Automatic,
+				Description -> "The desired total volume of the aliquoted sample plus dilution buffer.",
+				ResolutionDescription -> "Automatically determined based on Volume and TargetConcentration option values.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 Microliter, 20 Liter],
+					Units -> {Liter, {Microliter, Milliliter, Liter}}
 				]
 			},
 			{
-				OptionName->ConcentratedBuffer,
-				Default->Automatic,
-				Description->"The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Object,
-					Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+				OptionName -> ConcentratedBuffer,
+				Default -> Automatic,
+				Description -> "The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				]
 			},
 			{
-				OptionName->BufferDilutionFactor,
-				Default->Automatic,
-				Description->"The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
-				ResolutionDescription->"Automatically resolves to 1 if ConcentratedBuffer is specified; otherwise, resolves to Null.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[Type->Number,Pattern:>GreaterEqualP[1,1]]
+				OptionName -> BufferDilutionFactor,
+				Default -> Automatic,
+				Description -> "The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
+				ResolutionDescription -> "Automatically resolves to 1 if ConcentratedBuffer is specified; otherwise, resolves to Null.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
 			},
 			{
-				OptionName->BufferDiluent,
-				Default->Automatic,
-				Description->"The buffer used to dilute the concentration of the ConcentratedBuffer by BufferDilutionFactor; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
-				ResolutionDescription->"Automatically resolves to Model[Sample, \"Milli-Q water\"] if ConcentratedBuffer is specified; otherwise, resolves to Null.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Object,
-					Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+				OptionName -> BufferDiluent,
+				Default -> Automatic,
+				Description -> "The buffer used to dilute the concentration of the ConcentratedBuffer by BufferDilutionFactor; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
+				ResolutionDescription -> "Automatically resolves to Model[Sample, \"Milli-Q water\"] if ConcentratedBuffer is specified; otherwise, resolves to Null.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
-				OptionName->AssayBuffer,
-				Default->Automatic,
-				Description->"The buffer that should be added to any aliquots requiring dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
-				ResolutionDescription->"Automatically resolves to Model[Sample, \"Milli-Q water\"] if ConcentratedBuffer is not specified; otherwise, resolves to Null.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[
-					Type->Object,
-					Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+				OptionName -> AssayBuffer,
+				Default -> Automatic,
+				Description -> "The buffer that should be added to any aliquots requiring dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume.",
+				ResolutionDescription -> "Automatically resolves to Model[Sample, \"Milli-Q water\"] if ConcentratedBuffer is not specified; otherwise, resolves to Null.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
-				OptionName->AliquotSampleStorageCondition,
-				Default->Automatic,
-				Description->"The non-default conditions under which any aliquot samples generated by this experiment should be stored after the protocol is completed.",
-				AllowNull->True,
-				Category->"Aliquoting",
-				Widget->Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]
+				OptionName -> AliquotSampleStorageCondition,
+				Default -> Automatic,
+				Description -> "The non-default conditions under which any aliquot samples generated by this experiment should be stored after the protocol is completed.",
+				AllowNull -> True,
+				Category -> "Aliquoting",
+				Widget -> Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP | Disposal]
 			},
 
 			(* ----------Incubate prep options---------- *)
 			{
-				OptionName->Incubate,
-				Default->Automatic,
-				Description->"Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
-				ResolutionDescription->"Resolves to True if any of the corresponding Incubation options are set. Otherwise, resolves to False.",
-				AllowNull->False,
-				Category->"Preparatory Incubation",
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+				OptionName -> Incubate,
+				Default -> Automatic,
+				Description -> "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
+				ResolutionDescription -> "Resolves to True if any of the corresponding Incubation options are set. Otherwise, resolves to False.",
+				AllowNull -> False,
+				Category -> "Preparatory Incubation",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			},
 			{
-				OptionName->IncubationTemperature,
-				Default->Automatic,
-				Description->"Temperature at which the SamplesIn should be incubated for the duration of the IncubationTime prior to starting the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]],
-					Widget[Type->Quantity,Pattern:>RangeP[$MinIncubationTemperature,$MaxIncubationTemperature],Units->{Celsius,{Fahrenheit,Celsius}}]
+				OptionName -> IncubationTemperature,
+				Default -> Automatic,
+				Description -> "Temperature at which the SamplesIn should be incubated for the duration of the IncubationTime prior to starting the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]],
+					Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, $MaxIncubationTemperature], Units -> {Celsius, {Fahrenheit, Celsius}}]
 				]
 			},
 			{
-				OptionName->IncubationTime,
-				Default->Automatic,
-				Description->"Duration for which SamplesIn should be incubated at the IncubationTemperature, prior to starting the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Widget[Type->Quantity,Pattern:>RangeP[1 Minute,$MaxExperimentTime],Units->{Hour,{Hour,Minute,Second}}]
+				OptionName -> IncubationTime,
+				Default -> Automatic,
+				Description -> "Duration for which SamplesIn should be incubated at the IncubationTemperature, prior to starting the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[1 Minute, $MaxExperimentTime], Units -> {Hour, {Hour, Minute, Second}}]
 			},
 			{
-				OptionName->Mix,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-				Description->"Indicates if this sample should be mixed while incubated, prior to starting the experiment.",
-				ResolutionDescription->"Automatically resolves to True if any Mix related options are set. Otherwise, resolves to False.",
-				Category->"Preparatory Incubation"
+				OptionName -> Mix,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if this sample should be mixed while incubated, prior to starting the experiment.",
+				ResolutionDescription -> "Automatically resolves to True if any Mix related options are set. Otherwise, resolves to False.",
+				Category -> "Preparatory Incubation"
 			},
 			{
-				OptionName->MixType,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>MixTypeP],
-				Description->"Indicates the style of motion used to mix the sample, prior to starting the experiment.",
-				ResolutionDescription->"Automatically resolves based on the container of the sample and the Mix option.",
-				Category->"Preparatory Incubation"
+				OptionName -> MixType,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> MixTypeP],
+				Description -> "Indicates the style of motion used to mix the sample, prior to starting the experiment.",
+				ResolutionDescription -> "Automatically resolves based on the container of the sample and the Mix option.",
+				Category -> "Preparatory Incubation"
 			},
 			{
-				OptionName->MixUntilDissolved,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>(BooleanP)],
-				Description->"Indicates if the mix should be continued up to the MaxIncubationTime or MaxNumberOfMixes (chosen according to the mix Type), in an attempt dissolve any solute. Any mixing/incubation will occur prior to starting the experiment.",
-				ResolutionDescription->"Automatically resolves to True if MaxIncubationTime or MaxNumberOfMixes is set.",
-				Category->"Preparatory Incubation"
+				OptionName -> MixUntilDissolved,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> (BooleanP)],
+				Description -> "Indicates if the mix should be continued up to the MaxIncubationTime or MaxNumberOfMixes (chosen according to the mix Type), in an attempt dissolve any solute. Any mixing/incubation will occur prior to starting the experiment.",
+				ResolutionDescription -> "Automatically resolves to True if MaxIncubationTime or MaxNumberOfMixes is set.",
+				Category -> "Preparatory Incubation"
 			},
 			{
-				OptionName->MaxIncubationTime,
-				Default->Automatic,
-				Description->"Maximum duration of time for which the samples will be mixed while incubated in an attempt to dissolve any solute, if the MixUntilDissolved option is chosen. This occurs prior to starting the experiment.",
-				ResolutionDescription->"Automatically resolves based on MixType, MixUntilDissolved, and the container of the given sample.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Widget[Type->Quantity,Pattern:>RangeP[1 Minute,$MaxExperimentTime],Units->{Hour,{Hour,Minute,Second}}]
+				OptionName -> MaxIncubationTime,
+				Default -> Automatic,
+				Description -> "Maximum duration of time for which the samples will be mixed while incubated in an attempt to dissolve any solute, if the MixUntilDissolved option is chosen. This occurs prior to starting the experiment.",
+				ResolutionDescription -> "Automatically resolves based on MixType, MixUntilDissolved, and the container of the given sample.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[1 Minute, $MaxExperimentTime], Units -> {Hour, {Hour, Minute, Second}}]
 			},
 			{
-				OptionName->IncubationInstrument,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+				OptionName -> IncubationInstrument,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Join[MixInstrumentModels, MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
-				Description->"The instrument used to perform the Mix and/or Incubation, prior to starting the experiment.",
-				ResolutionDescription->"Automatically resolves based on the options Mix, Temperature, MixType and container of the sample.",
-				Category->"Preparatory Incubation"
+				Description -> "The instrument used to perform the Mix and/or Incubation, prior to starting the experiment.",
+				ResolutionDescription -> "Automatically resolves based on the options Mix, Temperature, MixType and container of the sample.",
+				Category -> "Preparatory Incubation"
 			},
 			{
-				OptionName->AnnealingTime,
-				Default->Automatic,
-				Description->"Minimum duration for which the SamplesIn should remain in the incubator allowing the system to settle to room temperature after the IncubationTime has passed but prior to starting the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Widget[Type->Quantity,Pattern:>RangeP[0 Minute,$MaxExperimentTime],Units->{Hour,{Hour,Minute,Second}}]
+				OptionName -> AnnealingTime,
+				Default -> Automatic,
+				Description -> "Minimum duration for which the SamplesIn should remain in the incubator allowing the system to settle to room temperature after the IncubationTime has passed but prior to starting the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 Minute, $MaxExperimentTime], Units -> {Hour, {Hour, Minute, Second}}]
 			},
 			{
-				OptionName->IncubateAliquotContainer,
-				Default->Automatic,
-				Description->"The desired type of container that should be used to prepare and house the incubation samples which should be used in lieu of the SamplesIn for the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+				OptionName -> IncubateAliquotContainer,
+				Default -> Automatic,
+				Description -> "The desired type of container that should be used to prepare and house the incubation samples which should be used in lieu of the SamplesIn for the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Alternatives[
+					Widget[Type -> Object, Pattern :> ObjectP[Model[Container]], ObjectTypes -> {Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							},
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Acoustic Liquid Handling",
+								"Acoustic Liquid Handling Plates"
+							}
+						}
+					],
 					{
-						"Index"->Alternatives[
+						"Index" -> Alternatives[
 							Widget[
-								Type->Number,
-								Pattern:>GreaterEqualP[1,1]
+								Type -> Number,
+								Pattern :> GreaterEqualP[1, 1]
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						],
-						"Container"->Alternatives[
+						"Container" -> Alternatives[
 							Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Model[Container],Object[Container]}],
-								ObjectTypes->{Model[Container],Object[Container]}
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Container], Object[Container]}],
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						]
 					}
 				]
 			},
 			{
-				OptionName->IncubateAliquotDestinationWell,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->String,
-					Pattern:>WellPositionP,
-					Size->Word,
-					PatternTooltip->"Must be any well from A1 to P24."
+				OptionName -> IncubateAliquotDestinationWell,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> WellPositionP,
+					Size -> Word,
+					PatternTooltip -> "Must be any well from A1 to P24."
 				],
-				Category->"Preparatory Incubation",
-				Description->"The desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed.",
-				ResolutionDescription->"Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
+				Category -> "Preparatory Incubation",
+				Description -> "The desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed.",
+				ResolutionDescription -> "Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
 			},
 			{
-				OptionName->IncubateAliquot,
-				Default->Automatic,
-				Description->"The amount of each sample that should be transferred from the SamplesIn into the IncubateAliquotContainer when performing an aliquot before incubation.",
-				ResolutionDescription->"Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
-				AllowNull->True,
-				Category->"Preparatory Incubation",
-				Widget->Alternatives[
+				OptionName -> IncubateAliquot,
+				Default -> Automatic,
+				Description -> "The amount of each sample that should be transferred from the SamplesIn into the IncubateAliquotContainer when performing an aliquot before incubation.",
+				ResolutionDescription -> "Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
+				AllowNull -> True,
+				Category -> "Preparatory Incubation",
+				Widget -> Alternatives[
 					Widget[
-						Type->Quantity,
-						Pattern:>RangeP[1 Microliter,20 Liter],
-						Units->{1,{Microliter,{Microliter,Milliliter,Liter}}}
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 20 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 					],
 					Widget[
-						Type->Enumeration,
-						Pattern:>Alternatives[All]
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
 					]
 				]
 			},
 
 			(* ----------Centrifuge prep options---------- *)
 			{
-				OptionName->Centrifuge,
-				Default->Automatic,
-				Description->"Indicates if the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
-				ResolutionDescription->"Resolves to True if any of the corresponding Centrifuge options are set. Otherwise, resolves to False.",
-				AllowNull->False,
-				Category->"Preparatory Centrifugation",
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+				OptionName -> Centrifuge,
+				Default -> Automatic,
+				Description -> "Indicates if the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
+				ResolutionDescription -> "Resolves to True if any of the corresponding Centrifuge options are set. Otherwise, resolves to False.",
+				AllowNull -> False,
+				Category -> "Preparatory Centrifugation",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			},
 			{
-				OptionName->CentrifugeInstrument,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Instrument,Centrifuge],Object[Instrument,Centrifuge]}]],
-				Category->"Preparatory Centrifugation",
-				Description->"The centrifuge that will be used to spin the provided samples prior to starting the experiment."
+				OptionName -> CentrifugeInstrument,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						}
+					}],
+				Category -> "Preparatory Centrifugation",
+				Description -> "The centrifuge that will be used to spin the provided samples prior to starting the experiment."
 			},
 			{
-				OptionName->CentrifugeIntensity,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Quantity,Pattern:>GreaterP[0 RPM],Units->Alternatives[RPM]],
-					Widget[Type->Quantity,Pattern:>GreaterP[0 GravitationalAcceleration],Units->Alternatives[GravitationalAcceleration]]
+				OptionName -> CentrifugeIntensity,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Quantity, Pattern :> GreaterP[0 RPM], Units -> Alternatives[RPM]],
+					Widget[Type -> Quantity, Pattern :> GreaterP[0 GravitationalAcceleration], Units -> Alternatives[GravitationalAcceleration]]
 				],
-				Category->"Preparatory Centrifugation",
-				Description->"The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment."
+				Category -> "Preparatory Centrifugation",
+				Description -> "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment."
 			},
 			{
-				OptionName->CentrifugeTime,
-				Default->Automatic,
-				Description->"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Centrifugation",
-				Widget->Widget[Type->Quantity,Pattern:>GreaterP[0 Minute],Units->{Minute,{Minute,Second}}]
+				OptionName -> CentrifugeTime,
+				Default -> Automatic,
+				Description -> "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Centrifugation",
+				Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Minute], Units -> {Minute, {Minute, Second}}]
 			},
 			{
-				OptionName->CentrifugeTemperature,
-				Default->Automatic,
-				Description->"The temperature at which the centrifuge chamber should be held while the samples are being centrifuged prior to starting the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Centrifugation",
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]],
-					Widget[Type->Quantity,Pattern:>RangeP[-10 Celsius,40Celsius],Units->{Celsius,{Fahrenheit,Celsius,Kelvin}}]
+				OptionName -> CentrifugeTemperature,
+				Default -> Automatic,
+				Description -> "The temperature at which the centrifuge chamber should be held while the samples are being centrifuged prior to starting the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Centrifugation",
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]],
+					Widget[Type -> Quantity, Pattern :> RangeP[-10 Celsius, 40Celsius], Units -> {Celsius, {Fahrenheit, Celsius, Kelvin}}]
 				]
 			},
 			{
-				OptionName->CentrifugeAliquotContainer,
-				Default->Automatic,
-				Description->"The desired type of container that should be used to prepare and house the centrifuge samples which should be used in lieu of the SamplesIn for the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Centrifugation",
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+				OptionName -> CentrifugeAliquotContainer,
+				Default -> Automatic,
+				Description -> "The desired type of container that should be used to prepare and house the centrifuge samples which should be used in lieu of the SamplesIn for the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Centrifugation",
+				Widget -> Alternatives[
+					Widget[Type -> Object, Pattern :> ObjectP[Model[Container]], ObjectTypes -> {Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							},
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Acoustic Liquid Handling",
+								"Acoustic Liquid Handling Plates"
+							}
+						}
+					],
 					{
-						"Index"->Alternatives[
+						"Index" -> Alternatives[
 							Widget[
-								Type->Number,
-								Pattern:>GreaterEqualP[1,1]
+								Type -> Number,
+								Pattern :> GreaterEqualP[1, 1]
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						],
-						"Container"->Alternatives[
+						"Container" -> Alternatives[
 							Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Model[Container],Object[Container]}],
-								ObjectTypes->{Model[Container],Object[Container]}
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Container], Object[Container]}],
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						]
 					}
 				]
 			},
 			{
-				OptionName->CentrifugeAliquotDestinationWell,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->String,
-					Pattern:>WellPositionP,
-					Size->Word,
-					PatternTooltip->"Must be any well from A1 to P24."
+				OptionName -> CentrifugeAliquotDestinationWell,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> WellPositionP,
+					Size -> Word,
+					PatternTooltip -> "Must be any well from A1 to P24."
 				],
-				Category->"Preparatory Centrifugation",
-				Description->"The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
-				ResolutionDescription->"Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
+				Category -> "Preparatory Centrifugation",
+				Description -> "The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
+				ResolutionDescription -> "Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
 			},
 			{
-				OptionName->CentrifugeAliquot,
-				Default->Automatic,
-				Description->"The amount of each sample that should be transferred from the SamplesIn into the CentrifugeAliquotContainer when performing an aliquot before centrifugation.",
-				ResolutionDescription->"Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
-				AllowNull->True,
-				Category->"Preparatory Centrifugation",
-				Widget->Alternatives[
+				OptionName -> CentrifugeAliquot,
+				Default -> Automatic,
+				Description -> "The amount of each sample that should be transferred from the SamplesIn into the CentrifugeAliquotContainer when performing an aliquot before centrifugation.",
+				ResolutionDescription -> "Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
+				AllowNull -> True,
+				Category -> "Preparatory Centrifugation",
+				Widget -> Alternatives[
 					Widget[
-						Type->Quantity,
-						Pattern:>RangeP[1 Microliter,20 Liter],
-						Units->{1,{Microliter,{Microliter,Milliliter,Liter}}}
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 20 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 					],
 					Widget[
-						Type->Enumeration,
-						Pattern:>Alternatives[All]
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
 					]
 				]
 			},
 
 			(* ----------Filter prep options---------- *)
 			{
-				OptionName->Filtration,
-				Default->Automatic,
-				Description->"Indicates if the SamplesIn should be filter prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
-				ResolutionDescription->"Resolves to True if any of the corresponding Filter options are set. Otherwise, resolves to False.",
-				AllowNull->False,
-				Category->"Preparatory Filtering",
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+				OptionName -> Filtration,
+				Default -> Automatic,
+				Description -> "Indicates if the SamplesIn should be filter prior to starting the experiment or any aliquoting. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified).",
+				ResolutionDescription -> "Resolves to True if any of the corresponding Filter options are set. Otherwise, resolves to False.",
+				AllowNull -> False,
+				Category -> "Preparatory Filtering",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			},
 			{
-				OptionName->FiltrationType,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>FiltrationTypeP],
-				Category->"Preparatory Filtering",
-				Description->"The type of filtration method that should be used to perform the filtration.",
-				ResolutionDescription->"Will automatically resolve to a filtration type appropriate for the volume of sample being filtered."
+				OptionName -> FiltrationType,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> FiltrationTypeP],
+				Category -> "Preparatory Filtering",
+				Description -> "The type of filtration method that should be used to perform the filtration.",
+				ResolutionDescription -> "Will automatically resolve to a filtration type appropriate for the volume of sample being filtered."
 			},
 			{
-				OptionName->FilterInstrument,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Instrument,FilterBlock],
-					Object[Instrument,FilterBlock],
-					Model[Instrument,PeristalticPump],
-					Object[Instrument,PeristalticPump],
-					Model[Instrument,VacuumPump],
-					Object[Instrument,VacuumPump],
-					Model[Instrument,Centrifuge],
-					Object[Instrument,Centrifuge],
-					Model[Instrument,SyringePump],
-					Object[Instrument,SyringePump]
-				}]],
-				Description->"The instrument that should be used to perform the filtration.",
-				ResolutionDescription->"Will automatically resolved to an instrument appropriate for the filtration type.",
-				Category->"Preparatory Filtering"
+				OptionName -> FilterInstrument,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
+					Model[Instrument, FilterBlock],
+					Object[Instrument, FilterBlock],
+					Model[Instrument, PeristalticPump],
+					Object[Instrument, PeristalticPump],
+					Model[Instrument, VacuumPump],
+					Object[Instrument, VacuumPump],
+					Model[Instrument, Centrifuge],
+					Object[Instrument, Centrifuge],
+					Model[Instrument, SyringePump],
+					Object[Instrument, SyringePump]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Pumps",
+							"Vacuum Pumps"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						}
+					}
+				],
+				Description -> "The instrument that should be used to perform the filtration.",
+				ResolutionDescription -> "Will automatically resolved to an instrument appropriate for the filtration type.",
+				Category -> "Preparatory Filtering"
 			},
 			{
-				OptionName->Filter,
-				Default->Automatic,
-				Description->"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment.",
-				ResolutionDescription->"Will automatically resolve to a filter appropriate for the filtration type and instrument.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Plate,Filter],
-					Model[Container,Vessel,Filter],
-					Model[Item,Filter]
-				}]]
+				OptionName -> Filter,
+				Default -> Automatic,
+				Description -> "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment.",
+				ResolutionDescription -> "Will automatically resolve to a filter appropriate for the filtration type and instrument.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
+					Model[Container, Plate, Filter],
+					Model[Container, Vessel, Filter],
+					Model[Item, Filter]
+				}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
+					}
+				]
 			},
 			{
-				OptionName->FilterMaterial,
-				Default->Automatic,
-				Description->"The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment.",
-				ResolutionDescription->"Resolves to an appropriate filter material for the given sample is Filtration is set to True.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Widget[Type->Enumeration,Pattern:>FilterMembraneMaterialP]
+				OptionName -> FilterMaterial,
+				Default -> Automatic,
+				Description -> "The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment.",
+				ResolutionDescription -> "Resolves to an appropriate filter material for the given sample is Filtration is set to True.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Widget[Type -> Enumeration, Pattern :> FilterMembraneMaterialP]
 			},
 			{
-				OptionName->PrefilterMaterial,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>FilterMembraneMaterialP],
-				Description->"The material from which the prefilter filtration membrane should be made of to remove impurities from the SamplesIn prior to starting the experiment.",
-				ResolutionDescription->"By default, no prefiltration is performed on samples, even when Filter->True.",
-				Category->"Preparatory Filtering"
+				OptionName -> PrefilterMaterial,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> FilterMembraneMaterialP],
+				Description -> "The material from which the prefilter filtration membrane should be made of to remove impurities from the SamplesIn prior to starting the experiment.",
+				ResolutionDescription -> "By default, no prefiltration is performed on samples, even when Filter->True.",
+				Category -> "Preparatory Filtering"
 			},
 			{
-				OptionName->FilterPoreSize,
-				Default->Automatic,
-				Description->"The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment.",
-				ResolutionDescription->"Resolves to an appropriate filter pore size for the given sample is Filtration is set to True.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Widget[Type->Enumeration,Pattern:>FilterSizeP]
+				OptionName -> FilterPoreSize,
+				Default -> Automatic,
+				Description -> "The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment.",
+				ResolutionDescription -> "Resolves to an appropriate filter pore size for the given sample is Filtration is set to True.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Widget[Type -> Enumeration, Pattern :> FilterSizeP]
 			},
 			{
-				OptionName->PrefilterPoreSize,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>FilterSizeP],
-				Description->"The pore size of the filter; all particles larger than this should be removed during the filtration.",
-				ResolutionDescription->"By default, no prefiltration is performed on samples, even when Filter->True.",
-				Category->"Preparatory Filtering"
+				OptionName -> PrefilterPoreSize,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> FilterSizeP],
+				Description -> "The pore size of the filter; all particles larger than this should be removed during the filtration.",
+				ResolutionDescription -> "By default, no prefiltration is performed on samples, even when Filter->True.",
+				Category -> "Preparatory Filtering"
 			},
 			(* Options for filtering by syringe *)
 			{
-				OptionName->FilterSyringe,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Syringe],
-					Object[Container,Syringe]
-				}]],
-				Description->"The syringe used to force that sample through a filter.",
-				ResolutionDescription->"Resolves to an syringe appropriate to the volume of sample being filtered, if Filtration is set to True.",
-				Category->"Preparatory Filtering"
+				OptionName -> FilterSyringe,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
+					Model[Container, Syringe],
+					Object[Container, Syringe]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Syringes"
+						}
+					}
+				],
+				Description -> "The syringe used to force that sample through a filter.",
+				ResolutionDescription -> "Resolves to an syringe appropriate to the volume of sample being filtered, if Filtration is set to True.",
+				Category -> "Preparatory Filtering"
 			},
 			{
-				OptionName->FilterHousing,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
+				OptionName -> FilterHousing,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{
 					Model[Instrument, FilterHousing],
 					Object[Instrument, FilterHousing],
 					Model[Instrument, FilterBlock],
-					Object[Instrument, FilterBlock]
-				}]],
-				Description->"The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane.",
-				ResolutionDescription->"Resolve to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used and Filtration is set to True.",
-				Category->"Preparatory Filtering"
+					Object[Instrument, FilterBlock]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						}
+					}
+				],
+				Description -> "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane.",
+				ResolutionDescription -> "Resolve to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used and Filtration is set to True.",
+				Category -> "Preparatory Filtering"
 			},
 			(* Options for filtering by centrifuge *)
 			{
-				OptionName->FilterIntensity,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Quantity,Pattern:>GreaterP[0 RPM],Units->Alternatives[RPM]],
-					Widget[Type->Quantity,Pattern:>GreaterP[0 GravitationalAcceleration],Units->Alternatives[GravitationalAcceleration]]
+				OptionName -> FilterIntensity,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Quantity, Pattern :> GreaterP[0 RPM], Units -> Alternatives[RPM]],
+					Widget[Type -> Quantity, Pattern :> GreaterP[0 GravitationalAcceleration], Units -> Alternatives[GravitationalAcceleration]]
 				],
-				Category->"Preparatory Filtering",
-				Description->"The rotational speed or force at which the samples will be centrifuged during filtration.",
-				ResolutionDescription->"Will automatically resolve to 2000 GravitationalAcceleration if FiltrationType is Centrifuge and Filtration is True."
+				Category -> "Preparatory Filtering",
+				Description -> "The rotational speed or force at which the samples will be centrifuged during filtration.",
+				ResolutionDescription -> "Will automatically resolve to 2000 GravitationalAcceleration if FiltrationType is Centrifuge and Filtration is True."
 			},
 			{
-				OptionName->FilterTime,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[Type->Quantity,Pattern:>GreaterP[0 Minute],Units->{Hour,{Hour,Minute,Second}}],
-				Category->"Preparatory Filtering",
-				Description->"The amount of time for which the samples will be centrifuged during filtration.",
-				ResolutionDescription->"Will automatically resolve to 5 Minute if FiltrationType is Centrifuge and Filtration is True."
+				OptionName -> FilterTime,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Minute], Units -> {Hour, {Hour, Minute, Second}}],
+				Category -> "Preparatory Filtering",
+				Description -> "The amount of time for which the samples will be centrifuged during filtration.",
+				ResolutionDescription -> "Will automatically resolve to 5 Minute if FiltrationType is Centrifuge and Filtration is True."
 			},
 			{
-				OptionName->FilterTemperature,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Quantity,Pattern:>GreaterEqualP[4 Celsius],Units->{Celsius,{Celsius,Fahrenheit,Kelvin}}]
+				OptionName -> FilterTemperature,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Quantity, Pattern :> GreaterEqualP[4 Celsius], Units -> {Celsius, {Celsius, Fahrenheit, Kelvin}}]
 				],
-				Category->"Preparatory Filtering",
-				Description->"The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration.",
-				ResolutionDescription->"Will automatically resolve to 22 Celsius if FiltrationType is Centrifuge and Filtration is True."
+				Category -> "Preparatory Filtering",
+				Description -> "The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration.",
+				ResolutionDescription -> "Will automatically resolve to 22 Celsius if FiltrationType is Centrifuge and Filtration is True."
 			},
 			{
-				OptionName->FilterContainerOut,
-				Default->Automatic,
-				Description->"The desired container filtered samples should be produced in or transferred into by the end of filtration, with indices indicating grouping of samples in the same plates, if desired.",
-				ResolutionDescription->"Automatically set as the PreferredContainer for the Volume of the sample. For plates, attempts to fill all wells of a single plate with the same model before using another one.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Alternatives[
+				OptionName -> FilterContainerOut,
+				Default -> Automatic,
+				Description -> "The desired container filtered samples should be produced in or transferred into by the end of filtration, with indices indicating grouping of samples in the same plates, if desired.",
+				ResolutionDescription -> "Automatically set as the PreferredContainer for the Volume of the sample. For plates, attempts to fill all wells of a single plate with the same model before using another one.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Alternatives[
 					Widget[
-						Type->Object,
-						Pattern:>ObjectP[{Model[Container],Object[Container]}],
-						ObjectTypes->{Model[Container],Object[Container]}
+						Type -> Object,
+						Pattern :> ObjectP[{Model[Container], Object[Container]}],
+						ObjectTypes -> {Model[Container], Object[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
 					],
 					{
-						"Index"->Alternatives[
+						"Index" -> Alternatives[
 							Widget[
-								Type->Number,
-								Pattern:>GreaterEqualP[1,1]
+								Type -> Number,
+								Pattern :> GreaterEqualP[1, 1]
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
 							]
 						],
-						"Container"->Alternatives[
+						"Container" -> Alternatives[
 							Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Model[Container],Object[Container]}],
-								ObjectTypes->{Model[Container],Object[Container]}
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Container], Object[Container]}],
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
 							]
 						]
 					}
 				]
 			},
 			{
-				OptionName->FilterAliquotDestinationWell,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Widget[
-					Type->String,
-					Pattern:>WellPositionP,
-					Size->Word,
-					PatternTooltip->"Must be any well from A1 to P24."
+				OptionName -> FilterAliquotDestinationWell,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> WellPositionP,
+					Size -> Word,
+					PatternTooltip -> "Must be any well from A1 to P24."
 				],
-				Category->"Preparatory Filtering",
-				Description->"The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
-				ResolutionDescription->"Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
+				Category -> "Preparatory Filtering",
+				Description -> "The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
+				ResolutionDescription -> "Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
 			},
 			{
-				OptionName->FilterAliquotContainer,
-				Default->Automatic,
-				Description->"The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+				OptionName -> FilterAliquotContainer,
+				Default -> Automatic,
+				Description -> "The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Alternatives[
+					Widget[Type -> Object, Pattern :> ObjectP[Model[Container]], ObjectTypes -> {Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							},
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Acoustic Liquid Handling",
+								"Acoustic Liquid Handling Plates"
+							}
+						}
+					],
 					{
-						"Index"->Alternatives[
+						"Index" -> Alternatives[
 							Widget[
-								Type->Number,
-								Pattern:>GreaterEqualP[1,1]
+								Type -> Number,
+								Pattern :> GreaterEqualP[1, 1]
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						],
-						"Container"->Alternatives[
+						"Container" -> Alternatives[
 							Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Model[Container],Object[Container]}],
-								ObjectTypes->{Model[Container],Object[Container]}
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Container], Object[Container]}],
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
-								Type->Enumeration,
-								Pattern:>Alternatives[Automatic,Null]
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic, Null]
 							]
 						]
 					}
 				]
 			},
 			{
-				OptionName->FilterAliquot,
-				Default->Automatic,
-				Description->"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration.",
-				ResolutionDescription->"Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Alternatives[
+				OptionName -> FilterAliquot,
+				Default -> Automatic,
+				Description -> "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration.",
+				ResolutionDescription -> "Automatically set as the smaller between the current sample volume and the maximum volume of the destination container.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Alternatives[
 					Widget[
-						Type->Quantity,
-						Pattern:>RangeP[1 Microliter,20 Liter],
-						Units->{1,{Microliter,{Microliter,Milliliter,Liter}}}
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 20 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 					],
 					Widget[
-						Type->Enumeration,
-						Pattern:>Alternatives[All]
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
 					]
 				]
 			},
 			{
-				OptionName->FilterSterile,
-				Default->Automatic,
-				Description->"Indicates if the filtration of the samples should be done in a sterile environment.",
-				ResolutionDescription->"Resolve to False if Filtration is indicated. If sterile filtration is desired, this option must manually be set to True.",
-				AllowNull->True,
-				Category->"Preparatory Filtering",
-				Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+				OptionName -> FilterSterile,
+				Default -> Automatic,
+				Description -> "Indicates if the filtration of the samples should be done in a sterile environment.",
+				ResolutionDescription -> "Resolve to False if Filtration is indicated. If sterile filtration is desired, this option must manually be set to True.",
+				AllowNull -> True,
+				Category -> "Preparatory Filtering",
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 			},
 
 			(* ----------SamplesIn storage condition options---------- *)
 			{
-				OptionName->SamplesInStorageCondition,
-				Default->Null,
-				Description->"The non-default conditions under which the SamplesIn of this experiment should be stored after the protocol is completed. If left unset, SamplesIn will be stored according to their current StorageCondition.",
-				AllowNull->True,
-				Category->"Post Experiment",
+				OptionName -> SamplesInStorageCondition,
+				Default -> Null,
+				Description -> "The non-default conditions under which the SamplesIn of this experiment should be stored after the protocol is completed. If left unset, SamplesIn will be stored according to their current StorageCondition.",
+				AllowNull -> True,
+				Category -> "Post Experiment",
 				(* Null indicates the storage conditions will be inherited from the model *)
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP | Disposal]
 				]
 			}
 		],
@@ -811,167 +1007,239 @@ DefineOptions[ExperimentAcousticLiquidHandling,
 		(* ----------Non-index matching aliquot options---------- *)
 
 		{
-			OptionName->DestinationWell,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Alternatives[
+			OptionName -> DestinationWell,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Alternatives[
 				Widget[
-					Type->String,
-					Pattern:>WellPositionP,
-					Size->Word,
-					PatternTooltip->"Must be any well from A1 to P24."
+					Type -> String,
+					Pattern :> WellPositionP,
+					Size -> Word,
+					PatternTooltip -> "Must be any well from A1 to P24."
 				],
 				Adder[
-					Widget[
-						Type->String,
-						Pattern:>WellPositionP,
-						Size->Word,
-						PatternTooltip->"Must be any well from A1 to P24."
-					]
-				]
-			],
-			Category->"Aliquoting",
-			Description->"The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
-			ResolutionDescription->"Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
-		},
-		{
-			OptionName->AliquotContainer,
-			Default->Automatic,
-			Description->"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired. This option will resolve to be Model[Container, Plate, \"384-well Polypropylene Echo Qualified Plate\"] if the Source Samples are required to be aliquoted.",
-			ResolutionDescription->"Automatically set as Model[Container, Plate, \"384-well Polypropylene Echo Qualified Plate\"]. For plates, attempts to fill all wells of a single plate with the same model before aliquoting into the next.",
-			AllowNull->True,
-			Category->"Aliquoting",
-			Widget->Alternatives[
-				Widget[
-					Type->Object,
-					Pattern:>ObjectP[Flatten[{PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True],Object[Container,Plate]}]],
-					ObjectTypes->{Model[Container,Plate],Object[Container,Plate]}
-				],
-				Widget[
-					Type->Enumeration,
-					Pattern:>Alternatives[Automatic,Null]
-				],
-				{
-					"Index"->Alternatives[
+					Alternatives[
 						Widget[
-							Type->Number,
-							Pattern:>GreaterEqualP[1,1]
+							Type -> String,
+							Pattern :> WellPositionP,
+							Size -> Word,
+							PatternTooltip -> "Must be any well from A1 to P24."
 						],
 						Widget[
 							Type->Enumeration,
 							Pattern:>Alternatives[Automatic,Null]
 						]
-					],
-					"Container"->Alternatives[
+					]
+				]
+			],
+			Category -> "Aliquoting",
+			Description -> "The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
+			ResolutionDescription -> "Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
+		},
+		{
+			OptionName -> AliquotContainer,
+			Default -> Automatic,
+			Description -> "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired. This option will resolve to be Model[Container, Plate, \"384-well Polypropylene Echo Qualified Plate\"] if the Source Samples are required to be aliquoted.",
+			ResolutionDescription -> "Automatically set as Model[Container, Plate, \"384-well Polypropylene Echo Qualified Plate\"]. For plates, attempts to fill all wells of a single plate with the same model before aliquoting into the next.",
+			AllowNull -> True,
+			Category -> "Aliquoting",
+			Widget -> Alternatives[
+				Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Flatten[{PreferredContainer[All, Type -> All, AcousticLiquidHandlerCompatible -> True], Object[Container, Plate]}]],
+					ObjectTypes -> {Model[Container, Plate], Object[Container, Plate]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Acoustic Liquid Handling",
+							"Acoustic Liquid Handling Plates"
+						}
+					}
+				],
+				Widget[
+					Type -> Enumeration,
+					Pattern :> Alternatives[Automatic, Null]
+				],
+				{
+					"Index" -> Alternatives[
 						Widget[
-							Type->Object,
-							Pattern:>ObjectP[Flatten[{PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True],Object[Container,Plate]}]],
-							ObjectTypes->{Model[Container,Plate],Object[Container,Plate]}
+							Type -> Number,
+							Pattern :> GreaterEqualP[1, 1]
 						],
 						Widget[
-							Type->Enumeration,
-							Pattern:>Alternatives[Automatic,Null]
+							Type -> Enumeration,
+							Pattern :> Alternatives[Automatic, Null]
+						]
+					],
+					"Container" -> Alternatives[
+						Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Flatten[{PreferredContainer[All, Type -> All, AcousticLiquidHandlerCompatible -> True], Object[Container, Plate]}]],
+							ObjectTypes -> {Model[Container, Plate], Object[Container, Plate]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials",
+									"Acoustic Liquid Handling",
+									"Acoustic Liquid Handling Plates"
+								}
+							}
+						],
+						Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[Automatic, Null]
 						]
 					]
 				},
 				Adder[
 					Alternatives[
 						Widget[
-							Type->Object,
-							Pattern:>ObjectP[Flatten[{PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True],Object[Container,Plate]}]],
-							ObjectTypes->{Model[Container,Plate],Object[Container,Plate]}
+							Type -> Object,
+							Pattern :> ObjectP[Flatten[{PreferredContainer[All, Type -> All, AcousticLiquidHandlerCompatible -> True], Object[Container, Plate]}]],
+							ObjectTypes -> {Model[Container, Plate], Object[Container, Plate]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials",
+									"Acoustic Liquid Handling",
+									"Acoustic Liquid Handling Plates"
+								}
+							}
 						],
 						Widget[
-							Type->Enumeration,
-							Pattern:>Alternatives[Automatic,Null]
+							Type -> Enumeration,
+							Pattern :> Alternatives[Automatic, Null]
 						]
 					]
 				],
 				Adder[
 					Alternatives[
 						{
-							"Index"->Alternatives[
+							"Index" -> Alternatives[
 								Widget[
-									Type->Number,
-									Pattern:>GreaterEqualP[1,1]
+									Type -> Number,
+									Pattern :> GreaterEqualP[1, 1]
 								],
 								Widget[
-									Type->Enumeration,
-									Pattern:>Alternatives[Automatic,Null]
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic, Null]
 								]
 							],
-							"Container"->Alternatives[
+							"Container" -> Alternatives[
 								Widget[
-									Type->Object,
-									Pattern:>ObjectP[Flatten[{PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True],Object[Container,Plate]}]],
-									ObjectTypes->{Model[Container,Plate],Object[Container,Plate]}
+									Type -> Object,
+									Pattern :> ObjectP[Flatten[{PreferredContainer[All, Type -> All, AcousticLiquidHandlerCompatible -> True], Object[Container, Plate]}]],
+									ObjectTypes -> {Model[Container, Plate], Object[Container, Plate]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials",
+											"Acoustic Liquid Handling",
+											"Acoustic Liquid Handling Plates"
+										}
+									}
 								],
 								Widget[
-									Type->Enumeration,
-									Pattern:>Alternatives[Automatic,Null]
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic, Null]
 								]
 							]
 						},
 						Widget[
-							Type->Enumeration,
-							Pattern:>Alternatives[Automatic,Null]
+							Type -> Enumeration,
+							Pattern :> Alternatives[Automatic, Null]
 						]
 					]
 				]
 			]
 		},
 		{
-			OptionName->AliquotPreparation,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[Type->Enumeration,Pattern:>PreparationMethodP],
-			Description->"Indicates the desired scale at which liquid handling used to generate aliquots will occur.",
-			ResolutionDescription->"Automatic resolution will occur based on manipulation volumes and container types.",
-			Category->"Aliquoting"
+			OptionName -> AliquotPreparation,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[Type -> Enumeration, Pattern :> PreparationMethodP],
+			Description -> "Indicates the desired scale at which liquid handling used to generate aliquots will occur.",
+			ResolutionDescription -> "Automatic resolution will occur based on manipulation volumes and container types.",
+			Category -> "Aliquoting"
 		},
 		{
-			OptionName->ConsolidateAliquots,
-			Default->Automatic,
-			Description->"Indicates if identical aliquots should be prepared in the same container/position.",
-			AllowNull->True,
-			Category->"Aliquoting",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+			OptionName -> ConsolidateAliquots,
+			Default -> Automatic,
+			Description -> "Indicates if identical aliquots should be prepared in the same container/position.",
+			AllowNull -> True,
+			Category -> "Aliquoting",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 		},
 
 		(* ----------Non-index matching sample prep options---------- *)
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
 
 		(* ----------SamplesOut storage condition options---------- *)
 		{
-			OptionName->SamplesOutStorageCondition,
-			Default->Null,
-			Description->"The non-default conditions under which any new samples generated by this experiment should be stored after the protocol is completed. If left unset, the new samples will be stored according to their Models' DefaultStorageCondition.",
-			AllowNull->True,
-			Category->"Post Experiment",
+			OptionName -> SamplesOutStorageCondition,
+			Default -> Null,
+			Description -> "The non-default conditions under which any new samples generated by this experiment should be stored after the protocol is completed. If left unset, the new samples will be stored according to their Models' DefaultStorageCondition.",
+			AllowNull -> True,
+			Category -> "Post Experiment",
 			(* Null indicates the storage conditions will be inherited from the model *)
-			Widget->Alternatives[
-				Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]
+			Widget -> Alternatives[
+				Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP | Disposal]
 			]
 		},
 
 		(* ----------MeasureVolume option ---------- *)
 		(* Note: re-define this because we want to default it to False as the volume is already measured by an acoustic liquid handler *)
 		(* the user can set it to True and have the samples' volumes measured by liquid level detector after manipulation is done by an acoustic liquid handler *)
-		{
-			OptionName->MeasureVolume,
-			Default->False,
-			Description->"Indicates if any liquid samples that are modified in the course of the experiment should have their volumes measured and updated after running the experiment.",
-			AllowNull->False,
-			Category->"Post Experiment",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
-		},
+		ModifyOptions[
+			MeasureVolumeOption,
+			{Default -> False}
+		],
 
-		(* We would normally include FuntopiaSharedOptions here but our inputs are not samples *)
+		(* We would normally include NonBiologyFuntopiaSharedOptions here but our inputs are not samples *)
 		(* We need to work around this by populating SamplesIn options with samples we extract from the input primitives *)
 		(* We then use SamplesIn as index matching parent *)
 		ProtocolOptions,
-		ImageSampleOption
+		ImageSampleOption,
+		SimulationOption,
+
+		(* we need these two options to store user input in its unsimulated, unexpanded, and original form, then store this to the protocol Object *)
+		{
+			OptionName -> Source,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Expression,
+				Pattern :> _,
+				Size -> Line
+			],
+			Description -> "The input sources specified from user.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> Destination,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Expression,
+				Pattern :> _,
+				Size -> Line
+			],
+			Description -> "The input destinations specified from user.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> Amount,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Expression,
+				Pattern :> _,
+				Size -> Line
+			],
+			Description -> "The input amounts specified from user.",
+			Category -> "Hidden"
+		}
 	}
 ];
 
@@ -980,12 +1248,6 @@ DefineOptions[ExperimentAcousticLiquidHandling,
 (*ExperimentAcousticLiquidHandling Messages*)
 
 
-Error::InvalidPrimitiveType="The given input primitives at index `1` do not have the manipulation type Transfer, Aliquot, or Consolidation. Please check the definition of the primitives in question.";
-Warning::PrimitivesWithIncompatibleKeys="The primitive at index `1` has a key(s) that is not supported by ExperimentAcousticLiquidHandling. Keys that are not Source/Sources/Destination/Destinations/Amount/Amounts/InWellSeparation will be ignored.";
-Error::InvalidPrimitiveKeyValue="The value of the following key(s) defined in the primitive at index `1` does not match the expected pattern: `2`. Please check the definition of the primitive in question and correct the primitive's key value.";
-Error::InvalidAmountLength="The Amount(s) specified in the primitive at index `1` have invalid lengths that do not match with Sources or Destinations. Please check the definition of the primitive in question and specify amounts with correct lengths";
-Error::InvalidSourceObjectType="The specified Source object(s) `1` from input primitives at index `2` is not an object with type Object[Sample]. Please check the source definition in the input primitives and specify a sample object. The PreparatoryUnitOperations option can be used to create a new sample from a desired Model[Sample]. An example call is provided in the help file.";
-Error::InvalidDestinationDefinition="The specified Destination `1` from input primitives at index `2` is not an object with type supported by ExperimentAcousticLiquidHandling. Please specify Destination that has the type plate-containing Object[Sample], Object[Container,Plate], or Model[Container,Plate].";
 Error::AliquotContainerOccupied="The following specified AliquotContainer objects are not empty: `1`. If specifying an aliquot container object directly, it must be empty. Please specify an empty container, a model, or leave the option to be set automatically.";
 Error::TotalAliquotVolumeTooLarge="The required aliquot amount `1` of the following sample(s) `2` exceed the volume `3` of these sample(s). The required aliquot amount is determined by adding the dead volume of the source plate well to the amount needed to perform all manipulations specified in the input primitives. Please check the available volume of these sample(s), or provide an alternative sample.";
 Error::MultipleSourceContainerModels="The provided source samples are not in containers that share the same model. Please provide samples that are located in containers of the same model. Otherwise, leave the Aliquot option to be set automatically so that the samples can be aliquoted into appropriate containers.";
@@ -998,17 +1260,15 @@ Error::PrimitivesWithContainerlessSamples="The provided source samples `1` from 
 Error::IncompatibleSourceContainer="The provided source samples `1` from primitives at index `2` are not in containers that are compatible with an acoustic liquid handler. Please provide samples that are located in a compatible container or leave the Aliquot option to be set automatically. Call PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True] for a list of compatible container models.";
 Error::DiscardedDestinationContainer="The provided destination containers `1` from primitives at index `2` are discarded and thereby cannot be used for the experiment.";
 Error::DeprecatedDestinationContainerModel="The provided destination container model `1` from primitives at index `2` are deprecated and thereby cannot be used for the experiment.";
-Error::IncompatibleDestinationContainer="The container models of the provided destination object `1` from primitives at index `2` have values in the Fields `3` that are not compatible with the acoustic liquid handler. Please see ExperimentAcousticLiquidHandling help file for more information on compatible destination containers.";
+Error::IncompatibleAcousticLiquidHandlingDestinationContainer="The container models of the provided destination object `1` from primitives at index `2` have values in the Fields `3` that are not compatible with the acoustic liquid handler. Please see ExperimentAcousticLiquidHandling help file for more information on compatible destination containers.";
 Error::MissingLabwareDefinitionFields="The container models of the provided destination object `1` from primitives at index `2` have Fields `3` that are not populated. Labware definition for the acoustic liquid handler cannot be created unless the value in Fields `3` are provided.";
 Error::UnsafeDestinationVolume="The containers of the provided destination object `1` from primitives at index `2` have occupied wells that may spill when the plate is inverted during acoustic liquid handling. If the destination container is required to be occupied, please use a 384-well plate that is pre-filled up to half of the maximum well volume.";
 Error::AmountOutOfRange="The Amount(s) `1` supplied in primitives at index `2` are outside of range supported by the instrument `3`. Please check the definition of the primitives in question and supply the Amount(s) between `4` and `5`.";
 Error::InsufficientSourceVolume="The volumes of source samples `1` are not sufficient to perform the manipulation defined in primitives at index `2`. Note that the samples `1` have dead volumes of `3` which cannot be used in any manipulations. Please check the volume of the sample in question and provide a sample with sufficient amount.";
-Error::SamePlateTransfer="The input primitives at index `1` contain manipulations that involve transfer between source and destination wells within the same container which is not supported by the acoustic liquid handler. Please correct the definition of the primitive in question.";
+Error::SamePlateTransfer="For samples at indices `1`, the container of source and destination is the same object which is currently not supported by the acoustic liquid handler. Please double correct the sources and destinations at indices `1` and run the Experiment again.";
 Error::InvalidDestinationWellAcousticLiquidHandling="The destination wells `1` defined in primitives at index `2` are not allowed for containers `3`. Please check the primitive in question and supply destination wells that are included in AllowedPositions of the container.";
 Error::OverFilledDestinationVolume="The volume of destination location `1` will be overfilled in primitives at index `2`. Note that the destination location `1` have maximum well volumes of `3`. Please correct the Amount or Destination of the primitive in question.";
-Error::InvalidInWellSeparationKey="The input primitives at index `1` have their InWellSeparation Key set to True when physical separation of droplets in the destination well is not possible to achieve. Please see ExperimentAcousticLiquidHandling help file for more information.";
-Error::InWellSeparationKeyOptionMismatch="The value of InWellSeparation Key specified in the input primitives at index `1` does not match the InWellSeparation Option value. Please check the definition of the primitives in question or leave the Key and Option to be set automatically.";
-Error::InvalidInWellSeparationOption="The input primitives at index `1` have their InWellSeparation Option set to True when physical separation of droplets in the destination well is not possible to achieve. Please see ExperimentAcousticLiquidHandling help file for more information.";
+Error::InvalidInWellSeparationOption="InWellSeparation is set to True when physical separation of droplets in the destination well is not possible to achieve. Please see ExperimentAcousticLiquidHandling help file for more information.";
 Error::GlycerolConcentrationTooHigh="The glycerol concentrations of source samples `1` from primitives at index `2` are higher than the maximum concentration supported by the acoustic liquid handler. Please provide a new sample with glycerol concentration below or equal to `3`.";
 Error::CalibrationAndMeasurementTypeMismatch="The options FluidTypeCalibration and FluidAnalysisMeasurement conflict for the primitives at index `1`. If one of the options is set to DMSO or Glycerol, the other must have the same value. Otherwise, FluidAnalysisMeasurement must be set to AcousticImpedance for all other values of FluidTypeCalibration. Please correct the options in question or leave them to be set automatically.";
 Error::InvalidFluidTypeCalibration="The option FluidTypeCalibration for the primitives at index `1` is invalid. FluidTypeCalibration cannot be set to Glycerol when a low-dead-volume plate is used as a source. Please correct the options in question or leave them to be set automatically.";
@@ -1020,621 +1280,304 @@ Warning::FluidAnalysisMeasurementMismatch="The option FluidAnalysisMeasurement f
 (* ::Subsubsection:: *)
 (*ExperimentAcousticLiquidHandling*)
 
-(* single primitive overload *)
-ExperimentAcousticLiquidHandling[myPrimitive:SampleManipulationP,myOptions:OptionsPattern[]]:=ExperimentAcousticLiquidHandling[{myPrimitive},myOptions];
+(* define the singleton pattern as we need to use this to make sure everything is expanded correctly *)
+acousticLHSourceSingletonPattern = ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]};
+acousticLHDestinationSingletonPattern = ObjectP[{Object[Sample], Object[Container, Plate], Model[Container, Plate]}] | _String | {_Integer, ObjectP[Model[Container]]} | {LocationPositionP, _String | ObjectP[{Object[Container, Plate], Model[Container, Plate]}] | {_Integer, ObjectP[Model[Container]]}};
+acousticLHAmountSingletonPattern = GreaterEqualP[0 * Nanoliter];
 
-(* core overload *)
-ExperimentAcousticLiquidHandling[myPrimitives:{SampleManipulationP..},myOptions:OptionsPattern[]]:=Module[
+
+(* container overload *)
+(* we need this b/c ExperimentAcousticLH only allows source sample to be Object[Sample] *)
+ExperimentAcousticLiquidHandling[
+	mySources:ListableP[acousticLHSourceSingletonPattern],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:OptionsPattern[]
+] := Module[
 	{
-		listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
-		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,allPackets,cacheBall,resolvedOptionsResult,
-		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
-		upload,confirm,fastTrack,parentProtocol,cache,safeOpsNamed,
-
-		(* sample prep variables *)
-		myDefinedSampleInputs,myDefinedSamples,validSamplePreparationResult,myPreparedSamplesNamed,myPreparedSamples,myOptionsWithPreparedSamplesNamed,myOptionsWithPreparedSamples,samplePreparationCache,
-		updatedSamplePreparationCache,defineNameRules,updatedPrimitives,
-
-		(* pre-download primitive validation check variables *)
-		invalidManipulationTypeBools,invalidPrimitivePosition,validPrimitivePosition,primitivesWithInvalidType,
-		invalidManipulationTypeTest,expandVolume,primitivesWithExpandedAmount,incompatibleKeysLookup,primitivesWithIncompatibleKeysPositions,
-		primitivesWithCompatibleKeysPositions,primitivesWithIncompatibleKeysTest,primitivesWithCompatibleKeys,primitiveKeyValidityRules,
-		invalidKeyValuesPickList,primitivesWithInvalidKeys,primitivesWithInvalidKeysTest,primitivesWithConvertedTransfers,
-		mismatchedAmountLengthBools,invalidAmountPositions,invalidAmountLengthTest,
-
-		(* download variables *)
-		allObjectsFromPrimitives,suppliedObjectsFromOptions,userSpecifiedObjects,simulatedObjectQ,objectsToCheck,objectsExistQ,
-		nonExistingObjects,objectsExistenceTest,specifiedAliquotContainerObjects,specifiedInstrument,preferredAliquotContainersModels,
-		sampleFields,modelSampleFields,objectContainerFields,modelContainerFields,objectInstrumentFields,modelInstrumentFields,
-		defaultInstrumentModel,rawObjectsToDownload,objectsToDownload,allFields,
-
-		(* pre-resolver validation variables *)
-		primitivesInTransferForm,specifiedUpdatedPrimitives,specifiedSourceSamples,rawSources,invalidSources,
-		primitiveWithInvalidSourceIndices,invalidSourceObjectTypeTests,splitPrimitives,validDestinations,invalidDestinations,
-		primitiveWithInvalidDestinationIndices,invalidDestinationDefinitionTests,sampleUsageAssociation,samplesIn,samplesVolume,
-		updatedOptions
-
+		outputSpecification, output, gatherTests, cache, combinedSourcesAndDestinations, combinedSourcesAndDestinationsWithPreparedSamples,
+		mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples, modelContainerReplaceRules,
+		validSamplePreparationResult, myOptionsWithPreparedSamples, samplePreparationSimulation,
+		containerToSampleResult,
+		containerToSampleOutput, mySourceSamples, sampleOptions, containerToSampleTests, containerToSampleSimulation
 	},
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests=MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
-	(* ---------------------------------------- *)
-	(* ---MANIPULATION TYPE VALIDATION CHECK--- *)
-	(* ---------------------------------------- *)
+	(* Fetch the cache from listedOptions. *)
+	cache = Lookup[ToList[myOptions], Cache, {}];
 
-	(* check early if the input primitive has a valid manipulation type *)
-	(* ExperimentAcousticLiquidHandling only supports Transfer/Aliquot/Consolidation Primitives *)
-	invalidManipulationTypeBools=Map[
-		!MatchQ[#,Alternatives[_Transfer,_Aliquot,_Consolidation]]&,
-		myPrimitives
-	];
+	(* we have to make sure the sources and destinations are combined correctly without accidental flattening *)
+	{combinedSourcesAndDestinations, modelContainerReplaceRules} = combineSourcesAndDestinations[mySources, myDestinations];
 
-	(* get the positions of the invalid input primitives *)
-	invalidPrimitivePosition=Flatten[Position[invalidManipulationTypeBools,True]];
-
-	(* get the positions of the valid input primitives *)
-	validPrimitivePosition=Flatten[Position[invalidManipulationTypeBools,False]];
-
-	(* get the invalid primitives *)
-	primitivesWithInvalidType=PickList[myPrimitives,invalidManipulationTypeBools,True];
-
-	(* if there are invalid primitives and we are throwing messages, throw an error message *)
-	If[Or@@invalidManipulationTypeBools&&!gatherTests,
-		Message[Error::InvalidPrimitiveType,invalidPrimitivePosition];
-	];
-
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	invalidManipulationTypeTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=
-				If[MatchQ[primitivesWithInvalidType,{}],
-					Nothing,
-					Test["The input primitives at index "<>ToString[invalidPrimitivePosition]<>" have the manipulation types that are supported by ExperimentAcousticLiquidHandling:",True,False]];
-
-			passingTest=
-				If[Length[primitivesWithInvalidType]==Length[myPrimitives],
-					Nothing,
-					Test["The input primitives at index "<>ToString[validPrimitivePosition]<>" have the manipulation types that are supported by ExperimentAcousticLiquidHandling:",True,True]];
-
-			{failingTest,passingTest}
+	(* Simulate our sample preparation. *)
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation. *)
+		{combinedSourcesAndDestinationsWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentAcousticLiquidHandling,
+			combinedSourcesAndDestinations,
+			ToList[myOptions]
 		],
-
-		Nothing
+		$Failed,
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
-	(* if at least one primitive with invalid manipulation type is given, return $Failed *)
-	If[!MatchQ[primitivesWithInvalidType,{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->invalidManipulationTypeTest,
-			Options->$Failed,
-			Preview->Null
-		}]
+	(* split sources and destinations *)
+	{mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples} = splitSourcesAndDestinations[mySources, myDestinations, combinedSourcesAndDestinationsWithPreparedSamples, modelContainerReplaceRules];
+
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
 	];
 
-	(* ------------------------------------- *)
-	(* ---EXPAND VALUES OF THE AMOUNT KEY--- *)
-	(* ------------------------------------- *)
+	(* Convert our given containers into samples and sample index-matched options. *)
+	(* we do not need to turn containers in the destination to be samples since it can be an empty container for sure *)
+	containerToSampleResult = If[gatherTests,
+		(
+			(* We are gathering tests. This silences any messages being thrown. *)
+			{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentAcousticLiquidHandling,
+				mySourcesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Tests, Simulation},
+				Cache -> cache,
+				Simulation -> samplePreparationSimulation
+			];
 
-	(* a helper function to expand values under Amount key to match the length sources or destinations *)
-	expandVolume[amount_,input_]:=Switch[{amount,Length[amount]},
-		{_List,EqualP[1]},Table[First[amount],Length[input]],
-		{_List,_},amount,
-		_,Table[amount,Length[input]]
-	];
-
-	(* expand amounts in Transfer/Aliquot/Consolidation primitives *)
-	primitivesWithExpandedAmount=Map[
-		Switch[#,
-			_Transfer,
-				If[!MissingQ[#[Volume]],
-					Transfer[Append[KeyDrop[First[#],Volume],Amount->#[Volume]]],
-					#
-				],
-			_Aliquot,
-				If[!MissingQ[#[Volumes]],
-					Head[#][Append[KeyDrop[First[#],Volumes],Amounts->expandVolume[#[Volumes],#[Destinations]]]],
-					Head[#][Append[KeyDrop[First[#],Volumes],Amounts->expandVolume[#[Amounts],#[Destinations]]]]
-				],
-			_Consolidation,
-				If[!MissingQ[#[Volumes]],
-					Head[#][Append[KeyDrop[First[#],Volumes],Amounts->expandVolume[#[Volumes],#[Sources]]]],
-					Head[#][Append[KeyDrop[First[#],Volumes],Amounts->expandVolume[#[Amounts],#[Sources]]]]
-				],
-			_,
-				#
-		]&,
-		myPrimitives
-	];
-
-	(* -------------------------------------- *)
-	(* ---PRIMITIVE INCOMPATIBLE KEY CHECK--- *)
-	(* -------------------------------------- *)
-
-	(* get the incompatible keys for each of the supported manipulation types *)
-	incompatibleKeysLookup=Map[
-		#->Complement[Keys[Experiment`Private`manipulationKeyPatterns[#]],{Source,Sources,Destination,Destinations,Amount,Amounts,InWellSeparation}]&,
-		{Transfer,Aliquot,Consolidation}
-	];
-
-	(* check if each of the input primitives is defined with keys other than Source/Destination/Amount/InWellSeparation *)
-	primitivesWithIncompatibleKeysPositions=Flatten[MapIndexed[
-		If[Intersection[Keys[Association@@#1],Lookup[incompatibleKeysLookup,Head[#1]]]!={},
-			#2,
-			Nothing
-		]&,
-		primitivesWithExpandedAmount
-	]];
-
-	(* get the positions of the primitive with compatible keys *)
-	primitivesWithCompatibleKeysPositions=Complement[Range[Length[primitivesWithExpandedAmount]],primitivesWithIncompatibleKeysPositions];
-
-	(* if there are primitives with incompatible keys and we are throwing messages, throw a warning message *)
-	If[!MatchQ[primitivesWithIncompatibleKeysPositions,{}]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::PrimitivesWithIncompatibleKeys,primitivesWithIncompatibleKeysPositions];
-	];
-
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	primitivesWithIncompatibleKeysTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=
-				If[MatchQ[primitivesWithIncompatibleKeysPositions,{}],
-					Nothing,
-					Warning["The input primitives at index "<>ToString[primitivesWithIncompatibleKeysPositions]<>" have keys that are supported by ExperimentAcousticLiquidHandling:",True,False]];
-
-			passingTest=
-				If[Length[primitivesWithIncompatibleKeysPositions]==Length[primitivesWithExpandedAmount],
-					Nothing,
-					Warning["The input primitives at index "<>ToString[primitivesWithCompatibleKeysPositions]<>" have keys that are supported by ExperimentAcousticLiquidHandling:",True,True]];
-
-			{failingTest,passingTest}
-		],
-
-		Nothing
-	];
-
-	(* drop incompatible keys from the primitives *)
-	primitivesWithCompatibleKeys=Flatten[MapIndexed[
-		If[Intersection[Keys[Association@@#1],Lookup[incompatibleKeysLookup,Head[#1]]]!={},
-			Head[#1][KeyDrop[Association@@#1,Lookup[incompatibleKeysLookup,Head[#1]]]],
-			#1
-		]&,
-		primitivesWithExpandedAmount
-	]];
-
-	(* -------------------------------------------------- *)
-	(* ---PRIMITIVE KEY VALUE PATTERN VALIDATION CHECK--- *)
-	(* -------------------------------------------------- *)
-
-	(* check the patterns of the keys in the provided manipulations to ensure validity *)
-	(* Return a list of rules. Key that points to False has value with invalid pattern *)
-	primitiveKeyValidityRules=Map[
-		Function[primitive,
-			Map[
-				Switch[primitive,
-					_Transfer,
-						#->MatchQ[primitive[#],ListableP[Lookup[Experiment`Private`manipulationKeyPatterns[Head[primitive]],#]]],
-					_,
-						#->MatchQ[primitive[#],Lookup[Experiment`Private`manipulationKeyPatterns[Head[primitive]],#]]
-				]&,
-				Keys[Association@@primitive]
+			(* Therefore, we have to run the tests to see if we encountered a failure. *)
+			If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+				Null,
+				$Failed
 			]
-		],
-		primitivesWithCompatibleKeys
-	];
+		),
 
-	(* create a pick list to select primitives that have at least one invalid key value *)
-	invalidKeyValuesPickList=Map[And@@Values[#]&,primitiveKeyValidityRules];
-
-	(* get the list of primitives with invalid key value *)
-	primitivesWithInvalidKeys=PickList[primitivesWithCompatibleKeys,invalidKeyValuesPickList,False];
-
-	(* throw a message if invalid key value patterns exist in our input primitives *)
-	If[!MatchQ[primitivesWithInvalidKeys,{}]&&!gatherTests,
-		MapThread[
-			Function[{bool,rules,index},
-				If[Not[bool],
-					Message[Error::InvalidPrimitiveKeyValue,
-						{index},
-						PickList[rules[[All,1]],rules[[All,2]],False]
-					]
-				]
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentAcousticLiquidHandling,
+				mySourcesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Simulation},
+				Cache -> cache,
+				Simulation -> samplePreparationSimulation
 			],
-			{invalidKeyValuesPickList,primitiveKeyValidityRules,Range[Length[primitivesWithCompatibleKeys]]}
+			$Failed,
+			{Error::EmptyContainer, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	primitivesWithInvalidKeysTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=
-				If[MatchQ[primitivesWithInvalidKeys,{}],
-					Nothing,
-					Test["The input primitives at index "<>ToString[Flatten[Position[invalidKeyValuesPickList,False]]]<>" have keys that match the expected patterns:",True,False]];
+	(* If we were given an empty container, return early. *)
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
+			Result -> $Failed,
+			Tests -> containerToSampleTests,
+			Options -> $Failed,
+			Preview -> Null,
+			Simulation -> Null
+		},
+		(
+			(* Split up our containerToSample result into the samples and sampleOptions. *)
+			{mySourceSamples, sampleOptions} = containerToSampleOutput;
 
-			passingTest=
-				If[Length[primitivesWithInvalidKeys]==Length[primitivesWithCompatibleKeys],
-					Nothing,
-					Test["The input primitives at index "<>ToString[Flatten[Position[invalidKeyValuesPickList,True]]]<>" have keys that match the expected patterns:",True,True]];
+			(* Call our main function with our samples and converted options. *)
+			ExperimentAcousticLiquidHandling[mySourceSamples, myDestinationsWithPreparedSamples, myAmounts, ReplaceRule[sampleOptions, {Simulation -> containerToSampleSimulation, Cache -> cache, Source -> mySources, Destination -> myDestinations, Amount -> myAmounts}]]
+		)
+	]
+];
 
-			{failingTest,passingTest}
-		],
 
-		Nothing
-	];
+(* core sample overload *)
+ExperimentAcousticLiquidHandling[
+	mySources:ListableP[ObjectP[Object[Sample]]],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:OptionsPattern[]
+] := Module[
+	{
+		mySourcesNoLink, myDestinationsNoLink, listedOptionsNoLink, messages, warnings, combinedSourcesAndDestinationsWithPreparedSamplesNoLink, myOptionsWithPreparedSamplesNoLink, samplePreparationSimulation,
+		mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples, expandedSources, expandedDestinations, expandedAmounts, combinedSourcesAndDestinationsNoLink,
+		mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton, myOptionsWithPreparedSamplesWithConsolidatedSources, expandedSafeOpsWithInternalSampleOptions,
+		mySourcesWithPreparedSamplesNoLink, myDestinationsWithPreparedSamplesNoLink, modelContainerReplaceRules, expandedSafeOpsWithTransfers,
 
-	(* if at least one primitive with invalid key pattern is given, return $Failed *)
-	If[!MatchQ[primitivesWithInvalidKeys,{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
+		outputSpecification, output, gatherTests, safeOps, safeOpsTests, validLengths, validLengthTests,
+		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, allDownloads, cacheBall, resolvedOptionsResult,
+		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets, resourcePacketTests,
+		upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, safeOpsNoLink,
 
-	(* -------------------------------------------------- *)
-	(* ----------AMOUNT LENGTH VALIDATION CHECK---------- *)
-	(* -------------------------------------------------- *)
+		(* sample prep variables *)
+		validSamplePreparationResult, myOptionsWithPreparedSamples,
 
-	(* call convertTransferPrimitive as a mean to check matching amount length with Source or Destination *)
-	(* convertTransfer works with all valid input format except Transfer primitive with amount length mismatch *)
-	(* we simply check if MapThread error message is thrown from convertTransfer primitive *)
-	primitivesWithConvertedTransfers=Map[
-		Switch[#,
-			_Transfer,
-				Quiet[Check[
-					Experiment`Private`convertTransferPrimitive[#],
-					$Failed,
-					{MapThread::mptc}
-				]],
-			_,
-				#
-		]&,
-		primitivesWithExpandedAmount
-	];
+		(* download variables *)
+		allInputObjects, suppliedObjectsFromOptions, specifiedAliquotContainerObjects, specifiedInstrument, preferredAliquotContainersModels,
+		sampleFields, modelSampleFields, objectContainerFields, modelContainerFields, objectInstrumentFields, modelInstrumentFields,
+		defaultInstrumentModel, rawObjectsToDownload, objectsToDownload, allFields
 
-	(* check if the length of amount after expansion matches the length of sources or destinations *)
-	mismatchedAmountLengthBools=Map[
-		Switch[#,
-			$Failed,
-				True,
-			_Aliquot,
-				!MatchQ[Length[#[Destinations]],Length[#[Amounts]]],
-			_Consolidation,
-				!MatchQ[Length[#[Sources]],Length[#[Amounts]]],
-			_,
-				False
-		]&,
-		primitivesWithConvertedTransfers
-	];
+	},
 
-	(* get the positions of the input primitives with invalid amount length *)
-	invalidAmountPositions=Flatten[Position[mismatchedAmountLengthBools,True]];
+	(* Make sure we're working with a list of options *)
+	{{mySourcesNoLink, myDestinationsNoLink}, listedOptionsNoLink} = removeLinks[{mySources, myDestinations}, ToList[myOptions]];
 
-	(* if we are throwing messages, throw an error message indicating the index of primitives with Amount length mismatch *)
-	If[Not[MatchQ[invalidAmountPositions,{}]]&&!gatherTests,
-		Message[Error::InvalidAmountLength,invalidAmountPositions]
-	];
+	(* Determine the requested return value from the function *)
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	invalidAmountLengthTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=
-				If[MatchQ[invalidAmountPositions,{}],
-					Nothing,
-					Test["The Amount(s) specified in the input primitive at index "<>ToString[invalidAmountPositions]<>" have lengths that match with Sources or Destinations:",True,False]];
+	(* Determine if we should keep a running list of tests *)
+	gatherTests = MemberQ[output, Tests];
+	messages = !gatherTests;
+	warnings = messages && !MatchQ[$ECLApplication, Engine];
 
-			passingTest=
-				If[Length[invalidAmountPositions]==Length[myPrimitives],
-					Nothing,
-					Test["The Amount(s) specified in the input primitive at index "<>ToString[Complement[Range[Length[myPrimitives]],invalidAmountPositions]]<>" have lengths that match with Sources or Destinations:",True,True]];
+	(* we have to make sure the sources and destinations are combined correctly without accidental flattening *)
+	{combinedSourcesAndDestinationsNoLink, modelContainerReplaceRules} = combineSourcesAndDestinations[mySourcesNoLink, myDestinationsNoLink];
 
-			{failingTest,passingTest}
-		],
-
-		Nothing
-	];
-
-	(* if at least one primitive with invalid key pattern is given, return $Failed *)
-	If[!MatchQ[invalidAmountPositions,{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
-	(* --------------------------------- *)
-	(* ---SIMULATE SAMPLE PREPARATION--- *)
-	(* --------------------------------- *)
-
-	(* get source/destination from the primitives that are defined as string names and pass into sample prep simulation *)
-	(* for any primitives that use a name, extract the referenced name *)
-	myDefinedSampleInputs=DeleteDuplicates[Flatten[Map[
-		Switch[#,
-			_Transfer,
-				Cases[{#[Source],#[Destination]},(name_String|{name_String,WellPositionP}):>name,{1}],
-
-			_Aliquot,
-				Cases[Append[#[Destinations],#[Source]],(name_String|{name_String,WellPositionP}):>name,{1}],
-
-			_Consolidation,
-				Cases[Append[#[Sources],#[Destination]],(name_String|{name_String,WellPositionP}):>name,{1}],
-			_,
-				{}
-		]&,
-		primitivesWithCompatibleKeys
-	]]];
-
-	(* Remove temporal links. *)
-	{myDefinedSamples, listedOptions} = removeLinks[myDefinedSampleInputs, ToList[myOptions]];
-
-	(* simulate our sample preparation for DEFINED samples in our input primitives and options *)
-	(* FIXME: what if any option is specified as string name? it is tricky because the user may not specify Object[Sample] as Source *)
-	validSamplePreparationResult=Check[
+	(* Simulate our sample preparation. *)
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{myPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=If[MatchQ[myDefinedSamples,{}],
-
-			(* if we don't have any defined source samples, don't simulate SM *)
-			{{},listedOptions,{}},
-
-			(* otherwise, simulate as usual but with on defined sample names as input *)
-			simulateSamplePreparationPackets[
-				ExperimentAcousticLiquidHandling,
-				myDefinedSamples,
-				listedOptions
-			]
+		{combinedSourcesAndDestinationsWithPreparedSamplesNoLink, myOptionsWithPreparedSamplesNoLink, samplePreparationSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentAcousticLiquidHandling,
+			combinedSourcesAndDestinationsNoLink,
+			listedOptionsNoLink
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
-	(* if we are given an invalid define name, return $Failed *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
 	];
 
-	(* Name key in the simulated prepared sample packet is Null. we populate it with DefineName manually so that we can use it in the resolver *)
-	(* update prepared samples packets in samplePreparationCache by assigning DefineName to Name Key *)
-	updatedSamplePreparationCache=Map[
-		Function[preparedPacket,
-			If[KeyExistsQ[preparedPacket,DefineName],
-				(* if Key DefineName exist in the packet, update Name Key with DefineName Value *)
-				Module[{packetToUpdate},
-					packetToUpdate=preparedPacket;
-					AssociateTo[packetToUpdate,Name->Lookup[preparedPacket,DefineName]]
-				],
-				(* otherwise, return the packet as is *)
-				preparedPacket
-			]
-		],
-		samplePreparationCache
+	(* Importantly, we have to split sources, destinations in the same way as it was fed into the experiment function **WITHOUT ToList** before checking valid length *)
+	{mySourcesWithPreparedSamplesNoLink, myDestinationsWithPreparedSamplesNoLink} = splitSourcesAndDestinations[mySources, myDestinations, combinedSourcesAndDestinationsWithPreparedSamplesNoLink, modelContainerReplaceRules];
+
+	(* Call SafeOptions to make sure all options match pattern *)
+	{safeOpsNoLink, safeOpsTests} = If[gatherTests,
+		SafeOptions[ExperimentAcousticLiquidHandling, myOptionsWithPreparedSamplesNoLink, AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[ExperimentAcousticLiquidHandling, myOptionsWithPreparedSamplesNoLink, AutoCorrect -> False], {}}
 	];
 
-	(* create replace rules for defined name lookup *)
-	(* Note: for all simulated objects, DefineName key is added to the packet in the simulated cache *)
-	defineNameRules=Map[
-		If[KeyExistsQ[#,DefineName],
-			#[DefineName]->#[Object],
-			Nothing
-		]&,
-		samplePreparationCache
-	];
-
-	(* replace all defined names in the input primitives *)
-	updatedPrimitives=primitivesWithCompatibleKeys/.defineNameRules;
-
-	(* --------------------------- *)
-	(* ---OPTIONS PATTERN CHECK--- *)
-	(* --------------------------- *)
-
-	(* call SafeOptions to make sure all options match pattern *)
-	{safeOpsNamed,safeOpsTests}=If[gatherTests,
-		SafeOptions[ExperimentAcousticLiquidHandling,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentAcousticLiquidHandling,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],Null}
-	];
+	(* Sanitize named inputs *)
+	{{mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples}, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[{mySourcesWithPreparedSamplesNoLink, myDestinationsWithPreparedSamplesNoLink}, safeOpsNoLink, myOptionsWithPreparedSamplesNoLink, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOps,$Failed],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests
-			}],
-			Options->$Failed,
-			Preview->Null
+	If[MatchQ[safeOps, $Failed],
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> safeOpsTests,
+			Options -> $Failed,
+			Preview -> Null
 		}]
 	];
 
-	(* Call sanitize-inputs to clean any named objects *)
-	{myPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[myPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	(* if all inputs are in its singleton pattern, we have to ToList for all of them, since ExpandIndexMatchedInputs does not expand inputs when options are expanded *)
+	{mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton} = If[MatchQ[{mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples, myAmounts}, {acousticLHSourceSingletonPattern, acousticLHDestinationSingletonPattern, acousticLHAmountSingletonPattern}],
+		{{mySourcesWithPreparedSamples}, {myDestinationsWithPreparedSamples}, {myAmounts}},
+		{mySourcesWithPreparedSamples, myDestinationsWithPreparedSamples, myAmounts}
+	];
 
-	(* -------------------------- *)
-	(* ---OPTIONS LENGTH CHECK--- *)
-	(* -------------------------- *)
+	(* update the SamplesIn option, since all our sources here should now be samples, all we need to do is DeleteDuplicates to get it consolidated *)
+	myOptionsWithPreparedSamplesWithConsolidatedSources = ReplaceRule[myOptionsWithPreparedSamples, {SamplesIn -> DeleteDuplicates[ToList[mySourcesWithPreparedSamplesListedSingleton]]}];
 
-	(* call ValidOptionLengthsQ to make sure all options are the right length *)
-	(* TODO: this always returns True. Need to check if it is because our weird input format and index matching parent *)
-	(* did not pass valid length test when options with string are specified. results of valid length -> Failed but passed all valid length tests. works fine if specified with the correct pattern *)
-	(* there might be an issue with index-matching parent *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentAcousticLiquidHandling,{myPrimitives},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentAcousticLiquidHandling,{myPrimitives},myOptionsWithPreparedSamples],Null}
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentAcousticLiquidHandling, {mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton}, myOptionsWithPreparedSamplesWithConsolidatedSources, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentAcousticLiquidHandling, {mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton}, myOptionsWithPreparedSamplesWithConsolidatedSources], {}}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests,
-				validLengthTests
-			}],
-			Options->$Failed,
-			Preview->Null
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> Join[safeOpsTests, validLengthTests],
+			Options -> $Failed,
+			Preview -> Null
 		}]
 	];
 
-	(* --------------------------- *)
-	(* ---GET TEMPLATED OPTIONS--- *)
-	(* --------------------------- *)
-
 	(* Use any template options to get values for options not specified in myOptions *)
-	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[ExperimentAcousticLiquidHandling,{myPrimitives},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentAcousticLiquidHandling,{myPrimitives},myOptionsWithPreparedSamples],Null}
+	{templatedOptions, templateTests} = If[gatherTests,
+		ApplyTemplateOptions[ExperimentAcousticLiquidHandling, {mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton}, myOptionsWithPreparedSamplesWithConsolidatedSources, Output -> {Result, Tests}],
+		{ApplyTemplateOptions[ExperimentAcousticLiquidHandling, {mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton}, myOptionsWithPreparedSamplesWithConsolidatedSources], {}}
 	];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
-	If[MatchQ[templatedOptions,$Failed],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests,
-				validLengthTests,
-				templateTests
-			}],
-			Options->$Failed,
-			Preview->Null
+	If[MatchQ[templatedOptions, $Failed],
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests],
+			Options -> $Failed,
+			Preview -> Null
 		}]
 	];
 
 	(* Replace our safe options with our inherited options from our template. *)
-	(* Note: remove inherited hidden options ResolvedManipulations, SamplesIn, and SamplesVolume because they are required to be populated by the current experiment call only *)
-	inheritedOptions=ReplaceRule[safeOps,Normal@KeyDrop[templatedOptions,{ResolvedManipulations,SamplesIn,SamplesVolume}]];
+	(* also update the SamplesIn option, since all our sources here should now be samples, all we need to do is DeleteDuplicates to get it consolidated *)
+	inheritedOptions = ReplaceRule[safeOps,
+		Normal[
+			Append[KeyDrop[templatedOptions, {ResolvedManipulations, SamplesIn, SamplesVolume}], SamplesIn -> Lookup[myOptionsWithPreparedSamplesWithConsolidatedSources, SamplesIn]],
+			Association
+		]
+	];
+
+	(* Expand inputs and index-matching options. In this step, sources, destinations, amounts, WILL finally be expanded to correct length *)
+	{{expandedSources, expandedDestinations, expandedAmounts}, expandedSafeOps} = ExpandIndexMatchedInputs[ExperimentAcousticLiquidHandling, {mySourcesWithPreparedSamplesListedSingleton, myDestinationsWithPreparedSamplesListedSingleton, myAmountsListedSingleton}, inheritedOptions];
+
+	(* populate the some options to pass between internal helpers *)
+	expandedSafeOpsWithInternalSampleOptions = Module[{consolidatedSources, consolidatedSampleUsageLookup},
+		(* consolidate source samples *)
+		consolidatedSources = DeleteDuplicates[ToList[mySourcesWithPreparedSamplesListedSingleton]];
+		(* consolidate source sample usages *)
+		consolidatedSampleUsageLookup = GroupBy[Transpose[{expandedSources, expandedAmounts}], First -> Last, Total];
+
+		ReplaceRule[
+			expandedSafeOps,
+			{
+				SamplesIn -> consolidatedSources,
+				SamplesVolume -> Lookup[consolidatedSampleUsageLookup, consolidatedSources]
+			}
+		]
+	];
 
 	(* ------------------------ *)
 	(* ---GET HIDDEN OPTIONS--- *)
 	(* -------------------------*)
-
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
-
-	(* --------------------------- *)
-	(* ---OBJECT EXISTENCE TEST--- *)
-	(* --------------------------- *)
-
-	(* get all objects from our input primitives *)
-	allObjectsFromPrimitives=Cases[updatedPrimitives,ObjectP[],Infinity];
-
-	(* get all user-specified objects from our options *)
-	(* Note: Cache option is removed from the inherited options to exclude objects that exist in the packets *)
-	suppliedObjectsFromOptions=Cases[KeyDrop[inheritedOptions,Cache],ObjectP[],Infinity];
-
-	(* combine all the user-specified primitive and option objects *)
-	userSpecifiedObjects=DeleteDuplicates@Flatten[{allObjectsFromPrimitives,suppliedObjectsFromOptions}];
-
-	(* filter out the simulated objects from the user-specified objects *)
-	simulatedObjectQ=Lookup[fetchPacketFromCache[#,updatedSamplePreparationCache],Simulated,False]&/@userSpecifiedObjects;
-	objectsToCheck=PickList[userSpecifiedObjects,simulatedObjectQ,False];
-
-	(* check if the user-specified objects exist on the database *)
-	objectsExistQ=DatabaseMemberQ[objectsToCheck];
-	nonExistingObjects=PickList[objectsToCheck,objectsExistQ,False];
-
-	(* if any object doesn't exist and we are throwing messages, throw an error message *)
-	If[Not[MatchQ[nonExistingObjects,{}]]&&!gatherTests,
-		Message[Error::ObjectDoesNotExist,nonExistingObjects];
-		Message[Error::InvalidInput,nonExistingObjects]
-	];
-
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	objectsExistenceTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=
-				If[MatchQ[nonExistingObjects,{}],
-					Nothing,
-					Test["The specified objects "<>ToString[nonExistingObjects]<>" exist in the database:",True,False]];
-
-			passingTest=
-				If[Length[nonExistingObjects]==Length[objectsToCheck],
-					Nothing,
-					Test["The specified objects "<>ObjectToString[Complement[objectsToCheck,nonExistingObjects],Cache->updatedSamplePreparationCache]<>" exist in the database:",True,True]];
-
-			{failingTest,passingTest}
-		],
-
-		Nothing
-	];
-
-	(* Return early if any object does not exist does not exist in the database. *)
-	If[Not[MatchQ[nonExistingObjects,{}]],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests,
-				validLengthTests,
-				templateTests,
-				objectsExistenceTest
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* -------------- *)
 	(* ---DOWNLOAD--- *)
 	(* -------------- *)
-
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
 	(* ---GATHER ALL OBJECTS TO DOWNLOAD--- *)
 
+	allInputObjects = Cases[Flatten[{expandedSources, expandedDestinations}], ObjectP[], Infinity];
+
+	(* get all user-specified objects from our options *)
+	(* Note: Cache option is removed from the inherited options to exclude objects that exist in the packets *)
+	suppliedObjectsFromOptions = Cases[KeyDrop[inheritedOptions, {Cache, Simulation}], ObjectP[], Infinity];
+
 	(* pull out all the objects specified in the AliquotContainer option *)
-	specifiedAliquotContainerObjects=Cases[Flatten[{Lookup[inheritedOptions,AliquotContainer]}],ObjectP[]];
+	specifiedAliquotContainerObjects = Cases[Flatten[{Lookup[inheritedOptions, AliquotContainer]}], ObjectP[]];
 
 	(* get the preferred aliquot containers *)
-	preferredAliquotContainersModels=PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True];
+	preferredAliquotContainersModels = PreferredContainer[All, Type -> All, AcousticLiquidHandlerCompatible -> True];
 
 	(* get the specified Instrument option *)
-	specifiedInstrument=Lookup[inheritedOptions,Instrument];
+	specifiedInstrument = Lookup[inheritedOptions, Instrument];
 
 	(* get the default instrument from our experiment option *)
 	(* do the following so that we don't have to change the default in multiple locations when needed *)
-	defaultInstrumentModel=Lookup[Options[ExperimentAcousticLiquidHandling],"Instrument"];
+	defaultInstrumentModel = Lookup[Options[ExperimentAcousticLiquidHandling], "Instrument"];
 
 	(* define Fields to download for each object type *)
 	sampleFields=Sequence@@SamplePreparationCacheFields[Object[Sample]];
@@ -1642,325 +1585,128 @@ ExperimentAcousticLiquidHandling[myPrimitives:{SampleManipulationP..},myOptions:
 	objectContainerFields=Sequence@@SamplePreparationCacheFields[Object[Container]];
 	modelContainerFields=Sequence@@Union[{AllowedPositions,Columns,CrossSectionalShape,FlangeHeight,HorizontalMargin,HorizontalPitch,
 		Rows,VerticalMargin,VerticalPitch,WellBottom,ConnectionType},SamplePreparationCacheFields[Model[Container]]];
-	objectInstrumentFields=Sequence[Name,Status,Model,MinPlateHeight,MaxPlateHeight,MaxFlangeHeight,MinVolume,MaxVolume,DropletTransferResolution,SampleHandlingCategories,MaxTime,MaxTemperature,MinTemperature,
+	objectInstrumentFields=Sequence[Name,Status,Model,MinPlateHeight,MaxPlateHeight,MaxFlangeHeight,MinVolume,MaxVolume,DropletTransferResolution,AsepticHandling,MaxTime,MaxTemperature,MinTemperature,
 		SpeedResolution,MaxRotationRate,MinRotationRate,CentrifugeType,
 		Positions,RequestedResources];
-	modelInstrumentFields=Sequence[Name,Deprecated,MinPlateHeight,MaxPlateHeight,MaxFlangeHeight,MinVolume,MaxVolume,DropletTransferResolution,SampleHandlingCategories,MaxTime,MaxTemperature,MinTemperature,
+	modelInstrumentFields=Sequence[Name,Deprecated,MinPlateHeight,MaxPlateHeight,MaxFlangeHeight,MinVolume,MaxVolume,DropletTransferResolution,AsepticHandling,MaxTime,MaxTemperature,MinTemperature,
 		SpeedResolution,MaxRotationRate,MinRotationRate,CentrifugeType,
 		Positions,RequestedResources,InternalDimensions];
 
 	(* combine all objects to download *)
 	(* Note: make sure to convert all object references to ID form to remove all duplicates efficiently before downloading *)
-	rawObjectsToDownload=Flatten[{
-		allObjectsFromPrimitives,
+	rawObjectsToDownload = Flatten[{
+		allInputObjects,
 		suppliedObjectsFromOptions,
 		specifiedAliquotContainerObjects,
 		preferredAliquotContainersModels,
 		specifiedInstrument,
 		defaultInstrumentModel
-	}]/.x:ObjectReferenceP[]:>Download[x,Object];
+	}] /. x:ObjectP[] :> Download[x, Object];
 
 	(* create a list of all to objects to download *)
-	objectsToDownload=DeleteDuplicates@Cases[rawObjectsToDownload,ObjectP[]];
+	objectsToDownload = DeleteDuplicates@Cases[rawObjectsToDownload, ObjectP[]];
 
 	(* get the fields to download according to the object type *)
-	allFields=Map[
+	allFields = Map[
 		Switch[#,
 			ObjectP[Object[Sample]],
-				{
-					Packet[sampleFields],
-					Packet[Model[List@modelSampleFields]],
-					Packet[Container[List@objectContainerFields]],
-					Packet[Container[Model][List@modelContainerFields]]
-				},
+			{
+				Packet[sampleFields],
+				Packet[Model[List@modelSampleFields]],
+				Packet[Container[List@objectContainerFields]],
+				Packet[Container[Model][List@modelContainerFields]]
+			},
 			ObjectP[Object[Container]],
-				{
-					Packet[objectContainerFields],
-					Packet[Model[List@modelContainerFields]],
-					Packet[Field[Contents[[All,2]]][List@sampleFields]]
-				},
+			{
+				Packet[objectContainerFields],
+				Packet[Model[List@modelContainerFields]],
+				Packet[Field[Contents[[All, 2]]][List@sampleFields]]
+			},
 			ObjectP[Model[Container]],
-				{
-					Packet[modelContainerFields]
-				},
+			{
+				Packet[modelContainerFields]
+			},
 			ObjectP[Object[Instrument]],
-				{
-					Packet[objectInstrumentFields],
-					Packet[Model[List@modelInstrumentFields]]
-				},
+			{
+				Packet[objectInstrumentFields],
+				Packet[Model[List@modelInstrumentFields]]
+			},
 			ObjectP[Model[Instrument]],
-				{
-					Packet[modelInstrumentFields]
-				},
+			{
+				Packet[modelInstrumentFields]
+			},
 			_,
-				{}
+			{}
 		]&,
 		objectsToDownload
 	];
 
 	(* make the big download call *)
-	allPackets=Flatten[Quiet[
+	allDownloads = Flatten[Quiet[
 		Download[
 			objectsToDownload,
 			Evaluate[allFields],
-			Date->Now,
-			Cache->Flatten[{cache,updatedSamplePreparationCache}]
+			Date -> Now,
+			Cache -> cache,
+			Simulation -> samplePreparationSimulation
 		],
 		Download::FieldDoesntExist
 	]];
 
 	(* Combine our downloaded and simulated cache. *)
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
-	cacheBall=Experiment`Private`FlattenCachePackets[{updatedSamplePreparationCache,allPackets}];
+	cacheBall = Experiment`Private`FlattenCachePackets[{cache, allDownloads}];
 
-	(* --------------------------- *)
-	(* ---SPECIFY MANIPULATIONS--- *)
-	(* --------------------------- *)
+	(* after download, we can try to populate ResolvedManipulations with pre-resolved individual transfers *)
+	expandedSafeOpsWithTransfers = Module[{splitPrimitives},
+		(* need to create individual fake Transfer primitives (these are not really intended for calling in SM, or SP, just an association containing transfer information, so this is effectively "tuples" *)
+		splitPrimitives = Module[{transfer, formattedTransfer, specifiedTransfer},
+			(* make a Transfer-headed association with Reversed well/container source/destination specification, this is the SampleManipulation framework (Deprecated) way of formulating Transfer primitive but we are just borrowing the format here, this is NOR A REAL PRIMITIVE TO BE CALLED BY FRAMEWORK FUNCTIONS, only to pass information between experiment and engine functions *)
+			transfer = Transfer[
+				Source -> (expandedSources /. {well:WellPositionP, obj:ObjectP[]} :> {obj, well}),
+				Destination -> (expandedDestinations /. {{well:WellPositionP, obj:ObjectP[]} :> {obj, well}, {well:WellPositionP, taggedModel:{_Integer, ObjectP[]}} :> {taggedModel, well}}),
+				Amount -> expandedAmounts
+			];
 
-	(* convert Aliquot and Consolidation primitives to low-level Transfer syntax
-	and returns Transfer primitives with expanded Source/Destination/Amount key values *)
-	primitivesInTransferForm=Map[Experiment`Private`convertTransferPrimitive,updatedPrimitives];
+			(* call helper to reformat the Transfer association so rest of the code can work, this function adds an additional inner list for Source/Destination/Amount key, this helper also expands these keys to make sure they are index matched*)
+			(*
+				before: Transfer[<|Source -> {source1, source2}, Destination -> {dest1, dest2}, Amount -> {amt1, amt2}|>]
+				after: Transfer[<|Source -> {{source1}, {source2}}, Destination -> {{dest1}, {dest2}}, Amount -> {{amt1}, {amt2}}|>]
+			*)
+			formattedTransfer = toFormattedTransferPrimitive[transfer];
 
-	(* specify our primitives to resolve source samples *)
-	specifiedUpdatedPrimitives=Map[
-		Experiment`Private`specifyManipulation[#,Cache->cacheBall]&,
-		primitivesInTransferForm
-	];
+			(* call helper to populate ResolvedSourceLocation/SourceSample/ResolvedDestinationLocation/DestinationSample keys *)
+			(* ResolvedSourceLocation/ResolvedDestinationLocation is gonna be in the format of {{{cont1, well1}} | {{Null}}, {{cont2, well2}} | {{Null}}, ...}, {{Null}} is for the case where a Model[Container] is populated as destination *)
+			(* SourceSample/DestinationSample is gonna be in the format of {{samp1} | {Null}, {samp2} | {Null}, {samp3} | {Null}, ...}, {Null} is for the case where a Model[Container] is populated as destination *)
+			specifiedTransfer = populateTransferKeys[formattedTransfer, Cache -> cacheBall];
 
-	(* ------------------------------------- *)
-	(* ---SOURCE SAMPLE OBJECT TYPE CHECK--- *)
-	(* ------------------------------------- *)
-
-	(* up to this point, SourceSample in our 'specified' primitives should be populated as Object[Sample] if they were defined correctly by the user *)
-	(* Flag the primitives that have Null under SourceSample key as that indicates Source being specified as a Model *)
-	(* we don't allow source sample to be specified as a model directly as it would mess up sample simulation *)
-	(* check here and return early if source samples from the input primitives contain any thing that's not Object[Sample] *)
-
-	(* get the Source objects from the primitives. Maintain nested list structure for identifying primitive index *)
-	specifiedSourceSamples=Flatten[#[SourceSample]]&/@specifiedUpdatedPrimitives;
-
-	(* extract the raw sources from the input primitives *)
-	(* call convertTransferPrimitive so that everything is expanded and indexmatched to specifiedSourceSamples *)
-	rawSources=Map[
-		Experiment`Private`convertTransferPrimitive[#][Source]&,
-		myPrimitives
-	];
-
-	(* get the invalid source and the index of the corresponding input primitive *)
-	{invalidSources,primitiveWithInvalidSourceIndices}=If[MemberQ[Flatten[specifiedSourceSamples],Null],
-		Transpose[
-			Flatten[MapIndexed[
-				Function[{sourceTuple,primitiveIndex},
-					MapThread[
-						Switch[#1,
-							Null,{#2,primitiveIndex},
-							_,Nothing
-						]&,
-						sourceTuple
-					]
-				],
-				Transpose[{specifiedSourceSamples,rawSources}]
-			],1]
-		],
-
-		{{},{}}
-	];
-
-	(* if a specified non-Object[Sample] exists in our input primitives and we are throwing messages, throw an error message *)
-	(* TODO: the message should also cover when {Object[Container,Plate], "A1"} cannot resolve to Object[Sample] *)
-	If[!MatchQ[invalidSources,{}]&&!gatherTests,
-		Message[Error::InvalidSourceObjectType,Flatten[invalidSources],Flatten[primitiveWithInvalidSourceIndices]];
-	];
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	invalidSourceObjectTypeTests=If[gatherTests,
-		Module[{flatInvalidSources,flatValidSources,failingTest,passingTest},
-
-			flatInvalidSources=DeleteDuplicates[Flatten[invalidSources]];
-
-			flatValidSources=DeleteDuplicates[Cases[specifiedSourceSamples,ObjectP[],Infinity]];
-
-			failingTest=
-				If[MatchQ[flatInvalidSources,{}],
-					Nothing,
-					Test["The specified source objects "<>ObjectToString[flatInvalidSources,Cache->cacheBall]<>" have the type Object[Sample]:",True,False]];
-
-			passingTest=
-				If[MatchQ[flatValidSources,NullP],
-					Nothing,
-					Test["The specified source objects "<>ObjectToString[flatValidSources,Cache->cacheBall]<>" have the type Object[Sample]:",True,True]];
-
-			{failingTest,passingTest}
-		],
-
-		Nothing
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[!MatchQ[invalidSources,{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests,
-				validLengthTests,
-				templateTests,
-				invalidSourceObjectTypeTests
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
-	(* ---------------------- *)
-	(* ---SPLIT PRIMITIVES--- *)
-	(* ---------------------- *)
-
-	(* split primitives to individual Transfer primitives and add Index key to store the indices of their parent primitives *)
-	splitPrimitives=Flatten[MapIndexed[
-		Function[{primitive,primitiveIndex},
-			Map[
-				(* call convertTransferPrimitive on split primitive again to keep all key values in the correct format *)
-				Experiment`Private`convertTransferPrimitive[Transfer[
+			(* split into individual ones, we do not build single transfer then specify them b/c there is a weird nested list that i cannot get rid of *)
+			MapIndexed[
+				(* call toFormattedTransferPrimitive on split primitive again to keep all key values in the correct format *)
+				toFormattedTransferPrimitive[Transfer[
 					Append[
-						AssociationThread[Keys[Association@@primitive],#],
+						AssociationThread[Keys[Association @@ specifiedTransfer], #1],
 						(* include Index key in the split primitive to store original index of its parent primitive *)
-						Index->First[primitiveIndex]
+						Index -> #2[[1]]
 					]
 				]]&,
-				Transpose[Values[Association@@primitive]]
+				Transpose[Values[Association @@ specifiedTransfer]]
 			]
-		],
-		specifiedUpdatedPrimitives
-	]];
+		];
 
-	(* ----------------------------------- *)
-	(* ---DESTINATION OBJECT TYPE CHECK--- *)
-	(* ----------------------------------- *)
 
-	(* we only allow Destination to be specified as Model[Container, Plate], Object[Container, Plate], or Object[Sample] that is in a plate *)
-	(* we will return early if the user-specified Destination is invalid *)
-	(* we will perform a more thorough check on the plate model/object in the resolver *)
-	{validDestinations,invalidDestinations,primitiveWithInvalidDestinationIndices}=Transpose[Map[
-		Function[primitive,
-			Module[{rawDestination,destinationLocation},
-				(* get the raw Destination and location from our split Transfer primitive *)
-				(* Note: Destination is now in a nested {{value}} format *)
-				rawDestination=First@First@primitive[Destination];
-				(* Note: ResolvedDestinationLocation is in the form {value} *)
-				destinationLocation=First@primitive[ResolvedDestinationLocation];
 
-				Switch[{destinationLocation,rawDestination},
-					(* specified as Object[Sample] in a plate or {plate, well} format *)
-					(* for this case, DestinationLocation is specified as PlateWellP *)
-					{PlateAndWellP,_},
-						{ToString[rawDestination],{},{}},
-					(* specified in {{tag, plateModel}, well} format *)
-					{Null,{{_,ObjectReferenceP[Model[Container,Plate]]},WellPositionP}},
-						{ToString[rawDestination],{},{}},
-					(* specified in {tag, plateModel} format *)
-					{Null,{_,ObjectReferenceP[Model[Container,Plate]]}},
-						{ToString[rawDestination],{},{}},
-					(* specified in {plateModel, well} format *)
-					{Null,{ObjectReferenceP[Model[Container,Plate]],WellPositionP}},
-						{ToString[rawDestination],{},{}},
-					(* specified as a plate model *)
-					{Null,ObjectReferenceP[Model[Container,Plate]]},
-						{ToString[rawDestination],{},{}},
-					(* we don't allow all other cases. return the value in String form and primitive index *)
-					_,
-						{{},ToString[rawDestination],primitive[Index]}
-				]
-			]
-		],
-		splitPrimitives
-	]];
+		ReplaceRule[
+			expandedSafeOpsWithInternalSampleOptions,
+			{
+				ResolvedManipulations -> splitPrimitives,
+				(* store user inputs in these hidden options so we can upload to the corresponding fields in the protocol finally *)
+				Source -> If[MatchQ[Lookup[expandedSafeOpsWithInternalSampleOptions, Source], Automatic], mySources, Lookup[expandedSafeOpsWithInternalSampleOptions, Source]],
+				Destination -> If[MatchQ[Lookup[expandedSafeOpsWithInternalSampleOptions, Destination], Automatic], myDestinations, Lookup[expandedSafeOpsWithInternalSampleOptions, Destination]],
+				Amount -> If[MatchQ[Lookup[expandedSafeOpsWithInternalSampleOptions, Amount], Automatic], myAmounts, Lookup[expandedSafeOpsWithInternalSampleOptions, Amount]]
+			}
+		]
 
-	(* if an invalid destination object exists in our input primitives and we are throwing messages, throw an error message *)
-	If[!MatchQ[Flatten[invalidDestinations],{}]&&!gatherTests,
-		Message[Error::InvalidDestinationDefinition,Flatten[invalidDestinations],Flatten[primitiveWithInvalidDestinationIndices]];
-	];
-	(* if we are gathering tests,create a passing and/or failing test with the appropriate result *)
-	invalidDestinationDefinitionTests=If[gatherTests,
-		Module[{flatInvalidDestinations,flatValidDestinations,failingTest,passingTest},
-
-			flatInvalidDestinations=DeleteDuplicates[Flatten[invalidDestinations]];
-
-			flatValidDestinations=DeleteDuplicates[Flatten[validDestinations]];
-
-			failingTest=
-				If[MatchQ[flatInvalidDestinations,{}],
-					Nothing,
-					Test["The specified Destination value "<>ObjectToString[flatInvalidDestinations]<>" have the type non-self-contained Object[Sample], Object[Container,Plate], or Model[Container,Plate]:",True,False]];
-
-			passingTest=
-				If[MatchQ[flatValidDestinations,{}],
-					Nothing,
-					Test["The specified Destination value "<>ObjectToString[flatValidDestinations]<>" have the type non-self-contained Object[Sample], Object[Container,Plate], or Model[Container,Plate]:",True,True]];
-
-			{failingTest,passingTest}
-		],
-
-		Nothing
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[!MatchQ[Flatten[invalidDestinations],{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
-				safeOpsTests,
-				validLengthTests,
-				templateTests,
-				invalidSourceObjectTypeTests,
-				invalidDestinationDefinitionTests
-			}],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
-	(* ----------------------------------- *)
-	(* ---DETERMINE SOURCE SAMPLE USAGE--- *)
-	(* ----------------------------------- *)
-
-	(* pull out all Source objects and usage volume from the input primitives by calling the SampleUsage function *)
-	(* we don't care about the messages thrown by SampleUsage since we handle all the checks here *)
-	sampleUsageAssociation=Quiet[SampleUsage[updatedPrimitives,OutputFormat->Association,Cache->cacheBall]];
-
-	(* assign the sample objects from SampleUsage result as our samples in *)
-	samplesIn=Lookup[sampleUsageAssociation,Sample];
-
-	(* assign the usage amount from SampleUsage result as our samples' volume *)
-	samplesVolume=Lookup[sampleUsageAssociation,Usage];
-
-	(* add SamplesIn, SamplesVolume to listedOptions, before calling SafeOptions. *)
-	(* safeOptions will then check if the user input valid source objects *)
-	(* by comparing SampleIn/SamplesVolume with the defined option patterns *)
-	updatedOptions=ReplaceRule[
-		inheritedOptions,
-		{
-			SamplesIn->samplesIn,
-			SamplesVolume->samplesVolume,
-			ResolvedManipulations->splitPrimitives
-		}
-	];
-
-	(* ----------------------------------- *)
-	(* ---EXPAND INDEX-MATCHING OPTIONS--- *)
-	(* ----------------------------------- *)
-
-	(* Expand index-matching options *)
-	(* FIXME: Options are expanded properly but shows 'input not expanded' warning because we have primitives as input instead of samples. *)
-	expandedSafeOps=Quiet[
-		Last[ExpandIndexMatchedInputs[ExperimentAcousticLiquidHandling,{myPrimitives},updatedOptions]],
-		Warning::UnableToExpandInputs
 	];
 
 	(* -------------------------------- *)
@@ -1968,115 +1714,139 @@ ExperimentAcousticLiquidHandling[myPrimitives:{SampleManipulationP..},myOptions:
 	(* ---------------------------------*)
 
 	(* Build the resolved options *)
-	resolvedOptionsResult=If[gatherTests,
+	resolvedOptionsResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentAcousticLiquidHandlingOptions[myPrimitives,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		(
+			{resolvedOptions, resolvedOptionsTests} = resolveExperimentAcousticLiquidHandlingOptions[
+				expandedSources,
+				expandedDestinations,
+				expandedAmounts,
+				expandedSafeOpsWithTransfers,
+				Cache -> cacheBall,
+				Simulation -> samplePreparationSimulation,
+				Output -> {Result, Tests}
+			];
 
-		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-			{resolvedOptions,resolvedOptionsTests},
-			$Failed
-		],
+			(* Therefore, we have to run the tests to see if we encountered a failure. *)
+			If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+				{resolvedOptions, resolvedOptionsTests},
+				$Failed
+			]
+		),
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentAcousticLiquidHandlingOptions[myPrimitives,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {
+				resolveExperimentAcousticLiquidHandlingOptions[
+					expandedSources,
+					expandedDestinations,
+					expandedAmounts,
+					expandedSafeOpsWithTransfers,
+					Cache -> cacheBall,
+					Simulation -> samplePreparationSimulation
+				],
+				{}
+			},
 			$Failed,
-			{Error::InvalidInput,Error::InvalidOption}
+			{Error::InvalidInput, Error::InvalidOption}
 		]
 	];
 
 	(* Collapse the resolved options *)
-	collapsedResolvedOptions=CollapseIndexMatchedOptions[
+	collapsedResolvedOptions = CollapseIndexMatchedOptions[
 		ExperimentAcousticLiquidHandling,
 		resolvedOptions,
-		Ignore->ToList[myOptions],
-		Messages->False
+		Ignore -> ToList[myOptions],
+		Messages -> False
 	];
 
 	(* If option resolution failed, return early. *)
-	If[MatchQ[resolvedOptionsResult,$Failed],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
+	If[MatchQ[resolvedOptionsResult, $Failed],
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> Flatten[{
 				safeOpsTests,
 				validLengthTests,
 				templateTests,
-				invalidSourceObjectTypeTests,
-				invalidDestinationDefinitionTests,
 				resolvedOptionsTests
 			}],
-			Options->RemoveHiddenOptions[ExperimentAcousticLiquidHandling,collapsedResolvedOptions],
-			Preview->Null
+			Options -> RemoveHiddenOptions[ExperimentAcousticLiquidHandling, collapsedResolvedOptions],
+			Preview -> Null
 		}]
 	];
 
 	(* Build packets with resources *)
-	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		experimentAcousticLiquidHandlingResourcePackets[ToList[myPrimitives],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{experimentAcousticLiquidHandlingResourcePackets[ToList[myPrimitives],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+	{resourcePackets, resourcePacketTests} = If[gatherTests,
+		experimentAcousticLiquidHandlingResourcePackets[
+			expandedSources,
+			expandedDestinations,
+			expandedAmounts,
+			ToList[myOptions],
+			resolvedOptions,
+			Cache -> cacheBall,
+			Simulation -> samplePreparationSimulation,
+			Output -> {Result, Tests}
+		],
+		{
+			experimentAcousticLiquidHandlingResourcePackets[
+				expandedSources,
+				expandedDestinations,
+				expandedAmounts,
+				ToList[myOptions],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> samplePreparationSimulation
+			],
+			{}
+		}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
-	If[!MemberQ[output,Result],
-		Return[outputSpecification/.{
-			Result->Null,
-			Tests->Flatten[{
-				invalidManipulationTypeTest,
-				primitivesWithIncompatibleKeysTest,
-				primitivesWithInvalidKeysTest,
-				invalidAmountLengthTest,
+	If[!MemberQ[output, Result],
+		Return[outputSpecification /. {
+			Result -> Null,
+			Tests -> Flatten[{
 				safeOpsTests,
 				validLengthTests,
 				templateTests,
-				invalidSourceObjectTypeTests,
-				invalidDestinationDefinitionTests,
 				resolvedOptionsTests,
 				resourcePacketTests
 			}],
-			Options->RemoveHiddenOptions[ExperimentAcousticLiquidHandling,collapsedResolvedOptions],
-			Preview->Null
+			Options -> RemoveHiddenOptions[ExperimentAcousticLiquidHandling, collapsedResolvedOptions],
+			Preview -> Null
 		}]
 	];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-	protocolObject=If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
+	protocolObject = If[!MatchQ[resourcePackets, $Failed] && !MatchQ[resolvedOptionsResult, $Failed],
 		UploadProtocol[
 			resourcePackets,
-			Upload->Lookup[safeOps,Upload],
-			Confirm->Lookup[safeOps,Confirm],
-			ParentProtocol->Lookup[safeOps,ParentProtocol],
-			ConstellationMessage->Object[Protocol,AcousticLiquidHandling],
-			Cache->samplePreparationCache
+			Upload -> Lookup[safeOps, Upload],
+			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
+			ParentProtocol -> Lookup[safeOps, ParentProtocol],
+			ConstellationMessage -> Object[Protocol, AcousticLiquidHandling],
+			Cache -> cacheBall,
+			Simulation -> samplePreparationSimulation
 		],
 		$Failed
 	];
 
 	(* Return requested output *)
-	outputSpecification/.{
-		Result->protocolObject,
-		Tests->Flatten[{
-			invalidManipulationTypeTest,
-			primitivesWithIncompatibleKeysTest,
-			primitivesWithInvalidKeysTest,
-			invalidAmountLengthTest,
+	outputSpecification /. {
+		Result -> protocolObject,
+		Tests -> Flatten[{
 			safeOpsTests,
 			validLengthTests,
 			templateTests,
-			invalidSourceObjectTypeTests,
-			invalidDestinationDefinitionTests,
 			resolvedOptionsTests,
 			resourcePacketTests
 		}],
-		Options->RemoveHiddenOptions[ExperimentAcousticLiquidHandling,collapsedResolvedOptions],
-		Preview->Null
+		Options -> RemoveHiddenOptions[ExperimentAcousticLiquidHandling, collapsedResolvedOptions],
+		Preview -> Null
 	}
-
 ];
+
 
 
 (* ::Subsubsection::Closed:: *)
@@ -2085,14 +1855,20 @@ ExperimentAcousticLiquidHandling[myPrimitives:{SampleManipulationP..},myOptions:
 
 DefineOptions[
 	resolveExperimentAcousticLiquidHandlingOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
-resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentAcousticLiquidHandlingOptions]]:=Module[
+resolveExperimentAcousticLiquidHandlingOptions[
+	mySources:ListableP[ObjectP[Object[Sample]]],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:{_Rule...},
+	myResolutionOptions:OptionsPattern[resolveExperimentAcousticLiquidHandlingOptions]
+]:=Module[
 	{
 		(* boilerplate variables *)
-		outputSpecification,output,gatherTests,cache,samplePrepOptions,AcousticLiquidHandlingOptions,mapThreadFriendlyOptions,
-		fastTrack,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,invalidInputs,invalidOptions,
+		outputSpecification,output,gatherTests,cache,simulation,samplePrepOptions,AcousticLiquidHandlingOptions,mapThreadFriendlyOptions,
+		fastTrack,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,cacheBall,invalidInputs,invalidOptions,
 		resolveSamplePrepOptionsWithoutAliquot,resolvedAliquotOptions,resolvedPostProcessingOptions,allTests,resolvedOptions,
 
 		(* sample prep / aliquot resolution variables *)
@@ -2114,7 +1890,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		splitPrimitives,destinationValues,suppliedDestinationContainerModels,modelContainerTagLookup,primitivesWithResolvedDest,
 		plateObjectsWithEmptyWells,plateModelAndWellTuples,plateModelAndWellTuplesNoDupes,plateToWellsAssociation,
 		plateModelToWellsAssociation,simulatedDestSamplePackets,simulatedDestContainerPackets,destPlateReplaceRules,
-		updatedPackets,primitivesWithSimulatedDest,updatedSimulatedCache,
+		updatedPackets,primitivesWithSimulatedDest,updatedCacheBall,
 
 		(* destination check variables *)
 		resolvedDestinationLocations,specifiedDestContainerObjects,destContainerPackets,destinationContainers,
@@ -2129,8 +1905,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 		(* pre-MapThread variables *)
 		specifiedPrimitives,destLocationAndAmountTuples,destLocationToAmountsAssoc,destWithMultipleSourcesAssoc,
-		AcousticLiquidHandlingOptionsAssociation,optionDefinitions,indexMatchingInputOptionNames,indexMatchingInputOptions,
-		primitiveExpandingFactor,expandedIndexMatchingInputOptions,allSamplePackets,allSamplesInContainerPackets,
+		AcousticLiquidHandlingOptionsAssociation,allSamplePackets,allSamplesInContainerPackets,
 		allSamplesContainerPackets,allSamplesContainerModelPackets,allSamplesDeadVolumes,allSamplesMaxVolumes,
 		allSamplesDeadVolumesAssoc,allSamplesMaxVolumesAssoc,sampleToVolumeAssociation,volumePrecision,instrumentsMinAllowedVolume,
 		instrumentsMaxAllowedVolume,dropletResolution,glycerolMolecule,dmsoMolecule,surfactantMoleculesLookup,
@@ -2139,12 +1914,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		(* ---MapThread variables--- *)
 		(* warning/error checking booleans *)
 		amountPrecisionWarnings,outOfRangeAmountErrors,insufficientSourceAmountErrors,samePlateTransferErrors,
-		invalidDestinationWellErrors,overFillingDestErrors,inWellSeparationNotAllowedKeyErrors,inWellSeparationConflictErrors,
+		invalidDestinationWellErrors,overFillingDestErrors,inWellSeparationNotAllowedKeyErrors,
 		inWellSeparationNotAllowedOptionErrors,glycerolPercentageErrors,calibrationMeasurementMismatchErrors,
 		calibrationInvalidOptionErrors,measurementInvalidOptionErrors,calibrationInvalidOptionWarnings,measurementInvalidOptionWarnings,
 		discardedSourceSampleErrors,deprecatedSourceModelErrors,sourceStateErrors,containerlessSourceErrors,invalidSourceContainerErrors,
 		discardedDestContainerErrors,deprecatedDestContainerErrors,invalidDestContainerErrors,destLabwareDefinitionErrors,
-		unsafeDestVolumeErrors,invalidPrimitiveBools,indexMatchedSourceSamples,indexMatchedDestinationSamples,indexMatchedRawDestinations,
+		unsafeDestVolumeErrors,indexMatchedSourceSamples,indexMatchedDestinationSamples,indexMatchedRawDestinations,
 
 		(* resolved options *)
 		resolvedFluidTypeCalibrations,resolvedFluidAnalysisMeasurements,suppliedAmounts,roundedAmounts,
@@ -2152,7 +1927,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		resolvedEmailOption,
 
 		(* defaulted options *)
-		emailOption,uploadOption,confirmOption,parentProtocolOption,templateOption,samplesInStorageOption,samplesOutStorageOption,
+		emailOption,uploadOption,confirmOption,canaryBranchOption,parentProtocolOption,templateOption,samplesInStorageOption,samplesOutStorageOption,
 		operatorOption,prepPrimitives,subprotocolDescriptionOption,outputOption,collapsedSamplesInStorageConditionOption,
 		expandedSamplesInStorageOption,
 
@@ -2161,7 +1936,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		samplePrepReplaceRules,allPrimitiveReplaceRules,primitivesToReturn,
 
 		(* post-mapthread checks *)
-		invalidParentPrimitiveLookup,invalidParentPrimtiveIndices,precisionWarningIndices,overlyPreciseAmounts,
+		precisionWarningIndices,overlyPreciseAmounts,
 		roundedOverlyPreciseAmounts,discardedSourceIndices,undiscardedSourceIndices,deprecatedSourceModelIndices,
 		undeprecatedSourceModelIndices,nonLiquidSourceIndices,liquidSourceIndices,containerlessSourceIndices,
 		sourceWithContainerIndices,invalidSourceContainerIndices,validSourceContainerIndices,discardedDestinationIndices,
@@ -2175,7 +1950,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		differentPlateTransferIndices,primitivesWithInvalidDestWell,invalidDestLocationTuples,invalidDestinationWells,
 		containersWithInvalidWells,primitivesWithInvalidDestWellIndices,overFilledDestSamples,overFilledSuppliedDestinations,
 		overFilledSampleToSuppliedDestLookup,overFilledDestIndices,overFilledDestTuples,groupedOverFilled,overFilledDestNoDupes,
-		overFilledSuppliedDestNoDupes,invalidInWellSeparationKeyIndices,validInWellSeparationKeyIndices,inWellSeparationConflictIndices,
+		overFilledSuppliedDestNoDupes,
 		invalidInWellSeparationOptionIndices,validInWellSeparationOptionIndices,highGlycerolSamples,highGlycerolSamplesIndices,
 		validGlycerolSamples,validGlycerolSamplesIndices,highGlycerolSamplesIndexLookup,calibrationMeasurementMismatchIndices,
 		invalidCalibrationIndices,invalidMeasurementIndices,calibrationWarningSamples,calibrationWarningIndices,goodCalibrationSamples,
@@ -2194,7 +1969,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		validNameTest,discardedDestinationContainerTest,deprecatedDestinationContainerModelTest,invalidDestinationContainerTest,
 		invalidLabwareTest,unsafeDestVolumeTest,precisionTests,outOfRangeAmountTest,insufficientSourceSampleVolumeTest,
 		samePlateTransferTest,invalidDestinationWellTest,overFilledDestinationVolumeTest,invalidInWellSeparationKeyTest,
-		inWellSeparationKeyOptionTest,invalidInWellSeparationOptionTest,samplesWithTooHighGlycerolTest,calibrationMeasurementMismatchTest,
+		invalidInWellSeparationOptionTest,samplesWithTooHighGlycerolTest,calibrationMeasurementMismatchTest,
 		invalidFluidTypeCalibrationTest,invalidFluidAnalysisMeasurementTest,fluidTypeCalibrationWarningTest,fluidAnalysisMeasurementWarningTest,
 		validSampleStorageTests,tooLargeAliquotVolumeTest,
 
@@ -2202,11 +1977,11 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		discardedSourceInvalidInputs,deprecatedInvalidInputs,sourceWithDeprecatedModels,sourceWithInvalidStates,
 		containerlessSamples,sourceWithInvalidContainers,multipleSourceContainerTypes,discardedDestContainers,
 		deprecatedDestContainerModels,incompatibleDestContainerModels,failedLabwareDestContainerModels,
-		multipleDestContainerTypes,occupiedDestWithUnsafeVolume,invalidPrimitivesString,insufficientSamplesNoDupes,
+		multipleDestContainerTypes,occupiedDestWithUnsafeVolume,insufficientSamplesNoDupes,
 		highGlycerolSamplesNoDupes,tooLargeAliquotVolSamples,
 
 		(* invalid options variables *)
-		invalidAliquotContainerOption,nameInvalidOptions,inWellSeparationConflictOption,inWellSeparationNotAllowedOption,
+		invalidAliquotContainerOption,nameInvalidOptions,inWellSeparationNotAllowedOption,
 		calibrationMeasurementMismatchOptions,fluidTypeCalibrationErrorOption,fluidAnalysisMeasurementErrorOption,
 		invalidStorageConditionOptions,notEmptyAliquotContainersOptionName
 	},
@@ -2221,7 +1996,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	gatherTests=MemberQ[output,Tests];
 
 	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, {}];
 
 	(* Separate out our AcousticLiquidHandling options from our Sample Prep options. *)
 	{samplePrepOptions,AcousticLiquidHandlingOptions}=Experiment`Private`splitPrepOptions[myOptions];
@@ -2241,8 +2017,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* re-expand our SamplePrepOptions *)
 	(* do this because some options are not expanded properly as we indexmatch them with SamplesIn option instead of the inputs *)
-	(* TODO: AliquotContainer only get expanded if specified as a Model. Not sure why Object[Container] doesn't get expanded *)
-	expandedPrepOptions=Last[ExpandIndexMatchedInputs[Experiment`Private`resolveAcousticLiquidHandlingSamplePrepOptions,{Lookup[myOptions,SamplesIn]},samplePrepOptions]];
+	(* we set AliquotContainer to be expanded form preferred since without it, this is reexpanding the expanded AliquotContainer to be multiple mutliple, which is bad *)
+	expandedPrepOptions=Last[ExpandIndexMatchedInputs[Experiment`Private`resolveAcousticLiquidHandlingSamplePrepOptions,{Lookup[myOptions,SamplesIn]},samplePrepOptions,ExpandedClassificationPreferred->{AliquotContainer}]];
 
 	(* set the preferred aliquot container *)
 	preferredAliquotContainers=ToList[PreferredContainer[All,Type->All,AcousticLiquidHandlerCompatible->True]]/.x:ObjectReferenceP[]:>Download[x,Object];
@@ -2484,20 +2260,24 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* defined a private function here to work around this issue where we can use SamplesIn option that we populated in the main experiment function as 'experiment samples' and use the normal index-matching prep option definitions *)
 	(* TODO: samplePrepTests seems to be returned as {}. double check if this happens in every cases *)
 	{
-		{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests
+		{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests
 	}=Experiment`Private`resolveAcousticLiquidHandlingSamplePrepOptions[
 		Flatten[expandedSamplesIn],
 		Sequence@@updatedPrepOptions,
 		Cache->cache,
+		Simulation->simulation,
 		Output->output
 	];
+
+	(* need to combine any packets from new simulation into cache as we did not do a Download again *)
+	cacheBall = Experiment`Private`FlattenCachePackets[{cache, Lookup[FirstOrDefault[updatedSimulation, <||>], Packets, {}]}];
 
 	(* ----------------------------- *)
 	(* ---RESOLVE ALIQUOT OPTIONS--- *)
 	(* ----------------------------- *)
 
 	(* get the specified aliquot container packets from our cache *)
-	aliquotContainerPackets=fetchPacketFromCache[#,simulatedCache]&/@DeleteDuplicates[Cases[Lookup[samplePrepOptions,AliquotContainer],ObjectP[Object[Container]],Infinity]];
+	aliquotContainerPackets=fetchPacketFromCache[#,cacheBall]&/@DeleteDuplicates[Cases[Lookup[samplePrepOptions,AliquotContainer],ObjectP[Object[Container]],Infinity]];
 
 	(* pick the specified aliquot containers that are not empty *)
 	{notEmptyAliquotContainers,notEmptyAliquotContainersOptionName}=If[MatchQ[aliquotContainerPackets,{}],
@@ -2507,7 +2287,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* if there are any occupied containers, throw an error *)
 	If[Not[MatchQ[notEmptyAliquotContainers,{}]]&&!gatherTests,
-		Message[Error::AliquotContainerOccupied,ObjectToString[notEmptyAliquotContainers,Cache->simulatedCache]];
+		Message[Error::AliquotContainerOccupied,ObjectToString[notEmptyAliquotContainers,Cache->cacheBall,Simulation->updatedSimulation]];
 	];
 
 	(* if we are gathering tests, create a test for the AliquotContainer option *)
@@ -2538,7 +2318,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	];
 
 	(* get the dead volume of the target container *)
-	targetContainerDeadVolume=Lookup[fetchPacketFromCache[resolvedTargetContainer,simulatedCache],MinVolume];
+	targetContainerDeadVolume=Lookup[fetchPacketFromCache[resolvedTargetContainer,cacheBall],MinVolume];
 
 	(* get the RequiredAliquotAmount from the usage amount of each of our expanded SamplesIn *)
 	(* note that expandedAssayVolume and updatedUsageVolumes are index-matched to expandedSamplesIn *)
@@ -2574,7 +2354,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 			Flatten[expandedSamplesIn],
 			simulatedSamples,
 			ReplaceRule[myOptions,Flatten[{fullyExpandedAliquotOptions,resolvedSamplePrepOptions}]],
-			Cache->simulatedCache,
+			Cache->cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AllowSolids->False,
@@ -2586,7 +2367,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 			Flatten[expandedSamplesIn],
 			simulatedSamples,
 			ReplaceRule[myOptions,Flatten[{fullyExpandedAliquotOptions,resolvedSamplePrepOptions}]],
-			Cache->simulatedCache,
+			Cache->cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AllowSolids->False,
@@ -2648,7 +2430,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	If[Not[MatchQ[tooLargeAliquotVolSamples,{}]]&&!gatherTests,
 		Message[Error::TotalAliquotVolumeTooLarge,
 			tooLargeAliquotAmounts,
-			ObjectToString[tooLargeAliquotVolSamples,Cache->simulatedCache],
+			ObjectToString[tooLargeAliquotVolSamples,Cache->cacheBall,Simulation->updatedSimulation],
 			insufficientSampleVolumes
 		]
 	];
@@ -2658,12 +2440,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[tooLargeAliquotVolSamples]==0,
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[tooLargeAliquotVolSamples,Cache->simulatedCache]<>" have enough volumes to satisfy the required aliquot amount:",True,False]
+				Test["The provided source samples "<>ObjectToString[tooLargeAliquotVolSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" have enough volumes to satisfy the required aliquot amount:",True,False]
 			];
 
 			passingTest=If[Length[tooLargeAliquotVolSamples]==Length[Keys[samplesInRequiredVolumes]],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[Complement[Keys[samplesInRequiredVolumes],tooLargeAliquotVolSamples],Cache->simulatedCache]<>" have enough volumes to satisfy the required aliquot amount:",True,True]
+				Test["The provided source samples "<>ObjectToString[Complement[Keys[samplesInRequiredVolumes],tooLargeAliquotVolSamples],Cache->cacheBall,Simulation->updatedSimulation]<>" have enough volumes to satisfy the required aliquot amount:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -2678,7 +2460,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* ---1. DISCARDED SOURCE SAMPLE CHECK--- *)
 
 	(* get the source sample packets from cache *)
-	sourceSamplePackets=fetchPacketFromCache[#,simulatedCache]&/@simulatedSamples;
+	sourceSamplePackets=fetchPacketFromCache[#,cacheBall]&/@simulatedSamples;
 
 	(* Get the samples from sourceSamplePackets that are discarded. *)
 	discardedSamplePackets=Cases[sourceSamplePackets,KeyValuePattern[Status->Discarded]];
@@ -2695,7 +2477,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	sourceSampleModels=Download[Lookup[sourceSamplePackets,Model],Object];
 
 	(* get the model packets from cache *)
-	sourceModelPackets=fetchPacketFromCache[#,simulatedCache]&/@sourceSampleModels;
+	sourceModelPackets=fetchPacketFromCache[#,cacheBall]&/@sourceSampleModels;
 
 	(* get only the packets to ensure there's no Null from model-less sample *)
 	sourceModelPacketsNoNull=Cases[sourceModelPackets,PacketP[]];
@@ -2755,7 +2537,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	sourceContainersNoNull=Cases[sourceContainers,Except[Null]];
 
 	(* get the packet of each container *)
-	sourceContainerPackets=fetchPacketFromCache[#,simulatedCache]&/@sourceContainersNoNull;
+	sourceContainerPackets=fetchPacketFromCache[#,cacheBall]&/@sourceContainersNoNull;
 
 	(* get the model of each container *)
 	sourceContainerModels=Download[Lookup[sourceContainerPackets,Model,{}],Object];
@@ -2820,7 +2602,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw a warning message if the source container have non-input sample *)
 	If[Not[MatchQ[containerWithNonInputSamples,{}]]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::ContainerWithNonInputSamples,ObjectToString[containerWithNonInputSamples,Cache->simulatedCache]]
+		Message[Warning::ContainerWithNonInputSamples,ObjectToString[containerWithNonInputSamples,Cache->cacheBall,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2828,12 +2610,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[containerWithNonInputSamples,{}],
 				Nothing,
-				Warning["The provided source containers "<>ObjectToString[containerWithNonInputSamples,Cache->simulatedCache]<>" do not contain samples that are not inputs to our experiment:",True,False]
+				Warning["The provided source containers "<>ObjectToString[containerWithNonInputSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" do not contain samples that are not inputs to our experiment:",True,False]
 			];
 
 			passingTest=If[Length[containerWithNonInputSamples]==Length[DeleteDuplicates[sourceContainersNoNull]],
 				Nothing,
-				Warning["The provided source containers "<>ObjectToString[Complement[sourceContainersNoNull,containerWithNonInputSamples],Cache->simulatedCache]<>" do not contain samples that are not inputs to our experiment:",True,True]
+				Warning["The provided source containers "<>ObjectToString[Complement[sourceContainersNoNull,containerWithNonInputSamples],Cache->cacheBall,Simulation->updatedSimulation]<>" do not contain samples that are not inputs to our experiment:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -2941,7 +2723,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* replace keys that are still container object with its model with unique tags *)
 	plateModelToWellsAssociation=KeyMap[
 		Switch[#,
-			ObjectP[],{Unique[],Download[Lookup[fetchPacketFromCache[#,simulatedCache],Model],Object]},
+			ObjectP[],{Unique[],Download[Lookup[fetchPacketFromCache[#,cacheBall],Model],Object]},
 			_,#
 		]&,
 		plateToWellsAssociation
@@ -2979,7 +2761,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 			If[MatchQ[container,ObjectP[Object[Container]]],
 				Module[{rawContainerPacket,rawContents,simulatedContents,updatedContainerPacket,newSamples,updatedSimulatedSamplePackets},
 					(* get the raw container packet *)
-					rawContainerPacket=fetchPacketFromCache[container,simulatedCache];
+					rawContainerPacket=fetchPacketFromCache[container,cacheBall];
 					(* get the contents from the raw container packets *)
 					rawContents=Lookup[rawContainerPacket,Contents];
 					(* get the contents from the simulated destination container packet *)
@@ -3010,7 +2792,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	primitivesWithSimulatedDest=primitivesWithResolvedDest/.destPlateReplaceRules;
 
 	(* update our simulatedCache with newly created destination sample/container packets *)
-	updatedSimulatedCache=Experiment`Private`FlattenCachePackets[{updatedPackets,simulatedCache,simulatedDestSamplePackets,simulatedDestContainerPackets}];
+	updatedCacheBall=Experiment`Private`FlattenCachePackets[{updatedPackets,cacheBall,simulatedDestSamplePackets,simulatedDestContainerPackets}];
 
 	(* ----------------------------------- *)
 	(* ---DESTINATION VALIDATION CHECKS--- *)
@@ -3026,7 +2808,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	specifiedDestContainerObjects=DeleteDuplicates[Cases[resolvedDestinationLocations,ObjectP[Object[Container]],Infinity]];
 
 	(* get the destination container packets from cache *)
-	destContainerPackets=fetchPacketFromCache[#,simulatedCache]&/@specifiedDestContainerObjects;
+	destContainerPackets=fetchPacketFromCache[#,cacheBall]&/@specifiedDestContainerObjects;
 
 	(* get the destination container objects *)
 	destinationContainers=Flatten[Lookup[destContainerPackets,Object,{}]];
@@ -3045,7 +2827,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* if Destination is specified as a model, check if it is deprecated *)
 
 	(* get the packet for each destination container model *)
-	suppliedDestContainerModelPackets=fetchPacketFromCache[#,simulatedCache]&/@suppliedDestinationContainerModels;
+	suppliedDestContainerModelPackets=fetchPacketFromCache[#,cacheBall]&/@suppliedDestinationContainerModels;
 
 	(* get the deprecated container model packets *)
 	deprecatedDestContainerModelPackets=Cases[suppliedDestContainerModelPackets,KeyValuePattern[Deprecated->True]];
@@ -3063,7 +2845,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	destContainerObjModels=Lookup[destContainerPackets,Model,{}];
 
 	(* get the model packets *)
-	destContainerObjModelPackets=fetchPacketFromCache[#,simulatedCache]&/@destContainerObjModels;
+	destContainerObjModelPackets=fetchPacketFromCache[#,cacheBall]&/@destContainerObjModels;
 
 	(* combine with the destination container model packets we already collected. Call FlattenCachePackets to make sure we don't have multiple packets per mode *)
 	allDestContainerModelPackets=Experiment`Private`FlattenCachePackets[{suppliedDestContainerModelPackets,destContainerObjModelPackets}];
@@ -3080,11 +2862,11 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	instrumentModelToUse=Switch[specifiedInstrument,
 		ObjectP[defaultInstrumentModel],defaultInstrumentModel,
 		ObjectP[Model[Instrument]],specifiedInstrument,
-		_,Lookup[fetchPacketFromCache[specifiedInstrument,simulatedCache],Model]
+		_,Lookup[fetchPacketFromCache[specifiedInstrument,cacheBall],Model]
 	];
 
 	(* get the instrument model packet from cache *)
-	instrumentModelPacket=fetchPacketFromCache[instrumentModelToUse,simulatedCache];
+	instrumentModelPacket=fetchPacketFromCache[instrumentModelToUse,cacheBall];
 
 	(* get the destination plate parameters from the instrument model *)
 	{minAllowedPlateHeight,maxAllowedPlateHeight,maxAllowedFlangeHeight}=Lookup[instrumentModelPacket,{MinPlateHeight,MaxPlateHeight,MaxFlangeHeight}];
@@ -3199,7 +2981,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				occupiedModel=Lookup[occupiedPacket,Model];
 
 				(* get the model packet *)
-				occupiedModelPacket=fetchPacketFromCache[occupiedModel,simulatedCache];
+				occupiedModelPacket=fetchPacketFromCache[occupiedModel,cacheBall];
 
 				(* get number of wells/max volume from the model packet *)
 				{numberOfWells,maxWellVolume}=Lookup[occupiedModelPacket,{NumberOfWells,MaxVolume}];
@@ -3214,7 +2996,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 						(* get all the contents samples from the packet *)
 						contentsSamples=Lookup[occupiedPacket,Contents][[All,2]];
 						(* get the volumes of all contents samples *)
-						contentsVolumes=Lookup[Map[fetchPacketFromCache[#,simulatedCache]&,contentsSamples],Volume];
+						contentsVolumes=Lookup[Map[fetchPacketFromCache[#,cacheBall]&,contentsSamples],Volume];
 						(* find the max content volume. only compare quantity elements *)
 						maxContentVolume=Max[Cases[contentsVolumes,_Quantity]];
 						(* compare max volume against our allowed fill volume *)
@@ -3268,7 +3050,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* -------------------------------- *)
 
 	(* specify our most updated primitives again to make sure all relevant keys are populated correctly *)
-	specifiedPrimitives=Experiment`Private`specifyManipulation[#,Cache->updatedSimulatedCache]&/@primitivesWithSimulatedDest;
+	specifiedPrimitives=Experiment`Private`populateTransferKeys[#,Cache->updatedCacheBall]&/@primitivesWithSimulatedDest;
 
 	(* ---identify destination locations that receive transfer from multiple sources--- *)
 	(* Note: duplicate sources of a single destination location is considered multiple sources *)
@@ -3290,55 +3072,23 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* ---re-expand index-matching options--- *)
 
-	(* Get the full list of option definitions for this function *)
-	optionDefinitions=OptionDefinition[ExperimentAcousticLiquidHandling];
-
-	(* get the names options that are index-matched to the input primitives *)
-	indexMatchingInputOptionNames=Lookup[Cases[optionDefinitions,KeyValuePattern["IndexMatchingInput"->Except[Null]]],"OptionName"];
-
-	(* extract the options that are index-matched to the input primitives *)
-	indexMatchingInputOptions=KeyValueMap[
-		If[MemberQ[indexMatchingInputOptionNames,ToString[#1]],
-			#1->#2,
-			Nothing
-		]&,
-		AcousticLiquidHandlingOptionsAssociation
-	];
-
-	(* get the number of times each raw input primitive have been expanded *)
-	primitiveExpandingFactor=SortBy[Tally[#[Index]&/@splitPrimitives],First][[All,2]];
-
-	(* further expand our options that are index-matched to input primitives now that we split the inputs into individual Transfer primitives *)
-	expandedIndexMatchingInputOptions=Rule@@@Map[
-		Function[option,
-			{
-				option[[1]],
-				MapThread[
-					If[#2>1,Sequence@@ConstantArray[#1,#2],#1]&,
-					{option[[2]],primitiveExpandingFactor}
-				]
-			}
-		],
-		indexMatchingInputOptions
-	];
-
 	(* Convert our options into a MapThread friendly version. *)
-	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentAcousticLiquidHandling,Association@expandedIndexMatchingInputOptions];
+	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentAcousticLiquidHandling, AcousticLiquidHandlingOptions];
 
 	(* --volume tracking variable setup--- *)
 	(* pre-mapthread: setup variables for volume tracking. include both source and destination samples *)
 
 	(* get all of Object[Sample] packets. all potential source and destination sample should already be included at this point *)
-	allSamplePackets=Cases[updatedSimulatedCache,PacketP[Object[Sample]]];
+	allSamplePackets=Cases[updatedCacheBall,PacketP[Object[Sample]]];
 
 	(* we have to remove samples without containers because they won't work with the volume tracking system in mapthread *)
 	allSamplesInContainerPackets=Cases[allSamplePackets,KeyValuePattern[Container->Except[Null]]];
 
 	(* get the dead volume and max volume of each sample's container *)
 	(* 1. get all the SamplesIn container packets *)
-	allSamplesContainerPackets=fetchPacketFromCache[#,updatedSimulatedCache]&/@Lookup[allSamplesInContainerPackets,Container];
+	allSamplesContainerPackets=fetchPacketFromCache[#,updatedCacheBall]&/@Lookup[allSamplesInContainerPackets,Container];
 	(* 2. get all the model packet for each SamplesIn container *)
-	allSamplesContainerModelPackets=fetchPacketFromCache[#,updatedSimulatedCache]&/@Lookup[allSamplesContainerPackets,Model];
+	allSamplesContainerModelPackets=fetchPacketFromCache[#,updatedCacheBall]&/@Lookup[allSamplesContainerPackets,Model];
 	(* 3. get the dead volume and max volume from the container models *)
 	{allSamplesDeadVolumes,allSamplesMaxVolumes}=Transpose@Lookup[allSamplesContainerModelPackets,{MinVolume,MaxVolume},0 Liter];
 	(* 4. create an association that store dead volume for each container OBJECT *)
@@ -3388,12 +3138,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 			(* lookup the object's model *)
 			Switch[destination,
 				ObjectP[Object[Container]],
-					destination->Lookup[fetchPacketFromCache[destination,updatedSimulatedCache],Model],
+					destination->Lookup[fetchPacketFromCache[destination,updatedCacheBall],Model],
 				ObjectP[Object[Sample]],
-					container=Lookup[fetchPacketFromCache[destination,updatedSimulatedCache],Container];
+					container=Lookup[fetchPacketFromCache[destination,updatedCacheBall],Container];
 					Sequence@@{
-						container->Lookup[fetchPacketFromCache[container,updatedSimulatedCache],Model],
-						destination->Lookup[fetchPacketFromCache[container,updatedSimulatedCache],Model]
+						container->Lookup[fetchPacketFromCache[container,updatedCacheBall],Model],
+						destination->Lookup[fetchPacketFromCache[container,updatedCacheBall],Model]
 					},
 				_,
 					Nothing
@@ -3412,7 +3162,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		(*5*)invalidDestinationWellErrors,
 		(*6*)overFillingDestErrors,
 		(*7*)inWellSeparationNotAllowedKeyErrors,
-		(*8*)inWellSeparationConflictErrors,
 		(*9*)inWellSeparationNotAllowedOptionErrors,
 		(*10*)glycerolPercentageErrors,
 		(*11*)calibrationMeasurementMismatchErrors,
@@ -3430,22 +3179,21 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		(*23*)invalidDestContainerErrors,
 		(*24*)destLabwareDefinitionErrors,
 		(*25*)unsafeDestVolumeErrors,
-		(*26*)invalidPrimitiveBools,
 
 		(* option values *)
-		resolvedFluidTypeCalibrations,
-		resolvedFluidAnalysisMeasurements,
-		suppliedAmounts,
-		roundedAmounts,
-		resolvedInWellSeparationOptions,
+		(*27*)resolvedFluidTypeCalibrations,
+		(*28*)resolvedFluidAnalysisMeasurements,
+		(*29*)suppliedAmounts,
+		(*30*)roundedAmounts,
+		(*31*)resolvedInWellSeparationOptions,
 
 		(* updated primitives *)
-		specifiedUpdatedPrimitives,
-		sourceToDestTuples,
-		parentPrimitiveIndices,
-		indexMatchedSourceSamples,
-		indexMatchedDestinationSamples,
-		indexMatchedRawDestinations
+		(*32*)specifiedUpdatedPrimitives,
+		(*33*)sourceToDestTuples,
+		(*34*)parentPrimitiveIndices,
+		(*35*)indexMatchedSourceSamples,
+		(*36*)indexMatchedDestinationSamples,
+		(*37*)indexMatchedRawDestinations
 	}=Transpose@MapThread[
 		Function[{myMapThreadFriendlyOptions,myPrimitive,rawPrimitive},
 			Module[
@@ -3479,7 +3227,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					invalidDestinationWellError,
 					overFillingDestError,
 					inWellSeparationNotAllowedKeyError,
-					inWellSeparationConflictError,
 					inWellSeparationNotAllowedOptionError,
 					glycerolPercentageError,
 					calibrationMeasurementMismatchError,
@@ -3497,7 +3244,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					invalidDestContainerError,
 					destLabwareDefinitionError,
 					unsafeDestVolumeError,
-					invalidPrimitiveBool,
 
 					(* volume tracking variables *)
 					usableVolume,
@@ -3538,7 +3284,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					invalidDestinationWellError,
 					overFillingDestError,
 					inWellSeparationNotAllowedKeyError,
-					inWellSeparationConflictError,
 					inWellSeparationNotAllowedOptionError,
 					glycerolPercentageError,
 					calibrationMeasurementMismatchError,
@@ -3555,9 +3300,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					deprecatedDestContainerError,
 					invalidDestContainerError,
 					destLabwareDefinitionError,
-					unsafeDestVolumeError,
-					invalidPrimitiveBool
-				}=ConstantArray[False,26];
+					unsafeDestVolumeError
+				}=ConstantArray[False,24];
 
 				(* store use-specified option Values in their variables *)
 				{
@@ -3718,7 +3462,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				destContainerModel=Lookup[destinationObjsModelLookup,First@destinationLocation];
 
 				(* get the list of allowed wells from the destination model packet *)
-				allowedDestinationWells=Lookup[fetchPacketFromCache[destContainerModel,updatedSimulatedCache],AllowedPositions];
+				allowedDestinationWells=Lookup[fetchPacketFromCache[destContainerModel,updatedCacheBall],AllowedPositions];
 
 				(* check if the destination well defined in the primitive a valid position in its container *)
 				invalidDestinationWellError=Not[MatchQ[destinationLocation[[2]],Alternatives@@allowedDestinationWells]];
@@ -3766,7 +3510,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 						(* get the number of sources going into our current destination well *)
 						numberOfSources=Length[allAmounts];
 						(* get the well bottom and well shape *)
-						{wellBottom,wellShape}=Lookup[fetchPacketFromCache[destContainerModel,updatedSimulatedCache],{WellBottom,CrossSectionalShape}];
+						{wellBottom,wellShape}=Lookup[fetchPacketFromCache[destContainerModel,updatedCacheBall],{WellBottom,CrossSectionalShape}];
 
 						(* check if setting destination well offset is allowed based on multiple criteria below *)
 						If[(numberOfSources<=1)||MatchQ[wellBottom,Except[FlatBottom]]||MatchQ[wellShape,Except[Circle|Rectangle]],
@@ -3776,9 +3520,9 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 							(* get the max volume from the amount list *)
 							maxAmount=Max[allAmounts];
 							(* get the well diameter according to the well shape *)
-							wellDiameter=If[NullQ[Lookup[fetchPacketFromCache[destContainerModel,updatedSimulatedCache],WellDimensions]],
-								Lookup[fetchPacketFromCache[destContainerModel,updatedSimulatedCache],WellDiameter],
-								First@Lookup[fetchPacketFromCache[destContainerModel,updatedSimulatedCache],WellDimensions]
+							wellDiameter=If[NullQ[Lookup[fetchPacketFromCache[destContainerModel,updatedCacheBall],WellDimensions]],
+								Lookup[fetchPacketFromCache[destContainerModel,updatedCacheBall],WellDiameter],
+								First@Lookup[fetchPacketFromCache[destContainerModel,updatedCacheBall],WellDimensions]
 							];
 
 							(* in order to separate target locations of multiple sources in the destination well, we need to make sure that *)
@@ -3797,14 +3541,10 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					]
 				];
 
-				(* check for InWellSeparation Key and Option mismatch *)
-				inWellSeparationConflictError=Not[MatchQ[resolvedInWellSeparationOption,inWellSeparationKey]];
-
 				(* option and key may be different, so check the option value based on the key error *)
 				(* Note: we won't throw an error if InWellSeparation Option is Automatic *)
 				inWellSeparationNotAllowedOptionError=Which[
 					MatchQ[inWellSeparationOption,Automatic],False,
-					inWellSeparationConflictError,Not[inWellSeparationNotAllowedKeyError],
 					True,inWellSeparationNotAllowedKeyError
 				];
 
@@ -3813,10 +3553,10 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 				(* get the sample's composition and model (if any) *)
 				(* Note: we select the first sample from our list of samples to use since they all share the sample composition *)
-				{samplesComposition,samplesModel}=Lookup[fetchPacketFromCache[First@sourceSampleToUse,updatedSimulatedCache],{Composition,Model}];
+				{samplesComposition,samplesModel}=Lookup[fetchPacketFromCache[First@sourceSampleToUse,updatedCacheBall],{Composition,Model}];
 
 				(* extract the objects from the sample's composition *)
-				compositionObjects=Cases[samplesComposition,{_,x:ObjectP[]}:>Download[x,Object]];
+				compositionObjects=Cases[samplesComposition,{_,x:ObjectP[],_}:>Download[x,Object]];
 
 				(* get the max well volume of the sample's container *)
 				(* Note: we will need to identify if it is a low-dead-volume plate for valid calibration type check *)
@@ -3833,7 +3573,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				proteinQ=!MatchQ[Cases[compositionObjects,ObjectP[Model[Molecule,Protein]]],{}];
 
 				(* get the glycerol percentage if any *)
-				glycerolPercent=With[{percent=FirstCase[samplesComposition,{percentage_,ObjectP[glycerolMolecule]}:>percentage]},
+				glycerolPercent=With[{percent=FirstCase[samplesComposition,{percentage_,ObjectP[glycerolMolecule],_}:>percentage]},
 					Switch[percent,
 						_Missing,0 VolumePercent,
 						_,percent
@@ -3841,7 +3581,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				];
 
 				(* get the DMSO percentage if any *)
-				dmsoPercent=With[{percent=FirstCase[samplesComposition,{percentage_,ObjectP[dmsoMolecule]}:>percentage]},
+				dmsoPercent=With[{percent=FirstCase[samplesComposition,{percentage_,ObjectP[dmsoMolecule],_}:>percentage]},
 					Switch[percent,
 						_Missing,0 VolumePercent,
 						_,percent
@@ -4123,7 +3863,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 				(* ---14. re-specify the primitive--- *)
 				(* re-specify our primitives to keep the ResolvedSourceLocation up-to-date *)
-				specifiedUpdatedPrimitive=specifyManipulation[#,Cache->updatedSimulatedCache]&/@primitivesWithUpdatedSource;
+				specifiedUpdatedPrimitive=populateTransferKeys[#,Cache->updatedCacheBall]&/@primitivesWithUpdatedSource;
 
 				(* ---15. create transfer tuples--- *)
 				(* create tuples to use in the from {sourceLocation, destinationLocation} for optimizing transfer sequence after mapthread *)
@@ -4135,71 +3875,48 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 					specifiedUpdatedPrimitive
 				],3];
 
-				(* 16. flag primitive as invalid if any of the Source/Destination/Key errors is True *)
-				invalidPrimitiveBool={parentPrimitiveIndex,
-					Or@@{outOfRangeAmountError,
-						insufficientSourceAmountError,
-						samePlateTransferError,
-						invalidDestinationWellError,
-						overFillingDestError,
-						inWellSeparationNotAllowedKeyError,
-						glycerolPercentageError,
-						discardedSourceSampleError,
-						deprecatedSourceModelError,
-						sourceStateError,
-						containerlessSourceError,
-						invalidSourceContainerError,
-						discardedDestContainerError,
-						deprecatedDestContainerError,
-						invalidDestContainerError,
-						destLabwareDefinitionError,
-						unsafeDestVolumeError}
-				};
-
 				(* gather MapThread results *)
 				{
 					(* warning/error checking booleans *)
-					amountPrecisionWarning,
-					outOfRangeAmountError,
-					insufficientSourceAmountError,
-					samePlateTransferError,
-					invalidDestinationWellError,
-					overFillingDestError,
-					inWellSeparationNotAllowedKeyError,
-					inWellSeparationConflictError,
-					inWellSeparationNotAllowedOptionError,
-					glycerolPercentageError,
-					calibrationMeasurementMismatchError,
-					calibrationInvalidOptionError,
-					measurementInvalidptionError,
-					calibrationInvalidOptionWarning,
-					measurementInvalidOptionWarning,
-					discardedSourceSampleError,
-					deprecatedSourceModelError,
-					sourceStateError,
-					containerlessSourceError,
-					invalidSourceContainerError,
-					discardedDestContainerError,
-					deprecatedDestContainerError,
-					invalidDestContainerError,
-					destLabwareDefinitionError,
-					unsafeDestVolumeError,
-					invalidPrimitiveBool,
+					(*1*)amountPrecisionWarning,
+					(*2*)outOfRangeAmountError,
+					(*3*)insufficientSourceAmountError,
+					(*4*)samePlateTransferError,
+					(*5*)invalidDestinationWellError,
+					(*6*)overFillingDestError,
+					(*7*)inWellSeparationNotAllowedKeyError,
+					(*9*)inWellSeparationNotAllowedOptionError,
+					(*10*)glycerolPercentageError,
+					(*11*)calibrationMeasurementMismatchError,
+					(*12*)calibrationInvalidOptionError,
+					(*13*)measurementInvalidptionError,
+					(*14*)calibrationInvalidOptionWarning,
+					(*15*)measurementInvalidOptionWarning,
+					(*16*)discardedSourceSampleError,
+					(*17*)deprecatedSourceModelError,
+					(*18*)sourceStateError,
+					(*19*)containerlessSourceError,
+					(*20*)invalidSourceContainerError,
+					(*21*)discardedDestContainerError,
+					(*22*)deprecatedDestContainerError,
+					(*23*)invalidDestContainerError,
+					(*24*)destLabwareDefinitionError,
+					(*25*)unsafeDestVolumeError,
 
 					(* option values *)
-					resolvedCalibration,
-					resolvedMeasurement,
-					suppliedAmount,
-					roundedAmount,
-					resolvedInWellSeparationOption,
+					(*27*)resolvedCalibration,
+					(*28*)resolvedMeasurement,
+					(*29*)suppliedAmount,
+					(*30*)roundedAmount,
+					(*31*)resolvedInWellSeparationOption,
 
 					(* updated primitives *)
-					specifiedUpdatedPrimitive,
-					sourceToDestTuple,
-					parentPrimitiveIndex,
-					sourceSampleToUse,
-					destinationSample,
-					rawDestination
+					(*32*)specifiedUpdatedPrimitive,
+					(*33*)sourceToDestTuple,
+					(*34*)parentPrimitiveIndex,
+					(*35*)sourceSampleToUse,
+					(*36*)destinationSample,
+					(*37*)rawDestination
 				}
 			]
 		],
@@ -4220,21 +3937,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* flatten our list of updated primitives *)
 	flatSpecifiedUpdatedPrimitives=Flatten[specifiedUpdatedPrimitives];
 
-	(* ---PRIMITIVES WITH INVALID INPUT CHECK--- *)
-	(* since we did all the check on split primitives, figure out which parent primitives are invalid *)
-
-	(* group the invalid primitive bools from our mapthread by the index *)
-	invalidParentPrimitiveLookup=Map[(Or@@#)&,GroupBy[invalidPrimitiveBools,First->Last]];
-
-	(* get the indices of invalid parent primitives *)
-	invalidParentPrimtiveIndices=Keys@Select[invalidParentPrimitiveLookup,TrueQ];
-
-	(* create string to indicate indices of invalid primitives to return all other invalid inputs *)
-	invalidPrimitivesString=If[MatchQ[invalidParentPrimtiveIndices,{}],
-		{},
-		{"primitive at index: "<>ToString[DeleteDuplicates[invalidParentPrimtiveIndices]]}
-	];
-
 	(* --------------------------------- *)
 	(* ---GENERATE MESSAGES AND TESTS--- *)
 	(* --------------------------------- *)
@@ -4251,7 +3953,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message for any of the source samples is discarded *)
 	If[Not[MatchQ[discardedSourceInvalidInputs,{}]]&&!gatherTests,
-		Message[Error::DiscardedSourceSamples,ObjectToString[discardedSourceInvalidInputs,Cache->simulatedCache],discardedSourceIndices]
+		Message[Error::DiscardedSourceSamples,ObjectToString[discardedSourceInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation],discardedSourceIndices]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4259,12 +3961,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[discardedSourceInvalidInputs,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[discardedSourceInvalidInputs,Cache->simulatedCache]<>" from primitives at index "<>ToString[discardedSourceIndices]<>" are not discarded:",True,False]
+				Test["The provided source samples "<>ObjectToString[discardedSourceInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[discardedSourceIndices]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedSourceSampleTest]==Length[simulatedSamples],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,discardedSourceInvalidInputs],Cache->simulatedCache]<>" from primitives at index "<>ToString[undiscardedSourceIndices]<>" are not discarded:",True,True]
+				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,discardedSourceInvalidInputs],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[undiscardedSourceIndices]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4290,12 +3992,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[deprecatedInvalidInputs]==0,
 				Nothing,
-				Test["The provided source sample models "<>ObjectToString[deprecatedInvalidInputs,Cache->simulatedCache]<>" from primitives at index "<>ToString[deprecatedSourceModelIndices]<>" are not deprecated:",True,False]
+				Test["The provided source sample models "<>ObjectToString[deprecatedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[deprecatedSourceModelIndices]<>" are not deprecated:",True,False]
 			];
 
 			passingTest=If[Length[deprecatedInvalidInputs]==Length[sourceModelPacketsNoNull],
 				Nothing,
-				Test["The provided source sample models "<>ObjectToString[Complement[Cases[sourceSampleModels,ObjectP[]],deprecatedInvalidInputs],Cache->simulatedCache]<>" from primitives at index "<>ToString[undeprecatedSourceModelIndices]<>" are not deprecated:",True,True]
+				Test["The provided source sample models "<>ObjectToString[Complement[Cases[sourceSampleModels,ObjectP[]],deprecatedInvalidInputs],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[undeprecatedSourceModelIndices]<>" are not deprecated:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4313,7 +4015,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message for any of the source samples is not liquid *)
 	If[Not[MatchQ[sourceWithInvalidStates,{}]]&&!gatherTests,
-		Message[Error::NonLiquidSourceSamples,ObjectToString[sourceWithInvalidStates,Cache->simulatedCache],nonLiquidSourceIndices]
+		Message[Error::NonLiquidSourceSamples,ObjectToString[sourceWithInvalidStates,Cache->cacheBall,Simulation->updatedSimulation],nonLiquidSourceIndices]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4321,12 +4023,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[sourceWithInvalidStates]==0,
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[sourceWithInvalidStates,Cache->simulatedCache]<>" from primitives at index "<>ToString[nonLiquidSourceIndices]<>" are in a liquid state:",True,False]
+				Test["The provided source samples "<>ObjectToString[sourceWithInvalidStates,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[nonLiquidSourceIndices]<>" are in a liquid state:",True,False]
 			];
 
 			passingTest=If[Length[sourceWithInvalidStates]==Length[simulatedSamples],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,sourceWithInvalidStates],Cache->simulatedCache]<>" from primitives at index "<>ToString[liquidSourceIndices]<>" are in a liquid state:",True,True]
+				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,sourceWithInvalidStates],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[liquidSourceIndices]<>" are in a liquid state:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4344,7 +4046,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* if there are container-less samples and we are throwing messages, throw an error message *)
 	If[Not[MatchQ[containerlessSamples,{}]]&&!gatherTests,
-		Message[Error::PrimitivesWithContainerlessSamples,ObjectToString[containerlessSamples,Cache->simulatedCache],containerlessSourceIndices]
+		Message[Error::PrimitivesWithContainerlessSamples,ObjectToString[containerlessSamples,Cache->cacheBall,Simulation->updatedSimulation],containerlessSourceIndices]
 	];
 
 	(* if we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4352,12 +4054,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[containerlessSamples]==0,
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[containerlessSamples,Cache->simulatedCache]<>" from primitives at index "<>ToString[containerlessSourceIndices]<>" are in a container:",True,False]
+				Test["The provided source samples "<>ObjectToString[containerlessSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[containerlessSourceIndices]<>" are in a container:",True,False]
 			];
 
 			passingTest=If[Length[containerlessSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,containerlessSamples],Cache->simulatedCache]<>" from primitives at index "<>ToString[sourceWithContainerIndices]<>" are in a container:",True,True]
+				Test["The provided source samples "<>ObjectToString[Complement[simulatedSamples,containerlessSamples],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[sourceWithContainerIndices]<>" are in a container:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4375,7 +4077,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message if the source container is incompatible *)
 	If[Not[MatchQ[sourceWithInvalidContainers,{}]]&&!gatherTests,
-		Message[Error::IncompatibleSourceContainer,ObjectToString[sourceWithInvalidContainers,Cache->simulatedCache],invalidSourceContainerIndices]
+		Message[Error::IncompatibleSourceContainer,ObjectToString[sourceWithInvalidContainers,Cache->cacheBall,Simulation->updatedSimulation],invalidSourceContainerIndices]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4383,12 +4085,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[sourceWithInvalidContainers,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[sourceWithInvalidContainers,Cache->simulatedCache]<>" from primitives at index "<>ToString[invalidSourceContainerIndices]<>" are located in containers that are compatible with an acoustic liquid handler:",True,False]
+				Test["The provided source samples "<>ObjectToString[sourceWithInvalidContainers,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[invalidSourceContainerIndices]<>" are located in containers that are compatible with an acoustic liquid handler:",True,False]
 			];
 
 			passingTest=If[Length[sourceWithInvalidContainers]==Length[simulatedSamples],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[Complement[sourceSamplesWithContainer,sourceWithInvalidContainers],Cache->simulatedCache]<>" from primitives at index "<>ToString[validSourceContainerIndices]<>" are located in containers that are compatible with an acoustic liquid handler:",True,True]
+				Test["The provided source samples "<>ObjectToString[Complement[sourceSamplesWithContainer,sourceWithInvalidContainers],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[validSourceContainerIndices]<>" are located in containers that are compatible with an acoustic liquid handler:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4417,7 +4119,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message for any of the destination containers is discarded *)
 	If[Not[MatchQ[discardedDestContainers,{}]]&&!gatherTests,
-		Message[Error::DiscardedDestinationContainer,ObjectToString[discardedDestContainers,Cache->simulatedCache],discardedDestinationIndices]
+		Message[Error::DiscardedDestinationContainer,ObjectToString[discardedDestContainers,Cache->cacheBall,Simulation->updatedSimulation],discardedDestinationIndices]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4425,12 +4127,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[discardedDestContainers,{}],
 				Nothing,
-				Test["The provided destination container "<>ObjectToString[discardedDestContainers,Cache->simulatedCache]<>" from primitives at index "<>ToString[discardedDestinationIndices]<>" are not discarded:",True,False]
+				Test["The provided destination container "<>ObjectToString[discardedDestContainers,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[discardedDestinationIndices]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedDestContainers]==Length[destinationContainers],
 				Nothing,
-				Test["The provided destination container "<>ObjectToString[Complement[destinationContainers,discardedDestContainers],Cache->simulatedCache]<>" from primitives at index "<>ToString[undiscardedDestinationIndices]<>" are not discarded:",True,True]
+				Test["The provided destination container "<>ObjectToString[Complement[destinationContainers,discardedDestContainers],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[undiscardedDestinationIndices]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4457,7 +4159,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message for any of the destination container models is deprecated *)
 	If[Not[MatchQ[deprecatedDestContainerModels,{}]]&&!gatherTests,
-		Message[Error::DeprecatedDestinationContainerModel,ObjectToString[deprecatedDestContainerModels,Cache->simulatedCache],deprecatedDestinationModelIndices]
+		Message[Error::DeprecatedDestinationContainerModel,ObjectToString[deprecatedDestContainerModels,Cache->cacheBall,Simulation->updatedSimulation],deprecatedDestinationModelIndices]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -4465,12 +4167,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[deprecatedDestContainerModels,{}],
 				Nothing,
-				Test["The provided destination container model "<>ObjectToString[deprecatedDestContainerModels,Cache->simulatedCache]<>" from primitives at index "<>ToString[deprecatedDestinationModelIndices]<>" are not deprecated:",True,False]
+				Test["The provided destination container model "<>ObjectToString[deprecatedDestContainerModels,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[deprecatedDestinationModelIndices]<>" are not deprecated:",True,False]
 			];
 
 			passingTest=If[Length[deprecatedDestContainerModels]==Length[suppliedDestinationContainerModels],
 				Nothing,
-				Test["The provided destination container model "<>ObjectToString[Complement[suppliedDestinationContainerModels,deprecatedDestContainerModels],Cache->simulatedCache]<>" from primitives at index "<>ToString[undeprecatedDestinationIndices]<>" are not deprecated:",True,True]
+				Test["The provided destination container model "<>ObjectToString[Complement[suppliedDestinationContainerModels,deprecatedDestContainerModels],Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[undeprecatedDestinationIndices]<>" are not deprecated:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4507,8 +4209,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* throw an error message for any of the incompatible destination containers *)
 	If[Not[MatchQ[incompatibleDestinationObjects,{}]]&&!gatherTests,
-		Message[Error::IncompatibleDestinationContainer,
-			ObjectToString[incompatibleDestinationObjects,Cache->simulatedCache],
+		Message[Error::IncompatibleAcousticLiquidHandlingDestinationContainer,
+			ObjectToString[incompatibleDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation],
 			incompatibleDestinationIndices,
 			invalidFieldsOfSuppliedDestObjects
 		]
@@ -4519,12 +4221,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[incompatibleDestinationObjects,{}],
 				Nothing,
-				Test["The container models of the provided destination object "<>ObjectToString[incompatibleDestinationObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[incompatibleDestinationIndices]<>" are compatible with the acoustic liquid handler:",True,False]
+				Test["The container models of the provided destination object "<>ObjectToString[incompatibleDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[incompatibleDestinationIndices]<>" are compatible with the acoustic liquid handler:",True,False]
 			];
 
 			passingTest=If[MatchQ[compatibleDestinationObjects,{}],
 				Nothing,
-				Test["The container models of the provided destination object "<>ObjectToString[compatibleDestinationObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[compatibleDestinationIndices]<>" are compatible with the acoustic liquid handler:",True,True]
+				Test["The container models of the provided destination object "<>ObjectToString[compatibleDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[compatibleDestinationIndices]<>" are compatible with the acoustic liquid handler:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4552,7 +4254,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* throw an error message for any of the destination objects missing labware definition required Fields *)
 	If[Not[MatchQ[invalidLabwareDestinationObjects,{}]]&&!gatherTests,
 		Message[Error::MissingLabwareDefinitionFields,
-			ObjectToString[invalidLabwareDestinationObjects,Cache->simulatedCache],
+			ObjectToString[invalidLabwareDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation],
 			invalidLabwareDestinationIndices,
 			nulledFieldsOfSuppliedDestObjects
 		]
@@ -4563,12 +4265,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[invalidLabwareDestinationObjects,{}],
 				Nothing,
-				Test["The container models of the provided destination object "<>ObjectToString[invalidLabwareDestinationObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[invalidLabwareDestinationIndices]<>" have all required Fields to create labware definition for the instrument:",True,False]
+				Test["The container models of the provided destination object "<>ObjectToString[invalidLabwareDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[invalidLabwareDestinationIndices]<>" have all required Fields to create labware definition for the instrument:",True,False]
 			];
 
 			passingTest=If[MatchQ[validLabwareDestinationObjects,{}],
 				Nothing,
-				Test["The container models of the provided destination object "<>ObjectToString[validLabwareDestinationObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[validLabwareDestinationIndices]<>" have all required Fields to create labware definition for the instrument:",True,True]
+				Test["The container models of the provided destination object "<>ObjectToString[validLabwareDestinationObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[validLabwareDestinationIndices]<>" have all required Fields to create labware definition for the instrument:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4597,7 +4299,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 						{destObj,primitiveIndex},
 					(* if the object is a plate, only return if it is not empty *)
 					_,
-						If[Lookup[fetchPacketFromCache[destObj,simulatedCache],Contents]=={},
+						If[Lookup[fetchPacketFromCache[destObj,cacheBall],Contents]=={},
 							Nothing,
 							{destObj,primitiveIndex}
 						]
@@ -4616,7 +4318,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* throw an error message for any of the destination container models is deprecated *)
 	If[Not[MatchQ[unsafeDestVolumeObjects,{}]]&&!gatherTests,
 		Message[Error::UnsafeDestinationVolume,
-			ObjectToString[unsafeDestVolumeObjects,Cache->simulatedCache],
+			ObjectToString[unsafeDestVolumeObjects,Cache->cacheBall,Simulation->updatedSimulation],
 			unsafeDestVolumeIndices
 		]
 	];
@@ -4626,12 +4328,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[unsafeDestVolumeObjects,{}],
 				Nothing,
-				Test["The containers of the provided destination object "<>ObjectToString[unsafeDestVolumeObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[unsafeDestVolumeIndices]<>" have occupied wells that will not spill when the plate is inverted during acoustic liquid handling:",True,False]
+				Test["The containers of the provided destination object "<>ObjectToString[unsafeDestVolumeObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[unsafeDestVolumeIndices]<>" have occupied wells that will not spill when the plate is inverted during acoustic liquid handling:",True,False]
 			];
 
 			passingTest=If[MatchQ[safeDestVolumeObjects,{}],
 				Nothing,
-				Test["The containers of the provided destination object "<>ObjectToString[safeDestVolumeObjects,Cache->simulatedCache]<>" from primitives at index "<>ToString[safeDestVolumeIndices]<>" have occupied wells that will not spill when the plate is inverted during acoustic liquid handling:",True,True]
+				Test["The containers of the provided destination object "<>ObjectToString[safeDestVolumeObjects,Cache->cacheBall,Simulation->updatedSimulation]<>" from primitives at index "<>ToString[safeDestVolumeIndices]<>" have occupied wells that will not spill when the plate is inverted during acoustic liquid handling:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4692,7 +4394,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Message[Error::AmountOutOfRange,
 			(*1*)EmeraldUnits`Private`quantityToSymbol[N[outOfRangeAmounts]],
 			(*2*)outOfRangeAmountIndices,
-			(*3*)ObjectToString[specifiedInstrument,Cache->simulatedCache],
+			(*3*)ObjectToString[specifiedInstrument,Cache->cacheBall,Simulation->updatedSimulation],
 			(*4*)EmeraldUnits`Private`quantityToSymbol[N[instrumentsMinAllowedVolume]],
 			(*5*)EmeraldUnits`Private`quantityToSymbol[N[instrumentsMaxAllowedVolume]]
 		]
@@ -4739,7 +4441,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* throw an error message for any source samples with insufficient volume  *)
 	If[Not[MatchQ[insufficientSamplesNoDupes,{}]]&&!gatherTests,
 		Message[Error::InsufficientSourceVolume,
-			ObjectToString[insufficientSamplesNoDupes,Cache->simulatedCache],
+			ObjectToString[insufficientSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation],
 			Values[insufficientSamplesIndexLookup],
 			EmeraldUnits`Private`quantityToSymbol[N[Lookup[allSamplesDeadVolumesAssoc,insufficientSamplesNoDupes]]]
 		]
@@ -4750,12 +4452,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[insufficientSamplesNoDupes,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[insufficientSamplesNoDupes,Cache->simulatedCache]<>" have sufficient volume to perform all manipulations defined in the primitives:",True,False]
+				Test["The provided source samples "<>ObjectToString[insufficientSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]<>" have sufficient volume to perform all manipulations defined in the primitives:",True,False]
 			];
 
 			passingTest=If[MatchQ[samplesWithSufficientVolume,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[samplesWithSufficientVolume,Cache->simulatedCache]<>" have sufficient volume to perform all manipulations defined in the primitives:",True,True]
+				Test["The provided source samples "<>ObjectToString[samplesWithSufficientVolume,Cache->cacheBall,Simulation->updatedSimulation]<>" have sufficient volume to perform all manipulations defined in the primitives:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -4868,7 +4570,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* throw an error message for any destination with over-filled volume  *)
 	If[Not[MatchQ[overFilledSuppliedDestNoDupes,{}]]&&!gatherTests,
 		Message[Error::OverFilledDestinationVolume,
-			ObjectToString[overFilledSuppliedDestNoDupes,Cache->simulatedCache],
+			ObjectToString[overFilledSuppliedDestNoDupes,Cache->cacheBall,Simulation->updatedSimulation],
 			Values[groupedOverFilled],
 			EmeraldUnits`Private`quantityToSymbol[N[Lookup[allSamplesMaxVolumesAssoc,overFilledDestNoDupes]]]
 		]
@@ -4890,76 +4592,6 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 			{failingTest,passingTest}
 		],
 		Nothing
-	];
-
-	(* 7. InWellSeparation not allowed Key error *)
-
-	(* get the primitive indices with invalid InWellSeparation Key *)
-	invalidInWellSeparationKeyIndices=DeleteDuplicates[PickList[parentPrimitiveIndices,inWellSeparationNotAllowedKeyErrors]];
-
-	(* get the primitive indices with valid InWellSeparation Key *)
-	validInWellSeparationKeyIndices=Complement[parentPrimitiveIndices,invalidInWellSeparationKeyIndices];
-
-	(* if there are primitives with invalid InWellSeparation Key and we are throwing messages, throw an error message *)
-	If[Not[MatchQ[invalidInWellSeparationKeyIndices,{}]]&&!gatherTests,
-		Message[Error::InvalidInWellSeparationKey,invalidInWellSeparationKeyIndices]
-	];
-
-	(* if we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	invalidInWellSeparationKeyTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[MatchQ[invalidInWellSeparationKeyIndices,{}],
-				Nothing,
-				Test["The InWellSeparation Key of the input primitives at index "<>ToString[invalidInWellSeparationKeyIndices]<>" is set to False when physical separation of droplets in the destination well is not possible:",True,False]
-			];
-
-			passingTest=If[MatchQ[validInWellSeparationKeyIndices,{}],
-				Nothing,
-				Test["The InWellSeparation Key of the input primitives at index "<>ToString[validInWellSeparationKeyIndices]<>" is set to False when physical separation of droplets in the destination well is not possible:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		Nothing
-	];
-
-	(* 8. conflicting InWellSeparation option/key error *)
-
-	(* we allow 2 ways of specifying InWellSeparation *)
-	(* 1. by including InWellSeparation Key in the input primitive *)
-	(* 2. by specifying InWellSeparation Option that is index-matched to the raw input primitives *)
-	(* we check here if there's a mismatch between Key and Option values *)
-
-	(* get the primitive indices with InWellSeparation Key and Option conflict *)
-	inWellSeparationConflictIndices=DeleteDuplicates[PickList[parentPrimitiveIndices,inWellSeparationConflictErrors]];
-
-	(* throw an error message if there's any conflict between InWellSeparation Key and Option *)
-	If[Not[MatchQ[inWellSeparationConflictIndices,{}]]&&!gatherTests,
-		Message[Error::InWellSeparationKeyOptionMismatch,inWellSeparationConflictIndices]
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	inWellSeparationKeyOptionTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[MatchQ[inWellSeparationConflictIndices,{}],
-				Nothing,
-				Test["The input primitives at index "<>ToString[inWellSeparationConflictIndices]<>" have matching InWellSeparation Key and Option values:",True,False]
-			];
-
-			passingTest=If[Length[inWellSeparationConflictIndices]==Length[myPrimitives],
-				Nothing,
-				Test["The input primitives at index "<>ToString[Complement[parentPrimitiveIndices,inWellSeparationConflictIndices]]<>" have matching InWellSeparation Key and Option values:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		Nothing
-	];
-
-	(* stash the InWellSeparation option if there's a conflict *)
-	inWellSeparationConflictOption=If[MemberQ[inWellSeparationConflictErrors,True],
-		{InWellSeparation},
-		{}
 	];
 
 	(* 9. InWellSeparation not allowed Option error *)
@@ -5022,7 +4654,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* throw an error message for any source samples with too high glycerol concentration  *)
 	If[Not[MatchQ[highGlycerolSamplesNoDupes,{}]]&&!gatherTests,
 		Message[Error::GlycerolConcentrationTooHigh,
-			ObjectToString[highGlycerolSamplesNoDupes,Cache->simulatedCache],
+			ObjectToString[highGlycerolSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation],
 			Values[highGlycerolSamplesIndexLookup],
 			EmeraldUnits`Private`quantityToSymbol[N[50 VolumePercent]]
 		]
@@ -5033,12 +4665,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[highGlycerolSamplesNoDupes,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[highGlycerolSamplesNoDupes,Cache->simulatedCache]<>" have glycerol concentration of 50% or less:",True,False]
+				Test["The provided source samples "<>ObjectToString[highGlycerolSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]<>" have glycerol concentration of 50% or less:",True,False]
 			];
 
 			passingTest=If[MatchQ[validGlycerolSamples,{}],
 				Nothing,
-				Test["The provided source samples "<>ObjectToString[validGlycerolSamples,Cache->simulatedCache]<>" have glycerol concentration of 50% or less:",True,True]
+				Test["The provided source samples "<>ObjectToString[validGlycerolSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" have glycerol concentration of 50% or less:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -5064,7 +4696,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				Test["The input primitives at index "<>ToString[calibrationMeasurementMismatchIndices]<>" have matching FluidTypeCalibration and FluidAnalysisMeasurement Option values:",True,False]
 			];
 
-			passingTest=If[Length[calibrationMeasurementMismatchIndices]==Length[myPrimitives],
+			passingTest=If[Length[calibrationMeasurementMismatchIndices]==Length[mySources],
 				Nothing,
 				Test["The input primitives at index "<>ToString[Complement[parentPrimitiveIndices,calibrationMeasurementMismatchIndices]]<>" have matching FluidTypeCalibration and FluidAnalysisMeasurement Option values:",True,True]
 			];
@@ -5098,7 +4730,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				Test["The input primitives at index "<>ToString[invalidCalibrationIndices]<>" have valid FluidTypeCalibration Option value:",True,False]
 			];
 
-			passingTest=If[Length[invalidCalibrationIndices]==Length[myPrimitives],
+			passingTest=If[Length[invalidCalibrationIndices]==Length[mySources],
 				Nothing,
 				Test["The input primitives at index "<>ToString[Complement[parentPrimitiveIndices,invalidCalibrationIndices]]<>" have valid FluidTypeCalibration Option value:",True,True]
 			];
@@ -5132,7 +4764,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				Test["The input primitives at index "<>ToString[invalidMeasurementIndices]<>" have valid FluidAnalysisMeasurement Option value:",True,False]
 			];
 
-			passingTest=If[Length[invalidMeasurementIndices]==Length[myPrimitives],
+			passingTest=If[Length[invalidMeasurementIndices]==Length[mySources],
 				Nothing,
 				Test["The input primitives at index "<>ToString[Complement[parentPrimitiveIndices,invalidMeasurementIndices]]<>" have valid FluidAnalysisMeasurement Option value:",True,True]
 			];
@@ -5172,7 +4804,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	If[Not[MatchQ[calibrationWarningSamplesNoDupes,{}]]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
 		Message[Warning::FluidTypeCalibrationMismatch,
 			Values[calibrationWarningSamplesIndexLookup],
-			ObjectToString[calibrationWarningSamplesNoDupes,Cache->simulatedCache]
+			ObjectToString[calibrationWarningSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]
 		]
 	];
 
@@ -5181,12 +4813,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[calibrationWarningIndices,{}],
 				Nothing,
-				Warning["The input primitives at index "<>ToString[DeleteDuplicates[calibrationWarningIndices]]<>" have the FluidTypeCalibration Option set to the intended value for the composition of samples "<>ObjectToString[calibrationWarningSamplesNoDupes,Cache->simulatedCache]<>" :",True,False]
+				Warning["The input primitives at index "<>ToString[DeleteDuplicates[calibrationWarningIndices]]<>" have the FluidTypeCalibration Option set to the intended value for the composition of samples "<>ObjectToString[calibrationWarningSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]<>" :",True,False]
 			];
 
 			passingTest=If[MatchQ[goodCalibrationSamplesIndices,{}],
 				Nothing,
-				Warning["The input primitives at index "<>ToString[goodCalibrationSamplesIndices]<>" have the FluidTypeCalibration Option set to the intended value for the composition of samples "<>ObjectToString[goodCalibrationSamples,Cache->simulatedCache]<>" :",True,True]
+				Warning["The input primitives at index "<>ToString[goodCalibrationSamplesIndices]<>" have the FluidTypeCalibration Option set to the intended value for the composition of samples "<>ObjectToString[goodCalibrationSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" :",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -5218,7 +4850,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	If[Not[MatchQ[measurementWarningSamplesNoDupes,{}]]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
 		Message[Warning::FluidAnalysisMeasurementMismatch,
 			Values[measurementWarningSamplesIndexLookup],
-			ObjectToString[measurementWarningSamplesNoDupes,Cache->simulatedCache]
+			ObjectToString[measurementWarningSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]
 		]
 	];
 
@@ -5227,12 +4859,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		Module[{failingTest,passingTest},
 			failingTest=If[MatchQ[measurementWarningIndices,{}],
 				Nothing,
-				Warning["The input primitives at index "<>ToString[DeleteDuplicates[measurementWarningIndices]]<>" have the FluidAnalysisMeasurement Option set to the intended value for the composition of samples "<>ObjectToString[measurementWarningSamplesNoDupes,Cache->simulatedCache]<>" :",True,False]
+				Warning["The input primitives at index "<>ToString[DeleteDuplicates[measurementWarningIndices]]<>" have the FluidAnalysisMeasurement Option set to the intended value for the composition of samples "<>ObjectToString[measurementWarningSamplesNoDupes,Cache->cacheBall,Simulation->updatedSimulation]<>" :",True,False]
 			];
 
 			passingTest=If[MatchQ[goodMeasurementSamplesIndices,{}],
 				Nothing,
-				Warning["The input primitives at index "<>ToString[goodMeasurementSamplesIndices]<>" have the FluidAnalysisMeasurement Option set to the intended value for the composition of samples "<>ObjectToString[goodMeasurementSamples,Cache->simulatedCache]<>" :",True,True]
+				Warning["The input primitives at index "<>ToString[goodMeasurementSamplesIndices]<>" have the FluidAnalysisMeasurement Option set to the intended value for the composition of samples "<>ObjectToString[goodMeasurementSamples,Cache->cacheBall,Simulation->updatedSimulation]<>" :",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -5334,8 +4966,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* -------------------------------- *)
 
 	(* --- pull out all the shared options from the input options --- *)
-	{emailOption,uploadOption,confirmOption,parentProtocolOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operatorOption,prepPrimitives,subprotocolDescriptionOption,outputOption}=
-		Lookup[myOptions,{Email,Upload,Confirm,ParentProtocol,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator,PreparatoryUnitOperations,SubprotocolDescription,Output}];
+	{emailOption,uploadOption,confirmOption,canaryBranchOption,parentProtocolOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operatorOption,prepPrimitives,subprotocolDescriptionOption,outputOption}=
+		Lookup[myOptions,{Email,Upload,Confirm,CanaryBranch,ParentProtocol,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator,PreparatoryUnitOperations,SubprotocolDescription,Output}];
 
 	(* --------------------------------- *)
 	(* ---SamplesIn STORAGE CONDITION--- *)
@@ -5354,8 +4986,8 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 
 	(* check if the provided sampleStorageCondition is valid*)
 	{validSampleStorageConditionQ,validSampleStorageTests}=If[gatherTests,
-		ValidContainerStorageConditionQ[simulatedSamples,expandedSamplesInStorageOption,Cache->simulatedCache,Output->{Result,Tests}],
-		{ValidContainerStorageConditionQ[simulatedSamples,expandedSamplesInStorageOption,Cache->simulatedCache,Output->Result],{}}
+		ValidContainerStorageConditionQ[simulatedSamples,expandedSamplesInStorageOption,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{ValidContainerStorageConditionQ[simulatedSamples,expandedSamplesInStorageOption,Cache->cacheBall,Simulation->updatedSimulation,Output->Result],{}}
 	];
 
 	(* if the test above passes, there's no invalid option, otherwise, SamplesInStorageCondition will be an invalid option *)
@@ -5373,19 +5005,20 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		discardedSourceInvalidInputs,deprecatedInvalidInputs,sourceWithDeprecatedModels,sourceWithInvalidStates,
 		containerlessSamples,sourceWithInvalidContainers,discardedDestContainers,deprecatedDestContainerModels,
 		incompatibleDestContainerModels,failedLabwareDestContainerModels,occupiedDestWithUnsafeVolume,
-		invalidPrimitivesString,insufficientSamplesNoDupes,highGlycerolSamplesNoDupes,multipleDestContainerTypes,
-		tooLargeAliquotVolSamples,multipleSourceContainerTypes
+		insufficientSamplesNoDupes,highGlycerolSamplesNoDupes,multipleDestContainerTypes,
+		tooLargeAliquotVolSamples,multipleSourceContainerTypes,overFilledSuppliedDestNoDupes[[All,1]],invalidDestLocationTuples[[All,1;;2]],
+		outOfRangeAmounts, mySources[[samePlateTransferIndices]]
 	}]];
 
 	invalidOptions=DeleteDuplicates[Flatten[{
-		notEmptyAliquotContainersOptionName,nameInvalidOptions,inWellSeparationConflictOption,inWellSeparationNotAllowedOption,
+		notEmptyAliquotContainersOptionName,nameInvalidOptions,inWellSeparationNotAllowedOption,
 		calibrationMeasurementMismatchOptions,fluidTypeCalibrationErrorOption,fluidAnalysisMeasurementErrorOption,
 		invalidStorageConditionOptions
 	}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->updatedSimulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -5404,7 +5037,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 		validNameTest,discardedDestinationContainerTest,deprecatedDestinationContainerModelTest,invalidDestinationContainerTest,
 		invalidLabwareTest,unsafeDestVolumeTest,precisionTests,outOfRangeAmountTest,insufficientSourceSampleVolumeTest,
 		samePlateTransferTest,invalidDestinationWellTest,overFilledDestinationVolumeTest,invalidInWellSeparationKeyTest,
-		inWellSeparationKeyOptionTest,invalidInWellSeparationOptionTest,samplesWithTooHighGlycerolTest,
+		invalidInWellSeparationOptionTest,samplesWithTooHighGlycerolTest,
 		calibrationMeasurementMismatchTest,invalidFluidTypeCalibrationTest,invalidFluidAnalysisMeasurementTest,
 		fluidTypeCalibrationWarningTest,fluidAnalysisMeasurementWarningTest,validSampleStorageTests,tooLargeAliquotVolumeTest
 	}],_EmeraldTest];
@@ -5432,7 +5065,7 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 	(* we need to replace all the simulated samples/containers in the primitives back to their original forms so that it makes sense for the user *)
 
 	(* create replace rules for objects that were prepared via sample preparation *)
-	samplePrepReplaceRules=Rule@@@Cases[updatedSimulatedCache,KeyValuePattern[{Simulated->True,SimulationParent->parent_,Object->object_,Type->Object[Sample]}]:>{object,parent}];
+	samplePrepReplaceRules=Rule@@@Cases[updatedCacheBall,KeyValuePattern[{Simulated->True,SimulationParent->parent_,Object->object_,Type->Object[Sample]}]:>{object,parent}];
 
 	(* combine all replace rules *)
 	(* Note: destPlateReplaceRules is where we assigned unique ID to untagged Model[Container]. we will use this info to generate resources *)
@@ -5465,12 +5098,12 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 				SamplesVolume->requiredAliquotAmounts,
 				SamplesInStorageCondition->expandedSamplesInStorageOption,
 				SamplesOutStorageCondition->samplesOutStorageOption,
-				Cache->cache,
 				FastTrack->fastTrack,
 				Template->templateOption,
 				ParentProtocol->parentProtocolOption,
 				Operator->operatorOption,
 				Confirm->confirmOption,
+				CanaryBranch->canaryBranchOption,
 				Name->nameOption,
 				Upload->uploadOption,
 				Output->outputOption,
@@ -5494,27 +5127,28 @@ resolveExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP
 (* ExperimentAcousticLiquidHandling Resource Packets *)
 
 DefineOptions[experimentAcousticLiquidHandlingResourcePackets,
-	Options:>{CacheOption,HelperOutputOption}
+	Options :> {CacheOption, HelperOutputOption, SimulationOption}
 ];
 
 
-experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulationP..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
+experimentAcousticLiquidHandlingResourcePackets[
+	mySources:ListableP[ObjectP[Object[Sample]]],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myUnresolvedOptions:{___Rule},
+	myResolvedOptions:{___Rule},
+	ops:OptionsPattern[]
+]:=Module[
 	{
-		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,
-		inheritedCache,samplesInResources,instrument,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,
+		resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,
+		cache,simulation,samplesInResources,instrument,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,
 		finalizedPacket,allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,samplesWithPreparedSamples,samplesInStorage,
 		aliquotQ,aliquotAmounts,requiredAmounts,sampleRequiredAmounts,defineNameReplaceRules,resolvedPrimitives,primitiveAmounts,
 		suppliedDestinations,destinationSamples,destinationSamplePackets,suppliedDestinationLocations,destinationContainerSpecs,
 		destinationResources,measureVolumeOption,imageSampleOption,fluidTypeCalibOption,inWellSeparationOption,requiredObjects,
 		transferRate,transferTime,numberOfBatches,softwareSetupTime,numberOfPlateChanges,plateChangeTime,runTime,containerObjects,
-		primtivesToReturn,sourceToDestTuples,platePairs,resolvedOptionsWithListedSamplesOutStorage
+		primitivesToReturn,sourceToDestTuples,platePairs,resolvedOptionsWithListedSamplesOutStorage
 	},
-	(* expand the resolved options if they weren't expanded already *)
-	(* FIXME: Options are expanded properly but shows 'input not expanded' warning because we have primitives as input instead of samples. *)
-	{expandedInputs,expandedResolvedOptions}=Quiet[
-		ExpandIndexMatchedInputs[ExperimentAcousticLiquidHandling,{myPrimitives},myResolvedOptions],
-		Warning::UnableToExpandInputs
-	];
 
 	(* Get the resolved collapsed index matching options that don't include hidden options *)
 	resolvedOptionsNoHidden=CollapseIndexMatchedOptions[
@@ -5533,14 +5167,15 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 	messages=Not[gatherTests];
 
 	(* Get the inherited cache *)
-	inheritedCache=Lookup[ToList[ops],Cache];
+	cache=Lookup[ToList[ops],Cache,{}];
+	simulation=Lookup[ToList[ops],Simulation,Simulation[]];
 
 	(* get all the option values we need *)
 	{
 		samplesWithPreparedSamples,requiredAmounts,samplesInStorage,aliquotQ,aliquotAmounts,resolvedPrimitives,
 		instrument,measureVolumeOption,imageSampleOption,fluidTypeCalibOption,inWellSeparationOption
 	}=
-		Lookup[expandedResolvedOptions,{
+		Lookup[myResolvedOptions,{
 			SamplesIn,SamplesVolume,SamplesInStorageCondition,Aliquot,AliquotAmount,ResolvedManipulations,Instrument,
 			MeasureVolume,ImageSample,FluidTypeCalibration,InWellSeparation
 		}];
@@ -5573,7 +5208,8 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 			{Container[Object]},
 			{Packet[Volume]}
 		},
-		Cache->inheritedCache,
+		Cache->cache,
+		Simulation->simulation,
 		Date->Now
 	];
 
@@ -5718,10 +5354,10 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 
 	(* ---replace prepared samples in resolved primitives with user-defined string name if any--- *)
 	(* create replace rules for objects that were prepared via preparatory primitives *)
-	defineNameReplaceRules=Rule@@@Cases[inheritedCache,KeyValuePattern[{Object->object_,DefineName->name_}]:>{object,name}];
+	defineNameReplaceRules=Lookup[FirstOrDefault[simulation, <||>], Labels, {}];
 
 	(* replace prepared objects with their original string names *)
-	primtivesToReturn=resolvedPrimitives/.defineNameReplaceRules;
+	primitivesToReturn=resolvedPrimitives/.defineNameReplaceRules;
 
 	(* --- Generate the protocol packet --- *)
 	protocolPacket=<|
@@ -5729,14 +5365,14 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 		Type->Object[Protocol,AcousticLiquidHandling],
 		Replace[SamplesIn]->(Link[#,Protocols]&/@samplesInResources),
 		Replace[ContainersIn]->(Link[Resource[Sample->#],Protocols]&)/@Flatten[DeleteDuplicates@containerObjects],
-		UnresolvedOptions->myUnresolvedOptions,
-		ResolvedOptions->myResolvedOptions,
+		UnresolvedOptions->RemoveHiddenOptions[ExperimentAcousticLiquidHandling, myUnresolvedOptions],
+		ResolvedOptions->resolvedOptionsNoHidden,
 		Replace[Checkpoints]->{
-			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-			{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-			{"Manipulation",instrumentTime,"The manipulation of samples by an acoustic liquid handler is performed and data is collected.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->(runTime+30*Minute)]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1*Hour]]},
-			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10*Minute]]}
+			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->1 Minute]]},
+			{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+			{"Manipulation",instrumentTime,"The manipulation of samples by an acoustic liquid handler is performed and data is collected.",Link[Resource[Operator->$BaselineOperator,Time->(runTime+30*Minute)]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->1*Hour]]},
+			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->10*Minute]]}
 		},
 		RunTime->runTime,
 		(* shared options/fields *)
@@ -5745,8 +5381,10 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 		Replace[SamplesInStorage]->samplesInStorage,
 		(* acoustic liquid handling options/fields *)
 		LiquidHandler->Link[instrumentResource],
-		Replace[Manipulations]->myPrimitives,
-		Replace[ResolvedManipulations]->primtivesToReturn,
+		Replace[Sources] -> Lookup[myResolvedOptions, Source],
+		Replace[Destinations] -> Lookup[myResolvedOptions, Destination],
+		Replace[Amounts] -> Lookup[myResolvedOptions, Amount],
+		Replace[ResolvedManipulations]->primitivesToReturn,
 		Replace[RequiredObjects]->requiredObjects,
 		Replace[FluidTypeCalibration]->fluidTypeCalibOption,
 		Replace[InWellSeparation]->inWellSeparationOption
@@ -5754,10 +5392,10 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 
 	(* make sure SamplesOutStorageCondition is in a list before passing the options to populateSamplePrepFields *)
 	(* Note: normally ExpandIndexedMatchInput would take care of this but our input is not sample so we do this manually here *)
-	resolvedOptionsWithListedSamplesOutStorage=ReplaceRule[expandedResolvedOptions,SamplesOutStorageCondition->ToList[Lookup[expandedResolvedOptions,SamplesOutStorageCondition]]];
+	resolvedOptionsWithListedSamplesOutStorage=ReplaceRule[myResolvedOptions,SamplesOutStorageCondition->ToList[Lookup[myResolvedOptions,SamplesOutStorageCondition]]];
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket=Experiment`Private`populateSamplePrepFields[Lookup[resolvedOptionsWithListedSamplesOutStorage,SamplesIn],resolvedOptionsWithListedSamplesOutStorage,Cache->inheritedCache];
+	sharedFieldPacket=Experiment`Private`populateSamplePrepFields[Lookup[resolvedOptionsWithListedSamplesOutStorage,SamplesIn],resolvedOptionsWithListedSamplesOutStorage,Cache->cache,Simulation->simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -5769,8 +5407,8 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation -> simulation],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache, Simulation -> simulation],Null}
 	];
 
 	(* generate the tests rule *)
@@ -5789,3 +5427,869 @@ experimentAcousticLiquidHandlingResourcePackets[myPrimitives:{SampleManipulation
 	(* return the output as we desire it *)
 	outputSpecification/.{resultRule,testsRule}
 ];
+
+
+(* helper to combine sources and destinations according to singleton patterns since singleton pattern has List head, so we cannot easily distinguish *)
+combineSourcesAndDestinations[sources_, destinations_] := Module[{combinedList, combinedListNoContainerModel, containerModelReplacementRulesWithNull},
+	(* combine source and destination *)
+	combinedList = Switch[{sources, destinations},
+		{acousticLHDestinationSingletonPattern, acousticLHDestinationSingletonPattern},
+			Join[{sources}, {destinations}],
+		{acousticLHDestinationSingletonPattern, _},
+			Join[{sources}, destinations],
+		{_, acousticLHDestinationSingletonPattern},
+			Join[sources, {destinations}],
+		_,
+			Join[sources, destinations]
+	];
+
+	(* replace any Model[Container] with Null since simulateSamplePreparationPacketsNew cannot take Model[Container] and return the replacement rules for later use *)
+	{combinedListNoContainerModel, containerModelReplacementRulesWithNull} = Transpose@MapIndexed[
+		If[MemberQ[Flatten[ToList[#1]], ObjectP[Model[Container]]],
+			{Null, First[#2] -> #1},
+			{#1, Null}
+		]&,
+		combinedList
+	];
+
+	(* return *)
+	{
+		combinedListNoContainerModel,
+		DeleteCases[containerModelReplacementRulesWithNull, Null]
+	}
+];
+
+
+(* helper to split sources and destinations according to singleton patterns since singleton pattern has List head, so we cannot easily distinguish *)
+splitSourcesAndDestinations[sources_, destinations_, combinedList_List, replacementRules_List] := Module[{combinedListWithContainerModels},
+	(* add the original model container back *)
+	combinedListWithContainerModels = ReplacePart[combinedList, replacementRules];
+
+	Switch[{sources, destinations},
+		{acousticLHDestinationSingletonPattern, acousticLHDestinationSingletonPattern},
+			First /@ TakeDrop[combinedListWithContainerModels, 1],
+		{acousticLHDestinationSingletonPattern, _},
+			MapAt[First, TakeDrop[combinedListWithContainerModels, 1], 1],
+		{_, acousticLHDestinationSingletonPattern},
+			MapAt[First, TakeDrop[combinedListWithContainerModels, Length[sources]], 2],
+		_,
+			TakeDrop[combinedListWithContainerModels, Length[sources]]
+	]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*toFormattedTransferPrimitive*)
+
+objectSpecificationP:=(objectSpecificationP=Alternatives[
+	NonSelfContainedSampleP,
+	NonSelfContainedSampleModelP,
+	FluidContainerP,
+	FluidContainerModelP,
+	PlateAndWellP,
+	{ObjectP[Model[Container,Plate]],WellPositionP},
+	(* Defined tag *)
+	_String,
+	(* Container tag *)
+	{_String,WellPositionP},
+	{_Integer|_Symbol,NonSelfContainedSampleModelP|FluidContainerP|FluidContainerModelP},
+	{{_Integer|_Symbol,FluidContainerP|FluidContainerModelP},WellPositionP}
+]);
+
+
+(* Convert any Aliquot/Consolidation primitives to expanded Transfer primitives and expand any Transfer primitives.
+ 	NOTE: Source/Destination/Amount key values will be "expanded" to low-level list syntax
+	(ie: Source -> {{value..}..} etc *)
+toFormattedTransferPrimitive[myPrimitive_]:=Module[
+	{},
+
+	Switch[myPrimitive,
+		_Aliquot,
+			Transfer[
+				(* Prepend such that any other parameters are preserved *)
+				Prepend[
+					KeyDrop[First[myPrimitive],{Destinations,Amounts}],
+					Join[
+						{
+							Source -> Switch[myPrimitive[Source],
+								{ObjectP[Model[Container,Plate]],_String},
+									Module[{tag=Unique[]},
+										Table[{{{tag,First[myPrimitive[Source]]},Last[myPrimitive[Source]]}},Length[myPrimitive[Destinations]]]
+									],
+								ObjectP[{Model[Container,Vessel],Model[Container,Cartridge],Model[Container,ReactionVessel],Model[Container,Cuvette],Model[Container,Plate]}],
+									Module[{tag=Unique[]},
+										Table[{{tag,myPrimitive[Source]}},Length[myPrimitive[Destinations]]]
+									],
+								_,
+									Table[{myPrimitive[Source]},Length[myPrimitive[Destinations]]]
+							],
+							Destination -> List/@(myPrimitive[Destinations]),
+							Amount -> Module[{myAmounts, expandedAmounts},
+								myAmounts = myPrimitive[Amounts];
+								expandedAmounts = If[MatchQ[myAmounts,_List],
+									myAmounts,
+									ConstantArray[myAmounts,Length[myPrimitive[Destinations]]]
+								];
+								List/@expandedAmounts
+							]
+						},
+						KeyValueMap[
+							If[MemberQ[Keys[manipulationKeyPatterns[Transfer]],#1],
+								If[MatchQ[#2,Lookup[manipulationKeyPatterns[Transfer],#1]],
+									#1 -> Table[#2,Length[myPrimitive[Destinations]]],
+									Nothing
+								],
+								Nothing
+							]&,
+							KeyDrop[First[myPrimitive],{Source,Destinations,Amounts}]
+						]
+					]
+				]
+			],
+		_Consolidation,
+			Transfer[
+				(* Prepend such that any other parameters are preserved *)
+				Prepend[
+					KeyDrop[First[myPrimitive],{Sources,Amounts}],
+					Join[
+						{
+							Source -> List/@(myPrimitive[Sources]),
+							Destination -> Switch[myPrimitive[Destination],
+								{ObjectP[Model[Container,Plate]],_String},
+									Module[{tag=Unique[]},
+										Table[{{{tag,First[myPrimitive[Destination]]},Last[myPrimitive[Destination]]}},Length[myPrimitive[Sources]]]
+									],
+								ObjectP[{Model[Container,Vessel],Model[Container,Cartridge],Model[Container,ReactionVessel],Model[Container,Cuvette],Model[Container,Plate]}],
+									Module[{tag=Unique[]},
+										Table[{{tag,myPrimitive[Destination]}},Length[myPrimitive[Sources]]]
+									],
+								_,
+									Table[{myPrimitive[Destination]},Length[myPrimitive[Sources]]]
+							],
+							Amount -> Module[{myAmounts, expandedAmounts},
+								myAmounts = myPrimitive[Amounts];
+								expandedAmounts = If[MatchQ[myAmounts,_List],
+									myAmounts,
+									ConstantArray[myAmounts, Length[myPrimitive[Sources]]]
+								];
+								List/@expandedAmounts
+							]
+						},
+						KeyValueMap[
+							If[MemberQ[Keys[manipulationKeyPatterns[Transfer]],#1],
+								If[MatchQ[#2,Lookup[manipulationKeyPatterns[Transfer],#1]],
+									#1 -> Table[#2,Length[myPrimitive[Sources]]],
+									Nothing
+								],
+								Nothing
+							]&,
+							KeyDrop[First[myPrimitive],{Sources,Destination,Amounts}]
+						]
+					]
+				]
+			],
+		_Transfer,
+			Module[
+				{rawSource,rawDestination,rawAmount,expandedSource,expandedDestination,expandedAmount},
+
+				(* Extract specified values *)
+				rawSource = myPrimitive[Source];
+				rawDestination = myPrimitive[Destination];
+				rawAmount = myPrimitive[Amount];
+
+				(* Expand Source and Destination values depending on the specified syntax/listability *)
+				{expandedSource,expandedDestination} = Switch[rawSource,
+					objectSpecificationP,
+						Switch[rawDestination,
+							(* Source -> A, Destination -> B *)
+							objectSpecificationP,
+								{
+									{{rawSource}},
+									{{rawDestination}}
+								},
+							(* Source -> A, Destination -> {B} or {{B}} *)
+							{(objectSpecificationP|{objectSpecificationP..})..},
+								{
+									(* Expand Source to match length of Destination *)
+									Table[{rawSource},Length[rawDestination]],
+									(* If Destination -> {B,C}, convert to {{B},{C}} *)
+									Map[
+										If[MatchQ[#,objectSpecificationP],
+											{#},
+											#
+										]&,
+										rawDestination
+									]
+								}
+						],
+					{(objectSpecificationP|{objectSpecificationP..})..},
+						Switch[rawDestination,
+							(* Source -> {A,B} or {{A},{B}}, Destination -> C *)
+							objectSpecificationP,
+								(* If Source -> {A,B}, convert to {{A},{B}} *)
+								{
+									Map[
+										If[MatchQ[#,objectSpecificationP],
+											{#},
+											#
+										]&,
+										rawSource
+									],
+									(* Expand Destination to match length of Source *)
+									Table[{rawDestination},Length[rawSource]]
+								},
+							(* Source -> {A,B} or {{A},{B}}, Destination -> {C,D} or {{C},{D}} *)
+							{(objectSpecificationP|{objectSpecificationP..})..},
+								(* If Source/Destination -> {A,B}, convert to {{A},{B}} *)
+								Transpose@MapThread[
+									Switch[#1,
+										objectSpecificationP,
+											Switch[#2,
+												objectSpecificationP,
+													{{#1},{#2}},
+												{objectSpecificationP..},
+													{Table[#1,Length[#2]],#2}
+											],
+										{objectSpecificationP..},
+											Switch[#2,
+												objectSpecificationP,
+													{#1,Table[#2,Length[#1]]},
+												{objectSpecificationP..},
+													{#1,#2}
+											]
+									]&,
+									{rawSource,rawDestination}
+								]
+						]
+				];
+
+				(* Expand Amount to match the listability or Source/Destination *)
+				expandedAmount = Switch[rawAmount,
+					(* If Amount -> amt, convert to {amt..} for each Source/Destination sublist.
+					Expand the length of {amt..} to match the longest length of Source vs Destination
+					ie: if Source -> {{A,B},{C}} and Destination -> {{D},{E}}, expand Amount -> {{amt,amt},{amt}}
+					Use _Quantity instead of MassP|VolumeP in case the amount value is invalid (still need to handle it) *)
+					_Quantity|_Integer,
+						MapThread[
+							Table[rawAmount,Max[Length[#1],Length[#2]]]&,
+							{expandedSource,expandedDestination}
+						],
+					(* If Amount -> {amt..} or {{amt..}..}, convert any {amt..} to {{amt..}} matching the max
+					length of expanded Source or Destination *)
+					{(_Quantity|_Integer)..}|{{(_Quantity|_Integer)..}..},
+					MapThread[
+						If[MatchQ[#3,{(MassP|VolumeP|_Integer)..}],
+							#3,
+							Table[#3,Max[Length[#1],Length[#2]]]
+						]&,
+						{expandedSource,expandedDestination,rawAmount}
+					]
+				];
+
+				(* Replace Source/Destination/Amount values with expanded values *)
+				Transfer@Prepend[
+					First[myPrimitive],
+					Join[
+						{
+							Source -> expandedSource,
+							Destination -> expandedDestination,
+							Amount -> expandedAmount
+						},
+						KeyValueMap[
+							If[MemberQ[Keys[manipulationKeyPatterns[Transfer]],#1],
+								If[MatchQ[#2,Lookup[manipulationKeyPatterns[Transfer],#1]],
+									#1 -> Table[#2,Length[expandedSource]],
+									Nothing
+								],
+								Nothing
+							]&,
+							KeyDrop[First[myPrimitive],{Source,Destination,Amount}]
+						]
+					]
+				]
+			],
+		_,
+			myPrimitive
+	]
+];
+
+
+(* ::Subsection:: *)
+(*populateTransferKeys*)
+
+
+(* Update the manipulation with additional keys to more fully specify the manipulation by fetching location information from samples and sample information from locations *)
+(* This is needed since users initially describe manipulations in varying and incomplete ways - e.g. they might provide a destination sample, but we need to know the container/well *)
+(* This will add the all information currently available and is called in the Experiment function and again in the compiler (necessary since models will not be fulfilled until run-time). *)
+(* The following keys are added (manipulation specific):
+	Transfer: ResolvedSourceLocation, SourceSample, ResolvedDestinationLocation,
+	Aliquot: ResolvedSourceLocation, SourceSample, ResolvedDestinationLocations, DestinationSamples
+	Consolidation: ResolvedSourceLocations,SourceSamples,ResolvedDestinationLocation,DestinationSample
+	Mix: ResolvedSourceLocation, SourceSample
+	Incubate: ResolvedSourceLocation, SourceSample
+	Centrifuge: ResolvedSourceLocation, SourceSample
+	Filter: ResolvedSourceLocation,SourceSample,ResolvedFilterLocation,ResolvedCollectionLocation
+	Pellet: ResolvedSourceLocation, ResolvedSupernatantDestinationLocation, ResolvedResuspensionSourceLocation, SourceSample, SupernatantDestinationSample, ResuspensionSourceSample
+	Cover: ResolvedSourceLocation
+	Uncover: ResolvedSourceLocation
+*)
+(* Unknown information will be represented by Null values - e.g. if a transfer of a model is specified SourceSample and ResolvedSourceLocation will be set to Null *)
+Options[populateTransferKeys]:={Cache->{},DefineLookup-><||>,PrimaryInjectionSample->Null,SecondaryInjectionSample->Null};
+populateTransferKeys[myManipulation:SampleManipulationP,ops:OptionsPattern[]]:=Module[
+	{manipulationType,defineLookup,specifyLocationFunction,specifySampleFunction,primaryInjectionModel,
+	secondaryInjectionModel,specificationRules,specifiedManipulation},
+
+	(* Get the type of myManipulation to determine what needs populating *)
+	manipulationType = Head[myManipulation];
+
+	(* Fetch lookup from options (lookup in the form <|"Name" -> Define primitive) *)
+	defineLookup = OptionValue[DefineLookup];
+
+	(* --- define internal functions that will be used to specify locations/samples for Source/Destination keys --- *)
+	(* When specifying a manipulations, the sources/destinations can be supplied as Model[Sample], Model[Container], Object[Container], Object[Sample] or locations *)
+	(* If possible we want to take the specified value and determine the location (container for single position containers, {container, well} for plates ) *)
+	(* myContainerContents, myContainers, myContentPositions are index-matched lists used to get the container/well for the specified sample without having to Download *)
+	specifyLocationFunction[mySpecifier_]:=Module[
+		{convertedSpecifier},
+
+		(* If the specified has a defined string in it, we need to convert it to the string's reference *)
+		convertedSpecifier = Which[
+			(* If specifier is a string, determine _what_ it specifies *)
+			MatchQ[mySpecifier,_String],
+				Module[{definePrimitive},
+
+					definePrimitive = Lookup[defineLookup,mySpecifier];
+
+					If[MatchQ[definePrimitive[ContainerName],mySpecifier],
+						Return[
+							If[MatchQ[definePrimitive[Sample],{ObjectP[{Object[Container],Model[Container]}],WellPositionP}],
+								definePrimitive[Sample][[1]],
+								definePrimitive[Container]
+							],
+							Module
+						]
+					];
+
+					Which[
+						MatchQ[definePrimitive[Sample],Except[Null|Automatic|_Missing]],
+							definePrimitive[Sample],
+						MatchQ[{definePrimitive[Container],definePrimitive[Well]},{ObjectP[],WellPositionP}],
+							{definePrimitive[Container],definePrimitive[Well]},
+						MatchQ[definePrimitive[Container],ObjectP[]],
+							definePrimitive[Container],
+						True,
+							Null
+					]
+				],
+			(* If specifier is a string representing a container, determine _what_ container it specifies *)
+			MatchQ[mySpecifier,{_String,WellPositionP}],
+				Module[{definePrimitive},
+
+					definePrimitive = Lookup[defineLookup,mySpecifier[[1]]];
+
+					If[MatchQ[definePrimitive[Container],ObjectP[{Object[Container,Vessel],Model[Container,Vessel]}]],
+						definePrimitive[Container],
+						{definePrimitive[Container],mySpecifier[[2]]}
+					]
+				],
+			True,
+				mySpecifier
+		];
+
+		Switch[convertedSpecifier,
+			{ObjectReferenceP[Object[Container,Vessel]],WellPositionP},convertedSpecifier[[1]],
+			(* Resolve raw plate locations to A1 *)
+			ObjectReferenceP[Object[Container,Plate]],{convertedSpecifier,"A1"},
+			ObjectReferenceP[Object[Container]]|PlateAndWellP,convertedSpecifier,
+			ObjectReferenceP[Object[Sample]],Module[{samplePacket,container},
+
+				(* get the sample packet from the overall sample packet list; we
+				 	must have it since it is in the manipulation *)
+				samplePacket=SelectFirst[OptionValue[Cache],MatchQ[Download[convertedSpecifier,Object],Lookup[#,Object]]&];
+
+				(* pull out the sample container from the packet *)
+				container=Download[Lookup[samplePacket,Container],Object];
+
+				(* Return the container, or if in a plate, the {container,well} pair *)
+				If[MatchQ[container,ObjectP[Object[Container,Plate]]],
+					{container,Lookup[samplePacket,Position]},
+					container
+				]
+			],
+			(* Specifier is still a model, so we can't yet get the location *)
+			_,Null
+		]
+	];
+
+	(* When specifying a manipulations, the sources/destinations can be supplied as Model[Sample], Model[Container], Object[Container], Object[Sample] or locations *)
+	(* If possible we want to take the specified value and determine the sample being referenced *)
+	specifySampleFunction[mySpecifier_]:=Module[
+		{convertedSpecifier},
+
+		(* If the specified has a defined string in it, we need to convert it to the string's reference *)
+		convertedSpecifier = Which[
+			(* If specifier is a string, determine _what_ it specifies *)
+			MatchQ[mySpecifier,_String],
+				Module[{definePrimitive},
+
+					definePrimitive = Lookup[defineLookup,mySpecifier];
+
+					If[MatchQ[definePrimitive[ContainerName],mySpecifier],
+						Return[
+							If[MatchQ[definePrimitive[Sample],{ObjectP[{Object[Container],Model[Container]}],WellPositionP}],
+								definePrimitive[Sample][[1]],
+								definePrimitive[Container]
+							],
+							Module
+						]
+					];
+
+					Which[
+						MatchQ[definePrimitive[Sample],Except[Null|Automatic|_Missing]],
+							definePrimitive[Sample],
+						MatchQ[{definePrimitive[Container],definePrimitive[Well]},{ObjectP[],WellPositionP}],
+							{definePrimitive[Container],definePrimitive[Well]},
+						MatchQ[definePrimitive[Container],ObjectP[]],
+							definePrimitive[Container],
+						True,
+							Null
+					]
+				],
+			(* If specifier is a string representing a container, determine _what_ container it specifies *)
+			MatchQ[mySpecifier,{_String,WellPositionP}],
+				Module[{definePrimitive},
+
+					definePrimitive = Lookup[defineLookup,mySpecifier[[1]]];
+
+					If[MatchQ[definePrimitive[Container],ObjectP[{Object[Container,Vessel],Model[Container,Vessel]}]],
+						definePrimitive[Container],
+						{definePrimitive[Container],mySpecifier[[2]]}
+					]
+				],
+			(* in case it's a plate and the ID is a Name, download the object since we're doing MatchQ below *)
+			MatchQ[mySpecifier,ObjectP[Object[Container]]],
+				Download[mySpecifier,Object],
+			(* in case it's a plate and well and the ID is a Name, download the object since we're doing MatchQ below *)
+			MatchQ[mySpecifier,PlateAndWellP],
+				{Download[mySpecifier[[1]], Object], mySpecifier[[2]]},
+			True,
+				mySpecifier
+		];
+
+		Switch[convertedSpecifier,
+			ObjectReferenceP[Object[Sample]],convertedSpecifier,
+
+			ObjectReferenceP[Object[Container,Plate]],Module[
+				{samplePacket},
+				(* TODO do we need a swtich for Object[Container,Plate] here to populate not with SelectFirst but Select? *)
+				(* find the sample that is in this container; since it's JUST a container,
+				 we assume it is single position, and that only one sample packet is in it, if any (it may be empty) *)
+				samplePacket=SelectFirst[OptionValue[Cache],MatchQ[convertedSpecifier,Download[Lookup[#,Container],Object]]&];
+
+				(* return the object from the packet, or Null if the we didn't find any sample packet with this container (it's empty) *)
+				If[MatchQ[samplePacket,PacketP[Object[Sample]]],
+					Lookup[samplePacket,Object],
+					Null
+				]
+			],
+
+			ObjectReferenceP[Object[Container]],Module[
+				{samplePacket},
+			(* TODO do we need a swtich for Object[Container,Plate] here to populate not with SelectFirst but Select? *)
+				(* find the sample that is in this container; since it's JUST a container,
+				 	we assume it is single position, and that only one sample packet is in it, if any (it may be empty) *)
+				samplePacket=SelectFirst[OptionValue[Cache],MatchQ[convertedSpecifier,Download[Lookup[#,Container],Object]]&,Null];
+
+				(* return the object from the packet, or Null if the we didn't find any sample packet with this container (it's empty) *)
+				If[MatchQ[samplePacket,PacketP[Object[Sample]]],
+					Lookup[samplePacket,Object]
+				]
+			],
+			{ObjectReferenceP[Object[Container]],_String},Module[
+				{samplePacket},
+
+				(* select the sample packet that is in the container and well specified (should be either none or 1) *)
+				samplePacket = SelectFirst[
+					OptionValue[Cache],
+					And[
+						MatchQ[Download[convertedSpecifier[[1]],Object],Download[Lookup[#,Container],Object]],
+						MatchQ[convertedSpecifier[[2]],Lookup[#,Position]]
+					]&,
+					Null
+				];
+
+				(* return the object from the packet, or Null if the we didn't find any sample packet with this container (it's empty) *)
+				If[MatchQ[samplePacket,PacketP[Object[Sample]]],
+					Lookup[samplePacket,Object]
+				]
+			],
+			_,Null
+		]
+	];
+
+	primaryInjectionModel = If[MatchQ[OptionValue[PrimaryInjectionSample],ObjectP[Object[Sample]]],
+		Download[Lookup[SelectFirst[OptionValue[Cache],MatchQ[OptionValue[PrimaryInjectionSample],Lookup[#,Object]]&,<||>],Model,Null],Object],
+		OptionValue[PrimaryInjectionSample]
+	];
+
+	secondaryInjectionModel = If[MatchQ[OptionValue[SecondaryInjectionSample],ObjectP[Object[Sample]]],
+		Download[Lookup[SelectFirst[OptionValue[Cache],MatchQ[OptionValue[SecondaryInjectionSample],Lookup[#,Object]]&,<||>],Model,Null],Object],
+		OptionValue[SecondaryInjectionSample]
+	];
+
+	(* Get a new list of keys depending on the manipulation type *)
+	specificationRules = Switch[manipulationType,
+		Transfer,{
+			ResolvedSourceLocation -> Map[
+				specifyLocationFunction,
+				(myManipulation[Source]),
+				{2}
+			],
+			SourceSample -> Map[
+				specifySampleFunction,
+				(myManipulation[Source]),
+				{2}
+			],
+			ResolvedDestinationLocation -> Map[
+				specifyLocationFunction,
+				(myManipulation[Destination]),
+				{2}
+			],
+			DestinationSample -> Map[
+				specifySampleFunction,
+				(myManipulation[Destination]),
+				{2}
+			]
+		},
+		FillToVolume,{
+			ResolvedSourceLocation->specifyLocationFunction[myManipulation[Source]],
+			SourceSample->specifySampleFunction[myManipulation[Source]],
+			ResolvedDestinationLocation->specifyLocationFunction[myManipulation[Destination]],
+			DestinationSample->specifySampleFunction[myManipulation[Destination]]
+		},
+		Incubate|Mix|Cover|Uncover,
+			Which[
+			(* For the Incubate case, if we're dealing with a Sample key that is specified to a plate, we expand the source samples to all the samples contained in the plate here *)
+				MatchQ[myManipulation[Sample],ObjectReferenceP[Object[Container,Plate]]],
+				{
+					ResolvedSourceLocation -> {specifyLocationFunction[myManipulation[Sample]]},
+					SourceSample -> specifySampleFunction[myManipulation[Sample]] (* no need to list since the specifySampleFunction gives us a list for the case of a plate *)
+				},
+				(* If we're dealing with a listabl-ized primitive, we map over each entry *)
+				MatchQ[myManipulation[Sample],{(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})..}]&&!MatchQ[myManipulation[Sample],PlateAndWellP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP}],
+				{
+					ResolvedSourceLocation -> (specifyLocationFunction /@ myManipulation[Sample]),
+					SourceSample -> Flatten[(specifySampleFunction /@ myManipulation[Sample])] (* need to flatten here in case we're dealing with a plate, in which case we would get a nested list *)
+				},
+				(* If the primitive comes in not listable-ized, don't listablize it.
+				This is done because the compiler expands listable Mix primitives into
+				multiple singleton primitives and expects them to be returned from
+				this function still singleton. *)
+			True,
+				{
+					ResolvedSourceLocation -> specifyLocationFunction[myManipulation[Sample]],
+					SourceSample -> specifySampleFunction[myManipulation[Sample]]
+				}
+			],
+		Centrifuge,
+			Which[
+			(* For the Centrifuge case, if we're dealing with a Sample key that is specified to a plate, we expand the source samples to all the samples contained in the plate here *)
+				MatchQ[myManipulation[Sample],ObjectReferenceP[Object[Container,Plate]]],
+				{
+					ResolvedSourceLocation -> {specifyLocationFunction[myManipulation[Sample]]},
+					SourceSample -> specifySampleFunction[myManipulation[Sample]] (* no need to list since the specifySampleFunction gives us a list *)
+				},
+			(* Convert input to list if it's not yet listed *)
+				MatchQ[myManipulation[Sample],(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+				{
+					ResolvedSourceLocation -> {specifyLocationFunction[myManipulation[Sample]]},
+					SourceSample -> {specifySampleFunction[myManipulation[Sample]]}
+				},
+
+				True,
+			(* Keep listed input *)
+				{
+					ResolvedSourceLocation -> (specifyLocationFunction /@ myManipulation[Sample]),
+					SourceSample -> Flatten[(specifySampleFunction /@ myManipulation[Sample])] (* need to flatten here in case we're dealing with a plate here, in which case we would get a nested list here *)
+				}
+			],
+		Pellet,
+			Module[{pelletSampleSpecification},
+				(* We use this below to get the length of our samples. *)
+				pelletSampleSpecification=If[MatchQ[myManipulation[Sample],(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+					(* Convert input to list *)
+					{
+						ResolvedSourceLocation -> {specifyLocationFunction[myManipulation[Sample]]},
+						SourceSample -> {specifySampleFunction[myManipulation[Sample]]}
+					},
+					(* Keep listed input *)
+					{
+						ResolvedSourceLocation -> (specifyLocationFunction /@ myManipulation[Sample]),
+						SourceSample -> (specifySampleFunction /@ myManipulation[Sample])
+					}
+				];
+
+				Join[
+					pelletSampleSpecification,
+					With[{
+						expandedDestinations=If[MatchQ[myManipulation[SupernatantDestination],(Automatic|Waste|objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+							ConstantArray[Lookup[myManipulation[[1]], SupernatantDestination, Automatic], Length[Lookup[pelletSampleSpecification, SourceSample]]],
+							myManipulation[SupernatantDestination]
+						]},
+
+						Switch[expandedDestinations,
+							(Waste|objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP}),
+							(* Convert input to list *)
+							{
+								SupernatantDestination -> expandedDestinations,
+								ResolvedSupernatantDestinationLocation -> {specifyLocationFunction[expandedDestinations]},
+								SupernatantDestinationSample -> {specifySampleFunction[expandedDestinations]}
+							},
+							{(Waste|objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})..},
+							(* Keep listed input *)
+							{
+								SupernatantDestination -> expandedDestinations,
+								ResolvedSupernatantDestinationLocation -> (specifyLocationFunction /@ expandedDestinations),
+								SupernatantDestinationSample -> (specifySampleFunction /@ expandedDestinations)
+							},
+							_,
+							{
+								SupernatantDestination -> expandedDestinations,
+								ResolvedSupernatantDestinationLocation -> ConstantArray[Null, Length[expandedDestinations]],
+								SupernatantDestinationSample -> ConstantArray[Null, Length[expandedDestinations]]
+							}
+						]
+					],
+					With[{
+						expandedResuspensions=If[!MatchQ[myManipulation[ResuspensionSource], _List],
+							ConstantArray[Lookup[myManipulation[[1]], ResuspensionSource, Automatic], Length[Lookup[pelletSampleSpecification, SourceSample]]],
+							myManipulation[ResuspensionSource]
+						]},
+						Switch[expandedResuspensions,
+							(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP}),
+							(* Convert input to list *)
+							{
+								ResuspensionSource -> expandedResuspensions,
+								ResolvedResuspensionSourceLocation -> {specifyLocationFunction[expandedResuspensions]},
+								ResuspensionSourceSample -> {specifySampleFunction[expandedResuspensions]}
+							},
+							{(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})..},
+							(* Keep listed input *)
+							{
+								ResuspensionSource -> expandedResuspensions,
+								ResolvedResuspensionSourceLocation -> (specifyLocationFunction /@ expandedResuspensions),
+								ResuspensionSourceSample -> (specifySampleFunction /@ expandedResuspensions)
+							},
+							_,
+							{
+								ResuspensionSource -> expandedResuspensions,
+								ResolvedResuspensionSourceLocation -> ConstantArray[Null, Length[expandedResuspensions]],
+								ResuspensionSourceSample -> ConstantArray[Null, Length[expandedResuspensions]]
+							}
+						]
+					]
+				]
+			],
+		ReadPlate,
+			Join[
+				If[MatchQ[myManipulation[Sample],(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+					(* Convert input to list *)
+					{
+						ResolvedSourceLocation -> {specifyLocationFunction[myManipulation[Sample]]},
+						SourceSample -> {specifySampleFunction[myManipulation[Sample]]}
+					},
+					(* Keep listed input *)
+					{
+						ResolvedSourceLocation -> (specifyLocationFunction /@ myManipulation[Sample]),
+						SourceSample -> (specifySampleFunction /@ myManipulation[Sample])
+					}
+				],
+				If[MatchQ[myManipulation[AdjustmentSample],(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+					{
+						ResolvedAdjustmentSample -> specifySampleFunction[myManipulation[AdjustmentSample]],
+						ResolvedAdjustmentSampleLocation -> specifyLocationFunction[myManipulation[AdjustmentSample]]
+					},
+					{}
+				],
+				If[MatchQ[myManipulation[Blank],(objectSpecificationP|{ObjectReferenceP[Object[Container,Vessel]],WellPositionP})],
+					(* Convert input to list *)
+					{
+						ResolvedBlankLocation -> {specifyLocationFunction[myManipulation[Blank]]},
+						ResolvedBlankSample -> {specifySampleFunction[myManipulation[Blank]]}
+					},
+					{
+						ResolvedBlankLocation -> (specifyLocationFunction /@ Lookup[First[myManipulation],Blank,{}]),
+						ResolvedBlankSample -> (specifySampleFunction /@ Lookup[First[myManipulation],Blank,{}])
+					}
+				],
+				{
+					If[MatchQ[myManipulation[PrimaryInjectionSample],{ObjectP[]|Null..}],
+						PrimaryInjectionSample -> Map[
+							Switch[#,
+								primaryInjectionModel,
+									OptionValue[PrimaryInjectionSample],
+								secondaryInjectionModel,
+									OptionValue[SecondaryInjectionSample],
+								_,
+									#
+							]&,
+							myManipulation[PrimaryInjectionSample]
+						],
+						Nothing
+					],
+					If[MatchQ[myManipulation[SecondaryInjectionSample],{ObjectP[]|Null..}],
+						SecondaryInjectionSample -> Map[
+							Switch[#,
+								primaryInjectionModel,
+									OptionValue[PrimaryInjectionSample],
+								secondaryInjectionModel,
+									OptionValue[SecondaryInjectionSample],
+								_,
+									#
+							]&,
+							myManipulation[SecondaryInjectionSample]
+						],
+						Nothing
+					],
+					If[MatchQ[myManipulation[TertiaryInjectionSample],{ObjectP[]|Null..}],
+						TertiaryInjectionSample -> Map[
+							Switch[#,
+								primaryInjectionModel,
+									OptionValue[PrimaryInjectionSample],
+								secondaryInjectionModel,
+									OptionValue[SecondaryInjectionSample],
+								_,
+									#
+							]&,
+							myManipulation[TertiaryInjectionSample]
+						],
+						Nothing
+					],
+					If[MatchQ[myManipulation[QuaternaryInjectionSample],{ObjectP[]|Null..}],
+						QuaternaryInjectionSample -> Map[
+							Switch[#,
+								primaryInjectionModel,
+									OptionValue[PrimaryInjectionSample],
+								secondaryInjectionModel,
+									OptionValue[SecondaryInjectionSample],
+								_,
+									#
+							]&,
+							myManipulation[QuaternaryInjectionSample]
+						],
+						Nothing
+					]
+				}
+			],
+		Filter,Module[
+			{sourceLocations,sourceSamples,filterLocation,collectionContainerLocation,
+			collectionLocations,collectionSamples},
+
+			(* Fetch sample positions if possible *)
+			sourceLocations = (specifyLocationFunction/@myManipulation[Sample]);
+
+			(* Fetch sample objects *)
+			sourceSamples = (specifySampleFunction/@myManipulation[Sample]);
+
+			(* NOTE: Assume that error checking has occurred where we know all objects
+			in Sample are in the same filter plate or are all in phytip columns. *)
+
+			(* If our samples are in plates, then take the first index (the container) of the first sample location listed. *)
+			(* Otherwise, if our samples are in phytip columns, take the first phytip column. *)
+			filterLocation = Which[
+				MatchQ[First[sourceLocations],{ObjectP[],WellPositionP}],
+					First[First[sourceLocations]],
+				MatchQ[sourceLocations, {ObjectP[Object[Container, Vessel]]..}],
+					sourceLocations,
+				True,
+					Null
+			];
+
+			(* Fetch collection container location. Note that for Filter Macro, this can be a list of things, so we map over specifyLocationFunction in these cases *)
+			collectionContainerLocation = Which[
+				(* This is kind of a hacky first case where in some (macro) cases the manipulation has a list
+				of all the same container index matching the ResolvedSampleLocation values.
+				NOTE: the true thing to do if figure out why macro Filter sets it as such and change that *)
+				And[
+					MatchQ[myManipulation[CollectionContainer],{ObjectP[Object[Container,Plate]]..}],
+					SameQ@@(myManipulation[CollectionContainer])
+				],
+					{First[myManipulation[CollectionContainer]]},
+				MatchQ[myManipulation[CollectionContainer],{(ObjectP[]|_String|{_String,WellPositionP})..}],
+					specifyLocationFunction/@myManipulation[CollectionContainer],
+				True,
+					specifyLocationFunction[myManipulation[CollectionContainer]]
+			];
+
+			(* Convert source locations to collection locations *)
+			collectionLocations = Which[
+				(* If we're dealing with a list of vessels (macro), those are just fine for the lookup below *)
+				MatchQ[collectionContainerLocation,{ObjectP[Object[Container,Vessel]]..}],
+					collectionContainerLocation,
+				(* in other macro cases, like the Filter block, the collection container may be a plate, in a list *)
+				(* we will use the source location to get the new {{collectionPlate, well}..} *)
+				MatchQ[collectionContainerLocation,{ObjectP[Object[Container,Plate]]}],
+					Map[
+						{First[collectionContainerLocation],#[[2]]}&,
+						sourceLocations
+					],
+				(* If we're dealing with a plate as the collection container but vessels as the sample containers, we're doing phytips. *)
+				(* Use transposed AllWells[] order to get the order of the phytips. *)
+				(* TODO: This should probably use vessel rack placements. *)
+				MatchQ[collectionContainerLocation,{ObjectP[Object[Container,Plate]],"A1"}] && MatchQ[sourceLocations, {ObjectP[Object[Container, Vessel]]..}],
+					Map[
+						{First[collectionContainerLocation],#}&,
+						Take[Flatten[Transpose[AllWells[]]], Length[sourceLocations]]
+					],
+				(* If we're dealing with a plate (micro), we will use the source location to get the new {{collectionPlate, well}..} *)
+				MatchQ[collectionContainerLocation,ObjectP[Object[Container,Plate]]],
+					Map[
+					{collectionContainerLocation,#[[2]]}&,
+					sourceLocations
+				],
+				MatchQ[collectionContainerLocation,{ObjectP[Object[Container,Plate]],_String}],
+					Map[
+						{collectionContainerLocation[[1]],#[[2]]}&,
+						sourceLocations
+				],
+				True,
+					Null
+			];
+
+			(* Find sample created at the collection location *)
+			collectionSamples = Which[
+				MatchQ[myManipulation[CollectionSample],{ObjectP[Object[Sample]]..}],
+					myManipulation[CollectionSample],
+				MatchQ[myManipulation[CollectionSample],(_Missing|{Null..}|Null)],
+					specifySampleFunction/@collectionLocations,
+				True,
+					Table[Null,Length[sourceSamples]]
+			];
+
+			{
+				ResolvedSourceLocation -> sourceLocations,
+				SourceSample -> sourceSamples,
+				ResolvedFilterLocation -> filterLocation,
+				ResolvedCollectionLocation -> collectionContainerLocation,
+				CollectionSample -> collectionSamples
+			}
+		],
+		MoveToMagnet|RemoveFromMagnet,
+			{
+				ResolvedSourceLocation->specifyLocationFunction[myManipulation[Sample]],
+				SourceSample->specifySampleFunction[myManipulation[Sample]]
+			},
+		_,{}
+	];
+
+	(* replace the manipulation internal association with the new specification rules *)
+	manipulationType[Append[First[myManipulation],specificationRules]]
+];
+
+
+
+
+
+
+
+

@@ -46,7 +46,12 @@ DefineUsage[ExperimentFluorescenceKineticsOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"
@@ -116,7 +121,12 @@ DefineUsage[ExperimentFluorescenceKineticsPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"
@@ -186,7 +196,12 @@ DefineUsage[ValidExperimentFluorescenceKineticsQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"

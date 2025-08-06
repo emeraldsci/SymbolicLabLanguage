@@ -32,6 +32,80 @@ DefineTests[
 		],
 
 		(* --- Messages --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentDifferentialScanningCalorimetry[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentDifferentialScanningCalorimetry[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentDifferentialScanningCalorimetry[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentDifferentialScanningCalorimetry[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDifferentialScanningCalorimetry[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDifferentialScanningCalorimetry[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentDifferentialScanningCalorimetry[Link[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], Now - 1 Minute]],
 			ObjectP[Object[Protocol, DifferentialScanningCalorimetry]],
@@ -440,21 +514,29 @@ DefineTests[
     ],
 
 		(* --- Sample prep option tests --- *)
-
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol = ExperimentDifferentialScanningCalorimetry[
-				{"oligomer sample 1", "oligomer sample 2"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "oligomer sample 1", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "oligomer sample 2", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Destination -> "oligomer sample 1", Amount -> 500 Microliter],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Destination -> "oligomer sample 2", Amount -> 500 Microliter]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentDifferentialScanningCalorimetry[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
 			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol = ExperimentDifferentialScanningCalorimetry[
@@ -739,7 +821,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
@@ -808,19 +890,19 @@ DefineTests[
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well 500uL Round Bottom DSC Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well 500uL Round Bottom DSC Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well 500uL Round Bottom DSC Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Destination well is automatically set differently if CleaningFrequency -> First:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CleaningFrequency -> First, Output -> Options];
 			Lookup[options, DestinationWell],
-			"A4",
+			{"A4"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -841,6 +923,15 @@ DefineTests[
 			True,
 			Variables :> {options}
 		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentDifferentialScanningCalorimetry[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, DifferentialScanningCalorimetry]]
+		],
 
 		(* Tests *)
 		Test["Populate the InjectionPlateSeal, RefillSample, and RunTime fields:",
@@ -850,6 +941,8 @@ DefineTests[
 			Variables :> {prot}
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs :> {
 		(* I am an important stub that prevents the tester from getting a bunch of notifications *)
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
@@ -1511,11 +1604,11 @@ DefineTests[ExperimentDifferentialScanningCalorimetryPreview,
 			ExperimentDifferentialScanningCalorimetryPreview[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID]],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentDifferentialScanningCalorimetryPreview[{{Object[Sample, "PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID], Object[Sample, "DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID]}}],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple poooled samples:"},
+		Example[{Basic, "Return Null for multiple pooled samples:"},
 			ExperimentDifferentialScanningCalorimetryPreview[{{Object[Sample, "PNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID], Object[Sample, "DNA sample 1 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID]}, {Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetryPreview testing"<> $SessionUUID]}}],
 			Null
 		]

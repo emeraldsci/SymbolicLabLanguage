@@ -24,7 +24,6 @@ DefineObjectType[Model[Instrument, SampleInspector], {
 			Class -> Expression,
 			Pattern :> SampleInspectorIlluminationDirectionP,
 			Description -> "The directions from which light sources can be provided relative to the sample positioned on the agitator in this model of the instrument.",
-			Description -> "The directions from which light sources can be provided relative to the sample positioned on the agitator.",
 			Category -> "Instrument Specifications",
 			Abstract -> True
 		},

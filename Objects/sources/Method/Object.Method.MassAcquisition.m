@@ -212,7 +212,7 @@ DefineObjectType[Object[Method, MassAcquisition], {
 		LowCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Volt],
+			Pattern :> GreaterEqualP[0*Volt],
 			Units -> Volt,
 			Description -> "For each member of AcquisitionWindows, the lowest value of the linear function for applied potential as mapped to the MinMass.",
 			IndexMatching -> AcquisitionWindows,
@@ -221,7 +221,7 @@ DefineObjectType[Object[Method, MassAcquisition], {
 		HighCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Volt],
+			Pattern :> GreaterEqualP[0*Volt],
 			Units -> Volt,
 			Description -> "For each member of AcquisitionWindows, the highest value of the linear function for applied potential as mapped to the MinMass.",
 			IndexMatching -> AcquisitionWindows,

@@ -132,6 +132,13 @@ DefineOptions[PlotTable,
 			Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[True,False]],
 			Category->"Plot Labeling"
 		},
+		{
+			OptionName -> HeaderCopy,
+			Default -> Contents,
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Contents|Header]],
+			Description -> "Determines what to copy when clicking on the table headers."
+		},
 
 		ModifyOptions[GridOption,
 			{
@@ -185,11 +192,12 @@ PlotTable::SecondaryLabelMismatch="The number of secondary headers (`1`) cannot 
 (*
 	Given raw list data
 *)
-PlotTable[items:{_List..},ops:OptionsPattern[]]:=Module[{
-	listedOptions,outputSpecification,output,gatherTests,safeOptions,safeOptionTests,namedItems,
-	unresolvedOptions,combinedOptions,resolvedOptionsResult,resolvedOptions, itemsWithHeaders,
-	resolvedOptionsTests,outputTable, previewRule, optionsRule, testsRule, resultRule
-},
+PlotTable[items:{_List..},ops:OptionsPattern[]]:=Module[
+	{
+		listedOptions,outputSpecification,output,gatherTests,safeOptions,safeOptionTests,namedItems,
+		resolvedOptionsResult,resolvedOptions, itemsWithHeaders,
+		resolvedOptionsTests,outputTable, previewRule, optionsRule, testsRule, resultRule
+	},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[ops];
@@ -217,12 +225,8 @@ PlotTable[items:{_List..},ops:OptionsPattern[]]:=Module[{
 		}]
 	];
 
-	unresolvedOptions = listedOptions;
-
-	combinedOptions=ReplaceRule[safeOptions,unresolvedOptions];
-
 	(* If we are displaying object references by names, let do that conversion now *)
-	namedItems = If[Lookup[combinedOptions, ShowNamedObjects],
+	namedItems = If[Lookup[safeOptions, ShowNamedObjects],
 		(* True case *)
 		NamedObject[items],
 		(* False case: let's at least remove any links from objects *)
@@ -234,8 +238,8 @@ PlotTable[items:{_List..},ops:OptionsPattern[]]:=Module[{
 	(* Check will return $Failed if InvalidInput/InvalidOption is thrown, indicating we can't actually return the standard result *)
 	resolvedOptionsResult=Check[
 		{{itemsWithHeaders, resolvedOptions}, resolvedOptionsTests}=If[gatherTests,
-			resolvePlotTableOptions[namedItems,listedOptions,combinedOptions,Output->{Result,Tests}],
-			{resolvePlotTableOptions[namedItems,listedOptions,combinedOptions],Null}
+			resolvePlotTableOptions[namedItems,listedOptions,safeOptions,Output->{Result,Tests}],
+			{resolvePlotTableOptions[namedItems,listedOptions,safeOptions],Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -255,7 +259,17 @@ PlotTable[items:{_List..},ops:OptionsPattern[]]:=Module[{
 
    (* Prepare the Options result if we were asked to do so *)
 	optionsRule=Options->If[MemberQ[output,Options],
-		RemoveHiddenOptions[PlotTable,resolvedOptions],
+		Module[{noHidden},
+			noHidden=RemoveHiddenOptions[PlotTable,resolvedOptions];
+			ReplaceRule[noHidden,{
+				(*we are building extra stuff into our alignment when we want to pass it to the Grid command, extract only what user can enter to PlotTable*)
+				Alignment->Cases[Lookup[noHidden,Alignment],Alternatives[Automatic,Left,Right,Top,Bottom,Baseline,Center]],
+				(* for Grid call, we make extra directives so only show what we got from SafeOptions since we would keep anything that the user would put in*)
+				(* we want to use listed options over safe options here because we expand the values that the user gave us in the SafeOptions call in a weird way *)
+				Dividers->Lookup[safeOptions, Dividers]
+				}
+			]
+		],
 		Null
 	];
 
@@ -478,7 +492,8 @@ resolveItemsWithHeaders[items_, rowLabels_, colLabels_, secondaryHeaders_, myOpt
       {2}
     ],
     Map[
-      Style[#,FontSize -> 11]&,
+      (* Ensure text styling is the same as when it uses Button above *)
+      Style[#,"GenericButton",FontSize -> 11]&,
       processedItems,
       {2}
     ]
@@ -654,6 +669,8 @@ resolveDividers[dividers_,rowLabels_,secondaryRowLabelsFormatted_,colLabels_,sec
 ];
 
 
+(* a helper to convert user-specified alignment (user is only allowed to specify Alignment directly for the contents of the table) *)
+(* we add extra Alignment elements here for the headers, note that when we return this to the user with Output->Options, we have to remove these extra things *)
 resolveAlignment[rowLabels_,secondaryRowLabelsFormatted_,colLabels_,secondaryColumnLabelsFormatted_,itemsWithHeaders_]:=Module[
 	{},
 
@@ -703,32 +720,55 @@ resolveAlignment[rowLabels_,secondaryRowLabelsFormatted_,colLabels_,secondaryCol
 ];
 
 
-formatTableHeaders[headerList_,contents_,safeOps_]:=Module[{processedHeaders,backgroundOption,styledHeaders},
+formatTableHeaders[headerList_,contents_,safeOps_]:=Module[{processedHeaders,styledHeaders,headerCopy,copyContentsQ,whatToCopy},
 
 	(* format values in headers *)
 	processedHeaders = Quiet[processItems[headerList,Infinity,safeOps], {Part::partd,Part::pspec1}];
 
     (* set style of other things in headers *)
-    styledHeaders=Replace[processedHeaders,x_:>Style[x,Bold,11,FontFamily->"Helvetica",RGBColor["#4A4A4A"],TextAlignment->Lookup[safeOps,HeaderTextAlignment]],{1}];
+	styledHeaders = Replace[processedHeaders, x_ :> Style[x, Bold, 11, FontFamily -> "Helvetica", RGBColor["#4A4A4A"], TextAlignment -> Lookup[safeOps, HeaderTextAlignment]], {1}];
+
+	(* Lookup the HeaderCopy option from SafeOps *)
+	headerCopy = Lookup[safeOps,HeaderCopy,Contents];
+
+	(* See what we are copying *)
+	copyContentsQ = MatchQ[headerCopy,Contents];
+
+	(* Define what we will copy *)
+	whatToCopy = If[copyContentsQ,
+		contents,
+		processedHeaders
+	];
 
 	(* Make each header a button to copy the row/column contents *)
 	If[
 		MatchQ[Lookup[safeOps,Tooltips],True],
 		MapThread[
-			Tooltip[
-				Button[
-					#1,
-					CopyToClipboard[#2],
-					Appearance -> None, Method -> "Queued"
-				],
-				"Copy list to clipboard"]&,{styledHeaders,contents}],
-		styledHeaders
+			Function[{styledHeader,copyContent},
+				Tooltip[
+					Button[
+						styledHeader,
+						CopyToClipboard[copyContent],
+						Appearance -> None, Method -> "Queued"
+					],
+					If[copyContentsQ,
+						"Copy list to clipboard",
+						"Copy header to clipboard"
+					]
+				]
+			],
+			{styledHeaders,whatToCopy}
+		],
+		(* Ensure text styling is the same as when it uses Button above *)
+		Style[#,"GenericButton"]&/@styledHeaders
 	]
 
 
 ];
 
 
+(* Tiny helper to format the table headers so that we can call it in multiple places *)
+styleTableHeaders[items_, alignment : Alternatives[Left,Right,Center]] := Replace[items,x_:>Style[x,Bold,11,FontFamily->"Helvetica",RGBColor["#4A4A4A"],TextAlignment->alignment],{1}];
 
 
 (*
@@ -768,7 +808,7 @@ resolveSecondaryTableHeadings[headersAndSpan:{{_,_Integer}..},cellLength_Integer
   processedHeaders = Quiet[processItems[headers,Infinity,safeOps], {Part::partd,Part::pspec1}];
 
   (* set style of other things in headers *)
-  styledHeaders=Replace[processedHeaders,x_:>Style[x,Bold,11,FontFamily->"Helvetica",RGBColor["#4A4A4A"],TextAlignment->Lookup[safeOps,HeaderTextAlignment]],{1}];
+  styledHeaders=styleTableHeaders[processedHeaders,Lookup[safeOps,HeaderTextAlignment]];
 
   (* Row headers span from above, column headers span from left *)
   spanningDirection=If[MatchQ[dimensionSpecification,Row],
@@ -805,7 +845,7 @@ resolveSecondaryTableHeadings[headers_List,cellLength_Integer,dimensionSpecifica
   processedHeaders = Quiet[processItems[headers,Infinity,safeOps], {Part::partd,Part::pspec1}];
 
   (* set style of other things in headers *)
-  styledHeaders=Replace[processedHeaders,x_:>Style[x,Bold,11,FontFamily->"Helvetica",RGBColor["#4A4A4A"],TextAlignment->Lookup[safeOps,HeaderTextAlignment]],{1}];
+  styledHeaders=styleTableHeaders[processedHeaders,Lookup[safeOps,HeaderTextAlignment]];
 
   (* Subtract 1 from the number of cells a header will span to leave space for the header itself *)
   spanningLength=headersCellsRatio-1;
@@ -941,7 +981,7 @@ PlotTableOptions[items:{_List..},ops:OptionsPattern[]]:=Module[
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = PlotTable[items,Evaluate[Append[noOutputOptions,Output->Options]]];
@@ -965,7 +1005,7 @@ PlotTableOptions[objects:ListableP[ObjectP[]],fields_,ops:OptionsPattern[]]:=Mod
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = PlotTable[objects,fields,Evaluate[Append[noOutputOptions,Output->Options]]];

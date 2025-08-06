@@ -54,7 +54,7 @@ Error::MultipleOptionValueInputs = "The following options, `1`, are specified in
 resolveSharedOptions[
   myChildFunction_Symbol,
   myErrorMessagePrefix_String,
-  mySamplePackets:{PacketP[Object[Sample]]...},
+  mySamplePackets:{(PacketP[Object[Sample]]|ObjectP[Model[Sample]])...},(*Model[Sample] should also be supported after experiments are supporting model input. No specific info from the packets are used in this helper*)
   myResolverMasterSwitches:{BooleanP..},
   myOptionMap:{_Rule...},
   myOptions:{_Rule...},
@@ -63,7 +63,7 @@ resolveSharedOptions[
   gatherTestsQ:BooleanP,
   myResolutionOptions:OptionsPattern[resolveSharedOptions]
 ] := Module[
-  {safeOptions, cache, simulation, samplePacketsToResolve, mapThreadOptionsToResolve, resolverErrorsThrownQ, resolvedChildOptions,
+  {safeOptions, mySamples, cache, simulation, samplesToResolve, mapThreadOptionsToResolve, resolverErrorsThrownQ, resolvedChildOptions,
     newSimulation, childResolverTests, callChildResolverQ, fullyResolvedOptions, myResolverMasterSwitchPositions, childResolverCalledPositions, debugQ, additionalInputs, additionalInputsNotIndexMatchingQ, doubleInputOptions, additionalInputsToResolve},
 
   (* Get our safe options. *)
@@ -76,6 +76,11 @@ resolveSharedOptions[
   (*gather additional inputs*)
   debugQ = Lookup[safeOptions, Debug];
   additionalInputs = Lookup[safeOptions, AdditionalInputs];
+  (*Get an object format of samples*)
+  mySamples = If[MatchQ[#,PacketP[Object[Sample]]],
+    Lookup[#,Object],
+    #
+  ]& /@ mySamplePackets;
 
   (*check that the additional inputs are index matched to the sample packets*)
   additionalInputsNotIndexMatchingQ = !MatchQ[additionalInputs, Null] && !MatchQ[Length/@additionalInputs, {Length[mySamplePackets]..}];
@@ -139,12 +144,12 @@ resolveSharedOptions[
 
   If[
     debugQ,
-    Echo[Lookup[#, Object]& /@PickList[mySamplePackets, callChildResolverQ, True], "Samples going into child function:"];
-    Echo[Lookup[#, Object]& /@PickList[mySamplePackets, callChildResolverQ, False], "Samples NOT going into child function:"];
+    Echo[PickList[mySamples, callChildResolverQ, True], "Samples going into child function:"];
+    Echo[PickList[mySamples, callChildResolverQ, False], "Samples NOT going into child function:"];
   ];
 
   (* Figure out the samples and options that need to be passed down to the child function resolver. *)
-  samplePacketsToResolve=PickList[mySamplePackets, callChildResolverQ, True];
+  samplesToResolve=PickList[mySamples, callChildResolverQ, True];
   mapThreadOptionsToResolve=PickList[myMapThreadOptions, callChildResolverQ, True];
 
   (*Gather additionalInputs to resolve. Need to specify Map levelspec in case additionalInputs are lists of lists*)
@@ -154,7 +159,7 @@ resolveSharedOptions[
       ];
 
   (* Call child resolver function. *)
-  {resolverErrorsThrownQ, resolvedChildOptions, newSimulation, childResolverTests}=If[Length[samplePacketsToResolve]==0,
+  {resolverErrorsThrownQ, resolvedChildOptions, newSimulation, childResolverTests}=If[Length[samplesToResolve]==0,
     {False, {}, Null, {}},
     Module[{gatherSimulationQ,helperOutputQ},
       (* A bool to check if the childResolver we are calling can output Simulation or not, b/c some helper resolvers cannot *)
@@ -168,10 +173,10 @@ resolveSharedOptions[
           {errorsThrownQ,{options,tests}}=ModifyFunctionMessages[
             myChildFunction,
             If[MatchQ[additionalInputs,Null],
-              {Lookup[samplePacketsToResolve,Object]},
-              {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+              {samplesToResolve},
+              {samplesToResolve,Sequence@@additionalInputsToResolve}
             ],
-            myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+            myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
             myOptionMap,
             Join[
               (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -209,10 +214,10 @@ resolveSharedOptions[
             {errorsThrownQ,{options,newSimulation,tests}}=ModifyFunctionMessages[
               myChildFunction,
               If[MatchQ[additionalInputs,Null],
-                {Lookup[samplePacketsToResolve,Object]},
-                {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+                {samplesToResolve},
+                {samplesToResolve,Sequence@@additionalInputsToResolve}
               ],
-              myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+              myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
               myOptionMap,
               Join[
                 (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -247,10 +252,10 @@ resolveSharedOptions[
             {errorsThrownQ,{options,tests}}=ModifyFunctionMessages[
               myChildFunction,
               If[MatchQ[additionalInputs,Null],
-                {Lookup[samplePacketsToResolve,Object]},
-                {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+                {samplesToResolve},
+                {samplesToResolve,Sequence@@additionalInputsToResolve}
               ],
-              myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+              myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
               myOptionMap,
               Join[
                 (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -291,10 +296,10 @@ resolveSharedOptions[
           {errorsThrownQ,{options}}=ModifyFunctionMessages[
             myChildFunction,
             If[MatchQ[additionalInputs,Null],
-              {Lookup[samplePacketsToResolve,Object]},
-              {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+              {samplesToResolve},
+              {samplesToResolve,Sequence@@additionalInputsToResolve}
             ],
-            myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+            myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
             myOptionMap,
             Join[
               (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -332,10 +337,10 @@ resolveSharedOptions[
             {errorsThrownQ,{options,newSimulation}}=ModifyFunctionMessages[
               myChildFunction,
               If[MatchQ[additionalInputs,Null],
-                {Lookup[samplePacketsToResolve,Object]},
-                {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+                {samplesToResolve},
+                {samplesToResolve,Sequence@@additionalInputsToResolve}
               ],
-              myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+              myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
               myOptionMap,
               Join[
                 (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -370,10 +375,10 @@ resolveSharedOptions[
             {errorsThrownQ,{options}}=ModifyFunctionMessages[
               myChildFunction,
               If[MatchQ[additionalInputs,Null],
-                {Lookup[samplePacketsToResolve,Object]},
-                {Lookup[samplePacketsToResolve,Object],Sequence@@additionalInputsToResolve}
+                {samplesToResolve},
+                {samplesToResolve,Sequence@@additionalInputsToResolve}
               ],
-              myErrorMessagePrefix<>ObjectToString[samplePacketsToResolve]<>": ",
+              myErrorMessagePrefix<>ObjectToString[samplesToResolve]<>": ",
               myOptionMap,
               Join[
                 (* For each original option given in the option map, KeyValueMap uses the option map to lookup *)
@@ -420,7 +425,7 @@ resolveSharedOptions[
   (* Map over all Symbols/Options which were provided and either output unchanged, or changed options, based on what made it through the childResolver *)
   fullyResolvedOptions=Map[
     Function[optionSymbol,
-      (* Module serves to temporarily make two seperate lists based on original and new options *)
+      (* Module serves to temporarily make two separate lists based on original and new options *)
       Module[{inputOptions, indexMatchedQ, nestedIndexMatchedQ, resolvedOptions},
 
         (* Check if the option being resolved is index-matched. *)
@@ -491,7 +496,7 @@ resolveSharedOptions[
 
               childOptionSymbol = Lookup[myOptionMap, optionSymbol];
 
-              expandedInputs = ExpandIndexMatchedInputs[myChildFunction, {Lookup[samplePacketsToResolve, Object]}, {childOptionSymbol -> Lookup[resolvedChildOptions, optionSymbol]}];
+              expandedInputs = ExpandIndexMatchedInputs[myChildFunction, {samplesToResolve}, {childOptionSymbol -> Lookup[resolvedChildOptions, optionSymbol]}];
 
               Lookup[expandedInputs[[2]], childOptionSymbol]
 

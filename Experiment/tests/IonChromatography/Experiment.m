@@ -46,7 +46,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240
         ],
         Example[
-            {Basic,"Automatically resolve of all options for samples with a defined AnionInjectionTable:"},
+            {Basic,"Automatically resolve all options for samples with a defined AnionInjectionTable:"},
 
             customAnionInjectionTable={
                 {ColumnPrime,AnionChannel,Object[Method,IonChromatographyGradient,"ExperimentIC Test Anion Gradient Object 1" <> $SessionUUID]},
@@ -69,7 +69,7 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{customAnionInjectionTable,options}
         ],
         Example[
-            {Basic,"Automatically resolve of all options for samples with a defined CationInjectionTable:"},
+            {Basic,"Automatically resolve all options for samples with a defined CationInjectionTable:"},
 
             customCationInjectionTable={
                 {ColumnPrime,CationChannel,Object[Method,IonChromatographyGradient,"ExperimentIC Test Cation Gradient Object 1" <> $SessionUUID]},
@@ -92,7 +92,7 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{customCationInjectionTable,options}
         ],
         Example[
-            {Basic,"Automatically resolve of all options for samples with a defined ElectrochemicalInjectionTable:"},
+            {Basic,"Automatically resolve all options for samples with a defined ElectrochemicalInjectionTable:"},
 
             customElectrochemicalInjectionTable={
                 {ColumnPrime,Object[Method,Gradient,"ExperimentIC Test Gradient Object 1" <> $SessionUUID],Object[Method,Waveform,"id:dORYzZJOGLZD"],Null},
@@ -168,7 +168,7 @@ DefineTests[ExperimentIonChromatography,
         Example[{Additional,"Automatically assumes a Blank sample if any of the blank options were specified:"},
             options=ExperimentIonChromatography[
                 Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
-                CationBlankSuppressorMode->DynamicMode,
+                BlankAnalysisChannel -> CationChannel,
                 Upload->False,
                 Output->Options
             ];
@@ -189,7 +189,7 @@ DefineTests[ExperimentIonChromatography,
                 CationGradient->Object[Method,IonChromatographyGradient,"ExperimentIC Test Cation Gradient Object 1" <> $SessionUUID],
                 CationInjectionVolume->10 Microliter,
                 AnionInjectionVolume->10 Microliter,
-                AnionSuppressorVoltage->5 Volt
+                AnionSuppressorCurrent->5 Milliampere
             ],
             ObjectP[Object[Protocol,IonChromatography]],
             Variables:>{protocol},
@@ -241,17 +241,59 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{customCationInjectionTable,options},
             TimeConstraint->240
         ],
+        Example[
+            {Additional,"A resolved injection table will group all replicates for each input sample together:"},
 
+            protocol=ExperimentIonChromatography[
+                {Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID]},
+                NumberOfReplicates -> 3
+            ];
+            protocol[AnionInjectionTable],
+            {<|Type -> ColumnPrime, Sample -> Null, AnalysisChannel -> AnionChannel, InjectionVolume -> Null, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 2" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 2" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 2" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> Sample, Sample -> ObjectP[Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID]], AnalysisChannel -> AnionChannel, InjectionVolume -> 10. Microliter, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>,
+                <|Type -> ColumnFlush, Sample -> Null, AnalysisChannel -> AnionChannel, InjectionVolume -> Null, Gradient -> ObjectP[Object[Method, IonChromatographyGradient]], DilutionFactor -> Null, ColumnTemperature -> 25. Celsius, Data -> Null|>},
+            Variables:>{protocol},
+            TimeConstraint->240
+        ],
 
         (* --- Message tests --- *)
+
+        Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+            ExperimentIonChromatography[Object[Sample, "Nonexistent sample"]],
+            $Failed,
+            Messages :> {Download::ObjectDoesNotExist}
+        ],
+        Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+            ExperimentIonChromatography[Object[Container, Vessel, "Nonexistent container"]],
+            $Failed,
+            Messages :> {Download::ObjectDoesNotExist}
+        ],
+        Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+            ExperimentIonChromatography[Object[Sample, "id:12345678"]],
+            $Failed,
+            Messages :> {Download::ObjectDoesNotExist}
+        ],
+        Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+            ExperimentIonChromatography[Object[Container, Vessel, "id:12345678"]],
+            $Failed,
+            Messages :> {Download::ObjectDoesNotExist}
+        ],
+
         Example[{Messages,"ObjectDoesNotExist","Return a warning when any specific object does not exist in the database:"},
             ExperimentIonChromatography[
                 {Object[Sample,"ExperimentIC Test Sample 10"],Object[Sample,"ExperimentIC Test Sample 11"],Object[Sample,"ExperimentIC Test Sample 12"]}
             ],
             $Failed,
             Messages:>{
-                Error::ObjectDoesNotExist,
-                Error::InvalidInput
+                Download::ObjectDoesNotExist
             }
         ],
         Example[{Messages,"DuplicateName","Specified protocol Name does not already exist in SLL:"},
@@ -375,6 +417,16 @@ DefineTests[ExperimentIonChromatography,
             ObjectP[Object[Protocol,IonChromatography]],
             Messages:>{
                 Warning::IncompatibleICDetector
+            }
+        ],
+        Example[{Messages,"NonRecommendedICInjectionVolume","If an injection volume between the sample loop volume and one half of the sample loop volume is specified, throw a warning:"},
+            ExperimentIonChromatography[
+                Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
+                AnionInjectionVolume->8 Microliter
+            ],
+            ObjectP[Object[Protocol,IonChromatography]],
+            Messages:>{
+                Warning::NonRecommendedICInjectionVolume
             }
         ],
         Example[{Messages,"HPICConflictingDetectionOptions","The specified detection options are not conflicting with the specified Detector option value:"},
@@ -1078,6 +1130,39 @@ DefineTests[ExperimentIonChromatography,
         ],
 
         (* --- Experiment options tests --- *)
+        Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+            options = ExperimentIonChromatography[
+                {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+                PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+                PreparedModelAmount -> 1 Milliliter,
+                Output -> Options
+            ];
+            prepUOs = Lookup[options, PreparatoryUnitOperations];
+            {
+                prepUOs[[-1, 1]][Sample],
+                prepUOs[[-1, 1]][Container],
+                prepUOs[[-1, 1]][Amount],
+                prepUOs[[-1, 1]][Well],
+                prepUOs[[-1, 1]][ContainerLabel]
+            },
+            {
+                {ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+                {ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+                {EqualP[1 Milliliter]..},
+                {"A1", "B1"},
+                {_String, _String}
+            },
+            Variables :> {options, prepUOs}
+        ],
+        Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+            ExperimentIonChromatography[
+                Model[Sample, "Ammonium hydroxide"],
+                PreparedModelAmount -> 0.5 Milliliter,
+                Aliquot -> True,
+                Mix -> True
+            ],
+            ObjectP[Object[Protocol, IonChromatography]]
+        ],
         Example[
             {Options,Instrument,"Specify the measurement device on which the protocol is to be run:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -1137,7 +1222,7 @@ DefineTests[ExperimentIonChromatography,
                 AnalysisChannel->ElectrochemicalChannel
             ];
             Download[protocol,{AnionSamples,CationSamples}],
-            {{Null},{Null}},
+            {{},{}},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -1238,13 +1323,24 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{protocol}
         ],
         Example[
-            {Options,AnionColumn,"Specify a device with positively-charged resin through which the buffer and anion samples flow:"},
+            {Options,AnionColumn,"Specify a device model with positively-charged resin through which the buffer and anion samples flow:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
-                AnionColumn->Model[Item,Column,"Dionex IonPac AS18-Fast IC Analytical Column"],
+                AnionColumn->Model[Item, Column, "id:6V0npvm3W4za"],
                 Output->Options
             ];
             Lookup[options,AnionColumn],
-            Model[Item,Column,"Dionex IonPac AS18-Fast IC Analytical Column"][Object],
+            ObjectP[Model[Item, Column, "id:6V0npvm3W4za"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,AnionColumn,"Specify a device object with positively-charged resin through which the buffer and anion samples flow:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                AnionColumn->Object[Item,Column,"IonPac AS18-Fast IC" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,AnionColumn],
+            ObjectP[Object[Item,Column,"IonPac AS18-Fast IC" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -1261,14 +1357,26 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options}
         ],
         Example[
-            {Options,CationColumn,"Specify a device with negatively-charged resin through which the buffer and input samples flow:"},
+            {Options,CationColumn,"Specify a device model with negatively-charged resin through which the buffer and input samples flow:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
                 CationSamples->{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
-                CationColumn->Model[Item,Column,"Dionex IonPac CS16 4Micron IC Analytical Column"],
+                CationColumn->Model[Item, Column, "id:Z1lqpMz94jlL"],
                 Output->Options
             ];
             Lookup[options,CationColumn],
-            Model[Item,Column,"Dionex IonPac CS16 4Micron IC Analytical Column"][Object],
+            ObjectP[Model[Item, Column, "id:Z1lqpMz94jlL"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,CationColumn,"Specify a device object with negatively-charged resin through which the buffer and input samples flow:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                CationSamples->{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
+                CationColumn->Object[Item,Column,"IonPac CS16 4Micron IC" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,CationColumn],
+            ObjectP[Object[Item,Column,"IonPac CS16 4Micron IC" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -1285,14 +1393,26 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options}
         ],
         Example[
-            {Options,Column,"Specify a device through which the buffer and input samples flow in ElectrochemicalChannel:"},
+            {Options,Column,"Specify a device model through which the buffer and input samples flow in ElectrochemicalChannel:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
                 AnalysisChannel->ElectrochemicalChannel,
-                Column->Model[Item, Column, "Dionex CarboPack PA10 BioLC Analytical 4 x 250 mm"],
+                Column->Model[Item, Column, "id:wqW9BP78Xnl4"],
                 Output->Options
             ];
             Lookup[options,Column],
-            Model[Item, Column, "Dionex CarboPack PA10 BioLC Analytical 4 x 250 mm"][Object],
+            ObjectP[Model[Item, Column, "id:wqW9BP78Xnl4"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,Column,"Specify a device object through which the buffer and input samples flow in ElectrochemicalChannel:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                AnalysisChannel->ElectrochemicalChannel,
+                Column->Object[Item, Column, "CarboPack PA10 BioLC" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,Column],
+            ObjectP[Object[Item, Column, "CarboPack PA10 BioLC" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -1308,13 +1428,24 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options}
         ],
         Example[
-            {Options,AnionGuardColumn,"Specify a protective device placed in the flow path before the AnionColumn in order to adsorb fouling contaminants and, thus, preserve the AnionColumn lifetime:"},
+            {Options,AnionGuardColumn,"Specify a protective device model placed in the flow path before the AnionColumn in order to adsorb fouling contaminants and, thus, preserve the AnionColumn lifetime:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
-                AnionGuardColumn->Model[Item,Column,"Dionex IonPac AS18 IC Guard Column"],
+                AnionGuardColumn->Model[Item, Column, "id:xRO9n3BDm765"],
                 Output->Options
             ];
             Lookup[options,AnionGuardColumn],
-            Model[Item,Column,"Dionex IonPac AS18 IC Guard Column"][Object],
+            ObjectP[Model[Item, Column, "id:xRO9n3BDm765"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,AnionGuardColumn,"Specify a protective device object placed in the flow path before the AnionColumn in order to adsorb fouling contaminants and, thus, preserve the AnionColumn lifetime:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                AnionGuardColumn->Object[Item,Column,"IonPac AS18 IC Guard" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,AnionGuardColumn],
+            ObjectP[Object[Item,Column,"IonPac AS18 IC Guard" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -1330,14 +1461,26 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options}
         ],
         Example[
-            {Options,CationGuardColumn,"Specify a protective device placed in the flow path before the CationColumn in order to adsorb fouling contaminants and, thus, preserve the CationColumn lifetime:"},
+            {Options,CationGuardColumn,"Specify a protective device model placed in the flow path before the CationColumn in order to adsorb fouling contaminants and, thus, preserve the CationColumn lifetime:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
                 CationSamples->{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
-                CationGuardColumn->Model[Item,Column,"Dionex IonPac CS16 4Micron IC Guard Column"],
+                CationGuardColumn->Model[Item, Column, "id:1ZA60vL3WjA5"],
                 Output->Options
             ];
             Lookup[options,CationGuardColumn],
-            Model[Item,Column,"Dionex IonPac CS16 4Micron IC Guard Column"][Object],
+            ObjectP[Model[Item, Column, "id:1ZA60vL3WjA5"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,CationGuardColumn,"Specify a protective device object placed in the flow path before the CationColumn in order to adsorb fouling contaminants and, thus, preserve the CationColumn lifetime:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                CationSamples->{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
+                CationGuardColumn->Object[Item,Column,"IonPac CS16 4Micron IC Guard" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,CationGuardColumn],
+            ObjectP[Object[Item,Column,"IonPac CS16 4Micron IC Guard" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -1353,14 +1496,26 @@ DefineTests[ExperimentIonChromatography,
             Variables:>{options}
         ],
         Example[
-            {Options,GuardColumn,"Specify a protective device placed in the flow path before the Column in order to adsorb fouling contaminants and, thus, preserve the Column lifetime:"},
+            {Options,GuardColumn,"Specify a protective device model placed in the flow path before the Column in order to adsorb fouling contaminants and, thus, preserve the Column lifetime:"},
             options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
                 AnalysisChannel->ElectrochemicalChannel,
-                GuardColumn->Model[Item,Column,"Dionex CarboPack PA10 BioLC Guard 4 x 50 mm"],
+                GuardColumn->Model[Item, Column, "id:Vrbp1jKPW6JW"],
                 Output->Options
             ];
             Lookup[options,GuardColumn],
-            Model[Item,Column,"Dionex CarboPack PA10 BioLC Guard 4 x 50 mm"][Object],
+            ObjectP[Model[Item, Column, "id:Vrbp1jKPW6JW"]],
+            TimeConstraint->240,
+            Variables:>{options}
+        ],
+        Example[
+            {Options,GuardColumn,"Specify a protective device object placed in the flow path before the Column in order to adsorb fouling contaminants and, thus, preserve the Column lifetime:"},
+            options=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
+                AnalysisChannel->ElectrochemicalChannel,
+                GuardColumn->Object[Item,Column,"CarboPack PA10 BioLC Guard" <> $SessionUUID],
+                Output->Options
+            ];
+            Lookup[options,GuardColumn],
+            ObjectP[Object[Item,Column,"CarboPack PA10 BioLC Guard" <> $SessionUUID]],
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -2026,6 +2181,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{options}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,AnionSuppressorMode,"Specify the mode of operation for anion suppressor:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
@@ -2036,6 +2193,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,AnionSuppressorMode,"AnionSuppressorMode automatically resolves to LegacyMode if AnionSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
@@ -2046,6 +2204,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,AnionSuppressorMode,"AnionSuppressorMode automatically resolves to DynamicMode if AnionSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
@@ -2066,6 +2226,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,AnionSuppressorVoltage,"AnionSuppressorVoltage automatically resolves to Null if AnionSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
@@ -2086,6 +2247,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,AnionSuppressorCurrent,"AnionSuppressorCurrent automatically resolves to Null if AnionSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID]},
@@ -2096,6 +2259,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,AnionDetectionTemperature,"Specify the temperature of the cell where conductivity of the anion sample is measured:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2117,6 +2281,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,CationSuppressorMode,"Specify the mode of operation for cation suppressor:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2128,6 +2294,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,CationSuppressorMode,"CationSuppressorMode automatically resolves to LegacyMode if CationSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2139,6 +2306,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,CationSuppressorMode,"CationSuppressorMode automatically resolves to DynamicMode if CationSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2161,6 +2330,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,CationSuppressorVoltage,"CationSuppressorVoltage automatically resolves to Null if CationSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2183,6 +2353,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[
             {Options,CationSuppressorCurrent,"CationSuppressorCurrent automatically resolves to Null if CationSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -2194,6 +2366,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,CationDetectionTemperature,"Specify the temperature of the cell where conductivity of the cation sample is measured:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 2" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 4" <> $SessionUUID]},
@@ -3086,11 +3259,11 @@ DefineTests[ExperimentIonChromatography,
             {Options,AnionStandardInjectionVolume,"Specify the physical quantity of each AnionStandard to inject into the system:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 Standard->{Model[Sample,"Multielement Ion Chromatography Anion Standard Solution"]},
-                AnionStandardInjectionVolume->{7 Microliter},
+                AnionStandardInjectionVolume->{4 Microliter},
                 AnionStandardFrequency->First
             ];
             Cases[Download[protocol,AnionInjectionTable],KeyValuePattern[Type->Standard]][[All,4]],
-            {7. Microliter},
+            {4. Microliter},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -3111,11 +3284,11 @@ DefineTests[ExperimentIonChromatography,
             {Options,CationStandardInjectionVolume,"Specify the physical quantity of each CationStandard to inject into the system:"},
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID]},
                 Standard->{Model[Sample,"Multi Cation Standard 1 for IC"]},
-                CationStandardInjectionVolume->{7 Microliter},
+                CationStandardInjectionVolume->{5 Microliter},
                 CationStandardFrequency->First
             ];
             Cases[Download[protocol,CationInjectionTable],KeyValuePattern[Type->Standard]][[All,4]],
-            {7. Microliter},
+            {5. Microliter},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -3137,11 +3310,11 @@ DefineTests[ExperimentIonChromatography,
             protocol=ExperimentIonChromatography[{Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID]},
                 AnalysisChannel->ElectrochemicalChannel,
                 Standard->{Model[Sample,"Milli-Q water"]},
-                StandardInjectionVolume->{7 Microliter},
+                StandardInjectionVolume->{3 Microliter},
                 StandardFrequency->First
             ];
             Cases[Download[protocol,ElectrochemicalInjectionTable],KeyValuePattern[Type->Standard]][[All,3]],
-            {7. Microliter},
+            {3. Microliter},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -3423,6 +3596,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionStandardSuppressorCurrent,"AnionStandardSuppressorCurrent automatically resolves to Null if AnionStandardSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionStandard->Model[Sample,"Multielement Ion Chromatography Anion Standard Solution"],
@@ -3433,6 +3608,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[
             {Options,AnionStandardDetectionTemperature,"Specify the temperature of the cell where conductivity of the AnionStandard sample is measured:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
@@ -3545,10 +3721,10 @@ DefineTests[ExperimentIonChromatography,
             {Options,CationStandardFlowRate,"Specify the speed of the fluid through the system for CationStandard samples:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
-                CationStandardFlowRate->0.55 Milliliter/Minute
+                CationStandardFlowRate->0.20 Milliliter/Minute
             ];
             Download[protocol,CationStandardFlowRate],
-            {0.55 Milliliter/Minute},
+            {0.20 Milliliter/Minute},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -3637,6 +3813,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationStandardSuppressorMode,"Specify the mode of operation for cation suppressor during standard injections:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -3647,6 +3825,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationStandardSuppressorMode,"CationStandardSuppressorMode automatically resolves to LegacyMode CationStandardSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -3657,6 +3836,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationStandardSuppressorMode,"CationStandardSuppressorMode automatically resolves to DynamicMode if CationStandardSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -3676,6 +3857,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationStandardSuppressorVoltage,"CationStandardSuppressorVoltage automatically resolves to Null if CationStandardSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -3697,6 +3879,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationStandardSuppressorCurrent,"CationStandardSuppressorCurrent automatically resolves to Null if CationStandardSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -3707,7 +3891,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
-
+        *)
         Example[{Options,CationStandardDetectionTemperature,"Specify the temperature of the cell where conductivity of the CationStandard sample is measured:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationStandard->Model[Sample,"Multi Cation Standard 1 for IC"],
@@ -4840,6 +5024,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionBlankSuppressorCurrent,"AnionBlankSuppressorCurrent automatically resolves to Null if AnionBlankSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionBlank->Model[Sample,"Milli-Q water"],
@@ -4850,6 +5036,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionBlankDetectionTemperature,"Specify the temperature of the cell where conductivity of the AnionBlank sample is measured:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionBlank->Model[Sample,"Milli-Q water"],
@@ -4953,10 +5140,10 @@ DefineTests[ExperimentIonChromatography,
         Example[{Options,CationBlankFlowRate,"Specify the speed of the fluid through the system for CationBlank samples:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
-                CationBlankFlowRate->0.55 Milliliter/Minute
+                CationBlankFlowRate->0.20 Milliliter/Minute
             ];
             Download[protocol,CationBlankFlowRate],
-            {0.55 Milliliter/Minute},
+            {0.20 Milliliter/Minute},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -5043,6 +5230,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationBlankSuppressorMode,"Specify the mode of operation for anion suppressor during blank injections:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5053,6 +5242,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationBlankSuppressorMode,"CationBlankSuppressorMode automatically resolves to LegacyMode if CationBlankSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5063,6 +5253,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationBlankSuppressorMode,"CationBlankSuppressorMode automatically resolves to DynamicMode if CationBlankSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5083,6 +5275,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationBlankSuppressorVoltage,"CationBlankSuppressorVoltage automatically resolves to Null if CationBlankSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5103,6 +5296,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationBlankSuppressorCurrent,"CationBlankSuppressorCurrent automatically resolves to Null if CationBlankSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5113,6 +5308,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationBlankDetectionTemperature,"Specify the temperature of the cell where conductivity of the CationBlank sample is measured:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationBlank->Model[Sample,"Milli-Q water"],
@@ -5881,6 +6077,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnPrimeSuppressorMode,"Specify the mode of operation for anion suppressor during anion column prime:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeSuppressorMode->DynamicMode
@@ -5890,6 +6088,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnPrimeSuppressorMode,"AnionColumnPrimeSuppressorMode automatically resolves to LegacyMode if AnionColumnPrimeSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeSuppressorCurrent->70 Milliampere
@@ -5899,6 +6098,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnPrimeSuppressorMode,"AnionColumnPrimeSuppressorMode automatically resolves to DynamicMode if AnionColumnPrimeSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeSuppressorVoltage->5 Volt
@@ -5917,6 +6118,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnPrimeSuppressorVoltage,"AnionColumnPrimeSuppressorVoltage automatically resolves to Null if AnionColumnPrimeSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeSuppressorMode->LegacyMode
@@ -5935,6 +6137,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnPrimeSuppressorCurrent,"AnionColumnPrimeSuppressorCurrent automatically resolves to Null if AnionColumnPrimeSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeSuppressorMode->DynamicMode
@@ -5944,6 +6148,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnPrimeDetectionTemperature,"Specify the temperature of the conductivity cell during anion column prime:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnPrimeDetectionTemperature->25 Celsius
@@ -6158,6 +6363,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnPrimeSuppressorMode,"Specify the mode of operation for cation suppressor during cation column prime:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeSuppressorMode->DynamicMode
@@ -6167,6 +6374,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnPrimeSuppressorMode,"CationColumnPrimeSuppressorMode automatically resolves to LegacyMode if CationColumnPrimeSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeSuppressorCurrent->25 Milliampere
@@ -6176,6 +6384,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnPrimeSuppressorMode,"CationColumnPrimeSuppressorMode automatically resolves to DynamicMode if CationColumnPrimeSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeSuppressorVoltage->5 Volt
@@ -6194,6 +6404,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnPrimeSuppressorVoltage,"CationColumnPrimeSuppressorVoltage automatically resolves to Null if CationColumnPrimeSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeSuppressorMode->LegacyMode
@@ -6212,6 +6423,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnPrimeSuppressorCurrent,"CationColumnPrimeSuppressorCurrent automatically resolves to Null if CationColumnPrimeSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeSuppressorMode->DynamicMode
@@ -6221,6 +6434,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnPrimeDetectionTemperature,"Specify the temperature of the conductivity cell during cation column prime:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnPrimeDetectionTemperature->25 Celsius
@@ -6955,6 +7169,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnFlushSuppressorMode,"Specify the mode of operation for anion suppressor during anion column flush:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushSuppressorMode->DynamicMode
@@ -6964,6 +7180,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnFlushSuppressorMode,"AnionColumnFlushSuppressorMode automatically resolves to LegacyMode if AnionColumnFlushSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushSuppressorCurrent->70 Milliampere
@@ -6973,6 +7190,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnFlushSuppressorMode,"AnionColumnFlushSuppressorMode automatically resolves to DynamicMode if AnionColumnFlushSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushSuppressorVoltage->5 Volt
@@ -6991,6 +7210,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnFlushSuppressorVoltage,"AnionColumnFlushSuppressorVoltage automatically resolves to Null if AnionColumnFlushSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushSuppressorMode->LegacyMode
@@ -7009,6 +7229,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,AnionColumnFlushSuppressorCurrent,"AnionColumnFlushSuppressorCurrent automatically resolves to Null if AnionColumnFlushSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushSuppressorMode->DynamicMode
@@ -7018,6 +7240,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,AnionColumnFlushDetectionTemperature,"Specify the temperature of the conductivity cell during anion column flush:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
                 AnionColumnFlushDetectionTemperature->25 Celsius
@@ -7220,6 +7443,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnFlushSuppressorMode,"Specify the mode of operation for cation suppressor during cation column flush:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushSuppressorMode->DynamicMode
@@ -7229,6 +7454,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnFlushSuppressorMode,"CationColumnFlushSuppressorMode automatically resolves to LegacyMode if CationColumnFlushSuppressorCurrent is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushSuppressorCurrent->25 Milliampere
@@ -7238,6 +7464,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnFlushSuppressorMode,"CationColumnFlushSuppressorMode automatically resolves to DynamicMode if CationColumnFlushSuppressorVoltage is specified:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushSuppressorVoltage->5 Volt
@@ -7256,6 +7484,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnFlushSuppressorVoltage,"CationColumnFlushSuppressorVoltage automatically resolves to Null if CationColumnFlushSuppressorMode is LegacyMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushSuppressorMode->LegacyMode
@@ -7274,6 +7503,8 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        (*This test will be uncommented when we swap to suppressors that support both power modes*)
+        (*
         Example[{Options,CationColumnFlushSuppressorCurrent,"CationColumnFlushSuppressorCurrent automatically resolves to Null if CationColumnFlushSuppressorMode is DynamicMode:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushSuppressorMode->DynamicMode
@@ -7283,6 +7514,7 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240,
             Variables:>{protocol}
         ],
+        *)
         Example[{Options,CationColumnFlushDetectionTemperature,"Specify the temperature of the conductivity cell during cation column flush:"},
             protocol=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 CationColumnFlushDetectionTemperature->25 Celsius
@@ -8329,11 +8561,11 @@ DefineTests[ExperimentIonChromatography,
         ],
         Example[{Options,TargetConcentration,"The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
             options=ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 1" <> $SessionUUID],
-                TargetConcentration->10*Micromolar,
+                TargetConcentration->100*Micromolar,
                 Output->Options
             ];
             Lookup[options,TargetConcentration],
-            10*Micromolar,
+            100*Micromolar,
             EquivalenceFunction->Equal,
             TimeConstraint->240,
             Variables:>{options}
@@ -8439,7 +8671,7 @@ DefineTests[ExperimentIonChromatography,
                 Output->Options
             ];
             Lookup[options,AliquotContainer],
-            {1,ObjectP[Model[Container,Plate,"In Situ-1 Crystallization Plate"]]},
+            {{1, ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]}},
             TimeConstraint->240,
             Variables:>{options}
         ],
@@ -8450,7 +8682,7 @@ DefineTests[ExperimentIonChromatography,
                 Output->Options
             ];
             Lookup[options,DestinationWell],
-            "A1",
+            {"A1"},
             TimeConstraint->240,
             Variables:>{protocol}
         ],
@@ -8530,38 +8762,14 @@ DefineTests[ExperimentIonChromatography,
             TimeConstraint->240
         ],
         Example[
-            {Options,PreparatoryPrimitives,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-            ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
-                BufferA->"My Buffer",
-                PreparatoryPrimitives->{
-                    Define[
-                        Name->"My Buffer",
-                        Sample->{Model[Container,Vessel,"2L Glass Bottle"],"A1"}
-                    ],
-                    Transfer[
-                        Source->Model[Sample,"Milli-Q water"],
-                        Destination->"My Buffer",
-                        Amount->500 Milliliter
-                    ],
-                    Transfer[
-                        Source->Model[Sample,StockSolution,"50 mM MSA (Methanesulfonic Acid)"],
-                        Destination->"My Buffer",
-                        Amount->500 Milliliter
-                    ]
-                }
-            ],
-            ObjectP[Object[Protocol,IonChromatography]],
-            TimeConstraint->240,
-            Variables:>{protocol}
-        ],
-        Example[
-            {Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+            {Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
             ExperimentIonChromatography[Object[Sample,"ExperimentIC Test Sample 3" <> $SessionUUID],
                 BufferA->"My Buffer",
                 PreparatoryUnitOperations->{
                     LabelContainer[
                         Label->"My Buffer Container",
-                        Container->Model[Container,Vessel,"2L Glass Bottle"]
+                        (*Model[Container,Vessel,"Corning Reusable Plastic Reagent Bottles with GL-45 PP Screw Cap, 2L"]*)
+                        Container->Model[Container,Vessel,"id:mnk9jOkn6oMZ"]
                     ],
                     Transfer[
                         Source->Model[Sample,"Milli-Q water"],
@@ -8580,8 +8788,7 @@ DefineTests[ExperimentIonChromatography,
                 }
             ],
             ObjectP[Object[Protocol,IonChromatography]],
-            TimeConstraint->240,
-            Variables:>{protocol}
+            TimeConstraint->240
         ],
         Example[
             {Options,SamplesInStorageCondition,"Specify The non-default conditions under which the SamplesIn of this experiment should be stored after the protocol is completed. If left unset, SamplesIn will be stored according to their current StorageCondition:"},
@@ -8673,7 +8880,9 @@ DefineTests[ExperimentIonChromatography,
                 (* Gradients *)
                 gradientOne, gradientTwo, gradientThree, gradientFour, gradientFive, gradientSix, gradientPackets,
                 (* Waveforms *)
-                waveformPackets
+                waveformPackets,
+                (* Column objects *)
+                columnModels, columnNames, columnObjects
             },
 
             fakeBench = Upload[
@@ -8896,14 +9105,43 @@ DefineTests[ExperimentIonChromatography,
 
             Upload[samplePackets];
 
+            (* generate column objects *)
+            columnModels = {
+                Model[Item, Column, "id:6V0npvm3W4za"], (* "Dionex IonPac AS18-Fast IC Analytical Column" *)
+                Model[Item, Column, "id:xRO9n3BDm765"], (* "Dionex IonPac AG18-Fast-4 Micron IC Guard Column (2x30mm)" *)
+                Model[Item, Column, "id:Z1lqpMz94jlL"], (* "Dionex IonPac CS16 4Micron IC Analytical Column" *)
+                Model[Item, Column, "id:1ZA60vL3WjA5"], (* "Dionex IonPac CG16 4Micron IC Guard Column" *)
+                Model[Item, Column, "id:wqW9BP78Xnl4"], (* "Dionex CarboPack PA10 BioLC Analytical 4 x 250 mm" *)
+                Model[Item, Column, "id:Vrbp1jKPW6JW"]  (* "Dionex CarboPack PA10 BioLC Guard 4 x 50 mm" *)
+            };
+
+            columnNames = Map[
+                (# <> $SessionUUID)&,
+                {
+                    "IonPac AS18-Fast IC",
+                    "IonPac AS18 IC Guard",
+                    "IonPac CS16 4Micron IC",
+                    "IonPac CS16 4Micron IC Guard",
+                    "CarboPack PA10 BioLC",
+                    "CarboPack PA10 BioLC Guard"
+                }
+            ];
+
+            columnObjects = UploadSample[columnModels, ConstantArray[{"Bench Top Slot", fakeBench}, Length[columnModels]],
+                Name -> columnNames
+            ];
+
+            (* make column object dev objs *)
+            Upload[<|Object -> #, DeveloperObject -> True|>&/@columnObjects];
+
             (* Sever the link to the model *)
             Upload[
                 {
                     Association[
                         Object -> Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID],
                         Replace[Composition] -> {
-                            {100 VolumePercent, Link[Model[Molecule, "Water"]]},
-                            {5 Millimolar,Link[Model[Molecule, "Acetone"]]}
+                            {100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+                            {5 Millimolar,Link[Model[Molecule, "Acetone"]], Now}
                         }
                     ],
                     Association[
@@ -8913,8 +9151,8 @@ DefineTests[ExperimentIonChromatography,
                     Association[
                         Object -> Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID],
                         Replace[Composition] -> {
-                            {100 VolumePercent, Link[Model[Molecule, "Water"]]},
-                            {450 Micromolar, Link[Model[Molecule, "Uracil"]]}
+                            {100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+                            {450 Micromolar, Link[Model[Molecule, "Uracil"]], Now}
                         },
                         Replace[Analytes] -> {Link[Model[Molecule, "Uracil"]]}
                     ]
@@ -8937,38 +9175,53 @@ DefineTests[ExperimentIonChromatography,
     ),
 
     SymbolTearDown :> (
-        Module[{objects, existingObjects},
-            objects = {
-                (* Bench *)
-                Object[Container, Bench, "Test bench for ExperimentIonChromatography tests " <> $SessionUUID],
-                (* Containers *)
-                Object[Container, Plate, "Test plate 1 for ExperimentIC tests" <> $SessionUUID],
-                Object[Container, Plate, "Test plate 2 for ExperimentIC tests" <> $SessionUUID],
-                Object[Container, Vessel, "Test large container 1 for ExperimentIC tests" <> $SessionUUID],
-                Object[Container, Vessel, "Test invalid container 1 for ExperimentIC tests" <> $SessionUUID],
-                Object[Container, Vessel, "Test HPLC vial 1 for ExperimentIC tests" <> $SessionUUID],
-                (* Samples *)
-                Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID],
-                Object[Sample, "ExperimentIC Test Sample 2" <> $SessionUUID],
-                Object[Sample, "ExperimentIC Test Sample 3" <> $SessionUUID],
-                Object[Sample, "ExperimentIC Test Sample 4" <> $SessionUUID],
-                Object[Sample, "ExperimentIC Test Sample 5" <> $SessionUUID],
-                Object[Sample, "ExperimentIC Large Test Sample 1" <> $SessionUUID],
-                Object[Sample, "Test sample for invalid container for ExperimentIC tests" <> $SessionUUID],
-                (* Methods *)
-                Object[Method, IonChromatographyGradient, "ExperimentIC Test Anion Gradient Object 1" <> $SessionUUID],
-                Object[Method, IonChromatographyGradient, "ExperimentIC Test Anion Gradient Object 2" <> $SessionUUID],
-                Object[Method, IonChromatographyGradient, "ExperimentIC Test Invalid Anion Gradient Object 1" <> $SessionUUID],
-                Object[Method, IonChromatographyGradient, "ExperimentIC Test Cation Gradient Object 1" <> $SessionUUID],
-                Object[Method, IonChromatographyGradient, "ExperimentIC Test Invalid Cation Gradient Object 1" <> $SessionUUID],
-                Object[Method, Gradient, "ExperimentIC Test Gradient Object 1" <> $SessionUUID],
-                Object[Method, Waveform, "ExperimentIC Test Waveform Object 1" <> $SessionUUID],
-                Object[Method, Waveform, "ExperimentIC Test Waveform Object 2" <> $SessionUUID],
-                Object[Method, Waveform, "ExperimentIC Test Waveform Object 3" <> $SessionUUID],
-                (* Protocols *)
-                Object[Protocol, IonChromatography, "Test IonChromatography option template protocol" <> $SessionUUID],
-                Object[Protocol, IonChromatography, "A brilliant test protocol" <> $SessionUUID]
-            };
+        Module[{columnObjects, objects, existingObjects},
+            columnObjects = Map[
+                Object[Item, Column, # <> $SessionUUID]&,
+                {
+                    "IonPac AS18-Fast IC",
+                    "IonPac AS18 IC Guard",
+                    "IonPac CS16 4Micron IC",
+                    "IonPac CS16 4Micron IC Guard",
+                    "CarboPack PA10 BioLC",
+                    "CarboPack PA10 BioLC Guard"
+                }
+            ];
+
+            objects = Join[
+                {
+                    (* Bench *)
+                    Object[Container, Bench, "Test bench for ExperimentIonChromatography tests " <> $SessionUUID],
+                    (* Containers *)
+                    Object[Container, Plate, "Test plate 1 for ExperimentIC tests" <> $SessionUUID],
+                    Object[Container, Plate, "Test plate 2 for ExperimentIC tests" <> $SessionUUID],
+                    Object[Container, Vessel, "Test large container 1 for ExperimentIC tests" <> $SessionUUID],
+                    Object[Container, Vessel, "Test invalid container 1 for ExperimentIC tests" <> $SessionUUID],
+                    Object[Container, Vessel, "Test HPLC vial 1 for ExperimentIC tests" <> $SessionUUID],
+                    (* Samples *)
+                    Object[Sample, "ExperimentIC Test Sample 1" <> $SessionUUID],
+                    Object[Sample, "ExperimentIC Test Sample 2" <> $SessionUUID],
+                    Object[Sample, "ExperimentIC Test Sample 3" <> $SessionUUID],
+                    Object[Sample, "ExperimentIC Test Sample 4" <> $SessionUUID],
+                    Object[Sample, "ExperimentIC Test Sample 5" <> $SessionUUID],
+                    Object[Sample, "ExperimentIC Large Test Sample 1" <> $SessionUUID],
+                    Object[Sample, "Test sample for invalid container for ExperimentIC tests" <> $SessionUUID],
+                    (* Methods *)
+                    Object[Method, IonChromatographyGradient, "ExperimentIC Test Anion Gradient Object 1" <> $SessionUUID],
+                    Object[Method, IonChromatographyGradient, "ExperimentIC Test Anion Gradient Object 2" <> $SessionUUID],
+                    Object[Method, IonChromatographyGradient, "ExperimentIC Test Invalid Anion Gradient Object 1" <> $SessionUUID],
+                    Object[Method, IonChromatographyGradient, "ExperimentIC Test Cation Gradient Object 1" <> $SessionUUID],
+                    Object[Method, IonChromatographyGradient, "ExperimentIC Test Invalid Cation Gradient Object 1" <> $SessionUUID],
+                    Object[Method, Gradient, "ExperimentIC Test Gradient Object 1" <> $SessionUUID],
+                    Object[Method, Waveform, "ExperimentIC Test Waveform Object 1" <> $SessionUUID],
+                    Object[Method, Waveform, "ExperimentIC Test Waveform Object 2" <> $SessionUUID],
+                    Object[Method, Waveform, "ExperimentIC Test Waveform Object 3" <> $SessionUUID],
+                    (* Protocols *)
+                    Object[Protocol, IonChromatography, "Test IonChromatography option template protocol" <> $SessionUUID],
+                    Object[Protocol, IonChromatography, "A brilliant test protocol" <> $SessionUUID]
+                },
+                columnObjects
+            ];
 
             existingObjects = PickList[objects, DatabaseMemberQ[objects]];
 

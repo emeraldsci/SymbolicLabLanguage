@@ -26,6 +26,31 @@ DefineObjectType[Model[Container, GraduatedCylinder], {
 			Description -> "The markings on this cylinder model used to indicate the fluid's fill level.",
 			Abstract->True,
 			Category -> "Container Specifications"
-		}
+		},
+		GraduationTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Labeled, Short, Long],
+			Description -> "For each member of Graduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations
+		},
+		GraduationLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of Graduations, if GraduationTypes is Labeled, exactly matches the labeling text. Otherwise, Null.",
+			Category -> "Container Specifications",
+			IndexMatching -> Graduations,
+			Developer -> True
+		}(*,
+		GraduationCalibration -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Deliver, Contain, Both],
+			Description -> "Indicates if the manufacture calibrated the graduations for dispensing an accurate volume to a destination (i.e. 'To Deliver') or for taking an accurate volume from a source (i.e. 'To Contain').",
+			Category -> "Container Specifications",
+			Abstract -> True
+		}*)
 	}
 }];

@@ -433,7 +433,7 @@ DefineOptions[ExperimentExtractRNA,
 		RoboticPreparationOption,
 		ProtocolOptions,
 		SimulationOption,
-		PostProcessingOptions,
+		BiologyPostProcessingOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions,
@@ -494,11 +494,11 @@ ExperimentExtractRNA[myContainers:ListableP[ObjectP[{Object[Container], Object[S
 	gatherTests = MemberQ[output, Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
 	(* Fetch the cache from listedOptions. *)
 	cache = ToList[Lookup[listedOptions, Cache, {}]];
-	simulation = ToList[Lookup[listedOptions, Simulation, {}]];
+	simulation = Lookup[listedOptions, Simulation, Null];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult = If[gatherTests,
@@ -527,7 +527,7 @@ ExperimentExtractRNA[myContainers:ListableP[ObjectP[{Object[Container], Object[S
 				Simulation -> simulation
 			],
 			$Failed,
-			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+			{Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
@@ -552,7 +552,7 @@ ExperimentExtractRNA[myContainers:ListableP[ObjectP[{Object[Container], Object[S
 (* -- Main Overload --*)
 ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPattern[]] := Module[
 	{
-		cache, cacheBall, collapsedResolvedOptions, expandedSafeOpsWithoutPurification, expandedSafeOpsWithoutSolventAdditions, expandedSafeOps, gatherTests, inheritedOptions, listedOptions,
+		cache, cacheBall, collapsedResolvedOptions, expandedSafeOpsWithoutPurification, expandedSafeOpsWithoutSolventAdditions, expandedSafeOps, gatherTests, inheritedOptions, listedOptions,inputSimulation,
 		listedSamples, messages, output, outputSpecification, performSimulationQ, resultQ, resourcePacketResult, resourceReturnEarlyQ,
 		protocolObject, preResolvedOptions, resolvedOptionsResult, resolvedOptionsTests, resourceResult, resourcePacketTests,
 		returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, roboticSimulation, runTime, fullyResolvedOptions,
@@ -578,14 +578,10 @@ ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Opt
 		{SafeOptions[ExperimentExtractRNA, listedOptions, AutoCorrect -> False], {}}
 	];
 
-	(* Call sanitize-inputs to clean any named objects - replace all objects referenced by Name to ID *)
-	{listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
+	inputSimulation = Lookup[safeOptions, Simulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentExtractRNA, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentExtractRNA, {listedSanitizedSamples}, listedSanitizedOptions], Null}
-	];
+	(* Call sanitize-inputs to clean any named objects - replace all objects referenced by Name to ID *)
+	{listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions,Simulation->inputSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -596,6 +592,12 @@ ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Opt
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentExtractRNA, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentExtractRNA, {listedSanitizedSamples}, listedSanitizedOptions], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -655,37 +657,6 @@ ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Opt
 		}]
 	];
 
-	(* Make sure that all of our objects exist. *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten[{ToList[mySamples],ToList[myOptions]}],
-		ObjectReferenceP[]
-	];
-
-	objectsExistQs = DatabaseMemberQ[userSpecifiedObjects, Simulation->inheritedSimulation];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{userSpecifiedObjects,objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOptionTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
 	(* -- Determine which fields from the various Options that can be Objects or Models or Automatic that we need to download -- *)
@@ -720,27 +691,32 @@ ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Opt
 	];
 
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
-	allDownloadValues = Download[
-		{
-			(*1*)listedSanitizedSamples,
-			(*2*)listedSanitizedSamples,
-			(*3*)Cases[Lookup[expandedSafeOps, Method], ObjectP[]],
-			(*4*)listedSanitizedSamples,
-			(*5*)listedSanitizedSamples,
-			(*6*)containerModelObjects,
-			(*7*)containerObjects
-		},
-		Evaluate[{
-			(*1*){samplePacketFields},
-			(*2*){Packet[Model[sampleModelFields]]},
-			(*3*){methodPacketFields},
-			(*4*){Packet[Container[containerObjectFields]]},
-			(*5*){Packet[Container[Model][containerModelFields]]},
-			(*6*){containerModelPacketFields, Packet[VolumeCalibrations[{CalibrationFunction}]]},
-			(*7*){containerObjectPacketFields, Packet[Model[containerModelFields]], Packet[Model[VolumeCalibrations][{CalibrationFunction}]]}
-		}],
-		Cache -> cache,
-		Simulation -> inheritedSimulation
+	allDownloadValues = Quiet[
+		Download[
+			{
+				(*1*)listedSanitizedSamples,
+				(*2*)listedSanitizedSamples,
+				(*3*)Cases[ToList[Lookup[expandedSafeOps, Method]], ObjectP[]],
+				(*4*)listedSanitizedSamples,
+				(*5*)listedSanitizedSamples,
+				(*6*)containerModelObjects,
+				(*7*)containerObjects,
+				(*8*)Cases[ToList[Lookup[expandedSafeOps, RoboticInstrument]], ObjectP[]]
+			},
+			Evaluate[{
+				(*1*){samplePacketFields},
+				(*2*){Packet[Model[sampleModelFields]]},
+				(*3*){methodPacketFields},
+				(*4*){Packet[Container[containerObjectFields]]},
+				(*5*){Packet[Container[Model][containerModelFields]]},
+				(*6*){containerModelPacketFields, Packet[VolumeCalibrations[{CalibrationFunction}]]},
+				(*7*){containerObjectPacketFields, Packet[Model[containerModelFields]], Packet[Model[VolumeCalibrations][{CalibrationFunction}]]},
+				(*8*){Packet[Model], Packet[Model[Object]]}
+			}],
+			Cache -> cache,
+			Simulation -> inheritedSimulation
+		],
+		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 	(* Combine our downloaded and simulated cache. *)
@@ -961,6 +937,7 @@ ExperimentExtractRNA[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Opt
 					Name -> Lookup[safeOps, Name],
 					Upload -> Lookup[safeOps, Upload],
 					Confirm -> Lookup[safeOps, Confirm],
+					CanaryBranch -> Lookup[safeOps, CanaryBranch],
 					ParentProtocol -> Lookup[safeOps, ParentProtocol],
 					Priority -> Lookup[safeOps, Priority],
 					StartDate -> Lookup[safeOps, StartDate],
@@ -1001,38 +978,63 @@ DefineOptions[resolveExtractRNAWorkCell,
 resolveExtractRNAWorkCell[
 	myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container]}]],
 	myOptions:OptionsPattern[]
-]:=Module[{mySamples, myContainers, sampleCellTypes},
+]:=Module[{safeOps, mySamples, myContainers, sampleCellTypes, roboticInstrumentModel, simulation},
+
+	(* get safeOps *)
+	safeOps = SafeOptions[resolveExtractRNAWorkCell, ToList[myOptions]];
+	simulation = Lookup[safeOps, Simulation, Null];
 
 	mySamples = Cases[myContainersAndSamples, ObjectP[Object[Sample]], Infinity];
 	myContainers = Cases[myContainersAndSamples, ObjectP[Object[Container]], Infinity];
 
-	sampleCellTypes = Download[mySamples, CellType];
+	sampleCellTypes = Download[mySamples, CellType, Simulation -> simulation];
+
+	(* get RoboticInstrument model *)
+	roboticInstrumentModel = Switch[Lookup[safeOps, RoboticInstrument],
+		(* if we can find a instrument model, set to that *)
+		ObjectP[Model[Instrument]],
+			Download[Lookup[safeOps, RoboticInstrument], Object],
+		(* if we can find a instrument object, download the model of the instrument *)
+		ObjectP[Object[Instrument]],
+			Download[
+				Lookup[safeOps, RoboticInstrument],
+				Model[Object],
+				Simulation -> Lookup[safeOps, Simulation, Null],
+				Cache -> Lookup[safeOps, Cache, {}]
+			],
+		(* otherwise set to Null *)
+		_,
+			Null
+	];
 
 	(* NOTE: due to the mechanism by which the primitive framework resolves WorkCell, we can't just resolve it on our own and then tell *)
 	(* the framework what to use. So, we resolve using the CellType option if specified, or the CellType field in the input sample(s). *)
 
 	Which[
+		(*choose user selected workcell if the user selected one *)
+		MatchQ[Lookup[safeOps, WorkCell], Except[Automatic]],
+			ToList[Lookup[safeOps, WorkCell]],
 		(* If the user specifies the microbioSTAR for RoboticInstrument, resolve the WorkCell to match *)
-		KeyExistsQ[myOptions, RoboticInstrument] && MemberQ[Lookup[myOptions, RoboticInstrument], Model[Instrument, LiquidHandler, "id:aXRlGnZmOd9m"]],
-		{microbioSTAR},
-		(* If the user specifies the microbioSTAR for RoboticInstrument, resolve the WorkCell to match *)
-		KeyExistsQ[myOptions, RoboticInstrument] && MemberQ[Lookup[myOptions, RoboticInstrument], Model[Instrument, LiquidHandler, "id:o1k9jAKOwLV8"]],
-		{bioSTAR},
+		MatchQ[roboticInstrumentModel, ObjectReferenceP[Model[Instrument, LiquidHandler, "id:aXRlGnZmOd9m"]]],
+			{microbioSTAR},
+		(* If the user specifies the bioSTAR for RoboticInstrument, resolve the WorkCell to match *)
+		MatchQ[roboticInstrumentModel, ObjectReferenceP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLV8"]]],
+			{bioSTAR},
 		(* If the user specifies any microbial (Bacterial, Yeast, or Fungal) cell types using the CellType option, resolve to microbioSTAR *)
-		KeyExistsQ[myOptions, CellType] && MemberQ[Lookup[myOptions, CellType], MicrobialCellTypeP],
-		{microbioSTAR},
+		KeyExistsQ[safeOps, CellType] && MemberQ[Lookup[safeOps, CellType], MicrobialCellTypeP],
+			{microbioSTAR},
 		(* If the user specifies only nonmicrobial (Mammalian, Insect, or Plant) cell types using the CellType option, resolve to bioSTAR *)
-		KeyExistsQ[myOptions, CellType] && MatchQ[Lookup[myOptions, CellType], {(NonMicrobialCellTypeP | Null)..}],
-		{bioSTAR},
+		KeyExistsQ[safeOps, CellType] && MatchQ[Lookup[safeOps, CellType], {(NonMicrobialCellTypeP | Null)..}],
+			{bioSTAR},
 		(*If CellType field for any input Sample objects is microbial (Bacterial, Yeast, or Fungal), then the microbioSTAR is used. *)
 		MemberQ[sampleCellTypes, MicrobialCellTypeP],
-		{microbioSTAR},
+			{microbioSTAR},
 		(*If CellType field for all input Sample objects is not microbial (Mammalian, Plant, or Insect), then the bioSTAR is used. *)
 		MatchQ[sampleCellTypes, {(NonMicrobialCellTypeP | Null)..}],
-		{bioSTAR},
+			{bioSTAR},
 		(*Otherwise, use the microbioSTAR.*)
 		True,
-		{microbioSTAR}
+			{microbioSTAR}
 	]
 ];
 
@@ -1364,22 +1366,7 @@ resolveExperimentExtractRNAOptions[mySamples:{ObjectP[Object[Sample]]...}, myOpt
 	(* Resolve WorkCell *)
 	allowedWorkCells = resolveExtractRNAWorkCell[mySamples, listedOptions];
 
-	resolvedWorkCell = Which[
-		(*choose user selected workcell if the user selected one *)
-		MatchQ[Lookup[myOptions, WorkCell], Except[Automatic]],
-			Lookup[myOptions, WorkCell],
-		(*If user-set RoboticInstrument, then use set value.*)
-		MatchQ[Lookup[myOptions, RoboticInstrument], Model[Instrument, LiquidHandler, "id:o1k9jAKOwLV8"]],(* Model[Instrument, LiquidHandler, "bioSTAR"] *)
-			bioSTAR,
-		MatchQ[Lookup[myOptions, RoboticInstrument], Model[Instrument, LiquidHandler, "id:aXRlGnZmOd9m"]],(* Model[Instrument, LiquidHandler, "microbioSTAR"] *)
-			microbioSTAR,
-		(*choose the first workcell that is presented *)
-		MatchQ[allowedWorkCells, ListableP[WorkCellP]],
-			First[allowedWorkCells],
-		(* failsafe, choose microbioSTAR otherwise *)
-		True,
-			microbioSTAR
-	];
+	resolvedWorkCell = First[allowedWorkCells, microbioSTAR];
 
 	(* Resolve RoboticInstrument *)
 	resolvedRoboticInstrument = Which[
@@ -3011,18 +2998,18 @@ resolveExperimentExtractRNAOptions[mySamples:{ObjectP[Object[Sample]]...}, myOpt
 	mapThreadFriendlyOptionsWithResolvedMethodAndPurification = Experiment`Private`mapThreadFriendlySolventAdditions[optionsWithResolvedMethodAndPurification, preCorrectionMapThreadFriendlyOptionsWithResolvedMethodAndPurification, LiquidLiquidExtractionSolventAdditions];
 
 	(* Pre-resolve purification options. *)
-	preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, optionsWithResolvedMethodAndPurification, mapThreadFriendlyOptionsWithResolvedMethodAndPurification, TargetCellularComponent -> ConstantArray[RNA, Length[mySamples]]];
+	preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, optionsWithResolvedMethodAndPurification, mapThreadFriendlyOptionsWithResolvedMethodAndPurification, TargetCellularComponent -> ConstantArray[RNA, Length[mySamples]],Simulation->currentSimulation];
 
 	(* -- POST PROCESSING -- *)
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
 		MatchQ[Lookup[myOptions, Email], Automatic] && NullQ[Lookup[myOptions,ParentProtocol]],
 			True,
-		MatchQ[Lookup[myOptions, Email], Automatic] && MatchQ[Lookup[myOptions,ParentProtocol], ObjectP[ProtocolTypes[]]],
+		MatchQ[Lookup[myOptions, Email], Automatic] && MatchQ[Lookup[myOptions,ParentProtocol], ObjectP[ProtocolTypes[Output -> Short]]],
 			False,
 		True,
 			Lookup[myOptions, Email]
@@ -3889,25 +3876,30 @@ extractRNAResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplat
 		$ExtractRNAUnitOperations = primitives;
 
 		(* Get our robotic unit operation packets. *)
-		{{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = ExperimentRoboticCellPreparation[
-			primitives,
-			UnitOperationPackets -> True,
-			Output -> {Result, Simulation},
-			FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
-			ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
-			Name -> Lookup[expandedResolvedOptions, Name],
-			Simulation -> currentSimulation,
-			Upload -> False,
-			ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-			MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-			MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-			Priority -> Lookup[expandedResolvedOptions, Priority],
-			StartDate -> Lookup[expandedResolvedOptions, StartDate],
-			HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
-			QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
-			Instrument -> Lookup[expandedResolvedOptions, RoboticInstrument],
-			CoverAtEnd -> False,
-			Debug -> False
+		(* quieting the warning about sterile transferring because LLE will likely not contaminate things when extracting RNA, but will cause the warning to get thrown *)
+		(* there is no way around this because the phase separators are not sterile and we can't get a sterile one in hand.  For this case, we're deciding that that is ok *)
+		{{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
+			ExperimentRoboticCellPreparation[
+				primitives,
+				UnitOperationPackets -> True,
+				Output -> {Result, Simulation},
+				FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
+				ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
+				Name -> Lookup[expandedResolvedOptions, Name],
+				Simulation -> currentSimulation,
+				Upload -> False,
+				ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
+				MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
+				MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
+				Priority -> Lookup[expandedResolvedOptions, Priority],
+				StartDate -> Lookup[expandedResolvedOptions, StartDate],
+				HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
+				QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
+				Instrument -> Lookup[expandedResolvedOptions, RoboticInstrument],
+				CoverAtEnd -> False,
+				Debug -> False
+			],
+			Warning::ConflictingSourceAndDestinationAsepticHandling
 		];
 
 		(* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
@@ -3936,6 +3928,12 @@ extractRNAResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplat
 		roboticSimulation = UpdateSimulation[
 			roboticSimulation,
 			Simulation[<|Object -> Lookup[outputUnitOperationPacket, Object], Sample -> (Link /@ mySamples)|>]
+		];
+
+		(* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+		roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+			roboticSimulation,
+			updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
 		];
 
 		(* Return back our packets and simulation. *)

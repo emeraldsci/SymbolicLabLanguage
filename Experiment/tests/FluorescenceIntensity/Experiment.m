@@ -105,7 +105,7 @@ DefineTests[
 			}],
 			$Failed,
 			Messages:>{
-				Error::ConflictingUnitOperationMethodRequirements,
+				Error::ConflictingMethodRequirements,
 				Error::InvalidInput
 			}
 		],
@@ -1210,7 +1210,7 @@ DefineTests[
 				PrimaryInjectionVolume->3 Microliter
 			],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InvalidOption}
+			Messages:>{Error::IncompatibleMaterials,Error::InvalidOption}
 		],
 		Test["When running tests indicates that all injection samples must be compatible with the plate reader tubing:",
 			ValidExperimentFluorescenceIntensityQ[
@@ -1374,6 +1374,20 @@ DefineTests[
 			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],EquilibrationTime->4 Minute][EquilibrationTime],
 			4 Minute,
 			EquivalenceFunction->Equal
+		],
+		Example[{Options, Instrument, "Instrument is automatically set to Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] if TargetCarbonDioxideLevel/TargetOxygenLevel is set:"},
+			Lookup[
+				ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID], TargetCarbonDioxideLevel -> 5 * Percent, Output -> Options],
+				Instrument
+			],
+			ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]
+		],
+		Example[{Options, TargetCarbonDioxideLevel, "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			Lookup[
+				ExperimentFluorescenceIntensity[Object[Sample, "Test sample with mammalian cells for ExperimentFluorescenceIntensity "<>$SessionUUID], Instrument -> Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], Output -> Options],
+				TargetCarbonDioxideLevel
+			],
+			5 * Percent
 		],
 		Example[{Options,NumberOfReadings,"Indicate the number of raw fluorescence readings that should be taken by the plate reader for each sample, and averaged to produce a single sample fluorescence intensity measurement:"},
 			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],NumberOfReadings->50][NumberOfReadings],
@@ -1642,6 +1656,11 @@ DefineTests[
 			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],Confirm->True][Status],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"][CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Name,"Name the protocol:"},
 			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],Name->"World's Best FI Protocol"<>$SessionUUID],
 			Object[Protocol,FluorescenceIntensity,"World's Best FI Protocol"<>$SessionUUID]
@@ -1812,19 +1831,19 @@ DefineTests[
 					PrimaryInjectionVolume->3 Microliter
 				],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
 			],
 			{
 				ObjectP@Model[Sample,StockSolution,"70% Ethanol"],
-				ObjectP@Model[Sample,StockSolution,"70% Ethanol"],
+				Null,
 				ObjectP@Model[Sample,"Milli-Q water"],
-				ObjectP@Model[Sample,"Milli-Q water"],
+				Null,
 				Null,
 				Null
 			}
@@ -1838,10 +1857,10 @@ DefineTests[
 					SecondaryInjectionVolume->2 Microliter
 				],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
@@ -1859,10 +1878,10 @@ DefineTests[
 			Download[
 				ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID]],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
@@ -1884,7 +1903,7 @@ DefineTests[
 				];
 
 				resourceEntries=Download[protocol,RequiredResources];
-				solventEntries=Cases[resourceEntries,{_,PrimaryPreppingSolvent|PrimaryFlushingSolvent|SecondaryPreppingSolvent|SecondaryFlushingSolvent,___}];
+				solventEntries=Cases[resourceEntries,{_,Line1PrimaryPurgingSolvent|Line2PrimaryPurgingSolvent|Line1SecondaryPurgingSolvent|Line2SecondaryPurgingSolvent,___}];
 				solventResources=DeleteDuplicates[Download[solventEntries[[All,1]],Object]];
 				uniqueSolventResources=Length[solventResources]
 			],
@@ -2285,13 +2304,13 @@ DefineTests[
 		Example[{Options,AliquotContainer,"Indicate that the aliquot should be prepared in a UV-Star Plate:"},
 			options=ExperimentFluorescenceIntensity[Object[Sample,"Test sample 7 for ExperimentFluorescenceIntensity"<>$SessionUUID],AliquotContainer->Model[Container,Plate,"96-well UV-Star Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"96-well UV-Star Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicate that the sample should be aliquoted into well D6:"},
 			options=ExperimentFluorescenceIntensity[Object[Sample,"Test sample 7 for ExperimentFluorescenceIntensity"<>$SessionUUID],AliquotAmount->100 Microliter,DestinationWell->"D6",Output->Options];
 			Lookup[options,DestinationWell],
-			"D6",
+			{"D6"},
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
@@ -2307,15 +2326,61 @@ DefineTests[
 			Disposal,
 			Variables:>{options}
 		],
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to prepare a plate with control samples:"},
-			ExperimentFluorescenceIntensity["test plate",
-				PreparatoryPrimitives -> {
-					Define[Name -> "test plate", Container -> Model[Container, Plate, "id:kEJ9mqR3XELE"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Amount -> 100*Microliter, Destination -> {"test plate","A1"}],
-					Transfer[Source -> Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID], Amount -> 100*Microliter, Destination -> {"test plate","A2"}]
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared when Preparation is Manual:"},
+			options = ExperimentFluorescenceIntensity[
+				(* Red food dye *)
+				{Model[Sample, "id:BYDOjvG9z6Jl"], Model[Sample, "id:BYDOjvG9z6Jl"]},
+				(* UV-Star Plate*)
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 200 Microliter,
+				Preparation -> Manual,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared when Preparation is Robotic:"},
+			roboticProtocol = ExperimentFluorescenceIntensity[
+				(* Red food dye *)
+				{Model[Sample, "id:BYDOjvG9z6Jl"], Model[Sample, "id:BYDOjvG9z6Jl"]},
+				(* UV-Star Plate*)
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 200 Microliter,
+				Preparation -> Robotic
+			];
+			labelSampleUO = Download[roboticProtocol, OutputUnitOperations][[1]];
+			Download[
+				labelSampleUO,
+				{
+					SampleLink,
+					ContainerLink,
+					AmountVariableUnit,
+					Well,
+					ContainerLabel
 				}
 			],
-			ObjectP[Object[Protocol,FluorescenceIntensity]]
+			{
+				{ObjectP[Model[Sample, "id:BYDOjvG9z6Jl"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {roboticProtocol, labelSampleUO}
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to prepare a plate with control samples:"},
 			ExperimentFluorescenceIntensity["test plate",
@@ -2440,6 +2505,82 @@ DefineTests[
 		Test["Resolves to use the Clariostar when possible since we have the most Clariostar instruments:",
 			ExperimentFluorescenceIntensity[Object[Sample,"Test sample 1 for ExperimentFluorescenceIntensity"<>$SessionUUID]][Instrument],
 			ObjectP[Model[Instrument,PlateReader,"CLARIOstar"]]
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFluorescenceIntensity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFluorescenceIntensity[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFluorescenceIntensity[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFluorescenceIntensity[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFluorescenceIntensity[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::SinglePlateRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFluorescenceIntensity[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{Warning::SinglePlateRequired}
 		]
 	},
 	HardwareConfiguration->HighRAM,
@@ -2453,7 +2594,7 @@ DefineTests[
 
 		Module[
 		{platePacket,vesselPacket,bottlePacket,incompatibleChemicalPacket,
-		plate1,plate2,plate3,plate4,emptyPlate,vessel1,vessel2,vessel3,vessel4,vessel5,vessel6,bottle1,
+		plate1,plate2,plate3,plate4,plate5,emptyPlate,vessel1,vessel2,vessel3,vessel4,vessel5,vessel6,bottle1,
 		incompatibleChemicalModel,numberOfInputSamples,sampleNames,numberOfInjectionSamples,injectionSampleNames,samples,idModel1,targetConcentrationSample},
 
 		ClearMemoization[];
@@ -2468,9 +2609,9 @@ DefineTests[
 
 		incompatibleChemicalPacket=<|Type->Model[Sample],DeveloperObject->True,Replace[IncompatibleMaterials]->{PTFE},DeveloperObject->True,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]]|>;
 
-		{plate1,plate2,plate3,plate4,emptyPlate,vessel1,vessel2,vessel3,vessel4,vessel5,vessel6,bottle1,incompatibleChemicalModel}=Upload[
+		{plate1,plate2,plate3,plate4,plate5,emptyPlate,vessel1,vessel2,vessel3,vessel4,vessel5,vessel6,bottle1,incompatibleChemicalModel}=Upload[
 			Join[
-				Append[platePacket,Name->"Test plate "<>ToString[#]<>" for ExperimentFluorescenceIntensity"<>$SessionUUID]&/@Range[4],
+				Append[platePacket,Name->"Test plate "<>ToString[#]<>" for ExperimentFluorescenceIntensity"<>$SessionUUID]&/@Range[5],
 				{Append[platePacket,Name->"Empty plate for ExperimentFluorescenceIntensity"<>$SessionUUID]},
 				Append[vesselPacket,Name->"Test vessel "<>ToString[#]<>" for ExperimentFluorescenceIntensity"<>$SessionUUID]&/@Range[6],
 				{bottlePacket,incompatibleChemicalPacket}
@@ -2486,19 +2627,22 @@ DefineTests[
 		samples=UploadSample[
 			Join[
 				ConstantArray[Model[Sample,StockSolution,"0.2M FITC"],numberOfInputSamples-3],ConstantArray[Model[Sample, "Test Oligomer for ExperimentFluorescenceIntensity"],3],
-				ConstantArray[Model[Sample,StockSolution,"0.2M FITC"],numberOfInjectionSamples-2],{incompatibleChemicalModel},{Model[Sample,StockSolution,"0.2M FITC"]}
+				ConstantArray[Model[Sample,StockSolution,"0.2M FITC"],numberOfInjectionSamples-2],{incompatibleChemicalModel},{Model[Sample,StockSolution,"0.2M FITC"]},
+				{{{1000 * EmeraldCell / Milliliter, Model[Cell, Mammalian, "id:eGakldJvLvzq"]}, {100 * VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]}}}
 			],
 			{
 				{"A1",plate1},{"A2",plate1},{"A3",plate1},{"A4",plate1},{"A1",plate2},{"A2",plate2},{"A1",bottle1},{"A1",vessel6},{"A1",plate3},
-				{"A1",vessel1},{"A1",vessel2},{"A1",vessel3},{"A1",vessel4},{"A1",vessel5}
+				{"A1",vessel1},{"A1",vessel2},{"A1",vessel3},{"A1",vessel4},{"A1",vessel5},{"A1",plate5}
 			},
-			Name->Join[sampleNames,injectionSampleNames],
+			Name->Join[sampleNames,injectionSampleNames,{"Test sample with mammalian cells for ExperimentFluorescenceIntensity "<>$SessionUUID}],
 			InitialAmount->Join[
 				ConstantArray[250 Microliter,numberOfInputSamples-3],{200 Milliliter, 2 Milliliter,250 Microliter},
 				ConstantArray[15 Milliliter,numberOfInjectionSamples-1],
-				{750 Microliter} (* for insufficient injection volume test *)
+				{750 Microliter}, (* for insufficient injection volume test *)
+				{200 Microliter}
 			],
-			State->Liquid
+			State->Liquid,
+			Living->False
 		];
 
 		(* Upload fake oligomer ID Model and Object[Sample] for the TargetConcentration test *)
@@ -2583,12 +2727,14 @@ fiBackUpCleanup[]:=Module[{namedObjects,lurkers},
 		Object[Sample,"Injection test sample 3 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Sample,"Injection test sample 4 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Sample,"Injection test sample 5 for ExperimentFluorescenceIntensity"<>$SessionUUID],
+		Object[Sample,"Test sample with mammalian cells for ExperimentFluorescenceIntensity "<>$SessionUUID],
 		Model[Molecule,Oligomer,"Fake 40mer DNA Model Molecule for ExperimentFluorescenceIntensity tests"<>$SessionUUID],
 		Object[Container,Plate,"Empty plate for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Plate,"Test plate 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Plate,"Test plate 2 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Plate,"Test plate 3 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Plate,"Test plate 4 for ExperimentFluorescenceIntensity"<>$SessionUUID],
+		Object[Container,Plate,"Test plate 5 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Vessel,"Test vessel 1 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Vessel,"Test vessel 2 for ExperimentFluorescenceIntensity"<>$SessionUUID],
 		Object[Container,Vessel,"Test vessel 3 for ExperimentFluorescenceIntensity"<>$SessionUUID],
@@ -2731,7 +2877,8 @@ DefineTests[
 			{Basic,"Generate an ExperimentManualSamplePreparation protocol based on a single FluorescenceIntensity unit operation with a single sample using ExperimentSamplePreparation:"},
 			ExperimentSamplePreparation[
 				FluorescenceIntensity[
-					Sample->{Object[Sample,"Test sample 1 for FluorescenceIntensity" <> $SessionUUID]}
+					Sample->{Object[Sample,"Test sample 1 for FluorescenceIntensity" <> $SessionUUID]},
+					Preparation->Manual
 				]
 			],
 			ObjectP[Object[Protocol,ManualSamplePreparation]]

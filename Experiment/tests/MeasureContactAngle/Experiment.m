@@ -436,7 +436,7 @@ DefineTests[ExperimentMeasureContactAngle,
 		],
 		(*  *)
 		Example[
-			{Options,PreparatoryUnitOperations,"Specify specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+			{Options,PreparatoryUnitOperations,"Specify specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			Lookup[
 				ExperimentMeasureContactAngle[
 					Object[Sample,"Test fiber object 1 for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
@@ -445,19 +445,6 @@ DefineTests[ExperimentMeasureContactAngle,
 					Output->Options
 				],
 				PreparatoryUnitOperations
-			],
-			Null
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Specify specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-			Lookup[
-				ExperimentMeasureContactAngle[
-					Object[Sample,"Test fiber object 1 for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
-					Object[Sample,"Test wetting liquid object for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
-					PreparatoryPrimitives->Null,
-					Output->Options
-				],
-				PreparatoryPrimitives
 			],
 			Null
 		],
@@ -548,6 +535,19 @@ DefineTests[ExperimentMeasureContactAngle,
 			Lookup[resolvedOptions,Confirm],
 			False,
 			Variables:>{resolvedOptions}
+		],
+		Example[
+			{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentMeasureContactAngle[
+					Object[Sample,"Test fiber object 1 for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
+					Object[Sample,"Test wetting liquid object for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
+					CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"
+				],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[
 			{Options,Name,"Specify a object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
@@ -730,6 +730,146 @@ DefineTests[ExperimentMeasureContactAngle,
 			Null
 		],
 		(* Messages *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureContactAngle[Object[Sample, "Nonexistent Fiber sample"], Object[Sample, "Nonexistent Liquid sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureContactAngle[Object[Container, Vessel, Bag, "Nonexistent Fiber container"], Object[Container, Vessel, "Nonexistent Liquid container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureContactAngle[Object[Sample, "id:12345678"], Object[Sample, "id:87654321"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureContactAngle[Object[Container, Vessel, Bag, "id:12345678"], Object[Container, Vessel, "id:87654321"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{
+					containerPackets, containerIDs, samplePackets1, sampleID1, sample1Update, simulationToPassIn,
+					samplePackets2, sampleID2, sample2Update
+				},
+				containerPackets = UploadSample[
+					{
+						Model[Container, Vessel, Bag, "Medium clear plastic zip-lock bag for solid sample"],
+						Model[Container,Vessel,"Kruss SV20 glass sample vessel"]
+					},
+					ConstantArray[{"Work Surface", Object[Container, Bench, "The Bench of Testing"]}, 2],
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerIDs = Lookup[Take[containerPackets, 2], Object];
+				samplePackets1 = UploadSample[
+					Model[Sample, "Human hair"],
+					{"A1", containerIDs[[1]]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					State -> Solid
+				];
+				sampleID1 = Lookup[First[samplePackets1], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets1]];
+				sample1Update = <|
+					Object -> sampleID1,
+					FiberCircumference -> 200 Micrometer,
+					SampleHandling -> Itemized,
+					Fiber -> True,
+					Count -> 3
+				|>;
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[sample1Update]];
+				samplePackets2 = UploadSample[
+					Model[Sample, "Human hair"],
+					{"A1", containerIDs[[2]]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					State -> Liquid,
+					StorageCondition -> Model[StorageCondition,"Ambient Storage"]
+				];
+				sampleID2 = Lookup[First[samplePackets2], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets2]];
+				sample2Update = <|
+					Object -> sampleID2,
+					SurfaceTension -> Quantity[72.8, ("Millinewtons")/("Meters")],
+					Product -> Link[Object[Product, "Milli-Q Water"], Samples]
+				|>;
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[sample2Update]];
+
+				ExperimentMeasureContactAngle[sampleID1, sampleID2, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{
+					containerPackets, containerIDs, samplePackets1, sampleID1, sample1Update, simulationToPassIn,
+					samplePackets2, sampleID2, sample2Update
+				},
+				containerPackets = UploadSample[
+					{
+						Model[Container, Vessel, Bag, "Medium clear plastic zip-lock bag for solid sample"],
+						Model[Container,Vessel,"Kruss SV20 glass sample vessel"]
+					},
+					ConstantArray[{"Work Surface", Object[Container, Bench, "The Bench of Testing"]}, 2],
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerIDs = Lookup[Take[containerPackets, 2], Object];
+				samplePackets1 = UploadSample[
+					Model[Sample, "Human hair"],
+					{"A1", containerIDs[[1]]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					State -> Solid
+				];
+				sampleID1 = Lookup[First[samplePackets1], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets1]];
+				sample1Update = <|
+					Object -> sampleID1,
+					FiberCircumference -> 200 Micrometer,
+					SampleHandling -> Itemized,
+					Fiber -> True,
+					Count -> 3
+				|>;
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[sample1Update]];
+				samplePackets2 = UploadSample[
+					Model[Sample, "Human hair"],
+					{"A1", containerIDs[[2]]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					State -> Liquid,
+					StorageCondition -> Model[StorageCondition,"Ambient Storage"]
+				];
+				sampleID2 = Lookup[First[samplePackets2], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets2]];
+				sample2Update = <|
+					Object -> sampleID2,
+					SurfaceTension -> Quantity[72.8, ("Millinewtons")/("Meters")],
+					Product -> Link[Object[Product, "Milli-Q Water"], Samples]
+				|>;
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[sample2Update]];
+
+				ExperimentMeasureContactAngle[containerIDs[[1]], containerIDs[[2]], Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"IncompatibleSample","The fiber sample input must be a solid fiber:"},
 			ExperimentMeasureContactAngle[
 				Object[Sample,"Test wetting liquid object for ExperimentMeasureContactAngle unit test "<>$SessionUUID],

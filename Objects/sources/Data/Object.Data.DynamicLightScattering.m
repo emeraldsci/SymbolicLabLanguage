@@ -71,6 +71,14 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Category->"Sample Loading",
       IndexMatching -> AssayContainers
     },
+    AssayPlateSample->{
+      Format->Single,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Sample],
+      Description->"The sample in the well plate analyzed in the specified Dynamic Light Scattering (DLS) assay.",
+      Category->"Sample Loading"
+    },
     NumberOfAcquisitions->{
       Format->Single,
       Class->Integer,
@@ -105,9 +113,9 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
     DiodeAttenuation->{
       Format->Single,
       Class->Real,
-      Pattern:>GreaterP[0*Percent],
+      Pattern:>GreaterEqualP[0*Percent],
       Units->Percent,
-      Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators.",
+      Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators (in Capillary-type assays) or the percent of scattered signal that is prevented from reaching the avalanche photodiode mediated by diode attenuators (in Plate-type assays).",
       Category->"Light Scattering"
     },
     CalibrationStandardIntensity->{
@@ -180,6 +188,13 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"The analyte mass concentrations of each dilution.",
       Category->"Sample Dilution"
     },
+    DilutionConcentration->{
+      Format->Single,
+      Class->Expression,
+      Pattern:>GreaterEqualP[0*(Milligram/Milliliter)],
+      Description->"The analyte mass concentrations of the dilution in the specified Dynamic Light Scattering (DLS) assay.",
+      Category->"Sample Dilution"
+    },
     Buffer->{
       Format->Single,
       Class->Link,
@@ -195,14 +210,6 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"The method used to mix the SampleLoadingPlate or AssayContainer used for dilution.",
       Category->"Sample Dilution"
     },
-    DilutionMixVolume->{
-      Format->Single,
-      Class->Real,
-      Pattern:>GreaterEqualP[0 Microliter],
-      Units->Microliter,
-      Description->"The volume that is pipetted up and down from the dilution to mix the sample with the Buffer to make the mixture homogeneous.",
-      Category->"Sample Dilution"
-    },
     DilutionNumberOfMixes->{
       Format->Single,
       Class->Integer,
@@ -215,7 +222,7 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Class->Real,
       Pattern:>RangeP[0.4 Microliter/Second,250 Microliter/Second],
       Units->Microliter/Second,
-      Description->"The speed at which the DilutionMixVolume is pipetted out of and into the dilution to mix the sample with the Diluent to make the DilutionCurve.",
+      Description->"The speed at which the dilution sample is pipetted out of and into the dilution to mix the sample with the Diluent to make the DilutionCurve.",
       Category->"Sample Dilution"
     },
     BlankBuffer->{
@@ -261,6 +268,13 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
 
     (* - Experimental Results - *)
     (* SizingPolydispersity Data *)
+    DataQuality->{
+      Format -> Single,
+      Class -> String,
+      Pattern :> _String,
+      Description -> "Describes the quality of dynamic light scattering data for the given measurement, based on the characteristics of the correlation function and intensity.",
+      Category -> "Experimental Results"
+    },
     ZAverageDiameter->{
       Format->Single,
       Class->Real,
@@ -301,6 +315,14 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"The amount of light that reaches the scattered light detector in counts per second.",
       Category->"Experimental Results"
     },
+    NormalizedScatteredLightIntensity->{
+      Format->Single,
+      Class->Real,
+      Pattern:>GreaterEqualP[0],
+      Units->None,
+      Description->"The amount of light that reaches the scattered light detector in counts per second, normalized for variations in laser power and attenuation.",
+      Category->"Experimental Results"
+    },
     CorrelationCurve->{
       Format->Single,
       Class->QuantityArray,
@@ -333,8 +355,26 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"Trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. In the MassDistribution, as opposed to the IntensityDistribution, the scattered light intensity at each hydrodynamic diameter is corrected for particle size, so this trace gives a more accurate representation of the number of particles of each size in solution.",
       Category->"Experimental Results"
     },
-
+    NumberDistribution->{
+      Format->Single,
+      Class->QuantityArray,
+      Pattern:>QuantityCoordinatesP[{Nanometer,ArbitraryUnit}],
+      Units->{Nanometer, ArbitraryUnit},
+      Description->"Trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. In the NumberDistribution, as opposed to the IntensityDistribution and MassDistribution, the scattered light intensity at each hydrodynamic diameter is corrected for particle size and mass, so this trace gives a more accurate representation of the number of particles of each size in solution.",
+      Category->"Experimental Results"
+    },
     (* IsothermalStability fields *)
+    DataQualities->{
+      Format -> Multiple,
+      Class -> {VariableUnit, String},
+      Pattern :> {
+        Alternatives[GreaterEqualP[0*Second],GreaterEqualP[0*Milligram/Milliliter]],
+        _String
+      },
+      Headers -> {"Time or Mass Concentration", "Data Quality"},
+      Description -> "For each time point or MassConcentration, describes the quality of dynamic light scattering data for the given measurement, based on the characteristics of the correlation function and intensity.",
+      Category -> "Experimental Results"
+    },
     ZAverageDiameters->{
       Format->Multiple,
       Class->{VariableUnit,Real},
@@ -383,20 +423,43 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"For each time point or MassConcentration, the amount of light that reaches the scattered light detector in counts per second, .",
       Category->"Experimental Results"
     },
+    NormalizedScatteredLightIntensities->{
+      Format->Multiple,
+      Class->{VariableUnit,Real},
+      Pattern:>{
+        Alternatives[GreaterEqualP[0*Second],GreaterEqualP[0*Milligram/Milliliter]],
+        GreaterEqualP[0*ArbitraryUnit]
+      },
+      Units->{None,ArbitraryUnit},
+      Headers->{"Time or Mass Concentration", "Scattered Light Intensity"},
+      Description->"For each time point or MassConcentration, the amount of light that reaches the scattered light detector in counts per second, normalized for variations in laser power and attenuation.",
+      Category->"Experimental Results"
+    },
     IntensityDistributions->{
       Format->Multiple,
-      Class->QuantityArray,
-      Pattern:>QuantityCoordinatesP[{Nanometer,ArbitraryUnit}],
-      Units->{Nanometer, ArbitraryUnit},
-      Description->"Trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. Since larger particles scatter more light, larger particles have a higher scattered light intensity per particle in the IntensityDistribution.",
+      Class->{VariableUnit, QuantityArray},
+      Pattern:>{Alternatives[GreaterEqualP[0*Second],GreaterEqualP[0*Milligram/Milliliter]], QuantityCoordinatesP[{Nanometer,ArbitraryUnit}]},
+      Units->{None, {Nanometer, ArbitraryUnit}},
+      Headers->{"Time or Mass Concentration", "Intensity Distribution"},
+      Description->"For each time point or MassConcentration, trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. Since larger particles scatter more light, larger particles have a higher scattered light intensity per particle in the IntensityDistribution.",
       Category->"Experimental Results"
     },
     MassDistributions->{
       Format->Multiple,
-      Class->QuantityArray,
-      Pattern:>QuantityCoordinatesP[{Nanometer,ArbitraryUnit}],
-      Units->{Nanometer, ArbitraryUnit},
-      Description->"Trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. In the MassDistribution, as opposed to the IntensityDistribution, the scattered light intensity at each hydrodynamic diameter is corrected for particle size, so this trace gives a more accurate representation of the number of particles of each size in solution.",
+      Class->{VariableUnit, QuantityArray},
+      Pattern:>{Alternatives[GreaterEqualP[0*Second],GreaterEqualP[0*Milligram/Milliliter]], QuantityCoordinatesP[{Nanometer,ArbitraryUnit}]},
+      Units->{None, {Nanometer, ArbitraryUnit}},
+      Headers->{"Time or Mass Concentration", "Mass Distribution"},
+      Description->"For each time point or MassConcentration, trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. In the MassDistribution, as opposed to the IntensityDistribution, the scattered light intensity at each hydrodynamic diameter is corrected for particle size, so this trace gives a more accurate representation of the number of particles of each size in solution.",
+      Category->"Experimental Results"
+    },
+    NumberDistributions->{
+      Format->Multiple,
+      Class->{VariableUnit, QuantityArray},
+      Pattern:>{Alternatives[GreaterEqualP[0*Second],GreaterEqualP[0*Milligram/Milliliter]], QuantityCoordinatesP[{Nanometer,ArbitraryUnit}]},
+      Units->{None, {Nanometer, ArbitraryUnit}},
+      Headers->{"Time or Mass Concentration", "Number Distribution"},
+      Description->"For each time point or MassConcentration, trace of the calculated scattered light intensities versus hydrodynamic diameters of particles in solution. In the NumberDistribution, as opposed to the IntensityDistribution and MassDistribution, the scattered light intensity at each hydrodynamic diameter is corrected for particle size and mass, so this trace gives a more accurate representation of the number of particles of each size in solution.",
       Category->"Experimental Results"
     },
     EstimatedMolecularWeights->{
@@ -577,6 +640,14 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Description->"Temperature of onset for global unfolding, also known as Tonset. This is determined by Dynamic Light Scattering (DLS) data as confirmation of expansion of hydrodynamic diameter, with support from Static Light Scattering (SLS) data that aggregation has not occurred.",
       Category->"Experimental Results"
     },
+    SLSCalibrationRSquared->{
+      Format->Multiple,
+      Class->Real,
+      Pattern:>RangeP[0,1],
+      Units->None,
+      Description->"For SLS plate calibrations, the R-squared value of each series of calibrations as functions of concentration. A single value represents the R-squared value at the specified DiodeAttenuation. Multiple values represent the R-squared values at each of 0.0%, 50.0%, 75.0%, 90.0%, and 99.0% attenuations.",
+      Category->"Experimental Results"
+    },
     RawDataFiles->{
       Format->Multiple,
       Class->Link,
@@ -599,6 +670,14 @@ DefineObjectType[Object[Data, DynamicLightScattering], {
       Pattern:>_Link,
       Relation->Object[Analysis][Reference],
       Description->"Peak picking analyses performed on the IntensityDistribution data.",
+      Category->"Analysis & Reports"
+    },
+    NumberDistributionAnalyses->{
+      Format->Multiple,
+      Class->Link,
+      Pattern:>_Link,
+      Relation->Object[Analysis][Reference],
+      Description->"Peak picking analyses performed on the NumberDistribution data.",
       Category->"Analysis & Reports"
     },
     DynamicLightScatteringAnalyses->{

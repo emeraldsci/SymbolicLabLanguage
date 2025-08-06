@@ -10,7 +10,7 @@ DefineOptions[ExperimentIncubatePreview,
 
 Authors[ExperimentIncubatePreview] := {"melanie.reschke", "yanzhe.zhu", "thomas"};
 
-ExperimentIncubatePreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentIncubatePreview]]:=Module[
+ExperimentIncubatePreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentIncubatePreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -38,7 +38,7 @@ DefineOptions[ExperimentIncubateOptions,
 
 Authors[ExperimentIncubateOptions] := {"melanie.reschke", "yanzhe.zhu", "thomas"};
 
-ExperimentIncubateOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentIncubateOptions]]:=Module[
+ExperimentIncubateOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentIncubateOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -70,7 +70,7 @@ DefineOptions[ValidExperimentIncubateQ,
 
 Authors[ValidExperimentIncubateQ] := {"melanie.reschke", "yanzhe.zhu", "thomas"};
 
-ValidExperimentIncubateQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentIncubateQ]]:=Module[
+ValidExperimentIncubateQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentIncubateQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];
@@ -126,9 +126,9 @@ DefineOptions[ExperimentMixPreview,
 	SharedOptions :> {ExperimentMix}
 ];
 
-Authors[ExperimentMixPreview] := {"Yahya.Benslimane", "dima", "thomas", "lige.tonggu"};
+Authors[ExperimentMixPreview] := {"tyler.pabst", "Yahya.Benslimane", "dima", "thomas", "lige.tonggu"};
 
-ExperimentMixPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentMixPreview]]:=Module[
+ExperimentMixPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentMixPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -154,9 +154,9 @@ DefineOptions[ExperimentMixOptions,
 	SharedOptions :> {ExperimentMix}
 ];
 
-Authors[ExperimentMixOptions] := {"Yahya.Benslimane", "steven", "thomas", "lige.tonggu"};
+Authors[ExperimentMixOptions] := {"tyler.pabst", "Yahya.Benslimane", "steven", "thomas", "lige.tonggu"};
 
-ExperimentMixOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentMixOptions]]:=Module[
+ExperimentMixOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentMixOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -186,9 +186,9 @@ DefineOptions[ValidExperimentMixQ,
 	SharedOptions :> {ExperimentMix}
 ];
 
-Authors[ValidExperimentMixQ] := {"Yahya.Benslimane", "dima", "thomas", "lige.tonggu"};
+Authors[ValidExperimentMixQ] := {"tyler.pabst", "Yahya.Benslimane", "dima", "thomas", "lige.tonggu"};
 
-ValidExperimentMixQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentMixQ]]:=Module[
+ValidExperimentMixQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentMixQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

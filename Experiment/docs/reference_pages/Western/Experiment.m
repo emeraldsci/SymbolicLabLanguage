@@ -44,7 +44,12 @@ DefineUsage[ExperimentWestern,{
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]}
+							]
 						],
 						Expandable->False
 					},
@@ -113,8 +118,5 @@ DefineUsage[ExperimentWestern,{
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author->{
-		"clayton.schwarz",
-		"axu"
-	}
+	Author->{"lige.tonggu", "clayton.schwarz", "axu"}
 }];

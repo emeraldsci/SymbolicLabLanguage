@@ -49,7 +49,7 @@ DefineOptions[PlotWaterfall,
 		{
 			OptionName->LabelField,
 			Description->"Specifies the object attribute used to set the z-value for each contour in the waterfall.",
-			ResolutionDescription->"If set to Automatic, LabelField will default to None unlesss the input data are in paired list form, in which case the z-coodinate values are used as labels.",
+			ResolutionDescription->"If set to Automatic, LabelField will default to None unless the input data are in paired list form, in which case the z-coodinate values are used as labels.",
 			Default->Automatic,
 			AllowNull->True,
 			Widget->Alternatives[

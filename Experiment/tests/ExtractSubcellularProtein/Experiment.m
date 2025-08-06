@@ -495,6 +495,90 @@ DefineTests[ExperimentExtractSubcellularProtein,
     (* Messages tests *)
 
     (* - General Errors and Warnings - *)
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentExtractSubcellularProtein[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentExtractSubcellularProtein[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentExtractSubcellularProtein[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentExtractSubcellularProtein[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.2 Milliliter,
+          CellType -> Bacterial,
+          CultureAdhesion -> Suspension,Living -> True,
+          State -> Liquid,
+          StorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"] (*Model[StorageCondition, "Refrigerator"]*)
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractSubcellularProtein[sampleID, Purification->None, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 1800
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.2 Milliliter,
+          CellType -> Bacterial,
+          CultureAdhesion -> Suspension,Living -> True,
+          State -> Liquid,
+          StorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"] (*Model[StorageCondition, "Refrigerator"]*)
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractSubcellularProtein[containerID, Purification->None, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 1800
+    ],
     Example[{Messages,"MethodTargetFractionMismatch","Return a warning if the specified method conflicts with the specified target protein:"},
       ExperimentExtractSubcellularProtein[
         Object[Sample, "ExperimentExtractSubcellularProtein Suspended Microbial Cell Sample "<>$SessionUUID],
@@ -5958,7 +6042,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
     ],
 
     (* -- MagnetizationRack Tests -- *)
-    Example[{Options, MagnetizationRack, "MagnetizationRack is automatically set to Model[Item, MagnetizationRack, \"Alpaqua 96S Super Magnet 96-well Plate Rack\"] if not otherwise specified:"},
+    Example[{Options, MagnetizationRack, "MagnetizationRack is automatically set to Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] if not otherwise specified:"},
       ExperimentExtractSubcellularProtein[
         Object[Sample,"ExperimentExtractSubcellularProtein Previously Extracted Protein Sample " <> $SessionUUID],
         Purification -> MagneticBeadSeparation,
@@ -5966,7 +6050,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagnetizationRack -> Automatic(*ObjectP[Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]]*)
+          MagnetizationRack -> Automatic(*ObjectP[Model[Item, MagnetizationRack, "Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"]]*)
         }
       ],
       TimeConstraint -> 1800
@@ -5981,7 +6065,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationPreWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationPreWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -5996,7 +6080,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationEquilibrationCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationEquilibrationCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6011,7 +6095,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationLoadingCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationLoadingCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6026,7 +6110,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6043,7 +6127,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSecondaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationSecondaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6061,7 +6145,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationTertiaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationTertiaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6080,7 +6164,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationQuaternaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationQuaternaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6100,7 +6184,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationQuinaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationQuinaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6121,7 +6205,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSenaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationSenaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6143,7 +6227,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSeptenaryWashCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationSeptenaryWashCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6158,7 +6242,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationElutionCollectionContainerLabel -> Automatic(*{(_String)}*)
+          MagneticBeadSeparationElutionCollectionContainerLabel -> {Automatic}(*{(_String)}*)
         }
       ],
       TimeConstraint -> 1800
@@ -6424,7 +6508,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationPreWashCollectionContainer -> Automatic(*{{"A1",ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationPreWashCollectionContainer -> {Automatic}(*{{"A1",ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -7361,7 +7445,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -7757,7 +7841,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSecondaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationSecondaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -8180,7 +8264,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationTertiaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationTertiaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -8626,7 +8710,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationQuaternaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationQuaternaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -9095,7 +9179,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationQuinaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationQuinaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -9587,7 +9671,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSenaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationSenaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -10102,7 +10186,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
       ],
       KeyValuePattern[
         {
-          MagneticBeadSeparationSeptenaryWashCollectionContainer -> Automatic(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
+          MagneticBeadSeparationSeptenaryWashCollectionContainer -> {Automatic}(*{{(_String),ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}}*)
         }
       ],
       TimeConstraint -> 1800
@@ -12307,7 +12391,7 @@ DefineTests[ExperimentExtractSubcellularProtein,
     $DeveloperSearch=True
   },
   Parallel -> True,
-  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct,Upload::Warning},
+  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct,Upload::Warning,Warning::ConflictingSourceAndDestinationAsepticHandling},
   SymbolSetUp :> Module[{allObjects,functionName,existingObjects,allSampleObjects},
     $CreatedObjects={};
 

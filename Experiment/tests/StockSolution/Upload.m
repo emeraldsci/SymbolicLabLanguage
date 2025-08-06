@@ -17,7 +17,7 @@
 
 
 (*
-	The filter tests specifically have DeveloperSearch on False because resolveFilterOptions just can't do shit unless allowed to Search and find like a billion different things
+	The filter tests specifically have DeveloperSearch on False because resolveFilterOptions just can't do anything unless allowed to Search and find like a billion different things
 *)
 DefineTests[UploadStockSolution,
 	{
@@ -214,7 +214,11 @@ DefineTests[UploadStockSolution,
 				$DeveloperSearch=True,
 				Experiment`Private`$StockSolutionUnitTestFilterOutNewlyCreatedObjects=True,
 				Experiment`Private`$StockSolutionUnitTestSearchName="Existing Solution of 10% v/v Methanol in Water"
-			}
+			},
+			SetUp:>(
+				(* Model[Sample,"Milli-Q water"] has a ShelfLife of 1Year and our stock solution is resolved to have a shelf life of 1 Year. We only think the stock solution is a match when expiration information is the same. Make sure we reset the ShelfLife and UnsealedShelfLife if they get reset by other tests *)
+				Upload[<|Object->Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water"],ShelfLife->1Year,UnsealedShelfLife->1Year|>]
+			)
 		],
 		Example[{Additional,"Create a model for a solution in which a solid component is a tablet by specifying a particular count of tablets to be included in the mixture:"},
 			UploadStockSolution[
@@ -274,14 +278,35 @@ DefineTests[UploadStockSolution,
 			EquivalenceFunction->MatchQ
 		],
 		Example[{Additional, "Safety information of the stock solution is automatically resolved based on the formula components:"},
-			Download[UploadStockSolution[
-				{
-					{6 Milligram, Model[Sample,"PETG powder"]},
-					{2 Milliliter, Model[Sample,"DMSO, anhydrous"]}
-				}
-			], {Ventilated,Flammable,Fuming,IncompatibleMaterials}],
-			{True,True,Null,{Delrin}},
-			EquivalenceFunction->MatchQ
+			Module[{modelInfo, ventilatedQ, flammableQ, fumingQ, incompatibleMaterials, ssModel},
+				(* download from model info *)
+				modelInfo = Transpose[Download[
+					{Model[Sample,"PETG powder"], Model[Sample,"DMSO, anhydrous"]},
+					{Ventilated, Flammable, Fuming, IncompatibleMaterials}
+				]];
+
+				(* expected value *)
+				ventilatedQ = If[NullQ[modelInfo[[1]]], Null, MemberQ[modelInfo[[1]], True]];
+				flammableQ = If[NullQ[modelInfo[[2]]], Null, MemberQ[modelInfo[[2]], True]];
+				fumingQ = If[NullQ[modelInfo[[3]]], Null, MemberQ[modelInfo[[3]], True]];
+				incompatibleMaterials = Module[{combinedIncompatibleMaterials},
+					combinedIncompatibleMaterials = Cases[Flatten[modelInfo[[4]]], MaterialP];
+					If[Length[combinedIncompatibleMaterials] == 0, {None}, combinedIncompatibleMaterials]
+				];
+
+				ssModel = UploadStockSolution[
+					{
+						{6 Milligram, Model[Sample, "PETG powder"]},
+						{2 Milliliter, Model[Sample, "DMSO, anhydrous"]}
+					}
+				];
+
+				MatchQ[
+					Download[ssModel, {Ventilated, Flammable, Fuming, IncompatibleMaterials}],
+					{ventilatedQ, flammableQ, fumingQ, incompatibleMaterials}
+				]
+			],
+			True
 		],
 		Example[{Additional,"Formula Issues","Formula components must be unique:"},
 			UploadStockSolution[
@@ -522,6 +547,110 @@ DefineTests[UploadStockSolution,
 				Warning::ComponentOrder
 			}
 		],
+		Example[{Messages, "ComponentOrder", "If in a formula-only stock solution and using an acid and there is UsedAsSolvent liquid added before the acid to a sufficient amount, no warning is thrown and the input order is respected:"},
+			Download[
+				UploadStockSolution[
+					{
+						{100 Milliliter, Model[Sample,"Milli-Q water"]},
+						{58.44 Gram, Model[Sample, "Sodium Chloride"]},(* component not considered, put here just to test the robustness of all the positions calculation *)
+						{20 Milliliter, Model[Sample, "Trifluoroacetic acid"]}
+					}
+				],
+				Formula
+			],
+			{
+				{EqualP[100 Milliliter], ObjectP[Model[Sample,"Milli-Q water"]]},
+				{EqualP[58.44 Gram], ObjectP[Model[Sample, "Sodium Chloride"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Trifluoroacetic acid"]]}
+			}
+		],
+		Example[{Messages, "ComponentOrder", "If in a formula-only stock solution and using more than one acid, if at the addition of any acid and there is not sufficient UsedAsSolvent liquid added before for the combined acid volume, but we are not adding more liquid to it, no warning is thrown and the input order is respected:"},
+			Download[
+				UploadStockSolution[
+					{
+						{100 Milliliter, Model[Sample, "Milli-Q water"]},
+						{58.44 Gram, Model[Sample, "Sodium Chloride"]},(* component not considered, put here just to test the robustness of all the positions calculation *)
+						{20 Milliliter, Model[Sample, "Trifluoroacetic acid"]},
+						{20 Milliliter, Model[Sample, "Formic Acid, LCMS Grade"]}
+					}
+				],
+				Formula
+			],
+			{
+				{EqualP[100 Milliliter],ObjectP[Model[Sample,"Milli-Q water"]]},
+				{EqualP[58.44 Gram], ObjectP[Model[Sample, "Sodium Chloride"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Trifluoroacetic acid"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Formic Acid, LCMS Grade"]]}
+			}
+		],
+		Example[{Messages, "ComponentOrder", "If in a formula-only stock solution and using more than one acid, if at the addition of any acid and there is not sufficient UsedAsSolvent liquid added before for the combined acid volume, and we are adding more liquid to it, throw a warning and adjust the order:"},
+			Download[
+				UploadStockSolution[
+					{
+						{100 Milliliter, Model[Sample, "Milli-Q water"]},
+						{58.44 Gram, Model[Sample, "Sodium Chloride"]},(* component not considered, put here just to test the robustness of all the positions calculation *)
+						{20 Milliliter, Model[Sample, "Trifluoroacetic acid"]},
+						{20 Milliliter, Model[Sample, "Formic Acid, LCMS Grade"]},
+						{100 Milliliter, Model[Sample, "Acetonitrile, Anhydrous"]}
+					}
+				],
+				Formula
+			],
+			{
+				{EqualP[100 Milliliter],ObjectP[Model[Sample,"Milli-Q water"]]},
+				{EqualP[58.44 Gram], ObjectP[Model[Sample, "Sodium Chloride"]]},
+				{EqualP[100 Milliliter], ObjectP[Model[Sample, "Acetonitrile, Anhydrous"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Trifluoroacetic acid"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Formic Acid, LCMS Grade"]]}
+			},
+			Messages :> {
+				Warning::ComponentOrder
+			}
+		],
+		Example[{Messages, "ComponentOrder", "If in a fill-to-volume stock solution and using an acid and there is another UsedAsSolvent liquid added before the acid to a sufficient amount, no warning is thrown and the input order is respected:"},
+			Download[
+				UploadStockSolution[
+					{
+						{100 Milliliter, Model[Sample, "Acetonitrile, Anhydrous"]},
+						{58.44 Gram, Model[Sample, "Sodium Chloride"]},(* component not considered, put here just to test the robustness of all the positions calculation *)
+						{20 Milliliter, Model[Sample, "Trifluoroacetic acid"]}
+					},
+					Model[Sample, "Milli-Q water"],
+					150 * Milliliter
+				],
+				Formula
+			],
+			{
+				{EqualP[100 Milliliter], ObjectP[Model[Sample, "Acetonitrile, Anhydrous"]]},
+				{EqualP[58.44 Gram], ObjectP[Model[Sample, "Sodium Chloride"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Trifluoroacetic acid"]]}
+			}
+		],
+		Example[{Messages, "ComponentOrder", "If in a fill-to-volume stock solution and using more than one acid, if at the addition of any acid and there is not sufficient UsedAsSolvent liquid added before for the combined acid volume, throw a warning and adjust the order:"},
+			Download[
+				UploadStockSolution[
+					{
+						{100 Milliliter, Model[Sample, "Acetonitrile, Anhydrous"]},
+						{58.44 Gram, Model[Sample, "Sodium Chloride"]},(* component not considered, put here just to test the robustness of all the positions calculation *)
+						{20 Milliliter, Model[Sample, "Trifluoroacetic acid"]},
+						{20 Milliliter, Model[Sample, "Formic Acid, LCMS Grade"]}
+					},
+					Model[Sample, "Milli-Q water"],
+					200 * Milliliter
+				],
+				Formula
+			],
+			{
+				{EqualP[100 Milliliter], ObjectP[Model[Sample, "Acetonitrile, Anhydrous"]]},
+				{EqualP[58.44 Gram], ObjectP[Model[Sample, "Sodium Chloride"]]},
+				{UnitsP[Milliliter],ObjectP[Model[Sample,"Milli-Q water"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Trifluoroacetic acid"]]},
+				{EqualP[20 Milliliter], ObjectP[Model[Sample, "Formic Acid, LCMS Grade"]]}
+			},
+			Messages :> {
+				Warning::ComponentOrder
+			}
+		],
 		Example[{Messages, "MixTimeIncubateTimeMismatch", "If MixTime and IncubationTime are both specified, they must be the same:"},
 			UploadStockSolution[
 				{
@@ -553,20 +682,6 @@ DefineTests[UploadStockSolution,
 			$Failed,
 			Messages:>{Error::NoNominalpH,Error::InvalidOption}
 		],
-		Example[{Messages, "TransportWarmedChilledConflict", "TransportWarmed and TransportChilled cannot both be specified:"},
-			UploadStockSolution[
-				{
-					{5 Milliliter,Model[Sample,"Milli-Q water"]},
-					{20 Milliliter,Model[Sample,"Trifluoroacetic acid"]}
-				},
-				TransportWarmed->50*Celsius,
-				TransportChilled->True
-			],
-			$Failed,
-			Messages :> {
-				Error::TransportWarmedChilledConflict, Error::InvalidOption
-			}
-		],
 		Example[{Messages,"AcidBaseConflict","Acid and Base storage cannot be simultaneously required for a stock solution:"},
 			UploadStockSolution[
 				{
@@ -577,7 +692,7 @@ DefineTests[UploadStockSolution,
 				Base->True
 			],
 			$Failed,
-			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsuppported,Error::InvalidOption}
+			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsupported,Error::InvalidOption}
 		],
 		Example[{Messages,"ComponentRequiresTabletCount","Tablet components must be specified in amounts that are tablet counts, not masses:"},
 			UploadStockSolution[
@@ -747,7 +862,7 @@ DefineTests[UploadStockSolution,
 			$Failed,
 			Messages:>{Error::StockSolutionNameInUse,Error::InvalidOption}
 		],
-		Example[{Messages,"StorageCombinationUnsuppported","Acid and Base storage cannot be simultaneously required for a stock solution:"},
+		Example[{Messages,"StorageCombinationUnsupported","Acid and Base storage cannot be simultaneously required for a stock solution:"},
 			UploadStockSolution[
 				{
 					{80 Gram,Model[Sample,"Sodium Hydroxide"]}
@@ -758,18 +873,7 @@ DefineTests[UploadStockSolution,
 				Acid->True
 			],
 			$Failed,
-			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsuppported,Error::InvalidOption}
-		],
-		Example[{Messages,"StorageCombinationUnsuppported","Cryo storage condition cannot be set for flammable formula components:"},
-			UploadStockSolution[
-				{
-					{6 Milligram, Model[Sample,"PETG powder"]},
-					{2 Milliliter, Model[Sample,"DMSO, anhydrous"]}
-				},
-				DefaultStorageCondition->DeepFreezer
-			],
-			$Failed,
-			Messages:>{Error::StorageCombinationUnsuppported,Error::InvalidOption}
+			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsupported,Error::InvalidOption}
 		],
 		Example[{Messages,"VolumeBelowFiltrationMinimum","The total preparation volume of the stock solution must exceed a minimum threshold for filtration to ensure that a method with low enough dead volume is available:"},
 			UploadStockSolution[
@@ -795,7 +899,7 @@ DefineTests[UploadStockSolution,
 			$Failed,
 			Messages:>{Error::VolumeBelowpHMinimum,Error::InvalidOption}
 		],
-		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a FillToVolume stock solution may not be outside of RangeP[$MinStockSolutionSolventVolume, $MaxStockSolutionComponentVolume]:"},
+		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a FillToVolume stock solution may not be outside of RangeP[$MinStockSolutionUltrasonicSolventVolume, $MaxStockSolutionComponentVolume]:"},
 			UploadStockSolution[
 				{
 					{5 Milligram,Model[Sample,"Sodium Chloride"]}
@@ -808,6 +912,17 @@ DefineTests[UploadStockSolution,
 				Error::BelowFillToVolumeMinimum,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a FillToVolume stock solution for Volumetric method has lower limits:"},
+			UploadStockSolution[
+				{
+					{0.1 Gram, Model[Sample, "Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				2 Milliliter,
+				FillToVolumeMethod->Volumetric
+			],
+			ObjectP[Model[Sample,StockSolution]]
 		],
 		Example[{Messages,"TemplateOptionUnused","If BOTH the template input and option are used, and the option differs from the input, the option will be ignored in favor of the direct input:"},
 			UploadStockSolution[
@@ -920,6 +1035,75 @@ DefineTests[UploadStockSolution,
 				FillToVolumeMethod->Volumetric
 			],
 			$Failed,
+			Messages :> {
+				Error::VolumeTooLargeForInversion,
+				Error::InvalidVolumetricFillToVolumeMethod,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "InvalidVolumetricFillToVolumeMethod", "The solvent volume in a Volumetric FillToVolume light-sensitive stock solution cannot exceed the volume of the largest opaque volumetric flask:"},
+			Module[
+				{lightSensitiveReturn,nonLightSensitiveReturn},
+				lightSensitiveReturn=UploadStockSolution[
+					{
+						{5 Milligram,Model[Sample, "Reserpine, USP Reference Standard"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					LightSensitive->True,
+					FillToVolumeMethod->Volumetric,
+					(* Use name to force creation of new model *)
+					Name->"UploadStockSolution test light-sensitive volumetric FTV stock solution model"<>$SessionUUID<>CreateUUID[]
+				];
+				nonLightSensitiveReturn=UploadStockSolution[
+					{
+						{5 Milligram,Model[Sample, "Reserpine, USP Reference Standard"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					LightSensitive->False,
+					FillToVolumeMethod->Volumetric,
+					(* Use name to force creation of new model *)
+					Name->"UploadStockSolution test non-light-sensitive volumetric FTV stock solution model"<>$SessionUUID<>CreateUUID[],
+					Upload->False
+				];
+				{lightSensitiveReturn,nonLightSensitiveReturn}
+			],
+			{$Failed,PacketP[]},
+			Messages :> {
+				Error::InvalidVolumetricFillToVolumeMethod,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "InvalidVolumetricFillToVolumeMethod", "The solvent volume in a Volumetric FillToVolume stock solution that is incompatible with Glass cannot exceed the volume of the largest polypropylene volumetric flask:"},
+			Module[
+				{incompatibleMaterialsReturn,nonIncompatibleMaterialsReturn},
+				incompatibleMaterialsReturn=UploadStockSolution[
+					{
+						{5 Milligram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					IncompatibleMaterials -> {Glass},
+					FillToVolumeMethod->Volumetric,
+					(* Use name to force creation of new model *)
+					Name->"UploadStockSolution test volumetric FTV stock solution model incompatible with Glass"<>$SessionUUID<>CreateUUID[]
+				];
+				nonIncompatibleMaterialsReturn=UploadStockSolution[
+					{
+						{5 Milligram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					IncompatibleMaterials -> {None},
+					FillToVolumeMethod->Volumetric,
+					(* Use name to force creation of new model *)
+					Name->"UploadStockSolution test volumetric FTV stock solution model without incompatible materials"<>$SessionUUID<>CreateUUID[],
+					Upload->False
+				];
+				{incompatibleMaterialsReturn,nonIncompatibleMaterialsReturn}
+			],
+			{$Failed,PacketP[]},
 			Messages :> {
 				Error::InvalidVolumetricFillToVolumeMethod,
 				Error::InvalidOption
@@ -1069,7 +1253,12 @@ DefineTests[UploadStockSolution,
 			Stubs:>{
 				$DeveloperSearch=True,
 				Experiment`Private`$StockSolutionUnitTestFilterOutNewlyCreatedObjects=True
-			}
+			},
+			SetUp:>(
+				(* Model[Sample,"Milli-Q water"] has a ShelfLife of 1Year and our stock solution is resolved to have a shelf life of 1 Year. We only think the stock solution is a match when expiration information is the same. Make sure we reset the ShelfLife and UnsealedShelfLife if they get reset by other tests. We will make the changes permanent eventually *)
+				Upload[<|Object->Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water"],ShelfLife->1Year,UnsealedShelfLife->1Year|>];
+				Upload[<|Object->Model[Sample,StockSolution,"Existing Alternative Solution of 10% v/v Methanol in Water"],ShelfLife->1Year,UnsealedShelfLife->1Year|>];
+			)
 		],
 		Example[{Messages,"ConflictingUnitOperationsOptions","An error will be thrown if a preparation option is specified when using the unit operations input:"},
 			UploadStockSolution[
@@ -1154,6 +1343,48 @@ DefineTests[UploadStockSolution,
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
 				Unset[$CreatedObjects]
 			)
+		],
+		Example[{Messages,"FormulaVolumeTooLarge","An error will be thrown if the input formula has the combined total volume of its components equal to or exceeds the model's TotalVolume:"},
+			UploadStockSolution[
+				{
+					{80 Gram, Model[Sample, "Sodium Chloride"]},
+					{1000 Milliliter, Model[Sample, "Milli-Q water"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter
+			],
+			$Failed,
+			Messages:>{Error::FormulaVolumeTooLarge,Error::InvalidOption},
+			SetUp:>(
+				ClearMemoization[]
+			),
+			TearDown:>(
+				ClearMemoization[];
+				EraseObject[$CreatedObjects,Force->True,Verbose->False];
+				Unset[$CreatedObjects]
+			)
+		],
+		Example[{Messages,"SpecifedMixRateNotSafe","If given formula, a warning will be thrown if the specified mix rate is over the safe mix rate of the container:"},
+			protocol = UploadStockSolution[
+				{
+					{700 Milliliter, Model[Sample, "Milli-Q water"]}
+				},
+				MixRate -> 750 RPM, MixType -> Stir
+			];
+			Download[protocol, MixRate],
+			EqualP[750 RPM],
+			Messages:>{Warning::SpecifedMixRateNotSafe},
+			Variables:>{protocol}
+		],
+		Example[{Messages,"SpecifedMixRateNotSafe","If given model stock solution, a warning will be thrown if the specified mix rate is over the safe mix rate of the container, and a new model will be generated with the specified mix rate:"},
+			protocol = UploadStockSolution[
+				Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water"],
+				MixRate -> 780 RPM, MixType -> Stir
+			];
+			Download[protocol, MixRate],
+			EqualP[780 RPM],
+			Messages:>{Warning::SpecifedMixRateNotSafe, Warning::NewModelCreation},
+			Variables:>{protocol}
 		],
 		(* --- Options --- *)
 		Example[{Options,Type,"Specify the SLL type of the new stock solution model being created:"},
@@ -1520,7 +1751,58 @@ DefineTests[UploadStockSolution,
 			],
 			Universal
 		],
-		Example[{Options,Composition,"Use AutoclaveProgram option to specify the autoclave program:"},
+		Example[{Options,{PostAutoclaveMix,PostAutoclaveMixType,PostAutoclaveMixUntilDissolved,PostAutoclaveMixer,PostAutoclaveMixTime,PostAutoclaveMaxMixTime},"Use PostAutoclaveMix and related options to specify the autoclave program:"},
+			Download[
+				UploadStockSolution[
+					{
+						{500 Milliliter,Model[Sample,"Milli-Q water"]},
+						{500 Milliliter,Model[Sample,"Methanol"]}
+					},
+					Autoclave -> True,
+					PostAutoclaveMix -> True,
+					PostAutoclaveMixType ->	Stir,
+					PostAutoclaveMixUntilDissolved -> True,
+					PostAutoclaveMixer ->	Model[Instrument, OverheadStirrer, "MINISTAR 40 with C-MAG HS 10 Hot Plate"],
+					PostAutoclaveMixTime ->	15 Minute,
+					PostAutoclaveMaxMixTime -> 30 Minute
+				],
+				{PostAutoclaveMixType,PostAutoclaveMixUntilDissolved,PostAutoclaveMixer,PostAutoclaveMixTime,PostAutoclaveMaxMixTime}
+			],
+			{Stir, True, ObjectP[Model[Instrument, OverheadStirrer, "MINISTAR 40 with C-MAG HS 10 Hot Plate"]], 15. Minute, 30. Minute}
+		],
+		Example[{Options,{PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes},"Use PostAutoclaveNumberOfMixes and related options to specify the autoclave program:"},
+			Download[
+				UploadStockSolution[
+					{
+						{500 Milliliter,Model[Sample,"Milli-Q water"]},
+						{500 Milliliter,Model[Sample,"Methanol"]}
+					},
+					Autoclave -> True,
+					PostAutoclaveMixType ->	Invert,
+					PostAutoclaveNumberOfMixes -> 10,
+					PostAutoclaveMaxNumberOfMixes -> 30
+				],
+				{PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes}
+			],
+			{10, 30}
+		],
+		Example[{Options,{PostAutoclaveIncubate, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature},"Use PostAutoclaveIncubate and related options to specify the autoclave program:"},
+			Download[
+				UploadStockSolution[
+					{
+						{500 Milliliter,Model[Sample,"Milli-Q water"]},
+						{500 Milliliter,Model[Sample,"Methanol"]}
+					},
+					Autoclave -> True,
+					PostAutoclaveIncubate -> True,
+					PostAutoclaveIncubationTime -> 10 Minute,
+					PostAutoclaveIncubationTemperature -> 55 Celsius
+				],
+				{PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature}
+			],
+			{10. Minute, 55. Celsius}
+		],
+		Example[{Options,Composition,"Use Composition option to specify the composition:"},
 			Download[
 				UploadStockSolution[
 					{
@@ -1534,6 +1816,27 @@ DefineTests[UploadStockSolution,
 			{OrderlessPatternSequence[
 				{EqualP[50 VolumePercent], LinkP[Model[Molecule, "id:vXl9j57PmP5D"]]},
 				{EqualP[50 VolumePercent], LinkP[Model[Molecule, "id:M8n3rx0676xR"]]}
+			]}
+		],
+		Example[{Options, Composition, "Calculate the composition correctly from the formula:"},
+			Lookup[
+				UploadStockSolution[
+					{
+						{0.79 Gram, Model[Sample, "id:n0k9mGzRa6o4"](*"Sodium Phosphate Monobasic Monohydrate"*)},
+						{7.88 Gram, Model[Sample, "id:qdkmxzqrzYLx"](*"Sodium Phosphate Dibasic Dihydrate"*)},
+						{800 Milliliter, Model[Sample, "id:8qZ1VWNmdLBD"](*"Milli-Q water"*)}
+					},
+					Model[Sample, "id:8qZ1VWNmdLBD"](*"Milli-Q water"*),
+					1 Liter,
+					Upload -> False,
+					Output -> Options
+				],
+				Composition
+			],
+			{OrderlessPatternSequence[
+				{GreaterP[99 VolumePercent], ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]]},
+				{RangeP[43 Millimolar, 44 Millimolar], ObjectP[Model[Molecule, "id:54n6evLRv8n7"]]},
+				{RangeP[5.5 Millimolar, 6 Millimolar], ObjectP[Model[Molecule, "id:D8KAEvGwmAbL"]]}
 			]}
 		],
 		(* TODO this does not work. Not sure if we even need this option - it is not getting uploaded in a field *)
@@ -2396,9 +2699,12 @@ DefineTests[UploadStockSolution,
 					{
 						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
 					},
-					Model[Sample,"Milli-Q water"],
+					(* RO Water does not have ShelfLife *)
+					Model[Sample, "RO Water"],
 					1 Liter,
-					Expires->True
+					Expires->True,
+					(* Give a special name so we don't try to find an existing stock solution model *)
+					Name->"Special Salt in Water Mixture"<>$SessionUUID<>CreateUUID[]
 				],
 				ShelfLife
 			],
@@ -2436,20 +2742,20 @@ DefineTests[UploadStockSolution,
 			1 Year,
 			EquivalenceFunction->Equal
 		],
-		Example[{Options,UnsealedShelfLife,"Automatically resolves to Null if Expires is set to True and no formula components have unsealed shelf lives:"},
-			Download[
-				UploadStockSolution[
+		Example[{Options,UnsealedShelfLife,"Automatically resolves to match ShelfLife if Expires is set to True and no formula components have unsealed shelf lives:"},
+			Module[
+				{stockSolutionModel},
+				stockSolutionModel=UploadStockSolution[
 					{
 						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
 					},
 					Model[Sample,"Dichloromethane, Reagent Grade"],
 					1 Liter,
 					Expires->True
-				],
-				UnsealedShelfLife
+				];
+				EqualQ[Download[stockSolutionModel,ShelfLife],Download[stockSolutionModel,UnsealedShelfLife]]
 			],
-			Null,
-			EquivalenceFunction->Equal
+			True
 		],
 		Example[{Options,UnsealedShelfLife,"Automatically resolves to the shortest of the unsealed shelf lives of any formula components:"},
 			Download[
@@ -2478,6 +2784,20 @@ DefineTests[UploadStockSolution,
 			],
 			ObjectP[Model[Sample,StockSolution]],
 			Messages:>{Warning::UnsealedShelfLifeLonger}
+		],
+		Example[{Options,DiscardThreshold,"Specify the percentage of the prepared stock solution volume below which the sample will be automatically marked as AwaitingDisposal:"},
+			Download[
+				UploadStockSolution[
+					{
+						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					DiscardThreshold -> 4 Percent
+				],
+				DiscardThreshold
+			],
+			EqualP[4 Percent]
 		],
 		Example[{Options,DefaultStorageCondition,"Indicate the temperature conditions in which samples of this stock solution should be stored. This default condition can be overridden for specific samples using the function StoreSamples:"},
 			Download[
@@ -2572,7 +2892,7 @@ DefineTests[UploadStockSolution,
 			],
 			True
 		],
-		Example[{Options,TransportChilled,"Indicate if samples of this stock solution should be refrigerated during transport when used in experiments:"},
+		Example[{Options,TransportTemperature,"Indicate at what temperature samples of this stock solution should be refrigerated during transport when used in experiments:"},
 			Download[
 				UploadStockSolution[
 					{
@@ -2580,13 +2900,13 @@ DefineTests[UploadStockSolution,
 					},
 					Model[Sample,"Acetonitrile, Biosynthesis Grade"],
 					25 Milliliter,
-					TransportChilled->True
+					TransportTemperature->4 Celsius
 				],
-				TransportChilled
+				TransportTemperature
 			],
-			True
+			EqualP[4 Celsius]
 		],
-		Example[{Options,TransportWarmed,"Indicate if samples of this stock solution should be refrigerated during transport when used in experiments:"},
+		Example[{Options,TransportTemperature,"Indicate at what temperature samples of this stock solution should be refrigerated during transport when used in experiments:"},
 			Download[
 				UploadStockSolution[
 					{
@@ -2594,11 +2914,11 @@ DefineTests[UploadStockSolution,
 					},
 					Model[Sample,"Acetonitrile, Biosynthesis Grade"],
 					25 Milliliter,
-					TransportWarmed->50*Celsius
+					TransportTemperature->50*Celsius
 				],
-				TransportWarmed
+				TransportTemperature
 			],
-			UnitsP[Celsius]
+			EqualP[50 Celsius]
 		],
 		Example[{Options,Density,"If known explicitly, specify the density that should be associated with this mixture. This will allow samples of this stock solution model to have their volumes measured via the gravimetric method:"},
 			Download[
@@ -2684,7 +3004,7 @@ DefineTests[UploadStockSolution,
 				Base->True
 			],
 			$Failed,
-			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsuppported,Error::InvalidOption}
+			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsupported,Error::InvalidOption}
 		],
 		Example[{Options,Base,"Indicates if this stock solution is a strong base (pH >= 12) and samples of this stock solution model require dedicated secondary containment during storage:"},
 			Download[
@@ -2711,7 +3031,7 @@ DefineTests[UploadStockSolution,
 				Acid->True
 			],
 			$Failed,
-			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsuppported,Error::InvalidOption}
+			Messages:>{Error::AcidBaseConflict,Error::StorageCombinationUnsupported,Error::InvalidOption}
 		],
 		Example[{Options,Fuming,"Indicates if samples of this stock solution emit fumes spontaneously when exposed to air:"},
 			Download[
@@ -2800,6 +3120,116 @@ DefineTests[UploadStockSolution,
 				$DeveloperSearch=True,
 				Experiment`Private`$StockSolutionUnitTestFilterOutNewlyCreatedObjects=True
 			}
+		],
+		Test["If Autoclave is set to or default to True, the resulted Model[Sample, StockSolution] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter,
+				Autoclave -> True,
+				Name -> "NaCl in Waster Autoclaved for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "NaCl in Waster Autoclaved for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
+		],
+		Test["If filtering with size at or below 0.22 Micrometer, the resulted Model[Sample, StockSolution] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter,
+				Autoclave -> False,
+				Filter -> True,
+				FilterSize -> 0.22 Micrometer,
+				Name -> "NaCl in Waster Filtered for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "NaCl in Waster Filtered for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
+		],
+		Test["Using the formula with solvent overload, if all components have Sterile -> True, the resulted Model[Sample, StockSolution] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadStockSolution[
+				{
+					{50 Milliliter,Model[Sample, StockSolution,"id:xRO9n3ExxAPx"]}(*"2 mg/mL Ampicillin in Water, Filtered"*)
+				},
+				Model[Sample, Media, "id:jLq9jXqbAn9E"],(*"LB (Liquid)"*)
+				1 Liter,
+				Autoclave -> False,
+				Filter -> False,
+				Name -> "Filtered ampicillin stock in autoclaved LB broth 1 for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "Filtered ampicillin stock in autoclaved LB broth 1 for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
+		],
+		Test["Using the plain formula overload, if all components have Sterile -> True, the resulted Model[Sample, StockSolution] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadStockSolution[
+				{
+					{50 Milliliter,Model[Sample, StockSolution,"id:xRO9n3ExxAPx"]}(*"2 mg/mL Ampicillin in Water, Filtered"*),
+					{950 Milliliter,Model[Sample, Media, "id:jLq9jXqbAn9E"]}(*"LB (Liquid)"*)
+				},
+				Autoclave -> False,
+				Filter -> False,
+				Name -> "Filtered ampicillin stock in autoclaved LB broth 2 for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "Filtered ampicillin stock in autoclaved LB broth 2 for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
+		],
+		Test["Using the template model overload, if the template model is sterile but Autoclave and Filter are turned off, the resulted Model[Sample, StockSolution] does not get populated with Sterile and AsepticHandling as True:",
+			UploadStockSolution[
+				Model[Sample, StockSolution,"id:xRO9n3ExxAPx"],(*"2 mg/mL Ampicillin in Water, Filtered"*)
+				Autoclave -> False,
+				Filter -> False,
+				FilterMaterial -> Null,
+				FilterSize -> Null,
+				Name -> "Unfiltered ampicillin stock for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "Unfiltered ampicillin stock for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{Null, Null}
+		],
+		Test["Using the unit operation overload, if all components have Sterile -> True, the resulted Model[Sample, StockSolution] is automatically populated with Sterile as True, AsepticHandling as True because individual UnitOperation takes care of potential aseptic handling needs:",
+			UploadStockSolution[
+				{
+					LabelContainer[
+						Label->"test tube",
+						Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL tube*)
+					],
+					Transfer[
+						Source->Model[Sample, StockSolution,"id:xRO9n3ExxAPx"],(*"2 mg/mL Ampicillin in Water, Filtered"*)
+						Destination->"test tube",
+						Amount-> 1 Milliliter,
+						MeasureVolume -> False, ImageSample -> False, MeasureWeight -> False
+					],
+					Transfer[
+						Source->Model[Sample, Media, "id:jLq9jXqbAn9E"](*"LB (Liquid)"*),
+						Destination->"test tube",
+						Amount->39 Milliliter,
+						MeasureVolume -> False, ImageSample -> False, MeasureWeight -> False
+					]
+				},
+				Name -> "Filtered ampicillin stock in autoclaved LB broth 3 for UploadStockSolution test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, StockSolution, "Filtered ampicillin stock in autoclaved LB broth 3 for UploadStockSolution test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
 		]
 	},
 	(* need to do this because we still want the StorageCondition search to return the real objects and not the fake ones even if $DeveloperSearch = True *)
@@ -3251,13 +3681,13 @@ DefineTests[UploadStockSolutionOptions,
 					Model[Sample,"Acetonitrile, Biosynthesis Grade"],
 					25 Milliliter,
 					OutputFormat->True,
-					TransportChilled->True,
+					TransportTemperature->4 Celsius,
 					Flammable->True,
 					Ventilated->True
 				],
-				{TransportChilled,Flammable,Ventilated}
+				{TransportTemperature,Flammable,Ventilated}
 			],
-			{True,True,True}
+			{EqualP[4 Celsius],True,True}
 		],
 		Example[{Options,OutputFormat,"Return a list of resolved options instead of a grid:"},
 			UploadStockSolutionOptions[
@@ -3284,7 +3714,7 @@ DefineTests[UploadStockSolutionOptions,
 				OutputFormat->List
 			],
 			{__Rule},
-			Messages:>{Error::InvalidOption,Error::NoFilterAvailable, Error::FilterOptionMismatch}
+			Messages:>{Error::InvalidOption,Error::NoFilterAvailable}
 		]
 	},
 	SymbolSetUp :> {

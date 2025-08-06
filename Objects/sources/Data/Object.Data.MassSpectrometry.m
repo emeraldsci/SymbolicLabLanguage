@@ -350,7 +350,15 @@ DefineObjectType[Object[Data, MassSpectrometry], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[(0*Gram)/Mole],
 			Units -> Gram/Mole,
-			Description -> "Standard deviation associated with the calibration used to generate this data.",
+			Description -> "Standard deviation associated with the calibration used to generate this data after applying the calibration.",
+			Category -> "Data Processing"
+		},
+		PriorCalibrationStandardDeviation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[(0*Gram)/Mole],
+			Units -> Gram/Mole,
+			Description -> "Standard deviation associated with the calibration used to generate this data prior to applying the calibration.",
 			Category -> "Data Processing"
 		},
 		Analytes -> {
@@ -518,6 +526,43 @@ DefineObjectType[Object[Data, MassSpectrometry], {
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "The data stored in the MassSpectrum field, in mzML format.",
 			Category -> "Experimental Results"
+		},
+		CalibrationFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The file containing information about the calibration applied to this data.",
+			Category -> "General"
+		},
+		CalibrationParameters -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> MALDICalibrationParametersP,
+			Description -> "The parameters describing the calibration that was applied to this data.",
+			Category -> "General"
+		},
+		CalibrationLaserPower -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0 Percent, 100 Percent],
+			Units :> Percent,
+			Description -> "The laser power used to perform calibration for this data.",
+			Category -> "General"
+		},
+		Calibrated -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if calibration was successful for this data.",
+			Category -> "General"
+		},
+		CalibratedMasses -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[(0*Gram)/Mole],
+			Description -> "Indicates which reference masses were calibrated for this data and the order in which they were calibrated.",
+			Category -> "General"
 		}
 	}
 }];

@@ -46,28 +46,48 @@ DefineTests[
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
 		],
 		(* Messages *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureViscosity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureViscosity[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureViscosity[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureViscosity[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentMeasureViscosity[Object[Sample,"Test discarded sample for ExperimentMeasureViscosity"<>$SessionUUID]],
 			$Failed,
 			Messages :> {Error::DiscardedSamples,Error::InvalidInput}
 		],
-		Example[{Messages,"TooManyViscosityInputs","If the ViscometerChip specified is Model[Part, ViscometerChip, \"Rheosense VROC B05 Viscometer Chip\"] and the number of samples is greater than 20, an error is thrown:"},
-			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],21],ViscometerChip->Model[Part, ViscometerChip, "id:6V0npvmZXEAa"]],
+		Example[{Messages,"TooManyViscosityInputs","If the ViscometerChip specified is Model[Part, ViscometerChip, \"Rheosense VROC B05 Viscometer Chip\"] and the number of samples is greater than 72, an error is thrown:"},
+			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],73],ViscometerChip->Model[Part, ViscometerChip, "id:6V0npvmZXEAa"]],
 			$Failed,
 			Messages :> {Error::TooManyViscosityInputs,Error::InvalidInput}
 		],
-		Example[{Messages,"TooManyViscosityInputs","If the ViscometerChip specified is Model[Part, ViscometerChip, \"Rheosense VROC C05 Viscometer Chip\"] and the number of samples is greater than 12, an error is thrown:"},
-			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],13],ViscometerChip->Model[Part, ViscometerChip, "id:pZx9jo8LKz04"]],
+		Example[{Messages,"TooManyViscosityInputs","If the ViscometerChip specified is Model[Part, ViscometerChip, \"Rheosense VROC C05 Viscometer Chip\"] and the number of samples is greater than 48, an error is thrown:"},
+			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],49],ViscometerChip->Model[Part, ViscometerChip, "id:pZx9jo8LKz04"]],
 			$Failed,
 			Messages :> {Error::TooManyViscosityInputs,Error::InvalidInput}
 		],
-		Example[{Messages,"TooManyViscosityInputs","If the AssayType is LowViscosity, no ViscometerChip is specified, and the number of samples is greater than 20, an error is thrown:"},
-			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],21],AssayType->LowViscosity],
+		Example[{Messages,"TooManyViscosityInputs","If the AssayType is LowViscosity, no ViscometerChip is specified, and the number of samples is greater than 72, an error is thrown:"},
+			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],73],AssayType->LowViscosity],
 			$Failed,
 			Messages :> {Error::TooManyViscosityInputs,Error::InvalidInput}
 		],
-		Example[{Messages,"TooManyViscosityInputs","If the AssayType is not LowViscosity, no ViscometerChip is specified, and the number of samples is greater than 12, an error is thrown:"},
-			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],13],AssayType->HighViscosity],
+		Example[{Messages,"TooManyViscosityInputs","If the AssayType is not LowViscosity, no ViscometerChip is specified, and the number of samples is greater than 48, an error is thrown:"},
+			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],49],AssayType->HighViscosity],
 			$Failed,
 			Messages :> {Error::TooManyViscosityInputs,Error::InvalidInput}
 		],
@@ -108,7 +128,7 @@ DefineTests[
 		Example[{Messages,"ViscosityIncompatibleSample","Return $Failed if Sample contains a component that is chemically incompatible with the viscometer:"},
 			ExperimentMeasureViscosity[Object[Sample, "Test incompatible sample for ExperimentMeasureViscosity"<>$SessionUUID]],
 			$Failed,
-			Messages:>{Error::InvalidInput, Error::ViscosityIncompatibleSample,Warning::IncompatibleMaterials}
+			Messages:>{Error::InvalidInput, Error::ViscosityIncompatibleSample,Error::IncompatibleMaterials}
 		],
 		(* Conflicting options messages *)
 		Example[{Messages,"ViscosityRemeasurementAllowedConflict","Return $Failed if the options for RemeasurementAllowed and RemeasurementReloadVolume conflict:"},
@@ -134,12 +154,6 @@ DefineTests[
 				InjectionVolume -> 26 Microliter],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::ViscosityUnsupportedInjectionVolume,Warning::AliquotRequired,Warning::TotalAliquotVolumeTooLarge}
-		],
-		Example[{Messages,"ViscosityPrePressurizationConflict","Throw an Error if PressurizationInjectionRate is specified but AutosamplerPrePressurization is specified as False:"},
-			 ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample 30 uL for aliquot testing"<>$SessionUUID],
-				PressurizationInjectionRate -> 60 Millimeter/Second, AutosamplerPrePressurization->False],
-			$Failed,
-			Messages:>{Error::ViscosityPrePressurizationConflict,Error::InvalidOption}
 		],
 		Example[{Messages,"ViscosityPrimingFalse","Throw a Warning if Priming is set to False:"},
 			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],
@@ -252,14 +266,14 @@ DefineTests[
 			Messages:>{Warning::ViscosityNotEnoughSampleInjected},
 			Variables:>{options}
 		],
-		(* Commenting this out since the number of samples limit is lower
+		
 		Example[{Messages,"ViscosityTooManyRecoupContainers","Throw an Error if the total number of sample containers and the recoup sample containers is greater than allowed by the instrument:"},
 			ExperimentMeasureViscosity[Table[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],49],
 				RecoupSample-> Table[True,49],RecoupSampleContainerSame->Table[False,49]],
 				$Failed,
-			Messages:>{Error::InvalidOption,Error::ViscosityTooManyRecoupContainers,Error::TooManyViscosityInputs,Error::InvalidInput}
+			Messages:>{Error::InvalidOption,Error::ViscosityTooManyRecoupContainers}
 		],
-		*)
+		
 		(*Example[{Messages,"InputContainsTemporalLinks","A Warning is thrown if any inputs contain temporal links:"},
 			ExperimentMeasureViscosity[Link[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],Now]],
 			ObjectP[Object[Protocol,MeasureViscosity]],
@@ -327,13 +341,6 @@ DefineTests[
 				AutosamplerPrePressurization->True,Output->Options];
 			Lookup[options,AutosamplerPrePressurization],
 			True,
-			Variables:>{options}
-		],
-		Example[{Options,PressurizationInjectionRate,"Specify the PressurizationInjectionRate of the sample:"},
-			options=ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],
-				PressurizationInjectionRate->35 Millimeter/Second,Output->Options];
-			Lookup[options,PressurizationInjectionRate],
-			35 Millimeter/Second,
 			Variables:>{options}
 		],
 		Example[{Options,TemperatureStabilityMargin,"Specify the TemperatureStabilityMargin of the run:"},
@@ -497,24 +504,38 @@ DefineTests[
 			False,
 			Variables:>{options}
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentMeasureViscosity:"},
-			options=ExperimentMeasureViscosity["My Container for Viscosity Measurements",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Container for Viscosity Measurements",
-						Container -> Model[Container, Plate, "96-well PCR Plate"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 150 Microliter,
-						Destination -> {"My Container for Viscosity Measurements", "A2"}
-					]
-				},
-				Output->Options
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureViscosity[
+				{Model[Sample,"Milli-Q water"],Model[Sample,"Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
 			];
-			Lookup[options,InjectionVolume],
-			{90`Microliter},
-			Variables :> {options}
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample,"Milli-Q water"]]..},
+				{ObjectP[Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureViscosity[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, MeasureViscosity]]
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentMeasureViscosity:"},
 				options=ExperimentMeasureViscosity["My Container for Viscosity Measurements",
@@ -532,7 +553,7 @@ DefineTests[
 					Output->Options
 				];
 				Lookup[options,InjectionVolume],
-				{90`Microliter},
+				90`Microliter,
 				Variables :> {options}
 			],
 		(*incubate options*)
@@ -859,7 +880,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], AliquotContainer ->Model[Container,Vessel,"1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectReferenceP[Model[Container,Vessel,"1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]]},
+			{{1, ObjectReferenceP[Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,SamplesInStorageCondition, "Indicates how the input samples of the experiment should be stored:"},
@@ -895,7 +916,7 @@ DefineTests[
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options,Name, "Specify the name of a protocol:"},
@@ -1203,7 +1224,7 @@ DefineTests[
 			<|Object->milliQWater,Status->Available,DeveloperObject->True|>,
 			<|Object->waterNoModel,Status->Available,Model -> Null, DeveloperObject->True|>,
 			<|Object->waterForAliquot,Status->Available, DeveloperObject->True|>,
-			<|Object->redDye,	Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}}, Status->Available, DeveloperObject->True|>,
+			<|Object->redDye,	Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}}, Status->Available, DeveloperObject->True|>,
 			<|Object->solidSample,Status->Available, DeveloperObject->True|>
 		}];
 

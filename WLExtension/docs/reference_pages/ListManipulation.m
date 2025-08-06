@@ -155,7 +155,7 @@ DefineUsage[PartitionRemainder,
 			"Partition",
 			"Split"
 		},
-	Author->{"kelmen.low", "harrison.gronlund", "josh.kenchel", "steven", "Frezza"}
+	Author->{"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "josh.kenchel", "steven", "Frezza"}
 }];
 
 

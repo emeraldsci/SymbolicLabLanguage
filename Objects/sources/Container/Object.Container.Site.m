@@ -187,6 +187,14 @@ DefineObjectType[Object[Container, Site], {
 			Description -> "Shelves in which non-SLL or personal items should be stored when recieved.",
 			Category -> "Inventory"
 		},
+		DryingShelves -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Shelves on which operators are instructed to place items out to dry after the items are cleaned.",
+			Category -> "Inventory"
+		},
 		(* Shipping Information *)
 		RepresentativeDestinations -> {
 			Format -> Multiple,
@@ -197,7 +205,7 @@ DefineObjectType[Object[Container, Site], {
 			Category -> "Shipping Information",
 			Developer -> True
 		},
-		(* "Queue Information" *)
+		(* -- Operations Information -- *)
 		OperationsMetrics -> {
 			Format -> Single,
 			Class -> {
@@ -219,7 +227,32 @@ DefineObjectType[Object[Container, Site], {
 				CurrentCompletion -> Object[EmeraldCloudFile]
 			},
 			Description -> "The laboratory operations metrics with respect to protocol execution for this site.",
-			Category -> "Queue Information"
+			Category -> "Operations Information"
+		},
+		SpecificRecertificationLearning-> {
+			Format -> Multiple,
+			Class -> {
+				StartDate -> Date,
+				EndDate -> Date,
+				Quizzes -> Expression,
+				Practicals -> Expression
+			},
+			Pattern :> {
+				StartDate -> _?DateObjectQ,
+				EndDate -> _?DateObjectQ,
+				Quizzes -> {ObjectP[]...},
+				Practicals -> {ObjectP[]...}
+			},
+			Description -> "Training modules which should be re-enqueued during the given time periods, as quiz-only or with practicals, in order to give operators on-demand.",
+			Category -> "Operations Information"
+		},
+		RecertificationCompletionTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Day, 1 Day],
+			Units->Minute,
+			Description->"The length of time given to complete a recertification training module after it has been enqueued, after which training must be completed before any certifications including the module will be invalidated.",
+			Category -> "Operations Information"
 		},
 		ShiftSchedule ->{
 			Format -> Multiple,
@@ -349,13 +382,52 @@ DefineObjectType[Object[Container, Site], {
 			Description -> "The sensor recording the delivered pressure of gas to the house Argon line.",
 			Category -> "Sensor Information"
 		},
-		CO2PressureSensor -> {
+		CarbonDioxidePressureSensor -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Sensor][DevicesMonitored],
-			Description -> "The sensor recording the delivered pressure of gas to the house Argon line.",
+			Description -> "The sensor recording the delivered pressure of gas to the house CO2 line.",
 			Category -> "Sensor Information"
+		},
+		NitrogenPressure -> {
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0*PSI],
+			Units->PSI,
+			Description -> "The target delivered pressure of gas to the house Nitrogen line.",
+			Category -> "Sensor Information"
+		},
+		ArgonPressure -> {
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0*PSI],
+			Units->PSI,
+			Description -> "The target delivered pressure of gas to the house Argon line.",
+			Category -> "Sensor Information"
+		},
+		CarbonDioxidePressure -> {
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0*PSI],
+			Units->PSI,
+			Description -> "The target delivered pressure of gas to the house CO2 line.",
+			Category -> "Sensor Information"
+		},
+		ProcessingQualificationLimit -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Description -> "The maximum number of processing qualifications allowed in the queue when enqueuing new protocols via Autorun.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		AvailableExperiments->{
+			Format->Multiple,
+			Class -> Expression,
+			Pattern :> ExperimentFunctionP,
+			Description -> "A list of experiment functions supported by this site's equipment configuration.",
+			Category->"Organizational Information"
 		}
 	}
 }];

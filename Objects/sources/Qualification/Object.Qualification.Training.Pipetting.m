@@ -19,6 +19,47 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model or sample describing the liquid that will be used in this Qualification to test the linearity of the pipettors.",
 			Category -> "General"
 		},
+		(* practice run *)
+		PracticeResult -> {
+ 			Format -> Single,
+ 			Class -> Expression,
+ 			(* we have to use Failed symbol here, which may disobey the style guide a little bit but Fail is a MM symbol that is giving us trouble when used in procedures *)
+ 			Pattern :> (Passed | Failed),
+ 			Description -> "Indicates the outcome of the current pipetting practice run, after evaluation according to the preset criteria.",
+ 			Category -> "Pipetting Skills",
+ 			Abstract -> True
+ 		},
+ 		NumberOfPracticeRetries -> {
+ 			Format -> Single,
+ 			Class -> Integer,
+ 			Pattern :> GreaterP[0,1],
+ 			Description -> "The number of times operator has retried the pipetting practice run.",
+ 			Category -> "Pipetting Skills"
+ 		},
+		PracticeErrorInstruction -> {
+ 			Format -> Single,
+ 			Class -> String,
+ 			Pattern :> _String,
+ 			Description -> "The instruction to shown to the operator about the possible failure modes during the failing pipetting practice run.",
+ 			Category -> "Pipetting Skills",
+ 			Developer -> True
+ 		},
+ 		PracticeErrorScreenshot -> {
+ 			Format -> Single,
+ 			Class -> EmeraldCloudFile,
+ 			Pattern :> EmeraldFileP,
+ 			Description -> "The cloud file of the screenshot to help operator understand the instructions in PracticeErrorInstruction.",
+ 			Category -> "Pipetting Skills",
+ 			Developer -> True
+ 		},
+ 		FastTrackPractice -> {
+ 			Format -> Single,
+ 			Class -> Expression,
+ 			Pattern :> BooleanP,
+ 			Description -> "Indicates if practice run error messages should be suppressed in engine, so operator can continue to retry the practice run again.",
+ 			Category -> "Pipetting Skills",
+ 			Abstract -> True
+ 		},
 		(* p1000 *)
 		MicropipetteP1000Instrument -> {
 			Format -> Single,
@@ -40,19 +81,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted with the Eppendorf P1000 pipette.",
 			Category -> "General"
@@ -154,19 +199,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P5000 pipette.",
 			Category -> "General"
@@ -268,19 +317,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P20 pipette.",
 			Category -> "General"
@@ -382,19 +435,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf P2.5 pipette.",
 			Category -> "General"
@@ -496,19 +553,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				SerologicalPipetteImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				SerologicalPipetteImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				SerologicalPipetteImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				SerologicalPipetteImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the pipetus serological pipette.",
 			Category -> "General"
@@ -610,19 +671,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Pos-D MR-100 positive displacement pipette.",
 			Category -> "General"
@@ -724,19 +789,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Pos-D MR-10 positive displacement pipette.",
 			Category -> "General"
@@ -839,19 +908,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf 8-channel 300 uL pipette.",
 			Category -> "General"
@@ -953,19 +1026,23 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Format->Multiple,
 			Class->{
 				Container->Link,
-				Volume->Real
+				Volume->Real,
+				PipetteDialImage->EmeraldCloudFile
 			},
 			Pattern:>{
 				Container->_Link,
-				Volume->VolumeP
+				Volume->VolumeP,
+				PipetteDialImage->EmeraldFileP
 			},
 			Relation->{
 				Container->Object[Container]|Object[Item],
-				Volume->Null
+				Volume->Null,
+				PipetteDialImage->Null
 			},
 			Units->{
 				Container->None,
-				Volume->Microliter
+				Volume->Microliter,
+				PipetteDialImage->None
 			},
 			Description->"Specifies how samples should be pipetted in this qualification with the Eppendorf 8-channel 10 uL pipette.",
 			Category -> "General"

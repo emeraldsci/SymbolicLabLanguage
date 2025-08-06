@@ -144,22 +144,39 @@ PDBIDExistsQ[pdbID_String] := Module[
 (*ProtocolTypes*)
 
 
-ProtocolTypes[]:=Apply[
-	Join,
-	Map[
-		Types,
-		{
-			Object[Protocol],
-			Object[Qualification],
-			Object[Maintenance]
-		}
+DefineOptions[
+	ProtocolTypes,
+	Options :> {
+		{Output -> Full, Full | Short, "Full returns every protocol type and its subtypes, Short returns only the top level parent types."}
+	}
+];
+
+ProtocolTypes[ops:OptionsPattern[ProtocolTypes]]:=With[
+	{
+		allTypes = Apply[
+			Join,
+			Map[
+				Types,
+				{
+					Object[Protocol],
+					Object[Qualification],
+					Object[Maintenance]
+				}
+			]
+		]
+  	},
+	If[MatchQ[OptionDefault[OptionValue[Output]], Short],
+		Select[allTypes, Length[#] == 1&],
+		allTypes
 	]
 ];
 
 (* this pattern is slow and shows up everywhere so memoize it *)
 If[$LazyLoading,
 	ProtocolTypes[] = ProtocolTypes[];
-	ObjectP[ProtocolTypes[]] = ObjectP[ProtocolTypes[]];
+	ProtocolTypes[Output -> Short] = ProtocolTypes[Output -> Short];
+	(* totally redundant to have the long forms in ObjectP anyway; short is fine here *)
+	ObjectP[ProtocolTypes[]] = ObjectP[ProtocolTypes[Output -> Short]];
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -276,7 +293,8 @@ PlateAndWellP:={ObjectP[Object[Container,Plate]],WellPositionP};
 DefineOptions[NamedObject,
 	Options:>{
 		{ConvertToObjectReference->True,BooleanP,"Indicates if additional forms of constellation objects (links and packets) should be replaced with object references (Object[...]), along with having their IDs replaced with Names."},
-		{MaxNumberOfObjects->Infinity,(_Integer|Infinity),"Indicates the maximum number of objects to replace IDs with Names. If there are more than MaxNumberOfObjects in the input expression, the input expression is returned untouched."}
+		{MaxNumberOfObjects->Infinity,(_Integer|Infinity),"Indicates the maximum number of objects to replace IDs with Names. If there are more than MaxNumberOfObjects in the input expression, the input expression is returned untouched."},
+		CacheOption
 	}
 ];
 
@@ -286,22 +304,78 @@ NamedObject[Null, myOptions:OptionsPattern[]]:=Null;
 NamedObject[$Failed, myOptions:OptionsPattern[]]:=$Failed;
 NamedObject[{}, myOptions:OptionsPattern[]]:={};
 
+(* Shortcut if given packet(s) with a name in it *)
+NamedObject[packets : {PacketP[{Object[], Model[]}, {Object, Name}]..}, myOptions:OptionsPattern[]] := Module[
+	{safeOptions, convertToObjectReferenceOption, maxObjectsOption},
+
+	(* Process the options *)
+	safeOptions=SafeOptions[NamedObject, ToList[myOptions]];
+
+	{convertToObjectReferenceOption, maxObjectsOption} = Lookup[safeOptions, {ConvertToObjectReference, MaxNumberOfObjects}];
+
+	(* If not converting packets or we exceed the max number of objects, don't convert and return early *)
+	If[!TrueQ[convertToObjectReferenceOption] || GreaterQ[Length[packets], maxObjectsOption],
+		Return[packets]
+	];
+
+	(* Otherwise convert the packets *)
+	Map[
+		Module[{objectName},
+
+			(* Extract the object name *)
+			objectName = Lookup[#, Name];
+
+			(* If the name is a string, use it otherwise return the packet *)
+			If[MatchQ[objectName, _String],
+				Append[Most[Lookup[#, Object]], objectName],
+				#
+			]
+		]&,
+		packets
+	]
+];
+
+NamedObject[packet : PacketP[{Object[], Model[]}, {Object, Name}], myOptions:OptionsPattern[]] := First[NamedObject[{packet}, myOptions]];
+
 (* Overload to get names of all links in a nested expression (e.g., in a Composition field) *)
 NamedObject[expr_, myOptions:OptionsPattern[]] := Module[
-	{convertToObjectReferenceQ, maxNumberOfObjects, listedExpression, objectPositions, extractedObjects, convertedObjects, replacementRules},
+	{safeOptions, convertToObjectReferenceQ, maxNumberOfObjects, listedExpression, objectPositions, extractedObjects, convertedObjects, replacementRules, cacheOption},
 
-	(* Get our option. *)
-	convertToObjectReferenceQ=Lookup[ToList[myOptions], ConvertToObjectReference, True];
-	maxNumberOfObjects=Lookup[ToList[myOptions], MaxNumberOfObjects, Infinity];
+	safeOptions=SafeOptions[NamedObject, ToList[myOptions]];
+
+	(* Get our options *)
+	{
+		convertToObjectReferenceQ,
+		maxNumberOfObjects,
+		cacheOption
+	} = Lookup[
+		safeOptions,
+		{
+			ConvertToObjectReference,
+			MaxNumberOfObjects,
+			Cache
+		}
+	];
 
 	(* ToList our expression. *)
 	listedExpression=ToList[expr];
 
 	(* Find all SLL objects in the expression to arbitrary depth *)
 	objectPositions = If[MatchQ[convertToObjectReferenceQ, True],
-		Position[listedExpression, ObjectP[]],
 		Position[
 			listedExpression,
+			(* Pull out all ObjectPs that are not a named object reference *)
+			Except[
+				Alternatives[
+					Object[Repeated[_Symbol, {0, 5}], _String?(!StringMatchQ[#,"id:"~~__]&)],
+					Model[Repeated[_Symbol, {0, 5}], _String?(!StringMatchQ[#,"id:"~~__]&)]
+				]?(ObjectReferenceQ[#1] &),
+				ObjectP[]
+			]
+		],
+		Position[
+			listedExpression,
+			(* Pull out all ID form object references *)
 			Alternatives[
 				Object[Repeated[_Symbol, {0, 5}], _String?(StringMatchQ[#,"id:"~~__]&)],
 				Model[Repeated[_Symbol, {0, 5}], _String?(StringMatchQ[#,"id:"~~__]&)]
@@ -318,7 +392,7 @@ NamedObject[expr_, myOptions:OptionsPattern[]] := Module[
 	];
 
 	(* Convert to named form where possible *)
-	convertedObjects=convertToNamedForm[extractedObjects,convertToObjectReferenceQ];
+	convertedObjects=convertToNamedForm[extractedObjects,convertToObjectReferenceQ, cacheOption];
 
 	(* Generate Position->Named Object replacement rules *)
 	(* NOTE: We do a little bit of error checking here since NamedObject can try to convert un-uploaded change packets. *)
@@ -335,11 +409,12 @@ NamedObject[expr_, myOptions:OptionsPattern[]] := Module[
 ];
 
 (* Converts each object with ID to and object with Name *)
-convertToNamedForm[extractedObjects_List,convertToObjectReferenceQ:BooleanP]:=If[Length[extractedObjects]==0,
+convertToNamedForm[extractedObjects_List,convertToObjectReferenceQ:BooleanP,cache:{(ObjectP[]|Null)...}]:=If[Length[extractedObjects]==0,
 	{},
 	Module[
 		{listedInput, filteredInput, objectsExistQ, existingObjects, existingNames, existingTypes, existingNameObjects, objReplaceRules, existingIDs,
-			nonexistentObjects, nonexistentObjReferences, nonexistentReplaceRules, listedInputNoNull},
+			nonexistentObjects, nonexistentObjReferences, nonexistentReplaceRules, listedInputNoNull, objectNames, objectTypes, objectIDs,
+			combinedCache},
 
 		listedInput = ToList[extractedObjects];
 		listedInputNoNull = DeleteCases[listedInput, Null|$Failed];
@@ -356,22 +431,36 @@ convertToNamedForm[extractedObjects_List,convertToObjectReferenceQ:BooleanP]:=If
 			]
 		];
 
-		(* check if the objects actually exist; if they do then we're not actually going to Download anything and will just return stuff *)
-		objectsExistQ = DatabaseMemberQ[filteredInput];
+		(* Augment the explicitly given cache with any packets in the list of objects to convert *)
+		(* This ensures that we don't contact the database if a packet and its object reference both appear in the list *)
+		(* This currently happens for all packets as the object references are pulled out of the packets too *)
+		combinedCache = Experiment`Private`FlattenCachePackets[{cache, Cases[filteredInput, PacketP[{Object[], Model[]}, {Object, Type, ID, Name}]]}];
+
+		(* get the names and types. This performs de facto DBQ check as name will be $Failed if object doesn't exist *)
+		{objectNames, objectTypes, objectIDs} = Transpose[
+			Quiet[
+				Download[
+					(* Replace packets in the list with object references. This ensures that we go to the database and download the name if the Name field is missing *)
+					(* Otherwise we'd throw and silence a missing field error and get $Failed *)
+					(* If it's an upload packet it may be missing the object key *)
+					ReplaceAll[filteredInput, x: PacketP[] :> Lookup[x, Object, x]],
+					{Name, Type, ID},
+					Cache -> combinedCache
+				],
+				{Download::ObjectDoesNotExist, Download::MissingField, Download::FieldDoesntExist, Download::MissingCacheField}
+			]
+		];
+
+		(* If the download packet has both an ID and a Name, the object exists *)
+		objectsExistQ = MapThread[And[!FailureQ[#1], !FailureQ[#2]] &, {objectNames, objectIDs}];
 
 		(* get the existing objects *)
 		existingObjects = PickList[filteredInput, objectsExistQ];
 
-		(* get the existing names and types *)
-		{existingNames, existingTypes, existingIDs} = If[MatchQ[existingObjects, {}],
-			{{}, {}, {}},
-			Transpose[
-				Quiet[
-					Download[existingObjects, {Name, Type, ID}],
-					{Download::MissingField,Download::FieldDoesntExist}
-				]
-			]
-		];
+		(* Pull out the info just for the objects that exist *)
+		existingNames = PickList[objectNames, objectsExistQ];
+		existingTypes = PickList[objectTypes, objectsExistQ];
+		existingIDs = PickList[objectIDs, objectsExistQ];
 
 		(* put the existing name-objects together *)
 		existingNameObjects = MapThread[
@@ -515,7 +604,8 @@ DefineOptions[TransferDevices,
 		{TipType->All,All|ListableP[TipTypeP],"Indicates which types of tips should be returned."},
 		{Sterile->All,All|BooleanP,"Indicates if sterile/non-sterile transfer devices should be returned."},
 		{CultureHandling->All,All|CultureHandlingP,"Indicates if specialized Mammalian/Microbial transfer devices should be returned."},
-		{EngineDefault->True,All|True,"Indicates if only transfer devices with EngineDefault->True or all transfer devices should be returned."}
+		{EngineDefault->True,All|True,"Indicates if only transfer devices with EngineDefault->True or all transfer devices should be returned."},
+		{AllowMultipleTransfers -> False, True|False, "Indicates whether we allow pipette tips to conduct transfer multiple times in order to fulfill the volume requested."}
 	}
 ];
 
@@ -545,7 +635,9 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 		safeOps,transferDevicePackets,rawTransferDeviceFastCache,transferDeviceFastCache,
 		pipetteType,tipConnectionType,tipMaterial,incompatibleMaterials,tipType,sterile,cultureHandling,engineDefault,
 		volumePackets,massPackets,volumeAndMassPackets,amountFilteredPackets,
-		tipFilterTipSortingFunction,tipSortingFunction,sterileSortingFunction, pipetteTypeSortingFunction},
+		tipFilterTipSortingFunction,tipSortingFunction,sterileSortingFunction, pipetteTypeSortingFunction, allowMultipleTransfers,
+		extraAmountFilteredPacketsNeedingMultipleTransfers, singleTransferResults, multiTransferResults
+	},
 
 	safeOps=SafeOptions[TransferDevices,ToList[ops]];
 
@@ -562,6 +654,7 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 	sterile=Lookup[safeOps,Sterile];
 	cultureHandling=Lookup[safeOps,CultureHandling];
 	engineDefault=Lookup[safeOps,EngineDefault];
+	allowMultipleTransfers = Lookup[safeOps, AllowMultipleTransfers];
 
 	transferDeviceFastCache=If[MatchQ[engineDefault,True],
 		Select[rawTransferDeviceFastCache,(MatchQ[#,KeyValuePattern[EngineDefault->True]]&)],
@@ -720,6 +813,26 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 			&)/@Cases[volumeAndMassPackets,KeyValuePattern[{MinWeight->LessEqualP[myAmount], MaxWeight->GreaterEqualP[myAmount]}]]
 	];
 
+	(* construct a secondary list of packets, which the MaxVolume of tips are lower than what we request *)
+	extraAmountFilteredPacketsNeedingMultipleTransfers = If[MatchQ[myAmount, VolumeP] && allowMultipleTransfers,
+		With[{
+			extractedInfo=If[Length[volumeAndMassPackets]>0,
+				{#[[1]],Unitless[UnitConvert[#[[2]],"Microliters"]],Unitless[UnitConvert[#[[3]],"Microliters"]],#[[4]]}&/@Lookup[volumeAndMassPackets,{Object,MinVolume,MaxVolume,Resolution}],
+				{}
+			],
+			pat1=LessEqualP[Unitless[UnitConvert[myAmount,"Microliters"]]],
+			pat2=LessP[Unitless[UnitConvert[myAmount,"Microliters"]]]
+		},
+			{
+				#[[1]],
+				#[[2]] Microliter,
+				#[[3]] Microliter,
+				#[[4]]
+			}&/@Select[extractedInfo,And[MatchQ[#[[2]],pat1],MatchQ[#[[3]],pat2]]&]
+		],
+		{}
+	];
+
 	(* Sort by Resolution, then sort by TipType (we want Normal tips over other types). *)
 	tipSortingFunction[myInput_List]:=If[
 		MatchQ[myInput[[1]], ObjectP[Model[Item, Tips]]],
@@ -760,14 +873,26 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 	];
 
 	(* Sort by PipetteType(we want positive displacement last), Resolution (low to high), MaxVolume (low to high), Sterile (non-sterile, then sterile) TipType (we want Normal tips over other types). *)
-	SortBy[amountFilteredPackets, {
+	singleTransferResults = SortBy[amountFilteredPackets, {
 		pipetteTypeSortingFunction,
 		Last,
 		tipFilterTipSortingFunction,
 		(#[[3]]&),
 		sterileSortingFunction,
 		tipSortingFunction
-	}]
+	}];
+
+	(* Sort by similar logic but except prioritize MaxVolume *)
+	multiTransferResults = SortBy[extraAmountFilteredPacketsNeedingMultipleTransfers, {
+		(-1*#[[3]]&),
+		pipetteTypeSortingFunction,
+		Last,
+		tipFilterTipSortingFunction,
+		sterileSortingFunction,
+		tipSortingFunction
+	}];
+
+	Join[singleTransferResults, multiTransferResults]
 ];
 
 
@@ -835,10 +960,12 @@ optionsToTable[myOptionsList:{_Rule..},myFunction_Symbol]:=Module[{optionDefinit
 	values = NamedObject[nonameValues];
 
 	(* For each key, pull out the corresponding description from the option definition *)
-	descriptions = Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionName" -> ToString[#]]], "Description"] & /@ keys;
+	(* note that if the option can't be found, we'll just do "" as a placeholder *)
+	descriptions = Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionName" -> ToString[#]], <||>], "Description", ""] & /@ keys;
 
 	(* For each key, pull out the corresponding category from the option definition *)
-	categories = Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionName" -> ToString[#]]], "Category"] & /@ keys;
+	(* note that if the option can't be found, we'll just do "Hidden" as a placeholder because those will get removed later *)
+	categories = Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionName" -> ToString[#]], <||>], "Category", "Hidden"] & /@ keys;
 
 	(* Pool all of the info for each defined option into a list *)
 	allInfo = Transpose[{keys, values, descriptions, categories}];

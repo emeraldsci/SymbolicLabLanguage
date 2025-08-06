@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Title:: *)
@@ -63,6 +63,54 @@ DefineTests[
 			{30 Celsius, 30 Celsius},
 			Variables :> {options}
 		],
+		Example[{Additional, "Incubate a suspension bacterial sample for 12 hours, quantifying the cell concentration every two hours using an absorbance intensity measurement to generate a growth curve:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> None,
+				Time -> 12 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationMethod -> Absorbance,
+				QuantificationAliquot -> True,
+				FailureResponse -> Discard,
+				Output -> Result
+			],
+			ObjectP[Object[Protocol, IncubateCells]]
+		],
+		Example[{Additional, "Incubate a solid media bacterial sample for 12 hours, quantifying the colony count every two hours until a colony count of at least 500 colonies is obtained:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 500 Colony,
+				Time -> 12 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationMethod -> ColonyCount,
+				FailureResponse -> Discard,
+				Output -> Result
+			],
+			ObjectP[Object[Protocol, IncubateCells]]
+		],
+		Example[{Additional, "Incubate a suspension bacterial sample for 3 hours using a robotic liquid handler and its integrations, quantifying the cell concentration every 1 hour using an absorbance measurement until an OD600 of at least 0.8 is obtained:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 3 Hour,
+				QuantificationInterval -> 1 Hour,
+				QuantificationMethod -> Absorbance,
+				QuantificationBlankMeasurement -> False,
+				FailureResponse -> Discard,
+				Preparation -> Robotic,
+				Output -> Result
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
+		],
 		Test["If protocol does not have a parent protocol and we're in a Manual protocol, populate Overclock -> True in the protocol object:",
 			Download[
 				ExperimentIncubateCells[Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID]],
@@ -78,14 +126,14 @@ DefineTests[
 			Download[Object[Protocol, ManualCellPreparation, "Test MCP for ExperimentIncubateCells unit tests" <> $SessionUUID], Overclock],
 			True
 		],
-		Test["If the protocol does not have a parent protocol and we're in a Robotic protocol, RoboticCellPrepration populates Overclock -> True in the protocol object:",
+		Test["If the protocol does not have a parent protocol and we're in a Robotic protocol, RoboticCellPreparation populates Overclock -> True in the protocol object:",
 			Download[
 				ExperimentIncubateCells[Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID], Preparation -> Robotic],
 				Overclock
 			],
 			True
 		],
-		Test["If the protocol does have a parent protocol and we're in a Robotic protocol, RoboticCellPrepration populates Overclock -> True in the root protocol object:",
+		Test["If the protocol does have a parent protocol and we're in a Robotic protocol, RoboticCellPreparation populates Overclock -> True in the root protocol object:",
 			ExperimentIncubateCells[
 				Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
 				Preparation -> Robotic,
@@ -159,33 +207,105 @@ DefineTests[
 				containersInResources, defaultIncubationContainerResources, nonIncubationStorageContainers
 			}
 		],
-		Test["Properly batch custom and default incubation conditions together:",
+		Test["If FailureResponse is Freeze, upload a FreezeCells unit operation to the FailureResponseUnitOperation field:",
 			protocol = ExperimentIncubateCells[
-				{
-					Object[Sample, "Test sample 1 sharing a plate (for ExperimentIncubateCells)" <> $SessionUUID],
-					Object[Sample, "Test sample 2 sharing a plate (for ExperimentIncubateCells)" <> $SessionUUID],
-					Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
-					Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID]
-				},
-				Temperature -> {30 Celsius, 30 Celsius, Automatic, Automatic}
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				QuantificationAliquot -> True,
+				FailureResponse -> Freeze
 			];
 			{
 				protocol,
-				Download[
-					protocol,
-					BatchedUnitOperations[{Object, SampleLink, Temperature, IncubationConditionExpression}]
-				]
+				Download[protocol, FailureResponseUnitOperation]
 			},
 			{
 				ObjectP[Object[Protocol, IncubateCells]],
-				{
-					{
-						ObjectP[Object[UnitOperation, IncubateCells]],
-						{ObjectP[Object[Container, Plate, "Test plate with stowaways (for ExperimentIncubateCells)" <> $SessionUUID]]},
-						{EqualP[30 Celsius]},
-						{Custom}
-					}
-				}
+				_FreezeCells
+			},
+			Variables :> {protocol}
+		],
+		Test["If FailureResponse is Freeze and any sample has a volume in excess of 3 Milliliter, partition the samples into the minimum required number of cryogenic vials:",
+			Module[
+				{protocol, freezeCellsPrimitiveAssociation},
+				protocol = ExperimentIncubateCells[
+					{Object[Sample, "Test sample for quantification tests 5 (for ExperimentIncubateCells)" <> $SessionUUID]},
+					FailureResponse -> Freeze,
+					QuantificationMethod -> Absorbance,
+					QuantificationAliquot -> True,
+					MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter
+				];
+				freezeCellsPrimitiveAssociation = Download[protocol, FailureResponseUnitOperation][[1]];
+				Lookup[freezeCellsPrimitiveAssociation, NumberOfReplicates]
+			],
+			8
+		],
+		Test["If FailureResponse is Discard, no unit operation is uploaded to the FailureResponseUnitOperation field:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				QuantificationAliquot -> True,
+				FailureResponse -> Discard
+			];
+			{
+				protocol,
+				Download[protocol, FailureResponseUnitOperation]
+			},
+			{
+				ObjectP[Object[Protocol, IncubateCells]],
+				Null
+			},
+			Variables :> {protocol}
+		],
+		Test["If FailureResponse is Incubate, no unit operation is uploaded to the FailureResponseUnitOperation field:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				QuantificationAliquot -> True,
+				FailureResponse -> Incubate
+			];
+			{
+				protocol,
+				Download[protocol, FailureResponseUnitOperation]
+			},
+			{
+				ObjectP[Object[Protocol, IncubateCells]],
+				Null
+			},
+			Variables :> {protocol}
+		],
+		Test["If QuantificationAliquot is True for any sample, a Transfer primitive is uploaded to the QuantificationAliquotUnitOperation field:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				FailureResponse -> Discard
+			];
+			{
+				protocol,
+				Download[protocol, QuantificationAliquotUnitOperation]
+			},
+			{
+				ObjectP[Object[Protocol, IncubateCells]],
+				_Transfer
+			},
+			Variables :> {protocol}
+		],
+		Test["If IncubationStrategy is QuantificationTarget, a constant array of QuantificationInterval with length equal to the maximum number of quantification cycles is uploaded to the QuantificationProcessingTimes field:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				QuantificationAliquot -> True,
+				QuantificationInterval -> 3 Hour,
+				Time -> 12 Hour,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				FailureResponse -> Discard
+			];
+			{
+				protocol,
+				Download[protocol, QuantificationProcessingTimes]
+			},
+			{
+				ObjectP[Object[Protocol, IncubateCells]],
+				{EqualP[3 Hour], EqualP[3 Hour], EqualP[3 Hour], EqualP[3 Hour]}
 			},
 			Variables :> {protocol}
 		],
@@ -231,6 +351,26 @@ DefineTests[
 				}
 			}
 		],
+		Test["Samples in flasks are allowed to be stored in Refridgerator after the experiment. NonIncubationStorageContainers and NonIncubationStorageContainerConditions are populated:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
+				SamplesOutStorageCondition -> Refrigerator
+			];
+			{
+				protocol,
+				Download[
+					protocol,
+					{NonIncubationStorageContainers,NonIncubationStorageContainerConditions}
+				]
+			},
+			{
+				ObjectP[Object[Protocol, IncubateCells]],
+				{
+					{ObjectP[Download[Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID], Container]]},
+					{Refrigerator}
+				}
+			}
+		],
 		Test["If performing a robotic incubation on an uncovered container, cover the container before it goes into the incubator:",
 			protocol = ExperimentIncubateCells[
 				Object[Sample, "Test bacterial sample in uncovered plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
@@ -254,6 +394,47 @@ DefineTests[
 			},
 			Variables :> {protocol}
 		],
+		Test["If Preparation is Robotic and we are quantifying, the RoboticUnitOperations with type Object[UnitOperation, IncubateCells] have Time set to the specified QuantificationInterval rather than the total Time:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard,
+				IncubationStrategy -> QuantificationTarget,
+				QuantificationBlankMeasurement -> False,
+				Time -> 3 Hour,
+				QuantificationInterval -> 1 Hour,
+				MinQuantificationTarget -> 1 OD600,
+				Preparation -> Robotic
+			];
+			incubateCellsRoboticUnitOperations = Cases[
+				Flatten@Download[protocol, OutputUnitOperations[RoboticUnitOperations]],
+				ObjectP[Object[UnitOperation, IncubateCells]]
+			];
+			Download[incubateCellsRoboticUnitOperations, Time],
+			ConstantArray[EqualP[1 Hour], 3],
+			Variables :> {protocol, incubateCellsRoboticUnitOperations}
+		],
+		Test["If Preparation is Robotic and we are quantifying, an IncubateCells, QuantifyCells, and child quantification RoboticUnitOperation is generated for each incubation/quantification cycle:",
+			protocol = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard,
+				IncubationStrategy -> QuantificationTarget,
+				QuantificationBlankMeasurement -> False,
+				Time -> 3 Hour,
+				QuantificationInterval -> 1 Hour,
+				MinQuantificationTarget -> 1 OD600,
+				Preparation -> Robotic
+			];
+			Cases[
+				Flatten @ Download[protocol, OutputUnitOperations[RoboticUnitOperations]],
+				Except[ObjectP[Object[UnitOperation, LabelSample]]]
+			],
+			{
+				ObjectP[Object[UnitOperation, IncubateCells]], ObjectP[Object[UnitOperation, QuantifyCells]], ObjectP[Object[UnitOperation, AbsorbanceIntensity]],
+				ObjectP[Object[UnitOperation, IncubateCells]], ObjectP[Object[UnitOperation, QuantifyCells]], ObjectP[Object[UnitOperation, AbsorbanceIntensity]],
+				ObjectP[Object[UnitOperation, IncubateCells]], ObjectP[Object[UnitOperation, QuantifyCells]], ObjectP[Object[UnitOperation, AbsorbanceIntensity]]
+			},
+			Variables :> {protocol, roboticUnitOperationsWithoutLabelSample}
+		],
 		Example[{Additional, "Incubate a specific cell on a plate:"},
 			ExperimentIncubateCells[{"A1", Object[Container, Plate, "Test mammalian plate 1 (for ExperimentIncubateCells)" <> $SessionUUID]}],
 			ObjectP[Object[Protocol]]
@@ -275,6 +456,102 @@ DefineTests[
 		],
 
 		(*-- INVALID INPUT TESTS --*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentIncubateCells[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentIncubateCells[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentIncubateCells[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentIncubateCells[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, coverPackets, coverID, sampleID, samplePackets, simulationToPassIn, coverUpdatePacket},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				coverPackets = UploadSample[
+					Model[Item, Cap, "Flask Cap, Breathable 49x30mm"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverPackets]];
+				coverID = Lookup[First[coverPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				coverUpdatePacket = UploadCover[containerID, Cover -> coverID, Simulation -> simulationToPassIn, Upload -> False];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverUpdatePacket]];
+
+				ExperimentIncubateCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, coverPackets, coverID, sampleID, samplePackets, simulationToPassIn, coverUpdatePacket},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				coverPackets = UploadSample[
+					Model[Item, Cap, "Flask Cap, Breathable 49x30mm"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverPackets]];
+				coverID = Lookup[First[coverPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Bacterial cells Model (for ExperimentIncubateCells)" <> $SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				coverUpdatePacket = UploadCover[containerID, Cover -> coverID, Simulation -> simulationToPassIn, Upload -> False];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverUpdatePacket]];
+
+				ExperimentIncubateCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "DiscardedSamples", "If the given samples are discarded, they cannot be incubated:"},
 			ExperimentIncubateCells[Object[Sample, "Test discarded sample (for ExperimentIncubateCells)" <> $SessionUUID]],
 			$Failed,
@@ -299,6 +576,39 @@ DefineTests[
 			Messages :> {
 				Error::NoCompatibleIncubator,
 				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "NoCompatibleIncubator", "If a sample is provided in a container incompatible with all incubators, resolve to return an incubator anyway:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test bacterial sample in incompatible container 1 (for ExperimentIncubateCells)"<> $SessionUUID],
+				Output -> Options
+			],
+			KeyValuePattern[Incubator -> ObjectP[Model[Instrument, Incubator]]],
+			Messages :> {
+				Error::NoCompatibleIncubator,
+				Error::InvalidInput
+			}
+		],
+		Example[{Messages, "IncubatorIsIncompatible", "If a sample is incompatible with the incubator model specified, throws an error and returns $Failed:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
+				Incubator -> Model[Instrument, Incubator, "id:AEqRl954Gpjw"] (*Model[Instrument, Incubator, "Innova 44 for Bacterial Plates"]*)
+			],
+			$Failed,
+			Messages :> {
+				Error::IncubatorIsIncompatible,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "IncubatorIsIncompatible", "If a sample is incompatible with the incubator object specified, throws an error and returns $Failed:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
+				Incubator -> Object[Instrument, Incubator, "id:dORYzZn0oWWw"] (*"Bacterial Plates Shaking Incubator"*)
+			],
+			$Failed,
+			Messages :> {
+				Error::IncubatorIsIncompatible,
+				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "UnsealedCellCultureVessels", "If a manual incubation is specified with an open container, an error is thrown:"},
@@ -346,6 +656,42 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::ConflictingUnitOperationMethodRequirements,
+				Error::IncubatorIsIncompatible,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If the QuantificationMethod is ColonyCount while the preparation is Robotic, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard,
+				Preparation -> Robotic
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If the QuantificationInstrument is a colony handler while the preparation is Robotic, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				QuantificationInstrument -> Model[Instrument, ColonyHandler, "QPix 420 HT"],
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard,
+				Preparation -> Robotic
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::ConflictingWorkCellWithPreparation,
 				Error::InvalidOption
 			}
 		],
@@ -363,11 +709,11 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::TooManyCustomIncubationConditions,
-				Error::ConflictingWorkCells,
+				Error::ConflictingIncubationWorkCells,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingWorkCells", "If WorkCell is specified, it must not disagree with the sample type or the specified incubator:"},
+		Example[{Messages, "ConflictingIncubationWorkCells", "If WorkCell is specified, it must not disagree with the sample type or the specified incubator:"},
 			ExperimentIncubateCells[
 				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
 				Incubator -> Model[Instrument, Incubator, "STX44-ICBT with Shaking"],
@@ -377,7 +723,7 @@ DefineTests[
 			],
 			$Failed,
 			Messages :> {
-				Error::ConflictingWorkCells,
+				Error::ConflictingIncubationWorkCells,
 				Error::InvalidOption
 			}
 		],
@@ -423,16 +769,16 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingPreparationWithIncubationTime", "If Preparation is set to Robotic, then Time must not be greater than 1 hour:"},
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If Preparation is set to Robotic, then Time must not be greater than 3 hours:"},
 			ExperimentIncubateCells[
 				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
 				Incubator -> Model[Instrument, Incubator, "STX44-ICBT with Shaking"],
 				Preparation -> Robotic,
-				Time -> 2 Hour
+				Time -> 4 Hour
 			],
 			$Failed,
 			Messages :> {
-				Error::ConflictingPreparationWithIncubationTime,
+				Error::ConflictingUnitOperationMethodRequirements,
 				Error::InvalidOption
 			}
 		],
@@ -446,6 +792,116 @@ DefineTests[
 			{__Rule},
 			Messages :> {
 				Warning::CellTypeNotSpecified
+			}
+		],
+		Example[{Messages, "QuantificationAliquotRecommended", "If QuantificationMethod is Absorbance or Nephelometry, Preparation is Manual, and QuantificationAliquot is False, a warning is thrown to recommend setting QuantificationAliquot to True to minimize the time that cells spend outside of the incubator(s):"},
+			ExperimentIncubateCells[{Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID]},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 1 Hour,
+				QuantificationInterval -> 1 Hour,
+				QuantificationMethod -> Absorbance,
+				QuantificationBlankMeasurement -> False,
+				QuantificationAliquot -> False,
+				FailureResponse -> Discard,
+				Preparation -> Manual,
+				Output -> Options
+			],
+			{__Rule},
+			Messages :> {
+				Warning::QuantificationAliquotRecommended
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationAliquotOptions", "If QuantificationAliquotVolume is set to Null for any samples when QuantificationAliquot is True, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+					Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 4 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationAliquot -> True,
+				QuantificationAliquotVolume -> {150 Microliter, Null},
+				QuantificationMethod -> Absorbance,
+				QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationAliquotOptions,
+				Error::InvalidOption,
+				Warning::GeneralFailureResponse
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationAliquotOptions", "If QuantificationAliquotVolume is specified for any samples when QuantificationAliquot is False, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+					Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 4 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationAliquot -> False,
+				QuantificationAliquotVolume -> {150 Microliter, Null},
+				QuantificationMethod -> Absorbance,
+				QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationAliquotOptions,
+				Error::InvalidOption,
+				Warning::GeneralFailureResponse
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationAliquotOptions", "If QuantificationAliquotContainer is set to Null for any samples when QuantificationAliquot is True, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+					Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 4 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationAliquot -> True,
+				QuantificationAliquotContainer -> {Null, Model[Container, Plate, "96-well UV-Star Plate"]},
+				QuantificationMethod -> Absorbance,
+				QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationAliquotOptions,
+				Error::InvalidOption,
+				Warning::GeneralFailureResponse
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationAliquotOptions", "If QuantificationAliquotContainer is specified for any samples when QuantificationAliquot is False, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+					Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> 0.8 OD600,
+				Time -> 4 Hour,
+				QuantificationInterval -> 2 Hour,
+				QuantificationAliquot -> False,
+				QuantificationAliquotContainer -> {Null, Model[Container, Plate, "96-well UV-Star Plate"]},
+				QuantificationMethod -> Absorbance,
+				QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationAliquotOptions,
+				Error::InvalidOption,
+				Warning::GeneralFailureResponse
 			}
 		],
 		Example[{Messages, "CultureAdhesionNotSpecified", "If a sample is provided with no CultureAdhesion, throws a warning and creates a protocol:"},
@@ -519,6 +975,20 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages, "ConflictingShakingConditions", "If shaking options are specified to be Null but Shake is set to True, throws an error and returns $Failed:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
+				Shake -> True,
+				ShakingRate -> Null
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingShakingConditions,
+				Error::NoCompatibleIncubator,
+				Error::InvalidInput,
+				Error::InvalidOption
+			}
+		],
 		Example[{Messages, "ConflictingCellTypeWithCultureAdhesion", "If using a mammalian sample, CultureAdhesion cannot be SolidMedia:"},
 			ExperimentIncubateCells[
 				Object[Sample, "Test water sample in plate (for ExperimentIncubateCells)" <> $SessionUUID],
@@ -553,7 +1023,6 @@ DefineTests[
 			Messages :> {
 				Error::UnsupportedCellCultureType,
 				Error::NoCompatibleIncubator,
-				Error::ConflictingCultureAdhesionWithStorageCondition,
 				Error::InvalidOption,
 				Error::InvalidInput
 			}
@@ -594,20 +1063,19 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::ConflictingCellTypeWithStorageCondition,
-				Error::ConflictingCultureAdhesionWithStorageCondition,
+				Warning::ConflictingCultureAdhesionWithStorageCondition,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingCultureAdhesionWithStorageCondition", "If samples are Suspension, SamplesOutStorageCondition must include shaking:"},
+		Example[{Messages, "ConflictingCultureAdhesionWithStorageCondition", "If samples are Suspension, throw a warning if SamplesOutStorageCondition is an incubation condition without shaking:"},
 			ExperimentIncubateCells[
 				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
 				(* wants to be BacterialShakingIncubation *)
 				SamplesOutStorageCondition -> BacterialIncubation
 			],
-			$Failed,
+			ObjectP[Object[Protocol, IncubateCells]],
 			Messages :> {
-				Error::ConflictingCultureAdhesionWithStorageCondition,
-				Error::InvalidOption
+				Warning::ConflictingCultureAdhesionWithStorageCondition
 			}
 		],
 		Example[{Messages, "ConflictingCultureAdhesionWithStorageCondition", "Note that solid media in refrigerator is allowed:"},
@@ -645,7 +1113,7 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "DuplicateSamples", "A sample cannot be specified more than one time in a given experiment call:"},
+		Example[{Messages, "DuplicatedSamples", "A sample cannot be specified more than one time in a given experiment call:"},
 			ExperimentIncubateCells[
 				{
 					Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID],
@@ -654,9 +1122,37 @@ DefineTests[
 			],
 			$Failed,
 			Messages :> {
-				Error::DuplicateSamples,
+				Error::DuplicatedSamples,
 				Error::InvalidInput
 			}
+		],
+		Example[{Messages, "InvalidPropertySamples", "If a sample's state is Gas or Null somehow, throws an error and returns $Failed:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				}
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidPropertySamples,
+				Error::InvalidInput
+			},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID], State -> Null|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID], State -> Solid|>])
+		],
+		Example[{Messages, "InvalidPropertySamples", "If a sample has zero amount left, throws an error and returns $Failed:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID]
+				}
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidPropertySamples,
+				Error::InvalidInput
+			},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID], Volume -> 0 Milliliter|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test bacteria sample in flask (for ExperimentIncubateCells)" <> $SessionUUID], Volume -> 100 Milliliter|>])
 		],
 		Example[{Messages, "TooManyIncubationSamples", "If more samples are specified than can fit in an incubator, an error is thrown:"},
 			ExperimentIncubateCells[
@@ -687,7 +1183,419 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
+		Example[{Messages, "ConflictingIncubationStrategy", "If any of the quantification options are specified while IncubationStrategy is Time, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> Time,
+				QuantificationWavelength -> 540 Nanometer
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingIncubationStrategy,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingIncubationStrategy", "If QuantificationMethod is Null while IncubationStrategy is QuantificationTarget, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				QuantificationAliquot -> True,
+				QuantificationAliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"],
+				FailureResponse -> Discard,
+				QuantificationMethod -> Null
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingIncubationStrategy,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingIncubationStrategy", "If QuantificationInstrument is Null while IncubationStrategy is QuantificationTarget, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				QuantificationAliquot -> True,
+				QuantificationAliquotContainer -> Model[Container, Vessel, "2mL Tube"],
+				QuantificationAliquotVolume -> 50 Microliter,
+				FailureResponse -> Discard,
+				QuantificationInstrument -> Null
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingIncubationStrategy,
+				Error::ConflictingQuantificationMethodAndInstrument,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "UnsuitableQuantificationInterval", "If the QuantificationInterval is longer than the Time, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				QuantificationAliquot -> True,
+				FailureResponse -> Discard,
+				QuantificationInterval -> 30 Hour,
+				Time -> 24 Hour
+			],
+			$Failed,
+			Messages :> {
+				Error::UnsuitableQuantificationInterval,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "UnsuitableQuantificationInterval", "If QuantificationInterval is Null while IncubationStrategy is QuantificationTarget, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				IncubationStrategy -> QuantificationTarget,
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				QuantificationAliquot -> True,
+				QuantificationInterval -> Null,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::UnsuitableQuantificationInterval,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FailureResponseNotSupported", "If FailureResponse is Incubate and IncubationCondition is Custom for any sample, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				FailureResponse -> Incubate,
+				IncubationCondition -> Custom,
+				Incubator -> Model[Instrument, Incubator, "Multitron Pro with 25mm Orbit"],
+				CellType -> Bacterial,
+				CultureAdhesion -> Suspension,
+				Temperature -> 37 Celsius,
+				CarbonDioxide -> Ambient,
+				RelativeHumidity -> Ambient,
+				Shake -> True,
+				ShakingRadius -> 25 Millimeter,
+				ShakingRate -> 250 RPM,
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter
+			],
+			$Failed,
+			Messages :> {
+				Error::FailureResponseNotSupported,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FailureResponseNotSupported", "If FailureResponse is Freeze and any samples have a CultureAdhesion other than Suspension, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				FailureResponse -> Freeze,
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony
+			],
+			$Failed,
+			Messages :> {
+				Error::FailureResponseNotSupported,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "FailureResponseNotSupported", "If FailureResponse is Freeze and the total volume to be frozen exceeds the capacity of a single instance of Model[Container, Rack, InsulatedCooler, \"5mL Mr. Frosty Rack\"], an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				FailureResponse -> Freeze,
+				QuantificationMethod -> Absorbance,
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter
+			],
+			$Failed,
+			Messages :> {
+				Error::FailureResponseNotSupported,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationOptions", "If QuantificationTolerance is Null while MinQuantificationTarget is specified, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationTolerance -> Null,
+				FailureResponse -> Discard,
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationOptions", "If MinQuantificationTarget is Null while QuantificationTolerance is specified, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationTolerance -> 10 Percent,
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> Null
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationOptions", "If MinQuantificationTarget is None while QuantificationTolerance is specified, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationTolerance -> 10 Percent,
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> None
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationMethodAndInstrument", "If the QuantificationMethod is Nephelometry and the QuantificationInstrument is not a Nephelometer, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				Time -> 3 Hour,
+				QuantificationMethod -> Nephelometry,
+				QuantificationInstrument -> Model[Instrument, ColonyHandler, "QPix 420 HT"],
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationMethodAndInstrument,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationMethodAndInstrument", "If the QuantificationMethod is ColonyCount and the QuantificationInstrument is not a ColonyHandler, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				Time -> 3 Hour,
+				QuantificationMethod -> ColonyCount,
+				QuantificationInstrument -> Model[Instrument, Nephelometer, "NEPHELOstar Plus"],
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationMethodAndInstrument,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ConflictingQuantificationMethodAndInstrument", "If the QuantificationMethod is Absorbance and the QuantificationInstrument is not a Spectrophotometer or PlateReader, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				Time -> 3 Hour,
+				QuantificationMethod -> Absorbance,
+				QuantificationInstrument -> Model[Instrument, Nephelometer, "NEPHELOstar Plus"],
+				MinQuantificationTarget -> (1000000 Cell)/Milliliter,
+				QuantificationAliquot -> True,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingQuantificationMethodAndInstrument,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExcessiveQuantificationAliquotVolumeRequired", "If the quantification schedule and aliquoting parameters would result in depletion of the input sample if the maximum number of quantifications was to occur, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationAliquot -> True,
+				QuantificationAliquotVolume -> 150 Microliter,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				QuantificationInterval -> 1 Hour,
+				Time -> 36 Hour,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ExcessiveQuantificationAliquotVolumeRequired,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "QuantificationTargetUnitsMismatch", "If MinQuantificationTarget and QuantificationTolerance are quantities with different units and QuantificationTolerance is not a Percent, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationAliquot -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				FailureResponse -> Discard,
+				QuantificationTolerance -> 25 OD600
+			],
+			$Failed,
+			Messages :> {
+				Error::QuantificationTargetUnitsMismatch,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExtraneousQuantifyColoniesOptions", "If any aliquoting options are specified while the QuantificationMethod is ColonyCount, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationAliquot -> True,
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ExtraneousQuantifyColoniesOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExtraneousQuantifyColoniesOptions", "If a QuantificationWavelength is specified while the QuantificationMethod is ColonyCount, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationWavelength -> 600 Nanometer,
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ExtraneousQuantifyColoniesOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExtraneousQuantifyColoniesOptions", "If a QuantificationStandardCurve is specified while the QuantificationMethod is ColonyCount, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationStandardCurve -> Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ExtraneousQuantifyColoniesOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "ExtraneousQuantifyColoniesOptions", "If a QuantificationBlank is specified while the QuantificationMethod is ColonyCount, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+				},
+				QuantificationBlank -> Model[Sample, "Milli-Q water"],
+				QuantificationMethod -> ColonyCount,
+				MinQuantificationTarget -> 500 Colony,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::ExtraneousQuantifyColoniesOptions,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "AliquotRecoupMismatch", "If FailureResponse is not Null and there are multiple input samples, a warning is thrown to tell the user that the response will be carried out for all samples if any one of them fails:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				QuantificationRecoupSample -> True,
+				MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+				QuantificationAliquot -> False,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::AliquotRecoupMismatch,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "MixedQuantificationAliquotRequirements", "If QuantificationAliquot is Automatic and the conditions of the experiment necessitate aliquoting for quantification of a subset (but not all) of the samples, an error is thrown:"},
+			ExperimentIncubateCells[
+				{
+					Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID], (* in a UV-star plate - BMG compatible *)
+					Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]  (* in a standard 96 DWP - not BMG compatible *)
+				},
+				MinQuantificationTarget -> 0.5 OD600,
+				QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				QuantificationAliquot -> Automatic,
+				FailureResponse -> Discard
+			],
+			$Failed,
+			Messages :> {
+				Error::MixedQuantificationAliquotRequirements,
+				Warning::GeneralFailureResponse,
+				Error::InvalidOption
+			}
+		],
 		(* Options tests *)
+		Example[{Options, Preparation, "If the time exceeds $MaxRoboticIncubationTime, the Preparation option defaults to Manual:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Time -> 4 Hour,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, Preparation],
+			Manual,
+			Variables :> {options}
+		],
+		Example[{Options, WorkCell, "STAR is not allowed:"},
+			ExperimentIncubateCells[
+				Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages :> {Error::Pattern}
+		],
+		Example[{Options, WorkCell, "WorkCell is resolved to bioSTAR if Prepartion->Robotic and sample contains mammalian cells:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Preparation -> Robotic,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			bioSTAR,
+			Variables :> {options}
+		],
+		Example[{Options, WorkCell, "WorkCell is resolved to microbioSTAR if Prepartion->Robotic and sample contains bacterial cells:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Preparation -> Robotic,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			microbioSTAR,
+			Variables :> {options}
+		],
 		Example[{Options, Time, "Incubate a single mammalian sample in a plate with a given Time:"},
 			options = ExperimentIncubateCells[
 				Object[Sample, "Test tissue culture sample in plate 1 (for ExperimentIncubateCells)" <> $SessionUUID],
@@ -698,6 +1606,33 @@ DefineTests[
 			Lookup[options, Time],
 			EqualP[1 Hour],
 			Variables :> {options}
+		],
+		Example[{Options, Time, "If Preparation is Manual and IncubationStrategy is QuantificationTarget, automatically set to 12 Hour:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				FailureResponse -> Discard,
+				MinQuantificationTarget -> None,
+				QuantificationAliquot -> True,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, Time],
+			EqualP[12 Hour],
+			Variables :> {options}
+		],
+		Example[{Options, Time, "If Preparation is Manual, IncubationStrategy is Time, and the cell's doubling time is known, automatically set to 36x the doubling time if it falls below $MaxCellIncubationTime:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				IncubationStrategy -> Time,
+				Output -> Options
+			];
+			cellDoublingTime = Download[
+				Model[Cell, Bacteria, "id:54n6evLm7m0L"],(*"E.coli MG1655"*)
+				DoublingTime
+			];
+			EqualQ[Lookup[options, Time], 36 * cellDoublingTime],
+			True,
+			Variables :> {options, cellDoublingTime}
 		],
 		Example[{Options, Temperature, "Incubate a single mammalian sample in a plate with a given Temperature:"},
 			options = ExperimentIncubateCells[
@@ -777,7 +1712,6 @@ DefineTests[
 			EqualP[93 Percent],
 			Variables :> {options}
 		],
-
 		Example[{Options, Shake, "Incubate a single bacterial sample in a plate with shaking:"},
 			options = ExperimentIncubateCells[
 				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
@@ -798,6 +1732,17 @@ DefineTests[
 			];
 			Lookup[options, ShakingRate],
 			EqualP[180 RPM],
+			Variables :> {options}
+		],
+		Example[{Options, {Shake, ShakingRate, ShakingRadius}, "Incubate a sample with Shake ->False when given Null for either ShakingRate or ShakingRadius:"},
+			options = ExperimentIncubateCells[
+				Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				ShakingRate -> Null,
+				OptionsResolverOnly -> True,
+				Output -> Options
+			];
+			Lookup[options, {Shake, ShakingRate, ShakingRadius}],
+			{False, Null, Null},
 			Variables :> {options}
 		],
 		Example[{Options, ShakingRadius, "Incubate a single bacterial sample in a plate with a given shaking radius:"},
@@ -826,11 +1771,11 @@ DefineTests[
 			Download[
 				ExperimentIncubateCells[
 					Object[Sample, "Test bacterial sample in plate 2 (for ExperimentIncubateCells)" <> $SessionUUID],
-					Name -> "my bacteria incubation"
+					Name -> "my bacteria incubation" <> $SessionUUID
 				],
 				Name
 			],
-			"my bacteria incubation"
+			"my bacteria incubation" <> $SessionUUID
 		],
 		Example[{Options, Template, "Incubate a single bacterial sample in a plate with a specified Template:"},
 			Module[{protocol, newProt},
@@ -846,8 +1791,572 @@ DefineTests[
 
 				Download[newProt, Temperatures]
 			],
-			{EqualP[33 Celsius]},
-			Messages :> {Warning::CustomIncubationConditionNotSpecified}
+			{EqualP[33 Celsius]}
+		],
+		If[TrueQ[$IncubateCellsIncubateOnly],
+			Nothing,
+			Sequence @@ {
+				Example[{Messages, "QuantificationAliquotRequired",  "If QuantificationAliquot is Automatic and any of the input samples are not in containers compatible with the QuantificationInstrument, QuantificationAliquot is automatically set to True and a warning is thrown:"},
+					options = ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]  (* in a standard 96 DWP - not BMG compatible *)
+						},
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 0.8 OD600,
+						Time -> 2 Hour,
+						QuantificationInterval -> 2 Hour,
+						QuantificationMethod -> Absorbance,
+						QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquot],
+					True,
+					Variables :> {options},
+					Messages :> {Warning::QuantificationAliquotRequired}
+				],
+				Example[{Messages, "QuantificationAliquotRequired",  "If QuantificationAliquot is Automatic and the QuantificationAliquotVolume is specified for any sample, QuantificationAliquot is automatically set to True and a warning is thrown:"},
+					options = ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+							Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						QuantificationAliquotVolume -> {150 Microliter, Automatic},
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 0.8 OD600,
+						Time -> 6 Hour,
+						QuantificationInterval -> 2 Hour,
+						QuantificationMethod -> Absorbance,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquot],
+					True,
+					Variables :> {options},
+					Messages :> {Warning::GeneralFailureResponse, Warning::QuantificationAliquotRequired}
+				],
+				Example[{Messages, "QuantificationAliquotRequired",  "If QuantificationAliquot is Automatic and a QuantificationAliquotContainer is specified for any sample, QuantificationAliquot is automatically set to True and a warning is thrown:"},
+					options = ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+							Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						QuantificationAliquotContainer -> {Automatic, Model[Container, Plate, "96-well UV-Star Plate"]},
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 0.8 OD600,
+						Time -> 6 Hour,
+						QuantificationInterval -> 2 Hour,
+						QuantificationMethod -> Absorbance,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquot],
+					True,
+					Variables :> {options},
+					Messages :> {Warning::GeneralFailureResponse, Warning::QuantificationAliquotRequired}
+				],
+				Example[{Messages, "DiscardUponFailure", "If FailureResponse is unspecified, it is automatically set to Discard and a warning is thrown:"},
+					ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						IncubationStrategy -> QuantificationTarget,
+						Output -> Options,
+						QuantificationAliquot -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						OptionsResolverOnly -> True
+					],
+					KeyValuePattern[{
+						FailureResponse -> Discard
+					}],
+					Messages :> {
+						Warning::DiscardUponFailure
+					}
+				],
+				Example[{Messages, "NoQuantificationTarget", "If MinQuantificationTarget is unspecified, it is automatically set to None and a warning is thrown:"},
+					ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						IncubationStrategy -> QuantificationTarget,
+						Output -> Options,
+						QuantificationAliquot -> True,
+						OptionsResolverOnly -> True
+					],
+					KeyValuePattern[{
+						MinQuantificationTarget -> None
+					}],
+					Messages :> {
+						Warning::NoQuantificationTarget
+					}
+				],
+				Example[{Messages, "GeneralFailureResponse", "If FailureResponse is not Null and there are multiple input samples, a warning is thrown to tell the user that the response will be carried out for all samples if any one of them fails:"},
+					ExperimentIncubateCells[
+						{
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+							Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						QuantificationAliquot -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						Output -> Options,
+						OptionsResolverOnly -> True
+					],
+					KeyValuePattern[{
+						QuantificationAliquot -> True
+					}],
+					Messages :> {
+						Warning::GeneralFailureResponse
+					}
+				],
+				(* Quantification Options *)
+				Example[{Options, IncubationStrategy, "The IncubationStrategy option can be used to specify whether cells are incubated until the Time has passed or until a predetermined quantification target has been met:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, IncubationStrategy],
+					QuantificationTarget,
+					Variables :> {options}
+				],
+				Example[{Options, IncubationStrategy, "If any quantification options are specified, the IncubationStrategy is automatically set to QuantificationTarget:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationTolerance -> 15 Percent,
+						Time -> 9 Hour,
+						QuantificationAliquot -> True,
+						QuantificationInterval -> 3 Hour,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, IncubationStrategy],
+					QuantificationTarget,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationMethod, "Specify the analytical method used to quantify the cells using the QuantificationMethod option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationMethod -> Absorbance,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationMethod],
+					Absorbance,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationMethod, "If the specified QuantificationInstrument restricts the possible QuantificationMethod to a particular method of analysis, QuantificationMethod is automatically set to that method:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationInstrument -> Model[Instrument, PlateReader, "CLARIOstar"],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationAliquot -> True,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationMethod],
+					Absorbance,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationMethod, "If the sample(s) are in a Solid State and IncubationStrategy is QuantificationTarget, QuantificationMethod is automatically set to ColonyCount:"},
+					options = ExperimentIncubateCells[
+						{
+							Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 1000 Colony,
+						Time -> 10 Hour,
+						QuantificationInterval -> 2 Hour,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationMethod],
+					ColonyCount,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationMethod, "If the sample(s) have a CultureAdhesion other than Suspension and IncubationStrategy is QuantificationTarget, QuantificationMethod is automatically set to ColonyCount:"},
+					options = ExperimentIncubateCells[
+						{
+							Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID]
+						},
+						IncubationStrategy -> QuantificationTarget,
+						CultureAdhesion -> SolidMedia,
+						MinQuantificationTarget -> 1000 Colony,
+						Time -> 10 Hour,
+						QuantificationInterval -> 2 Hour,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationMethod],
+					ColonyCount,
+					Variables :> {options}
+				],
+				Example[{Options, MinQuantificationTarget, "Specify the cell concentration at which cell incubation is to cease using the MinQuantificationTarget option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationAliquot -> True,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, MinQuantificationTarget],
+					EqualP[1000000 EmeraldCell/Milliliter],
+					Variables :> {options}
+				],
+				Example[{Options, MinQuantificationTarget, "If IncubationStrategy is QuantificationMethod and MinQuantificationTarget is Automatic, MinQuantificationTarget is automatically set to None, indicating that incubation will proceed until the Time has elapsed, but quantifications will occur at each QuantificationInterval:"},
+					options = Quiet[
+						ExperimentIncubateCells[
+							Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+							IncubationStrategy -> QuantificationTarget,
+							QuantificationAliquot -> True,
+							FailureResponse -> Discard,
+							OptionsResolverOnly -> True,
+							Output -> Options
+						],
+						Warning::NoQuantificationTarget
+					];
+					Lookup[options, MinQuantificationTarget],
+					None,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationTolerance, "Specify the QuantificationTolerance as a cell concentration:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationTolerance -> 50000 EmeraldCell/Milliliter,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationTolerance],
+					EqualP[50000 EmeraldCell/Milliliter],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationTolerance, "Specify the QuantificationTolerance as a percentage of the MinQualificationTarget:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationTolerance -> 15 Percent,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationTolerance],
+					EqualP[15 Percent],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationTolerance, "If MinQuantificationTarget is not Null or None and QuantificationTolerance is Automatic, QuantificationTolerance is automatically set to 10 Percent:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationAliquot -> True,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationTolerance],
+					EqualP[10 Percent],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationInterval, "Specify the QuantificationInterval option to set the time interval between quantifications:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationInterval -> 1 Hour,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationAliquot -> True,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationInterval],
+					EqualP[1 Hour],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationInterval, "If IncubationStrategy is QuantificationTarget, QuantificationInterval is not specified, and one fifth of the Time is less than 1 Hour, QuantificationInterval is automatically set to 1 Hour:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						Time -> 3 Hour,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationInterval],
+					EqualP[1 Hour],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationInterval, "If IncubationStrategy is QuantificationTarget, QuantificationInterval is not specified, and one fifth of the Time is greater than 1 Hour, QuantificationInterval is automatically set to one fifth of the Time:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						IncubationStrategy -> QuantificationTarget,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						QuantificationAliquot -> True,
+						Time -> 20 Hour,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationInterval],
+					EqualP[4 Hour],
+					Variables :> {options}
+				],
+				Example[{Options, FailureResponse, "Specify the FailureResponse option to determine the fate of a cell sample in the event that the MinQuantificationTarget is not obtained before the Time elapses:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, FailureResponse],
+					Discard,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationAliquot, "Specify whether quantification should be performed on an aliquoted portion of the sample (rather than directly on the source sample) with the QuantificationAliquot option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationAliquot -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquot],
+					True,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationAliquotVolume, "Specify the amount of sample to be aliquoted for quantification with the QuantificationAliquotVolume option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationAliquotVolume -> 150 Microliter,
+						QuantificationAliquot -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquotVolume],
+					EqualP[150 Microliter],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationAliquotContainer, "Specify the container model into which a portion of the cell sample will be aliquoted for quantification with the QuantificationAliquotContainer option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationAliquotContainer -> Model[Container, Plate, "96-well UV-Star Plate"],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquotContainer],
+					ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationAliquotContainer, "If QuantificationAliquot is True and QuantificationAliquotContainer is Automatic, QuantificationAliquotContainer is automatically set to a container model which is compatible with the QuantificationInstrument and QuantificationAliquotVolume:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationAliquot -> True,
+						QuantificationAliquotVolume -> 150 Microliter,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationAliquotContainer],
+					ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationRecoupSample, "Specify whether each aliquoted portion of the source sample should be recombined with the source sample following quantification with the QuantificationRecoupSample option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationRecoupSample -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationRecoupSample],
+					True,
+					Variables :> {options},
+					Messages :> {Warning::RecoupContamination}
+				],
+				Example[{Options, QuantificationRecoupSample, "If QuantificationAliquot is True, QuantificationRecoupSample defaults to False unless specified otherwise:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationAliquot -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationRecoupSample],
+					False,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationInstrument, "Specify the instrument object or model to be used for quantification with the QuantificationInstrument option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationInstrument -> Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationInstrument],
+					ObjectP[Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationInstrument, "If QuantificationMethod is specified and the QuantificationInstrument is automatic, QuantificationInstrument is automatically set to an instrument capable of the method:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationMethod -> Absorbance,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationInstrument],
+					ObjectP[Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationBlankMeasurement, "Specify whether a blank measurement should be recorded to account for background noise in quantification with the QuantificationBlankMeasurement option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationBlankMeasurement -> True,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationBlankMeasurement],
+					True,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationBlankMeasurement, "If IncubationStrategy is QuantificationTarget and QuantificationMethod is Absorbance or Nephelometry, QuantificationBlankMeasurement is set to True:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						IncubationStrategy -> QuantificationTarget,
+						QuantificationMethod -> Absorbance,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationBlankMeasurement],
+					True,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationBlankMeasurement, "If IncubationStrategy is QuantificationTarget and QuantificationMethod is ColonyCount, QuantificationBlankMeasurement is set to False:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test solid media bacteria sample 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						IncubationStrategy -> QuantificationTarget,
+						QuantificationMethod -> ColonyCount,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationBlankMeasurement],
+					False,
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationBlank, "Specify the sample object or model to be used as the blank sample in quantification with the QuantificationBlank option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationBlank -> Model[Sample, "Milli-Q water"],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationBlank],
+					ObjectP[Model[Sample, "Milli-Q water"]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationBlank, "If QuantificationBlankMeasurement is True, QuantificationBlank defaults to a solution with identical composition to the media in which the cell sample is being incubated unless specified otherwise:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationBlankMeasurement -> True,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationBlank],
+					ObjectP[Model[Sample, "Milli-Q water"]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationWavelength, "Specify the wavelength to be detected by the quantification measurement with the QuantificationWavelength option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationWavelength -> 600 Nanometer,
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationWavelength],
+					EqualP[600 Nanometer],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationStandardCurve, "Specify a standard curve used to convert raw data to cell concentration units with the QuantificationStandardCurve option:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						QuantificationStandardCurve -> Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationStandardCurve],
+					ObjectP[Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID]],
+					Variables :> {options}
+				],
+				Example[{Options, QuantificationStandardCurve, "If any existing standard curve is compatible with the sample, required cell unit conversion and instrument used in the experiment, the QuantificationStandardCurve option will automatically resolve to one such standard curve:"},
+					options = ExperimentIncubateCells[
+						Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+						MinQuantificationTarget -> 1000000 EmeraldCell/Milliliter,
+						QuantificationAliquot -> True,
+						FailureResponse -> Discard,
+						OptionsResolverOnly -> True,
+						Output -> Options
+					];
+					Lookup[options, QuantificationStandardCurve],
+					ObjectP[Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID]],
+					Variables :> {options}
+				]
+			}
 		]
 	},
 	SetUp :> {
@@ -981,7 +2490,29 @@ DefineTests[
 				Object[Item, Lid, "Test lid in too many samples test 16 (for ExperimentIncubateCells)" <> $SessionUUID],
 				Object[Item, Lid, "Test lid in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID],
 
-				Object[Protocol, ManualCellPreparation, "Test MCP for ExperimentIncubateCells unit tests" <> $SessionUUID]
+				Object[Protocol, ManualCellPreparation, "Test MCP for ExperimentIncubateCells unit tests" <> $SessionUUID],
+				Model[Cell, "Test cell model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Model[Sample, "Test cell sample model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Instrument, PlateReader, "Test PlateReader 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Model[Instrument, PlateReader, "Test non-BMG Plate Reader model (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Protocol, AbsorbanceIntensity, "Test AbsorbanceIntensity protocol 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Vessel, "Test flask for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Vessel, "Test flask for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Plate, "Test plate for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Plate, "Test plate for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Vessel, "Test flask for quantification 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Cap, "Test cover for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Cap, "Test cover for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Lid, "Test cover for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, PlateSeal, "Test cover for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Cap, "Test cover for quantification tests 5 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 5 (for ExperimentIncubateCells)" <> $SessionUUID]
 			};
 			existsFilter = DatabaseMemberQ[allObjs];
 			EraseObject[
@@ -1027,7 +2558,12 @@ DefineTests[
 					tooManySamplesSample11, tooManySamplesSample12, tooManySamplesSample13, tooManySamplesSample14, tooManySamplesSample15,
 					tooManySamplesSample16, tooManySamplesSample17,
 
-					mcpParentProt1
+					mcpParentProt1,
+
+					cellModelWithCurve, bacterialSampleModelWithCurve, plateReader1, plateReader2, nonBMGPlateReaderModel, absCurve, absProtocol,
+					quantContainer1, quantContainer2, quantContainer3, quantContainer4, quantContainer5,
+					quantCover1, quantCover2, quantCover3, quantCover4, quantCover5,
+					quantSample1, quantSample2, quantSample3, quantSample4, quantSample5
 				},
 
 				testBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentIncubateCells tests" <> $SessionUUID, Site -> Link[$Site], DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
@@ -1042,6 +2578,80 @@ DefineTests[
 						DeveloperObject -> True
 					|>
 				];
+
+				(* Generate IDs for some test objects related to quantification. *)
+				{cellModelWithCurve, bacterialSampleModelWithCurve, plateReader1, plateReader2, nonBMGPlateReaderModel, absCurve, absProtocol} = CreateID[{
+					Model[Cell],
+					Model[Sample],
+					Object[Instrument, PlateReader],
+					Object[Instrument, PlateReader],
+					Model[Instrument, PlateReader],
+					Object[Analysis, StandardCurve],
+					Object[Protocol, AbsorbanceIntensity]
+				}];
+
+				(* Upload objects for quantification tests. *)
+				Upload[{
+					<|
+						Object -> cellModelWithCurve,
+						Name -> "Test cell model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID,
+						CellType -> Bacterial,
+						Replace[StandardCurves] -> {Link[absCurve]},
+						Replace[StandardCurveProtocols] -> {Link[absProtocol]}
+					|>,
+					<|
+						Object -> bacterialSampleModelWithCurve,
+						Name -> "Test cell sample model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID,
+						Replace[Composition] -> {
+							{1000 * EmeraldCell/Milliliter, Link[cellModelWithCurve]},
+							{100 * VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}
+						},
+						Expires -> False,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						State -> Liquid,
+						BiosafetyLevel -> "BSL-1",
+						Flammable -> False,
+						MSDSRequired -> False,
+						CellType -> Bacterial,
+						CultureAdhesion -> Suspension,
+						Living -> True
+					|>,
+					Append[
+						Quiet[DoppelgangerObject[Model[Instrument, PlateReader, "CLARIOstar"]]],
+						<|
+							Object -> nonBMGPlateReaderModel,
+							(* The resolver checks the manufacturer of the plate reader to determine whether to run BMGCompatiblePlates, *)
+							(* so I can pick any other supplier in the database for the manufacturer of this test model. *)
+							Manufacturer -> Link[Object[Company, Supplier, "Hofbrauhaus"], InstrumentsManufactured],
+							Name -> "Test non-BMG Plate Reader model (for ExperimentIncubateCells)" <> $SessionUUID,
+							Replace[PlateReaderMode] -> {AbsorbanceIntensity, AbsorbanceKinetics}
+						|>
+					],
+					<|
+						Object -> plateReader1,
+						Name -> "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						Model -> Link[Model[Instrument, PlateReader, "CLARIOstar"], Objects],
+						Site -> Link[$Site]
+					|>,
+					<|
+						Object -> plateReader2,
+						Name -> "Test PlateReader 2 (for ExperimentIncubateCells)" <> $SessionUUID,
+						Model -> Link[nonBMGPlateReaderModel, Objects],
+						Site -> Link[$Site]
+					|>,
+					<|
+						Object -> absProtocol,
+						Name -> "Test AbsorbanceIntensity protocol 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						Instrument -> Link[plateReader1]
+					|>,
+					<|
+						Object -> absCurve,
+						Name -> "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID,
+						BestFitFunction -> QuantityFunction[#^2&, OD600, EmeraldCell/Milliliter],
+						Replace[StandardDataUnits] -> {OD600, EmeraldCell/Milliliter},
+						Protocol -> Link[absProtocol]
+					|>
+				}];
 
 				(* Create some empty containers *)
 				{
@@ -1080,22 +2690,28 @@ DefineTests[
 					tooManySamplesContainer14,
 					tooManySamplesContainer15,
 					tooManySamplesContainer16,
-					tooManySamplesContainer17
+					tooManySamplesContainer17,
+
+          quantContainer1,
+					quantContainer2,
+					quantContainer3,
+					quantContainer4,
+					quantContainer5
 				} = UploadSample[
 					{
-						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
-						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
 						Model[Container, Vessel, "1L Vented Polycarbonate Erlenmeyer Flask"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
-						Model[Container, Vessel, "15mL Tube"],
-						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 						Model[Container, Plate, "384-well Optical Reaction Plate"],
-						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
-						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Vessel, "Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "Omni Tray Sterile Media Plate"],
@@ -1118,7 +2734,13 @@ DefineTests[
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
 						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
-						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"]
+						Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
+
+						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"],
+						Model[Container, Plate, "96-well UV-Star Plate"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container,Vessel,"Corning 250mL Vented Polycarbonate Erlenmeyer Flask"]
 					},
 					{
 						{"Work Surface", testBench},
@@ -1140,6 +2762,11 @@ DefineTests[
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
@@ -1194,7 +2821,13 @@ DefineTests[
 						"Test plate in too many samples test 14 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test plate in too many samples test 15 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test plate in too many samples test 16 (for ExperimentIncubateCells)" <> $SessionUUID,
-						"Test plate in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID
+						"Test plate in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID,
+
+						"Test flask for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test flask for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test plate for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test plate for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test flask for quantification 3 (for ExperimentIncubateCells)" <> $SessionUUID
 					},
 					FastTrack -> True
 				];
@@ -1234,7 +2867,13 @@ DefineTests[
 					tooManySamplesCover14,
 					tooManySamplesCover15,
 					tooManySamplesCover16,
-					tooManySamplesCover17
+					tooManySamplesCover17,
+
+					quantCover1,
+					quantCover2,
+					quantCover3,
+					quantCover4,
+					quantCover5
 				} = UploadSample[
 					{
 						Model[Item, Cap, "Flask Cap, Breathable 49x30mm"],
@@ -1270,7 +2909,13 @@ DefineTests[
 						Model[Item, Lid, "96 Well Greiner Plate Lid"],
 						Model[Item, Lid, "96 Well Greiner Plate Lid"],
 						Model[Item, Lid, "96 Well Greiner Plate Lid"],
-						Model[Item, Lid, "96 Well Greiner Plate Lid"]
+						Model[Item, Lid, "96 Well Greiner Plate Lid"],
+
+						Model[Item, Cap, "Flask Cap, Breathable 49x30mm"],
+						Model[Item, Cap, "Flask Cap, Breathable 49x30mm"],
+						Model[Item, Lid, "Universal Clear Lid"],
+						Model[Item, PlateSeal, "Plate Seal, 96-Well Square"],
+						Model[Item, Cap, "Flask Cap, Breathable 49x30mm"]
 					},
 					{
 						{"Work Surface", testBench},
@@ -1290,6 +2935,11 @@ DefineTests[
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
@@ -1344,7 +2994,13 @@ DefineTests[
 						"Test lid in too many samples test 14 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test lid in too many samples test 15 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test lid in too many samples test 16 (for ExperimentIncubateCells)" <> $SessionUUID,
-						"Test lid in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID
+						"Test lid in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID,
+
+						"Test cover for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test cover for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test cover for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test cover for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test cover for quantification tests 5 (for ExperimentIncubateCells)" <> $SessionUUID
 					}
 				];
 				UploadCover[
@@ -1381,7 +3037,12 @@ DefineTests[
 						tooManySamplesContainer14,
 						tooManySamplesContainer15,
 						tooManySamplesContainer16,
-						tooManySamplesContainer17
+						tooManySamplesContainer17,
+						quantContainer1,
+						quantContainer2,
+						quantContainer3,
+						quantContainer4,
+						quantContainer5
 					},
 					Cover -> {
 						cover1,
@@ -1416,7 +3077,12 @@ DefineTests[
 						tooManySamplesCover14,
 						tooManySamplesCover15,
 						tooManySamplesCover16,
-						tooManySamplesCover17
+						tooManySamplesCover17,
+						quantCover1,
+						quantCover2,
+						quantCover3,
+						quantCover4,
+						quantCover5
 					}
 				];
 				(* Create some bacteria and mammalian models *)
@@ -1516,7 +3182,13 @@ DefineTests[
 					tooManySamplesSample14,
 					tooManySamplesSample15,
 					tooManySamplesSample16,
-					tooManySamplesSample17
+					tooManySamplesSample17,
+
+					quantSample1,
+					quantSample2,
+					quantSample3,
+					quantSample4,
+					quantSample5
 				} = ECL`InternalUpload`UploadSample[
 					{
 						bacteriaModel,
@@ -1557,7 +3229,12 @@ DefineTests[
 						bacteriaModel,
 						bacteriaModel,
 						bacteriaModel,
-						bacteriaModel
+						bacteriaModel,
+						bacterialSampleModelWithCurve,
+						bacterialSampleModelWithCurve,
+						bacterialSampleModelWithCurve,
+						bacterialSampleModelWithCurve,
+						bacterialSampleModelWithCurve
 					},
 					{
 						{"A1", emptyContainer1},
@@ -1597,7 +3274,13 @@ DefineTests[
 						{"A1", tooManySamplesContainer14},
 						{"A1", tooManySamplesContainer15},
 						{"A1", tooManySamplesContainer16},
-						{"A1", tooManySamplesContainer17}
+						{"A1", tooManySamplesContainer17},
+
+						{"A1", quantContainer1},
+						{"A1", quantContainer2},
+						{"A1", quantContainer3},
+						{"A1", quantContainer4},
+						{"A1", quantContainer5}
 					},
 					InitialAmount -> {
 						1 Milliliter,
@@ -1637,7 +3320,13 @@ DefineTests[
 						100 Microliter,
 						100 Microliter,
 						100 Microliter,
-						100 Microliter
+						100 Microliter,
+
+						2 Milliliter,
+						100 Milliliter,
+						0.3 Milliliter,
+						1 Milliliter,
+						20 Milliliter
 					},
 					Name -> {
 						"Test discarded sample (for ExperimentIncubateCells)" <> $SessionUUID,
@@ -1677,7 +3366,13 @@ DefineTests[
 						"Test sample in too many samples test 14 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test sample in too many samples test 15 (for ExperimentIncubateCells)" <> $SessionUUID,
 						"Test sample in too many samples test 16 (for ExperimentIncubateCells)" <> $SessionUUID,
-						"Test sample in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID
+						"Test sample in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID,
+
+						"Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID,
+						"Test sample for quantification tests 5 (for ExperimentIncubateCells)" <> $SessionUUID
 					}
 				];
 
@@ -1698,7 +3393,13 @@ DefineTests[
 					<|Object -> mammalianModel, DeveloperObject -> True|>,
 					<|Object -> bacteriaModel, DeveloperObject -> True|>,
 					<|Object -> deprecatedBacteriaModel, CellType -> Bacterial, CultureAdhesion -> Suspension, Deprecated -> True|>,
-					<|Object -> insectSample, CultureAdhesion -> Suspension|>
+					<|Object -> insectSample, CultureAdhesion -> Suspension|>,
+					<|Object -> solidMediaSample1, CultureAdhesion -> SolidMedia, State -> Solid, CellType -> Bacterial|>,
+					<|Object -> quantSample1, CultureAdhesion -> Suspension, CellType -> Bacterial, Solvent -> Link[Model[Sample,"Milli-Q water"]]|>,
+					<|Object -> quantSample2, CultureAdhesion -> Suspension, CellType -> Bacterial, Solvent -> Link[Model[Sample,"Milli-Q water"]]|>,
+					<|Object -> quantSample3, CultureAdhesion -> Suspension, CellType -> Bacterial, Solvent -> Link[Model[Sample,"Milli-Q water"]]|>,
+					<|Object -> quantSample4, CultureAdhesion -> Suspension, CellType -> Bacterial, Solvent -> Link[Model[Sample,"Milli-Q water"]]|>,
+					<|Object -> quantSample5, CultureAdhesion -> Suspension, CellType -> Bacterial, Solvent -> Link[Model[Sample,"Milli-Q water"]]|>
 				}];
 
 				mcpParentProt1 = ExperimentManualCellPreparation[
@@ -1835,7 +3536,26 @@ DefineTests[
 				Object[Item, Lid, "Test lid in too many samples test 16 (for ExperimentIncubateCells)" <> $SessionUUID],
 				Object[Item, Lid, "Test lid in too many samples test 17 (for ExperimentIncubateCells)" <> $SessionUUID],
 
-				Object[Protocol, ManualCellPreparation, "Test MCP for ExperimentIncubateCells unit tests" <> $SessionUUID]
+				Object[Protocol, ManualCellPreparation, "Test MCP for ExperimentIncubateCells unit tests" <> $SessionUUID],
+				Model[Cell, "Test cell model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Model[Sample, "Test cell sample model 1 with absorbance standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Instrument, PlateReader, "Test PlateReader 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Instrument, PlateReader, "Test PlateReader 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Model[Instrument, PlateReader, "Test non-BMG Plate Reader model (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Analysis, StandardCurve, "Test OD600 to Cell/mL standard curve (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Protocol, AbsorbanceIntensity, "Test AbsorbanceIntensity protocol 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Vessel, "Test flask for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Vessel, "Test flask for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Plate, "Test plate for quantification 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Container, Plate, "Test plate for quantification 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Cap, "Test cover for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Cap, "Test cover for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, Lid, "Test cover for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Item, PlateSeal, "Test cover for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 1 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 2 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 3 (for ExperimentIncubateCells)" <> $SessionUUID],
+				Object[Sample, "Test sample for quantification tests 4 (for ExperimentIncubateCells)" <> $SessionUUID]
 			};
 			existsFilter = DatabaseMemberQ[allObjs];
 			EraseObject[PickList[allObjs, existsFilter], Force -> True, Verbose -> False];
@@ -2138,7 +3858,6 @@ DefineTests[ExperimentIncubateCellsPreview,
 				Error::NoCompatibleIncubator,
 				Error::ConflictingCellTypeWithCultureAdhesion,
 				Error::UnsupportedCellCultureType,
-				Error::ConflictingCultureAdhesionWithStorageCondition,
 				Error::InvalidInput,
 				Error::InvalidOption
 			}
@@ -2720,6 +4439,10 @@ DefineTests[IncubateCellsDevices,
 				{{ObjectP[Model[Instrument, Incubator]], {ObjectP[Model[Container]]..}}..}
 			}
 		],
+		Example[{Additional, "Find an incubator that can accept a Falcon tube in one of multiple racks on its deck:"},
+			IncubateCellsDevices[Model[Container, Vessel, "id:AEqRl9KXBDoW"]],(*"Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap"*)
+			{ObjectP[Model[Instrument, Incubator]]..}
+		],
 		Example[{Additional, "If no incubators can be found to incubate the given container model, returns an empty list:"},
 			IncubateCellsDevices[Model[Container, Vessel, VolumetricFlask, "Volumetric flask, 500 ml"]],
 			{}
@@ -2796,14 +4519,14 @@ DefineTests[IncubateCellsDevices,
 		Example[{Options, CarbonDioxide, "Find incubators that will work with the desired carbon dioxide options:"},
 			IncubateCellsDevices[
 				Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
-				CarbonDioxide -> {5 Percent, Null, 10 Percent}
+				CarbonDioxide -> {5 Percent, Ambient, 10 Percent}
 			],
 			{{(ObjectP[Model[Instrument, Incubator]] | {})...}...}
 		],
 		Example[{Options, RelativeHumidity, "Find incubators that will work with the desired relative humidity options:"},
 			IncubateCellsDevices[
 				Model[Container, Plate, "96-well Greiner Tissue Culture Plate"],
-				RelativeHumidity -> {50 Percent, 93 Percent, Null}
+				RelativeHumidity -> {50 Percent, 93 Percent, Ambient}
 			],
 			{{(ObjectP[Model[Instrument, Incubator]] | {})...}...}
 		]

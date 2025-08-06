@@ -45,7 +45,18 @@ DefineUsage[ExperimentIncubate,
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
+							]
 						],
 						Expandable->False
 					},
@@ -63,7 +74,7 @@ DefineUsage[ExperimentIncubate,
 	},
 	MoreInformation -> {
 		"Based on the container(s) in the input 'objects', the protocol will automatically choose the optimal mixing and incubation technique.",
-		"ExperimentMix simply calls ExperimentIncubate and is provided for the user's convienence. The two functions are the same."
+		"ExperimentMix simply calls ExperimentIncubate and is provided for the user's convenience. The two functions are the same."
 	},
 	SeeAlso -> {
 		"ExperimentMix",
@@ -121,7 +132,18 @@ DefineUsage[ExperimentMix,
 									Type -> Object,
 									Pattern :> ObjectP[{Object[Container]}]
 								]
-							}
+							},
+							"Model Sample"->Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample]],
+								ObjectTypes -> {Model[Sample]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
+							]
 						],
 						Expandable->False
 					},
@@ -153,7 +175,7 @@ DefineUsage[ExperimentMix,
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author -> {"Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
+	Author -> {"tyler.pabst", "Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -228,7 +250,7 @@ DefineUsage[MixDevices,
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author -> {"Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
+	Author -> {"tyler.pabst", "Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
 }];
 
 
@@ -295,10 +317,7 @@ DefineUsage[uploadInvertFullyDissolved,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {
-			"hanming.yang",
-			"thomas"
-		}
+		Author -> {"taylor.hochuli", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -319,10 +338,7 @@ DefineUsage[uploadSwirlFullyDissolved,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {
-			"hanming.yang",
-			"thomas"
-		}
+		Author -> {"taylor.hochuli", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -343,10 +359,7 @@ DefineUsage[uploadThawStartTime,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {
-			"hanming.yang",
-			"thomas"
-		}
+		Author -> {"taylor.hochuli", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -367,10 +380,7 @@ DefineUsage[uploadCurrentStartDate,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {
-			"hanming.yang",
-			"thomas"
-		}
+		Author -> {"taylor.hochuli", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -389,7 +399,7 @@ DefineUsage[uploadTemporaryMixUntilDissolvedFalse,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {"Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
+		Author -> {"tyler.pabst", "Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -412,7 +422,7 @@ DefineUsage[uploadCurrentMixUntilDissolved,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {"Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
+		Author -> {"tyler.pabst", "Yahya.Benslimane", "steven", "josh.kenchel", "thomas"}
 	}
 ];
 
@@ -434,7 +444,7 @@ DefineUsage[uploadPipetteFullyDissolvedFalse,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {"waseem.vali", "malav.desai", "thomas"}
+		Author -> {"taylor.hochuli", "waseem.vali", "malav.desai", "thomas"}
 	}
 ];
 
@@ -456,7 +466,7 @@ DefineUsage[clearPipetteFullyDissolved,
 		SeeAlso -> {
 			"ExperimentIncubate"
 		},
-		Author -> {"waseem.vali", "malav.desai", "thomas"}
+		Author -> {"taylor.hochuli", "waseem.vali", "malav.desai", "thomas"}
 	}
 ];
 (* ::Subsubsection::Closed:: *)
@@ -527,5 +537,5 @@ DefineUsage[TransportDevices,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "steven"}
+		Author -> {"taylor.hochuli", "waseem.vali", "malav.desai", "steven"}
 	}];

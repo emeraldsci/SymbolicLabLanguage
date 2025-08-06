@@ -42,6 +42,10 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,UVMelting]]
 		],
+		Example[{Basic,"Generates a protocol to measure the UV melting curve of a model:"},
+			ExperimentUVMelting[Model[Sample,"Milli-Q water"]],
+			ObjectP[Object[Protocol,UVMelting]]
+		],
 
 		Example[{Additional,"Accepts a list of containers:"},
 			ExperimentUVMelting[{{Object[Container,Vessel,"50ml container 1 for UVMelting testing" <> $SessionUUID],Object[Container,Vessel,"50ml container 2 for UVMelting testing" <> $SessionUUID]}}],
@@ -74,6 +78,26 @@ DefineTests[
 		],
 
 		(* MESSAGES *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentUVMelting[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentUVMelting[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentUVMelting[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentUVMelting[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentUVMelting[Link[Object[Sample,"Sample in Semi-Micro cuvette for ExperimentUVMelting testing" <> $SessionUUID], Now - 1 Minute]],
 			ObjectP[Object[Protocol, UVMelting]],
@@ -297,7 +321,7 @@ DefineTests[
 		Example[{Messages, "NumberOfReplicatesRequiresAliquoting", "If NumberOfReplicates is set, Aliquot must not be set to False:"},
 			ExperimentUVMelting[{{Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID]}}, NumberOfReplicates -> 2, Aliquot -> False],
 			$Failed,
-			Messages :> {Error::AliquotOptionConflict, Error::NumberOfReplicatesRequiresAliquoting, Error::InvalidOption}
+			Messages :> {Error::AliquotOptionMismatch,Error::NumberOfReplicatesRequiresAliquoting, Error::InvalidOption}
 		],
 		Example[{Messages,"UVMeltingIncompatibleBlankOptions","If BlankMeasurement -> True, then Blank cannot be Null:"},
 			ExperimentUVMelting[{{Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID]}}, BlankMeasurement -> True, Blank -> Null],
@@ -335,7 +359,7 @@ DefineTests[
 				],
 				AliquotContainer
 			],
-			{1,ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}
+			{{1, ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}}
 		],
 		Example[{Options,AliquotContainer,"If the input is a pool of samples, AliquotContainer always resolves to a cuvette that can contain the total volume of the samples (including buffer, if specified) and in which the measurement is going to be performed:"},
 			Lookup[
@@ -346,7 +370,7 @@ DefineTests[
 				],
 				AliquotContainer
 			],
-			{1,ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}
+			{{1, ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}}
 		],
 		Example[{Options,AliquotContainer,"If the input is a single sample that is inside a container compatible with the measurement, then no aliquotting is performed:"},
 			Lookup[
@@ -396,7 +420,7 @@ DefineTests[
 				],
 				{Aliquot,AliquotContainer}
 			],
-			{True,{1,ObjectP[Model[Container, Cuvette, "id:eGakld01zz3E"]]}}
+			{True, {{1, ObjectP[Model[Container, Cuvette, "id:eGakld01zz3E"]]}}}
 		],
 		Example[{Options,NestedIndexMatchingMix,"Indicate that the pooled samples should be mixed prior to measurement:"},
 			Lookup[
@@ -460,7 +484,7 @@ DefineTests[
 				],
 				{AliquotContainer,NestedIndexMatchingMix,NestedIndexMatchingMixType,NestedIndexMatchingIncubate}
 			],
-			{{1,ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}, True, Pipette, False}
+			{{{1, ObjectP[Model[Container, Cuvette, "id:R8e1PjRDbbld"]]}}, True, Pipette, False}
 		],
 		Example[{Options,NestedIndexMatchingMixType,"Specify that the sample should be mixed by Inversion after pooling of the input samples inside the cuvette:"},
 			Lookup[
@@ -546,7 +570,7 @@ DefineTests[
 				],
 				{NestedIndexMatchingMix,NestedIndexMatchingMixType,NestedIndexMatchingNumberOfMixes,NestedIndexMatchingMixVolume,AliquotContainer}
 			],
-			{True,Pipette,15,200*Microliter,{1,Model[Container, Cuvette, "id:eGakld01zz3E"]}}
+			{True,Pipette,15,200*Microliter, {{1, Model[Container, Cuvette, "id:eGakld01zz3E"]}}}
 		],
 		Example[{Options,NestedIndexMatchingMixType,"NestedIndexMatchingMixType automatically resolves to mixing by Pipette if the AliquotContainer was resolved to a container that is suitable for mix by Pipette:"},
 			Lookup[
@@ -560,7 +584,7 @@ DefineTests[
 				],
 				{NestedIndexMatchingMix,NestedIndexMatchingMixType,NestedIndexMatchingNumberOfMixes,AliquotContainer}
 			],
-			{True, Pipette,10,{1,Model[Container, Cuvette, "id:R8e1PjRDbbld"]}}
+			{True, Pipette,10, {{1, Model[Container, Cuvette, "id:R8e1PjRDbbld"]}}}
 		],
 		Example[{Options,NestedIndexMatchingMix,"NestedIndexMatchingMix automatically resolves to False if no aliquotting/pooling is performed and none of the mixing parameters are specified:"},
 			Lookup[
@@ -572,7 +596,7 @@ DefineTests[
 				],
 				{NestedIndexMatchingMix,NestedIndexMatchingMixType,NestedIndexMatchingMixVolume,NestedIndexMatchingNumberOfMixes,Aliquot,AliquotContainer}
 			],
-			{False,Null,Null,Null,False,Null}
+			{False,Null,Null,Null,False, {Null}}
 		],
 		Example[{Options,NestedIndexMatchingIncubate,"If NestedIndexMatchingIncubate is set to False, no incubation of the pooled samples will occur prior to the measurement:"},
 			Lookup[
@@ -929,6 +953,14 @@ DefineTests[
 			],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentUVMelting[{{Object[Sample, "DNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample, "DNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]}},CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Template,"Indicate that all the same options used for a previous protocol should be used again for the current protocol:"},
 			Module[{templateUVMeltingProtocol,repeatProtocol},
 			(* Create an initial protocol *)
@@ -1157,28 +1189,6 @@ DefineTests[
 			Variables :> {options},
 			TimeConstraint->600
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentUVMelting:"},
-			Download[ExperimentUVMelting["My NestedIndexMatching Sample",
-				PreparatoryPrimitives-> {
-					Define[
-						Name->"My NestedIndexMatching Sample",
-						Container->Model[Container,Vessel,"2mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Isopropanol"],
-						Amount->500*Microliter,
-						Destination->{"My NestedIndexMatching Sample"}
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Amount->30*Microliter,
-						Destination->{"My NestedIndexMatching Sample"}
-					]
-				}
-			],PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Messages:>{Warning::TransferRequired}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentUVMelting:"},
 			Download[ExperimentUVMelting["My NestedIndexMatching Sample",
 				PreparatoryUnitOperations-> {
@@ -1200,6 +1210,38 @@ DefineTests[
 			],PreparatoryUnitOperations],
 			{SamplePreparationP..},
 			Messages:>{Warning::TransferRequired}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentUVMelting[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True
+			],
+			ObjectP[Object[Protocol, UVMelting]]
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentUVMelting[
+				{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				PreparedModelContainer -> Model[Container,Vessel,"50mL Tube"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"id:bq9LA0dBGGR6"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		(* ExperimentIncubate tests. *)
 		Example[{Options, Incubate, "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
@@ -1276,7 +1318,7 @@ DefineTests[
 		Example[{Options, DestinationWell, "Indicates the desired position in the corresponding DestinationWell in which the aliquot samples will be placed:"},
 			options = ExperimentUVMelting[{{Object[Sample,"PNA sample 3 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample,"PNA sample 4 for ExperimentUVMelting testing" <> $SessionUUID]}}, DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options, Mix, "Indicates if this sample should be mixed while incubated, prior to starting the experiment:"},
@@ -1603,6 +1645,8 @@ DefineTests[
 		]
 
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
 	(* I am an important stub that prevents the tester from getting a bunch of notifications *)
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
@@ -1925,7 +1969,7 @@ DefineTests[
 
 					1 Milliliter,
 					1 Milliliter,
-					0.1 Milliliter, (* very little volume *)
+					0.025 Milliliter, (* very little volume *)
 					4.1 Milliliter,(* incompatible volume - to large to fit into micro and to small to fit into medium *)
 					1 Milliliter,
 
@@ -1971,8 +2015,8 @@ DefineTests[
 				<|Object->sample1Plate2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Available sample 1 in plate 2 for ExperimentUVMelting testing" <> $SessionUUID|>,
 				<|Object->sample2Plate2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Available sample 2 in plate 2 for ExperimentUVMelting testing" <> $SessionUUID|>,
 				<|Object->sample3Plate2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Available sample 3 in plate 2 for ExperimentUVMelting testing" <> $SessionUUID|>,
-				<|Object->sampleForSamplePrep1,DeveloperObject->True,Replace[Composition] -> {{1000 Micromolar, Link[Model[Molecule, Oligomer, "Test PNA for UVMelting" <> $SessionUUID]]}, {100 VolumePercent, Link[Model[Molecule, "Water"]]}}, Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 3 for ExperimentUVMelting testing" <> $SessionUUID|>,
-				<|Object->sampleForSamplePrep2,DeveloperObject->True,Replace[Composition] -> {{1000 Micromolar, Link[Model[Molecule, Oligomer, "Test PNA for UVMelting" <> $SessionUUID]]}, {100 VolumePercent, Link[Model[Molecule, "Water"]]}}, Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 4 for ExperimentUVMelting testing" <> $SessionUUID|>,
+				<|Object->sampleForSamplePrep1,DeveloperObject->True,Replace[Composition] -> {{1000 Micromolar, Link[Model[Molecule, Oligomer, "Test PNA for UVMelting" <> $SessionUUID]], Now}, {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}}, Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 3 for ExperimentUVMelting testing" <> $SessionUUID|>,
+				<|Object->sampleForSamplePrep2,DeveloperObject->True,Replace[Composition] -> {{1000 Micromolar, Link[Model[Molecule, Oligomer, "Test PNA for UVMelting" <> $SessionUUID]], Now}, {100 VolumePercent, Link[Model[Molecule, "Water"]], Now}}, Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 4 for ExperimentUVMelting testing" <> $SessionUUID|>,
 				<|Object->sampleForSamplePrep3,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"50 mL PNA sample 5 for ExperimentUVMelting testing" <> $SessionUUID|>,
 				<|Object->sampleForSamplePrep4,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"50 mL PNA sample 6 for ExperimentUVMelting testing" <> $SessionUUID|>,
 				<|Object->samplefornomodeltest,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample for ExperimentUVMelting testing with no model" <> $SessionUUID|>
@@ -2381,27 +2425,27 @@ DefineTests[ExperimentUVMeltingOptions,
 DefineTests[ExperimentUVMeltingPreview,
 	{
 		Example[{Basic, "Return Null for one sample:"},
-			ExperimentUVMeltingPreview[Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"]],
+			ExperimentUVMeltingPreview[Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"<>$SessionUUID]],
 			Null
 		],
 		Example[{Basic, "Return  Null for multiple samples:"},
-			ExperimentUVMeltingPreview[{Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"],Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"]}],
+			ExperimentUVMeltingPreview[{Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"<>$SessionUUID],Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"<>$SessionUUID]}],
 			Null
 		],
 		Example[{Basic, "Return  Null for multiple pools:"},
 			ExperimentUVMeltingPreview[{
-				{Object[Sample, "PNA sample 1 for UVMeltingPreview testing"], Object[Sample, "PNA sample 2 for UVMeltingPreview testing"]},
-				{Object[Sample, "DNA sample 1 for UVMeltingPreview testing"], Object[Sample, "DNA sample 2 for UVMeltingPreview testing"]}
+				{Object[Sample, "PNA sample 1 for UVMeltingPreview testing"<>$SessionUUID], Object[Sample, "PNA sample 2 for UVMeltingPreview testing"<>$SessionUUID]},
+				{Object[Sample, "DNA sample 1 for UVMeltingPreview testing"<>$SessionUUID], Object[Sample, "DNA sample 2 for UVMeltingPreview testing"<>$SessionUUID]}
 			}
 			],
 			Null
 		],
 		Example[{Additional, "Return Null for one container:"},
-			ExperimentUVMeltingPreview[Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"]],
+			ExperimentUVMeltingPreview[Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"<>$SessionUUID]],
 			Null
 		],
 		Example[{Additional, "Return Null for multiple containers:"},
-			ExperimentUVMeltingPreview[{Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"],Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"]}],
+			ExperimentUVMeltingPreview[{Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"<>$SessionUUID],Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"<>$SessionUUID]}],
 			Null
 		]
 	},
@@ -2419,24 +2463,24 @@ DefineTests[ExperimentUVMeltingPreview,
 		Module[{uploadedObjects,existsFilter},
 			uploadedObjects={
 			(* containers *)
-				Object[Container,Vessel,"50ml container 1 for UVMeltingPreview testing"],
-				Object[Container,Vessel,"50ml container 2 for UVMeltingPreview testing"],
-				Object[Container,Vessel,"50ml container 3 for UVMeltingPreview testing"],
-				Object[Container,Vessel,"50ml container 4 for UVMeltingPreview testing"],
-				Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"],
-				Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"],
+				Object[Container,Vessel,"50ml container 1 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Container,Vessel,"50ml container 2 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Container,Vessel,"50ml container 3 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Container,Vessel,"50ml container 4 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"<>$SessionUUID],
 				(* models *)
-				Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"],
-				Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"],
-				Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"],
-				Model[Sample, "Test PNA oligomer for UVMeltingPreview testing"],
+				Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"<>$SessionUUID],
+				Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"<>$SessionUUID],
+				Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+				Model[Sample, "Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
 			(* samples *)
-				Object[Sample,"PNA sample 1 for UVMeltingPreview testing"],
-				Object[Sample,"PNA sample 2 for UVMeltingPreview testing"],
-				Object[Sample,"DNA sample 1 for UVMeltingPreview testing"],
-				Object[Sample,"DNA sample 2 for UVMeltingPreview testing"],
-				Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"],
-				Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"]
+				Object[Sample,"PNA sample 1 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Sample,"PNA sample 2 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Sample,"DNA sample 1 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Sample,"DNA sample 2 for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"<>$SessionUUID],
+				Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"<>$SessionUUID]
 
 			};
 			(* Check whether the names we want to give below already exist in the database *)
@@ -2464,47 +2508,47 @@ DefineTests[ExperimentUVMeltingPreview,
 
 		(* Create some empty containers and some other useful things *)
 			{emptyContainer1,emptyContainer2,emptyContainer3,emptyContainer4,microCuvette,mediumCuvette}=Upload[{
-				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 1 for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>,
-				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 2 for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>,
-				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 3 for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>,
-				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 4 for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>,
-				<|Type->Object[Container,Cuvette],Model->Link[Model[Container,Cuvette,"Micro Scale Black Walled UV Quartz Cuvette"],Objects],DeveloperObject->True,Name->"Micro sized Cuvette for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>,
-				<|Type->Object[Container,Cuvette],Model->Link[Model[Container,Cuvette,"Semi-Micro Scale Black Walled UV Quartz Cuvette"],Objects],DeveloperObject->True,Name->"Medium sized Cuvette for UVMeltingPreview testing", Status->Available,Site->Link[$Site]|>
+				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 1 for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>,
+				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 2 for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>,
+				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 3 for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>,
+				<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],DeveloperObject->True,Name->"50ml container 4 for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>,
+				<|Type->Object[Container,Cuvette],Model->Link[Model[Container,Cuvette,"Micro Scale Black Walled UV Quartz Cuvette"],Objects],DeveloperObject->True,Name->"Micro sized Cuvette for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>,
+				<|Type->Object[Container,Cuvette],Model->Link[Model[Container,Cuvette,"Semi-Micro Scale Black Walled UV Quartz Cuvette"],Objects],DeveloperObject->True,Name->"Medium sized Cuvette for UVMeltingPreview testing"<>$SessionUUID, Status->Available,Site->Link[$Site]|>
 			}];
 
 			(* Create some samples in those containers *)
 			(* Create test DNA and PNA Models *)
-			UploadOligomer["Test DNA for UVMeltingPreview testing", Molecule -> Strand[DNA["AATTGTTCGGACACT"]],
-				PolymerType -> DNA];
+			UploadOligomer["Test DNA for UVMeltingPreview testing"<>$SessionUUID,
+				Molecule -> Strand[DNA["AATTGTTCGGACACT"]],
+				PolymerType -> DNA
+			];
 
-			UploadOligomer["Test PNA for UVMeltingPreview testing",Molecule ->
-					Strand[Modification["Acetylated"], PNA["ACTATCGGATCA", "H'"],
-						Modification["3'-6-azido-L-norleucine"]],
-				Enthalpy ->
-						Quantity[-111.3`, ("KilocaloriesThermochemical")/(
-							"Moles")], Entropy ->
-					Quantity[-319.3340126733501`, ("CaloriesThermochemical")/(
-						"Kelvins" "Moles")], FreeEnergy ->
-					Quantity[-12.258555969360472`, ("KilocaloriesThermochemical")/(
-						"Moles")],
-				PolymerType -> PNA];
+			UploadOligomer["Test PNA for UVMeltingPreview testing"<>$SessionUUID,
+				Molecule -> Strand[Modification["Acetylated"], PNA["ACTATCGGATCA", "H'"],Modification["3'-6-azido-L-norleucine"]],
+				Enthalpy -> Quantity[-111.3`, ("KilocaloriesThermochemical")/("Moles")],
+				Entropy -> Quantity[-319.3340126733501`, ("CaloriesThermochemical")/("Kelvins" "Moles")],
+				FreeEnergy -> Quantity[-12.258555969360472`, ("KilocaloriesThermochemical")/("Moles")],
+				PolymerType -> PNA
+			];
 
-			UploadSampleModel["Test DNA oligomer for UVMeltingPreview testing",
-				Composition -> {{100 MassPercent,
-					Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"]}},
+			UploadSampleModel["Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
+				Composition -> {{100 MassPercent,Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"<>$SessionUUID]}},
 				MSDSRequired -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
 				Acid -> False,
 				Base -> False,
 				Pyrophoric -> False,
-				NFPA -> {0, 0, 0, Null}, DOTHazardClass -> "Class 0",
+				NFPA -> {0, 0, 0, Null},
+				DOTHazardClass -> "Class 0",
 				IncompatibleMaterials -> {None},
-				Expires -> False, State -> Liquid, BiosafetyLevel -> "BSL-1"];
+				Expires -> False,
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1"
+			];
 
-			UploadSampleModel["Test PNA oligomer for UVMeltingPreview testing",
-				Composition -> {{100 MassPercent,
-					Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"]}},
+			UploadSampleModel["Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
+				Composition -> {{100 MassPercent,Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"<>$SessionUUID]}},
 				MSDSRequired -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2525,13 +2569,13 @@ DefineTests[ExperimentUVMeltingPreview,
 			}=ECL`InternalUpload`UploadSample[
 				{
 				(* normal samples in falcon tubes *)
-					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"],
-					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"],
-					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"],
-					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"],
+					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
 				(* samples in cuvettes *)
-					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"],
-					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"]
+					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample,"Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID]
 				},
 				{
 					{"A1", emptyContainer1},
@@ -2551,12 +2595,12 @@ DefineTests[ExperimentUVMeltingPreview,
 				}
 			];
 			Upload[{
-				<|Object->availablePNA1,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 1 for UVMeltingPreview testing"|>,
-				<|Object->availablePNA2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 2 for UVMeltingPreview testing"|>,
-				<|Object->availableDNA1,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"DNA sample 1 for UVMeltingPreview testing"|>,
-				<|Object->availableDNA2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"DNA sample 2 for UVMeltingPreview testing"|>,
-				<|Object->sampleInMicroCuvette,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Sample in Micro cuvette for UVMeltingPreview testing"|>,
-				<|Object->sampleInMediumCuvette,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Sample in Semi-Micro cuvette for UVMeltingPreview testing"|>
+				<|Object->availablePNA1,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 1 for UVMeltingPreview testing"<>$SessionUUID|>,
+				<|Object->availablePNA2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"PNA sample 2 for UVMeltingPreview testing"<>$SessionUUID|>,
+				<|Object->availableDNA1,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"DNA sample 1 for UVMeltingPreview testing"<>$SessionUUID|>,
+				<|Object->availableDNA2,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"DNA sample 2 for UVMeltingPreview testing"<>$SessionUUID|>,
+				<|Object->sampleInMicroCuvette,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Sample in Micro cuvette for UVMeltingPreview testing"<>$SessionUUID|>,
+				<|Object->sampleInMediumCuvette,DeveloperObject->True,Concentration->1000 Micro Molar,Status->Available,Name->"Sample in Semi-Micro cuvette for UVMeltingPreview testing"<>$SessionUUID|>
 			}]
 		]
 	),
@@ -2567,26 +2611,26 @@ DefineTests[ExperimentUVMeltingPreview,
 			objs = Quiet[Cases[
 				Flatten[{
 				(* containers *)
-					Object[Container,Vessel,"50ml container 1 for UVMeltingPreview testing"],
-					Object[Container,Vessel,"50ml container 2 for UVMeltingPreview testing"],
-					Object[Container,Vessel,"50ml container 3 for UVMeltingPreview testing"],
-					Object[Container,Vessel,"50ml container 4 for UVMeltingPreview testing"],
-					Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"],
-					Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"],
+					Object[Container,Vessel,"50ml container 1 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Container,Vessel,"50ml container 2 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Container,Vessel,"50ml container 3 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Container,Vessel,"50ml container 4 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Container,Cuvette,"Micro sized Cuvette for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Container,Cuvette,"Medium sized Cuvette for UVMeltingPreview testing"<>$SessionUUID],
 
 				(* models *)
-					Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"],
-					Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"],
-					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"],
-					Model[Sample, "Test PNA oligomer for UVMeltingPreview testing"],
+					Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample, "Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
+					Model[Sample, "Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID],
 
 				(* samples *)
-					Object[Sample,"PNA sample 1 for UVMeltingPreview testing"],
-					Object[Sample,"PNA sample 2 for UVMeltingPreview testing"],
-					Object[Sample,"DNA sample 1 for UVMeltingPreview testing"],
-					Object[Sample,"DNA sample 2 for UVMeltingPreview testing"],
-					Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"],
-					Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"]
+					Object[Sample,"PNA sample 1 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Sample,"PNA sample 2 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Sample,"DNA sample 1 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Sample,"DNA sample 2 for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Sample,"Sample in Micro cuvette for UVMeltingPreview testing"<>$SessionUUID],
+					Object[Sample,"Sample in Semi-Micro cuvette for UVMeltingPreview testing"<>$SessionUUID]
 				}],
 				ObjectP[]
 			]];
@@ -2757,12 +2801,33 @@ DefineTests[ValidExperimentUVMeltingQ,
 				ContainerOut->{{1,Model[Container,Plate,"48-well Pyramid Bottom Deep Well Plate"]},{1,Model[Container,Vessel,"id:3em6Zv9NjjN8"]}}
 			],
 			False
+		],
+		Test["If giving a string as the input, this function still works properly:",
+			ValidExperimentUVMeltingQ["My NestedIndexMatching Sample",
+				PreparatoryUnitOperations-> {
+					LabelContainer[
+						Label->"My NestedIndexMatching Sample",
+						Container->Model[Container,Vessel,"2mL Tube"]
+					],
+					Transfer[
+						Source->Model[Sample,"Isopropanol"],
+						Amount->500*Microliter,
+						Destination->"My NestedIndexMatching Sample"
+					],
+					Transfer[
+						Source->Model[Sample,"Milli-Q water"],
+						Amount->30*Microliter,
+						Destination->"My NestedIndexMatching Sample"
+					]
+				}
+			],
+			True
 		]
-
 	},
 	Stubs:>{
 		$EmailEnabled=False
 	},
+	HardwareConfiguration -> HighRAM,
 	SymbolSetUp :> (
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
@@ -2993,7 +3058,7 @@ DefineTests[ValidExperimentUVMeltingQ,
 
 					1 Milliliter,
 					1 Milliliter,
-					0.1 Milliliter,
+					0.01 Milliliter, (*  *)
 					0.8 Milliliter,(* incompatible volume - to large to fit into micro and to small to fit into medium *)
 					1 Milliliter
 
@@ -3054,10 +3119,10 @@ DefineTests[ValidExperimentUVMeltingQ,
 					Model[Sample, "Test PNA oligomer for ValidExperimentUVMeltingQ testing"],
 
 					(* samples *)
-					Object[Sample"PNA sample 1 for ValidExperimentUVMeltingQ testing"],
-					Object[Sample"PNA sample 2 for ValidExperimentUVMeltingQ testing"],
+					Object[Sample,"PNA sample 1 for ValidExperimentUVMeltingQ testing"],
+					Object[Sample,"PNA sample 2 for ValidExperimentUVMeltingQ testing"],
 					Object[Sample,"DNA sample 1 for ValidExperimentUVMeltingQ testing"],
-					Object[Sample"DNA sample 2 for ValidExperimentUVMeltingQ testing"],
+					Object[Sample,"DNA sample 2 for ValidExperimentUVMeltingQ testing"],
 					Object[Sample,"Protein sample 1 for ValidExperimentUVMeltingQ testing"],
 					Object[Sample,"Protein sample 2 for ValidExperimentUVMeltingQ testing"],
 					Object[Sample,"Water sample 1 for ValidExperimentUVMeltingQ testing"],

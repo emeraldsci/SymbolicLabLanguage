@@ -35,7 +35,8 @@ DefineUsage[AnalyzeAbsorbanceQuantification,
 	},
 	MoreInformation -> {
 		"Concentrations are calculated for each sample in the protocol.",
-		"This function analyzes only the last absorbance spectroscopy data from each well in the quantification protocol.  If iteration occurred during the protocol, only the data from the final iteration will be analyzed."
+		"This function analyzes only the last absorbance spectroscopy data from each well in the quantification protocol. If iteration occurred during the protocol, only the data from the final iteration will be analyzed.",
+		"This function utilizes the function \"Absorbance\" to determine the absorbance value at the specified quantification wavelength. If the requested wavelength is not directly available in the absorbance spectrum of the provided data, interpolation is performed to estimate the absorbance at that wavelength."
 	},
 
 	SeeAlso -> {
@@ -43,7 +44,7 @@ DefineUsage[AnalyzeAbsorbanceQuantification,
 		"AnalyzeTotalProteinQuantification",
 		"Concentration"
 	},
-	Author -> {"Yahya.Benslimane", "pnafisi", "steven", "david.hattery", "qian", "alice", "brad", "srikant", "catherine"},
+	Author -> {"melanie.reschke", "Yahya.Benslimane", "pnafisi", "steven", "david.hattery", "qian", "alice", "brad", "srikant", "catherine"},
 	Guides -> {
 		"AnalysisCategories",
 		"ExperimentAnalysis"

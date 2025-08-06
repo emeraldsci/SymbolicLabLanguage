@@ -64,10 +64,7 @@ DefineUsage[PlotFit,
 		"AnalyzeQuantificationCycle",
 		"PlotPrediction"
 	},
-	Author->{
-		"kevin.hou",
-		"brad"
-	},
+	Author->{"dirk.schild", "kevin.hou", "brad"},
 	Preview->True
 }];
 

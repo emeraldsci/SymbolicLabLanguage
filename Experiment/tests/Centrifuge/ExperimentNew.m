@@ -18,48 +18,6 @@
 DefineTests[
 	ExperimentCentrifuge,
 	{
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples for ExperimentCentrifuge:"},
-			Download[ExperimentCentrifuge["Container 1",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "Container 1",
-						Container -> Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Isopropanol"],
-						Amount -> 30 * Microliter,
-						Destination -> {"Container 1", "A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 30 * Microliter,
-						Destination -> {"Container 1", "A2"}
-					]
-				}
-			], PreparatoryPrimitives],
-			{
-				Define[
-					Association[
-						Name -> "Container 1",
-						Container -> ObjectReferenceP[Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"]]
-					]
-				],
-				Transfer[
-					Association[
-						Source -> ObjectReferenceP[Model[Sample, "Isopropanol"]],
-						Amount -> Quantity[30, "Microliters"],
-						Destination -> {"Container 1", "A1"}
-					]
-				],
-				Transfer[
-					Association[
-						Source -> ObjectReferenceP[Model[Sample, "Milli-Q water"]],
-						Amount -> Quantity[30, "Microliters"],
-						Destination -> {"Container 1", "A2"}
-					]
-				]
-			}
-		],
 		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples for ExperimentCentrifuge:"},
 			Download[ExperimentCentrifuge["Container 1",
 				PreparatoryUnitOperations -> {
@@ -82,6 +40,47 @@ DefineTests[
 			{
 				SamplePreparationP..
 			}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCentrifuge[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (robotic):"},
+			protocol = ExperimentCentrifuge[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Robotic
+			];
+			Download[protocol, OutputUnitOperations[[1]][{SampleLink, ContainerLink, AmountVariableUnit, Well, ContainerLabel}]],
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		(* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESNT BUG ON THIS. *)
 		Example[{Additional, "Use the sample preparation options to prepare samples before the main experiment:"},
@@ -532,7 +531,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options},
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
@@ -628,7 +627,6 @@ DefineTests[
 				],
 				CalculatedUnitOperations[Instrument]],
 			{{LinkP[Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"]] ..}, {Null}},
-			Messages :> {Warning::CentrifugePrecision},
 			Stubs :> {
 			}
 		],
@@ -642,7 +640,6 @@ DefineTests[
 				],
 				CalculatedUnitOperations[Instrument]],
 			{{LinkP[Model[Instrument, Centrifuge, "HiG4"]] ..}, {Null}},
-			Messages :> {Warning::CentrifugePrecision},
 			Stubs :> {$DeveloperSearch = False}
 		],
 		Example[{Options, WorkCell, "Specify the STAR WorkCell to use:"},
@@ -867,7 +864,80 @@ DefineTests[
 			Messages :> {Error::NoCompatibleCentrifuge, Error::InvalidOption},
 			Stubs :> {$DeveloperSearch = False}
 		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCentrifuge[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCentrifuge[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCentrifuge[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCentrifuge[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentCentrifuge[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCentrifuge[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "EmptyContainer", "If an empty container is given as input, return $Failed:"},
 			ExperimentCentrifuge[Object[Container, Vessel, "Empty container for ExperimentCentrifuge testing" <> $SessionUUID]],
 			$Failed,
@@ -1822,7 +1892,7 @@ DefineTests[
 				{centrifugeMatch, sampleMatch, bucketMatch, balanceMatch, rackMatch}
 			],
 			{True, True, True, True, True},
-			(* This test is pretty slow locally, but holy hell *)
+			(* This test is pretty slow locally, but oh my *)
 			TimeConstraint -> 50000
 		],
 		Test["Resources are made correctly when samples are duplicated:",
@@ -2037,6 +2107,13 @@ DefineTests[
 				Status],
 			Processing | ShippingMaterials | Backlogged
 		],
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentCentrifuge[Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options, SamplesInStorageCondition, "Indicates how the input samples of the experiment should be stored:"},
 			Lookup[
 				ExperimentCentrifuge[Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID],
@@ -2050,7 +2127,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, IncubateAliquotDestinationWell, "Indicates how the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
@@ -2389,7 +2466,7 @@ DefineTests[
 					MinRotationRate -> Quantity[0.`, ("Revolutions") / ("Minutes")],
 					MinTemperature -> Quantity[4.`, "DegreesCelsius"],
 					Name -> "Test model centrifuge for ExperimentCentrifuge (1)" <> $SessionUUID,
-					Replace[SampleHandlingCategories] -> {Standard},
+					AsepticHandling -> False,
 					SpeedResolution -> Quantity[10, ("Revolutions") / ("Minutes")],
 					Type -> Model[Instrument, Centrifuge],
 					Replace[Positions] -> {
@@ -2406,7 +2483,7 @@ DefineTests[
 					MinRotationRate -> Quantity[0.`, ("Revolutions") / ("Minutes")],
 					MinTemperature -> Quantity[25.`, "DegreesCelsius"],
 					Name -> "Test model centrifuge for ExperimentCentrifuge (2)" <> $SessionUUID,
-					Replace[SampleHandlingCategories] -> {Standard},
+					AsepticHandling -> False,
 					SpeedResolution -> Quantity[100, ("Revolutions") / ("Minutes")],
 					Type -> Model[Instrument, Centrifuge],
 					Replace[Positions] -> {<|Name -> "Rotor Slot", Footprint -> Microfuge16Rotor, MaxWidth -> Quantity[0.14`, "Meters"], MaxDepth -> Quantity[0.14`, "Meters"], MaxHeight -> Null|>}
@@ -2421,7 +2498,7 @@ DefineTests[
 					MinRotationRate -> Quantity[0.`, ("Revolutions") / ("Minutes")],
 					MinTemperature -> Quantity[4.`, "DegreesCelsius"],
 					Name -> "Test model centrifuge for ExperimentCentrifuge (1, sterile)" <> $SessionUUID,
-					Replace[SampleHandlingCategories] -> {Sterile},
+					AsepticHandling -> True,
 					SpeedResolution -> Quantity[10, ("Revolutions") / ("Minutes")],
 					Type -> Model[Instrument, Centrifuge],
 					Replace[Positions] -> {
@@ -2438,7 +2515,7 @@ DefineTests[
 					MinRotationRate -> Quantity[0.`, ("Revolutions") / ("Minutes")],
 					MinTemperature -> Quantity[25.`, "DegreesCelsius"],
 					Name -> "Test model centrifuge for ExperimentCentrifuge (2, sterile)" <> $SessionUUID,
-					Replace[SampleHandlingCategories] -> {Sterile},
+					AsepticHandling -> True,
 					SpeedResolution -> Quantity[100, ("Revolutions") / ("Minutes")],
 					Type -> Model[Instrument, Centrifuge],
 					Replace[Positions] -> {<|Name -> "Rotor Slot", Footprint -> Microfuge16Rotor, MaxWidth -> Quantity[0.14`, "Meters"], MaxDepth -> Quantity[0.14`, "Meters"], MaxHeight -> Null|>}
@@ -3483,7 +3560,7 @@ DefineTests[
 						Site -> Link[$Site],
 						Name -> "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (" <> ToString[#2] <> ")" <> $SessionUUID,
 						Volume -> 10 Milliliter,
-						Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}, {0.137 Millimolar, Link[Model[Molecule, "Sodium Chloride"]]}}
+						Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}, {0.137 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
 					|>&,
 					{
 						{sample77, sample78, sample79, sample80, sample81, sample82, sample83, sample84, sample85, sample86},
@@ -3516,7 +3593,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "1 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID,
 					Volume -> 1Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> container67,
@@ -3537,7 +3614,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "50 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID,
 					Volume -> 50Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> container68,
@@ -3575,7 +3652,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "20 mL sample in 50 mL filter tube for ExperimentCentrifuge testing" <> $SessionUUID,
 					Volume -> 20Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> container69,
@@ -3596,7 +3673,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "0.2 mL sample in 96 well filter plate for ExperimentCentrifuge testing 1" <> $SessionUUID,
 					Volume -> 20Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> sample91,
@@ -3606,7 +3683,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "0.2 mL sample in 96 well filter plate for ExperimentCentrifuge testing 2" <> $SessionUUID,
 					Volume -> 20Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> plateFilter70,
@@ -3628,7 +3705,7 @@ DefineTests[
 					Site -> Link[$Site],
 					Name -> "1 mL sample in 96 well deep well plate for ExperimentCentrifuge testing" <> $SessionUUID,
 					Volume -> 1Milliliter,
-					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]]}}
+					Replace[Composition] -> {{10 Millimolar, Link[Model[Molecule, "Water"]], Now}}
 				|>,
 				<|
 					Object -> plate71,
@@ -3835,7 +3912,10 @@ DefineTests[
 			],
 			{GreaterEqualP[40 Celsius]..}
 		],
-
+		Example[{Additional, "If the given container is made of Quartz, return an empty list:"},
+			CentrifugeDevices[Model[Container, ReactionVessel, Microwave, "SP-D 80 Reaction Vessel"]],
+			{}
+		],
 		Example[{Additional, "If no centrifuges can be found to centrifuge the given container model, returns an empty list:"},
 			CentrifugeDevices[Model[Container, Vessel, VolumetricFlask, "Volumetric flask, 500 ml"]],
 			{}
@@ -4238,7 +4318,7 @@ DefineTests[ExperimentCentrifugePreview,
 			}, Preparation -> Robotic
 			],
 			Null,
-			Messages :> {Error::NoCompatibleCentrifuge, Error::CentrifugeContainerNullTareWeight, Error::InvalidInput, Error::InvalidOption}
+			Messages :> {Error::NoCompatibleCentrifuge, Error::InvalidOption}
 		]
 	},
 
@@ -4493,5 +4573,158 @@ DefineTests[ValidExperimentCentrifugeQ,
 		On[Warning::InstrumentUndergoingMaintenance];
 		EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True, Verbose -> False];
 		Unset[$CreatedObjects];
+	}
+];
+
+
+
+(* ::Subsubsection:: *)
+(*Centrifuge*)
+
+
+DefineTests[Centrifuge,
+	{
+		Example[
+			{Basic, "Perform a basic centrifuge"},
+			Experiment[{
+				Centrifuge[
+					Sample -> {
+						Object[Sample, "Centrifuge test sample 1"<>$SessionUUID],
+						Object[Container, Plate, "Centrifuge test sample 2 (container)"<>$SessionUUID]
+					}
+				]
+			}],
+			ObjectP[Object[Protocol]]
+		],
+		Example[
+			{Basic, "If an input is invalid, returns $Failed 1:"},
+			Experiment[{
+				Centrifuge[
+					Sample -> {
+						Object[Sample, "Centrifuge test sample 1"<>$SessionUUID],
+						Object[Container, Vessel, "Empty container for Centrifuge testing"<>$SessionUUID]
+					}
+				]
+			}],
+			$Failed,
+			Messages :> {Error::EmptyContainers, Error::InvalidInput}
+		],
+		Example[
+			{Basic, "If an input is invalid, returns $Failed 2:"},
+			ExperimentRoboticSamplePreparation[{
+				Centrifuge[
+					Sample -> {
+						Object[Sample, "Centrifuge test sample 1"<>$SessionUUID],
+						Object[Container, Plate, "Centrifuge test sample 2 (container)"<>$SessionUUID]
+					}
+				]
+			}],
+			$Failed,
+			Messages :> {Error::NoCompatibleCentrifuge, Error::InvalidInput}
+		]
+	},
+
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+		Module[
+			{allObjs, existingObjs},
+
+			allObjs = {
+				Model[Sample, "Model sample for Centrifuge testing" <> $SessionUUID],
+				Object[Container, Vessel, Name -> "Empty container for Centrifuge testing" <> $SessionUUID],
+				Object[Sample, Name -> "Centrifuge test sample 1" <> $SessionUUID],
+				Object[Container, Vessel, Name -> "Centrifuge test sample 1 (container)" <> $SessionUUID],
+				Object[Sample, "Centrifuge test sample 2-1" <> $SessionUUID],
+				Object[Sample, "Centrifuge test sample 2-2" <> $SessionUUID],
+				Object[Sample, "Centrifuge test sample 2-3" <> $SessionUUID],
+				Object[Container, Plate, "Centrifuge test sample 2 (container)" <> $SessionUUID]
+			};
+
+			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		{
+			EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True, Verbose -> False];
+			$CreatedObjects = {};
+
+			(* Model to use for samples *)
+			Upload[<|
+				DeveloperObject -> True,
+				Type -> Model[Sample],
+				Name -> "Model sample for Centrifuge testing" <> $SessionUUID
+			|>];
+
+			(*Empty Container *)
+			Upload[<|
+				DeveloperObject -> True,
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
+				Site -> Link[$Site],
+				Name -> "Empty container for Centrifuge testing" <> $SessionUUID
+			|>];
+
+			Module[{sample, container},
+				sample = Upload[<|
+					DeveloperObject -> True,
+					Type -> Object[Sample],
+					Model -> Link[Model[Sample, "Model sample for Centrifuge testing" <> $SessionUUID], Objects],
+					Site -> Link[$Site],
+					Name -> "Centrifuge test sample 1" <> $SessionUUID,
+					Volume -> 1Milliliter
+				|>];
+
+				container = Upload[<|
+					DeveloperObject -> True,
+					Type -> Object[Container, Vessel],
+					Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects],
+					Site -> Link[$Site],
+					Name -> "Centrifuge test sample 1 (container)" <> $SessionUUID,
+					Replace[Contents] -> {
+						{"A1", Link[sample, Container]}
+					}
+				|>]
+			];
+
+			Module[{samples, container, wells, samplesAndWells},
+				samples = Upload[
+					Map[
+						<|
+							DeveloperObject -> True,
+							Type -> Object[Sample],
+							Model -> Link[Model[Sample, "Model sample for Centrifuge testing" <> $SessionUUID], Objects],
+							Site -> Link[$Site],
+							Name -> "Centrifuge test sample 2-" <> ToString[#] <> $SessionUUID,
+							Volume -> 1Milliliter
+						|>&, Range[3]]
+				];
+
+				wells = Take[Flatten[AllWells[Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"]]], 3];
+
+				samplesAndWells = Transpose[{wells, Link[samples, Container]}];
+
+				container = Upload[<|
+					DeveloperObject -> True,
+					Type -> Object[Container, Plate],
+					Model -> Link[Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"], Objects],
+					Site -> Link[$Site],
+					Name -> "Centrifuge test sample 2 (container)" <> $SessionUUID,
+					Replace[Contents] -> samplesAndWells,
+					TareWeight -> 0.01Gram
+				|>]
+			];
+		}
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		{
+			EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True, Verbose -> False];
+			Unset[$CreatedObjects]
+		}
+	),
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"],
+		$EmailEnabled = False
 	}
 ];

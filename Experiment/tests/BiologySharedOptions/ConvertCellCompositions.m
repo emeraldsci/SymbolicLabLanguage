@@ -13,9 +13,9 @@ DefineTests[convertCellCompositions,
         Download[Object[Sample,
           "Test Sample 0 with Cell 0 in OD600 and Cell 1 in CFU/mL for convertCellCompositions" <> $SessionUUID]]}],
       {KeyValuePattern[
-        Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[]},
-          {RangeP[Quantity[59.9, IndependentUnit["Cfus"] / ("Milliliters")], Quantity[60.1, IndependentUnit["Cfus"] / ("Milliliters")]], ObjectP[]},
-          {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[]}}
+        Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[], _},
+          {RangeP[Quantity[59.9, IndependentUnit["Cfus"] / ("Milliliters")], Quantity[60.1, IndependentUnit["Cfus"] / ("Milliliters")]], ObjectP[], _},
+          {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[], _}}
       ]}
     ],
 
@@ -30,13 +30,13 @@ DefineTests[convertCellCompositions,
       }],
       {
         KeyValuePattern[
-          Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[]},
-            {RangeP[Quantity[59.9, IndependentUnit["Cfus"] / ("Milliliters")], Quantity[60.1, IndependentUnit["Cfus"] / ("Milliliters")]], ObjectP[]},
-            {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[]}}],
+          Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[], _},
+            {RangeP[Quantity[59.9, IndependentUnit["Cfus"] / ("Milliliters")], Quantity[60.1, IndependentUnit["Cfus"] / ("Milliliters")]], ObjectP[], _},
+            {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[], _}}],
         KeyValuePattern[
-          Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[]},
-            {RangeP[Quantity[29.9, IndependentUnit["Cells"] / ("Milliliters")], Quantity[30.1, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[]},
-            {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[]}}]}
+          Composition -> {{RangeP[4.4 Gram / Liter, 4.6 Gram / Liter], ObjectP[], _},
+            {RangeP[Quantity[29.9, IndependentUnit["Cells"] / ("Milliliters")], Quantity[30.1, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[], _},
+            {RangeP[Quantity[49.9`, IndependentUnit["Cells"] / ("Milliliters")], Quantity[50.1`, IndependentUnit["Cells"] / ("Milliliters")]], ObjectP[], _}}]}
     ]
 
 

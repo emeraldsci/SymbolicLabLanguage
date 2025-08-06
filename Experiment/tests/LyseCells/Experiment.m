@@ -71,7 +71,7 @@ DefineTests[ExperimentLyseCells,
       {
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
-          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}}
+          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}}
         }]
       }
     ],
@@ -90,7 +90,7 @@ DefineTests[ExperimentLyseCells,
       {
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
-          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}}
+          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}}
         }]
       }
     ],
@@ -109,7 +109,7 @@ DefineTests[ExperimentLyseCells,
       {
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
-          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate]}}
+          AliquotContainer -> {{1, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}, {2, PreferredContainer[1.0 Milliliter, LiquidHandlerCompatible->True, Type -> Plate, Sterile -> True]}}
         }]
       }
     ],
@@ -1134,7 +1134,7 @@ DefineTests[ExperimentLyseCells,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
           AliquotAmount -> GreaterP[0 Microliter],
-          AliquotContainer -> (ObjectP[Model[Container]] | {_Integer, ObjectP[Model[Container]]})
+          AliquotContainer -> (ObjectP[Model[Container]] | {{_Integer, ObjectP[Model[Container]]}})
         }]
       }
     ],
@@ -1151,7 +1151,7 @@ DefineTests[ExperimentLyseCells,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
           AliquotAmount -> GreaterP[0 Microliter],
-          AliquotContainer -> (ObjectP[Model[Container]] | {_Integer, ObjectP[Model[Container]]})
+          AliquotContainer -> (ObjectP[Model[Container]] | {{_Integer, ObjectP[Model[Container]]}})
         }]
       }
     ],
@@ -1201,7 +1201,7 @@ DefineTests[ExperimentLyseCells,
       {
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
-          AliquotContainer -> ObjectP[Model[Container, Vessel, "2mL Tube"]]
+          AliquotContainer -> {ObjectP[Model[Container, Vessel, "2mL Tube"]]}
         }]
       }
     ],
@@ -1217,7 +1217,7 @@ DefineTests[ExperimentLyseCells,
       {
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[{
-          AliquotContainer -> Null
+          AliquotContainer -> {Null}
         }]
       }
     ],
@@ -1956,7 +1956,88 @@ DefineTests[ExperimentLyseCells,
         }]
       }
     ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentLyseCells[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentLyseCells[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentLyseCells[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentLyseCells[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"2mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.5 Milliliter,
+          CellType -> Mammalian,
+          CultureAdhesion -> Adherent,
+          Living -> True,
+          State -> Liquid
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+        ExperimentLyseCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.5 Milliliter,
+          CellType -> Mammalian,
+          CultureAdhesion -> Adherent,
+          Living -> True,
+          State -> Liquid
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentLyseCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
     Example[{Messages, "UnsupportedCellType", "If any input sample has a CellType other than those currently supported (Mammalian, Bacterial, and Yeast), an error is thrown:"},
       ExperimentLyseCells[
         {
@@ -3712,7 +3793,7 @@ DefineTests[ExperimentLyseCells,
     ]
 
   },
-  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct},
+  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct, Warning::ConflictingSourceAndDestinationAsepticHandling},
   SetUp :> (
     $CreatedObjects = {}
   ),

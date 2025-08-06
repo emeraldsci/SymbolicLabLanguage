@@ -187,7 +187,7 @@ BMGCompatiblePlatesP[Fluorescence] := Alternatives@@BMGCompatiblePlates[Fluoresc
 (*ExperimentFluorescenceIntensity*)
 
 
-ExperimentFluorescenceIntensity[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentFluorescenceIntensity[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
 		samples,sampleOptions,containerToSampleTests,validSamplePreparationResult,mySamplesWithPreparedSamples,containerToSampleSimulation,
 		myOptionsWithPreparedSamples,samplePreparationSimulation},
@@ -199,8 +199,8 @@ ExperimentFluorescenceIntensity[myContainers:ListableP[ObjectP[{Object[Container
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Remove temporal links and throw warnings *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+	(* convert input to list *)
+	{listedContainers,listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -211,7 +211,7 @@ ExperimentFluorescenceIntensity[myContainers:ListableP[ObjectP[{Object[Container
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -272,7 +272,7 @@ ExperimentFluorescenceIntensity[myContainers:ListableP[ObjectP[{Object[Container
 
 ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],myOptions:OptionsPattern[]]:=Module[{
 	listedSamples,listedOptions,outputSpecification,output,gatherTestsQ,messagesBoolean,safeOptions,safeOptionTests,
-	upload, confirm, fastTrack, parentProt, estimatedRunTime,
+	upload, confirm, canaryBranch, fastTrack, parentProt, estimatedRunTime,
 	mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, safeOptionsNamed,
 	validLengthsQ,validLengthTests,templateOptions,templateOptionsTests,inheritedOptions,expandedSafeOps,
 	downloadedPackets,sampleObjects,cache,newCache,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,
@@ -301,7 +301,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -320,7 +320,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 	];
 
 	(* Sanitize Inputs *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed,Simulation->samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions,$Failed],
@@ -351,7 +351,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options - no need to specify the definition number since we only have samples defined as input *)
 	{templateOptions, templateOptionsTests} = If[gatherTestsQ,
@@ -426,7 +426,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
 	returnEarlyQ = Which[
 		MatchQ[resolveOptionsResult, $Failed], True,
-		gatherTests, Not[RunUnitTest[<|"Tests" -> resolutionTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
+		gatherTestsQ, Not[RunUnitTest[<|"Tests" -> resolutionTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
 		True, False
 	];
 
@@ -506,11 +506,25 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 
 		(* If we're doing Preparation->Robotic and Upload->True, call RCP or RSP with our primitive. *)
 		MatchQ[Lookup[resolvedOptions,Preparation],Robotic],
-		Module[{primitive, nonHiddenOptions,experimentFunction},
+		Module[{primitive, nonHiddenOptions,experimentFunction, samplesMaybeWithModels},
+
+			(* convert the samples to models if we had model inputs originally *)
+			(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+			(* NOTE: this is important. Need to use samplePreparationSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+			(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+			samplesMaybeWithModels = If[NullQ[samplePreparationSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+				mySamples,
+				simulatedSamplesToModels[
+					Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					samplePreparationSimulation,
+					mySamples
+				]
+			];
+
 			(* Create our primitive to feed into RoboticSamplePreparation. *)
 			primitive=FluorescenceIntensity@@Join[
 				{
-					Sample->mySamples
+					Sample->samplesMaybeWithModels
 				},
 				RemoveHiddenPrimitiveOptions[FluorescenceIntensity,ToList[myOptions]]
 			];
@@ -545,6 +559,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -561,6 +576,7 @@ ExperimentFluorescenceIntensity[mySamples:ListableP[ObjectP[{Object[Sample]}]],m
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -607,10 +623,10 @@ resolvePlateReaderOptions[
 	myExperimentOptions:{_Rule...},
 	myResolverOptions:OptionsPattern[resolvePlateReaderOptions]
 ]:=Module[{
-	experimentFunction,measurementType,experimentType,outputSpecification,output,gatherTestsQ,messagesBoolean,cache,simulation,updatedSimulation,
+	experimentFunction,measurementType,experimentType,outputSpecification,output,gatherTestsQ,messagesBoolean,cache,simulation,updatedSimulation,notInEngineQ,
 	samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,experimentOptionsAssociation,
 	injectionObjects,uniqueInjectionSamples,supportedPlateModels,defaultAliquotContainer,allPlateReaderModels,suppliedPlateReader,potentialPolarizationPlateReader,plateReaderToDownload,requestedProtocolName,
-	plateReaderModelFields,plateReaderModelPacketSpec,suppliedPlateReaderPacketSpec,possibleAliquotContainers,preparationResult,allowedPreparation,preparationTest,resolvedWorkCell,resolvedPreparation,
+	plateReaderModelFields,plateReaderModelPacketSpec,suppliedPlateReaderPacketSpec,possibleAliquotContainers,allDownloads, cacheBall, fastCacheBall, preparationResult,allowedPreparation,preparationTest,resolvedWorkCell,resolvedPreparation,
 	sampleTuples,listedInjectionSamplePackets,plateReaderDownload,plateReaderPacketLists,nameDownload,aliquotDownload,plateReaderModelPacket,plateReaderModelObject,samplePackets,
 	sampleContainerPackets,sampleContainerModelPackets,injectionSamplePackets,allPlateReaderModelPackets,aliquotContainerModelPackets,
 	aliquotContainerModelPacket,optionPrecisions,filteredOptionPrecisions,
@@ -653,6 +669,7 @@ resolvePlateReaderOptions[
 	relevantGains,resolvedAdjustmentSample,resolvedAdjustmentSampleIndex,resolvedAdjustmentSpecification,suppliedPrimaryFlowRate,suppliedSecondaryFlowRate,suppliedTertiaryFlowRate,suppliedQuaternaryFlowRate,primaryInjectionsQ,secondaryInjectionQ,tertiaryInjectionQ,quaternaryInjectionQ,resolvedPrimaryFlowRate,resolvedSecondaryFlowRate,resolvedTertiaryFlowRate,resolvedQuaternaryFlowRate,
 	clarioStarMinFlowRate,invalidFlowRateQ,invalidFlowRateOption,invalidFlowRateTest,
 	suppliedMoatSize,suppliedMoatBuffer,suppliedMoatVolume,impliedMoat,resolvedMoatBuffer,resolvedMoatVolume,resolvedMoatSize,resolvedReadLocation,resolvedEquilibrationTime,
+	resolvedACUOptions, resolvedACUInvalidOptions, resolvedACUTests,
 	resolvedSamplingPattern,modeForSampling,resolvedSamplingDistance,resolvedSamplingDimension,resolvedExperimentOptions,optionsForSpectroscopyResolvers,resolvedSpectroscopyOptions,
 	suppliedAliquotVolumes,suppliedAssayVolumes,suppliedTargetConcentrations,suppliedAssayBuffers,suppliedAliquotContainers,uniqueContainers,containerModels,uniqueContainerWellColor,conflictWellColorAndReadLocation,aliquotRequired,impliedAliquotingBooleans,preresolvedAliquotOptions,
 	automaticAliquotingBooleans,aliquotWarningTest,aliquotConflictBooleans,resolvedAliquotBooleans,resolvedAliquotContainers,duplicateSampleError,plateWells,moatWells,suppliedDestinationWells,duplicateDestinationWells,duplicateDestinationWellOption,duplicateDestinationWellTest,invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,resolvedDestinationWells,transferredResolvedDestinationWells,
@@ -704,6 +721,9 @@ resolvePlateReaderOptions[
 	(* Determine if we should keep a running list of tests *)
 	gatherTestsQ=MemberQ[output,Tests];
 	messagesBoolean=!gatherTestsQ;
+
+	(* Don't throw warnings in Engine. *)
+	notInEngineQ = !MatchQ[$ECLApplication, Engine];
 
 	(* The pre-downloaded packets *)
 	cache=OptionValue[Cache];
@@ -775,7 +795,7 @@ resolvePlateReaderOptions[
 
 	(* Download required information from the sample and option values if necessary *)
 	(* Quiet Download errors thrown if any injections were sent as models and don't have containers *)
-	{sampleTuples,listedInjectionSamplePackets,plateReaderDownload,plateReaderPacketLists,nameDownload,aliquotDownload}=Quiet[
+	{sampleTuples,listedInjectionSamplePackets,plateReaderDownload,plateReaderPacketLists,nameDownload,aliquotDownload}=allDownloads=Quiet[
 		Download[
 			{
 				simulatedSamples,
@@ -789,7 +809,8 @@ resolvePlateReaderOptions[
 				{
 					Packet[Container,Volume],
 					Packet[Container[{Contents,Model}]],
-					Packet[Container[Model][{MinVolume,MaxVolume,AspectRatio,NumberOfWells,WellColor,WellDiameter,RecommendedFillVolume, ContainerMaterials}]]
+					Packet[Container[Model][{MinVolume,MaxVolume,AspectRatio,NumberOfWells,WellColor,WellDiameter,RecommendedFillVolume, ContainerMaterials}]],
+					Packet[Composition[[All, 2]][{CellType}]]
 				},
 				{Packet[Container,Volume,State]},
 				suppliedPlateReaderPacketSpec,
@@ -803,6 +824,10 @@ resolvePlateReaderOptions[
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField,Download::ObjectDoesNotExist}
 	];
+
+	(* make fastCache *)
+	cacheBall = FlattenCachePackets[{cache, allDownloads}];
+	fastCacheBall = makeFastAssocFromCache[cacheBall];
 
 	(* Extract info from plate reader option download *)
 	{plateReaderModelPacket,plateReaderModelObject}=Which[
@@ -842,6 +867,9 @@ resolvePlateReaderOptions[
 		{ReadTime,1 Microsecond},
 		{Temperature,10^-1 Celsius},
 		{EquilibrationTime,1 Second},
+		{TargetOxygenLevel,10^-1 Percent},
+		{TargetCarbonDioxideLevel,10^-1 Percent},
+		{AtmosphereEquilibrationTime,1 Second},
 		{FocalHeight,10^-1 Millimeter},
 		{PrimaryInjectionVolume,1 Microliter},
 		{SecondaryInjectionVolume,1 Microliter},
@@ -1543,7 +1571,7 @@ resolvePlateReaderOptions[
 	];
 
 	(* Throw message *)
-	If[!wavelengthOrderingOk&&messagesBoolean,
+	If[!wavelengthOrderingOk&&messagesBoolean&&notInEngineQ,
 		Message[Warning::WavelengthsSwapped]
 	];
 
@@ -1575,10 +1603,11 @@ resolvePlateReaderOptions[
 	invalidWavelengthSelectionOption=If[wavelengthSelectionRequired||wavelengthSelectionUnused,WavelengthSelection];
 
 	(* - Determine how many multichromatics are supported - *)
-	numberOfMultichromaticsLookup=Association[
-		Model[Instrument,PlateReader,"id:01G6nvkKr3o7"]->5,
-		Model[Instrument,PlateReader,"id:mnk9jO3qDzpY"]->8,
-		Model[Instrument,PlateReader,"id:E8zoYvNkmwKw"]->5
+	numberOfMultichromaticsLookup = Association[
+		Model[Instrument, PlateReader, "id:01G6nvkKr3o7"] -> 5,
+		Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"] -> 8,
+		Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"] -> 5,
+		Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"] -> 5
 	];
 
 	(* Determine how many multichromatics our plate reader can read *)
@@ -1848,7 +1877,7 @@ resolvePlateReaderOptions[
 		Message[Error::InvalidAdjustmentSample,PickList[suppliedAdjustmentSample, validAdjustmentSample, False]]
 	];
 
-	If[(And@@validAdjustmentSample)&&ambiguousAdjustmentSample&&messagesBoolean,
+	If[(And@@validAdjustmentSample)&&ambiguousAdjustmentSample&&messagesBoolean&&notInEngineQ,
 		Message[Warning::AmbiguousAdjustmentSample]
 	];
 
@@ -1930,7 +1959,7 @@ resolvePlateReaderOptions[
 	];
 
 	(* Throw message *)
-	If[topReadIssue&&messagesBoolean,
+	If[topReadIssue&&messagesBoolean&&notInEngineQ,
 		Message[Warning::CoveredTopRead]
 	];
 
@@ -2025,6 +2054,7 @@ resolvePlateReaderOptions[
 					(* importantly, as of writing this comment, _none_ of the CMU liquid handlers have integrated omegas, so definitely don't want to default there *)
 					{
 						Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"], (* Model[Instrument, PlateReader, "CLARIOstar"] *)
+						Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
 						Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"], (* Model[Instrument, PlateReader, "FLUOstar Omega"] *)
 						Model[Instrument, PlateReader, "id:01G6nvkKr3o7"] (* Model[Instrument, PlateReader, "PHERAstar FS"] *)
 					},
@@ -2068,6 +2098,12 @@ resolvePlateReaderOptions[
 	(* Get modelPacket and modelObject too for any additional checks *)
 	{resolvedPlateReader,resolvedPlateReaderModelPacket,resolvedPlateReaderModelObject}=Which[
 		MatchQ[suppliedPlateReader,ObjectP[]],{suppliedPlateReader,plateReaderModelPacket,plateReaderModelObject},
+		(* if TargetCO2/TargetO2Level is specified, then we only have one option *)
+		Or[
+			MemberQ[Lookup[experimentOptionsAssociation, {TargetCarbonDioxideLevel, TargetOxygenLevel}], PercentP],
+			MatchQ[resolvedWorkCell,bioSTAR]
+		],
+		{Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"],  fetchPacketFromFastAssoc[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], fastCacheBall], Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]}, (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
 		!unresolvablePlateReader,{Lookup[First[possiblePlateReaderPackets],Object],First[possiblePlateReaderPackets],Lookup[First[possiblePlateReaderPackets],Object]},
 		True,{Lookup[defaultReaderModelPacket,Object],defaultReaderModelPacket,Lookup[defaultReaderModelPacket,Object]}
 	];
@@ -2478,12 +2514,12 @@ resolvePlateReaderOptions[
 	clarioStarMinFlowRate=100 Microliter/Second;
 
 	(* Flip a boolean if we are using a ClarioStar and any of the specified flow rates are less than the minimum flow rate *)
-	invalidFlowRateQ=And[
-		MatchQ[resolvedPlateReaderModelObject,Model[Instrument,PlateReader,"id:E8zoYvNkmwKw"]],
+	invalidFlowRateQ= And[
+		MatchQ[resolvedPlateReaderModelObject, ObjectP[{Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"], Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]}]],
 		MemberQ[
 			Map[
-				#<clarioStarMinFlowRate&,
-				{suppliedPrimaryFlowRate,suppliedSecondaryFlowRate,suppliedTertiaryFlowRate,suppliedQuaternaryFlowRate}
+				# < clarioStarMinFlowRate&,
+				{suppliedPrimaryFlowRate, suppliedSecondaryFlowRate, suppliedTertiaryFlowRate, suppliedQuaternaryFlowRate}
 			],
 			True
 		]
@@ -2534,6 +2570,37 @@ resolvePlateReaderOptions[
 		!MatchQ[Lookup[experimentOptionsAssociation,EquilibrationTime],Automatic],Lookup[experimentOptionsAssociation,EquilibrationTime],
 		!MatchQ[Lookup[experimentOptionsAssociation,Temperature],Ambient],5Minute,
 		True,0Second
+	];
+
+	(* Resolve TargetCarbonDioxideLevel *)
+	{{resolvedACUOptions, resolvedACUInvalidOptions}, resolvedACUTests} = If[gatherTestsQ,
+		resolveACUOptions[
+			type,
+			simulatedSamples,
+			Association[experimentOptionsAssociation,
+				{
+					Instrument -> resolvedPlateReader,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests}
+				}
+			]
+		],
+		{
+			resolveACUOptions[
+				type,
+				simulatedSamples,
+				Association[experimentOptionsAssociation,
+					{
+						Instrument -> resolvedPlateReader,
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation,
+						Output -> Result
+					}
+				]
+			],
+			{}
+		}
 	];
 
 	(* Gather up all our resolved options *)
@@ -2655,7 +2722,7 @@ resolvePlateReaderOptions[
 
 	(* Throw warnings if we're going to aliquot for any of our aliquot required reasons *)
 	(* Note that a special case here is that we don't force users to aliquot when the well color is OpaqueWhite or OpaqueBlack. However, a Warning message can be thrown to suggest the user to do Aliquoting. *)
-	aliquotWarningTest = If[MemberQ[automaticAliquotingBooleans,True]&&MatchQ[resolvedPreparation, Manual],
+	aliquotWarningTest = If[MemberQ[automaticAliquotingBooleans,True]&&MatchQ[resolvedPreparation, Manual]&&notInEngineQ,
 		Which[
 			Length[uniqueContainers]>1||!SubsetQ[supportedPlateModels,containerModels],If[!gatherTestsQ,
 				Message[Warning::SinglePlateRequired],
@@ -3062,7 +3129,7 @@ resolvePlateReaderOptions[
 	];
 
 	(* Throw message *)
-	If[messagesBoolean&&stowawaysPresentQ&&stowawaysDisturbed,
+	If[messagesBoolean&&stowawaysPresentQ&&stowawaysDisturbed&&notInEngineQ,
 		Message[Warning::PlateReaderStowaways,ObjectToString[Complement[plateContents,sampleObjects],Cache->cache]]
 	];
 
@@ -3085,7 +3152,7 @@ resolvePlateReaderOptions[
 		invalidAdjustmentOption,invalidPlateScanOptions,invalidFullPlateModeOptions,plateReaderMixOptionInvalidities,
 		invalidMoatOptions,invalidCoverOption,invalidNameOption,invalidInjectionOptions,invalidPlateReaderResolutionOption,invalidSpectroscopyOptions,duplicateDestinationWellOption,invalidFlowRateOption,invalidDestinationWellLengthOption,
 		invalidAliquotOption,invalidAliquotContainerOption,invalidCompatibilityOptions,
-		invalidStorageConditionOptions,If[MatchQ[preparationResult, $Failed], {Preparation}, {}]}],Null]];
+		invalidStorageConditionOptions,If[MatchQ[preparationResult, $Failed], {Preparation}, {}],resolvedACUInvalidOptions}],Null]];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
 	If[Length[invalidOptions]>0&&messagesBoolean,
@@ -3109,6 +3176,7 @@ resolvePlateReaderOptions[
 				SamplingPattern -> resolvedSamplingPattern,
 				SamplingDimension -> resolvedSamplingDimension
 			},
+			resolvedACUOptions,
 			resolvedSpectroscopyOptions,
 			resolvedSamplePrepOptions,
 			finalResolvedAliquotOptions,
@@ -3142,7 +3210,7 @@ resolvePlateReaderOptions[
 				unusedAdjustmentTest,fullPlateScanTest,plateReaderMixTests, moatTests,nameTest,topReadTest,retainCoverTest,
 				plateReaderTest,spectroscopyTests,repeatedSampleTest,duplicateDestinationWellTest,invalidFlowRateTest,invalidDestinationWellLengthTest,
 				aliquotTest,tooManySamplesTest,aliquotContainerTest,wellColorAliquotTest,compatibleMaterialsTests,stowawayTest,
-				validInjectionTests,invalidStorageConditionTest, aliquotTests
+				validInjectionTests,invalidStorageConditionTest, aliquotTests, resolvedACUTests
 			}],
 			Null
 		]
@@ -3930,7 +3998,7 @@ validPlateReaderInjections[
 		Message[Error::WellVolumeExceeded,ObjectToString[overFlowPackets]]
 	];
 
-	If[!MatchQ[highVolumePackets,{}]&&messagesQ&&!dilutionsQ,
+	If[!MatchQ[highVolumePackets,{}]&&messagesQ&&!dilutionsQ&&!MatchQ[$ECLApplication, Engine],
 		Message[Warning::HighWellVolume,ObjectToString[highVolumePackets]]
 	];
 
@@ -4224,14 +4292,14 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 	plateReaderResource,populateInjectionFieldFunction,primaryInjections,secondaryInjections,tertiaryInjections,
 	quaternaryInjections,injectionSampleVolumeAssociation,allowedInjectionContainers,injectionSampleToResourceLookup,
 	primaryInjectionWithResources,secondaryInjectionsWithResources,tertiaryInjectionsWithResources,quaternaryInjectionsWithResources,
-	anyInjectionsQ,washVolume,primaryCleaningSolvent,adjustmentSampleFromOptions,
-	secondaryCleaningSolvent,injectorCleaningFields,resolvedFocalHeight,resolvedGains,resolvedDualEmissionGains,
+	anyInjectionsQ,washVolume,line1PrimaryPurgingSolvent,line2PrimaryPurgingSolvent,adjustmentSampleFromOptions,
+	line1SecondaryPurgingSolvent,line2SecondaryPurgingSolvent, injectorCleaningFields,resolvedFocalHeight,resolvedGains,resolvedDualEmissionGains,
 	paddedGains,paddedGainPercentages,paddedDualEmissionGains,paddedDualEmissionGainPercentages,
 	opticModuleDownload,opticModuleFields,opticModuleModels,filterExcitationWavelengths,filterEmissionWavelengths,filterSecondaryEmissionWavelengths,filterPolarizations,resolvedExcitationWavelengths,resolveOpticModules,resolvedOpticModules,resolvedEmissionWavelengths,resolvedDualEmissionWavelengths,
 	excitationScanGain,emissionScanGain,parentProtocol,adjustmentSample,adjustmentSampleWell,adjustmentSampleResource,uniqueSampleContainers,
-	containerResources,protocolPacket,intensityAndKineticsFields,sampleLabelsWithReplicates,
-	fkAndfiFields,fpFields,fpKineticsFields,kineticsFields,specificFields,prepPacket,finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,
-	resolvedPreparation,nonHiddenOptions,unitOperationPackets,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,previewRule,resultRule,testsRule, optionsRule,
+	containerResources,sampleLabelsWithReplicates,
+	finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,
+	resolvedPreparation,unitOperationPackets,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,previewRule,resultRule,testsRule, optionsRule,
 	focalHeight, autoFocalHeight, adjustmentSampleResourceRule, listedAdjustmentSampleFromOptions, adjustmentSampleListed,adjustmentSampleWellListed},
 
 	experimentFunction=type/.{
@@ -4548,35 +4616,45 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 	washVolume=($BMGFlushVolume + 2.5 Milliliter) * 2;
 
 	(* Create solvent resources to clean the lines *)
-	primaryCleaningSolvent=Resource@@{
+	line1PrimaryPurgingSolvent=Resource@@{
 		Sample->Model[Sample,StockSolution,"id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Primary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Primary Purging Solvent"
 	};
+	line2PrimaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->Model[Sample,StockSolution,"id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Primary Purging Solvent"
+		},
+		Null
+	];
 
-	secondaryCleaningSolvent=Resource@@{
+	line1SecondaryPurgingSolvent=Resource@@{
 		Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Secondary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Secondary Purging Solvent"
 	};
+	line2SecondaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Secondary Purging Solvent"
+		},
+		Null
+	];
 
 	(* Populate fields needed to clean the lines before/after the run *)
 	injectorCleaningFields=If[anyInjectionsQ,
 		<|
-			PrimaryPreppingSolvent->primaryCleaningSolvent,
-			PrimaryFlushingSolvent->primaryCleaningSolvent,
-			SecondaryPreppingSolvent->secondaryCleaningSolvent,
-			SecondaryFlushingSolvent ->secondaryCleaningSolvent
+			Line1PrimaryPurgingSolvent->line1PrimaryPurgingSolvent,
+			Line2PrimaryPurgingSolvent->line2PrimaryPurgingSolvent,
+			Line1SecondaryPurgingSolvent->line1SecondaryPurgingSolvent,
+			Line2SecondaryPurgingSolvent ->line2SecondaryPurgingSolvent
 		|>,
 		<||>
 	];
@@ -4683,11 +4761,6 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 	(* expand sample labels for replicates *)
 	sampleLabelsWithReplicates = Lookup[replicatedOptions, SampleLabel];
 
-	(* get the non hidden options *)
-	nonHiddenOptions=Lookup[
-		Cases[OptionDefinition[experimentFunction], KeyValuePattern["Category"->Except["Hidden"]]],
-		"OptionSymbol"
-	];
 	focalHeight = If[MatchQ[type, Object[Protocol, FluorescenceSpectroscopy]|Object[Protocol, LuminescenceSpectroscopy]],
 		If[DistanceQ[resolvedFocalHeight],
 			resolvedFocalHeight
@@ -4706,7 +4779,7 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 
 
 	{finalizedPacket, unitOperationPackets} = If[MatchQ[resolvedPreparation,Manual],
-		Module[{protocolPacket, intensityAndKineticsFields, fkAndfiFields, fpFields, fpKineticsFields, kineticsFields, specificFields, prepPacket, singleMultiplefields},
+		Module[{protocolPacket, intensityAndKineticsFields, fkAndfiFields, fpFields, fpKineticsFields, kineticsFields, acuFields, specificFields, prepPacket, singleMultiplefields},
 			(* Create a protocol packet *)
 			protocolPacket=<|
 				Type->type,
@@ -4753,19 +4826,19 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 
 				Replace[Checkpoints] -> {
 					{"Picking Resources", 30 Minute,"Samples required to execute this protocol are gathered from storage.",
-						Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->30 Minute]]
+						Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]
 					},
 					{"Preparing Samples", 45 Minute,"Preprocessing, such as mixing, centrifuging, thermal incubation, and aliquoting, is performed.",
-						Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->45 Minute]]
+						Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]
 					},
 					{"Acquiring Data", plateReaderTime,"Change in fluorescence is monitored in the samples over a fixed time period.",
-						Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->plateReaderTime]]
+						Link[Resource[Operator->$BaselineOperator,Time->plateReaderTime]]
 					},
 					{"Sample Post-Processing", 15 Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",
-						Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->15 Minute]]
+						Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]
 					},
 					{"Returning Materials", 15 Minute,"Samples are returned to storage.",
-						Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->15 Minute]]
+						Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]
 					}
 				},
 				If[MatchQ[resolvedPreparation,Robotic],Replace[BatchedUnitOperations]->(Link[#, Protocol]&)/@ToList[Lookup[unitOperationPackets, Object]],Nothing]
@@ -4839,66 +4912,90 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 				QuaternaryInjectionFlowRate->Lookup[replicatedOptions,QuaternaryInjectionFlowRate]
 			|>;
 
+			acuFields = <|
+				TargetCarbonDioxideLevel -> Lookup[replicatedOptions, TargetCarbonDioxideLevel],
+				TargetOxygenLevel -> Lookup[replicatedOptions, TargetOxygenLevel],
+				AtmosphereEquilibrationTime -> Lookup[replicatedOptions, AtmosphereEquilibrationTime]
+			|>;
+
 			(* Populate fields specific to one protocol type *)
-			specificFields=Switch[type,
-				Object[Protocol,FluorescenceKinetics],Join[
-					kineticsFields,
-					intensityAndKineticsFields,
-					fkAndfiFields
-				],
-				Object[Protocol,FluorescencePolarizationKinetics],Join[
-					kineticsFields,
-					intensityAndKineticsFields,
-					fpKineticsFields
-				],
-				Object[Protocol,FluorescenceIntensity],Join[intensityAndKineticsFields,fkAndfiFields],
-				Object[Protocol,FluorescencePolarization],Join[intensityAndKineticsFields,fpFields],
-				Object[Protocol,FluorescenceSpectroscopy],<|
-					NumberOfReadings->Lookup[replicatedOptions,NumberOfReadings],
-					Replace[SpectralScan]->ToList[Lookup[replicatedOptions,SpectralScan]],
-
-					ExcitationWavelength->Lookup[replicatedOptions,ExcitationWavelength],
-					MinEmissionWavelength->Replace[Lookup[replicatedOptions,EmissionWavelengthRange],Span[min_,max_]:>min],
-					MaxEmissionWavelength->Replace[Lookup[replicatedOptions,EmissionWavelengthRange],Span[min_,max_]:>max],
-
-					EmissionWavelength->Lookup[replicatedOptions,EmissionWavelength],
-					MinExcitationWavelength->Replace[Lookup[replicatedOptions,ExcitationWavelengthRange],Span[min_,max_]:>min],
-					MaxExcitationWavelength->Replace[Lookup[replicatedOptions,ExcitationWavelengthRange],Span[min_,max_]:>max],
-
-					AdjustmentEmissionWavelength->Lookup[replicatedOptions,AdjustmentEmissionWavelength],
-					AdjustmentExcitationWavelength->Lookup[replicatedOptions,AdjustmentExcitationWavelength],
-
-					ExcitationScanGain->If[VoltageQ[excitationScanGain],
-						excitationScanGain
+			(* no ACU options for FP and FPK *)
+			specificFields= Switch[type,
+				Object[Protocol, FluorescenceKinetics],
+					Join[
+						kineticsFields,
+						intensityAndKineticsFields,
+						fkAndfiFields,
+						acuFields
 					],
-					ExcitationScanGainPercentage->If[PercentQ[excitationScanGain],
-						excitationScanGain
+				Object[Protocol, FluorescencePolarizationKinetics],
+					Join[
+						kineticsFields,
+						intensityAndKineticsFields,
+						fpKineticsFields
 					],
-					EmissionScanGain->If[VoltageQ[emissionScanGain],
-						emissionScanGain
+				Object[Protocol, FluorescenceIntensity],
+					Join[intensityAndKineticsFields, fkAndfiFields, acuFields],
+				Object[Protocol, FluorescencePolarization],
+					Join[intensityAndKineticsFields, fpFields],
+				Object[Protocol, FluorescenceSpectroscopy],
+					Join[
+						<|
+							NumberOfReadings -> Lookup[replicatedOptions, NumberOfReadings],
+							Replace[SpectralScan] -> ToList[Lookup[replicatedOptions, SpectralScan]],
+
+							ExcitationWavelength -> Lookup[replicatedOptions, ExcitationWavelength],
+							MinEmissionWavelength -> Replace[Lookup[replicatedOptions, EmissionWavelengthRange], Span[min_, max_] :> min],
+							MaxEmissionWavelength -> Replace[Lookup[replicatedOptions, EmissionWavelengthRange], Span[min_, max_] :> max],
+
+							EmissionWavelength -> Lookup[replicatedOptions, EmissionWavelength],
+							MinExcitationWavelength -> Replace[Lookup[replicatedOptions, ExcitationWavelengthRange], Span[min_, max_] :> min],
+							MaxExcitationWavelength -> Replace[Lookup[replicatedOptions, ExcitationWavelengthRange], Span[min_, max_] :> max],
+
+							AdjustmentEmissionWavelength -> Lookup[replicatedOptions, AdjustmentEmissionWavelength],
+							AdjustmentExcitationWavelength -> Lookup[replicatedOptions, AdjustmentExcitationWavelength],
+
+							ExcitationScanGain -> If[VoltageQ[excitationScanGain],
+								excitationScanGain
+							],
+							ExcitationScanGainPercentage -> If[PercentQ[excitationScanGain],
+								excitationScanGain
+							],
+							EmissionScanGain -> If[VoltageQ[emissionScanGain],
+								emissionScanGain
+							],
+							EmissionScanGainPercentage -> If[PercentQ[emissionScanGain],
+								emissionScanGain
+							]
+						|>,
+						acuFields
 					],
-					EmissionScanGainPercentage->If[PercentQ[emissionScanGain],
-						emissionScanGain
+				Object[Protocol, LuminescenceIntensity],
+					Join[
+						intensityAndKineticsFields,
+						acuFields,
+						<|IntegrationTime -> Lookup[replicatedOptions, IntegrationTime]|>
+					],
+				Object[Protocol, LuminescenceKinetics],
+					Join[
+						intensityAndKineticsFields,
+						kineticsFields,
+						acuFields,
+						<|IntegrationTime -> Lookup[replicatedOptions, IntegrationTime]|>
+					],
+				Object[Protocol, LuminescenceSpectroscopy],
+					Join[
+						<|
+							MinEmissionWavelength -> Replace[Lookup[replicatedOptions, EmissionWavelengthRange], Span[min_, max_] :> min],
+							MaxEmissionWavelength -> Replace[Lookup[replicatedOptions, EmissionWavelengthRange], Span[min_, max_] :> max],
+							AdjustmentEmissionWavelength -> Lookup[replicatedOptions, AdjustmentEmissionWavelength],
+							(* In the case of LuminescenceSpectroscopy, resolvedGains will actually be a single *)
+							Gain -> If[MatchQ[resolvedGains, VoltageP], resolvedGains],
+							GainPercentage -> If[MatchQ[resolvedGains, PercentP], resolvedGains],
+							IntegrationTime -> Lookup[replicatedOptions, IntegrationTime]
+						|>,
+						acuFields
 					]
-				|>,
-				Object[Protocol,LuminescenceIntensity],Join[
-					intensityAndKineticsFields,
-					<|IntegrationTime->Lookup[replicatedOptions,IntegrationTime]|>
-				],
-				Object[Protocol,LuminescenceKinetics],Join[
-					intensityAndKineticsFields,
-					kineticsFields,
-					<|IntegrationTime->Lookup[replicatedOptions,IntegrationTime]|>
-				],
-				Object[Protocol,LuminescenceSpectroscopy],<|
-					MinEmissionWavelength->Replace[Lookup[replicatedOptions,EmissionWavelengthRange],Span[min_,max_]:>min],
-					MaxEmissionWavelength->Replace[Lookup[replicatedOptions,EmissionWavelengthRange],Span[min_,max_]:>max],
-					AdjustmentEmissionWavelength->Lookup[replicatedOptions,AdjustmentEmissionWavelength],
-					(* In the case of LuminescenceSpectroscopy, resolvedGains will actually be a single *)
-					Gain->If[MatchQ[resolvedGains,VoltageP],resolvedGains],
-					GainPercentage->If[MatchQ[resolvedGains,PercentP],resolvedGains],
-					IntegrationTime->Lookup[replicatedOptions,IntegrationTime]
-				|>
 			];
 
 			(* Populate prep fields - send in initial samples and options since this handles NumberOfReplicates on its own *)
@@ -4909,77 +5006,104 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 				{}
 			}
 		],
-		Module[{unitOpPacket,unitOperationPacketWithLabeledObjects},
-			unitOpPacket = UploadUnitOperation[
-				primitiveHead@@Join[
-					{
-						Sample->sampleResources
-					},
-					ReplaceRule[
-						Cases[replicatedOptions, Verbatim[Rule][Alternatives@@nonHiddenOptions, _]],
-						{
-							Instrument -> plateReaderResource,
-							(* AdjustmentSample is in the form {index,sample} or FullPlate *)
-							AdjustmentSample->Module[{testVarTest2},
-								testVarTest2 = Switch[
-									{Lookup[replicatedOptions, AdjustmentSample], type},
-									{Null | FullPlate, _},
-										Lookup[replicatedOptions,AdjustmentSample],
-									{{_Integer, ObjectP[{Model[Sample], Object[Sample]}]}, Object[Protocol, FluorescenceSpectroscopy]|Object[Protocol, LuminescenceSpectroscopy]},
-										Lookup[replicatedOptions,AdjustmentSample]/.adjustmentSampleResourceRule,
-									{{_Integer, ObjectP[{Model[Sample], Object[Sample]}]}, _},
-										{Lookup[replicatedOptions,AdjustmentSample]/.adjustmentSampleResourceRule},
-									_,
-									Lookup[replicatedOptions,AdjustmentSample]/.adjustmentSampleResourceRule
-								]
-							],
-							(* injection sample resources are always in second to last position for all experiments *)
-							PrimaryInjectionSample->If[Length[primaryInjectionWithResources[[All,-2]]]==0,
-								ConstantArray[Null, Length[mySamples]],
-								primaryInjectionWithResources[[All,-2]]
-							],
-							SecondaryInjectionSample->If[Length[secondaryInjectionsWithResources[[All,-2]]]==0,
-								ConstantArray[Null, Length[mySamples]],
-								secondaryInjectionsWithResources[[All,-2]]
-							],
-							(* kinetics only *)
-							If[MatchQ[experimentFunction,ExperimentFluorescenceKinetics|ExperimentFluorescencePolarizationKinetics|ExperimentLuminescenceKinetics],
-								TertiaryInjectionSample->If[Length[tertiaryInjectionsWithResources[[All,-2]]]==0,
-									ConstantArray[Null, Length[mySamples]],
-									tertiaryInjectionsWithResources[[All,-2]]
-								],
-								Nothing
-							],
-							If[MatchQ[experimentFunction,ExperimentFluorescenceKinetics|ExperimentFluorescencePolarizationKinetics|ExperimentLuminescenceKinetics],
-								QuaternaryInjectionSample->If[Length[quaternaryInjectionsWithResources[[All,-2]]]==0,
-									ConstantArray[Null, Length[mySamples]],
-									quaternaryInjectionsWithResources[[All,-2]]
-								],
-								Nothing
-							],
-							(* NOTE: Don't pass Name down. *)
-							Name->Null
-						}
+		Module[{labelSampleAndPlateReaderUnitOperationPackets, newLabelSampleUO, oldResourceToNewResourceRules, unitOperationOptions, labelSampleUnitOperationPacket, plateReaderUnitOperationPacket, plateReaderUnitOperationPacketWithLabeledObjects},
+
+			labelSampleAndPlateReaderUnitOperationPackets = Module[{},
+
+				(* get the new label sample unit operation if it exists; need to replace the models in it with the sample resources we've already created/simulated *)
+				{newLabelSampleUO, oldResourceToNewResourceRules} = If[MatchQ[Lookup[replicatedOptions, PreparatoryUnitOperations], {_[_LabelSample]}],
+					generateLabelSampleUO[
+						Lookup[replicatedOptions, PreparatoryUnitOperations][[1, 1]],
+						updatedSimulation,
+						(* if we ever wrapped resource with Link, strip the Link *)
+						Join[sampleResources, containerResources] /. Link[res_Resource, ___] :> res
 					],
-					{SampleLabel->sampleLabelsWithReplicates}
-				],
-				Preparation->Robotic,
-				UnitOperationType->Output,
-				FastTrack->True,
-				Upload->False
+					{Null, {}}
+				];
+
+				(* Only include non-hidden options from Filter. *)
+				unitOperationOptions = allowedKeysForUnitOperationType[Object[UnitOperation, primitiveHead]];
+
+				UploadUnitOperation[
+					{
+						If[NullQ[newLabelSampleUO], Nothing, newLabelSampleUO],
+						primitiveHead @@ Join[
+							{
+								Sample -> sampleResources /. oldResourceToNewResourceRules
+							},
+							ReplaceRule[
+								Cases[replicatedOptions, Verbatim[Rule][Alternatives @@ unitOperationOptions, _]],
+								{
+									Instrument -> plateReaderResource,
+									(* AdjustmentSample is in the form {index,sample} or FullPlate *)
+									AdjustmentSample -> Module[{testVarTest2},
+										testVarTest2 = Switch[
+											{Lookup[replicatedOptions, AdjustmentSample], type},
+											{Null | FullPlate, _},
+											Lookup[replicatedOptions, AdjustmentSample],
+											{{_Integer, ObjectP[{Model[Sample], Object[Sample]}]}, Object[Protocol, FluorescenceSpectroscopy] | Object[Protocol, LuminescenceSpectroscopy]},
+											Lookup[replicatedOptions, AdjustmentSample] /. adjustmentSampleResourceRule,
+											{{_Integer, ObjectP[{Model[Sample], Object[Sample]}]}, _},
+											{Lookup[replicatedOptions, AdjustmentSample] /. adjustmentSampleResourceRule},
+											_,
+											Lookup[replicatedOptions, AdjustmentSample] /. adjustmentSampleResourceRule
+										]
+									],
+									(* injection sample resources are always in second to last position for all experiments *)
+									PrimaryInjectionSample -> If[Length[primaryInjectionWithResources[[All, -2]]] == 0,
+										ConstantArray[Null, Length[mySamples]],
+										primaryInjectionWithResources[[All, -2]]
+									],
+									SecondaryInjectionSample -> If[Length[secondaryInjectionsWithResources[[All, -2]]] == 0,
+										ConstantArray[Null, Length[mySamples]],
+										secondaryInjectionsWithResources[[All, -2]]
+									],
+									(* kinetics only *)
+									If[MatchQ[experimentFunction, ExperimentFluorescenceKinetics | ExperimentFluorescencePolarizationKinetics | ExperimentLuminescenceKinetics],
+										TertiaryInjectionSample -> If[Length[tertiaryInjectionsWithResources[[All, -2]]] == 0,
+											ConstantArray[Null, Length[mySamples]],
+											tertiaryInjectionsWithResources[[All, -2]]
+										],
+										Nothing
+									],
+									If[MatchQ[experimentFunction, ExperimentFluorescenceKinetics | ExperimentFluorescencePolarizationKinetics | ExperimentLuminescenceKinetics],
+										QuaternaryInjectionSample -> If[Length[quaternaryInjectionsWithResources[[All, -2]]] == 0,
+											ConstantArray[Null, Length[mySamples]],
+											quaternaryInjectionsWithResources[[All, -2]]
+										],
+										Nothing
+									],
+									(* NOTE: Don't pass Name down. *)
+									Name -> Null
+								}
+							],
+							{SampleLabel -> sampleLabelsWithReplicates}
+						]
+					},
+					Preparation -> Robotic,
+					UnitOperationType -> Output,
+					FastTrack -> True,
+					Upload -> False
+				]
+			];
+
+			(* split out the LabelSample and Filter UOs *)
+			{labelSampleUnitOperationPacket, plateReaderUnitOperationPacket} = If[Length[labelSampleAndPlateReaderUnitOperationPackets] == 2,
+				labelSampleAndPlateReaderUnitOperationPackets,
+				{Null, First[labelSampleAndPlateReaderUnitOperationPackets]}
 			];
 
 			(* Add the LabeledObjects field to the Robotic unit operation packet. *)
 			(* NOTE: This will be stripped out of the UnitOperation packet by the framework and only stored at the top protocol level. *)
-			unitOperationPacketWithLabeledObjects=Append[
-				unitOpPacket,
+			plateReaderUnitOperationPacketWithLabeledObjects=Append[
+				plateReaderUnitOperationPacket,
 				Replace[LabeledObjects]->DeleteDuplicates@Join[
 					Cases[
-						Transpose[{sampleLabelsWithReplicates, sampleResources}],
+						Transpose[{sampleLabelsWithReplicates, sampleResources /. oldResourceToNewResourceRules}],
 						{_String, Resource[KeyValuePattern[Sample->ObjectP[{Object[Sample], Model[Sample]}]]]}
 					],
 					Cases[
-						Transpose[{DeleteDuplicates@Lookup[replicatedOptions, SampleContainerLabel], containerResources}],
+						Transpose[{DeleteDuplicates@Lookup[replicatedOptions, SampleContainerLabel], containerResources /. oldResourceToNewResourceRules}],
 						{_String, Resource[KeyValuePattern[Sample->ObjectP[{Object[Container], Model[Container]}]]]}
 					]
 				]
@@ -4988,7 +5112,7 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 			(* Return our unit operation packet with labeled objects. *)
 			{
 				Null,
-				{unitOperationPacketWithLabeledObjects}
+				{If[NullQ[labelSampleUnitOperationPacket], Nothing, labelSampleUnitOperationPacket], plateReaderUnitOperationPacketWithLabeledObjects}
 			}
 		]
 	];
@@ -5010,9 +5134,9 @@ plateReaderResourcePackets[type:(Object[Protocol,FluorescenceIntensity]|Object[P
 		MatchQ[resolvedPreparation, Robotic],
 		{True, {}},
 		gatherTestsQ,
-		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[replicatedOptions,FastTrack],Site->Lookup[replicatedOptions,Site],Simulation->simulation,Cache->cache],
+		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[replicatedOptions,FastTrack],Site->Lookup[replicatedOptions,Site],Simulation->updatedSimulation,Cache->cache],
 		True,
-		{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[replicatedOptions,FastTrack],Site->Lookup[replicatedOptions,Site],Messages->Not[gatherTestsQ],Simulation->simulation,Cache->cache],Null}
+		{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[replicatedOptions,FastTrack],Site->Lookup[replicatedOptions,Site],Messages->Not[gatherTestsQ],Simulation->updatedSimulation,Cache->cache],Null}
 	];
 
 	(* --- Output --- *)
@@ -5476,7 +5600,6 @@ validMoat[numberOfAssaySamples_Integer,assayContainerModelPacket:PacketP[Model[C
 
 plateReaderExperimentDownload[type:(TypeP[Object[Protocol]]),samples:{ObjectP[Object[Sample]]..},experimentOptions:{(_Rule|_RuleDelayed)..},cache:{_Association...},simulation:SimulationP]:=Module[{defaultAliquotContainer,allPlateReaderModels,suppliedPlateReader,plateReaderToDownload,
 	plateReaderModelFields,plateReaderModelPacketSpec,suppliedPlateReaderPacketSpec,possibleAliquotContainers,
-	userSpecifiedObjects,objectsExistQs,fastCacheBall,
 	sampleModelFields,sampleModelPacket,samplePacket,containerModelPacket,aliquotContainerPacket,containerPacket,download},
 
 	defaultAliquotContainer=Model[Container,Plate,"id:kEJ9mqR3XELE"];
@@ -5492,7 +5615,7 @@ plateReaderExperimentDownload[type:(TypeP[Object[Protocol]]),samples:{ObjectP[Ob
 
 	(* Fields we need to download from any plate reader models we might use: *)
 	plateReaderModelFields={EmissionFilterTypes,ExcitationFilterTypes,PlateReaderMode,OpticModules,MinTemperature,MaxTemperature,MinExcitationWavelength,MaxExcitationWavelength,
-		ExcitationFilters,PolarizationExcitationFilters,ExcitationWavelengthResolution,MinEmissionWavelength,MaxEmissionWavelength,EmissionFilters,PolarizationEmissionFilters,EmissionWavelengthResolution,MaxFilters,WettedMaterials,SamplingPatterns};
+		ExcitationFilters,PolarizationExcitationFilters,ExcitationWavelengthResolution,MinEmissionWavelength,MaxEmissionWavelength,EmissionFilters,PolarizationEmissionFilters,EmissionWavelengthResolution,MaxFilters,WettedMaterials,SamplingPatterns,IntegratedLiquidHandlers};
 
 	(* Get fields in packet form *)
 	plateReaderModelPacketSpec=Packet@@plateReaderModelFields;
@@ -5500,8 +5623,8 @@ plateReaderExperimentDownload[type:(TypeP[Object[Protocol]]),samples:{ObjectP[Ob
 	(* Set-up to download model info from the plate reader option *)
 	suppliedPlateReaderPacketSpec=Switch[suppliedPlateReader,
 		Automatic,{},
-		ObjectP[Object[Instrument,PlateReader]],{Packet[Model[plateReaderModelFields]]},
-		ObjectP[Model[Instrument,PlateReader]],{plateReaderModelPacketSpec}
+		ObjectP[Object[Instrument,PlateReader]],{Packet[Model[plateReaderModelFields]], Packet[Model, IntegratedLiquidHandler], Packet[IntegratedLiquidHandler[Model]], Packet[IntegratedLiquidHandler[Model][Object]]},
+		ObjectP[Model[Instrument,PlateReader]],{plateReaderModelPacketSpec, Packet[IntegratedLiquidHandlers[Object]]}
 	];
 
 	possibleAliquotContainers=Append[
@@ -5515,39 +5638,6 @@ plateReaderExperimentDownload[type:(TypeP[Object[Protocol]]),samples:{ObjectP[Ob
 	containerModelPacket=SamplePreparationCacheFields[Model[Container]];
 	aliquotContainerPacket=SamplePreparationCacheFields[Model[Container],Format -> Packet];
 	containerPacket=Append[SamplePreparationCacheFields[Object[Container]],RequestedResources];
-
-	(* Before Download, check whether any of the specified objects does not exist. This is done early to avoid tons of errors later. *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				samples,
-				Values[experimentOptions]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	fastCacheBall = makeFastAssocFromCache[cache];
-
-	objectsExistQs=MapThread[
-		Or[#1,#2]&,
-		{
-			MatchQ[fetchPacketFromFastAssoc[#, fastCacheBall], KeyValuePattern[Simulated->True]]&/@userSpecifiedObjects,
-			DatabaseMemberQ[
-				userSpecifiedObjects,
-				Simulation->simulation
-			]
-		}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Return[$Failed],
-		Nothing
-	];
 
 	download=Check[
 		Quiet[
@@ -5568,7 +5658,8 @@ plateReaderExperimentDownload[type:(TypeP[Object[Protocol]]),samples:{ObjectP[Ob
 						samplePacket,
 						Packet[Model[sampleModelFields]],
 						Packet[Container[containerPacket]],
-						Packet[Container[Model][containerModelPacket]]
+						Packet[Container[Model][containerModelPacket]],
+						Packet[Composition[[All, 2]][{CellType}]]
 					},
 					{sampleModelPacket},
 					suppliedPlateReaderPacketSpec,

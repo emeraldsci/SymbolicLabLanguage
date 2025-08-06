@@ -10,22 +10,16 @@
 (* Constant for the acceptable amount of time a protocol can remain in OperatorReady or waiting for a check in *)
 $OperatorGracePeriod = 3 Hour;
 
-PlotProtocolTimelineDisplayP=(All|ReadyCheck|OperatorInterrupts|Tasks|Tickets|InstrumentCheckIns|Subprotocols);
-
 DefineOptions[PlotProtocolTimeline,
 	Options:>{
-		{
-			OptionName->DeveloperDisplay,
-			Default->Null,
-			Description->"Indicates what additional information, such as the task completion dates and resource availability, should be displayed on the plot. Subprotocols will plot the intervals of the subprotocol start/end dates, tasks will do the same but with the individual tasks that get completed in the protocol.",
-			AllowNull->True,
-			Widget->Alternatives[
-				Adder[Widget[Type->Enumeration,Pattern:>PlotProtocolTimelineDisplayP]],
-				Widget[Type->Enumeration,Pattern:>PlotProtocolTimelineDisplayP]
-			],
-			Category->"Hidden"
-		},
-		OutputOption
+		{ReadyCheck->False,BooleanP,"Indicates if instrument or materials limitations are displayed."},
+		{OperatorInterrupts->False,BooleanP,"Indicates if points where the operator was pulled into a priority protocol or priority check-in are displayed."},
+		{Tasks->False,BooleanP,"Indicates if each individual Engine TaskStart event is displayed."},
+		{Tickets->False,BooleanP,"Indicates if all support tickets created while executing the protocol are displayed."},
+		{InstrumentCheckIns->False,BooleanP,"Indicates if each time the operator performed a check-in during instrument processing is displayed."},
+		{Subprotocols->False,BooleanP,"Indicates if the DateStarted and DateCompleted of subprotocols at all levels are displayed."},
+		{Repairs->False,BooleanP,"Indicates if all repair tickets created while executing the protocol are displayed."},
+		{Title->Automatic,Automatic|Null|_String,"Indicates how the plot is labeled. If unspecified a copyable form of the protocol id is displayed"}
 	}
 ];
 
@@ -35,44 +29,63 @@ PlotProtocolTimeline[
 	obj:ObjectP[{Object[Protocol],Object[Qualification],Object[Maintenance]}],
 	ops:OptionsPattern[PlotProtocolTimeline]
 ]:=Module[
-	{safeOps,interruptMarkersQ,readyCheck, statusLog,dateEnqueued,author,priority,scriptProtocols,ticketDisplay,taskDisplay,subprotocolDisplay,instrumentCheckIns,
-		readyLog,initialStartDates,initialEndDates,
+	{safeOps,interruptMarkersQ,readyCheck, statusLog,priority,scriptProtocols,ticketDisplay,taskDisplay,subprotocolDisplay,instrumentCheckIns,
+		readyLog,initialStartDates,initialEndDates,downloadFields,downloadValues,
 		initialStatuses,initialResponsibleParties,currentReadyLog,readyLogParents,pickUpTimeLog,
 		rootProcedureEvents,subProcedureEvents,parentTickets,currentTickets,
 		startDates,endDates,statusesForColor,statuses,responsibleParties,unavailableObjects, shortOperatorReady,
-		shortTroubleshooting,errorEvents,errorDates,errorMessages,interruptEvents,interruptDates,
+		shortTroubleshooting,errorEvents,errorDates,errorMessages,interruptEvents,interruptDates,shortRepairingInstrumentation,
 		emerald,lightEmerald,yellow,blue,statusPlotStyles,plotStyles,labelingFunction,
-		outputSpecification,developerDisplay,plot,finalResolvedOps, checkInOverTimes, pickUpOverTimes, checkInSpacings, pickUpSpacings,
+		plot, checkInOverTimes, pickUpOverTimes, checkInSpacings, pickUpSpacings,
 		taskStartPackets,parentProtocolPacket,subprotocolPackets,allEventPackets,allTicketPackets,ticketPacketsInRange,ticketStartDates,ticketsInRange,timePoints,
-		taskIntervals,subprotocolIntervals,ticketButtons
+		taskIntervals,subprotocolIntervals,ticketButtons,repairsDisplay,repairPackets,repairPacketsInRange,
+		repairStartDates,repairsInRange,repairButtons,titleString,titleOption,sharedOptions
 	},
 
-	safeOps=SafeOptions[TimelinePlot,{Filling->True,ImageSize->1800}];
+	safeOps=SafeOptions[PlotProtocolTimeline,ToList[ops]];
 
 	(* Pull out the options the user specified *)
-	outputSpecification=OptionValue[Output];
-	developerDisplay=ToList[OptionValue[DeveloperDisplay]];
-	interruptMarkersQ=MemberQ[developerDisplay,All|OperatorInterrupts];
-	readyCheck=MemberQ[developerDisplay,All|ReadyCheck];
-	ticketDisplay=MemberQ[developerDisplay,All|Tickets];
-	taskDisplay=MemberQ[developerDisplay,All|Tasks];
-	subprotocolDisplay=MemberQ[developerDisplay,All|Subprotocols];
-	instrumentCheckIns=MemberQ[developerDisplay,All|InstrumentCheckIns];
+	interruptMarkersQ=Lookup[safeOps,OperatorInterrupts];
+	readyCheck=Lookup[safeOps,ReadyCheck];
+	ticketDisplay=Lookup[safeOps,Tickets];
+	taskDisplay=Lookup[safeOps,Tasks];
+	subprotocolDisplay=Lookup[safeOps,Subprotocols];
+	instrumentCheckIns=Lookup[safeOps,InstrumentCheckIns];
+	repairsDisplay=Lookup[safeOps,Repairs];
 
+	downloadFields=Join[
+		{StatusLog,Priority,Script[Protocols]},
+		If[readyCheck,
+			{ReadyCheckLog,Repeated[ParentProtocol][ReadyCheckLog]},
+			{Null,Null}
+		],
+		If[ticketDisplay,
+			{Packet[Repeated[ParentProtocol][InternalCommunications[DateCreated]]],Packet[InternalCommunications[DateCreated]]},
+			{Null,Null}
+		],
+		If[taskDisplay,
+			{ProcedureLog[Packet[EventType,DateCreated,TaskType,TaskID]],Packet[Subprotocols..[ProcedureLog[EventType,DateCreated,TaskType,TaskID]]]},
+			{Null,Null}
+		],
+		If[subprotocolDisplay,
+			{Packet[DateCreated,DateCompleted], Packet[Subprotocols..[DateCreated,DateCompleted]]},
+			{Null,Null}
+		],
+		If[instrumentCheckIns,
+			{PickUpTimeLog},
+			{Null}
+		],
+		If[repairsDisplay,
+			{Packet[InternalCommunications[AssociatedRepairs[DateCreated]]]},
+			{Null}
+		]
+	];
 
 	(*Download information from the protocol*)
-	{
-		statusLog,dateEnqueued,author,priority,scriptProtocols,currentReadyLog,readyLogParents,pickUpTimeLog,
-		rootProcedureEvents,subProcedureEvents,parentTickets,currentTickets,
-		parentProtocolPacket, subprotocolPackets
-	}=Download[obj,
-		{
-			StatusLog,DateEnqueued,Author,Priority,Script[Protocols],ReadyCheckLog,Repeated[ParentProtocol][ReadyCheckLog],PickUpTimeLog,
-			ProcedureLog[Packet[EventType,DateCreated,CreatedBy,TaskType,TaskID]],Packet[Subprotocols..[ProcedureLog[EventType,DateCreated,CreatedBy,TaskType,TaskID]]],
-			Packet[Repeated[ParentProtocol][OperationsSupportTickets[DateCreated]]],Packet[OperationsSupportTickets[DateCreated]],
-			Packet[DateCreated,DateCompleted], Packet[Subprotocols..[DateCreated,DateCompleted]]
-		}
-	]/.x:LinkP[IncludeTemporalLinks->True]:>Download[x,Object];
+	downloadValues=Download[obj, downloadFields]/.x:LinkP[IncludeTemporalLinks->True]:>Download[x,Object];
+
+	{statusLog,priority,scriptProtocols,currentReadyLog,readyLogParents,parentTickets,currentTickets,rootProcedureEvents,subProcedureEvents,
+	parentProtocolPacket,subprotocolPackets,pickUpTimeLog,repairPackets}=downloadValues;
 
 	(* Only root protocol has ReadyLog. We could be root, in which case log is in currentReadyLog, otherwise it's the last entry in our parents (i.e. the root) *)
 	readyLog = FirstCase[Reverse[Join[{currentReadyLog},readyLogParents]],{__},{}];
@@ -106,10 +119,16 @@ PlotProtocolTimeline[
 	];
 
 	(*Find the error events about unavailable resources and download their dates and error messages*)
-	errorEvents=Search[Object[Program,ProcedureEvent],Protocol==obj&&EventType==Error&&StringContainsQ[ErrorMessage,"available",IgnoreCase->True]];
-	{errorDates,errorMessages}=If[!MatchQ[errorEvents,{}],
-		Transpose[Download[errorEvents,{DateCreated,ErrorMessage}]],
-		{{},{}}
+	{errorEvents,errorDates,errorMessages} = If[readyCheck,
+		Module[{events,dates,messages},
+			events=Search[Object[Program,ProcedureEvent],Protocol==obj&&EventType==Error&&StringContainsQ[ErrorMessage,"available",IgnoreCase->True]];
+			{dates,messages}=If[!MatchQ[events,{}],
+				Transpose[Download[events,{DateCreated,ErrorMessage}]],
+				{{},{}}
+			];
+			{events,dates,messages}
+		],
+		{{},{},{}}
 	];
 
 	(*Find the dates of operator interrupts*)
@@ -166,6 +185,15 @@ PlotProtocolTimeline[
 	];
 	ticketStartDates=Lookup[ticketPacketsInRange,DateCreated,{}];
 	ticketsInRange=Lookup[ticketPacketsInRange,Object,{}];
+
+	(* -- Format repairs -- *)
+	(* Get dates of all ticket events in parent or sub *)
+	repairPacketsInRange=If[repairsDisplay,
+		Select[Flatten[repairPackets,1],Min[initialStartDates]<=Lookup[#,DateCreated]<=Max[initialEndDates]&],
+		{}
+	];
+	repairStartDates=Lookup[repairPacketsInRange,DateCreated,{}];
+	repairsInRange=Lookup[repairPacketsInRange,Object,{}];
 
 	(* Parse Check-In and Pickup Delays*)
 	{
@@ -320,7 +348,8 @@ PlotProtocolTimeline[
 			Which[
 				MatchQ[singleStatus, OperatorStart|OperatorReady] && GreaterQ[singleEndDate-singleStartDate, $OperatorGracePeriod], OperatorReady,
 				MatchQ[singleStatus, OperatorStart|OperatorReady] && LessEqualQ[singleEndDate-singleStartDate, $OperatorGracePeriod], shortOperatorReady,
-				MatchQ[singleStatus, Troubleshooting] && LessEqualQ[singleEndDate-singleStartDate, 1 Hour], shortTroubleshooting,
+				MatchQ[singleStatus, ScientificSupport] && LessEqualQ[singleEndDate-singleStartDate, 1 Hour], shortTroubleshooting,
+				MatchQ[singleStatus, RepairingInstrumentation] && LessEqualQ[singleEndDate-singleStartDate, 1 Hour], shortRepairingInstrumentation,
 				True, singleStatus
 			]
 		],
@@ -346,15 +375,18 @@ PlotProtocolTimeline[
 		shortOperatorReady,lightEmerald,
 		OperatorReady,yellow,
 		ResourceLimitation,Orange,
+		ReadyCheckFalse,Orange,
 		shortTroubleshooting,lightEmerald,
-		Troubleshooting,Red,
+		shortRepairingInstrumentation,lightEmerald,
+		ScientificSupport,Red,
+		RepairingInstrumentation,Darker[Orange],
 		Completed,emerald,
 		_,Gray
 	]&/@statusesForColor, White];
 
 	(*If we are showing delays on the timeline, we need to adjust the plot styles to include the colors of the delays in terms of their severity*)
-	plotStyles = If[!MatchQ[developerDisplay,{Null}],
-		Module[{overTimes, overTimePeriods, scaledOverTimePeriods, fillerColors, coloredPeriods},
+	plotStyles = If[instrumentCheckIns || readyCheck || interruptMarkersQ,
+		Module[{overTimes, overTimePeriods, fillerColors, coloredPeriods},
 
 			(* Get all the overtimes in order of how we are going to display them *)
 			overTimes = Join[Flatten[checkInOverTimes,1], Flatten[pickUpOverTimes, 1]];
@@ -418,7 +450,7 @@ PlotProtocolTimeline[
 							MatchQ[#3,ResourceLimitation],
 								Tooltip[Style["ResourceLimitation", Underlined],#5],
 							MatchQ[#4,ObjectP[Object[User]]],
-								ToString[#3] <> " ("<>#4[FirstName]<>")",
+								ToString[#3],
 							True,ToString[#3]
 						],
 						Before
@@ -440,7 +472,7 @@ PlotProtocolTimeline[
 
 		(*interrupt dates*)
 		If[!MatchQ[interruptEvents,{}],
-			Partition[interruptDates,1],
+			{Labeled[#, "Interrupt", Above]}&/@(Interval[#]&/@interruptDates),
 			{}
 		],
 
@@ -488,34 +520,69 @@ PlotProtocolTimeline[
 		{}
 	];
 
-	subprotocolIntervals=Map[
-		EventHandler[
-			(* NOTE: Aborted protocols that don't have DateCompleted mess up our plot, so replace any Nulls with the parent protocol's DateCompleted. *)
-			Labeled[Interval[{Lookup[#, DateCreated], Lookup[#, DateCompleted]}], Lookup[#, Object], Above] /. {Null -> Lookup[parentProtocolPacket, DateCompleted]},
-			With[{insertMe=Lookup[#,Object]},
-				"MouseClicked" :> printValue[insertMe]
-			]
-		]&,
-		Flatten[{parentProtocolPacket, subprotocolPackets}]
+	subprotocolIntervals=If[subprotocolDisplay,
+		Map[
+			EventHandler[
+				(* NOTE: Aborted protocols that don't have DateCompleted mess up our plot, so replace any Nulls with the parent protocol's DateCompleted.*)
+				Labeled[Interval[{Lookup[#, DateCreated], Lookup[#, DateCompleted]}], Lookup[#, Object], Above] /. {Null -> Lookup[parentProtocolPacket, DateCompleted]},
+				With[{insertMe=Lookup[#,Object]},
+					"MouseClicked" :> printValue[insertMe]
+				]
+			]&,
+			Flatten[{parentProtocolPacket, subprotocolPackets}]
+		],
+		Null
 	];
 
 	(* Create buttons with ticket as tooltip, CopyToClipboard as action*)
-	ticketButtons=MapThread[plotProtocolTimelineButton[#1,#2,printValue[#2]]&,{ticketStartDates,ticketsInRange}];
+	ticketButtons=If[ticketDisplay,
+		MapThread[plotProtocolTimelineButton[#1,#2,printValue[#2]]&,{ticketStartDates,ticketsInRange}],
+		{}
+	];
+
+	(* Create buttons with repairs as tooltip, CopyToClipboard as action*)
+	repairButtons=If[repairsDisplay,
+		MapThread[plotProtocolTimelineButton[#1,#2,printValue[#2]]&,{repairStartDates,repairsInRange}],
+		{}
+	];
+
+	titleString=If[MatchQ[Lookup[safeOps,Title],Automatic],
+		ToString[obj,InputForm],
+		Lookup[safeOps,Title]
+	];
+
+	titleOption=If[MatchQ[titleString,_String],
+		PlotLabel->With[{withTitle=titleString},Button[Style[titleString,FontSize->14],CopyToClipboard[withTitle],Appearance->"Frameless"]],
+		Nothing
+	];
+
+	sharedOptions={
+		ImageSize->1800,
+		PlotRange->{startDates[[1]]-30 Minute,endDates[[-1]]+30 Minute},
+		Epilog->{
+			PointSize[Medium],
+			Darker[Red],
+			ticketButtons,
+			Darker[Orange],
+			repairButtons
+		},
+		titleOption
+	};
 
 	(*Make a timeline plot*)
 	plot=Which[
 		subprotocolDisplay,
-			TimelinePlot[subprotocolIntervals, PlotRange->{startDates[[1]]-30 Minute,endDates[[-1]]+30 Minute}],
+			TimelinePlot[subprotocolIntervals, sharedOptions],
 		taskDisplay,
-			TimelinePlot[taskIntervals, PlotRange->{startDates[[1]]-30 Minute,endDates[[-1]]+30 Minute}, PlotLayout -> "Stacked"],
+			TimelinePlot[taskIntervals, Append[sharedOptions,PlotLayout -> "Stacked"]],
 		True,
 			TimelinePlot[
 				timePoints,
-				PassOptions[
-					TimelinePlot,
-					Sequence@@ReplaceRule[safeOps,{
-						LabelingFunction->labelingFunction,
+				Join[
+					sharedOptions,
+					{
 						PlotStyle->plotStyles,
+						LabelingFunction->labelingFunction,
 						PlotMarkers->Join[
 							(*disks for status intervals*)
 							Table[\[FilledCircle],Length[statuses]],
@@ -534,6 +601,7 @@ PlotProtocolTimeline[
 							(*disks for unlabeled pick-up intervals*)
 							Table[Style[\[FilledSquare],Darker[Blue]],Length[Flatten[pickUpOverTimes,1]]]
 						],
+						Filling->True,
 						Spacings->Join[
 							(*disks for status intervals growing upward*)
 							Table[1,Length[statuses]],
@@ -553,37 +621,31 @@ PlotProtocolTimeline[
 							{-Total[Flatten[checkInSpacings]]+First[Flatten[pickUpSpacings], 0]},
 							(*disks for late pick ups growing at each instrument processing status*)
 							RestOrDefault[Flatten[pickUpSpacings], {}]
-						],
-						PlotRange->{startDates[[1]]-30 Minute,endDates[[-1]]+30 Minute},
-						Epilog->{
-							Darker[Red],
-							ticketButtons
-						}
-					}]
+						]
+					}
 				]
 			]
 	];
 
-	(* Pull out the resolved options *)
-	finalResolvedOps={InterruptMarkers->Lookup[SafeOptions[PlotProtocolTimeline],InterruptMarkers],Output->Lookup[SafeOptions[PlotProtocolTimeline],Output]};
-
-	(* Return the requested outputs *)
-	outputSpecification/.{
-		Result->zoomableWorkaround[plot],
-		Options->finalResolvedOps,
-		Preview->Show[plot,ImageSize->Full],
-		Tests->{}
-	}
+	zoomableWorkaround[plot]
 ];
 
 
 (* This function takes in the ReadyCheckLog of a function along with the initial start dates, end dates, statuses, and responsible parties of a protocol's StatusLog *)
 (* And interweaves the statuses in the ready check log into the status log. These new start dates, end dates, statuses, and responsible parties are returned *)
 addReadyCheckStatuses[readyLog_,startDates_,endDates_,statuses_,responsibleParties_]:=Module[{uniqueUnavailableObjects,unavailableNames,unavailableObjectLookup,
-	namedObject,notReadyTimePeriods,availableObjects, amendedLog},
+	namedObject,notReadyTimePeriods,amendedLog},
 
 	(* Get any objects that were available at anytime *)
-	uniqueUnavailableObjects=DeleteDuplicates[Lookup[Flatten[Lookup[readyLog[[All,3]], {UnavailableInstruments, UnavailableMaterials},<||>]],Object,Nothing]];
+	(* Weirdly the ready check log contains just objects in UnavailableMaterials but associations in UnavailableInstruments *)
+	uniqueUnavailableObjects=DeleteDuplicates[
+		Flatten[
+			Join[
+				Lookup[readyLog[[All, 3]], UnavailableMaterials, {}],
+				Lookup[Flatten[Lookup[readyLog[[All, 3]],  UnavailableInstruments, <||>]], Object, Nothing]
+			]
+		]
+	];
 
 	(* We have to do a Download here because ReadyCheckLog has to be stored as an expression since we need a nested named multiple *)
 	unavailableNames=Download[uniqueUnavailableObjects,Name];
@@ -624,11 +686,11 @@ addReadyCheckStatuses[readyLog_,startDates_,endDates_,statuses_,responsibleParti
 	amendedLog=MapThread[
 		Function[{statusStartTime,statusEndTime,status,rp},
 			If[MatchQ[status,OperatorReady],
-				Module[{rcFalsePeriods, innerOperatorReadyPeriods, beginningOperatorReadyEntry, endOperatorReadyEntry},
+				Module[{rcFalsePeriods, innerOperatorReadyPeriods, beginningOperatorReadyEntry, endOperatorReadyEntry, issue},
 					rcFalsePeriods = Map[
 						Function[readyFalsePeriod,
-							Module[{beginningTime, endTime, readyCheckReport,materialsOwnerString,materialsString,instrumentString,
-								fullString,unavailables,beginningWithin,endWithin,fullyContains},
+							Module[{beginningTime, endTime, readyCheckReport,materialsString,instrumentString,
+								fullString,beginningWithin,endWithin,fullyContains},
 
 								(* Get the beginning and end of our current Ready->False period *)
 								beginningTime = readyFalsePeriod[[2]];
@@ -637,24 +699,16 @@ addReadyCheckStatuses[readyLog_,startDates_,endDates_,statuses_,responsibleParti
 								(* Get the restricting *)
 								readyCheckReport = readyFalsePeriod[[4]];
 
-								materialsOwnerString = StringRiffle[
-									{
-										Lookup[readyCheckReport, ECLMaterialsAvailable, False] /. {False -> "ECL", True -> Nothing},
-										Lookup[readyCheckReport, UserMaterialsAvailable, False] /. {False -> "User", True -> Nothing}
-									},
-									" and "
-								];
-
 								(* List out the unavailable objects, if not set because object is older *)
 								materialsString = Which[
-									Lookup[readyCheckReport, ECLMaterialsAvailable, False] && Lookup[readyCheckReport, UserMaterialsAvailable, False], Nothing,
-									MatchQ[Lookup[readyCheckReport, UnavailableMaterials],{}], materialsOwnerString<>" "<>"Materials Unavailable",
-									True, StringRiffle[namedObject[Lookup[Lookup[readyCheckReport, UnavailableMaterials, <||>],Object,{}]], ", "]<> " (" <> materialsOwnerString <> ")"
+									Lookup[readyCheckReport, ECLMaterialsAvailable, True] && Lookup[readyCheckReport, UserMaterialsAvailable, True], Nothing,
+									MatchQ[Lookup[readyCheckReport, UnavailableMaterials],{}],Nothing,
+									True, StringRiffle[namedObject[Lookup[readyCheckReport, UnavailableMaterials, {}]], ", "]
 								];
 
-								instrumentString = If[!Lookup[readyCheckReport, InstrumentsAvailable, False],
-									StringRiffle[namedObject[Lookup[Lookup[readyCheckReport, UnavailableInstruments, <||>],Object,{}]], ", "],
-									Nothing
+								instrumentString = If[MatchQ[Lookup[readyCheckReport, UnavailableInstruments],{}],
+									Nothing,
+									StringRiffle[namedObject[Lookup[Lookup[readyCheckReport, UnavailableInstruments, <||>],Object,{}]], ", "]
 								];
 
 								fullString = StringRiffle[{materialsString, instrumentString},"; "];
@@ -668,11 +722,17 @@ addReadyCheckStatuses[readyLog_,startDates_,endDates_,statuses_,responsibleParti
 								endWithin = MatchQ[endTime, RangeP[statusStartTime, statusEndTime]];
 								fullyContains = LessDateQ[beginningTime, statusStartTime] && GreaterDateQ[endTime, statusEndTime];
 
+								(* If we didn't find any materials we're RC->False for a reason other than materials *)
+								issue=If[MatchQ[fullString,""],
+									ReadyCheckFalse,
+									ResourceLimitation
+								];
+
 								Which[
-									beginningWithin&&endWithin,{beginningTime,endTime,ResourceLimitation,rp, fullString},
-									beginningWithin,{beginningTime,statusEndTime,ResourceLimitation,rp, fullString},
-									endWithin,{statusStartTime,endTime,ResourceLimitation,rp, fullString},
-									fullyContains,{statusStartTime,statusEndTime,ResourceLimitation,rp, fullString},
+									beginningWithin&&endWithin,{beginningTime,endTime,issue,rp, fullString},
+									beginningWithin,{beginningTime,statusEndTime,issue,rp, fullString},
+									endWithin,{statusStartTime,endTime,issue,rp, fullString},
+									fullyContains,{statusStartTime,statusEndTime,issue,rp, fullString},
 									True,Nothing
 								]
 							]

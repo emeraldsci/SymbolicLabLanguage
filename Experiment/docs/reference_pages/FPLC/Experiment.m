@@ -44,7 +44,18 @@ DefineUsage[ExperimentFPLC,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
+						]
 					]
 				},
 				IndexName -> "experiment samples"
@@ -115,7 +126,12 @@ DefineUsage[ExperimentFPLCOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -192,7 +208,12 @@ DefineUsage[ExperimentFPLCPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -267,7 +288,12 @@ DefineUsage[ValidExperimentFPLCQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},

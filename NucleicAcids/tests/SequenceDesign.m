@@ -510,7 +510,7 @@ DefineTests[FoldingSequences,
 			{{"TG","TG","TG","TG","GT","GT","GT","GT","GT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TA","TA","TA","TA","TA","TA","TA","TA","AG","AG","AG","AG","AG","AG","AG","AG","AG","AG","AG","GC","GC","GC","GC","GC","GC","GC","GC","CC","CC","CC","CC","CC","CC"},{"AC","AC","AC","AC","AC","AC","AC","AC","AC","AC","CA","CA","CA","CA","CA","CA","AC","AC","AC","AC","AC","AC","AC","AC","AC","AC","CC","CC","CC","CC","CC","CA","CA","CA","CA","CA","CA","AA","AA","AA","AT","AT","AT","AT","TG","TG","TG","TG","TG","TG","TG","TG","GG","GG","GG","GG","GG","GG","GG","GA","GA","GA","GA","GA","AG","AG","AG","AG","AG","GT","GT","GT","GT","GT","GT","GT","GT","GT"}}
 		],
 		Test[
-			"List of sequences, list of lenghts, list of spans:",
+			"List of sequences, list of lengths, list of spans:",
 			FoldingSequences[{"GTGGCCGAGGGCATAGCCTGTCTCTCTAGCCTTTCTATCGGCCCGGTGCATCTGATACAAACACTGTATCTGACGCCTTAGTAAGTACGCTCCGGTTGAA","ACGTAGCTCGGCTTGTCCACTAGGTTGCGGTGTTCCAAGAACGCTGTCCCGACCCACAACACCAATGGAGTAGATGACATAAGTAACTCAGTATAGGTAA"},{2,5},{20;;30,60;;70}],
 			{{"TG","TG","TG","TG","GT","GT","GT","GT","GT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TC","TC","TC","TC","CT","CT","CT","CT","CT","TA","TA","TA","TA","TA","TA","TA","TA","AG","AG","AG","AG","AG","AG","AG","AG","AG","AG","AG","GC","GC","GC","GC","GC","GC","GC","GC","CC","CC","CC","CC","CC","CC"},{"AACAC","ACACC"}}
 		],
@@ -2044,7 +2044,7 @@ DefineTests[
 			_previousSubsequences
 		],
 		Test[
-			"Checks taht the function returns nothing if any of the inputs are not nucleic acids:",
+			"Checks that the function returns nothing if any of the inputs are not nucleic acids:",
 			previousSubsequences["FISH",DNA["AATGC"]],
 			_previousSubsequences
 		],

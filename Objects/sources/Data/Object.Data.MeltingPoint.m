@@ -116,13 +116,13 @@ DefineObjectType[Object[Data,MeltingPoint],{
 			Description->"Melting point analysis performed on this data.",
 			Category->"Analysis & Reports"
 		},
-		ThermodynamicMeltingTemperature->{
-			Format->Single,
-			Class->Real,
-			Pattern:>GreaterP[0*Kelvin],
-			Units->Celsius,
-			Description->"The temperature measured at MeltingPointCriterion and corrected for the difference between the temperature of the furnace and the capillary. MeltingPointCriterion is either MeniscusPoint determined by MeniscusPointThreshold or ClearPoint determined by ClearPointThreshold. MeniscusPointThreshold is a transmission percent which determines the meniscus point and is defaulted at 40%. ClearPointThreshold is a transmission-time slope which determines the clear point and is defaulted at 0.4%/s.",
-			Category->"Analysis & Reports"
+		MeasurementMethod -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Pharmacopeia, Thermodynamic],
+			Description -> "The method used to adjust the measured temperatures obtained from the apparatus's temperature sensor. When set to \"Pharmacopeia\", the temperatures are adjusted using Pharmacopeia melting point standards; when set to \"Thermodynamic\", thermodynamic melting point standards are utilized for temperature adjustments. In \"Pharmacopeia\" mode, adjustments are based on experimental measurements following pharmacopeial guidelines. This method neglects the furnace temperature being slightly higher than the sample temperature during heating, leading to dependency on heating rate for comparability. In contrast, \"Thermodynamic\" mode provides a physically accurate melting point that represents the theoretical temperature at which a substance transitions from solid to liquid phase under standard conditions.",
+			Category -> "Method Information",
+			Abstract -> True
 		}
 	}
 }];

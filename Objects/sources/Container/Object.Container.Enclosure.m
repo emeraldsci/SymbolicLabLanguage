@@ -9,7 +9,14 @@ DefineObjectType[Object[Container, Enclosure], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
-		
+		Balances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, Balance],
+			Description -> "The balances that are contained on this enclosure for weighing purposes.",
+			Category -> "Instrument Specifications"
+		},
 		Vented -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], Vented]],

@@ -1,3 +1,277 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fa2757a3751eaa97400734de6f602a8c3a92adbface0d19cfc1f5bc31a61cb5b
-size 10996
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     10519,        267]
+NotebookOptionsPosition[      7440,        206]
+NotebookOutlinePosition[      8760,        240]
+CellTagsIndexPosition[      8717,        237]
+WindowTitle->Sample Manipulation Primitives
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "fb5e3d2f-48fe-4a8d-aad6-b630c7311dea"]
+        }],ExpressionUUID->"b78dbded-6811-4628-a6ca-2d5d5f7e0bfb"],
+        StripOnInput->False], {"\<\"Aliquot\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/Aliquot"], "\<\"Consolidation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Patterns/ref/Consolidation"], "\<\"FillToVolume\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/FillToVolume"], "\<\"Mix\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Mix"], "\<\"Transfer\"\>":>
+       Documentation`HelpLookup["paclet:Experiment/ref/Transfer"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "26412c8f-55d2-4e01-b8e5-17160e52ce6b"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "a4c006e3-d3e3-487f-a7db-133271c53704"]
+        }],ExpressionUUID->"a1a96958-1aaa-4b80-97ed-c47d7dafb728"],
+        StripOnInput->False], {"\<\"SampleShipments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/SampleShipments"], "\<\"SampleStorage\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/SampleStorage"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "39252024-fde3-42bc-8e08-e4d3bf42c13a"]
+    }], "AnchorBar",ExpressionUUID->"1f7ba4a8-27cc-4ae3-8a79-104d3f2c1f6a"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"731a8a74-267c-450a-b280-eda1bf7eb849"],
+
+Cell["Sample Manipulation Primitives", "GuideTitle",
+ CellID->2943690,ExpressionUUID->"a4c4cd44-198b-49f6-85c0-fafac20b1475"],
+
+Cell["", "GuideAbstract",
+ CellID->1467992,ExpressionUUID->"6966a894-8e2e-4754-8c0e-ed686a60b5de"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->781099513,ExpressionUUID->"0f4718ce-9398-41d2-806c-9c8332c2a036"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Transfer"]],"paclet:Experiment/ref/Transfer"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"295ef112-2fd2-4378-b2bd-f61656286647"]],\
+ "InlineGuideFunctionListing",
+ CellID->156767347,ExpressionUUID->"c64184ed-50f0-4574-a2ef-4e357290bf75"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Aliquot"]],"paclet:Experiment/ref/Aliquot"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"f12d536d-1013-47c6-a1ea-cd3f76d72777"]],\
+ "InlineGuideFunctionListing",
+ CellID->679036716,ExpressionUUID->"c9d12e61-976b-4304-b41d-230ff800a4dd"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Consolidation"]],"paclet:Patterns/ref/Consolidation"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"885eda9e-7552-46ac-94be-3be892ee3655"]],\
+ "InlineGuideFunctionListing",
+ CellID->726115717,ExpressionUUID->"82327694-f836-40d4-8aef-780ba26c8e1d"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FillToVolume"]],"paclet:Experiment/ref/FillToVolume"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"c198cb96-0af6-4940-99c9-0a30f6138e7b"]],\
+ "InlineGuideFunctionListing",
+ CellID->203681390,ExpressionUUID->"5d22dc7b-4291-47b2-a6dc-add63a418f2e"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Mix"]],"paclet:Experiment/ref/Mix"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"4f5b9531-5a83-4a3a-b696-65b22c5eefd3"]],\
+ "InlineGuideFunctionListing",
+ CellID->380774205,ExpressionUUID->"dbbd3667-1cdc-4f93-a7a2-a23de93eca24"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->226232586,ExpressionUUID->"3128674b-9a35-4591-be97-cec56d04e929"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"5d4f8bd6-ae72-4d52-a13b-3779c0e5596f"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->644526410,ExpressionUUID->"1c949416-21ab-41bb-83c2-d7a99a748aa3"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->122730198,ExpressionUUID->"fd131db5-8656-4f68-9787-4d1d896ccf9a"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleShipments"]],"paclet:Docs/guide/SampleShipments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->244466110,ExpressionUUID->"5bdaff66-d653-4362-91a6-d6da75e79c0e"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleStorage"]],"paclet:Docs/guide/SampleStorage"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->419900941,ExpressionUUID->"f648480d-46c0-43b0-bb05-b9ccafe366d3"],
+
+Cell["", "FooterCell",
+ CellID->296260573,ExpressionUUID->"186c6643-c2e4-451f-8256-9e67a0398b32"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"Sample Manipulation Primitives",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:30:47", "context" -> "Docs`", 
+    "keywords" -> {
+     "Transfer", "Aliquot", "Consolidation", "FillToVolume", "Mix"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> "", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "Sample Manipulation Primitives", "title" -> 
+    "Sample Manipulation Primitives", "type" -> "Guide", "uri" -> 
+    "Docs/guide/SampleManipulationPrimitives", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[602, 21, 3507, 87, 58, "AnchorBarGrid",ExpressionUUID->"731a8a74-267c-450a-b280-eda1bf7eb849",
+ CellID->1],
+Cell[4112, 110, 125, 1, 50, "GuideTitle",ExpressionUUID->"a4c4cd44-198b-49f6-85c0-fafac20b1475",
+ CellID->2943690],
+Cell[4240, 113, 98, 1, 31, "GuideAbstract",ExpressionUUID->"6966a894-8e2e-4754-8c0e-ed686a60b5de",
+ CellID->1467992],
+Cell[4341, 116, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"0f4718ce-9398-41d2-806c-9c8332c2a036",
+ CellID->781099513],
+Cell[4457, 119, 350, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"c64184ed-50f0-4574-a2ef-4e357290bf75",
+ CellID->156767347],
+Cell[4810, 129, 348, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"c9d12e61-976b-4304-b41d-230ff800a4dd",
+ CellID->679036716],
+Cell[5161, 139, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"82327694-f836-40d4-8aef-780ba26c8e1d",
+ CellID->726115717],
+Cell[5522, 149, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"5d22dc7b-4291-47b2-a6dc-add63a418f2e",
+ CellID->203681390],
+Cell[5883, 159, 340, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"dbbd3667-1cdc-4f93-a7a2-a23de93eca24",
+ CellID->380774205],
+Cell[6226, 169, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"3128674b-9a35-4591-be97-cec56d04e929",
+ CellID->226232586],
+Cell[6335, 172, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"1c949416-21ab-41bb-83c2-d7a99a748aa3",
+ CellID->644526410],
+Cell[6730, 186, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"fd131db5-8656-4f68-9787-4d1d896ccf9a",
+ CellID->122730198],
+Cell[6839, 189, 249, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"5bdaff66-d653-4362-91a6-d6da75e79c0e",
+ CellID->244466110],
+Cell[7091, 196, 245, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"f648480d-46c0-43b0-bb05-b9ccafe366d3",
+ CellID->419900941],
+Cell[7339, 203, 97, 1, 41, "FooterCell",ExpressionUUID->"186c6643-c2e4-451f-8256-9e67a0398b32",
+ CellID->296260573]
+}
+]
+*)
+
+(* End of internal cache information *)
+

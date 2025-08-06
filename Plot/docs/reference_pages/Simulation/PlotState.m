@@ -95,10 +95,7 @@ DefineUsage[PlotState,
 			"PlotReactionMechanism",
 			"MotifForm"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"brad"
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "brad"},
 		Preview->True
 	}
 ];

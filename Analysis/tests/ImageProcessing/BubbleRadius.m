@@ -301,33 +301,41 @@ DefineTests[AnalyzeBubbleRadiusOptions,
 DefineTests[AnalyzeBubbleRadiusPreview,
 	{
 		Example[{Basic, "Show a preview of the analysis for a single data object with foaming video data:"},
-			AnalyzeBubbleRadiusPreview[
-				Object[Data,DynamicFoamAnalysis,"full video for tests"]
-			],
-			TabView[{(_String->_Image|_Grid|_Deploy)..}, ___],
-			TimeConstraint->360
+			result = AnalyzeBubbleRadiusPreview[
+				Object[Data,DynamicFoamAnalysis,"large bubbles for tests"]
+			];
+			MatchQ[result, TabView[{(_String->_Image|_Grid|_Deploy)..}, ___]],
+			True,
+			TimeConstraint->360,
+			Variables :> {result}
 		],
 		Example[{Basic, "Show a preview of the analysis for multiple data objects with foaming video data:"},
-			AnalyzeBubbleRadiusPreview[
+			result = AnalyzeBubbleRadiusPreview[
 				{
 					Object[Data,DynamicFoamAnalysis,"small bubbles for tests"],
 					Object[Data,DynamicFoamAnalysis,"large bubbles for tests"]
 				},
 				MinimumBubbleRadius->{50 Micrometer, 100 Micrometer}
-			],
-			TabView[{Rule[_String,TabView[{(_String->_Image|_Grid|_Deploy)..},___]]..},___]
+			];
+			MatchQ[result, TabView[{Rule[_String,TabView[{(_String->_Image|_Grid|_Deploy)..},___]]..},___]],
+			True,
+			Variables :> {result}
 		],
 		Example[{Basic, "Show a preview of the analysis for all data objects in a DynamicFoamAnalysis protocol with foaming video data:"},
-			AnalyzeBubbleRadiusPreview[
+			result = AnalyzeBubbleRadiusPreview[
 				Object[Protocol,DynamicFoamAnalysis,"Test protocol for AnalyzeBubbleRadius"],
 				HistogramResizeFrequency->{10,5,1}
-			],
-			TabView[{Rule[_String,TabView[{$Failed}|{(_String->_Image|_Grid|_Deploy)..},___]]..},___],
-			Messages:>{Error::NoFoamStructureAnalysis}
+			];
+			MatchQ[result, TabView[{Rule[_String,TabView[{$Failed}|{(_String->_Image|_Grid|_Deploy)..},___]]..},___]],
+			True,
+			Messages:>{Error::NoFoamStructureAnalysis},
+			Variables :> {result}
 		],
 		Example[{Basic, "Show a preview of the analysis for a foaming video cloud file:"},
-			AnalyzeBubbleRadiusPreview[videoCloudFile],
-			TabView[{(_String->_Image|_Grid|_Deploy)..}, ___]
+			result = AnalyzeBubbleRadiusPreview[videoCloudFile];
+			MatchQ[result, TabView[{(_String->_Image|_Grid|_Deploy)..}, ___]],
+			True,
+			Variables :> {result}
 		]
 	},
 
@@ -374,7 +382,8 @@ DefineTests[ValidAnalyzeBubbleRadiusQ,
 				Object[Protocol,DynamicFoamAnalysis,"Test protocol for AnalyzeBubbleRadius"],
 				HistogramResizeFrequency->{1,5,10,20}
 			],
-			False
+			False,
+			Messages:>{Error::InputLengthMismatch}
 		],
 		Example[{Basic, "Validate video cloud file input:"},
 			ValidAnalyzeBubbleRadiusQ[videoCloudFile],

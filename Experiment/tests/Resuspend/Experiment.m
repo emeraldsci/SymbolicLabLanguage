@@ -19,7 +19,7 @@ DefineTests[ExperimentResuspend,
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
 		Example[{Basic, "Generate a new protocol to resuspend a sample robotically:"},
-			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter,MixType->Pipette],
+			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter,MixType->Pipette,Preparation->Robotic],
 			ObjectP[Object[Protocol, RoboticSamplePreparation]]
 		],
 		Example[{Basic, "Generate a new protocol to resuspend multiple samples:"},
@@ -27,7 +27,7 @@ DefineTests[ExperimentResuspend,
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
 		Example[{Basic, "Generate a new protocol to resuspend multiple specified as containers:"},
-			ExperimentResuspend[{Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ExperimentResuspend tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ExperimentResuspend tests"<> $SessionUUID]}, Volume -> 100 Microliter],
+			ExperimentResuspend[{Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ExperimentResuspend tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ExperimentResuspend tests"<> $SessionUUID]}, Volume -> 100 Microliter],
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
 		Test["Ensure that manipulations are properly generated when resuspending in the current container:",
@@ -43,14 +43,14 @@ DefineTests[ExperimentResuspend,
 			TimeConstraint -> 1000
 		],
 		Test["Ensure that robotic OutputUnitOperations are properly generated:",
-			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], MixType -> Pipette, Volume -> 100 Microliter];
+			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], MixType -> Pipette, Volume -> 100 Microliter,Preparation->Robotic];
 			Download[prot, OutputUnitOperations],
 			{ObjectP[Object[UnitOperation, Resuspend]]},
 			Variables :> {prot},
 			TimeConstraint -> 1000
 		],
 		Test["Ensure that robotic manipulations are properly generated when resuspending in the current container:",
-			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], MixType -> Pipette, Volume -> 100 Microliter];
+			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], MixType -> Pipette, Volume -> 100 Microliter,Preparation->Robotic];
 			Download[prot, OutputUnitOperations[[1]][RoboticUnitOperations]],
 			_?(And[
 				MemberQ[#, ObjectP[Object[UnitOperation, LabelContainer]]],
@@ -119,7 +119,7 @@ DefineTests[ExperimentResuspend,
 			TimeConstraint -> 1000
 		],
 		Test["Ensure that manipulations are properly generated when mixing by pipette:",
-			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter, MixType -> Pipette];
+			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter, MixType -> Pipette,Preparation->Robotic];
 			Download[prot, OutputUnitOperations[[1]][RoboticUnitOperations]],
 			_?(And[
 				MemberQ[#, ObjectP[Object[UnitOperation, LabelContainer]]],
@@ -178,19 +178,19 @@ DefineTests[ExperimentResuspend,
 		Example[{Options, ContainerOut, "If not specified, ContainerOut is automatically set to the current container of the specified samples:"},
 			options = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 1 Milliliter,Output->Options];
 			Lookup[options, ContainerOut],
-			{1,ObjectP[Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID]]},
+			{1,ObjectP[Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID]]},
 			Variables :> {options}
 		],
 		Example[{Options, ContainerOut, "If not specified, ContainerOut is automatically set to the current container of the specified samples:"},
 			prot = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 1 Milliliter];
 			FirstCase[Download[prot, OutputUnitOperations], ObjectP[Object[UnitOperation, LabelContainer]]][Container],
-			{ObjectP[Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID]]},
+			{ObjectP[Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID]]},
 			Variables :> {prot}
 		],
 		Example[{Options, DestinationWell, "Specify the position in the specified container in which to resuspend the samples:"},
 			options = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], DestinationWell -> "A2", ContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"], Volume -> 1 Milliliter, Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, Diluent, "Specify the solvent in which to dissolve the provided sample:"},
@@ -465,6 +465,198 @@ DefineTests[ExperimentResuspend,
 			Manual,
 			Variables :> {options}
 		],
+		Example[{Options, WorkCell, "If resuspending bacterial cells robotically, perform in the microbioSTAR:"},
+			protocol = ExperimentResuspend[
+				{Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID]},
+				Volume -> 1.2 Milliliter,
+				Preparation -> Robotic
+			];
+			resolvedWorkCell = Download[Download[protocol, OutputUnitOperations], WorkCell];
+			{
+				protocol,
+				resolvedWorkCell
+			},
+			{
+				ObjectP[Object[Protocol, RoboticCellPreparation]],
+				{microbioSTAR}
+			},
+			Variables :> {protocol, resolvedWorkCell}
+		],
+		Example[{Options, WorkCell, "If Preparation is Manual, WorkCell is Null:"},
+			options = ExperimentResuspend[
+				{Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID]},
+				Volume -> 1.2 Milliliter,
+				Preparation -> Manual,
+				Output -> Options
+			];
+			Lookup[options, WorkCell],
+			Null,
+			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentResuspend[
+				{Model[Sample, "Sodium Chloride"], Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 10 Milligram,
+				Volume -> 1.2 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjv1VA88z"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[10 Milligram]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (preparation -> robotic):"},
+			options = ExperimentResuspend[
+				{Model[Sample, "Sodium Chloride"], Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 10 Milligram,
+				Volume -> 1.2 Milliliter,
+				Preparation -> Robotic,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:BYDOjv1VA88z"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[10 Milligram]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (robotic):"},
+			protocol = ExperimentResuspend[
+				{Model[Sample, "Sodium Chloride"], Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 10 Milligram,
+				Volume -> 1.2 Milliliter,
+				Preparation -> Robotic
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			roboticUOs = Download[outputUOs[[1]], RoboticUnitOperations[Object]];
+			{
+				Download[outputUOs, SampleLink],
+				roboticUOs
+			},
+			{
+				{{ObjectP[Model[Sample, "id:BYDOjv1VA88z"]]..}},
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Mix]]}
+			},
+			Variables :> {protocol, outputUOs, roboticUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "If a model input is specified, make sure the protocol object/unit operations are created properly (manual):"},
+			protocol = ExperimentResuspend[
+				{Model[Sample, "Sodium Chloride"], Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 10 Milligram,
+				Volume -> 1.2 Milliliter,
+				Preparation -> Manual
+			];
+			outputUOs = Download[protocol, OutputUnitOperations[Object]];
+			{
+				outputUOs,
+				Download[outputUOs[[1]], SampleLink]
+			},
+			{
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Transfer]], ObjectP[Object[UnitOperation, Incubate]]},
+				{ObjectP[Model[Sample, "id:BYDOjv1VA88z"]], ObjectP[Model[Sample, "id:BYDOjv1VA88z"]], ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]}
+			},
+			Variables :> {protocol, outputUOs}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentResuspend[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentResuspend[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentResuspend[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentResuspend[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Sodium Chloride"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milligram
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentResuspend[sampleID, Volume -> 30 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Sodium Chloride"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milligram
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentResuspend[containerID, Volume -> 30 Milliliter, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "ResuspendPreparationInvalid", "Thow an error if the specified preparation cannot be performed:"},
 			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume->1Milliliter,Preparation -> Robotic, MixType->Vortex],
 			$Failed,
@@ -510,7 +702,7 @@ DefineTests[ExperimentResuspend,
 			}
 		],
 		Example[{Messages, "SampleStateInvalid", "If the input sample is a liquid, it cannot be resuspended:"},
-			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemcial 1 (200 uL)"<> $SessionUUID], Volume -> 1 Milliliter],
+			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (200 uL)"<> $SessionUUID], Volume -> 1 Milliliter],
 			$Failed,
 			Messages :> {
 				Error::SampleStateInvalid,
@@ -632,7 +824,7 @@ DefineTests[ExperimentResuspend,
 			}
 		],
 		Example[{Messages, "PartialResuspensionContainerInvalid", "If the ContainerOut is set to the current container, Amount must be equal to the full Mass/Count of the specified sample:"},
-			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Amount -> 10 Milligram, ContainerOut -> Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID], Volume -> 1 Milliliter],
+			ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Amount -> 10 Milligram, ContainerOut -> Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID], Volume -> 1 Milliliter],
 			$Failed,
 			Messages :> {
 				Error::ResuspendInitialVolumeOverContainerMax,
@@ -747,9 +939,31 @@ DefineTests[ExperimentResuspend,
 		Test["Return a simulation blob if Output -> Simulation with the correct volume of sample removed:",
 			simulation = ExperimentResuspend[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter, Output -> Simulation];
 			Download[Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume, Simulation -> simulation],
-			EqualP[200.3 Microliter],
+			EqualP[146.1 Microliter],
 			Variables :> {simulation},
 			TimeConstraint -> 3000
+		],
+		Test["Generate an Object[Protocol, ManualCellPreparation] if Preparation -> Manual and a cell-containing sample is used:",
+			ExperimentResuspend[
+				{Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID]},
+				Volume -> 1 Milliliter,
+				Preparation -> Manual,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, ManualCellPreparation]]
+		],
+		Test["Generate an Object[Protocol, RoboticCellPreparation] if Preparation -> Robotic and a cell-containing sample is used:",
+			ExperimentResuspend[
+				{Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID]},
+				Volume -> 1 Milliliter,
+				Preparation -> Robotic,
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			],
+			ObjectP[Object[Protocol, RoboticCellPreparation]]
 		]
 	},
 	Stubs:>{
@@ -771,31 +985,33 @@ DefineTests[ExperimentResuspend,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspend tests"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspend New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 2 (0.01 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical In Plate 2 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical In Plate 3 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspend Protocol"<> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
@@ -805,12 +1021,12 @@ DefineTests[ExperimentResuspend,
 			Module[
 				{
 					fakeBench,
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, plate1,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentResuspend tests"<> $SessionUUID, DeveloperObject -> True|>];
+				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentResuspend tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -825,6 +1041,7 @@ DefineTests[ExperimentResuspend,
 					container11,
 					container12,
 					container13,
+					container14,
 					plate1
 				} = UploadSample[
 					{
@@ -841,9 +1058,11 @@ DefineTests[ExperimentResuspend,
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 					},
 					{
+						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
 						{"Work Surface", fakeBench},
@@ -873,23 +1092,25 @@ DefineTests[ExperimentResuspend,
 						Available,
 						Available,
 						Available,
+						Available,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 4 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 5 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 6 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 7 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 8 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 9 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 10 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 11 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 12 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake container 13 for ExperimentResuspend tests"<> $SessionUUID,
-						"Fake plate 1 for ExperimentResuspend tests"<> $SessionUUID
+						"Test container 1 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 2 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 3 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 4 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 5 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 6 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 7 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 8 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 9 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 10 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 11 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 12 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 13 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test container 14 for ExperimentResuspend tests"<> $SessionUUID,
+						"Test plate 1 for ExperimentResuspend tests"<> $SessionUUID
 					}
 				];
 				{
@@ -902,7 +1123,8 @@ DefineTests[ExperimentResuspend,
 					sample7,
 					sample8,
 					sample9,
-					sample10
+					sample10,
+					sample11
 				} = UploadSample[
 					{
 						Model[Sample, "Sodium Chloride"],
@@ -914,7 +1136,8 @@ DefineTests[ExperimentResuspend,
 						Model[Sample, "Sodium Chloride"],
 						Model[Sample, "Sodium Chloride"],
 						Model[Sample, "Sodium Chloride"],
-						Model[Sample, "Sodium Chloride"]
+						Model[Sample, "Sodium Chloride"],
+						Model[Sample, "E.coli DH5 Alpha Agar Stab"]
 					},
 					{
 						{"A1", container},
@@ -926,7 +1149,8 @@ DefineTests[ExperimentResuspend,
 						{"A1", container7},
 						{"A1", container8},
 						{"A1", plate1},
-						{"A2", plate1}
+						{"A2", plate1},
+						{"A1", container14}
 					},
 					InitialAmount -> {
 						100 * Milligram,
@@ -938,7 +1162,8 @@ DefineTests[ExperimentResuspend,
 						100 * Milligram,
 						0.01 * Milligram,
 						100 * Milligram,
-						100 * Milligram
+						100 * Milligram,
+						100 Milligram
 					},
 					Name -> {
 						"ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID,
@@ -946,11 +1171,12 @@ DefineTests[ExperimentResuspend,
 						"ExperimentResuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID,
 						"ExperimentResuspend New Test Chemical 1 (Discarded)"<> $SessionUUID,
 						"ExperimentResuspend New Test Chemical 1 (no amount)"<> $SessionUUID,
-						"ExperimentResuspend New Test Chemcial 1 (200 uL)"<> $SessionUUID,
+						"ExperimentResuspend New Test Chemical 1 (200 uL)"<> $SessionUUID,
 						"ExperimentResuspend New Test Chemical 2 (100 mg)"<> $SessionUUID,
 						"ExperimentResuspend New Test Chemical 2 (0.01 mg)"<> $SessionUUID,
 						"ExperimentResuspend New Test Chemical In Plate 2 (100 mg)"<> $SessionUUID,
-						"ExperimentResuspend New Test Chemical In Plate 3 (100 mg)"<> $SessionUUID
+						"ExperimentResuspend New Test Chemical In Plate 3 (100 mg)"<> $SessionUUID,
+						"ExperimentResuspend Test cell sample 1" <> $SessionUUID
 					}
 				];
 
@@ -959,8 +1185,8 @@ DefineTests[ExperimentResuspend,
 				templateProtocol = ExperimentResuspend[sample7, Volume -> 123 Microliter, Name -> "Existing ExperimentResuspend Protocol"<> $SessionUUID];
 
 				allObjs = Cases[Flatten[{
-					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, plate1,
-					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, container13, container14, plate1,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11,
 					templateProtocol, Download[templateProtocol, {ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]
 				}], ObjectP[]];
 
@@ -980,27 +1206,27 @@ DefineTests[ExperimentResuspend,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ExperimentResuspend tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspend tests"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspend New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical 2 (0.01 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspend New Test Chemical In Plate 2 (100 mg)"<> $SessionUUID],
@@ -1028,7 +1254,7 @@ DefineTests[ExperimentResuspendPreview,
 			Null
 		],
 		Example[{Basic, "Always returns Null:"},
-			ExperimentResuspendPreview[{Object[Container, Vessel, "Fake container 1 for ExperimentResuspendPreview tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ExperimentResuspendPreview tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ExperimentResuspendPreview tests"<> $SessionUUID]}, Volume -> 100 Microliter],
+			ExperimentResuspendPreview[{Object[Container, Vessel, "Test container 1 for ExperimentResuspendPreview tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ExperimentResuspendPreview tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ExperimentResuspendPreview tests"<> $SessionUUID]}, Volume -> 100 Microliter],
 			Null
 		]
 	},
@@ -1046,28 +1272,34 @@ DefineTests[ExperimentResuspendPreview,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (100 mg)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Resin 1 (100 mg)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (Discarded)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemcial 1 (200 uL)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemical 2 (100 mg)"<> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspendPreview Protocol"<> $SessionUUID]
+				Object[Container, Bench, "Test bench for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspend tests"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Resin 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (Discarded)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (no amount)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 2 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical 2 (0.01 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical In Plate 2 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend New Test Chemical In Plate 3 (100 mg)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspend Test cell sample 1"<> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspend Protocol"<> $SessionUUID]
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
@@ -1081,7 +1313,7 @@ DefineTests[ExperimentResuspendPreview,
 					allObjs
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentResuspendPreview tests"<> $SessionUUID, DeveloperObject -> True|>];
+				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentResuspendPreview tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1143,19 +1375,19 @@ DefineTests[ExperimentResuspendPreview,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 4 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 5 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 6 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 7 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 8 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 9 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 10 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 11 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake container 12 for ExperimentResuspendPreview tests"<> $SessionUUID,
-						"Fake plate 1 for ExperimentResuspendPreview tests"<> $SessionUUID
+						"Test container 1 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 2 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 3 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 4 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 5 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 6 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 7 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 8 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 9 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 10 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 11 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test container 12 for ExperimentResuspendPreview tests"<> $SessionUUID,
+						"Test plate 1 for ExperimentResuspendPreview tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1200,7 +1432,7 @@ DefineTests[ExperimentResuspendPreview,
 						"ExperimentResuspendPreview New Test Chemical 1 (3 Tablets)"<> $SessionUUID,
 						"ExperimentResuspendPreview New Test Chemical 1 (Discarded)"<> $SessionUUID,
 						"ExperimentResuspendPreview New Test Chemical 1 (no amount)"<> $SessionUUID,
-						"ExperimentResuspendPreview New Test Chemcial 1 (200 uL)"<> $SessionUUID,
+						"ExperimentResuspendPreview New Test Chemical 1 (200 uL)"<> $SessionUUID,
 						"ExperimentResuspendPreview New Test Chemical 2 (100 mg)"<> $SessionUUID
 					}
 				];
@@ -1226,26 +1458,26 @@ DefineTests[ExperimentResuspendPreview,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspendPreview tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspendPreview tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspendPreview tests"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendPreview New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspendPreview New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendPreview New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspendPreview Protocol"<> $SessionUUID]
 			};
@@ -1262,19 +1494,19 @@ DefineTests[ExperimentResuspendOptions,
 	{
 		Example[{Basic, "Generate a new protocol to resuspend a sample:"},
 			ExperimentResuspendOptions[Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 100 Microliter, OutputFormat -> List],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}
+			{(Rule[_Symbol, Except[Automatic | $Failed]] | Rule[Site, _])..}
 		],
 		Example[{Basic, "Generate a new protocol to resuspend multiple samples:"},
 			ExperimentResuspendOptions[{Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID], Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (3 Tablets)"<> $SessionUUID]}, Volume -> 100 Microliter, OutputFormat -> List],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}
+			{(Rule[_Symbol, Except[Automatic | $Failed]] | Rule[Site, _])..}
 		],
 		Example[{Basic, "Generate a new protocol to resuspend multiple specified as containers:"},
-			ExperimentResuspendOptions[{Object[Container, Vessel, "Fake container 1 for ExperimentResuspendOptions tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ExperimentResuspendOptions tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ExperimentResuspendOptions tests"<> $SessionUUID]}, Volume -> 100 Microliter, OutputFormat -> List],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}
+			ExperimentResuspendOptions[{Object[Container, Vessel, "Test container 1 for ExperimentResuspendOptions tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ExperimentResuspendOptions tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ExperimentResuspendOptions tests"<> $SessionUUID]}, Volume -> 100 Microliter, OutputFormat -> List],
+			{(Rule[_Symbol, Except[Automatic | $Failed]] | Rule[Site, _])..}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options for each sample as a list:"},
 			ExperimentResuspendOptions[Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 1 Milliliter, OutputFormat -> List],
-			{Rule[_Symbol, Except[Automatic | $Failed]]..}
+			{(Rule[_Symbol, Except[Automatic | $Failed]] | Rule[Site, _])..}
 		],
 		Example[{Options, OutputFormat, "Return the resolved options for each sample as a table:"},
 			ExperimentResuspendOptions[Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID], Volume -> 1 Milliliter],
@@ -1295,26 +1527,26 @@ DefineTests[ExperimentResuspendOptions,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendOptions New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspendOptions Protocol"<> $SessionUUID]
 			};
@@ -1330,7 +1562,7 @@ DefineTests[ExperimentResuspendOptions,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ExperimentResuspendOptions tests"<> $SessionUUID, DeveloperObject -> True|>];
+				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ExperimentResuspendOptions tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1392,19 +1624,19 @@ DefineTests[ExperimentResuspendOptions,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 2 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 3 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 4 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 5 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 6 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 7 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 8 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 9 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 10 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 11 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake container 12 for ExperimentResuspendOptions tests"<> $SessionUUID,
-						"Fake plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID
+						"Test container 1 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 2 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 3 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 4 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 5 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 6 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 7 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 8 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 9 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 10 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 11 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test container 12 for ExperimentResuspendOptions tests"<> $SessionUUID,
+						"Test plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1449,7 +1681,7 @@ DefineTests[ExperimentResuspendOptions,
 						"ExperimentResuspendOptions New Test Chemical 1 (3 Tablets)"<> $SessionUUID,
 						"ExperimentResuspendOptions New Test Chemical 1 (Discarded)"<> $SessionUUID,
 						"ExperimentResuspendOptions New Test Chemical 1 (no amount)"<> $SessionUUID,
-						"ExperimentResuspendOptions New Test Chemcial 1 (200 uL)"<> $SessionUUID,
+						"ExperimentResuspendOptions New Test Chemical 1 (200 uL)"<> $SessionUUID,
 						"ExperimentResuspendOptions New Test Chemical 2 (100 mg)"<> $SessionUUID
 					}
 				];
@@ -1480,26 +1712,26 @@ DefineTests[ExperimentResuspendOptions,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ExperimentResuspendOptions tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ExperimentResuspendOptions tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ExperimentResuspendOptions tests"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ExperimentResuspendOptions New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ExperimentResuspendOptions New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ExperimentResuspendOptions New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ExperimentResuspendOptions Protocol"<> $SessionUUID]
 			};
@@ -1525,7 +1757,7 @@ DefineTests[ValidExperimentResuspendQ,
 			True
 		],
 		Example[{Basic, "Generate a new protocol to resuspend multiple specified as containers:"},
-			ValidExperimentResuspendQ[{Object[Container, Vessel, "Fake container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID], Object[Container, Vessel, "Fake container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID]}, Volume -> 100 Microliter],
+			ValidExperimentResuspendQ[{Object[Container, Vessel, "Test container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID], Object[Container, Vessel, "Test container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID], Object[Container, Vessel, "Test container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID]}, Volume -> 100 Microliter],
 			True
 		],
 		Example[{Options,Verbose,"Indicate whether all tests, no tests, or failures only are shown:"},
@@ -1549,7 +1781,7 @@ DefineTests[ValidExperimentResuspendQ,
 			True
 		],
 		Example[{Messages, "SampleStateInvalid", "If the input sample is a liquid, it cannot be resuspended:"},
-			ValidExperimentResuspendQ[Object[Sample, "ValidExperimentResuspendQ New Test Chemcial 1 (200 uL)"<> $SessionUUID], Volume -> 1 Milliliter],
+			ValidExperimentResuspendQ[Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (200 uL)"<> $SessionUUID], Volume -> 1 Milliliter],
 			False
 		],
 		Example[{Messages, "DuplicateName", "If the specified name already exists for a Resuspend protocol, an error is thrown:"},
@@ -1608,7 +1840,7 @@ DefineTests[ValidExperimentResuspendQ,
 			False
 		],
 		Example[{Messages, "PartialResuspensionContainerInvalid", "If the ContainerOut is set to the current container, Amount must be equal to the full Mass/Count of the specified sample:"},
-			ValidExperimentResuspendQ[Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (100 mg)"<> $SessionUUID], Amount -> 10 Milligram, ContainerOut -> Object[Container, Vessel, "Fake container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID], Volume -> 1 Milliliter],
+			ValidExperimentResuspendQ[Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (100 mg)"<> $SessionUUID], Amount -> 10 Milligram, ContainerOut -> Object[Container, Vessel, "Test container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID], Volume -> 1 Milliliter],
 			False
 		],
 		Example[{Messages, "DuplicateSampleConflictingConditions", "If the same sample is specified more than once, it will only be resuspended once.  In this case, all the options for these samples must be identical:"},
@@ -1630,27 +1862,27 @@ DefineTests[ValidExperimentResuspendQ,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentResuspendQ New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 2 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 2 (0.01 mg)"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ValidExperimentResuspendQ Protocol"<> $SessionUUID]
@@ -1667,7 +1899,7 @@ DefineTests[ValidExperimentResuspendQ,
 					allObjs, templateProtocol
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ValidExperimentResuspendQ tests"<> $SessionUUID, DeveloperObject -> True|>];
+				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for ValidExperimentResuspendQ tests"<> $SessionUUID, DeveloperObject -> True|>];
 				{
 					container,
 					container2,
@@ -1733,20 +1965,20 @@ DefineTests[ValidExperimentResuspendQ,
 						Available
 					},
 					Name -> {
-						"Fake container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID,
-						"Fake plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID
+						"Test container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID,
+						"Test plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID
 					}
 				];
 				{
@@ -1795,7 +2027,7 @@ DefineTests[ValidExperimentResuspendQ,
 						"ValidExperimentResuspendQ New Test Chemical 1 (3 Tablets)"<> $SessionUUID,
 						"ValidExperimentResuspendQ New Test Chemical 1 (Discarded)"<> $SessionUUID,
 						"ValidExperimentResuspendQ New Test Chemical 1 (no amount)"<> $SessionUUID,
-						"ValidExperimentResuspendQ New Test Chemcial 1 (200 uL)"<> $SessionUUID,
+						"ValidExperimentResuspendQ New Test Chemical 1 (200 uL)"<> $SessionUUID,
 						"ValidExperimentResuspendQ New Test Chemical 2 (100 mg)"<> $SessionUUID,
 						"ValidExperimentResuspendQ New Test Chemical 2 (0.01 mg)"<> $SessionUUID
 					}
@@ -1827,27 +2059,27 @@ DefineTests[ValidExperimentResuspendQ,
 		Module[
 			{allObjs, existingObjs},
 			allObjs = {
-				Object[Container, Bench, "Fake bench for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Vessel, "Fake container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID],
-				Object[Container, Plate, "Fake plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Bench, "Test bench for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 13 for ValidExperimentResuspendQ tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for ValidExperimentResuspendQ tests"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Resin 1 (100 mg)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (Discarded)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (no amount)"<> $SessionUUID],
-				Object[Sample, "ValidExperimentResuspendQ New Test Chemcial 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 1 (200 uL)"<> $SessionUUID],
 				Object[Sample, "ValidExperimentResuspendQ New Test Chemical 2 (0.01 mg)"<> $SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Existing ValidExperimentResuspendQ Protocol"<> $SessionUUID]
 			};
@@ -1856,3 +2088,244 @@ DefineTests[ValidExperimentResuspendQ,
 		]
 	)
 ];
+
+
+
+(* ::Subsection::Closed:: *)
+(*Resuspend*)
+
+DefineTests[Resuspend,
+	{
+		Example[{Basic, "Generate a new protocol to resuspend a sample:"},
+			Experiment[{Resuspend[Sample -> Object[Sample, "Resuspend New Test Chemical 1 (100 mg)"<>$SessionUUID], Amount -> 10 Milligram, Volume -> 100 Microliter]}],
+			ObjectP[Object[Protocol]]
+		]
+	},
+	Stubs:>{
+		$EmailEnabled=False,
+		$AllowSystemsProtocols = True,
+		$PersonID = Object[User, Emerald, Developer, "id:Y0lXejMmX69l"]
+	},
+	SetUp:>($CreatedObjects={}),
+	TearDown:>(
+		EraseObject[$CreatedObjects,Force->True,Verbose->False];
+		Unset[$CreatedObjects]
+	),
+	SymbolSetUp :> (
+		Module[
+			{allObjs, existingObjs},
+			allObjs = {
+				Object[Container, Bench, "Test bench for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for Resuspend tests"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Resin 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (Discarded)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (no amount)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 2 (100 mg)"<> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Existing Resuspend Protocol"<> $SessionUUID]
+			};
+			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Block[{$AllowSystemsProtocols = True},
+			Module[
+				{
+					fakeBench,
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, plate1,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7,
+					allObjs, templateProtocol
+				},
+
+				fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Test bench for Resuspend tests"<> $SessionUUID, DeveloperObject -> True|>];
+				{
+					container,
+					container2,
+					container3,
+					container4,
+					container5,
+					container6,
+					container7,
+					container8,
+					container9,
+					container10,
+					container11,
+					container12,
+					plate1
+				} = UploadSample[
+					{
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "50mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+					},
+					{
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench},
+						{"Work Surface", fakeBench}
+					},
+					Status -> {
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available,
+						Available
+					},
+					Name -> {
+						"Test container 1 for Resuspend tests"<> $SessionUUID,
+						"Test container 2 for Resuspend tests"<> $SessionUUID,
+						"Test container 3 for Resuspend tests"<> $SessionUUID,
+						"Test container 4 for Resuspend tests"<> $SessionUUID,
+						"Test container 5 for Resuspend tests"<> $SessionUUID,
+						"Test container 6 for Resuspend tests"<> $SessionUUID,
+						"Test container 7 for Resuspend tests"<> $SessionUUID,
+						"Test container 8 for Resuspend tests"<> $SessionUUID,
+						"Test container 9 for Resuspend tests"<> $SessionUUID,
+						"Test container 10 for Resuspend tests"<> $SessionUUID,
+						"Test container 11 for Resuspend tests"<> $SessionUUID,
+						"Test container 12 for Resuspend tests"<> $SessionUUID,
+						"Test plate 1 for Resuspend tests"<> $SessionUUID
+					}
+				];
+				{
+					sample,
+					sample2,
+					sample3,
+					sample4,
+					sample5,
+					sample6,
+					sample7
+				} = UploadSample[
+					{
+						Model[Sample, "Sodium Chloride"],
+						Model[Sample, "Wang-ChemMatrix "],
+						Model[Sample, "Test Ibuprofen tablet Model for ExperimentMeasureCount Testing"],
+						Model[Sample, "Sodium Chloride"],
+						Model[Sample, "Sodium Chloride"],
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Sodium Chloride"]
+					},
+					{
+						{"A1", container},
+						{"A1", container2},
+						{"A1", container3},
+						{"A1", container4},
+						{"A1", container5},
+						{"A1", container6},
+						{"A1", container7}
+					},
+					InitialAmount -> {
+						100 * Milligram,
+						100 * Milligram,
+						3,
+						100 * Milligram,
+						Null,
+						200 Microliter,
+						100 * Milligram
+					},
+					Name -> {
+						"Resuspend New Test Chemical 1 (100 mg)"<> $SessionUUID,
+						"Resuspend New Test Resin 1 (100 mg)"<> $SessionUUID,
+						"Resuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID,
+						"Resuspend New Test Chemical 1 (Discarded)"<> $SessionUUID,
+						"Resuspend New Test Chemical 1 (no amount)"<> $SessionUUID,
+						"Resuspend New Test Chemical 1 (200 uL)"<> $SessionUUID,
+						"Resuspend New Test Chemical 2 (100 mg)"<> $SessionUUID
+					}
+				];
+
+
+				(* make a new protocol object for templating *)
+				templateProtocol = ExperimentResuspend[sample7, Volume -> 123 Microliter, Name -> "Existing Resuspend Protocol"<> $SessionUUID];
+
+				allObjs = Cases[Flatten[{
+					container, container2, container3, container4, container5, container6, container7, container8, container9, container10, container11, container12, plate1,
+					sample, sample2, sample3, sample4, sample5, sample6, sample7,
+					templateProtocol, Download[templateProtocol, {ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]
+				}], ObjectP[]];
+
+				(* get rid of the Model field for these samples so that we can make sure everything works when that is the case *)
+				Upload[Flatten[{
+					<|Object -> #, DeveloperObject -> True|>& /@ PickList[allObjs, DatabaseMemberQ[allObjs]]
+				}]];
+				UploadSampleStatus[sample4, Discarded, FastTrack -> True]
+
+			]
+		]
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+
+		Module[
+			{allObjs, existingObjs},
+			allObjs = {
+				Object[Container, Bench, "Test bench for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 1 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 4 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 5 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 6 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 7 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 8 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 9 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 10 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 11 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Vessel, "Test container 12 for Resuspend tests"<> $SessionUUID],
+				Object[Container, Plate, "Test plate 1 for Resuspend tests"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Resin 1 (100 mg)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (3 Tablets)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (Discarded)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (no amount)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 1 (200 uL)"<> $SessionUUID],
+				Object[Sample, "Resuspend New Test Chemical 2 (100 mg)"<> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Existing Resuspend Protocol"<> $SessionUUID]
+			};
+			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		]
+	)
+];
+

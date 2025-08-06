@@ -89,7 +89,7 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 		],
 
 		(* Shared field shaping *)
-		NotNullFieldTest[packet, {State, BiosafetyLevel, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {chemicalIdentifier}],
+		NotNullFieldTest[packet, {State, Name, Synonyms}, Message -> Hold[Error::RequiredOptions], MessageArguments -> {chemicalIdentifier}],
 
 		Test["The contents of the Name field is a member of the Synonyms field for " <> ToString[chemicalIdentifier] <> ":",
 			MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
@@ -158,19 +158,6 @@ validModelMoleculeQTests[packet : PacketP[Model[Molecule]]] := With[
 
 
 		(* Other tests *)
-		Test["If MeltingPoint and BoilingPoint are both provided, BoilingPoint must be above MeltingPoint for " <> ToString[chemicalIdentifier] <> ":",
-			Module[{meltingPoint, boilingPoint},
-				{meltingPoint, boilingPoint} = Lookup[packet, {MeltingPoint, BoilingPoint}];
-				If[!NullQ[meltingPoint] && !NullQ[boilingPoint],
-					(meltingPoint) <= (boilingPoint),
-					True
-				]
-			],
-			True,
-			Message -> Hold[Error::MeltingBoilingPoint],
-			MessageArguments -> {chemicalIdentifier}
-		],
-
 		Test["If Monatomic is set to True, the MolecularFormula contains exactly one element.",
 			Module[{formula, monatomic},
 				{formula, monatomic} = Lookup[packet, {MolecularFormula, Monatomic}, $Failed];
@@ -285,13 +272,12 @@ Error::InvalidDensity="The density for the input(s), `1`, do not appear to be va
 Error::VentilatedRequired="The input(s), `1`, that are marked as Pungent must also be set to Ventilated->True. Please change the value of the Ventilated field.";
 Error::MoleculeRequiredFields="The options {State, BiosafetyLevel, Name, Synonyms} are required for input(s), `1`. Please include these options to upload a valid object.";
 Error::NameIsNotPartOfSynonyms="The Name option is not part of the Synonyms field, for the input(s) `1`. Please include the Name of the object as part of the Synonyms field.";
-Error::RequiredMSDSOptions="If MSDSRequired isn't set to False, the fields {Flammable,MSDSFile,NFPA,DOTHazardClass} are requied for input(s): `1`. Please fill out the values of these fields in order to upload a valid object.";
+Error::RequiredMSDSOptions="If MSDSRequired isn't set to False, the fields {Flammable,MSDSFile,NFPA,DOTHazardClass} are required for input(s): `1`. Please fill out the values of these fields in order to upload a valid object.";
 Error::IncompatibleMaterials="The option IncompatibleMaterials must either be {None} or a list of incompatible materials for input(s): `1`. Please change the value of this option in order to upload a valid object.";
-Error::MeltingBoilingPoint="The boiling point must be above the melting point for input(s): `1`. Please change the value of these options in order to upload a valid object.";
 Error::FluorescenceFields="The FluorescenceExcitationMaximums and FluorescenceEmissionMaximums fields must be the same length for the input(s):`1`. For every provided fluorescence excitation maximum please provide the corresponding fluorescence emission maximum.";
-Error::AffinityLabelsDoNotConformToPattern="The AffinityLabels `1` is not allowed. Allowed molecules for Affinity labels include `2`, whose AffinityLable->True.";
+Error::AffinityLabelsDoNotConformToPattern="The AffinityLabels `1` is not allowed. Allowed molecules for Affinity labels include `2`, whose AffinityLabel->True.";
 Error::DetectionLabelsDoNotConformToPattern="The DetectionLabels `1` is not allowed. Allowed molecules for Detection labels include `2`, whose DetectionLabel->True.";
-Error::RacemicOrChiralMolecule="The molucule `1` cannot be both a racemic molecule and a chiral molecule at the same time. Please check the chirality of the molecule and set either one or both of Chiral or Racemic to be False.";
+Error::RacemicOrChiralMolecule="The molecule `1` cannot be both a racemic molecule and a chiral molecule at the same time. Please check the chirality of the molecule and set either one or both of Chiral or Racemic to be False.";
 Error::MoleculeRequired = "Molecule was not specified for `1`, please make sure you specify a Molecule in order to upload it as Oligomer.";
 Error::MoleculeIsNotMonatomic = "The specified MolecularFormula for `1` does not agree with Monatomic being True. Please check that molecule's formula contains only one element.";
 Error::MoleculeIsMonatomic = "The specified MolecularFormula for `1` does not agree with Monatomic being False. Please check that molecule's formula contains only one element.";
@@ -305,10 +291,15 @@ errorToOptionMap[Model[Molecule]]:={
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
 	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
-	"Error::MeltingBoilingPoint"->{MeltingPoint, BoilingPoint},
 	"Error::FluorescenceFields"->{FluorescenceExcitationMaximums,FluorescenceEmissionMaximums},
 	"Error::AffinityLabelsDoNotConformToPattern"->{AffinityLabels},
-	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels}
+	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels},
+	"Error::MoleculeExists"->{InChI, InChIKey, CAS, IUPAC, PubChemID},
+	"Error::InvalidMSDSURL"->{MSDSFile},
+	"Error::InvalidStructureFileURL"->{StructureFile},
+	"Error::InvalidStructureImageFileURL"->{StructureImageFile},
+	"Error::InvalidStructureLocalFile"->{StructureFile},
+	"Error::InvalidStructureImageLocalFile"->{StructureImageFile}
 };
 
 
@@ -728,7 +719,6 @@ errorToOptionMap[Model[Lysate]]:={
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
 	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
-	"Error::MeltingBoilingPoint"->{MeltingPoint, BoilingPoint},
 	"Error::CellRequired"->{Cell}
 };
 

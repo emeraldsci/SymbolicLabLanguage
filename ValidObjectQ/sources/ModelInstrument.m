@@ -24,7 +24,7 @@ validModelInstrumentQTests[packet:PacketP[Model[Instrument]]] := {
 			Manufacturer,
 			UserManualFiles,
 			HazardCategories,
-			SampleHandlingCategories,
+			AsepticHandling,
 			CrossSectionalShape,
 			Dimensions,
 			PowerType,
@@ -117,17 +117,31 @@ validModelInstrumentQTests[packet:PacketP[Model[Instrument]]] := {
 		],
 		True
 	],
-	Test[
-		"If None is selected as a handling category, nothing else is selected:",
-		Module[{sampleHandlingCategories},
-		sampleHandlingCategories=Lookup[packet,SampleHandlingCategories];
-		If[MemberQ[(sampleHandlingCategories),Standard],
-			Length[sampleHandlingCategories]===1,
-				True
-			]
+
+	Test["If AsepticTechniqueEnvironment is set to True and CultureHandling is not Null, AsepticHandling must be True:",
+		If[TrueQ[Lookup[packet,AsepticTechniqueEnvironment]] && !NullQ[Lookup[packet,CultureHandling]],
+			TrueQ[Lookup[packet,AsepticHandling]],
+			True
 		],
 		True
 	],
+
+	Test["If AsepticTechniqueEnvironment is set to True, the instrument model must contains non-empty Positions:",
+		If[TrueQ[Lookup[packet,AsepticTechniqueEnvironment]],
+			!MatchQ[Lookup[packet,Positions],{}],
+			True
+		],
+		True
+	],
+
+	Test["If Sterile is set to True, AsepticHandling must be True:",
+		If[TrueQ[Lookup[packet,Sterile]],
+			TrueQ[Lookup[packet,AsepticHandling]],
+			True
+		],
+		True
+	],
+
 	Test[
 		"If None is selected as a hazard category, nothing else is selected:",
 		Module[{hazardCategories},
@@ -527,7 +541,15 @@ validModelInstrumentpHMeterQTests[packet:PacketP[Model[Instrument,pHMeter]]]:=Jo
 	]
 ];
 
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentpHTitratorQTests*)
 
+
+validModelInstrumentpHTitratorQTests[packet:PacketP[Model[Instrument,pHTitrator]]]:={
+
+	NotNullFieldTest[packet, {SyringeVolume, MinDispenseVolume}]
+
+};
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentConductivityMeterQTests*)
@@ -551,7 +573,32 @@ validModelInstrumentBiosafetyCabinetQTests[packet:PacketP[Model[Instrument,Biosa
 
 	NotNullFieldTest[packet, {
 			BiosafetyLevel,
-			LaminarFlow,
+			MinLaminarFlowSpeed,
+			Benchtop,
+			Plumbing,
+			(* Shared fields shaping *)
+			Positions
+		}
+	],
+
+	NullFieldTest[packet, {Connector, Dongle, OperatingSystem, PCICard}],
+
+	Test["The three indexes in InternalDimensions must be all informed:",
+	Lookup[packet,InternalDimensions],
+	{Except[NullP],Except[NullP],Except[NullP]}
+	]
+
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentHandlingStationBiosafetyCabinetQTests*)
+
+
+validModelInstrumentHandlingStationBiosafetyCabinetQTests[packet:PacketP[Model[Instrument,HandlingStation,BiosafetyCabinet]]]:={
+
+	NotNullFieldTest[packet, {
+			BiosafetyLevel,
+			MinLaminarFlowSpeed,
 			Benchtop,
 			Plumbing,
 			(* Shared fields shaping *)
@@ -1053,18 +1100,27 @@ validModelInstrumentDispenserQTests[packet:PacketP[Model[Instrument,Dispenser]]]
 	NullFieldTest[packet, {Connector,Dongle,OperatingSystem,PCICard}],
 
 	NotNullFieldTest[packet,{
-			Positions,PositionPlotting,
-			WettedMaterials,
-			(* Unique Fields *)
-			ReservoirContainer
-		}
-	],
+		DispensingMaterialType,
+		If[MatchQ[Lookup[packet, DispensingMaterialType], Sheet],
+			Nothing,
+			Sequence @@ {
+				Positions,
+				PositionPlotting,
+				WettedMaterials,
+				(* Unique Fields *)
+				ReservoirContainer
+			}
+		]
+	}],
 
-	Test["The positions must include \"Reservoir Slot\":",
-		pos=Lookup[packet,AllowedPositions];
-		MemberQ[List@@pos,"Reservoir Slot"],
-		True,
-		Variables:>{pos}
+	If[MatchQ[Lookup[packet, DispensingMaterialType], Sheet],
+		Nothing,
+		Test["The positions must include \"Reservoir Slot\":",
+			pos=Lookup[packet,AllowedPositions];
+			MemberQ[List@@pos,"Reservoir Slot"],
+			True,
+			Variables:>{pos}
+		]
 	]
 };
 
@@ -1482,6 +1538,49 @@ validModelInstrumentGravityRackQTests[packet:PacketP[Model[Instrument,GravityRac
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentHandlingStationQTests*)
+
+
+validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,HandlingStation]]]:={
+	
+	NotNullFieldTest[
+		packet,
+		{
+			BalanceType,
+			HandlingEnvironment,
+			NumberOfVideoCameras,
+			Ventilated,
+			Deionizing,
+			HermeticTransferCompatible,
+			ProvidedHandlingConditions
+		}
+	]
+	
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentHandlingStationAmbientQTests*)
+
+
+validModelInstrumentHandlingStationAmbientQTests[packet:PacketP[Model[Instrument,HandlingStation,Ambient]]]:={
+
+	NotNullFieldTest[
+		packet,
+		{
+			BalanceType,
+			HandlingEnvironment,
+			NumberOfVideoCameras,
+			Ventilated,
+			Deionizing,
+			HermeticTransferCompatible,
+			ProvidedHandlingConditions
+		}
+	]
+
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentHPLCQTests*)
@@ -1551,12 +1650,28 @@ validModelInstrumentHPLCQTests[packet:PacketP[Model[Instrument,HPLC]]]:={
 
 	(* If Detector LampType is informed, then Absorbance criteria must be informed *)
 	RequiredTogetherTest[packet,{DetectorLampType,AbsorbanceDetector,AbsorbanceFilterType,MinAbsorbanceWavelength,MaxAbsorbanceWavelength,AbsorbanceWavelengthBandpass}],
+	RequiredTogetherTest[packet,{MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate}],
+	RequiredTogetherTest[packet,{MinSmoothingTimeConstant,MaxSmoothingTimeConstant}],
 
 	(* Min/Max tests *)
 	FieldComparisonTest[packet,{MinFlowRate,MaxFlowRate},LessEqual],
 	FieldComparisonTest[packet,{MinPressure,TubingMaxPressure},LessEqual],
 	FieldComparisonTest[packet,{MinAbsorbanceWavelength,MaxAbsorbanceWavelength},LessEqual],
+	FieldComparisonTest[packet,{MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate},LessEqual],
+	FieldComparisonTest[packet,{MinSmoothingTimeConstant,MaxSmoothingTimeConstant},LessEqual],
 	FieldComparisonTest[packet,{MinSampleVolume,MaxSampleVolume},LessEqual],
+
+	(* If AbsorbanceSamplingRates are provided, MinAbsorbanceSamplingRate and MaxAbsorbanceSamplingRate cannot be populated and vice versa *)
+	Test["Either AbsorbanceSamplingRates or MinAbsorbanceSamplingRate and MaxAbsorbanceSamplingRate pair can be populated:",
+		Lookup[packet, {AbsorbanceSamplingRates,MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate}],
+		{{},Except[Null],Except[Null]}|{Except[{}],Null,Null}|{{},Null,Null}
+	],
+
+	(* If SmoothingTimeConstants are provided, MinSmoothingTimeConstant and MaxSmoothingTimeConstant cannot be populated and vice versa *)
+	Test["Either SmoothingTimeConstants or MinSmoothingTimeConstant and MaxSmoothingTimeConstant pair can be populated:",
+		Lookup[packet, {SmoothingTimeConstants,MinSmoothingTimeConstant,MaxSmoothingTimeConstant}],
+		{{},Except[Null],Except[Null]}|{Except[{}],Null,Null}|{{},Null,Null}
+	],
 
 	(* FractionCollectionDetectors is a subset of Detectors *)
 	Test["FractionCollectionDetectors is a subset of Detectors:",
@@ -1963,7 +2078,24 @@ validModelInstrumentPortableCoolerQTests[packet:PacketP[Model[Instrument,Portabl
 
 	(* Sensible Min/Max field checks *)
 	RequiredTogetherTest[packet,{MinTemperature,MaxTemperature}],
-	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},LessEqual]
+	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},LessEqual],
+
+	(* tests for cryogenic portable coolers *)
+	If[
+		MatchQ[Lookup[packet, Object], ObjectP[Model[Instrument, PortableCooler, "Brooks CryoPod Portable Cryogenic Freezer"]]],
+
+		{
+			NotNullFieldTest[packet,{
+				(* Unique fields*)
+				StoragePhase,
+				LiquidNitrogenCapacity,
+				StaticEvaporationRate
+			}]
+		},
+
+		Nothing
+	]
+
 };
 
 
@@ -1998,7 +2130,27 @@ validModelInstrumentPortableHeaterQTests[packet:PacketP[Model[Instrument,Portabl
 
 validModelInstrumentFumeHoodQTests[packet:PacketP[Model[Instrument,FumeHood]]]:={
 	(* Fields which should not be null *)
-	NotNullFieldTest[packet,{Mode,FlowMeter,FlowRate,Plumbing,Positions,PositionPlotting}],
+	NotNullFieldTest[packet,{Mode,FlowMeter,MinFlowSpeed,Plumbing,Positions,PositionPlotting}],
+
+	(* Fields which should all be populated *)
+	Test["The three indexes in InternalDimensions must be all informed:",
+		Lookup[packet,InternalDimensions],
+		{Except[NullP],Except[NullP],Except[NullP]}
+	],
+
+	(* Fields which should be null *)
+	NullFieldTest[packet,{Connector,Dongle,OperatingSystem,PCICard}]
+
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentHandlingStationFumeHoodQTests*)
+
+
+validModelInstrumentHandlingStationFumeHoodQTests[packet:PacketP[Model[Instrument,HandlingStation,FumeHood]]]:={
+	(* Fields which should not be null *)
+	NotNullFieldTest[packet,{Mode,FlowMeter,MinFlowSpeed,Plumbing,Positions,PositionPlotting}],
 
 	(* Fields which should all be populated *)
 	Test["The three indexes in InternalDimensions must be all informed:",
@@ -2023,7 +2175,8 @@ validModelInstrumentGasFlowSwitchQTests[packet:PacketP[Model[Instrument,GasFlowS
 			HighActivationPressure,
 			LowActivationPressure,
 			SwitchBackPressure,
-			OutputPressure
+			OutputPressure,
+			TurnsToOpen
 		}
 	],
 	NullFieldTest[packet,
@@ -2099,6 +2252,14 @@ validModelInstrumentGeneticAnalyzerQTests[packet:PacketP[Model[Instrument,Geneti
 
 
 validModelInstrumentGloveBoxQTests[packet:PacketP[Model[Instrument,GloveBox]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentHandlingStationGloveBoxQTests*)
+
+
+validModelInstrumentHandlingStationGloveBoxQTests[packet:PacketP[Model[Instrument,HandlingStation,GloveBox]]]:={
 };
 
 
@@ -2438,7 +2599,7 @@ validModelInstrumentLiquidHandlerQTests[packet:PacketP[Model[Instrument,LiquidHa
 
 	(* Test for SPE Gilsons *)
 	Test[
-		"If the model instument is solid phase extractor, MethodFilePath must be informed:",
+		"If the model instrument is solid phase extractor, MethodFilePath must be informed:",
 		If[MatchQ[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"],Lookup[packet,Object]],
 			!NullQ[Lookup[packet,MethodFilePath]],
 			True
@@ -2573,9 +2734,9 @@ validModelInstrumentIncubatorQTests[packet:PacketP[Model[Instrument,Incubator]]]
 	(* Require related information together *)
 	RequiredTogetherTest[packet,{OperatingSystem, Dongle}],
 
-    Test["The three indexes in InternalDimensions must be all informed or all Null or an empty list:",
-	Lookup[packet,InternalDimensions],
-	{NullP,NullP,NullP}|{Except[NullP],Except[NullP],Except[NullP]|{}}
+	Test["The three indexes in InternalDimensions must be all informed or all Null or an empty list:",
+		Lookup[packet,InternalDimensions],
+		{NullP,NullP,NullP}|{Except[NullP],Except[NullP],Except[NullP]|{}}
 	],
 
 	(* Sensible Max/Mins*)
@@ -3488,7 +3649,18 @@ validModelInstrumentHotPlateQTests[packet:PacketP[Model[Instrument, HotPlate]]] 
 (*validModelInstrumentOverheadStirrerQTests*)
 
 
-validModelInstrumentOverheadStirrerQTests[packet:PacketP[Model[Instrument, OverheadStirrer]]]:={};
+validModelInstrumentOverheadStirrerQTests[packet:PacketP[Model[Instrument, OverheadStirrer]]]:={
+	NotNullFieldTest[packet, {CompatibleImpellers,MinRotationRate, MaxRotationRate, StirBarControl,MinTemperature, MaxTemperature}],
+	FieldComparisonTest[packet, {MaxRotationRate, MinRotationRate}, GreaterEqual],
+	FieldComparisonTest[packet, {MaxTemperature, MinTemperature}, GreaterEqual],
+	If[TrueQ[Lookup[packet,StirBarControl]],
+		Sequence@{
+			NotNullFieldTest[packet, {MinStirBarRotationRate, MaxStirBarRotationRate}],
+			FieldComparisonTest[packet, {MaxStirBarRotationRate, MinStirBarRotationRate}, GreaterEqual]
+		},
+		NullFieldTest[packet,{MaxStirBarRotationRate, MinStirBarRotationRate}]
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -3597,6 +3769,40 @@ validModelInstrumentPlateImagerQTests[packet:PacketP[Model[Instrument,PlateImage
 	NullFieldTest[packet, {WettedMaterials, PCICard, Dongle}]
 
 };
+
+
+(* ::Subsection:: *)
+(*validModelInstrumentNephelometerQTests*)
+
+
+validModelInstrumentNephelometerQTests[packet:PacketP[Model[Instrument, Nephelometer]]] := {
+	NotNullFieldTest[packet,
+		{
+			Positions,
+			PositionPlotting,
+			DefaultMethodFilePath,
+			DefaultDataFilePath,
+			LightSource,
+			LightSourceWavelength,
+			ScatterDirection,
+			Detector,
+			MinTemperature,
+			MaxTemperature,
+			MinOxygenLevel,
+			MaxOxygenLevel,
+			MinCarbonDioxideLevel,
+			MaxCarbonDioxideLevel,
+			InjectorVolume,
+			InjectorDeadVolume
+		}
+	],
+
+	(* sensible min/max field *)
+	FieldComparisonTest[packet, {MinTemperature, MaxTemperature}, LessEqual],
+	FieldComparisonTest[packet, {MinOxygenLevel, MaxOxygenLevel}, LessEqual],
+	FieldComparisonTest[packet, {MinCarbonDioxideLevel, MaxCarbonDioxideLevel}, LessEqual]
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -3780,8 +3986,8 @@ validModelInstrumentPlateReaderQTests[packet:PacketP[Model[Instrument,PlateReade
 
 	(*Currently only CLARIOStar supports AlphaScreen. Perform this only to CLARIOStar and expand it to other plate readers later.*)
 	Test["If the plate reader supports AlphaScreen it must have corresponding excitation and emission information:",
-		If[MemberQ[Lookup[packet,PlateReaderMode],AlphaScreen]&&MatchQ[Lookup[packet,Object],Model[Instrument,PlateReader,"id:E8zoYvNkmwKw"]],
-			MatchQ[Lookup[packet,{AlphaScreenExcitationLaserWavelength,AlphaScreenEmissionFilter}],{DistanceP,DistanceP}],
+		If[MemberQ[Lookup[packet, PlateReaderMode], AlphaScreen] && MatchQ[Lookup[packet, Object], ObjectP[{Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"], Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]}]],
+			MatchQ[Lookup[packet, {AlphaScreenExcitationLaserWavelength, AlphaScreenEmissionFilter}], {DistanceP, DistanceP}],
 			True
 		],
 		True
@@ -5255,6 +5461,11 @@ registerValidQTestFunction[Model[Instrument, GelBox],validModelInstrumentGelBoxQ
 registerValidQTestFunction[Model[Instrument, GeneticAnalyzer],validModelInstrumentGeneticAnalyzerQTests];
 registerValidQTestFunction[Model[Instrument, GloveBox],validModelInstrumentGloveBoxQTests];
 registerValidQTestFunction[Model[Instrument, GravityRack],validModelInstrumentGravityRackQTests];
+registerValidQTestFunction[Model[Instrument, HandlingStation],validModelInstrumentHandlingStationQTests];
+registerValidQTestFunction[Model[Instrument, HandlingStation, Ambient], validModelInstrumentHandlingStationAmbientQTests];
+registerValidQTestFunction[Model[Instrument, HandlingStation, BiosafetyCabinet], validModelInstrumentHandlingStationBiosafetyCabinetQTests];
+registerValidQTestFunction[Model[Instrument, HandlingStation, FumeHood], validModelInstrumentHandlingStationFumeHoodQTests];
+registerValidQTestFunction[Model[Instrument, HandlingStation, GloveBox], validModelInstrumentHandlingStationGloveBoxQTests];
 registerValidQTestFunction[Model[Instrument, Grinder],validModelInstrumentGrinderQTests];
 registerValidQTestFunction[Model[Instrument, HeatBlock],validModelInstrumentHeatBlockQTests];
 registerValidQTestFunction[Model[Instrument, HeatExchanger],validModelInstrumentHeatExchangerQTests];
@@ -5286,6 +5497,7 @@ registerValidQTestFunction[Model[Instrument, PeristalticPump],validModelInstrume
 registerValidQTestFunction[Model[Instrument, PressureManifold],validModelInstrumentPressureManifoldQTests];
 registerValidQTestFunction[Model[Instrument, PlatePourer],validModelInstrumentPlatePourerQTests];
 registerValidQTestFunction[Model[Instrument, pHMeter],validModelInstrumentpHMeterQTests];
+registerValidQTestFunction[Model[Instrument, pHTitrator],validModelInstrumentpHTitratorQTests];
 registerValidQTestFunction[Model[Instrument, Pipette],validModelInstrumentPipetteQTests];
 registerValidQTestFunction[Model[Instrument, PlateImager],validModelInstrumentPlateImagerQTests];
 registerValidQTestFunction[Model[Instrument, PlateReader],validModelInstrumentPlateReaderQTests];
@@ -5338,3 +5550,4 @@ registerValidQTestFunction[Model[Instrument, WaterPurifier],validModelInstrument
 registerValidQTestFunction[Model[Instrument, Sink],validModelInstrumentSinkQTests];
 registerValidQTestFunction[Model[Instrument, Western],validModelInstrumentWesternQTests];
 registerValidQTestFunction[Model[Instrument, ProteinCapillaryElectrophoresis],validModelInstrumentProteinCapillaryElectrophoresisQTests];
+registerValidQTestFunction[Model[Instrument, Nephelometer], validModelInstrumentNephelometerQTests];

@@ -9,18 +9,176 @@
 DefineOptions[ExperimentStreakCells,
   Options:>{
     {
+      OptionName -> InoculationSource,
+      Default -> Automatic,
+      Description -> "The type of media in which the source cell samples are stored before the experiment. The possible types accepted by ExperimentSpreadCells include LiquidMedia, FreezeDried, and FrozenGlycerol. For sources of type LiquidMedia, samples are mixed in the source containers, the well-mixed input sample is then transferred to th destination media container with fresh media. For sources of type FreezeDried, samples are resuspended with media in the source container, the resuspended material is then transferred to the destination media container with fresh media. For sources of type FrozenGlycerol, samples are scraped from the frozen surface using pipette tips while the source container is kept chilled, the scraped material is then deposited into the destination media container with fresh media. See Figure 1 of ExperimentInoculateSpreadCells to check inoculation source specific procedures and ExampleResults section in the helpfile for more information.",
+      ResolutionDescription -> "If the source samples have liquid state, automatically set to LiquidMedia. If the source container models are hermetic or ampoules and the source samples have solid state, automatically set to FreezeDried. If the source containers are stored in cryogenic or deep freezer storage condition, automatically set to FrozenGlycerol.",
+      AllowNull -> False,
+      Widget -> Widget[
+        Type -> Enumeration,
+        Pattern :> StreakSpreadInoculationSourceP (*LiquidMedia | FreezeDried | FrozenGlycerol *)
+      ],
+      Category -> "General"
+    },
+
+    {
       OptionName->Instrument,
       Default->Automatic,
       Description->"The robotic instrument that is used to transfer cells in suspension to a solid agar gel and then streak the suspension across the plate.",
       AllowNull->False,
       Widget->Widget[
         Type->Object,
-        Pattern:>ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}]
+        Pattern:>ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Instruments",
+            "Cell Culture",
+            "Colony Handlers"
+          }
+        }
       ],
       Category->"Instrument"
     },
     IndexMatching[
       IndexMatchingInput->"experiment samples",
+
+      (*Resuspension options*)
+      {
+        OptionName->ResuspensionMedia,
+        Default->Automatic,
+        AllowNull->True,
+        Widget->Widget[
+          Type->Object,
+          Pattern:>ObjectP[{Model[Sample],Object[Sample],Object[Container]}],
+          Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+        ],
+        Description->"The liquid media to add to the ResuspensionContainer or source container in order to resuspend the sample. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the ResuspensionMedia is added to the source container directly followed by ResuspensionMix.",
+        ResolutionDescription->"Automatically set to Model[Sample, Media, \"LB Broth, Miller\"].",
+        Category->"Resuspension"
+      },
+      {
+        OptionName->ResuspensionMediaVolume,
+        Default-> Automatic,
+        AllowNull->True,
+        Widget->Alternatives[
+          "All"->Widget[Type->Enumeration, Pattern:>Alternatives[All]],
+          "Volume"->Widget[
+            Type -> Quantity,
+            Pattern :> RangeP[1 Microliter, 20 Liter],
+            Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
+          ]
+        ],
+        Description->"The amount of the liquid media added to the ResuspensionMediaContainer in order to resuspend the scraped frozen glycerol sample or the amount of the liquid media added to the freeze-dried sample.",
+        ResolutionDescription->"Automatically set to 1/2 of the source sample container's volume or the volume of the provided ResuspensionMedia object (whichever is smaller), if ResuspensionMedia is not Null.",
+        Category->"Resuspension"
+      },
+      {
+        OptionName->ResuspensionContainer,
+        Default-> Automatic,
+        AllowNull->True,
+        Widget -> Alternatives[
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Model[Container], Object[Container]}],
+            ObjectTypes -> {Model[Container], Object[Container]},
+            PreparedSample -> False,
+            PreparedContainer -> True
+          ],
+          {
+            "Index" -> Alternatives[
+              Widget[
+                Type -> Number,
+                Pattern :> GreaterEqualP[1, 1]
+              ],
+              Widget[
+                Type -> Enumeration,
+                Pattern :> Alternatives[Automatic]
+              ]
+            ],
+            "Container" -> Alternatives[
+              Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Model[Container]}],
+                ObjectTypes -> {Model[Container]},
+                PreparedSample -> False,
+                PreparedContainer -> True
+              ],
+              Widget[
+                Type -> Enumeration,
+                Pattern :> Alternatives[Automatic]
+              ]
+            ]
+          }
+        ],
+        Description->"The desired container (or type of container) to contain the cell resuspension, with indices indicating grouping of samples in the same plate, if desired. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the combined ResuspensionMedia and the source sample is added to the ResuspensionContainer.",
+        ResolutionDescription->"If the ResuspensionMedia is specified as an Object[Sample], automatically set to its container. Otherwise if ResuspensionMedia is not Null, automatically set by PreferredContainer ",
+        Category->"Resuspension"
+      },
+      {
+        OptionName -> ResuspensionContainerWell,
+        Default -> Automatic,
+        Description -> "For each Sample, the well of the ResuspensionMediaContainer to contain the cell resuspension.",
+        ResolutionDescription -> "Automatically set to the first empty position of the ResuspensionContainer. If no empty position is found, automatically set to \"A1\".",
+        AllowNull -> True,
+        Widget -> Widget[
+          Type -> String,
+          Pattern :> WellPositionP,
+          Size -> Word,
+          PatternTooltip -> "Enumeration must be any well from A1 to P24."
+        ],
+        Category -> "Resuspension"
+      },
+
+      {
+        OptionName->NumberOfSourceScrapes,
+        Default->Automatic,
+        Widget->Widget[
+          Type->Number,
+          Pattern:>RangeP[1,20,1]
+        ],
+        Description->"For each sample, the number of times that the frozen glycerol sample is scraped with the tip before it is dipped into the resuspension media and swirled.",
+        ResolutionDescription -> "Automatically set to 5 if InoculationSource is FrozenGlycerol.",
+        AllowNull->True,
+        Category->"Resuspension"
+      },
+
+      ModifyOptions[ExperimentMix,
+        OptionName->Mix,
+        ModifiedOptionName->ResuspensionMix,
+        AllowNull->True,
+        Description->"For each sample, indicates if the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to True. ",
+        Category->"Resuspension"
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->MixType,
+        ModifiedOptionName->ResuspensionMixType,
+        Description->"For each sample, the type of mixing of the cells in resuspension after combining ResuspensionMedia and the source sample. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to Pipette.",
+        Widget -> Widget[
+          Type->Enumeration,
+          Pattern:>Alternatives[Pipette]
+        ],
+        Category->"Hidden"(*Hide it since no option essentially, but jic we want to add more options in future*)
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->NumberOfMixes,
+        ModifiedOptionName->NumberOfResuspensionMixes,
+        Description->"For each sample, the number of times that the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to 5.",
+        Category->"Resuspension"
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->MixVolume,
+        ModifiedOptionName->ResuspensionMixVolume,
+        Description->"For each sample, the volume that will be repeatedly aspirated and dispensed via pipette from the cells in resuspension in order to mix after combining the ResuspensionMedia and the source sample. For freeze-dried source sample, the same pipette and tips used to add the ResuspensionMedia will be used to mix the cell resuspension. For frozen glycerol source sample, the same pipette and tips used to mix the cell resuspension will be used to deposit it onto the solid media.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to 1/2 the ResuspensionMediaVolume.",
+        Category->"Resuspension"
+      ],
 
       (* Preparatory Dilution *)
       ModifyOptions[ExperimentSpreadCells,
@@ -331,7 +489,7 @@ DefineOptions[ExperimentStreakCells,
     SimulationOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     QPixSanitizationSharedOptions
   }
 ];
@@ -340,10 +498,11 @@ DefineOptions[ExperimentStreakCells,
 (*Experiment Function*)
 
 (* Container Overload *)
-ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
   {
     outputSpecification,output,gatherTests,listedContainers,listedOptions,simulation,
-    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests
+    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,
+    containerToSampleSimulation
   },
 
   (* Determine the requested return value from the function *)
@@ -354,7 +513,7 @@ ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
   gatherTests=MemberQ[output,Tests];
 
   (* Remove temporal links. *)
-  {listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
   (* Lookup simulation option if it exists *)
   simulation = Lookup[listedOptions,Simulation,Null];
@@ -362,11 +521,11 @@ ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+    {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
       ExperimentStreakCells,
       listedContainers,
       listedOptions,
-      Output->{Result,Tests},
+      Output->{Result,Tests,Simulation},
       Simulation->simulation
     ];
 
@@ -378,15 +537,15 @@ ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput=containerToSampleOptions[
+      {containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
         ExperimentStreakCells,
         listedContainers,
         listedOptions,
-        Output->Result,
+        Output-> {Result,Simulation},
         Simulation->simulation
       ],
       $Failed,
-      {Error::EmptyContainer}
+      {Download::ObjectDoesNotExist, Error::EmptyContainer}
     ]
   ];
 
@@ -397,13 +556,14 @@ ExperimentStreakCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
       Result -> $Failed,
       Tests -> containerToSampleTests,
       Options -> $Failed,
-      Preview -> Null
+      Preview -> Null,
+      Simulation -> simulation
     },
     (* Split up our containerToSample result into the samples and sampleOptions. *)
     {samples,sampleOptions}=containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentStreakCells[samples,ReplaceRule[sampleOptions,Simulation->simulation]]
+    ExperimentStreakCells[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
   ]
 ];
 
@@ -413,7 +573,8 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
     outputSpecification,output,gatherTests,listedSamplesNamed,listedOptionsNamed,safeOpsNamed,safeOpsTests,
     listedSamples,safeOps,validLengths,validLengthTests,returnEarlyQ,performSimulationQ,
     templatedOptions,templateTests,simulation,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,updatedSimulation,
-    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,unitOperationPacket,batchedUnitOperationPackets,runTime,resourcePacketTests,uploadQ
+    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,unitOperationPacket,batchedUnitOperationPackets,
+    runTime,resourcePacketTests,uploadQ,allUnitOperationPackets
   },
 
   (* Determine the requested return value from the function *)
@@ -433,7 +594,7 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   ];
 
   (* replace all objects referenced by Name to ID *)
-  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed];
+  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed, Simulation->Lookup[safeOpsNamed, Simulation, Null]];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -591,6 +752,9 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   (* Lookup if we are supposed to upload *)
   uploadQ = Lookup[safeOps,Upload];
 
+  (* Gather all the unit operation packets *)
+  allUnitOperationPackets = Flatten[{unitOperationPacket,batchedUnitOperationPackets}];
+
   (* We have to return our result. Either return a protocol with a simulated procedure if SimulateProcedure\[Rule]True or return a real protocol that's ready to be run. *)
   protocolObject = Which[
     (* If there was a problem with our resource packets function or option resolver, we can't return a protocol. *)
@@ -599,7 +763,7 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 
     (* If Upload->False, return the unit operation packets without RequireResources called*)
     !uploadQ,
-      unitOperationPacket,
+      allUnitOperationPackets,
 
     (* Otherwise, upload an ExperimentRoboticCellPreparation *)
     True,
@@ -627,7 +791,7 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
             frameworkOutputSpecification=Lookup[ToList[options],Output];
 
             frameworkOutputSpecification/.{
-              Result -> Flatten[{unitOperationPacket,batchedUnitOperationPackets}],
+              Result -> allUnitOperationPackets,
               Options -> nonHiddenOptions,
               Preview -> Null,
               Simulation -> updatedSimulation,
@@ -641,6 +805,7 @@ ExperimentStreakCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
             Instrument -> Lookup[collapsedResolvedOptions,Instrument],
             Upload->Lookup[safeOps,Upload],
             Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
             ParentProtocol->Lookup[safeOps,ParentProtocol],
             Priority->Lookup[safeOps,Priority],
             StartDate->Lookup[safeOps,StartDate],
@@ -763,4 +928,22 @@ ValidExperimentStreakCellsQ[
   (*Run the tests as requested*)
   Lookup[RunUnitTest[<|"ValidExperimentStreakCellsQ"->allTests|>,Verbose->verbose,
     OutputFormat->outputFormat],"ValidExperimentStreakCellsQ"]
+];
+(* ::Subsubsection:: *)
+(* ExperimentStreakCellsPreview *)
+DefineOptions[ExperimentStreakCellsPreview,
+  SharedOptions :> {ExperimentStreakCells}
+];
+
+ExperimentStreakCellsPreview[myInputs : ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions : OptionsPattern[ExperimentStreakCellsPreview]] := Module[
+  {listedOptions, noOutputOptions},
+
+  (* get the options as a list *)
+  listedOptions = ToList[myOptions];
+
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
+  noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+  (* return only the options for ExperimentGrind *)
+  ExperimentStreakCells[myInputs, Append[noOutputOptions, Output -> Preview]]
 ];

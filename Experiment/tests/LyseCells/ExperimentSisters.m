@@ -49,6 +49,7 @@ DefineTests[
       {(_Rule|_RuleDelayed)..}
     ]
   },
+  TurnOffMessages :> {Warning::ConflictingSourceAndDestinationAsepticHandling},
   SetUp :> (
     $CreatedObjects = {}
   ),
@@ -313,6 +314,7 @@ DefineTests[
       True
     ]
   },
+  TurnOffMessages :> {Warning::ConflictingSourceAndDestinationAsepticHandling},
   SetUp :> (
     $CreatedObjects = {}
   ),
@@ -538,4 +540,245 @@ DefineTests[
   Stubs:>{
     $PersonID=Object[User,"Test user for notebook-less test protocols"]
   }
+];
+(* ::Subsection:: *)
+(* ExperimentLyseCellsPreview *)
+DefineTests[
+  ExperimentLyseCellsPreview,
+  {
+    (* --- Basic Examples --- *)
+    Example[
+      {Basic, "Generate a preview for an ExperimentLyseCells call to lyse the cells in a single sample:"},
+      ExperimentLyseCellsPreview[Object[Sample, "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID]],
+      Null
+    ],
+    Example[
+      {Basic, "Generate a preview for an ExperimentLyseCells call to lyse the cells in multiple samples:"},
+      ExperimentLyseCellsPreview[{
+        Object[Sample, "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Suspension mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID]
+      }],
+      Null
+    ],
+    Example[
+      {Basic, "Generate a preview for an ExperimentLyseCells call to lyse the cells in a single container:"},
+      ExperimentLyseCellsPreview[Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentLyseCellsPreview "<>$SessionUUID]],
+      Null
+    ]
+  },
+  TurnOffMessages :> {Warning::ConflictingSourceAndDestinationAsepticHandling},
+  SymbolSetUp :> Module[{existsFilter, tube0, tube1, tube2, tube3, tube4, tube5, aliquotTube0, sample0, sample1, sample2, sample3, sample4, sample5},
+    $CreatedObjects={};
+
+    Off[Warning::SamplesOutOfStock];
+    Off[Warning::InstrumentUndergoingMaintenance];
+    Off[Warning::DeprecatedProduct];
+
+    (* IMPORTANT: Make sure that any objects you upload have DeveloperObject->True. *)
+    (* Erase any objects that we failed to erase in the last unit test. *)
+    existsFilter=DatabaseMemberQ[{
+      Object[Sample, "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+      Object[Sample, "Suspension mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+      Object[Sample, "Adherent yeast cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+      Object[Sample, "Suspension mammalian cell sample with cell concentration info in composition (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+      Object[Sample, "Mammalian cell sample without information in CultureAdhesion field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+      Object[Sample, "Adherent cell sample without information in CellType field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+
+      Object[Method, LyseCells, "Mammalian protein Lysis Method (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+
+      Object[Container, Vessel, "Test 50mL Tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID],
+      Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentLyseCellsPreview "<>$SessionUUID],
+      Object[Container, Vessel, "Test 50mL Tube 2 for ExperimentLyseCellsPreview "<>$SessionUUID],
+      Object[Container, Vessel, "Test 50mL Tube 3 for ExperimentLyseCellsPreview "<>$SessionUUID],
+      Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentLyseCellsPreview "<>$SessionUUID],
+      Object[Container, Vessel, "Test 50mL Tube 5 for ExperimentLyseCellsPreview "<>$SessionUUID],
+
+      Object[Container, Vessel, "Test aliquot container tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID]
+
+    }];
+
+    EraseObject[
+      PickList[
+        {
+          Object[Sample, "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+          Object[Sample, "Suspension mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+          Object[Sample, "Adherent yeast cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+          Object[Sample, "Suspension mammalian cell sample with cell concentration info in composition (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+          Object[Sample, "Mammalian cell sample without information in CultureAdhesion field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+          Object[Sample, "Adherent cell sample without information in CellType field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+
+          Object[Method, LyseCells, "Mammalian protein Lysis Method (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+
+          Object[Container, Vessel, "Test 50mL Tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID],
+          Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentLyseCellsPreview "<>$SessionUUID],
+          Object[Container, Vessel, "Test 50mL Tube 2 for ExperimentLyseCellsPreview "<>$SessionUUID],
+          Object[Container, Vessel, "Test 50mL Tube 3 for ExperimentLyseCellsPreview "<>$SessionUUID],
+          Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentLyseCellsPreview "<>$SessionUUID],
+          Object[Container, Vessel, "Test 50mL Tube 5 for ExperimentLyseCellsPreview "<>$SessionUUID],
+
+          Object[Container, Vessel, "Test aliquot container tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID]
+
+        },
+        existsFilter
+      ],
+      Force->True,
+      Verbose->False
+    ];
+
+    {tube0, tube1, tube2, tube3, tube4, tube5, aliquotTube0} = Upload[{
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 1 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 2 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 3 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 4 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test 50mL Tube 5 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>,
+      <|
+        Type -> Object[Container, Vessel],
+        Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+        Name -> "Test aliquot container tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID,
+        DeveloperObject -> True,
+        Site -> Link[$Site]
+      |>
+    }];
+
+    (* Create some samples for testing purposes *)
+    {sample0, sample1, sample2, sample3, sample4, sample5} = UploadSample[
+      (* NOTE: We over-ride the SampleHandling of these models so that we get consistent test results. *)
+      {
+        {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+        {{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}},
+        {{100 MassPercent, Model[Cell, Yeast, "Pichia Pastoris"]}},
+        {{10^10 EmeraldCell/Milliliter, Model[Cell, Mammalian, "HEK293"]}},
+        {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}},
+        {{100 MassPercent, Model[Cell, Mammalian, "HEK293"]}}
+      },
+      {
+        {"A1", tube0},
+        {"A1", tube1},
+        {"A1", tube2},
+        {"A1", tube3},
+        {"A1", tube4},
+        {"A1", tube5}
+      },
+      Name -> {
+        "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID,
+        "Suspension mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID,
+        "Adherent yeast cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID,
+        "Suspension mammalian cell sample with cell concentration info in composition (Test for ExperimentLyseCellsPreview) "<>$SessionUUID,
+        "Mammalian cell sample without information in CultureAdhesion field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID,
+        "Adherent cell sample without information in CellType field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID
+      },
+      InitialAmount -> {
+        0.5 Milliliter,
+        0.5 Milliliter,
+        0.5 Milliliter,
+        0.5 Milliliter,
+        0.5 Milliliter,
+        0.5 Milliliter
+      },
+      CellType -> {
+        Mammalian,
+        Mammalian,
+        Yeast,
+        Mammalian,
+        Mammalian,
+        Null
+      },
+      CultureAdhesion -> {
+        Adherent,
+        Suspension,
+        Adherent,
+        Suspension,
+        Null,
+        Adherent
+      },
+      Living -> {
+        True,
+        True,
+        True,
+        True,
+        True,
+        True
+      },
+      State -> Liquid,
+      FastTrack -> True
+    ];
+
+  ],
+
+  SymbolTearDown :> (
+    On[Warning::SamplesOutOfStock];
+    On[Warning::InstrumentUndergoingMaintenance];
+    On[Warning::DeprecatedProduct];
+    Module[{allObjects, existsFilter},
+
+      (* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
+      allObjects = Cases[Flatten[{
+        Object[Sample, "Adherent mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Suspension mammalian cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Adherent yeast cell sample (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Suspension mammalian cell sample with cell concentration info in composition (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Mammalian cell sample without information in CultureAdhesion field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+        Object[Sample, "Adherent cell sample without information in CellType field (Test for ExperimentLyseCellsPreview) "<>$SessionUUID],
+
+        Object[Container, Vessel, "Test 50mL Tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID],
+        Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentLyseCellsPreview "<>$SessionUUID],
+        Object[Container, Vessel, "Test 50mL Tube 2 for ExperimentLyseCellsPreview "<>$SessionUUID],
+        Object[Container, Vessel, "Test 50mL Tube 3 for ExperimentLyseCellsPreview "<>$SessionUUID],
+        Object[Container, Vessel, "Test 50mL Tube 4 for ExperimentLyseCellsPreview "<>$SessionUUID],
+        Object[Container, Vessel, "Test 50mL Tube 5 for ExperimentLyseCellsPreview "<>$SessionUUID],
+
+        Object[Container, Vessel, "Test aliquot container tube 0 for ExperimentLyseCellsPreview "<>$SessionUUID]
+
+      }], ObjectP[]];
+
+      (* Erase any objects that we failed to erase in the last unit test *)
+      existsFilter=DatabaseMemberQ[allObjects];
+
+      Quiet[EraseObject[
+        PickList[
+          allObjects,
+          existsFilter
+        ],
+        Force->True,
+        Verbose->False
+      ]];
+    ]
+  )
 ];

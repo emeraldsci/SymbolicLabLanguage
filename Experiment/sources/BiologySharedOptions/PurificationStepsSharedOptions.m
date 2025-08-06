@@ -1622,3 +1622,19 @@ translateSharedSPEMasterswitch[myOptions: {_Rule..}, mySPEStage:Alternatives[Was
 		]
 	]
 ];
+
+(* Authors definition for Experiment`Private`checkPurificationConflictingOptions *)
+Authors[Experiment`Private`checkPurificationConflictingOptions]:={"taylor.hochuli"};
+
+
+(* Authors definition for Experiment`Private`purificationSharedOptionsTests *)
+Authors[Experiment`Private`purificationSharedOptionsTests]:={"taylor.hochuli"};
+
+
+(* Authors definition for Experiment`Private`optionsFromUnitOperation *)
+Authors[Experiment`Private`optionsFromUnitOperation]:={"taylor.hochuli"};
+
+
+(* Authors definition for Experiment`Private`resolvePurification *)
+Authors[Experiment`Private`resolvePurification]:={"taylor.hochuli"};
+

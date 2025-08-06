@@ -33,9 +33,7 @@ DefineOptionSet[PreFlushOptions :> {
 			Category -> "PreFlushing",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-				(* TODO After catalog *)
-				(*)
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 				OpenPaths -> {
 				  {
 					Object[Catalog, "Root"],
@@ -44,10 +42,8 @@ DefineOptionSet[PreFlushOptions :> {
 					"PreFlushing Solution"
 				  }
 				}
-				*)
 			],
 			Description -> "The solution that is used to wash the sorbent clean of any residues from manufacturing or storage processes, prior to Conditioning.",
-			(*TODO*)
 			ResolutionDescription -> "Automatically set to match ElutingSolution if ExtractionStrategy is Positive. And automatically set to match SampleIn's Solvent field if ExtractionStrategy is Negative.",
 			NestedIndexMatching -> False
 		},
@@ -116,12 +112,17 @@ DefineOptionSet[PreFlushOptions :> {
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Container], Object[Container]}],
-				ObjectTypes -> {Model[Container], Object[Container]}
+				ObjectTypes -> {Model[Container], Object[Container]},
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
 			],
 			(* TODO check for lidded container -> OpenContainer *)
 			Description -> "The container that is used to accumulates any flow through solution in PreFlushing step. The collected volume might be less than PreFlushingSolutionVolume because some of PreFlushingSolution left in cartrdige (the solution is not purged through the sorbent).",
-			(*TODO*)
-			ResolutionDescription -> "Automatically set to generic container that the instrument can accommodate (point to instrument diagram or make a table).",
+			ResolutionDescription -> "Automatically set to Model[Container, Plate, \"48-well Pyramid Bottom Deep Well Plate\"] if Instrument is set to a Gilson liquid handler.  Automatically set to Model[Container, Vessel, \"15mL Tube\"] if Instrument is set to a Biotage PressureManifold. Automatically set to Model[Container, Plate, \"96-well UV-Star Plate\"] if Instrument is a VSpin Centrifuge.  Automatically set to Model[Container, Plate, \"96-well flat bottom plate, Sterile, Nuclease-Free\"] if Instrument is set to a HiG4 Centrifuge.  Automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] otherwise.",
 			NestedIndexMatching -> False
 		},
 		(* Injection specific *)
@@ -202,14 +203,20 @@ DefineOptionSet[PreFlushOptions :> {
 			Default -> Automatic,
 			AllowNull -> True,
 			Category -> "PreFlushing",
-			Widget -> Widget[
-				Type -> Quantity,
-				(*TODO find max pressure*)
-				Pattern :> RangeP[0 * PSI, 100 * PSI, 1 * PSI],
-				Units -> {PSI, {PSI, Bar, Pascal}}
+			Widget -> Alternatives[
+				"Filter Block" -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				"Biotage or MPE2" -> Widget[
+					Type -> Quantity,
+					(*TODO find max pressure*)
+					Pattern :> RangeP[0 * PSI, 100 * PSI, 1 * PSI],
+					Units -> {PSI, {PSI, Bar, Pascal}}
+				]
 			],
 			Description -> "The target pressure applied to the ExtractionCartridge to flush PreFlushingSolution through the sorbent. If Instrument is Model[Instrument,PressureManifold,\"MPE2\"], the PreFlushingSolutionPressure is set to be LoadingSamplePressure (Pressure of Model[Instrument,PressureManifold,\"MPE2\"] cannot be changed while the Experiment is running).",
-			ResolutionDescription -> "Automatically set to 10 PSI. if ExtractionMethod is Pressure."
+			ResolutionDescription -> "Automatically set to 10 PSI if ExtractionMethod is Pressure, unless using a FilterBlock, in which case it is True."
 		}
 	]
 }];
@@ -472,7 +479,7 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 						Pattern :> ObjectP[Model[Container]]
 					]
 				],
-				Description -> "The container that the source sample will be located in during the transfer. This option can only be Null when using a WaterPurifier (which directly dispenses into a graduated cylinder).",
+				Description -> "The container that the source sample will be located in during the transfer.",
 				Category -> "Hidden"
 			},
 			(* Solid Phase Options *)
@@ -506,7 +513,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				OptionName -> ExtractionSorbent,
 				Default -> Automatic,
 				AllowNull -> True,
-				(*TODO*)
 				Widget -> Widget[
 					Type -> Enumeration,
 					Pattern :> SolidPhaseExtractionFunctionalGroupP
@@ -545,18 +551,15 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 						(* TODO Model[Item,Tips,SolidPhaseExtraction] *)
 						(* Syringe Cartridge *)
 						(*						Model[Item, ExtractionCartridge]*)
-					}]
-					(* TODO After catalog *)
-					(*
+					}],
 					OpenPaths -> {
 					  {
 						Object[Catalog, "Root"],
 						"Materials",
 						"Solid Phase Extraction (SPE)",
-						"Cartridges"
+						"ExtractionCartridges"
 					  }
 					}
-					*)
 				],
 				Category -> "General",
 				Description -> "The sorbent-packed container that forms the stationary phase of the extraction for each sample pool. Samples within the same pool are added to the same ExtractionCartridge's well or vessel, depends on the type of ExtractionCartridge (this is where pooling occurs in SolidPhaseExtraction).",
@@ -574,7 +577,15 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 						Model[Instrument, PressureManifold], Object[Instrument, PressureManifold],
 						Model[Instrument, Centrifuge], Object[Instrument, Centrifuge],
 						Model[Instrument, FilterBlock], Object[Instrument, FilterBlock]
-					}]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Solid Phase Extraction (SPE)",
+							"Instruments"
+						}
+					}
 				],
 				Category -> "General",
 				Description -> "The Instrument that generate force to drive the fluid through the sorbent during PreFlushing, Conditioning, LoadingSample, Washing and Eluting steps.",
@@ -655,22 +666,18 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				{
 					Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-						(* TODO After catalog *)
-						(*
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 						OpenPaths -> {
 						  {
 							Object[Catalog, "Root"],
 							"Materials",
 							"Solid Phase Extraction (SPE)",
-							"Conditioning Solutions"
+							"Conditioning Solution"
 						  }
 						}
-						*)
 					],
 					Description -> "The solution that is flushed through the sorbent in order to chemically prepare the sorbent to bind either to analytes if ExtractionStrategy is Positive, or to impurities if ExtractionStrategy is Negative.",
-					(*TODO*)
-					ResolutionDescription -> "Automatically set to match with ExtractionSorbent as indicate in Table... .",
+					(*TODO Resolution description*)
 					Category -> "Conditioning"
 				}
 			] /. {PreFlushingSolution -> ConditioningSolution},
@@ -780,7 +787,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				PreFlushingSolutionPressure,
 				{
 					Description -> "The target pressure applied to the ExtractionCartridge to flush ConditioningSolution through the sorbent. If Instrument is Model[Instrument,PressureManifold,\"MPE2\"], the ConditioningSolutionPressure is set to be LoadingSamplePressure (Pressure of Model[Instrument,PressureManifold,\"MPE2\"] cannot be changed while the Experiment is running).",
-					ResolutionDescription -> "Automatically set to 10 PSI. Applies to ExtractionMethod : Pressure.",
 					Category -> "Conditioning"
 				}
 			] /. {PreFlushingSolutionPressure -> ConditioningSolutionPressure},
@@ -805,7 +811,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				],
 				(* TODO still sounds weird *)
 				Description -> "The amount of each individual input sample that is applied into the sorbent. LoadingSampleVolume is set to All, then all of pooled sample will be loaded in to ExtractionCartridge. If multiple samples are included in the same pool, individual samples are loaded sequentially.",
-				(*TODO*)
 				ResolutionDescription -> "Automatically set to the whole volume of the sample or MaxVolume of ExtractionCartridge, whichever is smaller. When All is specified, it is set to the smaller of 105% of the volume of the sample or MaxVolume of ExtractionCartridge, to ensure the complete transfer.",
 				NestedIndexMatching -> True
 			},
@@ -828,18 +833,15 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				Category -> "LoadingSample",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-					(* TODO After catalog *)
-					(*)
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 					OpenPaths -> {
-					  {
-						Object[Catalog, "Root"],
-						"Materials",
-						"Solid Phase Extraction (SPE)",
-						"Conditioning Solution"
-					  }
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Solid Phase Extraction (SPE)",
+							"Conditioning Solution"
+						}
 					}
-					*)
 				],
 				Description -> "Solution that is used to rinse each individual sample source containers to ensure that all SampleIn is transferred to the sorbent.",
 				ResolutionDescription -> "Automatically set to ConditioningSolution.",
@@ -896,8 +898,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				{
 					AllowNull -> True,
 					Description -> "The container that is used to accumulates any material that exit the sorbent while sample is being loaded into the sorbent. The collected pooled sample flowthrough volume might be less than LoadingSampleVolume because some of SampleIn left in cartrdige (the pooled SampleIn is not purged through the sorbent).",
-					(*TODO*)
-					ResolutionDescription -> "Automatically set to generic container that the instrument can accommodate (point to instrument diagram or make a table).",
 					Category -> "LoadingSample"
 				}
 			] /. {PreFlushingSolutionCollectionContainer -> LoadingSampleFlowthroughContainer},
@@ -955,7 +955,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				PreFlushingSolutionPressure,
 				{
 					Description -> "The target pressure applied to the ExtractionCartridge to flush pooled SampleIn through the sorbent. If Instrument is Model[Instrument,PressureManifold,\"MPE2\"], the LoadingSamplePressure applies to PreFlushingSolutionPressure, ConditioningSolutionPressure, WashingSolutionPressure and ElutingSolutionPressure as well (Pressure of Model[Instrument,PressureManifold,\"MPE2\"] cannot be changed while the Experiment is running).",
-					ResolutionDescription -> "Automatically set to 10 PSI. Applies to ExtractionMethod : Pressure.",
 					Category -> "LoadingSample"
 				}
 			] /. {PreFlushingSolutionPressure -> LoadingSamplePressure},
@@ -978,22 +977,17 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				{
 					Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-						(*TODO After catalog*)
-						(*
-					OpenPaths -> {
-					  {
-						Object[Catalog, "Root"],
-						"Materials",
-						"Solid Phase Extraction (SPE)",
-						"Washing Solutions"
-					  }
-					}
-					*)
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+						OpenPaths -> {
+						  {
+							Object[Catalog, "Root"],
+							"Materials",
+							"Solid Phase Extraction (SPE)",
+							"Wash Buffers"
+						  }
+						}
 					],
 					Description -> "The solution that is flushed through the analyte-bound-sorbent to get rid of non-specific binding and improve extraction purity.",
-					(*TODO*)
-					ResolutionDescription -> "Automatically set to match with ExtractionSorbent as indicate in Table... .",
 					Category -> "Washing"
 				}
 			] /. {PreFlushingSolution -> WashingSolution},
@@ -1096,7 +1090,6 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				PreFlushingSolutionPressure,
 				{
 					Description -> "The target pressure applied to the ExtractionCartridge to flush WashingSolution through the sorbent. If Instrument is Model[Instrument,PressureManifold,\"MPE2\"], the WashingSolutionPressure is set to be LoadingSamplePressure (Pressure of Model[Instrument,PressureManifold,\"MPE2\"] cannot be changed while the Experiment is running).",
-					ResolutionDescription -> "Automatically set to 10 PSI. Applies to ExtractionMethod : Pressure.",
 					Category -> "Washing"
 				}
 			] /. {PreFlushingSolutionPressure -> WashingSolutionPressure},
@@ -1121,21 +1114,17 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 					Default -> Automatic,
 					Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-						(* TODO After catalog *)
-						(*)
-					OpenPaths -> {
-					  {
-						Object[Catalog, "Root"],
-						"Materials",
-						"Solid Phase Extraction (SPE)",
-						"Washing Solutions"
-					  }
-					}
-					*)
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Solid Phase Extraction (SPE)",
+								"Wash Buffers"
+							}
+						}
 					],
 					Description -> "The solution that is flushed through the analyte-bound-sorbent to get rid of non-specific binding and improve extraction purity.",
-					(*TODO*)
 					ResolutionDescription -> "Automatically set to be the same as WashingSolution.",
 					Category -> "SecondaryWashing"
 				}
@@ -1275,21 +1264,17 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 					Default -> Automatic,
 					Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-						(* TODO After Catalog *)
-						(*)
-					OpenPaths -> {
-					  {
-						Object[Catalog, "Root"],
-						"Materials",
-						"Solid Phase Extraction (SPE)",
-						"Washing Solutions"
-					  }
-					}
-					*)
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Solid Phase Extraction (SPE)",
+								"Wash Buffers"
+							}
+						}
 					],
 					Description -> "The solution that is flushed through the analyte-bound-sorbent to get rid of non-specific binding and improve extraction purity.",
-					(*TODO*)
 					ResolutionDescription -> "Automatically set to be the same as WashingSolution.",
 					Category -> "TertiaryWashing"
 				}
@@ -1430,22 +1415,17 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				{
 					Widget -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
-						(* TODO After catalog *)
-						(*)
-					OpenPaths -> {
-					  {
-						Object[Catalog, "Root"],
-						"Materials",
-						"Solid Phase Extraction (SPE)",
-						"Eluting Solutions"
-					  }
-					}
-					*)
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Solid Phase Extraction (SPE)",
+								"Elution Buffers"
+							}
+						}
 					],
 					Description -> "The solution that is used to flush and release bound analyte from the sorbent.",
-					(*TODO*)
-					ResolutionDescription -> "Automatically set to match with ExtractionSorbent as indicate in Table... .",
 					Category -> "Eluting"
 				}
 			] /. {PreFlushingSolution -> ElutingSolution},
@@ -1568,17 +1548,23 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				],
 				Description -> "Indicate the batch that SampleIn will be run together."
 			},
-			(* TODO what the actual fuck is this option *)
+			(* TODO what is this option?? *)
 			{
 				OptionName -> AliquotTargets,
 				Default -> Null,
 				AllowNull -> True,
 				Category -> "Hidden",
-				Widget -> Widget[
-					Type -> Expression,
-					Pattern :> ListableP[{WellPositionP, _?QuantityQ, _String, ObjectP[]}] | Null,
-					Size -> Line
-				],
+				Widget -> Adder[Alternatives[
+					Widget[
+						Type -> Expression,
+						Pattern :> {WellPositionP, _?QuantityQ, _String, ObjectP[]},
+						Size -> Line
+					],
+					Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[Null]
+					]
+				]],
 				NestedIndexMatching -> True,
 				Description -> "Indicate the target aliquot volume, wells and container to be used before running SPE."
 			},
@@ -1700,8 +1686,21 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 		(* Shared Options *)
 		WorkCellOption,
 		ProtocolOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True
+				}
+			}
+		],
 		SamplePrepOptionsNestedIndexMatching,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		PooledSamplesInStorageOption,
 		SamplesOutStorageOptions,
 		PreparationOption,
@@ -1753,7 +1752,7 @@ Error::SPEManualCurrentlyNotSupported = "The Preparation option was either set t
 (* ::Subsection:: *)
 (*ExperimentSolidPhaseExtraction (Mix Overload)*)
 (* Mixed Input *)
-ExperimentSolidPhaseExtraction[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]], _String]]], myOptions : OptionsPattern[]] := Module[
+ExperimentSolidPhaseExtraction[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}], _String]]], myOptions : OptionsPattern[]] := Module[
 	{outputSpecification, output, gatherTests,
 		(* Inputs and Options Lists*)
 		listedOptions, semiPooledSamplesObjects, listedInputs,
@@ -1772,7 +1771,7 @@ ExperimentSolidPhaseExtraction[mySemiPooledInputs : ListableP[ListableP[Alternat
 	gatherTests = MemberQ[output, Tests];
 
 	(* Remove temporal links and named objects. *)
-	{semiPooledSamplesObjects, listedOptions} = removeLinks[ToList[mySemiPooledInputs], ToList[myOptions]];
+	{semiPooledSamplesObjects, listedOptions} = {ToList[mySemiPooledInputs], ToList[myOptions]};
 
 	(* Wrap a list around any single inputs to make pools *)
 	listedInputs = Map[
@@ -1794,7 +1793,7 @@ ExperimentSolidPhaseExtraction[mySemiPooledInputs : ListableP[ListableP[Alternat
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1876,7 +1875,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 		mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples,
 		validLengths, validLengthTests,
 		(* template options *)
-		templatedOptions, templateTests, inheritedOptions, upload, confirm, fastTrack, parentProtocol, cache, expandedSafeOps,
+		templatedOptions, templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, expandedSafeOps,
 		(* resolved options *)
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests,
 		collapsedResolvedOptions,
@@ -1959,7 +1958,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1976,7 +1975,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	];
 
 	(* Sanitize named inputs *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
@@ -2024,7 +2023,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentSolidPhaseExtraction, {mySamplesWithPreparedSamples}, inheritedOptions]];
@@ -2102,9 +2101,9 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]], {AllowedPositions}];
 	objectContainerFields = Union[SamplePreparationCacheFields[Object[Container]], {Dimensions, CrossSectionalShape, Footprint, NumberOfWells, Rows, Columns}];
 	cartridgeFields = {SeparationMode, FunctionalGroup, Type, MaxVolume, BedWeight, NumberOfWells, Rows, Columns, Footprint, Dimensions, CrossSectionalShape};
-	instrumentFields = {MinFlowRate, MaxFlowRate, MinPressure, MaxPressure, MaxPressureWithFlowControl, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate, MaxTime, SpeedResolution, CentrifugeType, SampleHandlingCategories};
+	instrumentFields = {MinFlowRate, MaxFlowRate, MinPressure, MaxPressure, MaxPressureWithFlowControl, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate, MaxTime, SpeedResolution, CentrifugeType, AsepticHandling};
 
-	packetSampleObject = Packet[Sequence @@ objectSampleFields];
+	packetSampleObject = Packet[Sequence @@ objectSampleFields,Living];
 	packetSampleObjectModel = Packet[Model[modelSampleFields]];
 	packetSampleContainerObject = Packet[Container[objectContainerFields]];
 	packetSampleContainerModel = Packet[Container[Model][modelContainerFields]];
@@ -2206,7 +2205,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
 	(*performSimulationQ = MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];*)
-	performSimulationQ = MemberQ[output, Result | Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null | {}];
+	performSimulationQ = MemberQ[output, Result | Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[returnEarlyQ && !performSimulationQ,
@@ -2260,26 +2259,24 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	resultQ = MemberQ[output, Result];
 
 	(*	If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentSolidPhaseExtraction[
-			If[MatchQ[resourcePackets, $Failed],
-				$Failed,
-				resourcePackets[[1]]  (* protocolPacket *)
+	{simulatedProtocol, simulation} = Which[
+		MatchQ[resourcePackets, $Failed], {$Failed, Simulation[]},
+
+		performSimulationQ,
+			simulateExperimentSolidPhaseExtraction[
+				(* protocolPacket *)
+				resourcePackets[[1]],
+				(* unitOperationPackets *)
+				Flatten[ToList[resourcePackets[[2]]]],
+				(* sample *)
+				ToList[mySamplesWithPreparedSamples],
+				(* resolved options *)
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> postResourcePacketsSimulation
 			],
-			(* unitOperationPackets *)
-			If[MatchQ[resourcePackets, $Failed],
-				$Failed,
-				Flatten[ToList[resourcePackets[[2]]]]
-			],
-			(* sample *)
-			ToList[mySamplesWithPreparedSamples],
-			(* resolved options *)
-			resolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> postResourcePacketsSimulation
-		],
 		(* if we don't run simulation return Null *)
-		{Null, Null}
+		True, {Null, Null}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -2316,11 +2313,25 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 
 		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticCellPreparation with our primitive. *)
 		MatchQ[resolvedPreparation, Robotic],
-			Module[{primitive, nonHiddenOptions},
-				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
+			Module[{primitive, nonHiddenOptions, samplesMaybeWithModels},
+
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important. Need to use updatedSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					myPooledSamples,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						updatedSimulation,
+						myPooledSamples
+					]
+				];
+
+				(* Create our SPE primitive to feed into RoboticSamplePreparation. *)
 				primitive = SolidPhaseExtraction @@ Join[
 					{
-						Sample -> myPooledSamples
+						Sample -> samplesMaybeWithModels
 					},
 					RemoveHiddenPrimitiveOptions[SolidPhaseExtraction, ToList[myOptions]]
 				];
@@ -2328,9 +2339,11 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 				(* Remove any hidden options before returning. *)
 				nonHiddenOptions = RemoveHiddenOptions[ExperimentSolidPhaseExtraction, resolvedOptions];
 
-				(* Memoize the value of ExperimentTransfer so the framework doesn't spend time resolving it again. *)
-				Block[{ExperimentSolidPhaseExtraction, $PrimitiveFrameworkResolverOutputCache},
+				(* Memoize the value of ExperimentSolidPhaseExtraction so the framework doesn't spend time resolving it again. *)
+				Internal`InheritedBlock[{ExperimentSolidPhaseExtraction, $PrimitiveFrameworkResolverOutputCache},
 					$PrimitiveFrameworkResolverOutputCache = <||>;
+
+					DownValues[ExperimentSolidPhaseExtraction] = {};
 
 					ExperimentSolidPhaseExtraction[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
 						(* Lookup the output specification the framework is asking for. *)
@@ -2358,6 +2371,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 									Name -> Lookup[nonHiddenOptions, Name],
 									Upload -> Lookup[safeOps, Upload],
 									Confirm -> Lookup[safeOps, Confirm],
+									CanaryBranch -> Lookup[safeOps, CanaryBranch],
 									ParentProtocol -> Lookup[safeOps, ParentProtocol],
 									Priority -> Lookup[safeOps, Priority],
 									StartDate -> Lookup[safeOps, StartDate],
@@ -2382,6 +2396,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 				resourcePackets[[2]],
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch -> Lookup[safeOps, CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
@@ -2861,7 +2876,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 	cache = Lookup[ToList[myResolutionOptions], Cache];
 	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our experimental options from our Sample Prep options *)
+	(* Separate out our experimental options from our Sample Prep options *)
 	{samplePrepOptions, mySPEOptions} = splitPrepOptions[
 		myOptions,
 		PrepOptionSets -> {CentrifugePrepOptionsNew, IncubatePrepOptionsNew, FilterPrepOptionsNew}
@@ -6843,7 +6858,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						mustTransfer = Not[allPlateQ && twoPlateOnlyQ];
 						updatedAliquotTargets = If[mustTransfer,
 							samplesAliquotTarget,
-							samplesAliquotTarget /. {{_String, _?QuantityQ, _String, ObjectReferenceP[]} -> {Null, Null, Null, Null}}
+							samplesAliquotTarget /. {{_String, _?QuantityQ, _String, ObjectReferenceP[]} -> Null}
 						];
 						(* setup container out for GX271 *)
 						{
@@ -8341,7 +8356,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 				];
 				If[gatherTests,
 					failingTest = If[MemberQ[Flatten[#1], True],
-						Test["The Volume of " <> ToString[#2] <> " is too large for solidPhaseExtraction Intrument to operate with." , True, False],
+						Test["The Volume of " <> ToString[#2] <> " is too large for solidPhaseExtraction Instrument to operate with." , True, False],
 						Nothing
 					];
 					passingTest = If[!MemberQ[Flatten[#1], True],
@@ -8726,10 +8741,11 @@ solidPhaseExtractionResourcePackets[
 		safeOps, outputSpecification, output, gatherTests, messages, originalIndex,
 		cache, poolLengths, samplesIn, samplesInResources, simulation, updatedSimulation,
 		containersIn, containersInModels, containersInResources,
-		pooledSamplesInResources, pooledContainersInResources, allPackets,
+		pooledSamplesInResources, pooledContainersInResources, allPackets, oldSampleToLabelRules, oldSampleToModelRules,
 		allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule, simulationRule,
 		batchedOptions, unorderedResource, unorderedResourceMerged, originalOrder, orderedResource,
-		totalEstimatedRunTime, protocolPacket,
+		totalEstimatedRunTime, protocolPacket, modelInputQ, labelSampleUOFromPreparedModels,
+		oldObjectToNewResourceRules,
 		(* bunch of resolved options variables *)
 		resolvedExtractionStrategy,
 		resolvedExtractionMode,
@@ -8862,6 +8878,7 @@ solidPhaseExtractionResourcePackets[
 		finalSPEUnitOperationPackets,
 		(* local variable *)
 		flatAliquotTarget,
+		flatAliquotTargetNoNulls,
 		aliquotLabelAndObject,
 		uniqueAliquotLabelAndObject,
 		aliquotContainerResource,
@@ -8875,7 +8892,7 @@ solidPhaseExtractionResourcePackets[
 		aliquotLength,
 		mySharedOptions,
 		mySharedOptionsKeys,
-		cartridgeSize, resolvedWorkCell
+		cartridgeSize, resolvedWorkCell, resolvedPrepUOs
 	},
 
 	(* get the safe options for this function *)
@@ -8888,7 +8905,7 @@ solidPhaseExtractionResourcePackets[
 	output = ToList[outputSpecification];
 
 	(* decide if we are gathering tests or throwing messages *)
-	gatherTests = MemberQ[Output, Tests];
+	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
 	(* lookup the cache *)
@@ -9008,7 +9025,8 @@ solidPhaseExtractionResourcePackets[
 		resolvedElutingSolutionMixVolume,
 		resolvedElutingSolutionNumberOfMixes,
 		resolvedAliquotTargets,
-		resolvedWorkCell
+		resolvedWorkCell,
+		resolvedPrepUOs
 	} = Lookup[myResolvedOptions,
 		{
 			ExtractionStrategy,
@@ -9126,14 +9144,18 @@ solidPhaseExtractionResourcePackets[
 			ElutingSolutionMixVolume,
 			ElutingSolutionNumberOfMixes,
 			AliquotTargets,
-			WorkCell
+			WorkCell,
+			PreparatoryUnitOperations
 		}
 	];
 
 	resolvedPreparation = Lookup[myResolvedOptions, Preparation];
 
+	(* if we have a model input LabelSample here and we're on the robot, set this bool to True and use it below *)
+	modelInputQ = MatchQ[resolvedPreparation, Robotic] && MatchQ[resolvedPrepUOs, {_[_LabelSample]}];
+
 	{simulation, cache} = Lookup[ToList[myOptions], {Simulation, Cache}];
-	(* determine the pool lenghts*)
+	(* determine the pool lengths*)
 	poolLengths = Map[Length[#]&, myPooledSamples];
 	originalIndex = Range[Length[myPooledSamples]];
 
@@ -9195,7 +9217,7 @@ solidPhaseExtractionResourcePackets[
 	(* create aliquot target container resource and associated targets *)
 	(* flat twice because we are dealing with pool samples and each sample can end up in multiple wells *)
 	flatAliquotTarget = If[NullQ[resolvedAliquotTargets],
-		ConstantArray[{Null, Null, Null, Null}, Length[Flatten[resolvedAliquotTargets, 2]]],
+		ConstantArray[Null, Length[Flatten[resolvedAliquotTargets, 2]]],
 		Flatten[resolvedAliquotTargets, 2]
 	];
 	{
@@ -9210,8 +9232,9 @@ solidPhaseExtractionResourcePackets[
 		),
 		(
 			(* get a unique plate type and it's label *)
-			aliquotLabelAndObject = flatAliquotTarget[[All, 3 ;; 4]];
-			uniqueAliquotLabelAndObject = DeleteCases[DeleteDuplicates[aliquotLabelAndObject], {Null, Null}];
+			flatAliquotTargetNoNulls = DeleteCases[flatAliquotTarget, NullP];
+			aliquotLabelAndObject = flatAliquotTargetNoNulls[[All, 3 ;; 4]];
+			uniqueAliquotLabelAndObject = DeleteDuplicates[aliquotLabelAndObject];
 			(* create resource based on *)
 			aliquotContainerResource = Map[
 				Resource[
@@ -9221,22 +9244,29 @@ solidPhaseExtractionResourcePackets[
 				uniqueAliquotLabelAndObject
 			];
 			aliquotContainerResourceLabelRule = Flatten[Map[#[Name] -> #&, aliquotContainerResource]];
-			{
-				Map[
-					If[MatchQ[#, {Null..}],
-						Null,
-						"AliquotSample" <> ToString[Unique[]]
-					]&, flatAliquotTarget
-				],
-				flatAliquotTarget[[All, 3]] /. aliquotContainerResourceLabelRule
-			}
+			Transpose[Map[
+				If[NullQ[#],
+					{Null, Null},
+					{"AliquotSample"<>ToString[Unique[]], #[[3]] /. aliquotContainerResourceLabelRule}
+				]&,
+				flatAliquotTarget
+			]]
 		)
 	];
 
-	destinationWell = flatAliquotTarget[[All, 1]];
-	destinationVolume = flatAliquotTarget[[All, 2]];
-	destinationContainerLabel = flatAliquotTarget[[All, 3]];
-	destinationContainerModel = flatAliquotTarget[[All, 4]];
+	{
+		destinationWell,
+		destinationVolume,
+		destinationContainerLabel,
+		destinationContainerModel
+	} = Transpose[Map[
+		If[NullQ[#],
+			{Null, Null, Null, Null},
+			#
+		]&,
+		flatAliquotTarget
+	]];
+
 	(* for each sample, it can go to multiple wells, so this is a pool of a pool *)
 	(* we also have to replace 0 to 1, because ever if there is no aliquot needed, we still have to pick that one sample still *)
 	aliquotLength = Map[Map[Function[{x}, Length[x]]], resolvedAliquotTargets] /. 0 -> 1;
@@ -9244,7 +9274,7 @@ solidPhaseExtractionResourcePackets[
 	(* now we go everything by batch ID that we resolve *)
 	batchedOptions = Experiment`Private`groupByKey[
 		Flatten[{
-			DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations, PreparatoryPrimitives}]) -> _],
+			DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations}]) -> _],
 			Samples -> myPooledSamples,
 			SamplesResource -> pooledSamplesInResources,
 			SamplesIndex -> Table[n, {n, Length[myPooledSamples]}]
@@ -9357,7 +9387,7 @@ solidPhaseExtractionResourcePackets[
 				expandedInstrumentResource = ConstantArray[instrumentResource, nPool];
 
 				(* BUFFERs calculation; we try if possible, to group all the same buffer into one container
-					Except - GX271, we will just force them to be in different tank because the way that we have seperate sub-procedure for each step and that relies on tank opposition *)
+					Except - GX271, we will just force them to be in different tank because the way that we have separate sub-procedure for each step and that relies on tank opposition *)
 				(*straighten out solution and volume *)
 				allSolutionVolume = Flatten[Lookup[options[[2]], solutionVolumeRelatedKeys]] /. Null -> 0 Milliliter;
 				allSolutionType = Flatten[Lookup[options[[2]], solutionRelatedKeys]];
@@ -9390,7 +9420,7 @@ solidPhaseExtractionResourcePackets[
 					{preflushRes, conditionRes, washRes, secWashRes, terWashRes, eluteRes, quanLoadRes, primingRes},
 					{preflushPlace, conditionPlace, washPlace, secWashPlace, terWashPlace, elutePlace, quanLoadPlace, primingPlace}
 				} = If[MatchQ[instrumentModel, ObjectP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]]],
-					(*GX271 - there will be no attempt to pull solution together, place ment is critical for sub procedure *)
+					(*GX271 - there will be no attempt to pull solution together, placement is critical for sub procedure *)
 					Module[
 						{preFlushingResource, expandedPreFlushingResource, preFlushingPlacement, expandedPreFlushingPlacement, conditioningResource, conditioningPlacement, expandedConditioningResource, expandedConditioningPlacement,
 							elutingResource, elutingPlacement, expandedElutingResource, expandedElutingPlacement, washingResource, washingPlacement, expandedWashingResource, expandedWashingPlacement, secondaryWashingResource,
@@ -9569,7 +9599,7 @@ solidPhaseExtractionResourcePackets[
 							{
 								Resource[
 									Name -> "Pump Priming Solution" <> ToString[batchID],
-									Amount -> 500 Milliliter,
+									Amount -> 1500 Milliliter,
 									Sample -> Model[Sample, "Milli-Q water"],
 									Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
 									RentContainer -> True
@@ -9582,7 +9612,7 @@ solidPhaseExtractionResourcePackets[
 							{
 								Resource[
 									Name -> "Washing Solution" <> ToString[batchID],
-									Amount -> allOfWashVolume + 500 Milliliter,
+									Amount -> allOfWashVolume + 1500 Milliliter,
 									Sample -> typeWashingSolution,
 									Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
 									RentContainer -> True
@@ -10286,7 +10316,7 @@ solidPhaseExtractionResourcePackets[
 	(* put both options and resource together then pull the batch out and loop to create unit operation by batch  *)
 	optionsAndResourceByBatch = Experiment`Private`groupByKey[
 		Join[
-			DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations, PreparatoryPrimitives}]) -> _],
+			DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations}]) -> _],
 			orderedResource,
 			(* these are already in order with the original sample index*)
 			{
@@ -10307,7 +10337,7 @@ solidPhaseExtractionResourcePackets[
 		PreparationOption,
 		SimulationOption,
 		PrimitiveOutputOption,
-		PostProcessingOptions
+		NonBiologyPostProcessingOptions
 	};
 	mySharedOptionsKeys = ToExpression /@ Keys[Flatten[Options /@ mySharedOptions]];
 
@@ -10348,6 +10378,7 @@ solidPhaseExtractionResourcePackets[
 							QuantitativeLoadingSampleVolume -> Lookup[speOptions, QuantitativeLoadingSampleVolume],
 							QuantitativeLoadingSample -> Lookup[speOptions, QuantitativeLoadingSample],
 
+							(* TODO this is the input sample stuff *)
 							Sample -> Lookup[speOptions, Sample],
 							SampleLabel -> Lookup[speOptions, SampleLabel],
 							Instrument -> (Link[#]& /@ Lookup[speOptions, InstrumentResource]),
@@ -10682,6 +10713,50 @@ solidPhaseExtractionResourcePackets[
 		]
 	];
 
+	(* make the LabelSample unit operation; importantly here, we do NOT have resources; we just have models and labels *)
+	(* also make rules converting model input samples to labels, and also those same model input samples back to their models *)
+	{labelSampleUOFromPreparedModels, oldSampleToLabelRules, oldSampleToModelRules} = If[modelInputQ,
+		Module[{resolvedUO, simLabelRules, labelToSampleRules, sampleToModelRules},
+			resolvedUO = resolvedPrepUOs[[1, 1]];
+			simLabelRules = simulation[[1]][Labels];
+			labelToSampleRules = Flatten[Map[
+				Function[{label},
+					SelectFirst[simLabelRules, MatchQ[label, #[[1]]]&, {}]
+				],
+				Flatten[{resolvedUO[Label], resolvedUO[ContainerLabel]}]
+			]];
+
+			sampleToModelRules = MapThread[
+				(#1 /. labelToSampleRules) -> #2 &,
+				{
+					Join[resolvedUO[Label], resolvedUO[ContainerLabel]],
+					Join[resolvedUO[Sample], resolvedUO[Container]]
+				}
+			];
+
+			{
+				resolvedUO,
+				Reverse /@ labelToSampleRules,
+				sampleToModelRules
+			}
+		],
+		{Null, {}, {}}
+	];
+
+	(* update the simulation to _not_ have the labels that we are adding above *)
+	updatedSimulation = If[NullQ[simulation],
+		Null,
+		With[{oldLabelRules = Lookup[First[simulation], Labels], labelsToRemove = Values[oldSampleToLabelRules]},
+			Simulation[
+				Append[
+					First[simulation],
+					Labels -> Select[oldLabelRules, Not[MemberQ[labelsToRemove, #[[1]]]]&]
+				]
+			]
+		]
+	];
+
+
 	(* need to generate a filter unit operation blob here for robotic *)
 	(* mimicking what is happening in compileSolidPhaseExtraction *)
 	{{roboticFilterUnitOperationPackets, runTime}, updatedSimulation} = If[MatchQ[resolvedPreparation, Robotic],
@@ -10705,7 +10780,7 @@ solidPhaseExtractionResourcePackets[
 				washLabel, secondaryWashLabel, tertiaryWashLabel, elutionLabel, labelsToFilter, initLabel, restLabel, sampleRules,
 				filterReadyLabelFlat, firstInLabel, restInLabel, filterReadySamplesOutLabelFlat, mergedSampleRules,
 				experimentFunction,
-				labelSampleUnitOp, filterUnitOpOptions, preFlushContainerOutLabel, conditionContainerOutLabel, sampleContainerOutLabel, labelContainerContainerRules,
+				labelSampleUnitOp, preFlushContainerOutLabel, conditionContainerOutLabel, sampleContainerOutLabel, labelContainerContainerRules,
 				washContainerOutLabel, secondaryWashContainerOutLabel, tertiaryWashContainerOutLabel, elutionContainerOutLabel,
 				containerOutLabelsToFilter, initContainerLabel, restContainerLabel, filterReadyContainerLabelFlat, sampleOutLabelsToFilter,
 				filterReadyContainerLabelFlatIndexMatch, firstInContainerLabel, restInContainerLabel, filterReadySamplesOutLabelFlatIndexMatch,
@@ -11129,7 +11204,7 @@ solidPhaseExtractionResourcePackets[
 				Label -> samplesAndLabels[[All, 3]],
 				Container -> samplesAndLabels[[All, 4]],
 				ContainerLabel -> samplesAndLabels[[All, 5]]
-			];
+			] /. oldSampleToLabelRules;
 
 			(* get the filter unit op options *)
 			filterUnitOp = Filter[
@@ -11159,21 +11234,22 @@ solidPhaseExtractionResourcePackets[
 				ImageSample -> False,
 				MeasureWeight -> False,
 				MeasureVolume -> False
-			];
+			] /. oldSampleToLabelRules;
 
 			experimentFunction = Lookup[$WorkCellToExperimentFunction, resolvedWorkCell, ExperimentRoboticSamplePreparation];
 
 			(* --- get the unit operation packets for the UOs made above; need to replicate what ExperimentRoboticCellPreparation does if that is what is happening (otherwise just do nothing) ---*)
 
 			(* make unit operation packets for the UOs we just made here *)
+			(* note that we do have two separate LabelSample UOs; the first one refers specifically to if there were labeled input models *)
 			experimentFunction[
-				{labelSampleUnitOp, filterUnitOp},
+				{If[NullQ[labelSampleUOFromPreparedModels], Nothing, labelSampleUOFromPreparedModels], labelSampleUnitOp, filterUnitOp},
 				UnitOperationPackets -> True,
 				Output -> {Result, Simulation},
 				FastTrack -> Lookup[myResolvedOptions, FastTrack],
 				Name -> Lookup[myResolvedOptions, Name],
 				ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol],
-				Simulation -> Lookup[safeOps, Simulation],
+				Simulation -> updatedSimulation,
 				Upload -> False,
 				ImageSample -> False,
 				MeasureVolume -> False,
@@ -11186,19 +11262,22 @@ solidPhaseExtractionResourcePackets[
 			]
 
 		],
-		{{{},(Length[myPooledSamples]*20Second)}, simulation}
+		{{{},(Length[myPooledSamples]*20Second)}, updatedSimulation}
 	];
 
 	(* make our final SPE unit operation packets *)
 	finalSPEUnitOperationPackets = ToList[If[MatchQ[resolvedPreparation, Robotic],
 		Join[
-			First[unitOperationPackets],
+			First[unitOperationPackets] /. oldSampleToModelRules,
 			<|
 				Replace[RoboticUnitOperations] -> Link[Lookup[roboticFilterUnitOperationPackets, Object]]
 			|>
 		],
 		unitOperationPackets
 	]];
+
+	(* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+	updatedSimulation=updateLabelFieldReferences[updatedSimulation,RoboticUnitOperations];
 
 	(* finalize object protocol *)
 	protocolPacket = Association[
@@ -11699,2286 +11778,6 @@ simulateExperimentSolidPhaseExtraction[
 					Simulation -> simulation,
 					PooledSamplesIn -> mySamples
 				]
-			],
-
-		(* in case resource picking failed *)
-		MatchQ[myProtocolPacket, $Failed],
-			(* NOTE: Even if our resource packets simulation failed, we're going to have to generate some shell primitive *)
-			(* objects so that we can simulate the transfer samples and return them. This is NOT REQUIRED for most experiment *)
-			(* functions where a shell protocol object is just fine. *)
-			(* NOTE: The following is code from the resource packets function. It should be kept in sync. *)
-			(* We basically just run the part of the resource packets function here that we can be sure is error-proof. *)
-			Module[
-				{poolLengths, originalIndex, samplesIn, samplesInResources, pooledSamplesInResources,
-					containersIn, containersInModels, containersInResources, pooledContainersInResources,
-					resolvedExtractionCartridgeModel, resolvedExtractionCartridgeType, resolvedInstrumentModel,
-					batchedOptions, unorderedResource, resolvedPreparation,
-					unorderedResourceMerged, originalOrder, orderedResource, optionsAndResourceByBatch,
-					unitOperationPackets, mySharedOptions, mySharedOptionsKeys, protocolPacket,
-					roboticFilterUnitOperationPackets, runTime, updatedSimulation
-				},
-
-				resolvedPreparation = Lookup[myResolvedOptions, Preparation];
-				(* determine the pool lenghts*)
-				poolLengths = Map[Length[#]&, mySamples];
-				originalIndex = Range[Length[mySamples]];
-				(* CREATE RESOURCE for options that do not require batching *)
-				(* create the sample resource, only request the amount we're actually going to SPE *)
-				samplesIn = Flatten[mySamples];
-				samplesInResources = MapThread[
-					Resource[Name -> ToString[Unique[]], Sample -> #1, Amount -> #2]&,
-					{samplesIn, Flatten[Lookup[myResolvedOptions, LoadingSampleVolume]]}
-				];
-				pooledSamplesInResources = speRepool[samplesInResources, poolLengths];
-
-				(* create the resource for containers in *)
-				containersIn = Map[cacheLookup[cache, #, Container]&, samplesIn];
-				containersInModels = Map[cacheLookup[cache, #, Model]&, containersIn];
-				containersInResources = Map[Resource[Name -> ToString[#[ID]], Sample -> #]&, containersIn];
-				pooledContainersInResources = speRepool[containersInResources, poolLengths];
-				(* if we need to transfer sample , we will call ExperimentTransfer, there is no need for us to create resource of transfer plat e*)
-
-				(* create the resource of ExtractionCartridge *)
-				resolvedExtractionCartridgeModel = Map[
-					If[MatchQ[#, ObjectP[Object]],
-						cacheLookup[cache, #, Model],
-						#
-					]&,
-					Lookup[myResolvedOptions, ExtractionCartridge]
-				];
-				resolvedExtractionCartridgeType = Map[cacheLookup[cache, #, Type]&, resolvedExtractionCartridgeModel];
-				(* get resolved instrument models *)
-				resolvedInstrumentModel = Map[
-					If[MatchQ[#, ObjectP[Object]],
-						cacheLookup[cache, #, Model],
-						#
-					]&,
-					Lookup[myResolvedOptions, Instrument]
-				];
-
-				batchedOptions = Experiment`Private`groupByKey[
-					Flatten[{
-						(* remove the ProtocolOptions because we clearly don't intend those to make it here *)
-						DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations, PreparatoryPrimitives}]) -> _],
-						Samples -> mySamples,
-						SamplesResource -> pooledSamplesInResources,
-						SamplesIndex -> Table[n, {n, Length[mySamples]}]
-					}],
-					If[MatchQ[resolvedPreparation, Robotic],
-						{Instrument},
-						{SPEBatchID, Instrument}
-					]
-				];
-				(* get the resource that is batch dependent *)
-				unorderedResource = Map[
-					Function[{options},
-						Module[{nPool, instrument, instrumentModel, batchID, timeRelatedKeys, solutionRelatedKeys, solutionVolumeRelatedKeys, timedOptionValue, estimatedRunTime, instrumentResource,
-							TotalPreFlushingSolutionVolume, TotalConditioningSolutionVolume, TotalWashingSolutionVolume, TotalSecondaryWashingSolutionVolume, TotalTertiaryWashingSolutionVolume,
-							TotalElutingSolutionVolume, TotalQuantitativeLoadingSampleSolutionVolume, typePreFlushingSolution, typeConditioningSolution, typeWashingSolution,
-							typeSecondaryWashingSolution, typeTertiaryWashingSolution, typeElutingSolution, groupedSolution,
-							uniqueVolume, uniqueBuffer, premodSolutionResource,
-							preflushRes, conditionRes, washRes, secWashRes, terWashRes, eluteRes, quanLoadRes, primingRes,
-							preflushPlace, conditionPlace, washPlace, secWashPlace, terWashPlace, elutePlace, quanLoadPlace, primingPlace,
-							containerOutRelatedKeys, preFlushContainerOutResource, conditioningContainerOutResource, washingContainerOutResource,
-							secondaryWashingContainerOutResource, tertiaryContainerOutResource, elutingContainerOutResource, loadingSampleContainerOutResource,
-							sampleOrder, cartridgePlacement, expandedInstrumentResource, preFlushContainerOutDeckPlacement, conditioningContainerOutDeckPlacement,
-							washingContainerOutDeckPlacement, secondaryWashingContainerOutDeckPlacement, tertiaryContainerOutDeckPlacement, elutingContainerOutDeckPlacement,
-							loadingSampleContainerOutDeckPlacement, extractionCartridgeResource, wasteContainerResource, containerOutRelatedLabelKeys,
-							allSolutionVolume, allSolutionType, solutionTemperatureRelatedKeys, allSolutionTemperature, allSolutionTemperatureWithQuant, uniqueBufferTemperature, quantitativeTemperature, poolLengthUnorderResource, resourceRulesAndNull
-						},
-							sampleOrder = Lookup[options[[2]], SamplesIndex];
-							nPool = Length[Lookup[options[[2]], Samples]];
-							poolLengthUnorderResource = Length /@ Lookup[options[[2]], Samples];
-							instrument = Lookup[options[[1]], Instrument];
-							instrumentModel = If[MatchQ[instrument, ObjectP[Object]],
-								Experiment`Private`cacheLookup[cache, instrument, Model],
-								instrument
-							];
-
-							batchID = Lookup[options[[1]], If[MatchQ[resolvedPreparation, Robotic], Preparation, SPEBatchID]];
-							timeRelatedKeys = {
-								PreFlushingSolutionDrainTime,
-								MaxPreFlushingSolutionDrainTime,
-								ConditioningSolutionTemperatureEquilibrationTime,
-								ConditioningSolutionDrainTime,
-								MaxConditioningSolutionDrainTime,
-								LoadingSampleDrainTime,
-								MaxLoadingSampleDrainTime,
-								WashingSolutionDrainTime,
-								MaxWashingSolutionDrainTime,
-								SecondaryWashingSolutionDrainTime,
-								MaxSecondaryWashingSolutionDrainTime,
-								TertiaryWashingSolutionDrainTime,
-								MaxTertiaryWashingSolutionDrainTime,
-								ElutingSolutionDrainTime,
-								MaxElutingSolutionDrainTime};
-							solutionRelatedKeys = {
-								PreFlushingSolution,
-								ConditioningSolution,
-								WashingSolution,
-								SecondaryWashingSolution,
-								TertiaryWashingSolution,
-								ElutingSolution,
-								QuantitativeLoadingSampleSolution
-							};
-							solutionVolumeRelatedKeys = {
-								PreFlushingSolutionVolume,
-								ConditioningSolutionVolume,
-								WashingSolutionVolume,
-								SecondaryWashingSolutionVolume,
-								TertiaryWashingSolutionVolume,
-								ElutingSolutionVolume,
-								QuantitativeLoadingSampleVolume
-							};
-							solutionTemperatureRelatedKeys = {
-								PreFlushingSolutionTemperature,
-								ConditioningSolutionTemperature,
-								WashingSolutionTemperature,
-								SecondaryWashingSolutionTemperature,
-								TertiaryWashingSolutionTemperature,
-								ElutingSolutionTemperature
-							};
-							containerOutRelatedKeys = {
-								PreFlushingSolutionCollectionContainer,
-								ConditioningSolutionCollectionContainer,
-								WashingSolutionCollectionContainer,
-								SecondaryWashingSolutionCollectionContainer,
-								TertiaryWashingSolutionCollectionContainer,
-								ElutingSolutionCollectionContainer,
-								LoadingSampleFlowthroughContainer
-							};
-							containerOutRelatedLabelKeys = {
-								PreFlushingCollectionContainerOutLabel,
-								ConditioningCollectionContainerOutLabel,
-								WashingCollectionContainerOutLabel,
-								SecondaryWashingCollectionContainerOutLabel,
-								TertiaryWashingCollectionContainerOutLabel,
-								ElutingCollectionContainerOutLabel,
-								LoadingSampleFlowthroughCollectionContainerOutLabel
-							};
-
-							(* INSTRUMENT resource *)
-							(* guesstimate time for instrument*)
-							timedOptionValue = Lookup[options[[2]], timeRelatedKeys] /. Null -> 0 Minute;
-							(* add 5% of time demand *)
-							estimatedRunTime = Total[Flatten[timedOptionValue]] * 1.05;
-							instrumentResource = Resource[
-								Name -> "SPE Instrument " <> ToString[batchID],
-								Instrument -> Download[Lookup[options[[1]], Instrument], Object],
-								Time -> estimatedRunTime
-							];
-							(* expand instrument resource to index match *)
-							expandedInstrumentResource = ConstantArray[instrumentResource, nPool];
-
-							(* BUFFERs calculation; we try if possible, to group all the same buffer into one container
-								Except - GX271, we will just force them to be in different tank because the way that we have seperate sub-procedure for each step and that relies on tank opposition *)
-							(*straighten out solution and volume *)
-							allSolutionVolume = Flatten[Lookup[options[[2]], solutionVolumeRelatedKeys]] /. Null -> 0 Milliliter;
-							allSolutionType = Flatten[Lookup[options[[2]], solutionRelatedKeys]];
-							allSolutionTemperature = Flatten[Lookup[options[[2]], solutionTemperatureRelatedKeys]];
-							(* because we don't allow user to define temperature of quantitative laoding sample solution, so we force it to be room temp *)
-							quantitativeTemperature = Table[25 Celsius, Total[poolLengthUnorderResource]];
-							allSolutionTemperatureWithQuant = Flatten[{allSolutionTemperature, quantitativeTemperature}];
-
-							(* group buffer of the same type and temperature together -> we will use transport warm or transport chill later in compile *)
-							groupedSolution = Experiment`Private`groupByKey[{
-								SolutionObject -> allSolutionType,
-								SolutionVolume -> allSolutionVolume,
-								SolutionTemperature -> allSolutionTemperatureWithQuant
-							}, {SolutionObject, SolutionTemperature}];
-							(* sum volume of the same buffer *)
-							uniqueVolume = Map[Total[Flatten[Lookup[#[[2]], SolutionVolume]]]&, groupedSolution];
-							(* get all the unique  different type of the same buffer *)
-							uniqueBuffer = Lookup[groupedSolution[[All, 1]], SolutionObject];
-							uniqueBufferTemperature = Lookup[groupedSolution[[All, 1]], SolutionTemperature];
-							premodSolutionResource = {
-								SolutionObject -> PickList[uniqueBuffer, Map[!MatchQ[#, Null | {Null..}]&, uniqueBuffer]],
-								SolutionVolume -> PickList[uniqueVolume, Map[!MatchQ[#, Null | {Null..}]&, uniqueBuffer]],
-								SolutionTemperature -> PickList[uniqueBufferTemperature, Map[!MatchQ[#, Null | {Null..}]&, uniqueBuffer]]
-							};
-							(* set up cartridge placement *)
-							cartridgePlacement = Lookup[options[[2]], CartridgePlacement];
-							(* BUFFER MODIFIERs and create resource, base on each instrument constrains *)
-
-							{
-								{preflushRes, conditionRes, washRes, secWashRes, terWashRes, eluteRes, quanLoadRes, primingRes},
-								{preflushPlace, conditionPlace, washPlace, secWashPlace, terWashPlace, elutePlace, quanLoadPlace, primingPlace}
-								(*GX271 - there will be no attempt to pull solution together, place ment is critical for sub procedure *)
-							} = If[MatchQ[instrumentModel, ObjectP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]]],
-								Module[
-									{preFlushingResource, expandedPreFlushingResource, preFlushingPlacement, expandedPreFlushingPlacement, conditioningResource, conditioningPlacement, expandedConditioningResource, expandedConditioningPlacement,
-										elutingResource, elutingPlacement, expandedElutingResource, expandedElutingPlacement, washingResource, washingPlacement, expandedWashingResource, expandedWashingPlacement, secondaryWashingResource,
-										expandedSecondaryWashingResource, expandedSecondaryWashingPlacement, secondaryWashingPlacement, tertiaryWashingResource, tertiaryWashingPlacement, expandedTertiaryWashingResource, expandedTertiaryWashingPlacement,
-										allOfWashVolume, semiWashingResource, expandedPrimingResource, expandedPrimingPlacement, typeQuantitativeLoadingSampleSolution,
-										preFlushSampleContainerModel, conditioningSampleContainerModel,
-										elutingSampleContainerModel, washingSampleContainerModel, secWashSampleContainerModel, terWashSampleContainerModel},
-									(* this is special for GX 271 where bottle is fixed, so we have to resolve it step by step *)
-									{
-										TotalPreFlushingSolutionVolume,
-										TotalConditioningSolutionVolume,
-										TotalWashingSolutionVolume,
-										TotalSecondaryWashingSolutionVolume,
-										TotalTertiaryWashingSolutionVolume,
-										TotalElutingSolutionVolume,
-										TotalQuantitativeLoadingSampleSolutionVolume
-									} = Map[
-										(Total[Flatten[#] /. Null -> 0 Milliliter])&,
-										Lookup[options[[2]], solutionVolumeRelatedKeys]
-									];
-									(*type of buffer*)
-									{
-										typePreFlushingSolution,
-										typeConditioningSolution,
-										typeWashingSolution,
-										typeSecondaryWashingSolution,
-										typeTertiaryWashingSolution,
-										typeElutingSolution,
-										typeQuantitativeLoadingSampleSolution
-									} = Map[First[Flatten[#]]&, Lookup[options[[2]], solutionRelatedKeys]];
-
-									(* preflush, equilibrate and eluting are the same *)
-									(* position of buffer bottles are fix to make batch calculation easier *)
-									preFlushingResource = Switch[typePreFlushingSolution,
-										(* if it is nothing leave it*)
-										Null,
-										Null,
-										(* if it is a model, we have to put it in the right bottle *)
-										ObjectP[Model[Sample]],
-										(
-											Resource[
-												Name -> "PreFlushing Solution" <> ToString[batchID],
-												Amount -> TotalPreFlushingSolutionVolume + 125 Milliliter,
-												Sample -> typePreFlushingSolution,
-												Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-												RentContainer -> True
-											]
-										),
-										(* if it's an object sample, check what kind of contaier it's in, if it's already in Gilson bottle already, then leave it *)
-										ObjectP[Object[Sample]],
-										(
-											preFlushSampleContainerModel = typePreFlushingSolution[Container][Object][Model][Object];
-											If[MatchQ[preFlushSampleContainerModel, ObjectP[Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"]]],
-												Resource[
-													Name -> "PreFlushing Solution" <> ToString[batchID],
-													Sample -> typePreFlushingSolution,
-													RentContainer -> True
-												],
-												Resource[
-													Name -> "PreFlushing Solution" <> ToString[batchID],
-													Sample -> typePreFlushingSolution,
-													Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-													Amount -> typePreFlushingSolution[Volume],
-													RentContainer -> True
-												]
-											]
-										)
-									];
-									preFlushingPlacement = If[MatchQ[typePreFlushingSolution, Null],
-										Null,
-										{"Deck Slot", "A1", "1"}
-									];
-									(* expand to index match *)
-									expandedPreFlushingResource = ConstantArray[preFlushingResource, nPool];
-									expandedPreFlushingPlacement = ConstantArray[preFlushingPlacement, nPool];
-
-									conditioningResource = Switch[typeConditioningSolution,
-										(* if it is nothing leave it*)
-										Null,
-										Null,
-										(* if it is a model, we have to put it in the right bottle *)
-										ObjectP[Model[Sample]],
-										(
-											Resource[
-												Name -> "Conditioning Solution" <> ToString[batchID],
-												Amount -> TotalConditioningSolutionVolume + 125 Milliliter,
-												Sample -> typeConditioningSolution,
-												Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-												RentContainer -> True
-											]
-										),
-										(* if it's an object sample, check what kind of contaier it's in, if it's already in Gilson bottle already, then leave it *)
-										ObjectP[Object[Sample]],
-										(
-											conditioningSampleContainerModel = typeConditioningSolution[Container][Object][Model][Object];
-											If[MatchQ[conditioningSampleContainerModel, ObjectP[Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"]]],
-												Resource[
-													Name -> "Conditioning Solution" <> ToString[batchID],
-													Sample -> typeConditioningSolution,
-													RentContainer -> True
-												],
-												Resource[
-													Name -> "Conditioning Solution" <> ToString[batchID],
-													Sample -> typeConditioningSolution,
-													Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-													Amount -> typeConditioningSolution[Volume],
-													RentContainer -> True
-												]
-											]
-										)
-									];
-									conditioningPlacement = If[MatchQ[typeConditioningSolution, Null],
-										Null,
-										{"Deck Slot", "A1", "2"}
-									];
-
-									(* expand to index match *)
-									expandedConditioningResource = ConstantArray[conditioningResource, nPool];
-									expandedConditioningPlacement = ConstantArray[conditioningPlacement, nPool];
-
-									elutingResource = Switch[typeElutingSolution,
-										(* if it is nothing leave it*)
-										Null,
-										Null,
-										(* if it is a model, we have to put it in the right bottle *)
-										ObjectP[Model[Sample]],
-										(
-											Resource[
-												Name -> "Eluting Solution" <> ToString[batchID],
-												Amount -> TotalElutingSolutionVolume + 125 Milliliter,
-												Sample -> typeElutingSolution,
-												Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-												RentContainer -> True
-											]
-										),
-										(* if it's an object sample, check what kind of contaier it's in, if it's already in Gilson bottle already, then leave it *)
-										ObjectP[Object[Sample]],
-										(
-											elutingSampleContainerModel = typeElutingSolution[Container][Object][Model][Object];
-											If[MatchQ[elutingSampleContainerModel, ObjectP[Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"]]],
-												Resource[
-													Name -> "Eluting Solution" <> ToString[batchID],
-													Sample -> typeElutingSolution,
-													RentContainer -> True
-												],
-												Resource[
-													Name -> "Eluting Solution" <> ToString[batchID],
-													Sample -> typeElutingSolution,
-													Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-													Amount -> typeElutingSolution[Volume],
-													RentContainer -> True
-												]
-											]
-										)
-									];
-									elutingPlacement = If[MatchQ[typeElutingSolution, Null],
-										Null,
-										{"Deck Slot", "A1", "3"}
-									];
-									(* expand to index match *)
-									expandedElutingResource = ConstantArray[elutingResource, nPool];
-									expandedElutingPlacement = ConstantArray[elutingPlacement, nPool];
-
-									(* wash is a special case, because usually sec and ter wash are the same as pri wash, so better put them together *)
-									allOfWashVolume = Total[Flatten[PickList[
-										{TotalWashingSolutionVolume, TotalSecondaryWashingSolutionVolume, TotalTertiaryWashingSolutionVolume},
-										{typeWashingSolution, typeSecondaryWashingSolution, typeTertiaryWashingSolution},
-										ObjectReferenceP[typeWashingSolution]
-									]]];
-
-									(* wash solution *)
-									{semiWashingResource, washingPlacement} = Switch[typeWashingSolution,
-										(* we always need reservoir volume for priming pump *)
-										Null,
-										{
-											Resource[
-												Name -> "Pump Priming Solution" <> ToString[batchID],
-												Amount -> 500 Milliliter,
-												Sample -> Model[Sample, "Milli-Q water"],
-												Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
-												RentContainer -> True
-											],
-											Null
-										},
-
-										(* otherwise, prepare as requested *)
-										ObjectP[Model[Sample]],
-										{
-											Resource[
-												Name -> "Washing Solution" <> ToString[batchID],
-												Amount -> allOfWashVolume + 500 Milliliter,
-												Sample -> typeWashingSolution,
-												Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
-												RentContainer -> True
-											],
-											"Reservoir"
-										},
-
-										ObjectP[Object[Sample]],
-										washingSampleContainerModel = typeWashingSolution[Container][Object][Model][Object];
-										If[MatchQ[washingSampleContainerModel, Model[Container, Vessel, "10L Polypropylene Carboy"]],
-											{
-												Resource[
-													Name -> "Washing Solution" <> ToString[batchID],
-													Sample -> typeWashingSolution,
-													RentContainer -> True
-												],
-												"Reservoir"
-											},
-											{
-												Resource[
-													Name -> "Washing Solution" <> ToString[batchID],
-													Sample -> typeWashingSolution,
-													Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
-													Amount -> typeWashingSolution[Volume],
-													RentContainer -> True
-												],
-												"Reservoir"
-											}
-										]
-									];
-
-									expandedPrimingResource = ConstantArray[semiWashingResource, nPool];
-									expandedPrimingPlacement = ConstantArray[washingPlacement, nPool];
-									(* expand to index match *)
-									washingResource = If[MatchQ[typeWashingSolution, Null],
-										Null,
-										semiWashingResource
-									];
-									expandedWashingResource = ConstantArray[washingResource, nPool];
-									expandedWashingPlacement = ConstantArray[washingPlacement, nPool];
-
-									(* secondary wash solution *)
-									{secondaryWashingResource, secondaryWashingPlacement} = Switch[typeSecondaryWashingSolution,
-
-										Null,
-										{Null, Null},
-
-										(* if use the same wash buffer, no need to create any resource *)
-										typeWashingSolution,
-										{washingResource, washingPlacement},
-
-										(* if it is a model, we have to put it in the right bottle *)
-										ObjectP[Model[Sample]],
-										{
-											Resource[
-												Name -> "Solution 4" <> ToString[batchID],
-												Amount -> TotalSecondaryWashingSolutionVolume + 125 Milliliter,
-												Sample -> typeSecondaryWashingSolution,
-												Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-												RentContainer -> True
-											],
-											{"Deck Slot", "A1", "4"}
-										},
-
-										(* if it's an object sample, check what kind of contaier it's in, if it's already in Gilson bottle already, then leave it *)
-										ObjectP[Object[Sample]],
-										(
-											secWashSampleContainerModel = typeSecondaryWashingSolution[Container][Object][Model][Object];
-											If[MatchQ[secWashSampleContainerModel, ObjectP[Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"]]],
-												{
-													Resource[
-														Name -> "Solution 4" <> ToString[batchID],
-														Sample -> typeSecondaryWashingSolution,
-														RentContainer -> True
-													],
-													{"Deck Slot", "A1", "4"}
-												},
-												{
-													Resource[
-														Name -> "Eluting Solution" <> ToString[batchID],
-														Sample -> typeSecondaryWashingSolution,
-														Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-														Amount -> typeSecondaryWashingSolution[Volume],
-														RentContainer -> True
-													],
-													{"Deck Slot", "A1", "4"}
-												}
-											]
-										)
-									];
-									(* expand to index match *)
-									expandedSecondaryWashingResource = ConstantArray[secondaryWashingResource, nPool];
-									expandedSecondaryWashingPlacement = ConstantArray[secondaryWashingPlacement, nPool];
-
-									(* tertiary wash solution *)
-									{tertiaryWashingResource, tertiaryWashingPlacement} = Switch[typeTertiaryWashingSolution,
-
-										Null,
-										{Null, Null},
-
-										(* if use the same wash buffer, no need to create any resource *)
-										typeWashingSolution,
-										{washingResource, washingPlacement},
-
-										typeSecondaryWashingSolution,
-										{secondaryWashingResource, secondaryWashingPlacement},
-
-
-										(* if it is a model, we have to put it in the right bottle *)
-										ObjectP[Model[Sample]],
-										{
-											Resource[
-												Name -> "Solution 4" <> ToString[batchID],
-												Amount -> TotalTertiaryWashingSolutionVolume + 125 Milliliter,
-												Sample -> typeTertiaryWashingSolution,
-												Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-												RentContainer -> True
-											],
-											{"Deck Slot", "A1", "4"}
-										},
-
-										(* if it's an object sample, check what kind of contaier it's in, if it's already in Gilson bottle already, then leave it *)
-										ObjectP[Object[Sample]],
-										(
-											terWashSampleContainerModel = typeTertiaryWashingSolution[Container][Object][Model][Object];
-											If[MatchQ[terWashSampleContainerModel, ObjectP[Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"]]],
-												{
-													Resource[
-														Name -> "Solution 4" <> ToString[batchID],
-														Sample -> typeTertiaryWashingSolution,
-														RentContainer -> True
-													],
-													{"Deck Slot", "A1", "4"}
-												},
-												{
-													Resource[
-														Name -> "Eluting Solution" <> ToString[batchID],
-														Sample -> typeTertiaryWashingSolution,
-														Container -> Model[Container, Vessel, "Gilson Reagent Bottle -  Tall"],
-														Amount -> typeTertiarySolution[Volume],
-														RentContainer -> True
-													],
-													{"Deck Slot", "A1", "4"}
-												}
-											]
-										)
-									];
-									(* expand to index match *)
-									expandedTertiaryWashingResource = ConstantArray[tertiaryWashingResource, nPool];
-									expandedTertiaryWashingPlacement = ConstantArray[tertiaryWashingPlacement, nPool];
-
-									(* output for GX271 *)
-									{
-										{
-											expandedPreFlushingResource,
-											expandedConditioningResource,
-											expandedWashingResource,
-											expandedSecondaryWashingResource,
-											expandedTertiaryWashingResource,
-											expandedElutingResource,
-											(* we don't allow quantitative loading for GX271 for now *)
-											ConstantArray[Null, nPool],
-											expandedPrimingResource
-										}
-										,
-										{
-											expandedPreFlushingPlacement,
-											expandedConditioningPlacement,
-											expandedWashingPlacement,
-											expandedSecondaryWashingPlacement,
-											expandedTertiaryWashingPlacement,
-											expandedElutingPlacement,
-											(* we don't allow quantitative loading for GX271 for now *)
-											ConstantArray[Null, nPool],
-											expandedPrimingPlacement
-										}
-									}
-								], (* end module for gx271*)
-
-								(* all the non-GX271 branches *)
-								Module[
-									{modSolutionVolume, modSolutionType, modContainer, subSolutionResource, resourceRules, modSolutionTemperature,
-										preFlushResource, conditioningResource, washingResource, secondaryWashingResource, tertiaryResource, elutingResource,
-										quantitativeLoadingSampleResource, preFlushPlacement, conditioningPlacement, washingPlacement,
-										secondaryWashingPlacement, tertiaryPlacement, elutingPlacement, quantitativeLoadingSamplePlacement, preFlushingSolution,
-										conditioningSolution, washingSolution, secondaryWashingSolution, tertiaryWashingSolution, elutingSolution,
-										quantitativeLoadingSampleSolution, preFlushingTemperature, conditioningTemperature, washingTemperature, secondaryWashingTemperature,
-										tertiaryWashingTemperature, elutingTemperature, quantitativeLoadingSampleResourceUnpool, resName},
-
-									modSolutionVolume = Lookup[premodSolutionResource, SolutionVolume] * 1.1;
-									modSolutionType = Lookup[premodSolutionResource, SolutionObject];
-									modSolutionTemperature = Lookup[premodSolutionResource, SolutionTemperature];
-									modContainer = Map[PreferredContainer[#]&, modSolutionVolume];
-									subSolutionResource = Map[
-										(
-											resName = "Buffer" <> ToString[Unique[]] <> ToString[batchID];
-											Which[
-												(* if it's a sample, don't move the container *)
-												MatchQ[#1[[1]], ObjectP[Object[Sample]]],
-												Resource[
-													Name -> resName,
-													Sample -> #1[[1]]
-												],
-
-												(* if it's a container, get the content as sample *)
-												MatchQ[#1[[1]], ObjectP[Object[Container]]],
-												Resource[
-													Name -> resName,
-													Sample -> #1[[1]]
-												],
-
-												(* if it's not a sample or a container, use the model to get the resource *)
-												True,
-												Resource[
-													Name -> "Buffer" <> ToString[Unique[]] <> ToString[batchID],
-													Sample -> #1[[1]],
-													Amount -> #1[[2]],
-													Container -> #1[[3]]
-												]
-											]
-										)&,
-										Transpose[{modSolutionType, modSolutionVolume, modContainer}]
-									];
-									(* set list of rules to change the resolve option  to resource *)
-									resourceRules = MapThread[
-										{#1, #2} -> #3&,
-										{
-											modSolutionType,
-											modSolutionTemperature,
-											subSolutionResource
-										}
-									];
-									resourceRulesAndNull = Join[resourceRules, {{Null, _} -> Null}];
-
-									(* loop across all resolved solutions step and replace with resource *)
-									{
-										preFlushingSolution,
-										conditioningSolution,
-										washingSolution,
-										secondaryWashingSolution,
-										tertiaryWashingSolution,
-										elutingSolution,
-										quantitativeLoadingSampleSolution
-									} = Lookup[options[[2]], solutionRelatedKeys];
-									{
-										preFlushingTemperature,
-										conditioningTemperature,
-										washingTemperature,
-										secondaryWashingTemperature,
-										tertiaryWashingTemperature,
-										elutingTemperature
-									} = Lookup[options[[2]], solutionTemperatureRelatedKeys];
-
-									{
-										preFlushResource,
-										conditioningResource,
-										washingResource,
-										secondaryWashingResource,
-										tertiaryResource,
-										elutingResource,
-										quantitativeLoadingSampleResourceUnpool
-									} = Map[# /. resourceRulesAndNull&,
-										{
-											Transpose[{preFlushingSolution, preFlushingTemperature}],
-											Transpose[{conditioningSolution, conditioningTemperature}],
-											Transpose[{washingSolution, washingTemperature}],
-											Transpose[{secondaryWashingSolution, secondaryWashingTemperature}],
-											Transpose[{tertiaryWashingSolution, tertiaryWashingTemperature}],
-											Transpose[{elutingSolution, elutingTemperature}],
-											Transpose[{Flatten[quantitativeLoadingSampleSolution], Flatten[quantitativeTemperature]}]
-										}
-									];
-									quantitativeLoadingSampleResource = TakeList[quantitativeLoadingSampleResourceUnpool, poolLengthUnorderResource];
-									(*						*)(* special case here *)
-									(*						quantitativeLoadingSampleResource = Map[FirstOrDefault[#, #]&, quantitativeLoadingSampleSolution];*)
-
-									(* set everything to Null*)
-									{
-										preFlushPlacement,
-										conditioningPlacement,
-										washingPlacement,
-										secondaryWashingPlacement,
-										tertiaryPlacement,
-										elutingPlacement,
-										quantitativeLoadingSamplePlacement
-									} = Map[ConstantArray[(# /. {_ -> Null}), nPool]&,
-										{
-											preFlushingSolution,
-											conditioningSolution,
-											washingSolution,
-											secondaryWashingSolution,
-											tertiaryWashingSolution,
-											elutingSolution,
-											quantitativeLoadingSampleSolution
-										}
-									];
-
-									(* output *)
-									{
-										{
-											preFlushResource,
-											conditioningResource,
-											washingResource,
-											secondaryWashingResource,
-											tertiaryResource,
-											elutingResource,
-											quantitativeLoadingSampleResource,
-											(* there is no pump priming in this branch *)
-											ConstantArray[Null, nPool]
-										},
-										{
-											preFlushPlacement,
-											conditioningPlacement,
-											washingPlacement,
-											secondaryWashingPlacement,
-											tertiaryPlacement,
-											elutingPlacement,
-											quantitativeLoadingSamplePlacement,
-											(* there is no pump priming in this branch *)
-											ConstantArray[Null, nPool]
-										}
-									}
-								](* end module manual filter *)
-
-							]; (* end of buffer switch*)
-
-							(* Container out resource *)
-							{
-								preFlushContainerOutResource,
-								conditioningContainerOutResource,
-								washingContainerOutResource,
-								secondaryWashingContainerOutResource,
-								tertiaryContainerOutResource,
-								elutingContainerOutResource,
-								loadingSampleContainerOutResource,
-								preFlushContainerOutDeckPlacement,
-								conditioningContainerOutDeckPlacement,
-								washingContainerOutDeckPlacement,
-								secondaryWashingContainerOutDeckPlacement,
-								tertiaryContainerOutDeckPlacement,
-								elutingContainerOutDeckPlacement,
-								loadingSampleContainerOutDeckPlacement,
-								extractionCartridgeResource,
-								wasteContainerResource
-							} = Switch[instrumentModel,
-
-								(*GX271 - this is simple, the well out will be assign by the column position and there can be only on plate at a time*)
-								ObjectP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]],
-									(* loop across all container out *)
-									Module[
-										{containerOut, containerOutUnique, containerOutResource, containerOutResourceRule, preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer,
-											containerOutLabel,
-											containerOutAndLabel,
-											containerOutAndLabelUnique
-										},
-										wasteContainer = Map[
-											Resource[Sample -> Model[Container, Vessel, "id:aXRlGnZmOOB9"], Name -> "simulated waste"]&,
-											Lookup[options[[2]], ExtractionCartridge]];
-										cartridgeResources = Map[Resource[Sample -> #]&, Lookup[options[[2]], ExtractionCartridge]];
-										containerOut = Lookup[options[[2]], containerOutRelatedKeys];
-										containerOutLabel = Lookup[options[[2]], containerOutRelatedLabelKeys];
-										containerOutAndLabel = Transpose[{Flatten[containerOut], Flatten[containerOutLabel]}];
-										containerOutAndLabelUnique = DeleteDuplicates[containerOutAndLabel];
-										containerOutResource = Map[If[MatchQ[#[[1]], ObjectP[]],
-											(
-												Resource[
-													Name -> #[[2]],
-													Sample -> #[[1]]
-												]
-											),
-											Nothing
-										]&,
-											containerOutAndLabelUnique
-										];
-										containerOutResourceRule = Map[#[Name] -> #&, containerOutResource];
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut
-										} = Map[
-											# /. containerOutResourceRule&,
-											containerOutLabel
-										];
-										{
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement
-										} = Map[
-											# /. ObjectP[] -> {"Deck Slot", "A3", "Collection Slot"}&,
-											containerOut
-										];
-
-										(* output *)
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer
-										}
-									],
-
-								(*These are all the branches that go down ExperimentFilter *)
-								ObjectP[{Model[Instrument, Centrifuge], Model[Instrument, SyringePump], Model[Instrument, FilterBlock]}] | ObjectP[Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"]], (* last one here is the MPE2 *)
-									Module[
-										{containerOut, containerOutResource, containerOutResourceRule, preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer,
-											containerOutLabel,
-											containerOutAndLabel,
-											containerOutAndLabelUnique
-										},
-
-										wasteContainer = ConstantArray[
-											Resource[
-												Sample -> Model[Container, Vessel, "id:aXRlGnZmOOB9"],
-												Name -> "simulated waste"
-											],
-											Length[Lookup[options[[2]], ExtractionCartridge]]
-										];
-
-										cartridgeResources = Map[
-											Resource[
-												Sample -> #,
-												Name -> "Cartridge" <> ToString[batchID]
-											]&,
-											Lookup[options[[2]], ExtractionCartridge]
-										];
-										containerOut = Lookup[options[[2]], containerOutRelatedKeys];
-										containerOutLabel = Lookup[options[[2]], containerOutRelatedLabelKeys];
-										containerOutAndLabel = Transpose[{Flatten[containerOut], Flatten[containerOutLabel]}];
-										containerOutAndLabelUnique = DeleteDuplicates[containerOutAndLabel];
-										containerOutResource = Map[If[MatchQ[#[[1]], ObjectP[]],
-											(
-												Resource[
-													Name -> #[[2]],
-													Sample -> #[[1]]
-												]
-											),
-											Nothing
-										]&,
-											containerOutAndLabelUnique
-										];
-
-										containerOutResourceRule = Map[#[Name] -> #&, containerOutResource];
-
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut
-										} = Map[# /. containerOutResourceRule&,
-											containerOutLabel
-										];
-										{
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement
-										} = Map[
-											ConstantArray[Null, nPool]&,
-											containerOut
-										];
-
-										(* output *)
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer
-										}
-									], (* end module manual filter *)
-
-								(* biotage cartrdighe is one by one and also the colection container *)
-								ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]],
-									Module[
-										{containerOut, containerOutUnique, containerOutResource,
-											containerOutResourceRule, preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer,
-											containerOutLabel,
-											containerOutAndLabel,
-											containerOutAndLabelUnique
-										},
-
-										(* for biotage, waste is always this type of type, and we already calculate by batch according this max volume of this tub alreayd *)
-										wasteContainer = Table[
-											Resource[
-												Sample -> Model[Container, Vessel, "Biotage Pressure+48 Waste Tub"],
-												Name -> "Biotage Waste" <> ToString[batchID]
-											],
-											nPool
-										];
-										cartridgeResources = Map[Resource[Sample -> #, Name -> "Cartridge" <> ToString[Unique[]]]&, Lookup[options[[2]], ExtractionCartridge]];
-
-										containerOut = Lookup[options[[2]], containerOutRelatedKeys];
-										containerOutLabel = Lookup[options[[2]], containerOutRelatedLabelKeys];
-										containerOutAndLabel = Transpose[{Flatten[containerOut], Flatten[containerOutLabel]}];
-										containerOutAndLabelUnique = DeleteDuplicates[containerOutAndLabel];
-										containerOutResource = Map[If[
-											MatchQ[#[[1]], ObjectP[]] && Not[NullQ[#[[2]]]],
-											(
-												Resource[
-													Name -> #[[2]],
-													Sample -> #[[1]]
-												]
-											),
-											Nothing
-										]&,
-											containerOutAndLabelUnique
-										];
-
-										containerOutResourceRule = Map[#[Name] -> #&, containerOutResource];
-
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut
-										} = Map[# /. containerOutResourceRule&,
-											containerOutLabel
-										];
-
-										{
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement
-										} = Map[
-											If[MatchQ[#, Null | {Null..}],
-												ConstantArray[Null, nPool],
-												cartridgePlacement
-											]
-												&,
-											containerOut
-										];
-
-										(* output *)
-										{
-											preFlushContainerOut,
-											conditioningContainerOut,
-											washingContainerOut,
-											secondaryWashingContainerOut,
-											tertiaryContainerOut,
-											elutingContainerOut,
-											loadingSampleContainerOut,
-											preFlushContainerOutPlacement,
-											conditioningContainerOutPlacement,
-											washingContainerOutPlacement,
-											secondaryWashingContainerOutPlacement,
-											tertiaryContainerOutPlacement,
-											elutingContainerOutPlacement,
-											loadingSampleContainerOutPlacement,
-											cartridgeResources,
-											wasteContainer
-										}
-									](* end of biotage *)
-
-							]; (* end of switch for container *)
-
-							(* output of big resource map *)
-							{
-								PreFlushingResource -> preflushRes,
-								ConditioningResource -> conditionRes,
-								WashingResource -> washRes,
-								SecondaryWashingResource -> secWashRes,
-								TertiaryWashingResource -> terWashRes,
-								ElutingResource -> eluteRes,
-								PrimingResource -> primingRes,
-								QuantitativeLoadingResource -> quanLoadRes,
-								PreFlushingPlacement -> preflushPlace,
-								ConditioningPlacement -> conditionPlace,
-								WashingPlacement -> washPlace,
-								SecondaryWashingPlacement -> secWashPlace,
-								TertiaryWashingPlacement -> terWashPlace,
-								ElutingPlacement -> elutePlace,
-								PrimingPlacement -> primingPlace,
-								QuantitativeLoadingPlacement -> quanLoadPlace,
-								PreFlushingContainerOutResource -> preFlushContainerOutResource,
-								ConditioningContainerOutResource -> conditioningContainerOutResource,
-								WashingContainerOutResource -> washingContainerOutResource,
-								SecondaryWashingContainerOutResource -> secondaryWashingContainerOutResource,
-								TertiaryWashingContainerOutResource -> tertiaryContainerOutResource,
-								ElutingContainerOutResource -> elutingContainerOutResource,
-								LoadingSampleContainerOutResource -> loadingSampleContainerOutResource,
-								PreFlushingContainerOutPlacement -> preFlushContainerOutDeckPlacement,
-								ConditioningContainerOutPlacement -> conditioningContainerOutDeckPlacement,
-								WashingContainerOutPlacement -> washingContainerOutDeckPlacement,
-								SecondaryWashingContainerOutPlacement -> secondaryWashingContainerOutDeckPlacement,
-								TertiaryWashingContainerOutPlacement -> tertiaryContainerOutDeckPlacement,
-								ElutingContainerOutPlacement -> elutingContainerOutDeckPlacement,
-								LoadingSampleContainerOutPlacement -> loadingSampleContainerOutDeckPlacement,
-								InstrumentResource -> expandedInstrumentResource,
-								SampleOrder -> sampleOrder,
-								Sample -> Lookup[options[[2]], Samples],
-								SamplesResource -> Lookup[options[[2]], SamplesResource],
-								ExtractionCartridgeResource -> extractionCartridgeResource,
-								WasteContainerResource -> wasteContainerResource
-							}
-						]
-					],
-					batchedOptions
-				];
-				unorderedResourceMerged = Merge[unorderedResource, Flatten[#, 1]&] /. Association[x___] -> List[x];
-				originalOrder = ToList[Ordering[Flatten[Lookup[unorderedResourceMerged, SampleOrder]]]];
-				orderedResource = MapThread[
-					#1 -> #2[[originalOrder]]&,
-					{Keys[unorderedResourceMerged], Values[unorderedResourceMerged]}
-				];
-				(* put both options and resource together then pull the batch out and loop to create unit operation by batch  *)
-				optionsAndResourceByBatch = Experiment`Private`groupByKey[
-					Join[
-						DeleteCases[myResolvedOptions, Alternatives @@ (Join[Keys[SafeOptions[ProtocolOptions]], {PreparatoryUnitOperations, PreparatoryPrimitives}]) -> _],
-						orderedResource
-						(* these are already in order with the original sample index*)
-					],
-					If[MatchQ[resolvedPreparation, Robotic], (* don't actually have to do any grouping at this point with robotic *)
-						{},
-						{SPEBatchID}
-					]
-				];
-				(* we have to remove all the shared option from our resolved batched options *)
-				mySharedOptions = {
-					FuntopiaSharedOptionsNestedIndexMatching,
-					SamplesInStorageOptions,
-					SamplesOutStorageOptions,
-					PreparationOption,
-					SimulationOption,
-					PrimitiveOutputOption,
-					PostProcessingOptions
-				};
-				mySharedOptionsKeys = ToExpression /@ Keys[Flatten[Options /@ mySharedOptions]];
-
-				(* Prepare unit operation*)
-
-				unitOperationPackets = Module[
-					{speUnitOp, speUnitOpNoResourcesIfRobotic},
-					speUnitOp = Map[
-						Function[{batchedResourceOptions},
-							(* Only include non-hidden options from SPE. *)
-							Module[{nonHiddenOptions, speOptions, optionsWithoutShared, instrument, instrumentModel, cartridgeModel,
-								cartridge, cartridgeSize, speSharedOptions, valuesToBeFedIntoSPEUnitOpNoResources,	valuesToBeFedIntoSPEUnitOp},
-								nonHiddenOptions = allowedKeysForUnitOperationType[Object[UnitOperation, SolidPhaseExtraction]];
-								(* I have to get rid of shared options here *)
-								optionsWithoutShared = KeyDrop[batchedResourceOptions[[2]], mySharedOptionsKeys];
-								speOptions = optionsWithoutShared /. Association[x___] -> List[x];
-								speSharedOptions = (KeyTake[batchedResourceOptions[[2]], mySharedOptionsKeys]) /. Association[x___] -> List[x];
-								instrument = Lookup[speOptions, Instrument];
-								instrumentModel = If[MatchQ[instrument, ObjectP[Object]],
-									Experiment`Private`cacheLookup[cache, instrument, Model],
-									instrument
-								];
-								cartridge = First[Lookup[speOptions, ExtractionCartridge]];
-								cartridgeModel = If[MatchQ[cartridge, ObjectP[Object]],
-									Experiment`Private`cacheLookup[cache, cartridge, Model],
-									cartridge
-								];
-								cartridgeSize = Experiment`Private`cacheLookup[cache, cartridgeModel, MaxVolume];
-								valuesToBeFedIntoSPEUnitOp = ReplaceRule[
-									Cases[speOptions, Verbatim[Rule][Alternatives @@ nonHiddenOptions, _]],
-									(* TODO - add back all the quantitaative loading stuff *)
-									{
-										AliquotLength -> Flatten[Lookup[speOptions, AliquotLength]],
-										PoolLengths -> Flatten[Length /@ Lookup[speOptions, Sample]],
-										ExtractionTime -> (Length[Flatten[Lookup[speOptions, Sample]]] * 30 Minute),
-										ExtractionTemperature -> Flatten[Lookup[speOptions, ExtractionTemperature]],
-										QuantitativeLoadingSampleSolution -> Map[Link[#]&, Flatten[Lookup[speOptions, QuantitativeLoadingResource]]],
-										QuantitativeLoadingSampleVolume -> Lookup[speOptions, QuantitativeLoadingSampleVolume],
-										QuantitativeLoadingSample -> Lookup[speOptions, QuantitativeLoadingSample],
-
-										Sample -> Lookup[speOptions, Sample],
-										SampleLabel -> Lookup[speOptions, SampleLabel],
-										Instrument -> (Link[#]& /@ Lookup[speOptions, InstrumentResource]),
-										ExtractionCartridge -> Link /@ Lookup[speOptions, ExtractionCartridgeResource],
-										ExtractionCartridgeCaps -> Link /@ Lookup[speOptions, ExtractionCartridgeCapResource],
-										LoadingSampleVolume -> Lookup[speOptions, LoadingSampleVolume],
-										ExtractionCartridgePositions -> Lookup[speOptions, CartridgePlacement],
-										ExtractionCartridgePlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {{Null} -> Null}}&,
-											{
-												Lookup[speOptions, ExtractionCartridgeResource],
-												Lookup[speOptions, CartridgePlacement]
-											}
-										],
-										PurgePressure -> If[
-											MatchQ[resolvedInstrumentModel, {ObjectReferenceP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]]..}],
-											10 PSI,
-											0 PSI
-										],
-
-										(* buffer *)
-										PreFlushingSolution -> Link /@ Lookup[speOptions, PreFlushingResource],
-										ConditioningSolution -> Link /@ Lookup[speOptions, ConditioningResource],
-										WashingSolution -> Link /@ Lookup[speOptions, WashingResource],
-										SecondaryWashingSolution -> Link /@ Lookup[speOptions, SecondaryWashingResource],
-										TertiaryWashingSolution -> Link /@ Lookup[speOptions, TertiaryWashingResource],
-										ElutingSolution -> Link /@ Lookup[speOptions, ElutingResource],
-										PrimingSolution -> Link /@ Lookup[speOptions, PrimingResource],
-										(* container placement *)
-										PreFlushingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, PreFlushingResource], Lookup[speOptions, PreFlushingPlacement]}],
-										ConditioningSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, ConditioningResource], Lookup[speOptions, ConditioningPlacement]}],
-										WashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, WashingResource], Lookup[speOptions, WashingPlacement]}],
-										SecondaryWashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, SecondaryWashingResource], Lookup[speOptions, SecondaryWashingPlacement]}],
-										TertiaryWashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, TertiaryWashingResource], Lookup[speOptions, TertiaryWashingPlacement]}],
-										ElutingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, ElutingResource], Lookup[speOptions, ElutingPlacement]}],
-										PrimingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, PrimingResource], Lookup[speOptions, PrimingPlacement]}],
-										(* buffer label *)
-										PreFlushingSolutionLabel -> Lookup[speOptions, PreFlushingSolutionLabel],
-										ConditioningSolutionLabel -> Lookup[speOptions, ConditioningSolutionLabel],
-										WashingSolutionLabel -> Lookup[speOptions, WashingSolutionLabel],
-										SecondaryWashingSolutionLabel -> Lookup[speOptions, SecondaryWashingSolutionLabel],
-										TertiaryWashingSolutionLabel -> Lookup[speOptions, TertiaryWashingSolutionLabel],
-										ElutingSolutionLabel -> Lookup[speOptions, ElutingSolutionLabel],
-										(* volume *)
-										PreFlushingSolutionVolume -> Lookup[speOptions, PreFlushingSolutionVolume],
-										ConditioningSolutionVolume -> Lookup[speOptions, ConditioningSolutionVolume],
-										WashingSolutionVolume -> Lookup[speOptions, WashingSolutionVolume],
-										SecondaryWashingSolutionVolume -> Lookup[speOptions, SecondaryWashingSolutionVolume],
-										TertiaryWashingSolutionVolume -> Lookup[speOptions, TertiaryWashingSolutionVolume],
-										ElutingSolutionVolume -> Lookup[speOptions, ElutingSolutionVolume],
-										(* container out model *)
-										PreFlushingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, PreFlushingContainerOutResource]],
-										ConditioningSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, ConditioningContainerOutResource]],
-										WashingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, WashingContainerOutResource]],
-										SecondaryWashingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, SecondaryWashingContainerOutResource]],
-										TertiaryWashingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, TertiaryWashingContainerOutResource]],
-										ElutingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, ElutingContainerOutResource]],
-										LoadingSampleFlowthroughContainer -> Flatten[Link /@ Lookup[speOptions, LoadingSampleContainerOutResource]],
-										ContainerOut -> Link /@ Flatten[{
-											Lookup[speOptions, PreFlushingContainerOutResource],
-											Lookup[speOptions, ConditioningContainerOutResource],
-											Lookup[speOptions, WashingContainerOutResource],
-											Lookup[speOptions, SecondaryWashingContainerOutResource],
-											Lookup[speOptions, TertiaryWashingContainerOutResource],
-											Lookup[speOptions, ElutingContainerOutResource],
-											Lookup[speOptions, LoadingSampleContainerOutResource]
-										}],
-										(* container out placement *)
-										PreFlushingContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, PreFlushingContainerOutResource],
-												Lookup[speOptions, PreFlushingContainerOutPlacement]
-											}
-										],
-										ConditioningContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, ConditioningContainerOutResource],
-												Lookup[speOptions, ConditioningContainerOutPlacement]
-											}
-										],
-										LoadingSampleFlowthroughContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, LoadingSampleContainerOutResource],
-												Lookup[speOptions, LoadingSampleContainerOutPlacement]
-											}
-										],
-										WashingContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, WashingContainerOutResource],
-												Lookup[speOptions, WashingContainerOutPlacement]
-											}
-										],
-										SecondaryWashingContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, SecondaryWashingContainerOutResource],
-												Lookup[speOptions, SecondaryWashingContainerOutPlacement]
-											}
-										],
-										TertiaryWashingContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, TertiaryWashingContainerOutResource],
-												Lookup[speOptions, TertiaryWashingContainerOutPlacement]
-											}
-										],
-										ElutingContainerOutPlacements -> MapThread[
-											{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-											{
-												Lookup[speOptions, ElutingContainerOutResource],
-												Lookup[speOptions, ElutingContainerOutPlacement]
-											}
-										],
-										(* sample out *)
-										ContainerOutWellAssignment -> Lookup[speOptions, ContainerOutWellAssignment],
-										PreFlushingSampleOutLabel -> Lookup[speOptions, PreFlushingSampleOutLabel],
-										ConditioningSampleOutLabel -> Lookup[speOptions, ConditioningSampleOutLabel],
-										WashingSampleOutLabel -> Lookup[speOptions, WashingSampleOutLabel],
-										SecondaryWashingSampleOutLabel -> Lookup[speOptions, SecondaryWashingSampleOutLabel],
-										TertiaryWashingSampleOutLabel -> Lookup[speOptions, TertiaryWashingSampleOutLabel],
-										ElutingSampleOutLabel -> Lookup[speOptions, ElutingSampleOutLabel],
-										LoadingSampleFlowthroughSampleOutLabel -> Lookup[speOptions, LoadingSampleFlowthroughSampleOutLabel],
-										(* centrifuge stuff *)
-										PreFlushingSolutionCentrifugeIntensity -> Lookup[speOptions, PreFlushingSolutionCentrifugeIntensity],
-										ConditioningSolutionCentrifugeIntensity -> Lookup[speOptions, ConditioningSolutionCentrifugeIntensity],
-										WashingSolutionCentrifugeIntensity -> Lookup[speOptions, WashingSolutionCentrifugeIntensity],
-										SecondaryWashingSolutionCentrifugeIntensity -> Lookup[speOptions, SecondaryWashingSolutionCentrifugeIntensity],
-										TertiaryWashingSolutionCentrifugeIntensity -> Lookup[speOptions, TertiaryWashingSolutionCentrifugeIntensity],
-										ElutingSolutionCentrifugeIntensity -> Lookup[speOptions, ElutingSolutionCentrifugeIntensity],
-										LoadingSampleCentrifugeIntensity -> Lookup[speOptions, LoadingSampleCentrifugeIntensity],
-										(* time stuff *)
-										PreFlushingSolutionDrainTime -> Lookup[speOptions, PreFlushingSolutionDrainTime],
-										ConditioningSolutionDrainTime -> Lookup[speOptions, ConditioningSolutionDrainTime],
-										WashingSolutionDrainTime -> Lookup[speOptions, WashingSolutionDrainTime],
-										SecondaryWashingSolutionDrainTime -> Lookup[speOptions, SecondaryWashingSolutionDrainTime],
-										TertiaryWashingSolutionDrainTime -> Lookup[speOptions, TertiaryWashingSolutionDrainTime],
-										ElutingSolutionDrainTime -> Lookup[speOptions, ElutingSolutionDrainTime],
-										LoadingSampleDrainTime -> Lookup[speOptions, LoadingSampleDrainTime],
-										PreFlushingSolutionDrainTimeSingle -> Lookup[speOptions, PreFlushingSolutionDrainTime][[1]],
-										ConditioningSolutionDrainTimeSingle -> Lookup[speOptions, ConditioningSolutionDrainTime][[1]],
-										WashingSolutionDrainTimeSingle -> Lookup[speOptions, WashingSolutionDrainTime][[1]],
-										SecondaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, SecondaryWashingSolutionDrainTime][[1]],
-										TertiaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, TertiaryWashingSolutionDrainTime][[1]],
-										ElutingSolutionDrainTimeSingle -> Lookup[speOptions, ElutingSolutionDrainTime][[1]],
-										LoadingSampleDrainTimeSingle -> Lookup[speOptions, LoadingSampleDrainTime][[1]],
-										MaxPreFlushingSolutionDrainTimeSingle -> Lookup[speOptions, MaxPreFlushingSolutionDrainTime][[1]],
-										MaxConditioningSolutionDrainTimeSingle -> Lookup[speOptions, MaxConditioningSolutionDrainTime][[1]],
-										MaxWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxWashingSolutionDrainTime][[1]],
-										MaxSecondaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxSecondaryWashingSolutionDrainTime][[1]],
-										MaxTertiaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxTertiaryWashingSolutionDrainTime][[1]],
-										MaxElutingSolutionDrainTimeSingle -> Lookup[speOptions, MaxElutingSolutionDrainTime][[1]],
-										MaxLoadingSampleDrainTimeSingle -> Lookup[speOptions, MaxLoadingSampleDrainTime][[1]],
-										(* solution incubation temperature *)
-										PreFlushingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, PreFlushingSolutionTemperature]],
-										ConditioningSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, ConditioningSolutionTemperature]],
-										WashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, WashingSolutionTemperature]],
-										SecondaryWashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, SecondaryWashingSolutionTemperature]],
-										TertiaryWashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, TertiaryWashingSolutionTemperature]],
-										ElutingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, ElutingSolutionTemperature]],
-										LoadingSampleTemperature -> TakeList[Flatten[Lookup[speOptions, LoadingSampleTemperature]], poolLengths],
-										(* solution incubation temperature time *)
-										PreFlushingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, PreFlushingSolutionTemperatureEquilibrationTime],
-										ConditioningSolutionTemperatureEquilibrationTime -> Lookup[speOptions, ConditioningSolutionTemperatureEquilibrationTime],
-										WashingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, WashingSolutionTemperatureEquilibrationTime],
-										SecondaryWashingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, SecondaryWashingSolutionTemperatureEquilibrationTime],
-										TertiaryWashingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, TertiaryWashingSolutionTemperatureEquilibrationTime],
-										ElutingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, ElutingSolutionTemperatureEquilibrationTime],
-										LoadingSampleTemperatureEquilibrationTime -> Lookup[speOptions, LoadingSampleTemperatureEquilibrationTime],
-										(* we straighten sample out by the following order *)
-										SampleOutLabel -> Flatten[Lookup[speOptions,
-											{
-												PreFlushingSampleOutLabel,
-												ConditioningSampleOutLabel,
-												LoadingSampleFlowthroughSampleOutLabel,
-												WashingSampleOutLabel,
-												SecondaryWashingSampleOutLabel,
-												TertiaryWashingSampleOutLabel,
-												ElutingSampleOutLabel
-											}
-										]],
-										(* container out labels *)
-										PreFlushingCollectionContainerOutLabel -> Lookup[speOptions, PreFlushingCollectionContainerOutLabel],
-										ConditioningCollectionContainerOutLabel -> Lookup[speOptions, ConditioningCollectionContainerOutLabel],
-										WashingCollectionContainerOutLabel -> Lookup[speOptions, WashingCollectionContainerOutLabel],
-										SecondaryWashingCollectionContainerOutLabel -> Lookup[speOptions, SecondaryWashingCollectionContainerOutLabel],
-										TertiaryWashingCollectionContainerOutLabel -> Lookup[speOptions, TertiaryWashingCollectionContainerOutLabel],
-										ElutingCollectionContainerOutLabel -> Lookup[speOptions, ElutingCollectionContainerOutLabel],
-										LoadingSampleFlowthroughCollectionContainerOutLabel -> Lookup[speOptions, LoadingSampleFlowthroughCollectionContainerOutLabel],
-										(* we straighten sample out by the following order *)
-										ContainerOutLabel -> Flatten[Lookup[speOptions,
-											{
-												PreFlushingCollectionContainerOutLabel,
-												ConditioningCollectionContainerOutLabel,
-												LoadingSampleFlowthroughCollectionContainerOutLabel,
-												WashingCollectionContainerOutLabel,
-												SecondaryWashingCollectionContainerOutLabel,
-												TertiaryWashingCollectionContainerOutLabel,
-												ElutingCollectionContainerOutLabel
-											}
-										]],
-										(* upload pressure, make sure it's flat *)
-										PreFlushingSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, PreFlushingSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, PreFlushingSolutionPressure]
-										],
-										ConditioningSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, ConditioningSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, ConditioningSolutionPressure]
-										],
-										WashingSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, WashingSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, WashingSolutionPressure]
-										],
-										SecondaryWashingSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, SecondaryWashingSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, SecondaryWashingSolutionPressure]
-										],
-										TertiaryWashingSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, TertiaryWashingSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, TertiaryWashingSolutionPressure]
-										],
-										ElutingSolutionPressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, ElutingSolutionPressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, ElutingSolutionPressure]
-										],
-										LoadingSamplePressure -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, FilterBlock, "id:rea9jl1orrGr"]]],
-											Lookup[speOptions, LoadingSamplePressure] /. {GreaterP[0 PSI] -> True, EqualP[0 PSI] -> False},
-											Lookup[speOptions, LoadingSamplePressure]
-										],
-										PreFlushingSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, PreFlushingSolutionPressure][[1]],
-											Null
-										],
-										ConditioningSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, ConditioningSolutionPressure][[1]],
-											Null
-										],
-										WashingSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, WashingSolutionPressure][[1]],
-											Null
-										],
-										SecondaryWashingSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, SecondaryWashingSolutionPressure][[1]],
-											Null
-										],
-										TertiaryWashingSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, TertiaryWashingSolutionPressure][[1]],
-											Null
-										],
-										ElutingSolutionPressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, ElutingSolutionPressure][[1]],
-											Null
-										],
-										LoadingSamplePressureSingle -> If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Lookup[speOptions, LoadingSamplePressure][[1]],
-											Null
-										],
-										(* fake waste container for simulation *)
-										WasteContainer -> Map[Link[#]&, Lookup[speOptions, WasteContainerResource]],
-										ImageSample -> Lookup[myResolvedOptions, ImageSample],
-										MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume],
-										MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight],
-										(* special case for Biotage *)
-										WasteContainerRack -> Link[If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Resource[Sample -> Model[Container, Rack, "Biotage Pressure+48 Waste Tub Rack"]],
-											Null
-										]],
-										CartridgeContainerRack -> Link[Switch[{instrumentModel, cartridgeSize},
-
-											{ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]], 6. Milliliter},
-											Resource[Sample -> Model[Container, Rack, "Biotage Pressure+48 6 mL Cartridge Rack"]],
-
-											{ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]], 3. Milliliter},
-											Resource[Sample -> Model[Container, Rack, "Biotage Pressure+48 3 mL Cartridge Rack"]],
-
-											_,
-											Null
-										]],
-										ContainerOutRack -> Link[If[
-											MatchQ[instrumentModel, ObjectP[Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]]],
-											Resource[Sample -> Model[Container, Rack, "Biotage Pressure+48 15 mL Container Rack"]],
-											Null
-										]]
-										(*								SamplesOutStorageCondition -> Lookup[speOptions, SamplesOutStorageCondition]*)
-									}
-								];
-
-								(* remove the resources if we're doing robotic because we don't make any ourselves here *)
-								valuesToBeFedIntoSPEUnitOpNoResources = valuesToBeFedIntoSPEUnitOp /. {x_Resource :> Lookup[First[x], Sample, Lookup[First[x], Instrument]]};
-
-								SolidPhaseExtraction @@ If[MatchQ[resolvedPreparation, Robotic],
-									valuesToBeFedIntoSPEUnitOpNoResources,
-									valuesToBeFedIntoSPEUnitOp
-								]
-
-							]
-						],
-						optionsAndResourceByBatch
-					];
-					(*TODO this is not correcty right now*)
-					speUnitOpNoResourcesIfRobotic = If[MatchQ[resolvedPreparation, Robotic],
-						(* convert to the sample or instrument objects that go in the resource *)
-						speUnitOp /. {x_Resource :> Lookup[First[x], Sample, Lookup[First[x], Instrument]]},
-						speUnitOp
-					];
-
-					(* upload unit operation *)
-					UploadUnitOperation[
-						speUnitOpNoResourcesIfRobotic,
-						UnitOperationType -> Batched,
-						Preparation -> Manual,
-						FastTrack -> True,
-						Upload -> False
-					]
-				];
-
-				(* need to generate a filter unit operation blob here for robotic *)
-				(* mimicking what is happening in compileSolidPhaseExtraction *)
-				{{roboticFilterUnitOperationPackets,runTime}, updatedSimulation} = If[MatchQ[resolvedPreparation, Robotic],
-					Module[
-						{preFlush, condition, wash, secWash,
-							terWash, elute, poolLength, preFlushingSolutionVolume, conditioningSolutionVolume, washingSolutionVolume,
-							secondaryWashingSolutionVolume, tertiaryWashingSolutionVolume, elutingSolutionVolume, loadingSampleVolume,
-							cartridge, aliquotLength, instrument, preFlushingSolutionCentrifugeIntensity, conditioningSolutionCentrifugeIntensity, washingSolutionCentrifugeIntensity,
-							secondaryWashingSolutionCentrifugeIntensity, tertiaryWashingSolutionCentrifugeIntensity, elutingSolutionCentrifugeIntensity, loadingSampleCentrifugeIntensity,
-							preFlushingSolutionDrainTime, conditioningSolutionDrainTime, washingSolutionDrainTime, secondaryWashingSolutionDrainTime, tertiaryWashingSolutionDrainTime,
-							elutingSolutionDrainTime, loadingSampleDrainTime, preFlushingSolutionCollectionContainer, conditioningSolutionCollectionContainer, loadingSampleFlowthroughContainer,
-							washingSolutionCollectionContainer, secondaryWashingSolutionCollectionContainer, tertiaryWashingSolutionCollectionContainer, elutingSolutionCollectionContainer,
-							extractionTemperature, indexStepToUse, filterReadyIntensityFlatIndexMatch, filterReadyTimeFlatIndexMatch, filterReadyContainerFlatIndexMatch,
-							firstInFilterSamples, restInFilterSamples, firstInFilterIntensity, restInFilterIntensity, firstInFilterTime, restInFilterTime,
-							firstInFilterContainer, restInFilterContainer, firstInFilterVolume, restInFilterVolume, filterUnitOp, initPressure, restPressure,
-							filterUnitOpOptions, experimentFunction,
-							pooledSamples, nPooled, preFlushingSolutionPressure, conditioningSolutionPressure, loadingSamplePressure, firstInFilterPressure, restInFilterPressure,
-							washingSolutionPressure, secondaryWashingSolutionPressure, tertiaryWashingSolutionPressure, elutingSolutionPressure, sampleToFilter, intensityToFilter,
-							pressureToFilter, timeToFilter, containerToFilter, volumeToFilter, initSample, restSample, initIntensity, restIntensity, initTime, restTime, initCont, restCont,
-							initVol, restVol, filterReadySampleFlat, filterReadyIntensityFlat, filterReadyTimeFlat, filterReadyContainerFlat, filterReadyVolumeFlat,
-							filterReadyPressureFlatIndexMatch, filterReadyPressureFlat, preFlushLabel, conditionLabel, pooledSampleLabel,
-							washLabel, secondaryWashLabel, tertiaryWashLabel, elutionLabel, labelsToFilter, initLabel, restLabel, sampleRules,
-							filterReadyLabelFlat, firstInLabel, restInLabel, mergedSampleRules, labelSampleAmount,
-							labelSampleUnitOp, preFlushContainerOutLabel, conditionContainerOutLabel, sampleContainerOutLabel, labelContainerContainerRules,
-							washContainerOutLabel, secondaryWashContainerOutLabel, tertiaryWashContainerOutLabel, elutionContainerOutLabel,
-							containerOutLabelsToFilter, initContainerLabel, restContainerLabel, filterReadyContainerLabelFlat,
-							filterReadyContainerLabelFlatIndexMatch, firstInContainerLabel, restInContainerLabel,
-							sampleAndLabelsWithDupes, samplesAndLabels, extractionCartridgeLabel, preFlushSampleOutLabel, conditionSampleOutLabel,
-							loadingSampleOutLabel, washSampleOutLabel, secondarySampleOutLabel, tertiarySampleOutLabel, elutionSampleOutLabel,
-							sampleOutLabelsToFilter, initSampleOutLabel, restSampleOutLabel, filterReadySamplesOutLabelFlat, filterReadySamplesOutLabelFlatIndexMatch,
-							firstInSamplesOutLabel, restInSamplesOutLabel},
-
-						(* retreive all information that we need from the our packets *)
-						{
-							preFlush,
-							condition,
-							pooledSamples,
-							wash,
-							secWash,
-							terWash,
-							elute,
-							poolLength,
-							preFlushingSolutionVolume,
-							conditioningSolutionVolume,
-							washingSolutionVolume,
-							secondaryWashingSolutionVolume,
-							tertiaryWashingSolutionVolume,
-							elutingSolutionVolume,
-							loadingSampleVolume,
-							cartridge,
-							aliquotLength,
-							instrument,
-							preFlushingSolutionCentrifugeIntensity,
-							conditioningSolutionCentrifugeIntensity,
-							washingSolutionCentrifugeIntensity,
-							secondaryWashingSolutionCentrifugeIntensity,
-							tertiaryWashingSolutionCentrifugeIntensity,
-							elutingSolutionCentrifugeIntensity,
-							loadingSampleCentrifugeIntensity,
-							preFlushingSolutionDrainTime,
-							conditioningSolutionDrainTime,
-							washingSolutionDrainTime,
-							secondaryWashingSolutionDrainTime,
-							tertiaryWashingSolutionDrainTime,
-							elutingSolutionDrainTime,
-							loadingSampleDrainTime,
-							preFlushingSolutionCollectionContainer,
-							conditioningSolutionCollectionContainer,
-							loadingSampleFlowthroughContainer,
-							washingSolutionCollectionContainer,
-							secondaryWashingSolutionCollectionContainer,
-							tertiaryWashingSolutionCollectionContainer,
-							elutingSolutionCollectionContainer,
-							extractionTemperature,
-							preFlushingSolutionPressure,
-							conditioningSolutionPressure,
-							loadingSamplePressure,
-							washingSolutionPressure,
-							secondaryWashingSolutionPressure,
-							tertiaryWashingSolutionPressure,
-							elutingSolutionPressure,
-							preFlushLabel,
-							conditionLabel,
-							pooledSampleLabel,
-							washLabel,
-							secondaryWashLabel,
-							tertiaryWashLabel,
-							elutionLabel,
-							preFlushContainerOutLabel,
-							conditionContainerOutLabel,
-							sampleContainerOutLabel,
-							washContainerOutLabel,
-							secondaryWashContainerOutLabel,
-							tertiaryWashContainerOutLabel,
-							elutionContainerOutLabel,
-							extractionCartridgeLabel,
-							preFlushSampleOutLabel,
-							conditionSampleOutLabel,
-							loadingSampleOutLabel,
-							washSampleOutLabel,
-							secondarySampleOutLabel,
-							tertiarySampleOutLabel,
-							elutionSampleOutLabel
-						} = Map[
-							Lookup[First[unitOperationPackets], #]&,
-							{
-								Replace[PreFlushingSolutionLink],
-								Replace[ConditioningSolutionLink],
-								Replace[SampleExpression],
-								Replace[WashingSolutionLink],
-								Replace[SecondaryWashingSolutionLink],
-								Replace[TertiaryWashingSolutionLink],
-								Replace[ElutingSolutionLink],
-								Replace[PoolLengths],
-								Replace[PreFlushingSolutionVolume],
-								Replace[ConditioningSolutionVolume],
-								Replace[WashingSolutionVolume],
-								Replace[SecondaryWashingSolutionVolume],
-								Replace[TertiaryWashingSolutionVolume],
-								Replace[ElutingSolutionVolume],
-								Replace[LoadingSampleVolume],
-								Replace[ExtractionCartridge],
-								Replace[AliquotLength],
-								Replace[Instrument],
-								Replace[PreFlushingSolutionCentrifugeIntensity],
-								Replace[ConditioningSolutionCentrifugeIntensity],
-								Replace[WashingSolutionCentrifugeIntensity],
-								Replace[SecondaryWashingSolutionCentrifugeIntensity],
-								Replace[TertiaryWashingSolutionCentrifugeIntensity],
-								Replace[ElutingSolutionCentrifugeIntensity],
-								Replace[LoadingSampleCentrifugeIntensity],
-								Replace[PreFlushingSolutionDrainTime],
-								Replace[ConditioningSolutionDrainTime],
-								Replace[WashingSolutionDrainTime],
-								Replace[SecondaryWashingSolutionDrainTime],
-								Replace[TertiaryWashingSolutionDrainTime],
-								Replace[ElutingSolutionDrainTime],
-								Replace[LoadingSampleDrainTime],
-								Replace[PreFlushingSolutionCollectionContainerLink],
-								Replace[ConditioningSolutionCollectionContainerLink],
-								Replace[LoadingSampleFlowthroughContainerLink],
-								Replace[WashingSolutionCollectionContainerLink],
-								Replace[SecondaryWashingSolutionCollectionContainerLink],
-								Replace[TertiaryWashingSolutionCollectionContainerLink],
-								Replace[ElutingSolutionCollectionContainerLink],
-								Replace[ExtractionTemperatureReal],
-								Replace[PreFlushingSolutionPressureReal],
-								Replace[ConditioningSolutionPressureReal],
-								Replace[LoadingSamplePressureReal],
-								Replace[WashingSolutionPressureReal],
-								Replace[SecondaryWashingSolutionPressureReal],
-								Replace[TertiaryWashingSolutionPressureReal],
-								Replace[ElutingSolutionPressureReal],
-								Replace[PreFlushingSolutionLabel],
-								Replace[ConditioningSolutionLabel],
-								Replace[SampleLabel],
-								Replace[WashingSolutionLabel],
-								Replace[SecondaryWashingSolutionLabel],
-								Replace[TertiaryWashingSolutionLabel],
-								Replace[ElutingSolutionLabel],
-								Replace[PreFlushingCollectionContainerOutLabel],
-								Replace[ConditioningCollectionContainerOutLabel],
-								Replace[LoadingSampleFlowthroughCollectionContainerOutLabel],
-								Replace[WashingCollectionContainerOutLabel],
-								Replace[SecondaryWashingCollectionContainerOutLabel],
-								Replace[TertiaryWashingCollectionContainerOutLabel],
-								Replace[ElutingCollectionContainerOutLabel],
-								Replace[ExtractionCartridgeLabel],
-								Replace[PreFlushingSampleOutLabel],
-								Replace[ConditioningSampleOutLabel],
-								Replace[LoadingSampleFlowthroughSampleOutLabel],
-								Replace[WashingSampleOutLabel],
-								Replace[SecondaryWashingSampleOutLabel],
-								Replace[TertiaryWashingSampleOutLabel],
-								Replace[ElutingSampleOutLabel]
-							}
-						];
-
-						nPooled = Length[pooledSamples];
-
-						(* which step that we are using *)
-						indexStepToUse = Map[!MatchQ[#, {(Null | Automatic)..}]&, {
-							preFlush,
-							condition,
-							pooledSamples,
-							wash,
-							secWash,
-							terWash,
-							elute
-						}];
-
-						{
-							sampleToFilter,
-							intensityToFilter,
-							pressureToFilter,
-							timeToFilter,
-							containerToFilter,
-							volumeToFilter,
-							labelsToFilter,
-							containerOutLabelsToFilter,
-							sampleOutLabelsToFilter
-						} = Map[
-							PickList[#, indexStepToUse]&,
-							{
-								{
-									preFlush,
-									condition,
-									(*have to use pool here to index match*)
-									pooledSamples,
-									wash,
-									secWash,
-									terWash,
-									elute
-								},
-								{
-									preFlushingSolutionCentrifugeIntensity,
-									conditioningSolutionCentrifugeIntensity,
-									loadingSampleCentrifugeIntensity,
-									washingSolutionCentrifugeIntensity,
-									secondaryWashingSolutionCentrifugeIntensity,
-									tertiaryWashingSolutionCentrifugeIntensity,
-									elutingSolutionCentrifugeIntensity
-								},
-								{
-									preFlushingSolutionPressure,
-									conditioningSolutionPressure,
-									loadingSamplePressure,
-									washingSolutionPressure,
-									secondaryWashingSolutionPressure,
-									tertiaryWashingSolutionPressure,
-									elutingSolutionPressure
-								},
-								{
-									preFlushingSolutionDrainTime,
-									conditioningSolutionDrainTime,
-									loadingSampleDrainTime,
-									washingSolutionDrainTime,
-									secondaryWashingSolutionDrainTime,
-									tertiaryWashingSolutionDrainTime,
-									elutingSolutionDrainTime
-								},
-								{
-									preFlushingSolutionCollectionContainer,
-									conditioningSolutionCollectionContainer,
-									loadingSampleFlowthroughContainer,
-									washingSolutionCollectionContainer,
-									secondaryWashingSolutionCollectionContainer,
-									tertiaryWashingSolutionCollectionContainer,
-									elutingSolutionCollectionContainer
-								},
-								{
-									preFlushingSolutionVolume,
-									conditioningSolutionVolume,
-									loadingSampleVolume,
-									washingSolutionVolume,
-									secondaryWashingSolutionVolume,
-									tertiaryWashingSolutionVolume,
-									elutingSolutionVolume
-								},
-								{
-									preFlushLabel,
-									conditionLabel,
-									pooledSampleLabel,
-									washLabel,
-									secondaryWashLabel,
-									tertiaryWashLabel,
-									elutionLabel
-								},
-								{
-									preFlushContainerOutLabel,
-									conditionContainerOutLabel,
-									sampleContainerOutLabel,
-									washContainerOutLabel,
-									secondaryWashContainerOutLabel,
-									tertiaryWashContainerOutLabel,
-									elutionContainerOutLabel
-								},
-								{
-									preFlushSampleOutLabel,
-									conditionSampleOutLabel,
-									loadingSampleOutLabel,
-									washSampleOutLabel,
-									secondarySampleOutLabel,
-									tertiarySampleOutLabel,
-									elutionSampleOutLabel
-								}
-							}
-						];
-
-						{
-							{initSample, restSample},
-							{initIntensity, restIntensity},
-							{initPressure, restPressure},
-							{initTime, restTime},
-							{initCont, restCont},
-							{initVol, restVol},
-							{initLabel, restLabel},
-							{initContainerLabel, restContainerLabel},
-							{initSampleOutLabel, restSampleOutLabel}
-						} = Map[
-							TakeDrop[#, 1]&,
-							{
-								sampleToFilter,
-								intensityToFilter,
-								pressureToFilter,
-								timeToFilter,
-								containerToFilter,
-								volumeToFilter,
-								labelsToFilter,
-								containerOutLabelsToFilter,
-								sampleOutLabelsToFilter
-							}
-						];
-
-						(* since sample can still be pooled here, we have to make sure that the position is indexmatch to each flat sample *)
-						filterReadySampleFlat = Flatten[{initSample, restSample}, 1];
-						filterReadyIntensityFlat = Flatten[{initIntensity, restIntensity}, 1];
-						filterReadyPressureFlat = Flatten[{initPressure, restPressure}, 1];
-						filterReadyTimeFlat = Flatten[{initTime, restTime}, 1];
-						filterReadyContainerFlat = Flatten[{initCont, restCont}, 1];
-						filterReadyVolumeFlat = Flatten[{initVol, restVol}, 1];
-						filterReadyLabelFlat = Flatten[{initLabel, restLabel}, 1];
-						filterReadyContainerLabelFlat = Flatten[{initContainerLabel, restContainerLabel}, 1];
-						filterReadySamplesOutLabelFlat = Flatten[{initSampleOutLabel, restSampleOutLabel}, 1];
-
-						(* a mini function to flat all the pool options *)
-						speFlatWashToIndexMatchSample[options_] := Module[
-							{},
-							MapThread[
-								(
-									Which[
-										MatchQ[#1, ObjectP[]],
-										#2,
-
-										Length[#1] >= 1,
-										ConstantArray[#2, Length[#1]]
-									]
-								)&,
-								{
-									Flatten[filterReadySampleFlat, 1],
-									Flatten[options]
-								}
-							]
-						];
-
-						(* we have to make sure that the options that was not index match earlier, now index match to each sample *)
-						filterReadyIntensityFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyIntensityFlat]], nPooled];
-						filterReadyPressureFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyPressureFlat]], nPooled];
-						filterReadyTimeFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyTimeFlat]], nPooled];
-						filterReadyContainerFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyContainerFlat]], nPooled];
-						filterReadyContainerLabelFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyContainerLabelFlat]], nPooled];
-						filterReadySamplesOutLabelFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadySamplesOutLabelFlat]], nPooled];
-
-						(* now that we can be sure everything is flat, we can next pick the first thing and leave the rest as wash *)
-
-						(* make sure that sample that go to each well has a flat sample at the beginning*)
-						speFilterSeparateInitAndRest[myFilterOptions_] := Module[
-							{eachWellPosition, first, rest, allFirst, allRest},
-							(* for each well, we have to flat what will go in *)
-							eachWellPosition = Map[Flatten[#]&, Transpose[myFilterOptions]];
-							(* then we will loop across each well, and takedrop 1 *)
-							(* allocate empty list, so that we can use it to store across multiple wells *)
-							allFirst = {}; allRest = {};
-							Map[
-								(
-									{first, rest} = TakeDrop[#, 1];
-									(* we append across well *)
-									allFirst = Append[allFirst, first];
-									allRest = Append[allRest, rest];
-								)&, eachWellPosition
-							];
-							(* return the re-arrange result *)
-							{Flatten[allFirst], allRest}
-						];
-
-						{
-							{firstInFilterSamples, restInFilterSamples},
-							{firstInFilterIntensity, restInFilterIntensity},
-							{firstInFilterPressure, restInFilterPressure},
-							{firstInFilterTime, restInFilterTime},
-							{firstInFilterContainer, restInFilterContainer},
-							{firstInFilterVolume, restInFilterVolume},
-							{firstInLabel, restInLabel},
-							{firstInContainerLabel, restInContainerLabel},
-							{firstInSamplesOutLabel, restInSamplesOutLabel}
-						} = Map[
-							speFilterSeparateInitAndRest[#]&,
-							{
-								filterReadySampleFlat,
-								filterReadyIntensityFlatIndexMatch,
-								filterReadyPressureFlatIndexMatch,
-								filterReadyTimeFlatIndexMatch,
-								filterReadyContainerFlatIndexMatch,
-								filterReadyVolumeFlat,
-								filterReadyLabelFlat,
-								filterReadyContainerLabelFlatIndexMatch,
-								filterReadySamplesOutLabelFlatIndexMatch
-							}
-						];
-
-						(* get all the samples/volumes we need as inputs *)
-						sampleRules = MapThread[
-							{Download[#1, Object], #2} -> #3&,
-							{Flatten[filterReadySampleFlat], Flatten[filterReadyLabelFlat], Flatten[filterReadyVolumeFlat]}
-						];
-						mergedSampleRules = Merge[
-							sampleRules,
-							Total
-						];
-
-						(* get the preferred container for each combination of samples *)
-						labelContainerContainerRules = KeyValueMap[
-							If[MatchQ[#1[[1]], ObjectP[Model[Sample]]],
-								#1 -> PreferredContainer[#2],
-								#1 -> cacheLookup[cache, First[#1], Container]
-							]&,
-							mergedSampleRules
-						];
-
-						(* get the samples and the like we need to DeleteDuplicates on before sending into LabelSample *)
-						sampleAndLabelsWithDupes = MapThread[
-							{
-								#1,
-								Lookup[mergedSampleRules, Key[{#1, #2}], #3],
-								#2,
-								Lookup[labelContainerContainerRules, Key[{#1, #2}], PreferredContainer[#3]],
-								"Container for " <> ToString[#2]
-							}&,
-							{Download[Flatten[filterReadySampleFlat], Object], Flatten[filterReadyLabelFlat], Flatten[filterReadyVolumeFlat]}
-						];
-						samplesAndLabels = DeleteDuplicates[sampleAndLabelsWithDupes];
-
-						(* for the Amount key, only give a value if we're dealing with a model; if we're dealing with a sample, then set this to Automatic because it messes with downstream stuff *)
-						labelSampleAmount = MapThread[
-							If[MatchQ[#1, ObjectP[Model]],
-								#2,
-								Automatic
-							]&,
-							{samplesAndLabels[[All, 1]], samplesAndLabels[[All, 2]]}
-						];
-
-						(* make LabelSample unit operation for the Samples such that the input is not a model here like it could be if we didn't do this *)
-						labelSampleUnitOp = LabelSample[
-							Sample -> samplesAndLabels[[All, 1]],
-							Amount -> labelSampleAmount,
-							Label -> samplesAndLabels[[All, 3]],
-							Container -> samplesAndLabels[[All, 4]],
-							ContainerLabel -> samplesAndLabels[[All, 5]]
-						];
-
-						(* get the filter unit op options *)
-						filterUnitOp = Filter[
-							Sample -> Flatten[firstInLabel],
-							Instrument -> instrument,
-							Filter -> cartridge,
-							FilterLabel -> extractionCartridgeLabel,
-							Intensity -> First[firstInFilterIntensity],
-							Pressure -> First[firstInFilterPressure],
-							Time -> First[firstInFilterTime],
-							Volume -> Flatten[firstInFilterVolume],
-							CollectionContainerLabel -> (If[NullQ[#], Automatic, StringJoin["Collection container for " <> #]]& /@ Flatten[firstInContainerLabel]), (* TODO change this back once I get CollectionContianer/FiltrateContainerOut/WashFlowThroughContainer to not go into CollectionContainer at every step *)
-							FiltrateContainerLabel -> (Flatten[firstInContainerLabel] /. Null -> Automatic),
-							FiltrateContainerOut -> (Flatten[firstInFilterContainer] /. Null -> Automatic),
-							CollectionContainer -> (Flatten[firstInFilterContainer] /. Null -> Automatic),
-							FiltrateLabel -> (Flatten[firstInSamplesOutLabel] /. Null -> Automatic),
-							RetentateWashBuffer -> Map[Flatten[#]&, restInLabel]/.{}->Null,
-							RetentateWashCentrifugeIntensity -> Map[Flatten[#]&, restInFilterIntensity]/.{}->Null,
-							RetentateWashPressure -> Map[Flatten[#]&, restInFilterPressure]/.{}->Null,
-							RetentateWashDrainTime -> Map[Flatten[#]&, restInFilterTime]/.{}->Null,
-							RetentateWashVolume -> Map[Flatten[#]&, restInFilterVolume]/.{}->Null,
-							WashFlowThroughContainer -> ((Map[Flatten[#]&, restInFilterContainer]) /.({}|Null) -> Automatic),
-							WashFlowThroughContainerLabel -> (Map[Flatten[#]&, restInContainerLabel] /. Null :> CreateUniqueLabel["Wash Flow Through Container"])/.{}->Null,
-							WashFlowThroughLabel -> (Map[Flatten[#]&, restInSamplesOutLabel] /. Null :> CreateUniqueLabel["Wash Flow Through Sample"])/.{}->Null,
-							CollectRetentate -> False,
-							Preparation -> Robotic,
-							ImageSample -> False,
-							MeasureWeight -> False,
-							MeasureVolume -> False
-						];
-
-						experimentFunction = Lookup[$WorkCellToExperimentFunction, Lookup[myResolvedOptions, WorkCell], ExperimentRoboticSamplePreparation];
-
-						(* --- get the unit operation packets for the UOs made above; need to replicate what ExperimentRoboticCellPreparation does if that is what is happening (otherwise just do nothing) ---*)
-
-						(* make unit operation packets for the UOs we just made here *)
-						experimentFunction[
-							{labelSampleUnitOp, filterUnitOp},
-							UnitOperationPackets -> True,
-							Output -> {Result, Simulation},
-							FastTrack -> Lookup[myResolvedOptions, FastTrack],
-							Name -> Lookup[myResolvedOptions, Name],
-							ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol],
-							Simulation -> simulation,
-							Upload -> False,
-							ImageSample -> False,
-							MeasureVolume -> False,
-							MeasureWeight -> False,
-							Priority -> Lookup[myResolvedOptions, Priority],
-							StartDate -> Lookup[myResolvedOptions, StartDate],
-							HoldOrder -> Lookup[myResolvedOptions, HoldOrder],
-							QueuePosition -> Lookup[myResolvedOptions, QueuePosition],
-							CoverAtEnd -> False
-						]
-					],
-					{{{},Null}, simulation}
-				];
-
-				(* finalize object protocol *)
-				protocolPacket = If[MatchQ[resolvedPreparation, Robotic],
-					<|
-						Object -> protocolObject,
-						Replace[OutputUnitOperations] -> Link[Lookup[roboticFilterUnitOperationPackets, Object, {}], Protocol],
-						(* NOTE: If you have accessory primitive packets, you MUST put those resources into the main protocol object, otherwise *)
-						(* simulate resources will NOT simulate them for you. *)
-						(* DO NOT use RequiredObjects/RequiredInstruments in your regular protocol object. Put these resources in more sensible fields. *)
-						Replace[RequiredObjects] -> DeleteDuplicates[
-							Cases[Lookup[Cases[roboticFilterUnitOperationPackets, PacketP[]], Object, {}], Resource[KeyValuePattern[Type -> Except[Object[Resource, Instrument]]]], Infinity]
-						],
-						Replace[RequiredInstruments] -> DeleteDuplicates[
-							Cases[Lookup[Cases[roboticFilterUnitOperationPackets, PacketP[]], Object, {}], Resource[KeyValuePattern[Type -> Object[Resource, Instrument]]], Infinity]
-						],
-						ResolvedOptions -> {}
-					|>,
-					<|
-						Type -> Object[Protocol, SolidPhaseExtraction],
-						Object -> protocolObject,
-						If[MatchQ[resolvedPreparation, Manual],
-							Replace[BatchedUnitOperations] -> Map[Link[#, Protocol]&, Lookup[unitOperationPackets, Object]],
-							Nothing
-						],
-						Replace[SPEBatchID] -> Lookup[myResolvedOptions, SPEBatchID],
-						(* TODO - revert this when we are ready to merge *)
-						(*		Replace[Instrument] -> Map[Link[#]&, Lookup[orderedResource, InstrumentResource]],*)
-						Replace[ExtractionTime] -> Total[Map[#[Time]&, DeleteDuplicates[Lookup[orderedResource, InstrumentResource]]]],
-						(* special case for GX217 *)
-						(*		Replace[PurgePressure] -> Map[*)
-						(*			If[MatchQ[#, ({ObjectReferenceP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]]..} | ObjectReferenceP[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"]])],*)
-						(*				10 PSI,*)
-						(*				0 PSI*)
-						(*			]&, resolvedInstrumentModel*)
-						(*		],*)
-						Replace[ExtractionStrategy] -> Lookup[myResolvedOptions, ExtractionStrategy],
-						Replace[ExtractionMode] -> Lookup[myResolvedOptions, ExtractionMode],
-						Replace[ExtractionSorbent] -> Lookup[myResolvedOptions, ExtractionSorbent],
-						Replace[ExtractionMethod] -> Lookup[myResolvedOptions, ExtractionMethod],
-						Replace[ExtractionTemperature] -> Lookup[myResolvedOptions, ExtractionTemperature],
-						(* sample in *)
-						(* this is for pooled samples *)
-						Replace[SampleExpression] -> Lookup[orderedResource, Sample],
-						Replace[SampleLabel] -> Lookup[myResolvedOptions, SampleLabel],
-						Replace[SamplesIn] -> Map[Link[#, Protocols]&, samplesInResources],
-						Replace[ContainersIn] -> Map[Link[#, Protocols]&, containersInResources],
-						(* aliquot details *)
-						Replace[AliquotContainer] -> Map[Link[#]&, destinationContainerResource],
-						Replace[AliquotContainerLabel] -> destinationContainerLabel,
-						Replace[AliquotSampleLabel] -> aliquotSampleLabel,
-						Replace[AliquotWellDestination] -> destinationWell,
-						Replace[AliquotVolume] -> destinationVolume,
-						Replace[PoolLengths] -> poolLengths,
-						(* cartridge related fields *)
-						Replace[ExtractionCartridge] -> Map[Link[#]&, Lookup[orderedResource, ExtractionCartridgeResource]],
-						(*Replace[ExtractionCartridgeCaps] -> Map[Link[#]&, extractionCartridgeCapResources],*)
-						Replace[ExtractionCartridgeStorageCondition] -> Lookup[myResolvedOptions, ExtractionCartridgeStorageCondition],
-						(* dealing with solutions *)
-						Replace[PreFlushingSolution] -> Map[Link[#]&, Lookup[orderedResource, PreFlushingResource]];
-						Replace[PreFlushingSolutionVolume] -> Lookup[myResolvedOptions, PreFlushingSolutionVolume],
-						Replace[PreFlushingEquilibrationTime] -> Lookup[myResolvedOptions, PreFlushingEquilibrationTime],
-						Replace[PreFlushingSolutionDispenseRate] -> Lookup[myResolvedOptions, PreFlushingSolutionDispenseRate],
-						Replace[PreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, PreFlushingSolutionDrainTime],
-						Replace[PreFlushingSolutionUntilDrained] -> Lookup[myResolvedOptions, PreFlushingSolutionUntilDrained],
-						Replace[MaxPreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxPreFlushingSolutionDrainTime],
-
-						Replace[ConditioningSolution] -> Map[Link[#]&, Lookup[orderedResource, ConditioningResource]];
-						Replace[ConditioningSolutionVolume] -> Lookup[myResolvedOptions, ConditioningSolutionVolume],
-						Replace[ConditioningEquilibrationTime] -> Lookup[myResolvedOptions, ConditioningEquilibrationTime],
-						Replace[ConditioningSolutionDispenseRate] -> Lookup[myResolvedOptions, ConditioningSolutionDispenseRate],
-						Replace[ConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, ConditioningSolutionDrainTime],
-						Replace[ConditioningSolutionUntilDrained] -> Lookup[myResolvedOptions, ConditioningSolutionUntilDrained],
-						Replace[MaxConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, MaxConditioningSolutionDrainTime],
-
-						Replace[WashingSolution] -> Map[Link[#]&, Lookup[orderedResource, WashingResource]];
-						Replace[WashingSolutionVolume] -> Lookup[myResolvedOptions, WashingSolutionVolume],
-						Replace[WashingEquilibrationTime] -> Lookup[myResolvedOptions, WashingEquilibrationTime],
-						Replace[WashingSolutionDispenseRate] -> Lookup[myResolvedOptions, WashingSolutionDispenseRate],
-						Replace[WashingSolutionDrainTime] -> Lookup[myResolvedOptions, WashingSolutionDrainTime],
-						Replace[WashingSolutionUntilDrained] -> Lookup[myResolvedOptions, WashingSolutionUntilDrained],
-						Replace[MaxWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxWashingSolutionDrainTime],
-
-						Replace[SecondaryWashingSolution] -> Map[Link[#]&, Lookup[orderedResource, SecondaryWashingResource]];
-						Replace[SecondaryWashingSolutionVolume] -> Lookup[myResolvedOptions, SecondaryWashingSolutionVolume],
-						Replace[SecondaryWashingEquilibrationTime] -> Lookup[myResolvedOptions, SecondaryWashingEquilibrationTime],
-						Replace[SecondaryWashingSolutionDispenseRate] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDispenseRate],
-						Replace[SecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDrainTime],
-						Replace[SecondaryWashingSolutionUntilDrained] -> Lookup[myResolvedOptions, SecondaryWashingSolutionUntilDrained],
-						Replace[MaxSecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxSecondaryWashingSolutionDrainTime],
-
-						Replace[TertiaryWashingSolution] -> Map[Link[#]&, Lookup[orderedResource, TertiaryWashingResource]];
-						Replace[TertiaryWashingSolutionVolume] -> Lookup[myResolvedOptions, TertiaryWashingSolutionVolume],
-						Replace[TertiaryWashingEquilibrationTime] -> Lookup[myResolvedOptions, TertiaryWashingEquilibrationTime],
-						Replace[TertiaryWashingSolutionDispenseRate] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDispenseRate],
-						Replace[TertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDrainTime],
-						Replace[TertiaryWashingSolutionUntilDrained] -> Lookup[myResolvedOptions, TertiaryWashingSolutionUntilDrained],
-						Replace[MaxTertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxTertiaryWashingSolutionDrainTime],
-
-						Replace[ElutingSolution] -> Map[Link[#]&, Lookup[orderedResource, ElutingResource]];
-						Replace[ElutingSolutionVolume] -> Lookup[myResolvedOptions, ElutingSolutionVolume],
-						Replace[ElutingEquilibrationTime] -> Lookup[myResolvedOptions, ElutingEquilibrationTime],
-						Replace[ElutingSolutionDispenseRate] -> Lookup[myResolvedOptions, ElutingSolutionDispenseRate],
-						Replace[ElutingSolutionDrainTime] -> Lookup[myResolvedOptions, ElutingSolutionDrainTime],
-						Replace[ElutingSolutionUntilDrained] -> Lookup[myResolvedOptions, ElutingSolutionUntilDrained],
-						Replace[MaxElutingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxElutingSolutionDrainTime],
-
-						(* solution incubation temperature *)
-						Replace[PreFlushingSolutionTemperature] -> Lookup[myResolvedOptions, PreFlushingSolutionTemperature],
-						Replace[ConditioningSolutionTemperature] -> Lookup[myResolvedOptions, ConditioningSolutionTemperature],
-						Replace[WashingSolutionTemperature] -> Lookup[myResolvedOptions, WashingSolutionTemperature],
-						Replace[SecondaryWashingSolutionTemperature] -> Lookup[myResolvedOptions, SecondaryWashingSolutionTemperature],
-						Replace[TertiaryWashingSolutionTemperature] -> Lookup[myResolvedOptions, TertiaryWashingSolutionTemperature],
-						Replace[ElutingSolutionTemperature] -> Lookup[myResolvedOptions, ElutingSolutionTemperature],
-						Replace[LoadingSampleTemperature] -> Lookup[myResolvedOptions, LoadingSampleTemperature],
-						(* solution incubation temperature time *)
-						Replace[PreFlushingSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, PreFlushingSolutionTemperatureEquilibrationTime],
-						Replace[ConditioningSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, ConditioningSolutionTemperatureEquilibrationTime],
-						Replace[WashingSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, WashingSolutionTemperatureEquilibrationTime],
-						Replace[SecondaryWashingSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, SecondaryWashingSolutionTemperatureEquilibrationTime],
-						Replace[TertiaryWashingSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, TertiaryWashingSolutionTemperatureEquilibrationTime],
-						Replace[ElutingSolutionTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, ElutingSolutionTemperatureEquilibrationTime],
-						Replace[LoadingSampleTemperatureEquilibrationTime] -> Lookup[myResolvedOptions, LoadingSampleTemperatureEquilibrationTime],
-
-						Replace[PrimingSolution] -> Map[Link[#]&, Lookup[orderedResource, PrimingResource]];
-
-						(* solution in labeling*)
-						Replace[PreFlushingSolutionLabel] -> Lookup[myResolvedOptions, PreFlushingSolutionLabel],
-						Replace[ConditioningSolutionLabel] -> Lookup[myResolvedOptions, ConditioningSolutionLabel],
-						Replace[WashingSolutionLabel] -> Lookup[myResolvedOptions, WashingSolutionLabel],
-						Replace[SecondaryWashingSolutionLabel] -> Lookup[myResolvedOptions, SecondaryWashingSolutionLabel],
-						Replace[TertiaryWashingSolutionLabel] -> Lookup[myResolvedOptions, TertiaryWashingSolutionLabel],
-						Replace[ElutingSolutionLabel] -> Lookup[myResolvedOptions, ElutingSolutionLabel],
-
-						(* GX271 placement *)
-						(* solution container placement *)
-						Replace[PreFlushingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {PreFlushingResource, PreFlushingPlacement}]]
-						],
-						Replace[ConditioningSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {ConditioningResource, ConditioningPlacement}]]
-						],
-						Replace[WashingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {WashingResource, WashingPlacement}]]
-						],
-						Replace[SecondaryWashingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {SecondaryWashingResource, SecondaryWashingPlacement}]]
-						],
-						Replace[TertiaryWashingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {TertiaryWashingResource, TertiaryWashingPlacement}]]
-						],
-						Replace[ElutingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {ElutingResource, ElutingPlacement}]]
-						],
-						Replace[PrimingSolutionContainerPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {PrimingResource, PrimingPlacement}]]
-						],
-						Replace[ExtractionCartridgePlacements] -> MapThread[
-							{Link[#1], #2}&,
-							{Lookup[orderedResource, ExtractionCartridgeResource], Lookup[myResolvedOptions, CartridgePlacement]}
-						],
-						Replace[PreFlushingContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {PreFlushingContainerOutResource, PreFlushingContainerOutPlacement}]]
-						],
-						Replace[ConditioningContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {ConditioningContainerOutResource, ConditioningContainerOutPlacement}]]
-						],
-						Replace[WashingContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {WashingContainerOutResource, WashingContainerOutPlacement}]]
-						],
-						Replace[SecondaryWashingContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {SecondaryWashingContainerOutResource, SecondaryWashingContainerOutPlacement}]]
-						],
-						Replace[TertiaryWashingContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {TertiaryWashingContainerOutResource, TertiaryWashingContainerOutPlacement}]]
-						],
-						Replace[ElutingContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {ElutingContainerOutResource, ElutingContainerOutPlacement}]]
-						],
-						Replace[LoadingSampleFlowthroughContainerOutPlacements] -> Map[
-							{Link[#[[1]]], #[[2]]}&,
-							Transpose[Lookup[orderedResource, {LoadingSampleContainerOutResource, LoadingSampleContainerOutPlacement}]]
-						],
-						(* centrifuing stuff *)
-						Replace[PreFlushingSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, PreFlushingSolutionCentrifugeIntensity],
-						Replace[ConditioningSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, ConditioningSolutionCentrifugeIntensity],
-						Replace[WashingSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, WashingSolutionCentrifugeIntensity],
-						Replace[SecondaryWashingSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, SecondaryWashingSolutionCentrifugeIntensity],
-						Replace[TertiaryWashingSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, TertiaryWashingSolutionCentrifugeIntensity],
-						Replace[ElutingSolutionCentrifugeIntensity] -> Lookup[myResolvedOptions, ElutingSolutionCentrifugeIntensity],
-						Replace[LoadingSampleCentrifugeIntensity] -> Lookup[myResolvedOptions, LoadingSampleCentrifugeIntensity],
-
-						(* time stuff *)
-						Replace[PreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, PreFlushingSolutionDrainTime],
-						Replace[ConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, ConditioningSolutionDrainTime],
-						Replace[WashingSolutionDrainTime] -> Lookup[myResolvedOptions, WashingSolutionDrainTime],
-						Replace[SecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDrainTime],
-						Replace[TertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDrainTime],
-						Replace[ElutingSolutionDrainTime] -> Lookup[myResolvedOptions, ElutingSolutionDrainTime],
-						Replace[LoadingSampleDrainTime] -> Lookup[myResolvedOptions, LoadingSampleDrainTime],
-
-						(* dealing with sample loading *)
-						Replace[LoadingSampleVolume] -> Lookup[myResolvedOptions, LoadingSampleVolume],
-						Replace[LoadingSampleDispenseRate] -> Lookup[myResolvedOptions, LoadingSampleDispenseRate],
-						Replace[QuantitativeLoadingSampleSolution] -> Map[Link[#]&, Flatten[Lookup[orderedResource, QuantitativeLoadingResource]]];
-						Replace[QuantitativeLoadingSampleVolume] -> Lookup[myResolvedOptions, QuantitativeLoadingSampleVolume],
-
-						(* fill in the solution out *)
-						Replace[PreFlushingSampleOutLabel] -> Lookup[myResolvedOptions, PreFlushingSampleOutLabel],
-						Replace[ConditioningSampleOutLabel] -> Lookup[myResolvedOptions, ConditioningSampleOutLabel],
-						Replace[WashingSampleOutLabel] -> Lookup[myResolvedOptions, WashingSampleOutLabel],
-						Replace[SecondaryWashingSampleOutLabel] -> Lookup[myResolvedOptions, SecondaryWashingSampleOutLabel],
-						Replace[TertiaryWashingSampleOutLabel] -> Lookup[myResolvedOptions, TertiaryWashingSampleOutLabel],
-						Replace[ElutingSampleOutLabel] -> Lookup[myResolvedOptions, ElutingSampleOutLabel],
-						Replace[LoadingSampleFlowthroughSampleOutLabel] -> Lookup[myResolvedOptions, LoadingSampleFlowthroughSampleOutLabel],
-						Replace[SampleOutLabel] -> Flatten[Lookup[myResolvedOptions,
-							{
-								PreFlushingSampleOutLabel,
-								ConditioningSampleOutLabel,
-								LoadingSampleFlowthroughSampleOutLabel,
-								WashingSampleOutLabel,
-								SecondaryWashingSampleOutLabel,
-								TertiaryWashingSampleOutLabel,
-								ElutingSampleOutLabel
-							}
-						]],
-
-						(* well is fixed by the cartridge position/well *)
-						Replace[PreFlushingContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[ConditioningContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[WashingContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[SecondaryWashingContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[TertiaryWashingContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[ElutingContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-						Replace[LoadingSampleFlowthroughContainerDestinationWell] -> Lookup[myResolvedOptions, ContainerOutWellAssignment],
-
-						Replace[PreFlushingSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, PreFlushingContainerOutResource]],
-						Replace[ConditioningSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, ConditioningContainerOutResource]],
-						Replace[WashingSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, WashingContainerOutResource]],
-						Replace[SecondaryWashingSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, SecondaryWashingContainerOutResource]],
-						Replace[TertiaryWashingSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, TertiaryWashingContainerOutResource]],
-						Replace[ElutingSolutionCollectionContainer] -> Map[Link[#]&, Lookup[orderedResource, ElutingContainerOutResource]],
-						Replace[LoadingSampleFlowthroughContainer] -> Map[Link[#]&, Lookup[orderedResource, LoadingSampleContainerOutResource]],
-
-						Replace[PreFlushingCollectionContainerOutLabel] -> Lookup[myResolvedOptions, PreFlushingCollectionContainerOutLabel],
-						Replace[ConditioningCollectionContainerOutLabel] -> Lookup[myResolvedOptions, ConditioningCollectionContainerOutLabel],
-						Replace[WashingCollectionContainerOutLabel] -> Lookup[myResolvedOptions, WashingCollectionContainerOutLabel],
-						Replace[SecondaryWashingCollectionContainerOutLabel] -> Lookup[myResolvedOptions, SecondaryWashingCollectionContainerOutLabel],
-						Replace[TertiaryWashingCollectionContainerOutLabel] -> Lookup[myResolvedOptions, TertiaryWashingCollectionContainerOutLabel],
-						Replace[ElutingCollectionContainerOutLabel] -> Lookup[myResolvedOptions, ElutingCollectionContainerOutLabel],
-						Replace[LoadingSampleFlowthroughCollectionContainerOutLabel] -> Lookup[myResolvedOptions, LoadingSampleFlowthroughCollectionContainerOutLabel],
-						Replace[ContainerOutLabel] -> Flatten[Lookup[myResolvedOptions,
-							{
-								PreFlushingCollectionContainerOutLabel,
-								ConditioningCollectionContainerOutLabel,
-								LoadingSampleFlowthroughCollectionContainerOutLabel,
-								WashingCollectionContainerOutLabel,
-								SecondaryWashingCollectionContainerOutLabel,
-								TertiaryWashingCollectionContainerOutLabel,
-								ElutingCollectionContainerOutLabel
-							}
-						]],
-						Replace[WasteContainer] -> Map[Link[#]&, Lookup[orderedResource, WasteContainerResource]],
-
-						(* not sure what these are *)
-						populateSamplePrepFieldsPooledIndexMatched[mySamples, myResolvedOptions],
-						ResolvedOptions -> myResolvedOptions,
-
-						Replace[SamplesInStorage] -> Flatten[Lookup[myResolvedOptions, SamplesInStorageCondition]],
-						Replace[SamplesOutStorage] -> Flatten[Lookup[myResolvedOptions, SamplesOutStorageCondition]]
-					|>
-				];
-				(* we have to pull the pooled samples here to pass to SimulateResources *)
-				myPooledSamples = Lookup[protocolPacket, Replace[SampleExpression]];
-				(* simulate resource form the protocol *)
-				SimulateResources[protocolPacket, unitOperationPackets, Simulation -> simulation, PooledSamplesIn -> myPooledSamples]
 			],
 
 		(* Otherwise, our resource packets went fine and we have an Object[Protocol, SolidPhaseExtraction]. *)
@@ -14486,7 +12285,7 @@ simulateExperimentSolidPhaseExtraction[
 (* ::Subsection::Closed:: *)
 (* speTableFunction *)
 (* Try to put all look up tables all in one place for easy future edits *)
-(* TODO this is obviously fucking bonkers; we should try our best to kill this with fire *)
+(* TODO this is obviously crazy; we should try to not do this... *)
 speTableFunction[output_String] := Module[
 	{speExtractionOptionsList, queryInstrument},
 	(* TABLE - define tableExtractionOptions as a general logic guide for options resolution *)
@@ -15246,7 +13045,7 @@ speCheckTopBottomPlateQ[downloadedstuff_, topplate_, bottomplate_] := Module[
 		MatchQ[Lookup[topplatePacket, {NumberOfWells}], Lookup[bottomplatePacket, {NumberOfWells}]],
 		(* 3) footprint is plate, or at least dimension fit with SBS standard *)
 		MatchQ[Lookup[bottomplatePacket, Footprint], Plate] || MatchQ[Lookup[bottomplatePacket, Dimensions][[1 ;; 2]], {RangeP[125.76 Millimeter, 129.76 Millimeter], RangeP[83.98 Millimeter, 87.98 Millimeter]}],
-		(* 4) must be a container plate, not filter other other crap that got thrown into Model[Container,Plate] subtype *)
+		(* 4) must be a container plate, not filter other other things that got thrown into Model[Container,Plate] subtype *)
 		MatchQ[Lookup[bottomplatePacket, Type], Model[Container, Plate]]}
 		, TrueQ]
 ];
@@ -15707,7 +13506,7 @@ speBatchCalculatorCentrifugePlateManual[myOptionForPlateCentrifuge_List, cache_]
 				(* there is no need for aliquoting *)
 				poolLength = Map[Length[#]&, samples];
 				flatSamples = Flatten[samples];
-				aliquotTargetsFlat = Map[{{Null, Null, Null, Null}}&, flatSamples];
+				aliquotTargetsFlat = Map[Null&, flatSamples];
 				aliquotTargetsPooled = TakeList[aliquotTargetsFlat, poolLength];
 				(* for plate SPE, cartridge placement is actually the well that each sample will go into *)
 				updatedOptions = Join[
@@ -15835,7 +13634,7 @@ speBatchCalculatorFilterBlockManual[myOptionForPlateCentrifuge_List, cache_] := 
 				(* there is no need for aliquoting *)
 				poolLength = Map[Length[#]&, samples];
 				flatSamples = Flatten[samples];
-				aliquotTargetsFlat = Map[{{Null, Null, Null, Null}}&, flatSamples];
+				aliquotTargetsFlat = Map[Null&, flatSamples];
 				aliquotTargetsPooled = TakeList[aliquotTargetsFlat, poolLength];
 				(* for plate SPE, cartridge placement is actually the well that each sample will go into *)
 				updatedOptions = Join[
@@ -15868,7 +13667,7 @@ speBatchCalculatorSyringePumpOne[myOptionForSyringePump_List, cache_] := Module[
 	poolLength = Map[Length[#]&, samples];
 	flatSamples = Flatten[samples];
 	batchID = Table["SPE batch " <> ToString[Unique[]], Length[samples]];
-	aliquotTargetsFlat = Map[{{Null, Null, Null, Null}}&, flatSamples];
+	aliquotTargetsFlat = Map[Null&, flatSamples];
 	aliquotTargetsPooled = TakeList[aliquotTargetsFlat, poolLength];
 	(* for plate SPE, cartridge placement is actually the well that each sample will go into *)
 	updatedOptions = Join[
@@ -16060,7 +13859,7 @@ speBatchCalculatorForBiotage48[myOptionsUsingBiotage48_List, cache_] := Module[
 			(* there is no need for aliquoting *)
 			poolLength = Map[Length[#]&, samples];
 			flatSamples = Flatten[samples];
-			aliquotTargetsFlat = Map[{{Null, Null, Null, Null}}&, flatSamples];
+			aliquotTargetsFlat = Map[Null&, flatSamples];
 			aliquotTargetsPooled = TakeList[aliquotTargetsFlat, poolLength];
 
 			(* return structure like group by key*)

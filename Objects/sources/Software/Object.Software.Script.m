@@ -67,6 +67,14 @@ DefineObjectType[Object[Software,Script], {
 			Pattern :> BooleanP,
 			Description -> "Indicates whether the last run timed out.",
 			Category -> "Organizational Information"
+		},
+		Job -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Notebook, Job],
+			Description -> "The Job object which is responsible of launching this script.",
+			Category -> "Organizational Information"
 		}
 	}
 }];

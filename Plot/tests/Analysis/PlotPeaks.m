@@ -534,6 +534,14 @@ DefineTests[PlotPeaks,{
 			Purity -> {Area -> {0}, RelativeArea -> {Quantity[100, "Percent"]},
 				PeakLabels -> {"Background"}}|>],
 		Null
+	],
+
+	Test["Handles objects from AdvancedAnalyzePeaks, which have additonal options:",
+		PlotPeaks[
+			ECL`AdvancedAnalyzePeaks[Object[Data,Chromatography,"id:XnlV5jmbk0rn"],ManualPeaks -> {{{20, 0}, {30, 1}}},Upload->False],
+			PlotType->Preview
+		],
+		_DynamicModule
 	]
 
 }];

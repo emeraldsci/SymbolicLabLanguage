@@ -191,9 +191,9 @@ DefineObjectType[Object[SupportTicket], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Protocol][ProtocolSpecificTickets],
-				Object[Qualification][ProtocolSpecificTickets],
-				Object[Maintenance][ProtocolSpecificTickets]
+				Object[Protocol][ProtocolSpecificInternalCommunications],
+				Object[Qualification][ProtocolSpecificInternalCommunications],
+				Object[Maintenance][ProtocolSpecificInternalCommunications]
 			],
 			Description -> "The parent or subprotocol that was processing when this ticket was filed.",
 			Category -> "Organizational Information",
@@ -238,6 +238,13 @@ DefineObjectType[Object[SupportTicket], {
 			Format->Single,
 			Class->String,
 			Pattern:>_String,
+			Description->"The classification of the core issue that was responsible for this support ticket.",
+			Category->"Organizational Information"
+		},
+		ErrorCategory->{
+			Format->Single,
+			Class->String,
+			Pattern:>SupportTicketErrorSubcategoryP,
 			Description->"The classification of the core issue that was responsible for this support ticket.",
 			Category->"Organizational Information"
 		},
@@ -300,25 +307,16 @@ DefineObjectType[Object[SupportTicket], {
 			Developer -> True,
 			Headers -> {"Date","Person Deciding","Keywords"}
 		},
-		SolutionWarranted -> {
+
+		(* --- Data Integrations --- *)
+		Sync -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the immediate problems presented by this support ticket has been fully addressed or may need further investigation, which would involve either opening a new solution or linking this ticket to an existing solution.",
+			Description -> "Indicates if an Asana task is created for this ticket by the Nexana system, and updates in Asana and Constellation will be synchronized. When set to Null, an Asana task will be created and synchronized.",
 			Category -> "Organizational Information",
 			Developer -> True
 		},
-		SolutionWarrantedLog -> {
-			Format -> Multiple,
-			Class -> {Date, Link, Boolean},
-			Pattern :> {_?DateObjectQ, _Link, BooleanP},
-			Relation -> {Null, Object[User], Null},
-			Description -> "A log of whether the support ticket was deemeed to warrant a solution or not.",
-			Category -> "Organizational Information",
-			Headers -> {"Date","Person Deciding","Solution Warranted"}
-		},
-
-		(* --- Data Integrations --- *)
 		AsanaSyncedAttachments -> {
 			Format      -> Multiple,
 			Class       -> { String, Link },
@@ -365,16 +363,6 @@ DefineObjectType[Object[SupportTicket], {
 			},
 			Description -> "Indicates the version of the application (CommandCenter, Engine, or Nexus) from which the ticket was submitted, as well as the version information of Mathematica, Constellation, and SLL that were in use when this support ticket was filed.", 
 			Category -> "Versioning"
-		},
-		(* == Fields to Be Replaced, should be removed April 2024 post migration to SupportTicket ==*)
-		OriginalObject -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Troubleshooting][ReplacementObject],
-			Description -> "The support ticket made as a new version of this troubleshooting object.",
-			Category -> "Organizational Information",
-			Developer -> True
 		}
 	}
 }];

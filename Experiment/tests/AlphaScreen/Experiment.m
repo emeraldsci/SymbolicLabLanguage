@@ -418,7 +418,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"]]}},
 			TimeConstraint -> 240,
 			Variables :> {options}
 		],
@@ -1070,17 +1070,6 @@ DefineTests[
 			Messages :> {Error::AlphaScreenInvalidSampleAliquot, Error::InvalidOption},
 			TimeConstraint -> 240
 		],
-		Example[{Messages, "AlphaScreenObjectNotExist", "If any of the objects in samples or options do not exist in database, an error will be thrown:"},
-			ExperimentAlphaScreen[{Object[Sample, "Test sample 1 for ExperimentAlphaScreen" <> $SessionUUID], Object[Sample, "Not existing sample"]},
-				Instrument -> Object[Instrument, PlateReader, "Not existing instrument"],
-				AssayPlateModel -> Model[Container, Plate, "Not existing plate"],
-				Gain -> Automatic,
-				FocalHeight -> Automatic
-			],
-			$Failed,
-			Messages :> {Error::AlphaScreenObjectNotExist},
-			TimeConstraint -> 240
-		],
 		(* -- Option Resolution -- *)
 		Example[{Options, PreparedPlate, "Specify the input container as a prepared plate that should be measured in AlphaScreen:"},
 			Module[{options, preparedPlate},
@@ -1252,6 +1241,20 @@ DefineTests[
 			],
 			4 Minute,
 			TimeConstraint -> 240
+		],
+		Example[{Options, Instrument, "Instrument is automatically set to Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] if TargetCarbonDioxideLevel/TargetOxygenLevel is set:"},
+			Lookup[
+				ExperimentAlphaScreen[Object[Sample, "Test sample 1 for ExperimentAlphaScreen" <> $SessionUUID], TargetCarbonDioxideLevel -> 5 * Percent, Output -> Options],
+				Instrument
+			],
+			ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]
+		],
+		Example[{Options, TargetCarbonDioxideLevel, "TargetCarbonDioxideLevel is automatically set to 5 Percent if sample contains Mammalian cells:"},
+			Lookup[
+				ExperimentAlphaScreen[Object[Sample, "Test sample with mammalian cells for ExperimentAlphaScreen "<>$SessionUUID], Instrument -> Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], Output -> Options],
+				TargetCarbonDioxideLevel
+			],
+			5 * Percent
 		],
 		Example[{Options, PlateReaderMixTime, "Specify PlateReaderMixTime for plate reader mixing:"},
 			Module[{options, plateReaderMixTime},
@@ -1685,7 +1688,7 @@ DefineTests[
 		Example[{Options, TargetConcentrationAnalyte, "The specific analyte to get to the specified target concentration:"},
 			Module[{options, targetConcentrationAnalyte},
 				options = ExperimentAlphaScreen[Object[Sample, "Test 1M NaCl solution for ExperimentAlphaScreen" <> $SessionUUID],
-					TargetConcentration -> 1 * Millimolar, TargetConcentrationAnalyte -> Model[Molecule, "Sodium Chloride"],
+					TargetConcentration -> 10 * Millimolar, TargetConcentrationAnalyte -> Model[Molecule, "Sodium Chloride"],
 					AssayVolume -> 100 * Microliter,
 					Output -> Options];
 				targetConcentrationAnalyte = Lookup[options, TargetConcentrationAnalyte]
@@ -1701,9 +1704,32 @@ DefineTests[
 					Output -> Options];
 				destinationWell = Lookup[options, DestinationWell]
 			],
-			"A2"
+			{"A2"}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAlphaScreen[
+				{Model[Sample, "Red Food Dye"], Model[Sample, "Red Food Dye"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well UV-Star Plate"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "Red Food Dye"]]..},
+				{ObjectP[Model[Container, Plate, "96-well UV-Star Plate"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to create test standards prior to running the experiment:"},
 			Module[{options, preparatoryPrimitives},
 				options = ExperimentAlphaScreen[
@@ -1717,22 +1743,6 @@ DefineTests[
 				preparatoryPrimitives = Lookup[options, PreparatoryUnitOperations]
 			],
 			{SamplePreparationP..},
-			TimeConstraint -> 240
-		],
-
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to create test standards prior to running the experiment:"},
-			Module[{options, preparatoryPrimitives},
-				options = ExperimentAlphaScreen[
-					{"red dye sample", Object[Sample, "Test sample 1 for ExperimentAlphaScreen" <> $SessionUUID]},
-					PreparatoryPrimitives -> {
-						Define[Name -> "red dye sample", Container -> Model[Container, Vessel, "2mL Tube"]],
-						Transfer[Source -> Model[Sample, "Red Food Dye"], Amount -> 200 * Microliter, Destination -> "red dye sample"]
-					},
-					Output -> Options
-				];
-				preparatoryPrimitives = Lookup[options, PreparatoryPrimitives]
-			],
-			{SampleManipulationP..},
 			TimeConstraint -> 240
 		],
 
@@ -1783,6 +1793,80 @@ DefineTests[
 				ObjectP[Object[Sample, "Test sample 3 for ExperimentAlphaScreen" <> $SessionUUID][Object]]
 			},
 			TimeConstraint -> 240
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAlphaScreen[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAlphaScreen[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAlphaScreen[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAlphaScreen[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAlphaScreen[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAlphaScreen[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		]
 	},
 	SetUp :> {
@@ -1796,7 +1880,7 @@ DefineTests[
 	(* Variables :> {$SessionUUID},*)
 
 	SymbolSetUp :> Block[{$DeveloperUpload = True},
-		Module[{testBench, testBenchPacket, allPlates, plate1, plate2, plate3, plate4, plate5, emptyPlate, moreWellPlate1, moreWellSWPlate1, plateModels, plateNames, allVessels, vesselModels, vesselNames, retiredInstrumentPacket, allContainerModels, allContainerPackets, vessel1, vessel2, vessel3, vessel4, vessel5, bottle1, naclSolutionSample, naclSolutionSamplePackets, numberOfInputSamples, sampleNames, samples, samplePackets},
+		Module[{testBench, testBenchPacket, allPlates, plate1, plate2, plate3, plate4, plate5, plate6, emptyPlate, moreWellPlate1, moreWellSWPlate1, plateModels, plateNames, allVessels, vesselModels, vesselNames, retiredInstrumentPacket, allContainerModels, allContainerPackets, vessel1, vessel2, vessel3, vessel4, vessel5, bottle1, naclSolutionSample, naclSolutionSamplePackets, numberOfInputSamples, sampleNames, samples, samplePackets},
 
 			Off[Warning::SamplesOutOfStock];
 			Off[Warning::InstrumentUndergoingMaintenance];
@@ -1816,8 +1900,8 @@ DefineTests[
 				Upload -> False
 			];
 
-			allPlates = CreateID[ConstantArray[Object[Container, Plate], 8]];
-			{plate1, plate2, plate3, plate4, emptyPlate, moreWellPlate1, moreWellSWPlate1, plate5} = allPlates;
+			allPlates = CreateID[ConstantArray[Object[Container, Plate], 9]];
+			{plate1, plate2, plate3, plate4, emptyPlate, moreWellPlate1, moreWellSWPlate1, plate5, plate6} = allPlates;
 			{plateModels, plateNames} = Transpose[{
 				(*1*) {Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], "Test 96-well plate 1 for ExperimentAlphaScreen" <> $SessionUUID},
 				(*2*) {Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], "Test 96-well plate 2 for ExperimentAlphaScreen" <> $SessionUUID},
@@ -1826,7 +1910,8 @@ DefineTests[
 				(*5*) {Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], "Empty plate for ExperimentAlphaScreen" <> $SessionUUID},
 				(*6*) {Model[Container, Plate, "AlphaPlate 384-Well Gray Plate"], "Test 384-well plate for ExperimentAlphaScreen" <> $SessionUUID},
 				(*7*) {Model[Container, Plate, "AlphaPlate 384-Shallow-Well Gray Plate"], "Test 384-shallow-well plate for ExperimentAlphaScreen" <> $SessionUUID},
-				(*8*) {Model[Container, Plate, "96-well 2mL Deep Well Plate"], "Test 96-well 2mL deep well plate for ExperimentAlphaScreen" <> $SessionUUID}
+				(*8*) {Model[Container, Plate, "96-well 2mL Deep Well Plate"], "Test 96-well 2mL deep well plate for ExperimentAlphaScreen" <> $SessionUUID},
+				(*9*) {Model[Container, Plate, "AlphaPlate Half Area 96-Well Gray Plate"], "Test 96-well plate 5 for ExperimentAlphaScreen" <> $SessionUUID}
 			}];
 
 			allVessels = CreateID[ConstantArray[Object[Container, Vessel], 6]];
@@ -1863,18 +1948,19 @@ DefineTests[
 
 			(* Creating testing samples: "Test sample 1-6" are 0.2M FITC, "Test sample 7-9" are test oligomer. Test sample 9 is further modified for tests (See later Upload call). Samples in plate3 are for insufficient injection volume test. Samples in plate1 can be used for PreparedPlate option. *)
 
-			samples = CreateID[ConstantArray[Object[Sample], 10]];
+			samples = CreateID[ConstantArray[Object[Sample], 11]];
 			samplePackets = UploadSample[
-				ConstantArray[Model[Sample, StockSolution, "0.2M FITC"], numberOfInputSamples],
+				Join[ConstantArray[Model[Sample, StockSolution, "0.2M FITC"], numberOfInputSamples], {{{1000 * EmeraldCell / Milliliter, Model[Cell, Mammalian, "id:eGakldJvLvzq"]}, {100 * VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]}}}],
 				{
-					{"A1", plate1}, {"A2", plate1}, {"A3", plate1}, {"A4", plate1}, {"A1", plate2}, {"A2", plate2}, {"A1", bottle1}, {"A1", vessel1}, {"A1", plate3}, {"A1", plate5}
+					{"A1", plate1}, {"A2", plate1}, {"A3", plate1}, {"A4", plate1}, {"A1", plate2}, {"A2", plate2}, {"A1", bottle1}, {"A1", vessel1}, {"A1", plate3}, {"A1", plate5}, {"A1", plate6}
 				},
-				Name -> sampleNames,
+				Name -> Join[sampleNames, {"Test sample with mammalian cells for ExperimentAlphaScreen "<>$SessionUUID}],
 				ID -> samples[ID],
 				InitialAmount -> Join[
-					ConstantArray[200 Microliter, numberOfInputSamples - 4], {200 Milliliter, 1 Milliliter, 100 Microliter, 200 Microliter}
+					ConstantArray[200 Microliter, numberOfInputSamples - 4], {200 Milliliter, 1 Milliliter, 100 Microliter, 200 Microliter, 200 Microliter}
 				],
 				Cache -> allContainerPackets,
+				Living -> False,
 				Upload -> False
 			];
 
@@ -1939,11 +2025,13 @@ asBackUpCleanup[] := Module[{namedObjects, lurkers},
 		Object[Sample, "Test sample 9 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Sample, "Test sample 10 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Sample, "Test 1M NaCl solution for ExperimentAlphaScreen" <> $SessionUUID],
+		Object[Sample, "Test sample with mammalian cells for ExperimentAlphaScreen "<>$SessionUUID],
 		Object[Container, Plate, "Empty plate for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 96-well plate 1 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 96-well plate 2 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 96-well plate 3 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 96-well plate 4 for ExperimentAlphaScreen" <> $SessionUUID],
+		Object[Container, Plate, "Test 96-well plate 5 for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 384-well plate for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 384-shallow-well plate for ExperimentAlphaScreen" <> $SessionUUID],
 		Object[Container, Plate, "Test 96-well 2mL deep well plate for ExperimentAlphaScreen" <> $SessionUUID],

@@ -35,10 +35,7 @@ DefineUsage[ExtinctionCoefficient,
 		"Hyperchromicity260",
 		"MolecularWeight"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"yanzhe.zhu", "amir.saadat", "brad"}
 }];
 
 
@@ -66,10 +63,7 @@ DefineUsage[Hyperchromicity260,
 	MoreInformation -> {
 		"For DNA, the extinction coefficient and the hyperchromacity at 260 nm values can be found in Object[Report, Literature, \"id:kEJ9mqR5EmJB\"]: A. V. Tataurov et al, \"Predicting ultraviolet spectrum of single stranded and double stranded deoxyribonucleic acids.\" (2008) p66-70."
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"yanzhe.zhu", "amir.saadat", "brad"}
 }];
 
 
@@ -103,11 +97,7 @@ DefineUsage[MolecularWeight,
 		"ExtinctionCoefficient",
 		"Hyperchromicity260"
 	},
-	Author -> {
-		"amir.saadat",
-		"kevin.hou",
-		"brad"
-	}
+	Author -> {"yanzhe.zhu", "amir.saadat", "kevin.hou", "brad"}
 }];
 
 
@@ -164,7 +154,7 @@ DefineUsage[MonoisotopicMass,
 		"MolecularWeight",
 		"ExactMass"
 	},
-	Author -> {"olatunde.olademehin", "yanzhe.zhu", "weiran.wang", "kevin.hou"}
+	Author -> {"yanzhe.zhu", "olatunde.olademehin", "weiran.wang", "kevin.hou"}
 }];
 
 
@@ -222,7 +212,7 @@ DefineUsage[ExactMass,
 		"MolecularWeight",
 		"MonoisotopicMass"
 	},
-	Author -> {"olatunde.olademehin", "yanzhe.zhu", "weiran.wang", "kevin.hou"}
+	Author -> {"yanzhe.zhu", "olatunde.olademehin", "weiran.wang", "kevin.hou"}
 }];
 
 

@@ -8,5 +8,13 @@ DefineObjectType[Model[Qualification,Training,GatherResource], {
   CreatePrivileges -> None,
   Cache -> Session,
   Fields -> {
+    StickyRack -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Model[Container, Rack],
+      Description -> "The type of rack operators pick in order to then place all other resources inside, demonstrating Engine's ability to move a group of items inside a rack with just one scan.",
+      Category -> "General"
+    }
   }
 }]

@@ -231,7 +231,8 @@ DefineTests[
 		Stubs :> {
 			$PersonID=Object[User,"Test user for notebook-less test protocols"],
 			(* ValidObjectQ is super slow so just doing this here *)
-			ValidObjectQ[objs_,OutputFormat->Boolean]:=ConstantArray[True,Length[objs]]
+			ValidObjectQ[objs_,OutputFormat->Boolean]:=ConstantArray[True,Length[objs]],
+			$RequiredSearchName = $SessionUUID
 		}
 	},
 	SymbolSetUp :> (

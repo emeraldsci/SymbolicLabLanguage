@@ -40,6 +40,6 @@ DefineOptions[DefineAnalytes,
 	}
 ];
 
-InstallDefaultUploadFunction[DefineAnalytes, Object[Sample], {InstallNameOverload -> False, InstallObjectOverload -> True}];
+InstallDefaultUploadFunction[DefineAnalytes, Object[Sample], InstallNameOverload -> False, InstallObjectOverload -> True];
 InstallValidQFunction[DefineAnalytes, Object[Sample]];
 InstallOptionsFunction[DefineAnalytes, Object[Sample]];

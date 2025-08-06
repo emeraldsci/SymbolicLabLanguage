@@ -21,13 +21,13 @@ DefineTests[
 		(* basic tests *)
 		Example[{Basic,"Automatically generate an AcquireImage primitive for a single input sample:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP}
 		],
 		Example[{Basic,"Resolve values for all keys of AcquireImage primitive when only one option is specified:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->ConfocalFluorescence
 			];
 			ContainsExactly[
@@ -39,7 +39,7 @@ DefineTests[
 		],
 		Test["Automatically generate an AcquireImage primitive with BrightField Mode for a single input sample without any detection label:",
 			primitiveList=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			];
 			First[primitiveList][Mode],
 			BrightField,
@@ -47,7 +47,7 @@ DefineTests[
 		],
 		Test["Automatically generate an AcquireImage primitive with Epifluorescence Mode for a single input sample with a fluorescent DetectionLabels:",
 			primitiveList=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			];
 			First[primitiveList][Mode],
 			Epifluorescence,
@@ -55,13 +55,13 @@ DefineTests[
 		],
 		Example[{Basic,"Automatically generate a set of AcquireImage primitives for a single input sample with multiple DetectionLabels:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP..}
 		],
 		Example[{Basic,"Automatically generate a set of AcquireImage primitives with Epifluorescence and BrightField Mode for a single input sample with multiple DetectionLabels:"},
 			primitiveList=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			];
 			ContainsExactly[#[Mode]&/@primitiveList,{BrightField,Epifluorescence}],
 			True,
@@ -69,16 +69,16 @@ DefineTests[
 		],
 		Example[{Basic,"Automatically generate a set of AcquireImage primitives for multiple input samples with multiple DetectionLabels:"},
 			resolveAcquireImagePrimitive[{
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Object[Sample,"Fake cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			}],
 			{AcquireImagePrimitiveP..}
 		],
 		Test["Output results as a list of options instead of AcquireImage primitives when Output option is set to Options:",
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Output->Options
 			],
 			{_Rule..}
@@ -87,7 +87,7 @@ DefineTests[
 		(* options *)
 		Example[{Options,Mode,"Generate an AcquireImage primitive with specified Mode:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->ConfocalFluorescence
 			];
 			First[output][Mode],
@@ -96,7 +96,7 @@ DefineTests[
 		],
 		Example[{Options,Primitive,"Resolve values for all keys of AcquireImage primitive when a primitive with incomplete keys is specified:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Primitive->{
 					AcquireImage[
 						Mode->ConfocalFluorescence
@@ -112,7 +112,7 @@ DefineTests[
 		],
 		Example[{Options,Primitive,"Return AcquireImage primitive with matching specified key(s):"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Primitive->{
 					AcquireImage[
 						Mode->ConfocalFluorescence,
@@ -126,16 +126,16 @@ DefineTests[
 		],
 		Example[{Options,DetectionLabels,"Generate an AcquireImage primitive with specified DetectionLabels:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				DetectionLabels->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				DetectionLabels->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			];
 			First[output][DetectionLabels],
-			ObjectP[Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]],
+			ObjectP[Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]],
 			Variables:>{output}
 		],
 		Example[{Options,FocalHeight,"Generate an AcquireImage primitive with specified FocalHeight:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				FocalHeight->8000 Micrometer
 			];
 			N@First[output][FocalHeight],
@@ -144,7 +144,7 @@ DefineTests[
 		],
 		Example[{Options,ExposureTime,"Generate an AcquireImage primitive with specified ExposureTime:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExposureTime->25 Millisecond
 			];
 			N@First[output][ExposureTime],
@@ -153,7 +153,7 @@ DefineTests[
 		],
 		Example[{Options,TargetMaxIntensity,"Generate an AcquireImage primitive with specified TargetMaxIntensity:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				TargetMaxIntensity->40000
 			];
 			First[output][TargetMaxIntensity],
@@ -162,7 +162,7 @@ DefineTests[
 		],
 		Example[{Options,TimelapseImageCollection,"Generate an AcquireImage primitive with specified TimelapseImageCollection:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->5,
 				TimelapseImageCollection->StartAndEnd
@@ -173,7 +173,7 @@ DefineTests[
 		],
 		Example[{Options,ZStackImageCollection,"Generate an AcquireImage primitive with specified ZStackImageCollection:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ZStack->True,
 				ZStackImageCollection->True
 			];
@@ -184,7 +184,7 @@ DefineTests[
 		(* keep this as a place holder in case we decide to include ImagingChannel as an option *)
 		Example[{Options,ImagingChannel,"Generate an AcquireImage primitive with specified ImagingChannel:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->FITC
 			];
 			First[output][ImagingChannel],
@@ -193,7 +193,7 @@ DefineTests[
 		],
 		Example[{Options,ExcitationWavelength,"Generate an AcquireImage primitive with specified ExcitationWavelength:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExcitationWavelength->477 Nanometer
 			];
 			N@First[output][ExcitationWavelength],
@@ -202,7 +202,7 @@ DefineTests[
 		],
 		Example[{Options,EmissionWavelength,"Generate an AcquireImage primitive with specified EmissionWavelength:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExcitationWavelength->520 Nanometer
 			];
 			N@First[output][EmissionWavelength],
@@ -211,7 +211,7 @@ DefineTests[
 		],
 		Example[{Options,ExcitationPower,"Generate an AcquireImage primitive with specified ExcitationPower:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExcitationPower->30 Percent
 			];
 			N@First[output][ExcitationPower],
@@ -220,7 +220,7 @@ DefineTests[
 		],
 		Example[{Options,DichroicFilterWavelength,"Generate an AcquireImage primitive with specified DichroicFilterWavelength:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				DichroicFilterWavelength->488 Nanometer
 			];
 			N@First[output][DichroicFilterWavelength],
@@ -229,7 +229,7 @@ DefineTests[
 		],
 		Example[{Options,ImageCorrection,"Generate an AcquireImage primitive with specified ImageCorrection:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageCorrection->ShadingCorrection
 			];
 			First[output][ImageCorrection],
@@ -238,7 +238,7 @@ DefineTests[
 		],
 		Example[{Options,ImageDeconvolution,"Generate an AcquireImage primitive with specified ImageDeconvolution:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageDeconvolution->True
 			];
 			First[output][ImageDeconvolution],
@@ -247,7 +247,7 @@ DefineTests[
 		],
 		Example[{Options,ImageDeconvolutionKFactor,"Generate an AcquireImage primitive with specified ImageDeconvolutionKFactor:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageDeconvolution->True,
 				ImageDeconvolutionKFactor->0.2
 			];
@@ -257,7 +257,7 @@ DefineTests[
 		],
 		Example[{Options,TransmittedLightPower,"Generate an AcquireImage primitive with specified TransmittedLightPower:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				TransmittedLightPower->30 Percent
 			];
 			N@First[output][TransmittedLightPower],
@@ -266,7 +266,7 @@ DefineTests[
 		],
 		Example[{Options,TransmittedLightColorCorrection,"Generate an AcquireImage primitive with specified TransmittedLightColorCorrection:"},
 			output=resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				TransmittedLightColorCorrection->False
 			];
 			First[output][TransmittedLightColorCorrection],
@@ -277,7 +277,7 @@ DefineTests[
 		(* shared options *)
 		Example[{Options,ZStack,"Allow ZStackImageCollection to be set to True for each AcquireImage primitive:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ZStack->True,
 				ZStackImageCollection->True
 			],
@@ -285,7 +285,7 @@ DefineTests[
 		],
 		Example[{Options,Timelapse,"Allow TimelapseImageCollection to be specified for each AcquireImage primitive:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->7,
 				TimelapseImageCollection->StartAndEnd
@@ -294,7 +294,7 @@ DefineTests[
 		],
 		Example[{Options,NumberOfTimepoints,"Allow TimelapseImageCollection to specify image collection at every Nth timepoint:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->10,
 				TimelapseImageCollection->2
@@ -303,8 +303,8 @@ DefineTests[
 		],
 		Example[{Options,ObjectiveMagnification,"Specify objective lens magnification to lookup working distance from the instrument's objective to set FocalHeight correctly:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ObjectiveMagnification->10,
 				FocalHeight->3000 Micrometer
 			],
@@ -312,8 +312,8 @@ DefineTests[
 		],
 		Example[{Options,Instrument,"Specify instrument to be used with ExperimentImageCells to resolve options in AcquireImage primitive accordingly:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP..}
 		],
@@ -321,7 +321,7 @@ DefineTests[
 		(* messages *)
 		Example[{Messages,"ConflictingPrimitiveOptions","If Primitive option is given, all options in acquireImagePrimitiveOptions must not be specified:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Primitive->{
 					AcquireImage[
 						ImagingChannel->FITC
@@ -334,7 +334,7 @@ DefineTests[
 		],
 		Example[{Messages,"MissingNumberOfTimepoints","If Timelapse option is True, NumberOfTimepoints must be specified:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True
 			],
 			$Failed,
@@ -342,9 +342,9 @@ DefineTests[
 		],
 		Example[{Messages,"AcquireImageUnsupportedMode","Throw an error message if the specified Mode option is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->PhaseContrast,
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{
@@ -354,17 +354,17 @@ DefineTests[
 		],
 		Example[{Messages,"AcquireImageOverlappingDetectionLabels","Throw a warning message if the specified primitives contain overlapping DetectionLabels:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Primitive->{
 					AcquireImage[
 						DetectionLabels->{
-							Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+							Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 						},
 						ImageCorrection->BackgroundCorrection
 					],
 					AcquireImage[
 						DetectionLabels->{
-							Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+							Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 						},
 						ImageCorrection->ShadingCorrection
 					]
@@ -375,8 +375,8 @@ DefineTests[
 		],
 		Example[{Messages,"CannotImageFluorescentDetectionLabels","Throw a warning if the instrument does not support fluorescence imaging but all sample's DetectionLabels are fluorescent:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{
@@ -384,16 +384,16 @@ DefineTests[
 				Warning::UndetectableFluorescentDetectionLabels
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->BrightField|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->BrightField|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->{BrightField,ConfocalFluorescence,Epifluorescence}|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->{BrightField,ConfocalFluorescence,Epifluorescence}|>]
 			)
 		],
 		Example[{Messages,"CannotImageNonFluorescentDetectionLabels","Throw a warning if the instrument does not support non-fluorescence imaging but all sample's DetectionLabels are non-fluorescent:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{
@@ -401,21 +401,21 @@ DefineTests[
 				Warning::UndetectableNonFluorescentDetectionLabels
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->ConfocalFluorescence|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->ConfocalFluorescence|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->{BrightField,ConfocalFluorescence,Epifluorescence}|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[Modes]->{BrightField,ConfocalFluorescence,Epifluorescence}|>]
 			)
 		],
 		Example[{Messages,"UnresolvableMode","Throw an error message if unable to resolve Mode option because DetectionLabels option contains both fluorescent and non-fluorescent molecules:"},
 			resolveAcquireImagePrimitive[
 				{
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				DetectionLabels->{
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				}
 			],
 			{AcquireImagePrimitiveP...},
@@ -427,8 +427,8 @@ DefineTests[
 		],
 		Example[{Messages,"UndetectableNonFluorescentDetectionLabels","Throw a warning message if DetectionLabels option includes any non-fluorescent molecule when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				DetectionLabels->Model[Molecule,Protein,"Fake non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				DetectionLabels->Model[Molecule,Protein,"Test non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->ConfocalFluorescence
 			],
 			{AcquireImagePrimitiveP...},
@@ -437,12 +437,12 @@ DefineTests[
 		Example[{Messages,"DetectionLabelsNotSpecified","Throw a warning message if DetectionLabels option is specified as Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
 				{
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				DetectionLabels->{
 					Null,
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				Mode->Epifluorescence
 			],
@@ -456,12 +456,12 @@ DefineTests[
 		Example[{Messages,"UnresolvableExcitationWavelength","Throw a warning message if ExcitationWavelength is set to default value because DetectionLabels option is specified as Null:"},
 			resolveAcquireImagePrimitive[
 				{
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				DetectionLabels->{
 					Null,
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				Mode->Epifluorescence
 			],
@@ -474,51 +474,51 @@ DefineTests[
 		],
 		Example[{Messages,"MultipleExcitationWavelengths","Throw a warning message if all molecules specified as DetectionLabels do not share the same excitation wavelength:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				DetectionLabels->{
-					Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				}
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{Warning::MultipleExcitationWavelengths},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceEmissionMaximums]->{510 Nanometer}
 				|>]
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceEmissionMaximums]->{583 Nanometer}
 				|>]
 			)
 		],
 		Example[{Messages,"ExcitationWavelengthOutOfRange","Throw a warning message if excitation wavelength of sample's detection label is outside of instrument's supported range:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{Warning::ExcitationWavelengthOutOfRange},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceEmissionMaximums]->{421 Nanometer}
 				|>]
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceEmissionMaximums]->{400 Nanometer}
 				|>]
 			)
 		],
 		Example[{Messages,"UnsupportedExcitationWavelength","Throw an error message if the specified ExcitationWavelength is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExcitationWavelength->490 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -529,7 +529,7 @@ DefineTests[
 		],
 		Example[{Messages,"UnspecifiedExcitationWavelength","Throw an error message if the specified ExcitationWavelength is Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				ExcitationWavelength->Null
 			],
@@ -541,7 +541,7 @@ DefineTests[
 		],
 		Example[{Messages,"MismatchedExcitationWavelength","Throw a warning message if the specified ExcitationWavelength option does not match the excitation wavelength of the molecules in DetectionLabels option:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExcitationWavelength->546 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -550,12 +550,12 @@ DefineTests[
 		Example[{Messages,"UnresolvableEmissionWavelength","Throw a warning message if EmissionWavelength is set to default value because DetectionLabels option is specified as Null:"},
 			resolveAcquireImagePrimitive[
 				{
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				DetectionLabels->{
 					Null,
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				},
 				Mode->Epifluorescence
 			],
@@ -568,51 +568,51 @@ DefineTests[
 		],
 		Example[{Messages,"MultipleEmissionWavelengths","Throw a warning message if all molecules specified as DetectionLabels do not share the same emission wavelength:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				DetectionLabels->{
-					Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				}
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{Warning::MultipleEmissionWavelengths},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceExcitationMaximums]->{488 Nanometer}
 				|>]
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceExcitationMaximums]->{558 Nanometer}
 				|>]
 			)
 		],
 		Example[{Messages,"EmissionWavelengthOutOfRange","Throw a warning message if emission wavelength of sample's detection label is outside of instrument's supported range:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+				Object[Sample,"Test cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 			],
 			{AcquireImagePrimitiveP...},
 			Messages:>{Warning::EmissionWavelengthOutOfRange},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceExcitationMaximums]->{405 Nanometer}
 				|>]
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[FluorescenceExcitationMaximums]->{350 Nanometer}
 				|>]
 			)
 		],
 		Example[{Messages,"UnsupportedEmissionWavelength","Throw an error message if the specified EmissionWavelength is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				EmissionWavelength->555 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -623,7 +623,7 @@ DefineTests[
 		],
 		Example[{Messages,"UnspecifiedEmissionWavelength","Throw an error message if the specified EmissionWavelength is Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				EmissionWavelength->Null
 			],
@@ -635,7 +635,7 @@ DefineTests[
 		],
 		Example[{Messages,"MismatchedEmissionWavelength","Throw a warning message if the specified EmissionWavelength option does not match the excitation wavelength of the molecules in DetectionLabels option:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				EmissionWavelength->595 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -643,8 +643,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnsupportedWavelengthCombination","Throw an error message if ExcitationWavelength and EmissionWavelength combination does not match any combinations supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				EmissionWavelength->624 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -655,20 +655,20 @@ DefineTests[
 			},
 			SetUp:>(
 				Upload[{
-					<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>,
-					<|Object->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{624 Nanometer}|>
+					<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>,
+					<|Object->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{624 Nanometer}|>
 				}]
 			),
 			TearDown:>(
 				Upload[{
-					<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>,
-					<|Object->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{510 Nanometer}|>
+					<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>,
+					<|Object->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{510 Nanometer}|>
 				}]
 			)
 		],
 		Example[{Messages,"UnspecifiedExcitationPower","Throw an error message if the specified ExcitationPower is Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				ExcitationPower->Null
 			],
@@ -680,8 +680,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnresolvableDichroicFilterWavelength","Throw an error message if DichroicFilterWavelength cannot be determined from ExcitationWavelength and EmissionWavelength options:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				EmissionWavelength->624 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -692,20 +692,20 @@ DefineTests[
 			},
 			SetUp:>(
 				Upload[{
-					<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>,
-					<|Object->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{624 Nanometer}|>
+					<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>,
+					<|Object->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{624 Nanometer}|>
 				}]
 			),
 			TearDown:>(
 				Upload[{
-					<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>,
-					<|Object->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{510 Nanometer}|>
+					<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>,
+					<|Object->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[FluorescenceEmissionMaximums]->{510 Nanometer}|>
 				}]
 			)
 		],
 		Example[{Messages,"UnspecifiedDichroicFilterWavelength","Throw an error message if the specified DichroicFilterWavelength is Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				DichroicFilterWavelength->Null
 			],
@@ -717,8 +717,8 @@ DefineTests[
 		],
 		Example[{Messages,"MismatchedDichroicFilterWavelength","Throw an error message if DichroicFilterWavelength does not match any of the ExcitationWavelngth/EmissionWavelength/DichroicFilterWavelength combinations supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				DichroicFilterWavelength->656 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -727,16 +727,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->Null|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],CustomizableImagingChannel->True|>]
 			)
 		],
 		Example[{Messages,"UnsupportedDichroicFilterWavelength","Throw an error message if the specified DichroicFilterWavelength is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				DichroicFilterWavelength->555 Nanometer
 			],
 			{AcquireImagePrimitiveP...},
@@ -747,7 +747,7 @@ DefineTests[
 		],
 		Example[{Messages,"TransmittedLightPowerNotAllowed","Throw an error message if the specified TransmittedLightPower is not Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				TransmittedLightPower->10 Percent
 			],
@@ -759,7 +759,7 @@ DefineTests[
 		],
 		Example[{Messages,"TransmittedLightColorCorrectionNotAllowed","Throw an error message if the specified TransmittedLightColorCorrection is not Null when fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->Epifluorescence,
 				TransmittedLightColorCorrection->True
 			],
@@ -771,8 +771,8 @@ DefineTests[
 		],
 		Example[{Messages,"UndetectableFluorescentDetectionLabels","Throw a warning message if DetectionLabels option includes any fluorescent molecule when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				DetectionLabels->Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				DetectionLabels->Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField
 			],
 			{AcquireImagePrimitiveP...},
@@ -780,7 +780,7 @@ DefineTests[
 		],
 		Example[{Messages,"ExcitationWavelengthNotAllowed","Throw an error message if the specified ExcitationWavelength is not Null when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
 				ExcitationWavelength->477 Nanometer
 			],
@@ -792,7 +792,7 @@ DefineTests[
 		],
 		Example[{Messages,"EmissionWavelengthNotAllowed","Throw an error message if the specified EmissionWavelength is not Null when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
 				EmissionWavelength->520 Nanometer
 			],
@@ -804,7 +804,7 @@ DefineTests[
 		],
 		Example[{Messages,"ExcitationPowerNotAllowed","Throw an error message if the specified ExcitationPower is not Null when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
 				ExcitationPower->50 Percent
 			],
@@ -816,7 +816,7 @@ DefineTests[
 		],
 		Example[{Messages,"DichroicFilterWavelengthNotAllowed","Throw an error message if the specified DichroicFilterWavelength is not Null when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
 				DichroicFilterWavelength->488 Nanometer
 			],
@@ -828,7 +828,7 @@ DefineTests[
 		],
 		Example[{Messages,"UnspecifiedTransmittedLightPower","Throw an error message if the specified TransmittedLightPower is Null when non-fluorescence imaging mode is selected:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
 				TransmittedLightPower->Null
 			],
@@ -840,9 +840,9 @@ DefineTests[
 		],
 		Example[{Messages,"UnsupportedTransmittedLightColorCorrection","Throw an error message if the specified TransmittedLightColorCorrection is True when the instrument does not support color correction:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Mode->BrightField,
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				TransmittedLightColorCorrection->True
 			],
 			{AcquireImagePrimitiveP...},
@@ -853,8 +853,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnsupportedImageCorrection","Throw an error message if the specified ImageCorrection is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageCorrection->BackgroundCorrection
 			],
 			{AcquireImagePrimitiveP...},
@@ -863,16 +863,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[ImageCorrectionMethods]->{ShadingCorrection,BackgroundAndShadingCorrection}|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[ImageCorrectionMethods]->{ShadingCorrection,BackgroundAndShadingCorrection}|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[ImageCorrectionMethods]->{BackgroundCorrection,ShadingCorrection,BackgroundAndShadingCorrection}|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Replace[ImageCorrectionMethods]->{BackgroundCorrection,ShadingCorrection,BackgroundAndShadingCorrection}|>]
 			)
 		],
 		Example[{Messages,"UnsupportedImageDeconvolution","Throw an error message if the specified ImageDeconvolution is True when the instrument does not support image deconvolution:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageDeconvolution->True
 			],
 			{AcquireImagePrimitiveP...},
@@ -881,16 +881,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],ImageDeconvolution->Null|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],ImageDeconvolution->Null|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],ImageDeconvolution->True|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],ImageDeconvolution->True|>]
 			)
 		],
 		Example[{Messages,"ConflictingImageDeconvolutionOptions","Throw an error message if ImageDeconvolution and ImageDeconvolutionKFactor options are conflicting:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImageDeconvolution->False,
 				ImageDeconvolutionKFactor->0.2
 			],
@@ -902,8 +902,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnsupportedAutofocus","Throw an error message if the specified FocalHeight is set to Autofocus when the instrument does not support auto focusing:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				FocalHeight->Autofocus
 			],
 			{AcquireImagePrimitiveP...},
@@ -912,16 +912,16 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Autofocus->Null|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Autofocus->Null|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Autofocus->True|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],Autofocus->True|>]
 			)
 		],
 		Example[{Messages,"InvalidObjectiveMagnification","Throw an error message if FocalHeight is specified and none of the selected instrument's objective lenses have magnification that matches the ObjectiveMagnification option:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ObjectiveMagnification->5,
 				FocalHeight->8 Millimeter
 			],
@@ -933,8 +933,8 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidFocalHeight","Throw an error message if the specified FocalHeight exceeds maximum working distance of the objective lens:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ObjectiveMagnification->4,
 				FocalHeight->25 Millimeter
 			],
@@ -946,8 +946,8 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidExposureTime","Throw an error message if the specified ExposureTime is not within the instrument's supported range:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExposureTime->10 Second
 			],
 			{AcquireImagePrimitiveP...},
@@ -958,8 +958,8 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidTargetMaxIntensity","Throw an error message if the specified TargetMaxIntensity is not within the instrument's supported range:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				TargetMaxIntensity->50000
 			],
 			{AcquireImagePrimitiveP...},
@@ -968,15 +968,15 @@ DefineTests[
 				Error::InvalidOption
 			},
 			SetUp:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],MaxGrayLevel->30000|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],MaxGrayLevel->30000|>]
 			),
 			TearDown:>(
-				Upload[<|Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],MaxGrayLevel->65535|>]
+				Upload[<|Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],MaxGrayLevel->65535|>]
 			)
 		],
 		Example[{Messages,"TargetMaxIntensityNotAllowed","Throw an error message if the specified TargetMaxIntensity is not Null when ExposureTime option is set to AutoExpose:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ExposureTime->10 Millisecond,
 				TargetMaxIntensity->50000
 			],
@@ -988,7 +988,7 @@ DefineTests[
 		],
 		Example[{Messages,"UnspecifiedTimelapseImageCollection","Throw an error message if the specified TimelapseImageCollection is Null when Timelapse option is set to True:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->10,
 				TimelapseImageCollection->Null
@@ -1001,7 +1001,7 @@ DefineTests[
 		],
 		Example[{Messages,"TimelapseImageCollectionNotAllowed","Throw an error message if the specified TimelapseImageCollection is not Null when Timelapse option is set to False:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->False,
 				TimelapseImageCollection->All
 			],
@@ -1013,8 +1013,8 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidTimelapseImageCollection","Throw an error message if TimelapseImageCollection is specified as a number and exceeds NumberOfTimepoints:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				Timelapse->True,
 				NumberOfTimepoints->10,
 				TimelapseImageCollection->15
@@ -1027,7 +1027,7 @@ DefineTests[
 		],
 		Example[{Messages,"ZStackImageCollectionNotAllowed","Throw an error message if the specified ZStackImageCollection is True when ZStack option is set to False:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ZStack->False,
 				ZStackImageCollection->True
 			],
@@ -1039,7 +1039,7 @@ DefineTests[
 		],
 		Example[{Messages,"ConflictingModeAndImagingChannel","Throw an error message if ImagingChannel and Mode options are conflicting:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->TransmittedLight,
 				Mode->Epifluorescence
 			],
@@ -1052,7 +1052,7 @@ DefineTests[
 		],
 		Example[{Messages,"CustomChannelNotAllowed","Throw an error message if ImagingChannel is specified as CustomChannel:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->CustomChannel
 			],
 			{AcquireImagePrimitiveP...},
@@ -1063,7 +1063,7 @@ DefineTests[
 		],
 		Example[{Messages,"ConflictingImagingChannelOptions","Throw an error message if ImagingChannel and the following options are conflicting: {ExcitationWavelength, EmissionWavelength, ExcitationPower, DichroicFilterWavelength, TransmittedLightPower}:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->FITC,
 				ExcitationPower->50 Percent
 			],
@@ -1075,8 +1075,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnsupportedImagingChannel","Throw an error message if the specified ImagingChannel is not supported by the instrument:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->Cy7
 			],
 			{AcquireImagePrimitiveP...},
@@ -1087,8 +1087,8 @@ DefineTests[
 		],
 		Example[{Messages,"UnresolvableModeWithChannel","Throw an error if the instrument does not support fluorescence imaging but all sample's DetectionLabels are fluorescent:"},
 			resolveAcquireImagePrimitive[
-				Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-				Instrument->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+				Instrument->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 				ImagingChannel->FITC
 			],
 			{AcquireImagePrimitiveP...},
@@ -1098,13 +1098,13 @@ DefineTests[
 			},
 			SetUp:>(
 				Upload[<|
-					Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[Modes]->BrightField
 				|>]
 			),
 			TearDown:>(
 				Upload[<|
-					Object->Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object->Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Replace[Modes]->{BrightField,ConfocalFluorescence,Epifluorescence}
 				|>]
 			)
@@ -1122,48 +1122,48 @@ DefineTests[
 			objs=Quiet[Cases[
 				Flatten[{
 					(*fake bench for creating containers*)
-					Object[Container,Bench,"Fake bench for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Bench,"Test bench for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*test containers*)
-					Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Vessel,"Fake 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Hemocytometer,"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Vessel,"Test 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Hemocytometer,"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*identity models*)
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*sample models*)
-					Model[Sample,"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*test samples*)
-					Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Discarded sample for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Containerless sample for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Sample with incompatible container for resolveAcquireImagePrimitive tests" <> $SessionUUID],
@@ -1171,8 +1171,8 @@ DefineTests[
 					Object[Sample,"Hemocytometer sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(* Instrument *)
-					Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Instrument,Microscope,"Fake instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Instrument,Microscope,"Test instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				}],
 				ObjectReferenceP[]
 			]];
@@ -1200,18 +1200,18 @@ DefineTests[
 				fakeBenchPacket=<|
 					Type->Object[Container,Bench],
 					Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
-					Name->"Fake bench for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+					Name->"Test bench for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 					StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]]
 				|>;
 
 				(* create fluorescent protein identity models *)
 				{proteinPacket1,proteinPacket2,proteinPacket3,proteinPacket4,proteinPacket5}=UploadProtein[
 					{
-						"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID
+						"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID
 					},
 					State->Solid,
 					BiosafetyLevel->"BSL-1",
@@ -1271,13 +1271,13 @@ DefineTests[
 						(*7*)Available
 					},
 					Name->{
-						(*1*)"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*2*)"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*3*)"Fake plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*4*)"Fake plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*5*)"Fake 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*6*)"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*7*)"Fake plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID
+						(*1*)"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*2*)"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*3*)"Test plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*4*)"Test plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*5*)"Test 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*6*)"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*7*)"Test plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID
 					},
 					FastTrack->True,
 					Upload->False
@@ -1293,12 +1293,12 @@ DefineTests[
 					cellIdentityModelPacket6
 				}=UploadMammalianCell[
 					{
-						"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID
+						"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID
 					},
 					(*CellType->Adherent,*)
 					Morphology->Epithelial,
@@ -1340,20 +1340,20 @@ DefineTests[
 				(* create default sample models *)
 				{sampleModel1,sampleModel2,sampleModel3,sampleModel4,sampleModel5,sampleModel6}=UploadSampleModel[
 					{
-						(*1*)"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*2*)"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*3*)"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*4*)"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*5*)"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*6*)"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID
+						(*1*)"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*2*)"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*3*)"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*4*)"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*5*)"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*6*)"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID
 					},
 					Composition->{
-						(*1*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
-						(*2*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
-						(*3*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
-						(*4*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
-						(*5*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
-						(*6*){{100 MassPercent,Model[Cell,Mammalian,"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID]}}
+						(*1*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
+						(*2*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
+						(*3*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
+						(*4*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
+						(*5*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID]}},
+						(*6*){{100 MassPercent,Model[Cell,Mammalian,"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID]}}
 					},
 					Expires->False,
 					DefaultStorageCondition->Model[StorageCondition,"id:BYDOjvGNDpvm"],(* Mammalian Incubation *)
@@ -1399,20 +1399,20 @@ DefineTests[
 						(*14*)sampleModel4
 					},
 					{
-						(*1*){"A1",Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*2*){"B1",Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*3*){"C1",Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*4*){"D1",Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*5*){"A2",Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*6*){"B2",Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*7*){"C2",Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*8*){"D2",Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*9*){"A1",Object[Container,Plate,"Fake plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*10*){"A1",Object[Container,Plate,"Fake plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*11*){"A1",Object[Container,Vessel,"Fake 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*12*){"A1",Object[Container,Hemocytometer,"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*13*){"A2",Object[Container,Hemocytometer,"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
-						(*14*){"A1",Object[Container,Plate,"Fake plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]}
+						(*1*){"A1",Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*2*){"B1",Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*3*){"C1",Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*4*){"D1",Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*5*){"A2",Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*6*){"B2",Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*7*){"C2",Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*8*){"D2",Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*9*){"A1",Object[Container,Plate,"Test plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*10*){"A1",Object[Container,Plate,"Test plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*11*){"A1",Object[Container,Vessel,"Test 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*12*){"A1",Object[Container,Hemocytometer,"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*13*){"A2",Object[Container,Hemocytometer,"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID]},
+						(*14*){"A1",Object[Container,Plate,"Test plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]}
 					},
 					InitialAmount->{
 						(*1*)200 Microliter,
@@ -1431,20 +1431,20 @@ DefineTests[
 						(*14*)200 Microliter
 					},
 					Name->{
-						(*1*)"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*2*)"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*3*)"Fake cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*4*)"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*5*)"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*6*)"Fake cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*7*)"Fake cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*8*)"Fake cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*1*)"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*2*)"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*3*)"Test cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*4*)"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*5*)"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*6*)"Test cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*7*)"Test cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+						(*8*)"Test cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 						(*9*)"Discarded sample for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 						(*10*)"Containerless sample for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 						(*11*)"Sample with incompatible container for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 						(*12*)"Hemocytometer sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 						(*13*)"Hemocytometer sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID,
-						(*14*)"Fake cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID
+						(*14*)"Test cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID
 					},
 					SampleHandling->{
 						(*1*)Liquid,
@@ -1499,19 +1499,19 @@ DefineTests[
 				(* make lists of samples/containers *)
 				sampleList={sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11,sample12,sample13,sample14};
 				containerList={
-					Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Vessel,"Fake 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Hemocytometer,"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Vessel,"Test 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Hemocytometer,"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				};
 
 				(* create instrument model and object *)
 				ixmModelPacket=<|
 					Object->CreateID[Model[Instrument,Microscope]],
-					Name->"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+					Name->"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 					DeveloperObject->True,
 					HighContentImaging->True,
 					Autofocus->True,
@@ -1543,7 +1543,7 @@ DefineTests[
 				ixmObjectPacket=<|
 					Type->Object[Instrument,Microscope],
 					Model->Link[Lookup[ixmModelPacket,Object],Objects],
-					Name->"Fake instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID,
+					Name->"Test instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID,
 					DeveloperObject->True
 				|>;
 
@@ -1584,48 +1584,48 @@ DefineTests[
 					$CreatedObjects,
 
 					(*fake bench for creating containers*)
-					Object[Container,Bench,"Fake bench for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Bench,"Test bench for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*test containers*)
-					Object[Container,Plate,"Fake plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Plate,"Fake plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Vessel,"Fake 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Container,Hemocytometer,"Fake Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Plate,"Test plate 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Vessel,"Test 2mL tube for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Container,Hemocytometer,"Test Hemocytometer for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*identity models*)
-					Model[Molecule,Protein,"Fake GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Molecule,Protein,"Fake out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Cell,Mammalian,"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test non-fluorescent detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Molecule,Protein,"Test out-of-range detection label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Cell,Mammalian,"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*sample models*)
-					Model[Sample,"Fake mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Model[Sample,"Fake mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with GFP for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with dsRed for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with GFP/dsRed/iRFP670 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with non-fluorescent label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Model[Sample,"Test mammalian cell with out-of-range label for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(*test samples*)
-					Object[Sample,"Fake cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Sample,"Fake cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 1 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 3 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 4 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 5 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 6 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 7 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 8 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Sample,"Test cell sample 9 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Discarded sample for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Containerless sample for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 					Object[Sample,"Sample with incompatible container for resolveAcquireImagePrimitive tests" <> $SessionUUID],
@@ -1633,8 +1633,8 @@ DefineTests[
 					Object[Sample,"Hemocytometer sample 2 for resolveAcquireImagePrimitive tests" <> $SessionUUID],
 
 					(* Instrument *)
-					Model[Instrument,Microscope,"Fake instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
-					Object[Instrument,Microscope,"Fake instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID]
+					Model[Instrument,Microscope,"Test instrument model for resolveAcquireImagePrimitive tests" <> $SessionUUID],
+					Object[Instrument,Microscope,"Test instrument object for resolveAcquireImagePrimitive tests" <> $SessionUUID]
 				}],
 				ObjectReferenceP[]
 			]];

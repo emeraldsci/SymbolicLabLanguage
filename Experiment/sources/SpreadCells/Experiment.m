@@ -1,12 +1,25 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 (* ::Subsection::Closed:: *)
 (*Define Options*)
 DefineOptions[ExperimentSpreadCells,
   Options :> {
+    {
+      OptionName -> InoculationSource,
+      Default -> Automatic,
+      Description -> "The type of media in which the source cell samples are stored before the experiment. The possible types accepted by ExperimentSpreadCells include LiquidMedia, FreezeDried, and FrozenGlycerol. For sources of type LiquidMedia, samples are mixed in the source containers, the well-mixed input sample is then transferred to th destination media container with fresh media. For sources of type FreezeDried, samples are resuspended with media in the source container, the resuspended material is then transferred to the destination media container with fresh media. For sources of type FrozenGlycerol, samples are scraped from the frozen surface using pipette tips while the source container is kept chilled, the scraped material is then deposited into the destination media container with fresh media. See Figure 1 of ExperimentInoculateSpreadCells to check inoculation source specific procedures and ExampleResults section in the helpfile for more information.",
+      ResolutionDescription -> "If the source samples have liquid state, automatically set to LiquidMedia. If the source container models are hermetic or ampoules and the source samples have solid state, automatically set to FreezeDried. If the source containers are stored in cryogenic or deep freezer storage condition, automatically set to FrozenGlycerol.",
+      AllowNull -> False,
+      Widget -> Widget[
+        Type -> Enumeration,
+        Pattern :> StreakSpreadInoculationSourceP (*LiquidMedia | FreezeDried | FrozenGlycerol *)
+      ],
+      Category -> "General"
+    },
+
     {
       OptionName -> Instrument,
       Default -> Automatic,
@@ -14,12 +27,157 @@ DefineOptions[ExperimentSpreadCells,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}]
+        Pattern :> ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Instruments",
+            "Cell Culture",
+            "Colony Handlers"
+          }
+        }
       ],
       Category -> "Instrument"
     },
     IndexMatching[
       IndexMatchingInput -> "experiment samples",
+
+      (*Resuspension options*)
+      {
+        OptionName->ResuspensionMedia,
+        Default->Automatic,
+        AllowNull->True,
+        Widget->Widget[
+          Type->Object,
+          Pattern :> ObjectP[{Model[Sample], Object[Sample], Object[Container, Vessel]}],
+          Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+        ],
+        Description->"The liquid media to add to the ResuspensionContainer or source container in order to resuspend the sample. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the ResuspensionMedia is added to the source container directly followed by ResuspensionMix.",
+        ResolutionDescription->"Automatically set to Model[Sample, Media, \"LB Broth, Miller\"].",
+        Category->"Resuspension"
+      },
+      {
+        OptionName->ResuspensionMediaVolume,
+        Default-> Automatic,
+        AllowNull->True,
+        Widget->Alternatives[
+          "All"->Widget[Type->Enumeration, Pattern:>Alternatives[All]],
+          "Volume"->Widget[
+            Type -> Quantity,
+            Pattern :> RangeP[1 Microliter, 20 Liter],
+            Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
+          ]
+        ],
+        Description->"The amount of the liquid media added to the ResuspensionContainer in order to resuspend the scraped sample, or the amount of the liquid media added to the freeze-dried sample.",
+        ResolutionDescription->"Automatically set to 1/2 of the source sample container's volume or the volume of the provided ResuspensionMedia object (whichever is smaller), if ResuspensionMedia is not Null.",
+        Category->"Resuspension"
+      },
+      {
+        OptionName->ResuspensionContainer,
+        Default-> Automatic,
+        AllowNull->True,
+        Widget -> Alternatives[
+          Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Model[Container], Object[Container]}],
+            ObjectTypes -> {Model[Container], Object[Container]},
+            PreparedSample -> False,
+            PreparedContainer -> True
+          ],
+          {
+            "Index" -> Alternatives[
+              Widget[
+                Type -> Number,
+                Pattern :> GreaterEqualP[1, 1]
+              ],
+              Widget[
+                Type -> Enumeration,
+                Pattern :> Alternatives[Automatic]
+              ]
+            ],
+            "Container" -> Alternatives[
+              Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Model[Container]}],
+                ObjectTypes -> {Model[Container]},
+                PreparedSample -> False,
+                PreparedContainer -> True
+              ],
+              Widget[
+                Type -> Enumeration,
+                Pattern :> Alternatives[Automatic]
+              ]
+            ]
+          }
+        ],
+        Description->"The desired container (or type of container) to contain the cell resuspension, with indices indicating grouping of samples in the same plate, if desired. For a source of frozen glycerol, the ResuspensionMedia is added to the ResuspensionContainer before dipping the scraped sample. For a freeze-dried source sample, the combined ResuspensionMedia and the source sample is added to the ResuspensionContainer.",
+        ResolutionDescription->"If the ResuspensionMedia is specified as an Object[Sample], automatically set to its container. Otherwise if ResuspensionMedia is not Null, automatically set by PreferredContainer ",
+        Category->"Resuspension"
+      },
+      {
+        OptionName -> ResuspensionContainerWell,
+        Default -> Automatic,
+        Description -> "For each Sample, the well of the ResuspensionContainer to contain the cell resuspension.",
+        ResolutionDescription -> "Automatically set to the first empty position of the ResuspensionContainer. If no empty position is found, automatically set to \"A1\".",
+        AllowNull -> True,
+        Widget -> Widget[
+          Type -> String,
+          Pattern :> WellPositionP,
+          Size -> Word,
+          PatternTooltip -> "Enumeration must be any well from A1 to P24."
+        ],
+        Category -> "Resuspension"
+      },
+      {
+        OptionName->NumberOfSourceScrapes,
+        Default->Automatic,
+        Widget->Widget[
+          Type->Number,
+          Pattern:>RangeP[1,20,1]
+        ],
+        Description->"For each sample, the number of times that the frozen glycerol sample is scraped with the tip before it is dipped into the resuspension media and swirled.",
+        ResolutionDescription -> " Automatically set to 5 if InoculationSource is FrozenGlycerol.",
+        AllowNull->True,
+        Category->"Resuspension"
+      },
+
+      ModifyOptions[ExperimentMix,
+        OptionName->Mix,
+        ModifiedOptionName->ResuspensionMix,
+        AllowNull->True,
+        Description->"For each sample, indicates if the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to True. ",
+        Category->"Resuspension"
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->MixType,
+        ModifiedOptionName->ResuspensionMixType,
+        Description->"For each sample, the type of mixing of the cells in resuspension after combining ResuspensionMedia and the source sample. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to Pipette.",
+        Widget -> Widget[
+          Type->Enumeration,
+          Pattern:>Alternatives[Pipette]
+        ],
+        Category->"Hidden"(*Hide it since no option essentially, but jic we want to add more options in future*)
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->NumberOfMixes,
+        ModifiedOptionName->NumberOfResuspensionMixes,
+        Description->"For each sample, the number of times that the cells in resuspension is mixed after combining the ResuspensionMedia and the source sample.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to 5.",
+        Category->"Resuspension"
+      ],
+
+      ModifyOptions[ExperimentMix,
+        OptionName->MixVolume,
+        ModifiedOptionName->ResuspensionMixVolume,
+        Description->"For each sample, the volume that will be repeatedly aspirated and dispensed via pipette from the cells in resuspension in order to mix after combining the ResuspensionMedia and the source sample. For freeze-dried source sample, the same pipette and tips used to add the ResuspensionMedia will be used to mix the cell resuspension. For frozen glycerol source sample, the same pipette and tips used to mix the cell resuspension will be used to deposit it onto the solid media.",
+        ResolutionDescription->"If InoculationSource is FreezeDried or FrozenGlycerol, or if any of the other ResuspensionMix options are set, automatically set to 1/2 the ResuspensionMediaVolume.",
+        Category->"Resuspension"
+      ],
+
       (* Dilution Shared Options *)
       ModifyOptions[DilutionSharedOptions,
         OptionName -> DilutionType,
@@ -27,13 +185,14 @@ DefineOptions[ExperimentSpreadCells,
         AllowNull -> True
       ],
       ModifyOptions[DilutionSharedOptions,
-        OptionName -> DilutionStrategy
+        OptionName -> DilutionStrategy,
+        Description -> "Indicates if only the final sample (Endpoint) or all diluted samples (Series) produced by serial dilution are used for spreading on solid media plate."
       ],
       ModifyOptions[DilutionSharedOptions,
         OptionName -> NumberOfDilutions,
         Widget -> Widget[
           Type -> Number,
-          Pattern :> RangeP[1,96,1]
+          Pattern :> RangeP[1,$MaxNumberOfDilutions,1]
         ],
         AllowNull -> True
       ],
@@ -133,8 +292,7 @@ DefineOptions[ExperimentSpreadCells,
         OptionName -> SpreadVolume,
         Default -> Automatic, 
         Description -> "For each sample, the volume of suspended cells to transfer to the agar gel to be spread.",
-        (* TODO: Formalize this *)
-        ResolutionDescription -> "For now resolves to 100 Microliter",
+        ResolutionDescription -> "Automatically set to the median among 30 Microliter, the sample volume divided by the length of dispense coordinates, and 100 Microliter.",
         AllowNull -> False,
         Widget -> Widget[
           Type -> Quantity,
@@ -436,7 +594,7 @@ DefineOptions[ExperimentSpreadCells,
         Category -> "Hidden"
       }
     ],
-    (* Redefine Preparation and Workcell options because PickColonies can only occur robotically on the qpix *)
+    (* Redefine Preparation and Workcell options because SpreadCells can only occur robotically on the qpix *)
     {
       OptionName -> Preparation,
       Default -> Robotic,
@@ -461,13 +619,16 @@ DefineOptions[ExperimentSpreadCells,
     SimulationOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     QPixSanitizationSharedOptions
   }
 ];
 
 (* ::Subsection::Closed:: *)
 (*Warning and Error Messages*)
+
+Error::ResuspensionOptionIncompatibleSource = "The input samples, `1`, has resuspension options specified that are not compatible with the InoculationSource. For liquid media samples, resuspension is not supported, please use dilution options instead. For freeze dried samples, NumberOfSourceScrapes is not supported, and the entire contents of the hermetic container will be resuspended.";
+Error::InvalidResuspensionContainerWellPosition = "The input samples, `1`, have specified a ResuspensionContainerWell that is not a Position in ResuspensionContainer. Please specify a valid Position in ResuspensionContainer or allow this option to resolve automatically.";
 Error::SourceMixMismatch = "The sample(s), `1`, at indices, `5`, have conflicting source mixing options. SourceMix is `2`, while SourceMixVolume is `3` and NumberOfSourceMixes is `4`. If SourceMix is True, neither SourceMixVolume or NumberOfSourceMixes can be Null. If SourceMix is False, neither SourceMixVolume or NumberOfSourceMixes can be specified. Please fix these conflicting options to submit a valid experiment.";
 Error::ColonyHandlerHeadCassetteMismatch = "The sample(s), `1`, at indices, `7`, have conflicting colony handler head cassette options. ColonySpreadingTool is set to `2`, while HeadDiameter is `3`, HeadLength is `4`, NumberOfHeads is `5`, and ColonyHandlerHeadCassetteApplication is `6`. The values of HeadDiameter, HeadLength, NumberOfHeads, and ColonyHandlerHeadCassetteApplication must match the values stored in the ColonySpreadingTool. Please fix these options to submit a valid experiment.";
 Error::NoColonyHandlerSpreadingHeadFound = "For the sample(s), `1`, at indices, `2`, no ColonyHandlerHeadCassette could be found that matches the given values of HeadDiameter, HeadLength, NumberOfHeads, and ColonyHandlerHeadCassetteApplication. Please adjust these options so a valid ColonySpreadingTool can be found. The valid ColonySpreadingTools can be found with Search[Object[Part,ColonyHandlerHeadCassette],Application == Spread].";
@@ -483,18 +644,19 @@ Error::InvalidDestinationContainer = "The sample(s), `1`, at indices, `3`, have 
 Error::InvalidDestinationWell = "The sample(s), `1`, at indices, `4`, have conflicting DestinationWell and DestinationContainer options. DestinationWell is `2`, however, `2` is not a position in the DestinationContainer, `3`. Please fix these conflicting options to submit a valid experiment.";
 Error::ConflictingDestinationMedia = "The sample(s), `1`, at indices, `5`, have conflicting DestinationMedia and DestinationContainer options. DestinationMedia is `2`, however, that is not the model as the sample in well `3` of destination container `4`. Please fix these conflicting options to submit a valid experiment.";
 Error::DestinationMediaNotSolid = "For the sample(s), `1`, at indices, `3`, the specified DestinationMedia, `2`, is not Solid. Please specify a DestinationMedia with Solid State to submit a valid experiment.";
-Error::TotalDilutionVolumeTooLarge = "For the sample(s), `1`, at indices, `3`, there is a TotalDilutionVolume too large to fit in a sterile Deep Well Plate (), in `2`. Please scale the dilution such that all TotalDilutionVolumes are less than 1.9 Milliliter.";
 Error::SampleOutLabelMismatch = "For the sample(s), `1`, at indices, `5`, the given SampleOutLabel, `2` does not match the DilutionStrategy, `3`, and the NumberOfDilutions, `4`. If DilutionStrategy is Series, the length of SampleOutLabel must be NumberOfDilutions + 1. If DilutionStrategy is Endpoint, the length of SampleOutLabel must be 1. If DilutionStrategy is Null (or DilutionType is Linear), the length of SampleOutLabel must be NumberOfDilutions. Please specify a valid SampleOutLabel to submit a valid experiment.";
 Error::ContainerOutLabelMismatch = "For the sample(s), `1`, at indices, `5`, the given ContainerOutLabel, `2` does not match the DilutionStrategy, `3`, and the NumberOfDilutions, `4`. If DilutionStrategy is Series, the length of ContainerOutLabel must be NumberOfDilutions + 1. If DilutionStrategy is Endpoint, the length of ContainerOutLabel must be 1. If DilutionStrategy is Null (or DilutionType is Linear), the length of ContainerOutLabel must be NumberOfDilutions. Please specify a valid ContainerOutLabel to submit a valid experiment.";
+
 
 (* ::Subsection::Closed:: *)
 (*Experiment Function*)
 
 (* Container Overload *)
-ExperimentSpreadCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentSpreadCells[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
   {
     outputSpecification,output,gatherTests,listedContainers,listedOptions,simulation,
-    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests
+    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,
+    containerToSampleSimulation
   },
 
   (* Determine the requested return value from the function *)
@@ -513,11 +675,11 @@ ExperimentSpreadCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+    {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
       ExperimentSpreadCells,
       listedContainers,
       listedOptions,
-      Output->{Result,Tests},
+      Output->{Result,Tests,Simulation},
       Simulation->simulation
     ];
 
@@ -529,15 +691,15 @@ ExperimentSpreadCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput=containerToSampleOptions[
+      {containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
         ExperimentSpreadCells,
         listedContainers,
         listedOptions,
-        Output->Result,
+        Output-> {Result,Simulation},
         Simulation->simulation
       ],
       $Failed,
-      {Error::EmptyContainer}
+      {Download::ObjectDoesNotExist, Error::EmptyContainer}
     ]
   ];
 
@@ -548,13 +710,14 @@ ExperimentSpreadCells[myContainers:ListableP[ObjectP[{Object[Container],Object[S
       Result -> $Failed,
       Tests -> containerToSampleTests,
       Options -> $Failed,
-      Preview -> Null
+      Preview -> Null,
+      Simulation -> simulation
     },
     (* Split up our containerToSample result into the samples and sampleOptions. *)
     {samples,sampleOptions}=containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentSpreadCells[samples,ReplaceRule[sampleOptions,Simulation->simulation]]
+    ExperimentSpreadCells[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
   ]
 ];
 
@@ -565,7 +728,8 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
     listedSamples,safeOps,validLengths,validLengthTests,returnEarlyQ,performSimulationQ,
     templatedOptions,templateTests,simulation,currentSimulation,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,updatedSimulation,
     resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,unitOperationPacket,batchedUnitOperationPackets,
-    resourcePacketTests,uploadQ,runTime
+    resourcePacketTests,uploadQ,allUnitOperationPackets,runTime,specifiedSampleOutLabel,specifiedContainerOutLabel,listySampleOutLabel,listyContainerOutLabel,
+    listyInheritedOptions
   },
 
   (* Determine the requested return value from the function *)
@@ -585,7 +749,7 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   ];
 
   (* replace all objects referenced by Name to ID *)
-  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed];
+  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed, Simulation->Lookup[safeOpsNamed, Simulation, Null]];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -642,8 +806,27 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   (* Replace our safe options with our inherited options from our template. *)
   inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
+  (* explicitly handle the SampleOutLabel/ContainerOutLabel options if they are specified *)
+  (* the case where we have 4 inputs and a list of length 4 for SampleOutLabel is ambiguous.  It could mean we want to expand that list of length 4 for each input, or we could want each singleton value to be index matched with the input *)
+  (* in our case, the second case is always right.  So to get this, if we specify a flat list that is the same length as the input, then we add a ToList in there to make sure *)
+  {
+    specifiedSampleOutLabel,
+    specifiedContainerOutLabel
+  } = Lookup[inheritedOptions, {SampleOutLabel, ContainerOutLabel}];
+  listySampleOutLabel = If[ListQ[specifiedSampleOutLabel] && Length[specifiedSampleOutLabel] == Length[ToList[mySamples]],
+    ToList /@ specifiedSampleOutLabel,
+    specifiedSampleOutLabel
+  ];
+  listyContainerOutLabel = If[ListQ[specifiedContainerOutLabel] && Length[specifiedContainerOutLabel] == Length[ToList[mySamples]],
+    ToList /@ specifiedContainerOutLabel,
+    specifiedContainerOutLabel
+  ];
+
+  (* replace the old values for SampleOutLabel/ContainerOutLabel with the new one *)
+  listyInheritedOptions = ReplaceRule[inheritedOptions, {SampleOutLabel -> listySampleOutLabel, ContainerOutLabel -> listyContainerOutLabel}];
+
   (* Expand index-matching options *)
-  expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentSpreadCells,{ToList[listedSamples]},inheritedOptions]];
+  expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentSpreadCells,{ToList[listedSamples]},listyInheritedOptions]];
 
   (*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
   (* TODO: FILL THIS IN ONCE THE RESOLVE<TYPE>OPTIONS AND <TYPE>RESOURCE PACKETS ARE FINISHED *)
@@ -747,6 +930,9 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   (* Lookup if we are supposed to upload *)
   uploadQ = Lookup[safeOps,Upload];
 
+  (* Gather all the unit operation packets *)
+  allUnitOperationPackets = Flatten[{unitOperationPacket,batchedUnitOperationPackets}];
+
   (* We have to return our result. Either return a protocol with a simulated procedure if SimulateProcedure\[Rule]True or return a real protocol that's ready to be run. *)
   protocolObject = Which[
     (* If there was a problem with our resource packets function or option resolver, we can't return a protocol. *)
@@ -755,7 +941,7 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 
     (* If Upload->False, return the unit operation packets without RequireResources called*)
     !uploadQ,
-      unitOperationPacket,
+      allUnitOperationPackets,
 
     (* Otherwise, upload an ExperimentRoboticCellPreparation *)
     True,
@@ -774,7 +960,7 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
         (* Remove any hidden options before returning *)
         nonHiddenOptions=RemoveHiddenOptions[ExperimentSpreadCells,collapsedResolvedOptions];
 
-        (* Memoize the value of ExperimentPickColonies so the framework doesn't spend time resolving it again. *)
+        (* Memoize the value of ExperimentSpreadCells so the framework doesn't spend time resolving it again. *)
         Block[{ExperimentSpreadCells,$PrimitiveFrameworkResolverOutputCache},
           $PrimitiveFrameworkResolverOutputCache=<||>;
 
@@ -783,7 +969,7 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
             frameworkOutputSpecification=Lookup[ToList[options],Output];
 
             frameworkOutputSpecification/.{
-              Result -> Flatten[{unitOperationPacket,batchedUnitOperationPackets}],
+              Result -> allUnitOperationPackets,
               Options -> nonHiddenOptions,
               Preview -> Null,
               Simulation -> updatedSimulation,
@@ -797,13 +983,14 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
             Instrument -> Lookup[collapsedResolvedOptions,Instrument],
             Upload->Lookup[safeOps,Upload],
             Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
             ParentProtocol->Lookup[safeOps,ParentProtocol],
             Priority->Lookup[safeOps,Priority],
             StartDate->Lookup[safeOps,StartDate],
             HoldOrder->Lookup[safeOps,HoldOrder],
             QueuePosition->Lookup[safeOps,QueuePosition],
             Cache->cacheBall,
-            CoverAtEnd->False
+            CoverAtEnd -> False
           ]
         ]
       ]
@@ -820,6 +1007,138 @@ ExperimentSpreadCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
   }
 ];
 
+
+(* ::Subsection::Closed:: *)
+(*Helper functions*)
+
+(*-- Helper: memoized search for ColonyHandlerHeadCassettes --*)
+searchForColonyHandlerHeadCassettes[memoizationString_]:=searchForColonyHandlerHeadCassettes[memoizationString]=Module[{},
+  If[!MemberQ[$Memoization,Experiment`Private`searchForColonyHandlerHeadCassettes],
+    AppendTo[$Memoization,Experiment`Private`searchForColonyHandlerHeadCassettes]
+  ];
+  Search[Model[Part,ColonyHandlerHeadCassette],Application==Spread||Application==Streak&&Deprecated!=True]
+];
+
+(*-- Helper:classifyStreakSpreadSampleTypes --*)
+classifyStreakSpreadSampleTypes[inputSamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]],combinedAssoc_Association]:=classifyInoculationSampleTypes[inputSamples,combinedAssoc]=Module[{},
+  (*Memoize*)
+  If[!MemberQ[$Memoization,classifyStreakSpreadSampleTypes],
+    AppendTo[$Memoization,classifyStreakSpreadSampleTypes]
+  ];
+  (*StreakSpreadInoculationSourceP:LiquidMedia | FreezeDried | FrozenGlycerol*)
+  Transpose[Map[
+    Function[{sample},
+      Module[{sampleContainer,sampleContainerModel,samplePacket,hermeticOrAmpoule,sampleState,sampleStorageCondition,frozenConditionsP},
+
+        (*list the storage conditions that we consider as deep frozen for classifying frozen glycerol samples*)
+        frozenConditionsP = Alternatives[DeepFreezer,CryogenicStorage,ObjectP[{Model[StorageCondition, "id:xRO9n3BVOe3z"](*DeepFreezer*),Model[StorageCondition, "id:6V0npvmE09vG"](*Cryogenic*)}]];
+
+        (* Get the sample packet and look up the sample container, state, storage condition *)
+        samplePacket = fetchPacketFromCache[sample,combinedAssoc];
+        {sampleContainer, sampleState, sampleStorageCondition} = Lookup[samplePacket,{Container,State,StorageCondition}];
+
+        (*Lookup sample container model*)
+        sampleContainerModel = If[MatchQ[sampleContainer,ObjectP[Object[Container]]],
+          fastAssocLookup[combinedAssoc,sampleContainer, Model],
+          (*Just in case it is already a model*)
+          sampleContainer
+        ];
+        (* Get the Hermetic and ampoule bool of the sample container object or model*)
+        hermeticOrAmpoule =  MemberQ[{fastAssocLookup[combinedAssoc,sampleContainerModel, Hermetic],fastAssocLookup[combinedAssoc,sampleContainerModel, Ampoule]},True];
+
+        Switch[{sampleContainer,hermeticOrAmpoule,sampleState,sampleStorageCondition},
+
+          (* If the state is solid and the container is ampoule or hermetic, sample is FreezeDried *)
+          {_,True,Solid,_},
+          {Null,sample,Null},
+
+          (* If the storage condition is one of the deep frozen conditions *)
+          {_,False|Null,Solid,frozenConditionsP},
+          {Null,Null,sample},
+
+          (* Else if the state is liquid it is a LiquidMedia source *)
+          {_,False|Null,Liquid,_},
+          {sample,Null,Null},
+
+          (* Catchall - put as liquid *)
+          _,
+          {sample,Null,Null}
+        ]
+      ]
+    ],
+    inputSamples
+  ]]/.{Null->Nothing}];
+
+(*-- Helper:resolveStreakSpreadResuspensionMediaOptions --*)
+resolveStreakSpreadResuspensionMediaOptions[
+  sample:ObjectP[{Object[Container],Object[Sample]}],
+  unresolvedResuspensionOptions:{_Rule..}|(_Association),
+  sourceType:FreezeDried|FrozenGlycerol,
+  combinedAssoc_Association,
+  cache:ListableP[_Association]
+]:=Module[
+    {resuspensionMedia, resuspensionMediaVolume, resuspensionContainer,resolvedResuspensionMedia, resolvedResuspensionMediaVolume, resolvedResuspensionContainer,noPreferredLiquidMediaWarning},
+
+    (* Lookup needed options *)
+    {
+      resuspensionMedia,
+      resuspensionMediaVolume,
+      resuspensionContainer
+    } = Lookup[
+      unresolvedResuspensionOptions,
+      {
+        ResuspensionMedia,
+        ResuspensionMediaVolume,
+        ResuspensionContainer
+      }
+    ];
+
+    (* Resolve DestinationMediaContainer. We don't allow nested index matching here. *)
+    resolvedResuspensionContainer = If[MatchQ[resuspensionContainer,Automatic],
+      (* If destinationMediaContainer is Automatic, use PreferredContainer to get a valid container *)
+      If[MatchQ[resuspensionMediaVolume,VolumeP],
+        (* If mediaVolume is specified, use it to call preferred container *)
+        First@ToList[PreferredContainer[resuspensionMediaVolume,LiquidHandlerCompatible->True,Sterile->True]],
+        (* Otherwise, default to a sterile dwp *)
+        Model[Container, Plate, "id:4pO6dMmErzez"] (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
+      ],
+      (*Otherwise the option is not Automatic, keep it*)
+      resuspensionContainer
+    ];
+
+    (* Resolve ResuspensionMediaVolume *)
+    resolvedResuspensionMediaVolume = If[MatchQ[resuspensionMediaVolume,Automatic],
+      (*If it is automatic, resolve to to 25% of the container's max volume. For freeze dried sample, use sample container. For frozen glycerol, use resuspension media container.*)
+      If[MatchQ[sourceType,FreezeDried],
+        Module[{sampleContainerModelPacket,maxVolume},
+          sampleContainerModelPacket = fetchPacketFromCache[fastAssocLookup[combinedAssoc,sample,{Container,Model}],cache];
+          maxVolume = FirstCase[{Lookup[sampleContainerModelPacket,MaxVolume],1*Milliliter},VolumeP];
+          SafeRound[0.25*maxVolume,10^-1*Microliter]
+        ],
+        Module[{resuspensionContainerModelPacket,maxVolume},
+          resuspensionContainerModelPacket = fetchPacketFromCache[resolvedResuspensionContainer,cache];
+          maxVolume = FirstCase[{Lookup[resuspensionContainerModelPacket,MaxVolume],1*Milliliter},VolumeP];
+          SafeRound[0.25*maxVolume,10^-1*Microliter]
+        ]
+      ],
+      (*If it is not automatic, keep it*)
+      resuspensionMediaVolume
+    ];
+
+    (* Resolve ResuspensionMedia *)
+    {noPreferredLiquidMediaWarning,resolvedResuspensionMedia} = If[MatchQ[resuspensionMedia,Automatic],
+      (*If it is automatic, resolve to destination media if it is a single one, otherwise check the preferred*)
+      findPreferredMediaOfCellSample[sample,False,combinedAssoc],
+      (*If it is not automatic, keep it*)
+      {False,resuspensionMedia}
+    ];
+
+    (*return the resolved resuspension media, volume, container, warning*)
+    {resolvedResuspensionMedia,
+      resolvedResuspensionMediaVolume,
+      resolvedResuspensionContainer,
+      noPreferredLiquidMediaWarning}
+];
 
 (* ::Subsection::Closed:: *)
 (*OptionResolver*)
@@ -849,11 +1168,11 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
     outputSpecification,output,gatherTests,messages,cache,simulation,currentSimulation,experimentFunction,
     spreadAndStreakOptionsAssociation,spreadAndStreakColonyHandlerHeadCassettes,
-    colonySpreadingAndStreakingTools,destinationMedias,destinationContainers,
+    colonySpreadingAndStreakingTools,resuspensionMedias, resuspensionContainers,destinationMedias,destinationContainers,
     primaryWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,
-    quaternaryWashSolutions, allDestinationContainersNoLink,uniqueDestinationContainerObjects,
-    uniqueDestinationContainerModels,defaultWashSolutions,allWashSolutionsNoLink,uniqueWashSolutionObjects,uniqueWashSolutionModels,
-    allDestinationMediaNoLink,uniqueDestinationMediaObjects,uniqueDestinationMediaModels,
+    quaternaryWashSolutions, allResuspensionDestinationContainersNoLink,uniqueResuspensionDestinationContainerObjects,
+    uniqueResuspensionDestinationContainerModels,defaultWashSolutions,allWashSolutionsNoLink,uniqueWashSolutionObjects,uniqueWashSolutionModels,
+    allResuspensionDestinationMediaNoLink,uniqueResuspensionDestinationMediaObjects,uniqueResuspensionDestinationMediaModels,
     allColonySpreadingAndStreakingToolsNoLink,uniqueColonySpreadingAndStreakingToolObjects,uniqueColonySpreadingAndStreakingToolModels,
     sampleObjectDownloadPacket,sampleModelDownloadPacket,sampleContainerObjectDownloadPacket,sampleContainerModelDownloadPacket,
     containerDownloadPacket,containerModelDownloadPacket,colonyHandlerHeadCassetteObjectDownloadPacket,
@@ -863,13 +1182,20 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     spreadAndStreakColonyHandlerHeadCassettesPackets,flattenedCachePackets,combinedCache,combinedFastAssoc,
 
     (*-- INPUT VALIDATION CHECKS --*)
-    discardedSamplePackets,discardedInvalidInputs,discardedTest,nonLiquidSamplePackets,nonLiquidInvalidInputs,
-    nonLiquidTest,optionPrecisions,roundedSpreadAndStreakOptions,optionPrecisionTests,
+    discardedSamplePackets,discardedInvalidInputs,discardedTest,
+    multipleSourceSampleTypes,multipleInoculationSourceInputs,multipleInoculationSourceInInputTests,
+    nonLiquidSamplePackets,nonLiquidInvalidInputs, nonLiquidTest,inoculationSourceError,
+    optionPrecisions,roundedSpreadAndStreakOptions,optionPrecisionTests,
 
     (*-- RESOLVE INDEPENDENT OPTIONS --*)
     instrument,preparation,workCell,samplesInStorageCondition,samplesOutStorageCondition,
     resolvedInstrument,resolvedPreparation,resolvedWorkCell,resolvedSamplesInStorageCondition,resolvedSamplesOutStorageCondition,
-    compatibleMaterialsBools,compatibleMaterialsTests,
+    compatibleMaterialsBools,compatibleMaterialsTests,liquidMediaSamples,freezeDriedSamples,frozenGlycerolSamples,
+    inoculationSourceToSampleLookup,inoculationSource,resolvedInoculationSource,
+
+    (*-- RESOLVE RESUSPENSION OPTIONS --*)
+    resuspensionOptionSymbols,mapThreadFriendlyResuspensionOptions,resuspensionOptionIncompatibleSourceErrors,
+    noPreferredLiquidMediaForResuspensionWarnings,resuspensionMixOptionsMismatchErrors, noResuspensionMixWarnings,invalidResuspensionContainerWellErrors,resolvedResuspensionMedias, resolvedResuspensionMediaVolumes, resolvedResuspensionContainers, resolvedResuspensionContainerWells, resolvedResuspensionMixes, resolvedResuspensionMixTypes, resolvedResuspensionMixVolumes, resolvedNumberOfResuspensionMixess, resolvedNumberOfSourceScrapess,postResuspensionSamples,
 
     (*-- RESOLVE SANITIZATION AND DILUTION OPTIONS --*)
     sanitizationOptionInvalidOptions,sanitizationOptionTests,sanitizationOptionInvalidInputs,
@@ -901,7 +1227,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     resolvedDilutionNumberOfMixes,
     resolvedDilutionMixRates,
     resolvedDilutionMixOscillationAngles,
-    invalidDilutionOptionBool,
+    invalidDilutionOptions,
     partiallyResolvedSpreadAndStreakCellsOptionsWithDilution,
 
     (*-- RESOLVE MAPTHREAD EXPERIMENT OPTIONS --*)
@@ -936,11 +1262,14 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     resolvedContainerOutLabels,
 
     (* CONFLICTING OPTION CHECKS *)
+    resuspensionOptionIncompatibleSourceOptions,resuspensionOptionIncompatibleSourceTests,
+    resuspensionMixMismatchOptions,resuspensionMixMismatchTests,
+    invalidResuspensionContainerWellOptions,invalidResuspensionContainerWellTests,
     dilutionMismatchOptions,dilutionMismatchTests,
     sampleOutLabelMismatch,sampleOutLabelMismatchOptions,sampleOutLabelMismatchTests,
     containerOutLabelMismatch,containerOutLabelMismatchOptions,containerOutLabelMismatchTests,
     sourceMixMismatch,sourceMixMismatchOptions,sourceMixMismatchTests,
-    colonyHandlerHeadCassetteMismatches,colonyHandlerHeadCassetteMismatchOptions,colonyHandlerHeadCassetteMismatchTests,
+    resolvedColonyHandlingTools, resolvedColonyHandlingToolModels, colonyHandlerHeadCassetteMismatches,colonyHandlerHeadCassetteMismatchOptions,colonyHandlerHeadCassetteMismatchTests,
     noColonyHandlerSpreadingHeadFoundErrors,noColonyHandlerSpreadingHeadFoundOptions,noColonyHandlerSpreadingHeadFoundTests,
     noColonyHandlerStreakingHeadFoundErrors,noColonyHandlerStreakingHeadFoundOptions,noColonyHandlerStreakingHeadFoundTests,
     spreadPatternMismatchErrors,spreadPatternMismatchOptions,spreadPatternMismatchTests,
@@ -985,12 +1314,13 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   spreadAndStreakOptionsAssociation = Association[myOptions];
 
   (* Search for all the ColonyHandlerHeadCassettes that are for spreading/streaking cells *)
-  (* TODO: Memoize this *)
-  spreadAndStreakColonyHandlerHeadCassettes = Search[Model[Part,ColonyHandlerHeadCassette],Application==Spread||Application==Streak&&Deprecated!=True];
+  spreadAndStreakColonyHandlerHeadCassettes = searchForColonyHandlerHeadCassettes["Memoization"];
 
   (* Pull out the options that may have models/objects whose information we need to download *)
   {
     colonySpreadingAndStreakingTools,
+    resuspensionMedias,
+    resuspensionContainers,
     destinationMedias,
     destinationContainers,
     primaryWashSolutions,
@@ -1001,9 +1331,11 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     spreadAndStreakOptionsAssociation,
     {
       If[MatchQ[experimentFunction,ExperimentSpreadCells],
-        ColonySpreadingHead,
-        ColonyStreakingHead
+        ColonySpreadingTool,
+        ColonyStreakingTool
       ],
+      ResuspensionMedia,
+      ResuspensionContainer,
       DestinationMedia,
       DestinationContainer,
       PrimaryWashSolution,
@@ -1013,10 +1345,10 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     }
   ];
 
-  (* Get the unique DestinationContainers *)
-  allDestinationContainersNoLink = DeleteDuplicates[Download[Cases[Flatten@ToList[destinationContainers],ObjectP[]],Object]];
-  uniqueDestinationContainerObjects = Cases[allDestinationContainersNoLink,ObjectReferenceP[Object[Container]]];
-  uniqueDestinationContainerModels = Join[Cases[allDestinationContainersNoLink,ObjectReferenceP[Model[Container]]],{Model[Container, Plate, "id:O81aEBZjRXvx"]}]; (* Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Plate, "Omni Tray Sterile Media Plate"], Model[Container, Plate, "96-well UV-Star Plate"] *)
+  (* Get the unique Resuspension and DestinationContainers *)
+  allResuspensionDestinationContainersNoLink = DeleteDuplicates[Download[Cases[Flatten[{destinationContainers,resuspensionMedias}],ObjectP[]],Object]];
+  uniqueResuspensionDestinationContainerObjects = Cases[allResuspensionDestinationContainersNoLink,ObjectReferenceP[Object[Container]]];
+  uniqueResuspensionDestinationContainerModels = Join[Cases[allResuspensionDestinationContainersNoLink,ObjectReferenceP[Model[Container]]],{Model[Container, Plate, "id:O81aEBZjRXvx"],Model[Container, Plate, "id:4pO6dMmErzez"]}]; (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"], Model[Container, Plate, "Omni Tray Sterile Media Plate" *)
 
   (* Get the unique wash solutions *)
   defaultWashSolutions = {Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"],Model[Sample, "id:8qZ1VWNmdLBD"],Model[Sample, StockSolution, "id:qdkmxzq7lWRp"]};
@@ -1025,9 +1357,9 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   uniqueWashSolutionModels = Cases[allWashSolutionsNoLink,ObjectReferenceP[Model[Sample]]];
 
   (* Get the unique destination media *)
-  allDestinationMediaNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[destinationMedias]],ObjectP[]],Object]];
-  uniqueDestinationMediaObjects = Cases[allDestinationMediaNoLink,ObjectReferenceP[Object[Sample]]];
-  uniqueDestinationMediaModels = Append[Cases[allDestinationMediaNoLink,ObjectReferenceP[Model[Sample]]],Model[Sample, Media, "LB (Solid Agar)"]]; (* Add our default *)
+  allResuspensionDestinationMediaNoLink = DeleteDuplicates[Download[Cases[Flatten[{destinationMedias,resuspensionMedias}],ObjectP[]],Object]];
+  uniqueResuspensionDestinationMediaObjects = Cases[allResuspensionDestinationMediaNoLink,ObjectReferenceP[Object[Sample]]];
+  uniqueResuspensionDestinationMediaModels = Join[Cases[allResuspensionDestinationMediaNoLink,ObjectReferenceP[Model[Sample]]],{Model[Sample, Media, "id:9RdZXvdwAEo6"](*Model[Sample, Media, "LB (Solid Agar)"]*),Model[Sample, Media, "id:XnlV5jlXbNx8"](* Model[Sample, Media, "LB Broth, Miller"] *)}]; (* Add our default *)
 
   (* Get the unique colony SpreadingAndStreaking tools *)
   allColonySpreadingAndStreakingToolsNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[colonySpreadingAndStreakingTools]],ObjectP[]],Object]];
@@ -1062,10 +1394,10 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         mySamples,
         uniqueWashSolutionObjects,
         uniqueWashSolutionModels,
-        uniqueDestinationMediaObjects,
-        uniqueDestinationMediaModels,
-        uniqueDestinationContainerObjects,
-        uniqueDestinationContainerModels,
+        uniqueResuspensionDestinationMediaObjects,
+        uniqueResuspensionDestinationMediaModels,
+        uniqueResuspensionDestinationContainerObjects,
+        uniqueResuspensionDestinationContainerModels,
         uniqueColonySpreadingAndStreakingToolObjects,
         uniqueColonySpreadingAndStreakingToolModels,
         spreadAndStreakColonyHandlerHeadCassettes
@@ -1073,7 +1405,8 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       {
         {
           sampleObjectDownloadPacket,
-          Packet[Composition[[All,2]][{PreferredSolidMedia}]],
+          Packet[Composition[[All,2]][{CellType,PreferredLiquidMedia}]],
+          Packet[Composition[[All,2]][{PreferredSolidMedia[Object],PreferredSolidMedia[State]}]],
           sampleContainerObjectDownloadPacket,
           sampleContainerModelDownloadPacket
         },
@@ -1101,7 +1434,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         },
         {
           colonyHandlerHeadCassetteObjectDownloadPacket,
-          Packet[Model]
+          Packet[Model,ColonyHandlerHeadCassetteHolder]
         },
         {
           colonyHandlerHeadCassetteModelDownloadPacket
@@ -1172,8 +1505,112 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     Nothing
   ];
 
-  (* Get the samples from mySamples that do not have Liquid state *)
-  nonLiquidSamplePackets = Cases[Flatten[samplePackets],KeyValuePattern[State->Except[Liquid]]];
+  (* Multiple Input Sample State checks *)
+
+  (* Classify each sample as a LiquidMedia source sample, FreezeDried source sample, or FrozenGlycerol source sample *)
+  {
+    liquidMediaSamples,
+    freezeDriedSamples,
+    frozenGlycerolSamples
+  } = classifyStreakSpreadSampleTypes[mySamples, combinedFastAssoc];
+
+  inoculationSourceToSampleLookup = <|
+    LiquidMedia -> liquidMediaSamples,
+    FreezeDried -> freezeDriedSamples,
+    FrozenGlycerol -> frozenGlycerolSamples
+  |>;
+
+  (* Mark if we have multiple source sample types - This is an important flag/major error *)
+  multipleSourceSampleTypes = Cases[Normal[inoculationSourceToSampleLookup, Association], (type_ -> Except[{}]):>type];
+
+  (* Throw an error if there are multiple source sample types *)
+  multipleInoculationSourceInputs = If[Length[multipleSourceSampleTypes] > 1 && messages,
+    {mySamples},
+    {}
+  ];
+
+  (* Throw an error *)
+  If[!MatchQ[multipleInoculationSourceInputs, {}] && messages,
+    Message[
+      Error::MultipleInoculationSourceInInput,
+      ObjectToString[mySamples, Cache -> combinedCache, Simulation -> currentSimulation],
+      ToString[multipleSourceSampleTypes]
+    ]
+  ];
+
+  (* Create a test if we are gathering tests *)
+  multipleInoculationSourceInInputTests = If[!MatchQ[multipleInoculationSourceInputs, {}] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
+
+      (* Get the failing inputs *)
+      failingInputs = mySamples;
+
+      (* Get the passing inputs *)
+      passingInputs = {};
+
+      (* Create the passing test *)
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> combinedCache, Simulation -> currentSimulation] <> " have only a single source type among them:", True, True];
+
+      (* Create the failing test *)
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> combinedCache, Simulation -> currentSimulation] <> " have only a single source type among them:", True, False];
+
+      (* Return the tests *)
+      {passingTest, failingTest}
+    ],
+    Nothing
+  ];
+
+  (*-- OPTION PRECISION CHECKS --*)
+  (* First, define the option precisions that need to be checked for SpreadAndStreak Cells *)
+  optionPrecisions={
+    {ColonyPickingDepth,10^-2*Millimeter},
+    {ExposureTimes,10^0*Millisecond},
+    {PrimaryDryTime,10^0*Second},
+    {SecondaryDryTime,10^0*Second},
+    {TertiaryDryTime,10^0*Second},
+    {QuaternaryDryTime,10^0*Second},
+    If[MatchQ[experimentFunction,ExperimentStreakCells],
+      {StreakVolume,10^0*Microliter},
+      {SpreadVolume,10^0*Microliter}
+    ],
+    {DispenseCoordinates,10^-1*Millimeter},
+    If[MatchQ[experimentFunction,ExperimentStreakCells],
+      {CustomStreakPattern,10^-1*Millimeter},
+      {CustomSpreadPattern,10^-1*Millimeter}
+    ],
+    {ResuspensionMediaVolume,10^-1*Microliter}
+  };
+
+  (* Check the precisions of these options. *)
+  {roundedSpreadAndStreakOptions,optionPrecisionTests}=If[gatherTests,
+    (*If we are gathering tests *)
+    RoundOptionPrecision[spreadAndStreakOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]],Output->{Result,Tests}],
+    (* Otherwise *)
+    {RoundOptionPrecision[spreadAndStreakOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]]],{}}
+  ];
+
+  (*-- RESOLVE INDEPENDENT OPTIONS --*)
+  (* Lookup the options we are resolving independently *)
+  {inoculationSource,instrument,preparation,workCell,samplesInStorageCondition,samplesOutStorageCondition} = Lookup[roundedSpreadAndStreakOptions,{InoculationSource,Instrument,Preparation,WorkCell,SamplesInStorageCondition,SamplesOutStorageCondition}];
+
+  (* Resolve InoculationSource *)
+  resolvedInoculationSource = If[MatchQ[inoculationSource,Automatic],
+    (* If the option is Automatic, resolve it based on the type of input samples *)
+    If[Length[multipleSourceSampleTypes] > 1,
+      (* If there are multiple types of source samples, short circuit to Null *)
+      Null,
+      (* Otherwise, set based off of the input samples  *)
+      FirstCase[Normal[inoculationSourceToSampleLookup, Association], (type_ -> {ObjectP[]..}):> type]
+    ],
+    (* Otherwise keep the option as is *)
+    inoculationSource
+  ];
+
+  (* Get the samples from mySamples that do not have Liquid state but the inoculation source is set to Liquid media. This need the info from resolved source type because it is possible that the catch all resolves the InoculationSource to LiquidMedia. But it will break the resolver if the state is not liquid *)
+  nonLiquidSamplePackets = If[!MatchQ[resolvedInoculationSource,LiquidMedia],
+    {},
+    Cases[fetchPacketFromCache[#,combinedCache]&/@mySamples,KeyValuePattern[State->Except[Liquid]]]
+  ];
 
   (* Set nonLiquidInvalidInputs to the input objects whose state is not Liquid *)
   nonLiquidInvalidInputs = Lookup[nonLiquidSamplePackets,Object,{}];
@@ -1188,12 +1625,12 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     Module[{failingTest,passingTest},
       failingTest=If[Length[nonLiquidInvalidInputs]==0,
         Nothing,
-        Test["Our input samples "<>ObjectToString[nonLiquidInvalidInputs,Cache->combinedCache]<>" are Liquid State:",True,False]
+        Test["Our input samples "<>ObjectToString[nonLiquidInvalidInputs,Cache->combinedCache]<>" are Liquid State if InoculationSource is LiquidMedia:",True,False]
       ];
 
       passingTest=If[Length[nonLiquidInvalidInputs]==Length[mySamples],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidInvalidInputs],Cache->combinedCache]<>" are Liquid State:",True,True]
+        Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidInvalidInputs],Cache->combinedCache]<>" are Liquid State if InoculationSource is LiquidMedia:",True,True]
       ];
 
       {failingTest,passingTest}
@@ -1201,30 +1638,11 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     Nothing
   ];
 
-  (*-- OPTION PRECISION CHECKS --*)
-  (* First, define the option precisions that need to be checked for SpreadAndStreak Cells *)
-  (* TODO: Get rounding precisions from qpix (vnc currently down) *)
-  optionPrecisions={
-    {ColonyPickingDepth,10^-2*Millimeter},
-    {ExposureTimes,10^0*Millisecond},
-    {PrimaryDryTime,10^0*Second},
-    {SecondaryDryTime,10^0*Second},
-    {TertiaryDryTime,10^0*Second},
-    {QuaternaryDryTime,10^0*Second}
-  };
-
-  (* Check the precisions of these options. *)
-  {roundedSpreadAndStreakOptions,optionPrecisionTests}=If[gatherTests,
-    (*If we are gathering tests *)
-    RoundOptionPrecision[spreadAndStreakOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]],Output->{Result,Tests}],
-    (* Otherwise *)
-    {RoundOptionPrecision[spreadAndStreakOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]]],{}}
+  (* Detect if there is any sort of error with InoculationSource - we cannot continue if there is  *)
+  inoculationSourceError = Or[
+    Length[multipleSourceSampleTypes] > 1,
+    Length[Error::NonLiquidSamples] > 0
   ];
-
-  (*-- RESOLVE INDEPENDENT OPTIONS --*)
-  (* Lookup the options we are resolving independently *)
-  {instrument,preparation,workCell,samplesInStorageCondition,samplesOutStorageCondition} = Lookup[roundedSpreadAndStreakOptions,{Instrument,Preparation,WorkCell,SamplesInStorageCondition,SamplesOutStorageCondition}];
-
 
   (* Resolve the Instrument Option *)
   resolvedInstrument=If[MatchQ[instrument,Automatic],
@@ -1251,6 +1669,356 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   (* No resolution necessary for SamplesOutStorageCondition *)
   (* If the value is still set to Null, the sample will just be stored the same as its model *)
   resolvedSamplesOutStorageCondition = samplesOutStorageCondition;
+
+  (*-- RESOLVE RESUSPENSION OPTIONS --*)
+
+  (* Define list of options to resolve for suspension*)
+  resuspensionOptionSymbols = {
+    ResuspensionMix,
+    ResuspensionMixType,
+    NumberOfResuspensionMixes,
+    ResuspensionMixVolume,
+    ResuspensionMedia,
+    ResuspensionMediaVolume,
+    ResuspensionContainer,
+    ResuspensionContainerWell,
+    NumberOfSourceScrapes
+  };
+
+  (* Get the resuspension options into a usable form *)
+  mapThreadFriendlyResuspensionOptions = OptionsHandling`Private`mapThreadOptions[experimentFunction,KeyTake[roundedSpreadAndStreakOptions,resuspensionOptionSymbols],AmbiguousNestedResolution->IndexMatchingOptionPreferred];
+
+  {
+    noPreferredLiquidMediaForResuspensionWarnings,
+    resuspensionOptionIncompatibleSourceErrors,
+    resuspensionMixOptionsMismatchErrors,
+    noResuspensionMixWarnings,
+    invalidResuspensionContainerWellErrors,
+    resolvedResuspensionMedias,
+    resolvedResuspensionMediaVolumes,
+    resolvedResuspensionContainers,
+    resolvedResuspensionContainerWells,
+    resolvedResuspensionMixes,
+    resolvedResuspensionMixTypes,
+    resolvedResuspensionMixVolumes,
+    resolvedNumberOfResuspensionMixess,
+    resolvedNumberOfSourceScrapess
+  } = Which[
+    (*Source is Liquid Media, we are not doing resuspension, just do error checking for incompatible source*)
+    MatchQ[resolvedInoculationSource,LiquidMedia]&&!inoculationSourceError,
+      {
+        (*noPreferredLiquidMediaForResuspensionForResuspensionWarnings*)
+        ConstantArray[False,Length[mySamples]],
+        (*resuspensionOptionIncompatibleSourceErrors. Check if anything specified to not Automatic/Null*)
+        MemberQ[Flatten[Values[#]],Except[Automatic|Null]]&/@mapThreadFriendlyResuspensionOptions,
+        (*resuspensionMixOptionsMismatchErrors*)
+        ConstantArray[False,Length[mySamples]],
+        (*noResuspensionMixWarnings*)
+        ConstantArray[False,Length[mySamples]],
+        (*invalidResuspensionContainerWellErrors*)
+        ConstantArray[False,Length[mySamples]],
+        (*resolved resuspension options all goes to Null*)
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]]
+      },
+    MatchQ[resolvedInoculationSource,FreezeDried]&&!inoculationSourceError,
+      Module[{resolvedFreezeDriedResuspensionMedias,resolvedFreezeDriedResuspensionMediaVolumes,resolvedFreezeDriedResuspensionContainers,resolvedFreezeDriedResuspensionContainerWells,resolvedFreezeDriedResuspensionMixes,resolvedFreezeDriedResuspensionMixTypes,resolvedFreezeDriedResuspensionMixVolumes,resolvedFreezeDriedNumberOfResuspensionMixess,freezeDriedNoPreferredLiquidMediaForResuspensionWarnings, freezeDriedResuspensionOptionIncompatibleSourceErrors, freezeDriedResuspensionMixOptionsMismatchErrors, freezeDriedNoResuspensionMixWarnings,freezeDriedInvalidResuspensionContainerWellErrors},
+        
+        (*Mini-mapthread resolver for non-mix options and errors*)
+        {resolvedFreezeDriedResuspensionMedias, resolvedFreezeDriedResuspensionMediaVolumes, resolvedFreezeDriedResuspensionContainers,freezeDriedNoPreferredLiquidMediaForResuspensionWarnings} = Transpose[MapThread[
+          resolveStreakSpreadResuspensionMediaOptions[#1,#2,FreezeDried,combinedFastAssoc,combinedCache]&,
+          {mySamples,mapThreadFriendlyResuspensionOptions}
+        ]];
+        
+        (*Call the helper function to resolve resuspension mix options*)
+        {
+          resolvedFreezeDriedResuspensionMixes,
+          resolvedFreezeDriedResuspensionMixTypes,
+          resolvedFreezeDriedResuspensionMixVolumes,
+          resolvedFreezeDriedNumberOfResuspensionMixess,
+          freezeDriedNoResuspensionMixWarnings,
+          freezeDriedResuspensionMixOptionsMismatchErrors
+        } = Transpose@MapThread[
+          resolveInoculateResuspensionMixOptions[#1,#2,#3,Null,combinedFastAssoc]&,
+          {mySamples,mapThreadFriendlyResuspensionOptions,resolvedFreezeDriedResuspensionMediaVolumes}
+        ];
+
+        (* borrow the inoculate liquid media's destination well resolver to resolve the wells *)
+        {resolvedFreezeDriedResuspensionContainerWells,freezeDriedInvalidResuspensionContainerWellErrors} = resolveInoculationDestinationWells[
+          Lookup[mapThreadFriendlyResuspensionOptions,ResuspensionContainerWell],
+          resolvedFreezeDriedResuspensionContainers,
+          resolveInoculationLabel[
+            mySamples,
+            ContainerOutLabel,
+            ConstantArray[Automatic,Length[mySamples]],
+            resolvedFreezeDriedResuspensionContainers,
+            {},
+            simulation,
+            combinedFastAssoc
+          ],(*we don't have the label option here, fake some labels according to objects if specified*)
+          combinedFastAssoc
+        ];
+
+        (*For freeze dried samples we don't allow number of source scrapes*)
+        freezeDriedResuspensionOptionIncompatibleSourceErrors = Map[MatchQ[#,Except[Automatic|Null]]&,
+          Lookup[mapThreadFriendlyResuspensionOptions,NumberOfSourceScrapes]
+        ];
+        (*return the error tracking variables and resolved options*)
+        {
+          freezeDriedNoPreferredLiquidMediaForResuspensionWarnings,
+          freezeDriedResuspensionOptionIncompatibleSourceErrors,
+          freezeDriedResuspensionMixOptionsMismatchErrors,
+          freezeDriedNoResuspensionMixWarnings,
+          freezeDriedInvalidResuspensionContainerWellErrors,
+          resolvedFreezeDriedResuspensionMedias,
+          resolvedFreezeDriedResuspensionMediaVolumes,
+          resolvedFreezeDriedResuspensionContainers,
+          resolvedFreezeDriedResuspensionContainerWells,
+          resolvedFreezeDriedResuspensionMixes,
+          resolvedFreezeDriedResuspensionMixTypes,
+          resolvedFreezeDriedResuspensionMixVolumes,
+          resolvedFreezeDriedNumberOfResuspensionMixess,
+          (*NumberOfSourceScrapes to Null*)
+          ConstantArray[Null,Length[mySamples]]
+        }
+      ],
+    MatchQ[resolvedInoculationSource,FrozenGlycerol]&&!inoculationSourceError,
+      Module[{resolvedFrozenGlycerolResuspensionMedias,resolvedFrozenGlycerolResuspensionMediaVolumes,resolvedFrozenGlycerolResuspensionContainers,resolvedFrozenGlycerolResuspensionContainerWells,resolvedFrozenGlycerolResuspensionMixes,resolvedFrozenGlycerolResuspensionMixTypes,resolvedFrozenGlycerolResuspensionMixVolumes,resolvedFrozenGlycerolNumberOfResuspensionMixess,resolvedFrozenGlycerolNumberOfSourceScrapess,frozenGlycerolNoPreferredLiquidMediaForResuspensionWarnings, frozenGlycerolResuspensionMixOptionsMismatchErrors, frozenGlycerolNoResuspensionMixWarnings,frozenGlycerolInvalidResuspensionContainerWellErrors},
+  
+        (*Mini-mapthread resolver for non-mix options and errors*)
+        {resolvedFrozenGlycerolResuspensionMedias, resolvedFrozenGlycerolResuspensionMediaVolumes, resolvedFrozenGlycerolResuspensionContainers,frozenGlycerolNoPreferredLiquidMediaForResuspensionWarnings} = Transpose[MapThread[
+          resolveStreakSpreadResuspensionMediaOptions[#1,#2,FrozenGlycerol,combinedFastAssoc,combinedCache]&,
+          {mySamples,mapThreadFriendlyResuspensionOptions}
+        ]];
+  
+        (*Call the helper function to resolve resuspension mix options*)
+        {
+          resolvedFrozenGlycerolResuspensionMixes,
+          resolvedFrozenGlycerolResuspensionMixTypes,
+          resolvedFrozenGlycerolResuspensionMixVolumes,
+          resolvedFrozenGlycerolNumberOfResuspensionMixess,
+          frozenGlycerolNoResuspensionMixWarnings,
+          frozenGlycerolResuspensionMixOptionsMismatchErrors
+        } = Transpose@MapThread[
+          resolveInoculateResuspensionMixOptions[#1,#2,#3,Null,combinedFastAssoc]&,
+          {mySamples,mapThreadFriendlyResuspensionOptions,resolvedFrozenGlycerolResuspensionMediaVolumes}
+        ];
+  
+        (* borrow the inoculate liquid media's destination well resolver to resolve the wells *)
+        {resolvedFrozenGlycerolResuspensionContainerWells,frozenGlycerolInvalidResuspensionContainerWellErrors} = resolveInoculationDestinationWells[
+          Lookup[mapThreadFriendlyResuspensionOptions,ResuspensionContainerWell],
+          resolvedFrozenGlycerolResuspensionContainers,
+          resolveInoculationLabel[
+            mySamples,
+            ContainerOutLabel,
+            ConstantArray[Automatic,Length[mySamples]],
+            resolvedFrozenGlycerolResuspensionContainers,
+            {},
+            simulation,
+            combinedFastAssoc
+          ],(*we don't have the label option here, fake some labels according to objects if specified*)
+          combinedFastAssoc
+        ];
+
+        resolvedFrozenGlycerolNumberOfSourceScrapess = Map[
+          If[MatchQ[#,Automatic],
+          (*If it is automatic, set to 5*)
+          5,
+          (*If it is not automatic, keep it*)
+          #]&,
+          Lookup[mapThreadFriendlyResuspensionOptions,NumberOfSourceScrapes]
+        ];
+
+        (*return the error tracking variables and resolved options*)
+        {
+          frozenGlycerolNoPreferredLiquidMediaForResuspensionWarnings,
+          (*ResuspensionOptionIncompatibleSourceErrors. all resuspension options are allowed for frozen glycerol*)
+          ConstantArray[False,Length[mySamples]],
+          frozenGlycerolResuspensionMixOptionsMismatchErrors,
+          frozenGlycerolNoResuspensionMixWarnings,
+          frozenGlycerolInvalidResuspensionContainerWellErrors,
+          resolvedFrozenGlycerolResuspensionMedias,
+          resolvedFrozenGlycerolResuspensionMediaVolumes,
+          resolvedFrozenGlycerolResuspensionContainers,
+          resolvedFrozenGlycerolResuspensionContainerWells,
+          resolvedFrozenGlycerolResuspensionMixes,
+          resolvedFrozenGlycerolResuspensionMixTypes,
+          resolvedFrozenGlycerolResuspensionMixVolumes,
+          resolvedFrozenGlycerolNumberOfResuspensionMixess,
+          resolvedFrozenGlycerolNumberOfSourceScrapess
+        }
+      ],
+    (* We are not resolving any more options at this point - Return everything as Null. Options the user set will be replace in the parent function *)
+    MatchQ[resolvedInoculationSource,Null] || inoculationSourceError,
+      {
+        (*noPreferredLiquidMediaForResuspensionWarnings*)
+        ConstantArray[False,Length[mySamples]],
+        (*resuspensionOptionIncompatibleSourceErrors*)
+        ConstantArray[False,Length[mySamples]],
+        (*resuspensionMixOptionsMismatchErrors*)
+        ConstantArray[False,Length[mySamples]],
+        (*noResuspensionMixWarnings*)
+        ConstantArray[False,Length[mySamples]],
+        (*invalidResuspensionContainerWellErrors*)
+        ConstantArray[False,Length[mySamples]],
+        (*resolved resuspension options all goes to Null*)
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]],
+        ConstantArray[Null,Length[mySamples]]
+      }
+  ];
+
+  (*-- Simulate samples if resuspension happend for subsequent streak/spread or optional dilution and resuspension resolver is free of errors.*)
+  postResuspensionSamples = If[MatchQ[resolvedInoculationSource,FreezeDried|FrozenGlycerol]&& !MemberQ[Flatten[{resuspensionOptionIncompatibleSourceErrors, invalidResuspensionContainerWellErrors}],True],
+    Module[{resusNewDestinations,resuspensionContainersWithModelsSubstituted,uploadResuspensionSamplePackets,resuspensionContainerPackets,resuspensionSamples,resuspensionSamplePackets,updatePackets},
+      (*Find which position in resuspension container/well pair does not have a sample yet. Will need to create a simulated one with model of resuspension media*)
+      {resuspensionContainersWithModelsSubstituted,resusNewDestinations}= Transpose@MapThread[
+        Function[{container,well},
+          Module[{containerContents,simulatedContainer,destContainer},
+            (* Lookup the contents of the container *)
+            containerContents = fastAssocLookup[combinedFastAssoc,container,Contents];
+            (*If the container is a model, we need to simulate an object for it*)
+            currentSimulation = If[MatchQ[container,ObjectP[Model[Container]]],
+                (*first create IDs for simulated container*)
+                simulatedContainer = CreateID[container[Type]/.{Model[Container,Vessel]->Object[Container,Vessel],Model[Container,Plate]->Object[Container,Plate]}];
+                (*update the simulation with the packet*)
+                UpdateSimulation[currentSimulation,Simulation[<|Object->simulatedContainer,Model->Link[container,Objects]|>]],
+                (*Otherwise, no update*)
+                currentSimulation
+              ];
+            (*The returned container for calling UploadSample later. Use the simulated if the container is a model, otherwise use the object as it is*)
+            destContainer = If[MatchQ[container,ObjectP[Model[Container]]],
+              simulatedContainer,
+              container
+            ];
+            (* If there is an object sample at the well in question, skip it*)
+            If[!NullQ[FirstCase[containerContents, {well, ObjectP[Object[Sample]]}, Null]],
+              {container,Nothing},
+              (* Otherwise record the uploadcontainer packets well, container pairing*)
+              {destContainer,{well, destContainer}}
+            ]
+          ]
+        ],
+        {
+          resolvedResuspensionContainers,
+          resolvedResuspensionContainerWells
+        }
+      ];
+      (* Upload an sample of the resuspension media to all of empty locations *)
+      uploadResuspensionSamplePackets = UploadSample[
+        ConstantArray[{}, Length[resusNewDestinations]],
+        resusNewDestinations,
+        State -> Liquid,
+        InitialAmount -> ConstantArray[Null, Length[resusNewDestinations]],
+        Simulation -> currentSimulation,
+        SimulationMode -> True,
+        FastTrack -> True,
+        Upload -> False
+      ];
+      (* Update the simulation *)
+      currentSimulation = UpdateSimulation[currentSimulation,Simulation[uploadResuspensionSamplePackets]];
+      (* Retrieve samples inside all containers of interest *)
+      resuspensionContainerPackets = Download[
+        resuspensionContainersWithModelsSubstituted,
+        Packet[Contents],
+        Cache -> combinedCache,
+        Simulation -> currentSimulation
+      ];
+      (* Convert, {well, container} pairs to the corresponding sample *)
+      resuspensionSamples = MapThread[
+        Function[{containerPacket,well},
+          Download[Last[FirstCase[Lookup[containerPacket,Contents], {well, _}]],Object]
+        ],
+        {
+          resuspensionContainerPackets,
+          resolvedResuspensionContainerWells
+        }
+      ];
+     resuspensionSamplePackets = Download[
+       resuspensionSamples,
+       Packet[Volume,Composition],
+       Cache -> combinedCache,
+       Simulation -> currentSimulation
+     ];
+    (*MapThread over the samples to get a list of new volume and composition*)
+     updatePackets=MapThread[
+       Function[{sample, resuspensionSample, resuspensionSamplePacket,numberOfScrapes, media, volume},
+         Module[{initialVolume, scrapedVolume, newVolume,sampleComposition,sampleMass,sampleVolume,initialComposition,compositionUpdate,newComposition},
+           initialVolume = Lookup[resuspensionSamplePacket,Volume];
+           (*Roughly estimate the volume added by scrapes if any*)
+           scrapedVolume = 5 Microliter * numberOfScrapes;
+           (*Estimate the new volume by the sum of the 3*)
+           newVolume = Total[Cases[{initialVolume,scrapedVolume, volume}, VolumeP]];
+           (*Get the info of the input sample*)
+           sampleComposition = fastAssocLookup[combinedFastAssoc, sample, Composition];
+           sampleMass = fastAssocLookup[combinedFastAssoc, sample, Mass];
+           sampleVolume = fastAssocLookup[combinedFastAssoc, sample, Volume];
+           initialComposition = Lookup[resuspensionSamplePacket,Composition,{}];
+           (*If we are scraping, meaning dealing with glycerol, estimate the cell concentration by scrapes*)
+           compositionUpdate = If[GreaterQ[numberOfScrapes,0],
+             (*Go through the list to update the cell concentration by scrapes*)
+             Map[Switch[#,
+               {MassPercentP,ObjectP[Model[Cell]]},
+               (*If this item is expressed in mass percent, we don't know the cell count, null it out but pass along the cell model*)
+                {Null,#[[2]],Null},
+               {CFUP,_},
+                (*If somehow this item is expressed in mass percent, we update through mass*)
+                  {(#[[1]] * 5 Microliter * numberOfScrapes / sampleVolume) / newVolume, #[[2]],Null},
+               (*If the item is expressed in other compositionP, it can be simply updated by volume ratio*)
+               {CellConcentrationP|CFUConcentrationP,_},
+                  {#[[1]] * 5 Microliter * numberOfScrapes / newVolume, #[[2]],Null},
+               _,
+               (*Otherwise the concentration might be just Null or not a cell concentration, leave it as it is*)
+                  #
+             ]&,sampleComposition],
+             (*Otherwise, we are dealing with freeze dried samples, all samples go in*)
+             Map[Switch[#,
+               {MassPercentP,ObjectP[Model[Cell]]},
+               (*If this item is expressed in mass percent, we don't know the cell count, null it out but pass along the cell model*)
+                {Null,#[[2]],Null},
+               {CFUP,_},
+               (*If this item is somehow expressed in CFU (representing the cells of the whole vial), we update through by directly dividing by new volume*)
+                {#[[1]] / newVolume, #[[2]],Null},
+               (*If the item is somehow expressed in other cell concentrations, but it should not happen*)
+               {CellConcentrationP|CFUConcentrationP,_},
+               {#[[1]] * sampleVolume / newVolume, #[[2]],Null},
+               _,
+               (*Otherwise the concentration might be just Null or not a cell concentration, leave it as it is*)
+               #
+             ]&,sampleComposition]
+           ];
+           (*Get the new composition by joining the update with simulated resuspension sample*)
+           newComposition = DeleteCases[Join[initialComposition,compositionUpdate],{}];
+
+           (*Return the update packet for this resuspension sample*)
+           <|Object -> resuspensionSample,
+             Volume -> newVolume,
+             Replace[Composition] -> newComposition|>
+         ]
+       ],
+       {mySamples, resuspensionSamples, resuspensionSamplePackets, resolvedNumberOfSourceScrapess, resolvedResuspensionMedias, resolvedResuspensionMediaVolumes}
+     ];
+     (* Update the simulation *)
+     currentSimulation = UpdateSimulation[currentSimulation,Simulation[updatePackets]];
+     (*Return the samples to proceed*)
+     resuspensionSamples
+    ],
+    (*Otherwise, they are the same as mySamples*)
+    mySamples
+  ];
 
   (*-- RESOLVE SANITIZATION AND DILUTION OPTIONS --*)
 
@@ -1287,6 +2055,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     unresolvedSanitizationOptions=KeyTake[roundedSpreadAndStreakOptions,sanitizationOptionSymbols];
 
     (* Resolve the options *)
+    (*The samples are only used for mapthread/indexmatching purposed in resolveQPixSanitizationOptions. No need to update for sample volume or composition changes here. *)
     sanitzationOutput = resolveQPixSanitizationOptions[mySamples,Normal@unresolvedSanitizationOptions, resolvedInstrument, Cache->combinedCache, Output->output, Simulation -> currentSimulation];
 
     sanitzationOutput
@@ -1297,32 +2066,32 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
 
   (* The dilution options we are resolving *)
   dilutionOptionsToResolve = {
-    DilutionType,
-    DilutionStrategy,
-    NumberOfDilutions,
-    DilutionTargetAnalyte,
-    CumulativeDilutionFactor,
-    SerialDilutionFactor,
-    DilutionTargetAnalyteConcentration,
-    DilutionTransferVolume,
-    TotalDilutionVolume,
-    DilutionFinalVolume,
-    DilutionDiscardFinalTransfer,
-    Diluent,
-    DiluentVolume,
-    DilutionConcentratedBuffer,
-    ConcentratedBufferVolume,
-    ConcentratedBufferDiluent,
-    ConcentratedBufferDilutionFactor,
-    ConcentratedBufferDiluentVolume,
-    DilutionIncubate,
-    DilutionIncubationTime,
-    DilutionIncubationInstrument,
-    DilutionIncubationTemperature,
-    DilutionMixType,
-    DilutionNumberOfMixes,
-    DilutionMixRate,
-    DilutionMixOscillationAngle
+    DilutionType,(*1*)
+    DilutionStrategy,(*2*)
+    NumberOfDilutions,(*3*)
+    DilutionTargetAnalyte,(*4*)
+    CumulativeDilutionFactor,(*5*)
+    SerialDilutionFactor,(*6*)
+    DilutionTargetAnalyteConcentration,(*7*)
+    DilutionTransferVolume,(*8*)
+    TotalDilutionVolume,(*9*)
+    DilutionFinalVolume,(*10*)
+    DilutionDiscardFinalTransfer,(*11*)
+    Diluent,(*12*)
+    DiluentVolume,(*13*)
+    DilutionConcentratedBuffer,(*14*)
+    ConcentratedBufferVolume,(*15*)
+    ConcentratedBufferDiluent,(*16*)
+    ConcentratedBufferDilutionFactor,(*17*)
+    ConcentratedBufferDiluentVolume,(*18*)
+    DilutionIncubate,(*19*)
+    DilutionIncubationTime,(*20*)
+    DilutionIncubationInstrument,(*21*)
+    DilutionIncubationTemperature,(*22*)
+    DilutionMixType,(*23*)
+    DilutionNumberOfMixes,(*24*)
+    DilutionMixRate,(*25*)
+    DilutionMixOscillationAngle(*26*)
   };
 
   (* Resolve the dilution options *)
@@ -1347,11 +2116,8 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     (* Lookup the options we are going to resolve *)
     specifiedDilutionOptions = Lookup[roundedSpreadAndStreakOptions,dilutionOptionsToResolve];
 
-    (* Initialize invalid dilution option bool *)
-    invalidDilutionOptionBool = False;
-
     (* Get the dilution options into a usable form *)
-    mapThreadFriendlyDilutionOptions = OptionsHandling`Private`mapThreadOptions[experimentFunction,KeyTake[roundedSpreadAndStreakOptions,dilutionOptionsToResolve]];
+    mapThreadFriendlyDilutionOptions = OptionsHandling`Private`mapThreadOptions[experimentFunction, KeyTake[roundedSpreadAndStreakOptions, dilutionOptionsToResolve]];
 
     (* Get the option definition of the function *)
     optionDefinition = OptionDefinition[experimentFunction];
@@ -1375,18 +2141,16 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       Function[{myMapThreadOptions},
         Module[
           {
-            dilutionConflictError,specifiedDilutionOptions,specifiedDilutionType,specifiedDilutionStrategy,specifiedNumberOfDilutions,
-            possiblyConflictingDilutionOptions,dilutionOptionSetBool,resolvedDilutionType,resolvedDilutionStrategy,effectiveNumberOfDilutions,
+            dilutionConflictError, specifiedDilutionOptions, specifiedDilutionType, specifiedDilutionStrategy, specifiedNumberOfDilutions,
+            possiblyConflictingDilutionOptions, dilutionOptionSetBool, resolvedDilutionType, resolvedDilutionStrategy, effectiveNumberOfDilutions,
             specifiedCumulativeDilutionFactor, specifiedSerialDilutionFactor, specifiedDilutionTargetAnalyteConcentration,
             specifiedDilutionTransferVolume, specifiedTotalDilutionVolume, specifiedDilutionFinalVolume,
             specifiedDiluentVolume, specifiedConcentratedBufferVolume, specifiedConcentratedBufferDilutionFactor,
-            specifiedConcentratedBufferDiluentVolume,correctedNestedLengths
+            specifiedConcentratedBufferDiluentVolume, correctedNestedLengths
           },
-          (* Initialize our error checking bool *)
-          dilutionConflictError = {False,{}};
           
           (* Lookup the dilution options *)
-          specifiedDilutionOptions = Lookup[myMapThreadOptions,dilutionOptionsToResolve];
+          specifiedDilutionOptions = Lookup[myMapThreadOptions, dilutionOptionsToResolve];
           
           (* Get dilution type *)
           specifiedDilutionType = First[specifiedDilutionOptions];
@@ -1423,19 +2187,20 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
             }
           ];
           
-          (* Separate out the rest of the dilution options *)
+          (* Separate out the rest of the dilution options without DilutionType *)
           possiblyConflictingDilutionOptions = Rest[specifiedDilutionOptions];
           
           (* Is a Non-DilutionType dilution option set *)
-          dilutionOptionSetBool = MapThread[Function[{optionSymbol,optionValue},
-            Module[{defaultPattern},
-              (* Get the default pattern of the symbol *)
-              defaultPattern = Lookup[FirstCase[optionDefinition,KeyValuePattern["OptionSymbol"->optionSymbol]],"Default"];
+          dilutionOptionSetBool = MapThread[
+            Function[{optionSymbol, optionValue},
+              Module[{defaultPattern},
+                (* Get the default pattern of the symbol *)
+                defaultPattern = Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionSymbol" -> optionSymbol]], "Default"];
 
-              (* The option is set if it does not match its default *)
-              !MatchQ[optionValue, ListableP[ReleaseHold[defaultPattern]]]
-            ]
-          ],
+                (* The option is set if it does not match its default *)
+                !MatchQ[optionValue, ListableP[ReleaseHold[defaultPattern]]]
+              ]
+            ],
             {
               Rest[dilutionOptionsToResolve],
               possiblyConflictingDilutionOptions
@@ -1445,54 +2210,56 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
           (* Resolve DilutionType *) 
           resolvedDilutionType = Which[
             (* If the option is specified, keep it *)
-            MatchQ[specifiedDilutionType,Except[Automatic]],
-            specifiedDilutionType,
+            MatchQ[specifiedDilutionType, Except[Automatic]],
+              specifiedDilutionType,
             
             (* Otherwise, if there is a dilution option set, resolve *)
-            MemberQ[dilutionOptionSetBool,True],
-              Module[{dilutionStrategy,serialDilutionFactors},
+            MemberQ[dilutionOptionSetBool, True],
+              Module[
+                {dilutionStrategy, serialDilutionFactors},
                 
                 (* Lookup the DilutionStrategy and SerialDilutionFactor options *)
-                {dilutionStrategy,serialDilutionFactors} = Lookup[myMapThreadOptions,{DilutionStrategy,SerialDilutionFactor}];
-                
-                (* If DilutionStrategy is set to Series, or of SerialDilutionFactor is not Null or Automatic *)
-                (* Resolve to Serial, otherwise resolve to Linear *)
-                If[MatchQ[dilutionStrategy,Series]||MatchQ[serialDilutionFactors,Except[Null|Automatic]],
-                  Serial,
-                  Linear
+                {dilutionStrategy, serialDilutionFactors} = Lookup[myMapThreadOptions, {DilutionStrategy, SerialDilutionFactor}];
+
+                Which[
+                  (* If all set options are Null, resolve to Null (no dilution) *)
+                  MatchQ[PickList[possiblyConflictingDilutionOptions, dilutionOptionSetBool], {Null|{Null}..}], Null,
+                  (* If DilutionStrategy is set to Series or Endpoint, or SerialDilutionFactor is not Null or Automatic *)
+                  MatchQ[dilutionStrategy, Series|Endpoint]||MatchQ[serialDilutionFactors, Except[Null|Automatic]], Serial,
+                  (* Otherwise resolve to Linear *)
+                  True, Linear
                 ]
               ],
             
             (* Finally, if there are no dilution options set, resolve to Null *)
             True,
-            Null
+              Null
           ];
 
           (* Resolve DilutionStrategy *)
           resolvedDilutionStrategy = Which[
             (* If the option is specified, keep it *)
-            MatchQ[specifiedDilutionStrategy, Except[Automatic]],
-            specifiedDilutionStrategy,
-
+            MatchQ[specifiedDilutionStrategy, Except[Automatic]], specifiedDilutionStrategy,
             (* If the type is Null, set to Null *)
-            NullQ[resolvedDilutionType],
-            Null,
-
+            NullQ[resolvedDilutionType], Null,
             (* If the type is serial, default to series *)
-            MatchQ[resolvedDilutionType, Serial],
-            Series,
-
+            MatchQ[resolvedDilutionType, Serial], Series,
             (* Otherwise (type is linear), default to Null *)
-            True,
-            Null
+            True, Null
           ];
 
           (* If we have a conflict, mark the conflicting options *)
-          If[Or[
-            MatchQ[resolvedDilutionType,Null] && MemberQ[dilutionOptionSetBool,True],
-            MatchQ[resolvedDilutionType,Except[Null] && MemberQ[possiblyConflictingDilutionOptions,Null]]
-          ],
-            dilutionConflictError = {True,PickList[Rest[dilutionOptionsToResolve],dilutionOptionSetBool]}
+          dilutionConflictError = If[Or[
+              (* DilutionStrategy is only specified when DilutionType is Series, otherwise throw an error *)
+              MatchQ[resolvedDilutionType, Linear|Null] && !NullQ[resolvedDilutionStrategy],
+              MatchQ[resolvedDilutionType, Series] && NullQ[resolvedDilutionStrategy],
+              (* If any dilution option other than DilutionStrategy is set to non Null while DilutionType is Null, *)
+              (* or any dilution option is set to Null while DilutionType is not Null, throw an error *)
+              MatchQ[resolvedDilutionType, Null] && !MatchQ[possiblyConflictingDilutionOptions, {(Null|{Null}|Automatic|{Automatic})..}],
+              MatchQ[resolvedDilutionType, Except[Null] && MemberQ[Rest@possiblyConflictingDilutionOptions, Null]]
+            ],
+            {True, PickList[Rest[dilutionOptionsToResolve], dilutionOptionSetBool]},
+            {False, {}}
           ];
 
           (* Determine the number of dilutions to expand the nested options to *)
@@ -1588,7 +2355,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     mySplitLists = (splitList[intermediateDilutionTypes,#,spreadLabels]/.{None->Nothing})&/@intermediateDilutionOptions;
 
     (* Gather the samples to send to ResolveSharedDilutionOptions *)
-    samplesForDilution = PickList[mySamples,Transpose[{intermediateDilutionTypes,dilutionConflictErrors[[All,1]]}],{Except[Null], False}];
+    samplesForDilution = PickList[postResuspensionSamples,Transpose[{intermediateDilutionTypes,dilutionConflictErrors[[All,1]]}],{Except[Null], False}];
 
     (* Gather the options to send to resolve dilution shared options *)
     optionsForDilutionResolving = MapThread[Rule, {dilutionOptionsToResolve, mySplitLists[[All, 2]]}];
@@ -1610,6 +2377,9 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       DilutionMixRate->MixRate,
       DilutionMixOscillationAngle->MixOscillationAngle
     };
+
+    (*Initiate the invalid-options-tracking variable for branches not going through ModifyFunctionMessages*)
+    invalidDilutionOptions = {};
 
     (* Call ResolvedDilutionSharedOptions! *)
     If[MatchQ[Length[samplesForDilution],0] && !MemberQ[dilutionConflictErrors[[All,1]], True],
@@ -1640,7 +2410,9 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
               Module[{invalidOptionsBool,resolvedOptions},
 
                 (* Run the analysis function to get the resolved options *)
-                {resolvedOptions,invalidOptionsBool} = ModifyFunctionMessages[
+                (* ResolveDilutionSharedOptions might yell for not having some fields in cache,
+                and it doesn't really matter (e.g. Media,DilutionConcentratedBufferDiluent, DilutionConcentratedBufferDilutionFactor, BaselineStock). *)
+                {resolvedOptions,invalidOptionsBool,invalidDilutionOptions} = Quiet[ModifyFunctionMessages[
                   ResolveDilutionSharedOptions,
                   {samplesForDilution},
                   "",
@@ -1648,13 +2420,8 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
                   optionsForDilutionResolving,
                   Simulation -> currentSimulation,
                   Cache -> combinedCache,
-                  Output -> {Result,Boolean}
-                ];
-
-                (* Set the invalid analysis option boolean if appropriate *)
-                If[invalidOptionsBool,
-                  invalidDilutionOptionBool = True
-                ];
+                  Output -> {Result,Boolean,InvalidOptions}
+                ],{Download::MissingCacheField}];
 
                 (* Return the options *)
                 resolvedOptions
@@ -1752,9 +2519,11 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     resolvedCustomStreakPatterns,
     resolvedNumberOfSegments,
     resolvedHatchesPerSegments
-  } = Transpose@MapThread[Function[{mySample,myMapThreadOptions},
+  } = Transpose@MapThread[Function[{mySample,postResuspensionSample,myMapThreadOptions},
     Module[
-      {
+      { (*Helper variable*)
+        sampleVolume,
+        defaultNumberOfDispenseLocations,
         (* User specified options *)
         specifiedSpreadVolume,
         specifiedStreakVolume,
@@ -1804,7 +2573,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         resolvedHatchesPerSegment,
 
         (* Other variables *)
-        resolvedColonyTool
+        resolvedColonyTool,resolvedColonyToolModel
       },
 
       (* Look up the option values *)
@@ -1863,20 +2632,81 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         },
         Null
       ];
+      (* Get the volume of the sample we are mixing - either after dilution or if not diluting - our initial sample or resuspended sample*)
+      sampleVolume = Which[
+        (* If we aren't diluting and the sample does not need resuspension - use sample volume if populated, if not try to convert from mass *)
+        NullQ[resolvedDilutionType]&&MatchQ[mySample,ObjectP[postResuspensionSample]],
+        Module[{samplePacket,sampleObjectDensity,sampleModelDensity,sampleVolume,sampleMass,sampleDensity,sampleModel},
+          (*fetch the sample packet and look the fields from the packet*)
+          samplePacket = fetchPacketFromCache[mySample,combinedFastAssoc];
+          {sampleVolume,sampleMass,sampleObjectDensity,sampleModel} = Lookup[samplePacket,{Volume,Mass,Density,Model}];
+
+          (*If the sample has a model, look up the density as well in case it is populated*)
+          sampleModelDensity = If[MatchQ[sampleModel,ObjectP[]],
+            fastAssocLookup[combinedFastAssoc,sampleModel,Density],
+            (*Otherwise the sample might not have a model, we dont have additional density info*)
+            Null
+          ];
+          (* Get a sample density based on object and model, prioritize info from object *)
+          sampleDensity = FirstCase[{sampleObjectDensity,sampleModelDensity},DensityP,Null];
+
+          Which[
+            (* If volume is populated use it *)
+            MatchQ[sampleVolume,VolumeP],sampleVolume,
+            (* If density and mass are populated use them *)
+            MatchQ[sampleMass,MassP] && MatchQ[sampleDensity,DensityP],sampleMass / sampleDensity,
+            (* If only mass is populated use density of water *)
+            MatchQ[sampleMass,MassP],sampleMass / (0.997 Gram/Milliliter),
+            (* Default to 1 Milliliter so we don't crash *)
+            True,1 Milliliter
+          ]
+        ],
+        (* If we aren't diluting but the sample is resuspended, use the post resuspension sample info*)
+        NullQ[resolvedDilutionType],
+          Download[postResuspensionSample,Volume,Simulation->currentSimulation],
+
+        (* If we are diluting and dilution strategy is endpoint - take the last final volume *)
+        !NullQ[resolvedDilutionType] && MatchQ[resolvedDilutionStrategy,Endpoint],
+        Last[resolvedDilutionFinalVolume],
+
+        (* If we are diluting and dilution strategy is series - take the smallest volume*)
+        !NullQ[resolvedDilutionType] && MatchQ[resolvedDilutionStrategy,Series],
+        Min[resolvedDilutionFinalVolume],
+
+        (* If we made it this far, something errored earlier, just default to 1mL *)
+        True,
+        1 Milliliter
+      ];
+
+      defaultNumberOfDispenseLocations = Which[
+        MatchQ[specifiedDispenseCoordinates,Except[Automatic]],
+        (*If the dispense coordinates is specified, get its length*)
+          Length[specifiedDispenseCoordinates],
+        (*dispense coordinates is Automatic. We need to look at how it will be resolved.*)
+        (*SpreadPattern defaults to Spiral for SpreadCells through widget and has 9 dispense locations if resolved*)
+        MatchQ[specifiedSpreadPatternType,Spiral],
+          9,
+        (*If SpreadPattern is specified to vertical or horizontal zigzag it resolves to 5 dispense locations*)
+        MatchQ[specifiedSpreadPatternType,VerticalZigZag|HorizontalZigZag],
+          5,
+        True,
+        (*For other spread patterns or streak experiments, the dispense locations is resolved to 1 coordinates*)
+          1
+      ];
       
       (* -- Resolve Volume options -- *)
       resolvedSpreadVolume = Which[
         (* Null out if not this experiment *)
         MatchQ[experimentFunction,ExperimentStreakCells],
-        Null,
+          Null,
         
         (* If anything but automatic, leave it alone *)
         MatchQ[specifiedSpreadVolume,Except[Automatic]],
-        specifiedSpreadVolume,
+          specifiedSpreadVolume,
         
-        (* Otherwise, resolve to 100 Microliter *)
+        (* Otherwise, resolve to the median between 30uL, sample volume divided by default number of dispense locations, 100uL. As the minimum is 30uL and maximum is 100uL. Need to safe round down to make sure the sample volume is enough for the calculated spread/streak volume *)
         True,
-        100 Microliter
+          Median[{30 Microliter, 100 Microliter,SafeRound[sampleVolume/defaultNumberOfDispenseLocations,1*Microliter,RoundAmbiguous -> Down, Round->Down]}]
       ];
 
       resolvedStreakVolume = Which[
@@ -1888,9 +2718,9 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         MatchQ[specifiedStreakVolume,Except[Automatic]],
         specifiedStreakVolume,
 
-        (* Otherwise, resolve to 100 Microliter *)
+        (* Otherwise, resolve to the median between 30uL, sample volume divided by default number of dispense locations, 100uL. As the minimum is 30uL and maximum is 100uL. *)
         True,
-        100 Microliter
+          Median[{30 Microliter, 100 Microliter,SafeRound[sampleVolume/defaultNumberOfDispenseLocations,1*Microliter,RoundAmbiguous -> Down,Round->Down]}]
       ];
 
       (* Resolve Source Mixing *)
@@ -1899,10 +2729,10 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         MatchQ[specifiedSourceMix,Except[Automatic]],
         specifiedSourceMix,
 
-        (* If any of the other source mix options are set, resolve to True *)
-        Or[
-          MatchQ[specifiedSourceMixVolume,Except[Automatic]],
-          MatchQ[specifiedNumberOfSourceMixes,Except[Automatic]]
+        (* If source type is liquid media and If any of the other source mix options are set, resolve to True *)
+        MatchQ[resolvedInoculationSource,LiquidMedia]&& Or[
+            MatchQ[specifiedSourceMixVolume,Except[Automatic]],
+            MatchQ[specifiedNumberOfSourceMixes,Except[Automatic]]
         ],
         True,
 
@@ -1912,64 +2742,26 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       ];
 
       (* Resolve SourceMixVolume *)
-      resolvedSourceMixVolume = Module[{sampleVolume},
+      resolvedSourceMixVolume = Which[
+        (* If volume to mix is specified, use it *)
+        MatchQ[specifiedSourceMixVolume,Except[Automatic]],
+        specifiedSourceMixVolume,
 
-        (* Get the volume of the sample we are mixing - either after dilution or if not diluting - our initial sample *)
-        sampleVolume = Which[
-          (* If we aren't diluting - use sample volume if populated, if not try to convert from mass *)
-          NullQ[resolvedDilutionType],
-            Module[{sampleVolume,sampleMass,sampleDensity},
-              sampleVolume = fastAssocLookup[combinedFastAssoc,mySample,Volume];
-              sampleMass = fastAssocLookup[combinedFastAssoc,mySample,Mass];
-              sampleDensity = fastAssocLookup[combinedFastAssoc,mySample,Density];
+        (* If we are not mixing, resolve to Null *)
+        !resolvedSourceMix,
+        Null,
 
+        (* If volume is not specified and we are mixing, take 1/4th of the sampleVolume clamped between 10 and 130 microliter *)
+        True,
+        Module[{volToMix},
+          (* Volume to mix is 1/4th sample volume *)
+          volToMix = N[sampleVolume / 4];
 
-              Which[
-                (* If volume is populated use it *)
-                MatchQ[sampleVolume,VolumeP],sampleVolume,
-                (* If density and mass are populated use them *)
-                MatchQ[sampleMass,MassP] && MatchQ[sampleDensity,DensityP],sampleMass / sampleDensity,
-                (* If only mass is populated use density of water *)
-                MatchQ[sampleMass,MassP],sampleMass / (0.997 Gram/Milliliter),
-                (* Default to 1 Milliliter so we don't crash *)
-                True,1 Milliliter
-              ]
-            ],
-
-          (* If we are diluting and dilution strategy is endpoint - take the last final volume *)
-          !NullQ[resolvedDilutionType] && MatchQ[resolvedDilutionStrategy,Endpoint],
-          Last[resolvedDilutionFinalVolume],
-
-          (* If we are diluting and dilution strategy is series - take the smallest volume *)
-          !NullQ[resolvedDilutionType] && MatchQ[resolvedDilutionStrategy,Series],
-          Min[resolvedDilutionFinalVolume],
-
-          (* If we made it this far, something errored earlier, just default to 1mL *)
-          True,
-          1 Milliliter
-        ];
-
-        Which[
-          (* If volume to mix is specified, use it *)
-          MatchQ[specifiedSourceMixVolume,Except[Automatic]],
-          specifiedSourceMixVolume,
-
-          (* If we are not mixing, resolve to Null *)
-          !resolvedSourceMix,
-          Null,
-
-          (* If volume is not specified and we are mixing, take 1/4th of the sampleVolume clamped between 10 and 130 microliter *)
-          True,
-          Module[{volToMix},
-            (* Volume to mix is 1/4th sample volume *)
-            volToMix = N[sampleVolume / 4];
-
-            (* Clamp it between 10 and 130 microliter *)
-            Which[
-              GreaterQ[volToMix,130 Microliter],130 Microliter,
-              LessQ[volToMix,10 Microliter],10 Microliter,
-              True,volToMix
-            ]
+          (* Clamp it between 10 and 130 microliter *)
+          Which[
+            GreaterQ[volToMix,130 Microliter],130 Microliter,
+            LessQ[volToMix,10 Microliter],10 Microliter,
+            True,volToMix
           ]
         ]
       ];
@@ -2066,13 +2858,21 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         resolvedColonyTool,
         Null
       ];
+
+      (*Get the model of the cassette*)
+      resolvedColonyToolModel = If[MatchQ[resolvedColonyTool,ObjectP[Object[Part]]],
+        (*if it is an object, get its model*)
+        fastAssocLookup[combinedFastAssoc,resolvedColonyTool,Model],
+        (*Otherwise it is already a model, use as is*)
+        resolvedColonyTool
+      ];
       
       (* Resolve HeadDiameter *)
       resolvedHeadDiameter = Which[
         (* If it is specified, keep it *)
         MatchQ[specifiedHeadDiameter,Except[Automatic]], specifiedHeadDiameter,
         (* If we found a head to use - use its value *)
-        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyTool,HeadDiameter],
+        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyToolModel,HeadDiameter],
         (* If we couldn't find a head - default to Null *)
         True,Null
       ];
@@ -2082,7 +2882,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         (* If it is specified, keep it *)
         MatchQ[specifiedHeadLength,Except[Automatic]], specifiedHeadLength,
         (* If we found a head to use - use its value *)
-        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyTool,HeadLength],
+        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyToolModel,HeadLength],
         (* If we couldn't find a head - default to Null *)
         True,Null
       ];
@@ -2092,7 +2892,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         (* If it is specified, keep it *)
         MatchQ[specifiedNumberOfHeads,Except[Automatic]], specifiedNumberOfHeads,
         (* If we found a head to use - use its value *)
-        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyTool,NumberOfHeads],
+        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyToolModel,NumberOfHeads],
         (* If we couldn't find a head - default to Null *)
         True,Null
       ];
@@ -2102,7 +2902,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         (* If it is specified, keep it *)
         MatchQ[specifiedColonyHandlerHeadCassetteApplication,Except[Automatic]], specifiedColonyHandlerHeadCassetteApplication,
         (* If we found a head to use - use its value *)
-        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyTool,Application],
+        !NullQ[resolvedColonyTool],fastAssocLookup[combinedFastAssoc,resolvedColonyToolModel,Application],
         (* If we couldn't find a head - default to Null *)
         True,Null
       ];
@@ -2153,7 +2953,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
             ];
 
             (* Get the first model cell (if there are any) *)
-            cellModel = FirstCase[sampleComposition,{_,x:ObjectP[Model[Cell]]} :> x, Null];
+            cellModel = FirstCase[sampleComposition,{_,x:ObjectP[Model[Cell]],_} :> x, Null];
 
             (* If there is a cell model, look up its PreferredSolidMedia *)
             If[MatchQ[fastAssocLookup[combinedFastAssoc,cellModel,PreferredSolidMedia],ObjectP[Model[Sample]]],
@@ -2359,7 +3159,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       }
     ]
   ],
-    {mySamples,mapThreadFriendlyOptions}
+    {mySamples,postResuspensionSamples,mapThreadFriendlyOptions}
   ];
   
   (* Resolve DestinationWell *)
@@ -2502,7 +3302,8 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   (* If sampleOutLabels is Automatic, resolve it *)
   resolvedSampleOutLabels=MapThread[
     Function[{sampleOutLabel,dilutionType,dilutionStrategy,numberOfDilutions,index},
-      Which[
+      (* This ToList is needed so that we output resolved options with nested list for SampleOutLabel, which can then be run again in the script-generated RCP call. Otherwise, although ExperimentSpreadCells and RCP with SpreadCels UO would both be able to run error free, RCP generated script cannot as framework sees flat list and will ConstantArray expand it before it even reaches ExperimentSpreadCells and crash. *)
+      ToList[Which[
         (* If the given label is not automatic, leave it alone *)
         MatchQ[sampleOutLabel,Except[Automatic]],
           sampleOutLabel,
@@ -2526,7 +3327,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
         (* Otherwise, dilutionStrategy is Series, so we make numberOfDilutions + 1 samples out *)
         True,
           Table[CreateUniqueLabel[functionString <> " Sample " <> ToString[index] <> " Sample Out"],{i,1,numberOfDilutions+1}]
-      ]
+      ]]
     ],
     {
       Lookup[partiallyResolvedSpreadAndStreakCellsOptionsWithDilution,SampleOutLabel],
@@ -2547,7 +3348,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     (* Loop over the resolved containers and dilution strategies *)
     MapThread[
       Function[{containerOutLabel, destinationContainer, dilutionType, dilutionStrategy,numberOfDilutions,index},
-        Which[
+        ToList[Which[
           (* If the given label is not automatic, leave it alone *)
           MatchQ[containerOutLabel,Except[Automatic]],
             Module[{},
@@ -2589,12 +3390,12 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
 
           (* If we made it this far and numberOfDilutions is Null this means we have a conflict, make 1 sample out label *)
           NullQ[numberOfDilutions],
-          CreateUniqueLabel[functionString <> " Sample " <> ToString[index] <> " Sample Out"],
+            CreateUniqueLabel[functionString <> " Sample " <> ToString[index] <> " Sample Out"],
 
           (* Otherwise, dilutionStrategy is Series, so we make numberOfDilutions + 1 samples out *)
           True,
             Table[CreateUniqueLabel[functionString <> " Sample " <> ToString[index] <> " Container Out"],{i,1,numberOfDilutions+1}]
-        ]
+        ]]
       ],
       {
         Lookup[partiallyResolvedSpreadAndStreakCellsOptionsWithDilution,ContainerOutLabel],
@@ -2608,11 +3409,113 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   ];
 
   (* CONFLICTING OPTION CHECKS *)
+
+  (*NoPreferredLiquidMediaForResuspensionWarnings*)
+  If[MemberQ[noPreferredLiquidMediaForResuspensionWarnings,True]&&messages,
+    Message[Warning::NoPreferredLiquidMediaForResuspension,
+      ObjectToString[PickList[mySamples,noPreferredLiquidMediaForResuspensionWarnings], Cache -> combinedCache]]
+  ];
+
+  (*ResuspensionOptionIncompatibleSourceErrors*)
+  resuspensionOptionIncompatibleSourceOptions = If[MemberQ[resuspensionOptionIncompatibleSourceErrors,True]&&messages,
+    Message[Error::ResuspensionOptionIncompatibleSource, ObjectToString[PickList[mySamples,resuspensionOptionIncompatibleSourceErrors],Cache->combinedCache]];
+    Switch[resolvedInoculationSource,
+      (*all resuspension options are not allowed for liquid media*)
+      LiquidMedia,resuspensionOptionSymbols,
+      FreezeDried,{NumberOfSourceScrapes},
+      _,{}],
+    {}
+  ];
+
+  resuspensionOptionIncompatibleSourceTests = If[MemberQ[resuspensionOptionIncompatibleSourceErrors,True]&&gatherTests,
+    Module[{passingInputs,failingInputs,passingTest,failingTest},
+
+      (* Get the failing inputs *)
+      failingInputs = PickList[mySamples,resuspensionOptionIncompatibleSourceErrors];
+
+      (* Get the passing inputs *)
+      passingInputs = Complement[mySamples,failingInputs];
+
+      (* Create the passing test *)
+      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" do not have incompatible resuspension options specified:",True,True];
+
+      (* Create the failing test *)
+      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" do not have incompatible resuspension options specified:",True,False];
+
+      (* Return the tests *)
+      {passingTest,failingTest}
+    ],
+    Nothing
+  ];
+
+  (* noResuspensionMixForFreezeDriedSampleWarnings. Message is shared with InoculateLiquidMedia*)
+  If[MemberQ[noResuspensionMixWarnings,True]&&messages,
+    Message[Warning::NoResuspensionMix,  ObjectToString[PickList[mySamples,noResuspensionMixWarnings], Cache -> combinedCache]]
+  ];
+
+  (* mixMismatchErrors *)
+  resuspensionMixMismatchOptions = If[MemberQ[resuspensionMixOptionsMismatchErrors,True]&&messages,
+    Message[Error::ResuspensionMixMismatch,
+      ObjectToString[PickList[mySamples,resuspensionMixOptionsMismatchErrors], Cache -> combinedCache]];
+    {ResuspensionMix,ResuspensionMixType, NumberOfResuspensionMixes, ResuspensionMixVolume},
+    {}
+  ];
+
+  resuspensionMixMismatchTests = If[MemberQ[resuspensionMixOptionsMismatchErrors,True]&&gatherTests,
+    Module[{passingInputs,failingInputs,passingTest,failingTest},
+
+      (* Get the failing inputs *)
+      failingInputs = PickList[mySamples,resuspensionMixOptionsMismatchErrors];
+
+      (* Get the passing inputs *)
+      passingInputs = Complement[mySamples,failingInputs];
+
+      (* Create the passing test *)
+      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" have ResuspensionMix->True, or ResuspensionMix ->False while other resuspension mix options set to Null:",True,True];
+
+      (* Create the failing test *)
+      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" have ResuspensionMix->True, or ResuspensionMix ->False while other resuspension mix options set to Null:",True,False];
+
+      (* Return the tests *)
+      {passingTest,failingTest}
+    ],
+    Nothing
+  ];
+
+  (* invalidResuspensionContainerWellErrors *)
+  invalidResuspensionContainerWellOptions = If[MemberQ[invalidResuspensionContainerWellErrors,True]&&messages,
+    Message[Error::InvalidResuspensionContainerWellPosition,
+      ObjectToString[PickList[mySamples,invalidResuspensionContainerWellErrors], Cache -> combinedCache]];
+    {ResuspensionContainerWell},
+    {}
+  ];
+
+  invalidResuspensionContainerWellTests = If[MemberQ[invalidResuspensionContainerWellErrors,True]&&gatherTests,
+    Module[{passingInputs,failingInputs,passingTest,failingTest},
+
+      (* Get the failing inputs *)
+      failingInputs = PickList[mySamples,invalidResuspensionContainerWellErrors];
+
+      (* Get the passing inputs *)
+      passingInputs = Complement[mySamples,failingInputs];
+
+      (* Create the passing test *)
+      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" have a resuspension container well that is a valid Position in ResuspensionContainer:",True,True];
+
+      (* Create the failing test *)
+      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->combinedCache]<>" have a resuspension container well that is a valid Position in ResuspensionContainer:",True,False];
+
+      (* Return the tests *)
+      {passingTest,failingTest}
+    ],
+    Nothing
+  ];
+
   (* DilutionMismatchErrors *)
   dilutionMismatchOptions = If[MemberQ[allDilutionConflictErrors[[All,1]], True] && messages,
     Message[
       Error::DilutionMismatch,
-      PickList[mySamples, allDilutionConflictErrors[[All,1]], True],
+      ObjectToString[PickList[mySamples, allDilutionConflictErrors[[All,1]], True], Cache -> combinedCache],
       PickList[allDilutionConflictErrors[[All,2]], allDilutionConflictErrors[[All,1]], True],
       PickList[Range[Length[mySamples]], allDilutionConflictErrors[[All,1]], True]
     ];
@@ -2811,20 +3714,29 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   ];
 
   (* Error::ColonyHandlerHeadCassetteMismatch *)
+  (*Get the model of the cassette*)
+  resolvedColonyHandlingTools = If[MatchQ[experimentFunction,ExperimentSpreadCells],resolvedColonySpreadingTools,resolvedColonyStreakingTools];
+  resolvedColonyHandlingToolModels = If[MatchQ[#,ObjectP[Object[Part]]],
+        (*if it is an object, get its model*)
+        fastAssocLookup[combinedFastAssoc,#,Model],
+        (*Otherwise it is already a model, use as is*)
+       #
+  ]&/@resolvedColonyHandlingTools;
+  (*Check for mismatches*)    
   colonyHandlerHeadCassetteMismatches = MapThread[
-    Function[{sample,tool,headDiameter,headLength,numberOfHeads,application,index},
+    Function[{sample,tool,toolModel,headDiameter,headLength,numberOfHeads,application,index},
       If[
         Or[
-          !NullQ[tool] && !MatchQ[headDiameter,RangeP[fastAssocLookup[combinedFastAssoc,tool,HeadDiameter]]],
-          !NullQ[tool] && !MatchQ[headLength,RangeP[fastAssocLookup[combinedFastAssoc,tool,HeadLength]]],
-          !NullQ[tool] && !MatchQ[numberOfHeads,fastAssocLookup[combinedFastAssoc,tool,NumberOfHeads]],
-          !NullQ[tool] && !MatchQ[application,fastAssocLookup[combinedFastAssoc,tool,Application]]
+          !NullQ[tool] && !MatchQ[headDiameter,RangeP[fastAssocLookup[combinedFastAssoc,toolModel,HeadDiameter]]],
+          !NullQ[tool] && !MatchQ[headLength,RangeP[fastAssocLookup[combinedFastAssoc,toolModel,HeadLength]]],
+          !NullQ[tool] && !MatchQ[numberOfHeads,fastAssocLookup[combinedFastAssoc,toolModel,NumberOfHeads]],
+          !NullQ[tool] && !MatchQ[application,fastAssocLookup[combinedFastAssoc,toolModel,Application]]
         ],
         {sample,tool,headDiameter,headLength,numberOfHeads,application,index},
         Nothing
       ]
     ],
-    {mySamples,If[MatchQ[experimentFunction,ExperimentSpreadCells],resolvedColonySpreadingTools,resolvedColonyStreakingTools],resolvedHeadDiameters,resolvedHeadLengths,resolvedNumberOfHeads,resolvedColonyHandlerHeadCassetteApplications,Range[Length[mySamples]]}
+    {mySamples,resolvedColonyHandlingTools,resolvedColonyHandlingToolModels,resolvedHeadDiameters,resolvedHeadLengths,resolvedNumberOfHeads,resolvedColonyHandlerHeadCassetteApplications,Range[Length[mySamples]]}
   ];
 
   colonyHandlerHeadCassetteMismatchOptions = If[Length[colonyHandlerHeadCassetteMismatches] > 0 && messages,
@@ -3445,51 +4357,9 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     Nothing
   ];
 
-  (*(* Error::TotalDilutionVolumeTooLarge *)
-  totalDilutionVolumeTooLargeErrors = MapThread[
-    Function[{sample, totalDilutionVolumes, index},
-      If[
-        MemberQ[totalDilutionVolumes, GreaterP[1.9 Milliliter]],
-        {sample, totalDilutionVolumes, index},
-        Nothing
-      ]
-    ],
-    {mySamples, resolvedTotalDilutionVolumes, Range[Length[mySamples]]}
-  ];
-
-  totalDilutionVolumeTooLargeOptions = If[Length[totalDilutionVolumeTooLargeErrors] > 0 && messages,
-    Message[
-      Error::TotalDilutionVolumeTooLarge,
-      ObjectToString[totalDilutionVolumeTooLargeErrors[[All,1]], Cache -> combinedCache],
-      totalDilutionVolumeTooLargeErrors[[All,2]],
-      totalDilutionVolumeTooLargeErrors[[All,3]]
-
-    ];
-    {TotalDilutionVolume},
-    {}
-  ];
-
-  totalDilutionVolumeTooLargeTests = If[gatherTests,
-    Module[{affectedSamples, failingTest, passingTest},
-      affectedSamples = totalDilutionVolumeTooLargeErrors[[All,1]];
-
-      failingTest = If[Length[affectedSamples] == 0,
-        Nothing,
-        Test["The sample(s) " <> ObjectToString[affectedSamples, Cache -> combinedCache] <> " have a total dilution volume less than or equal to 1.9 Milliliters for all stages of dilution.", True, False]
-      ];
-
-      passingTest = If[Length[affectedSamples] == Length[mySamples],
-        Nothing,
-        Test["The sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> combinedCache] <> " have a total dilution volume less than or equal to 1.9 Milliliters for all stages of dilution.", True, True]
-      ];
-
-      {failingTest, passingTest}
-    ],
-    Nothing
-  ];*)
-
   invalidOptions = DeleteDuplicates@Flatten[
     {
+      sanitizationOptionInvalidOptions,
       destinationMediaNotSolidOptions,
       conflictingDestinationMediaOptions,
       invalidDestinationWellOptions,
@@ -3505,7 +4375,11 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       sourceMixMismatchOptions,
       dilutionMismatchOptions,
       sampleOutLabelMismatchOptions,
-      containerOutLabelMismatchOptions
+      containerOutLabelMismatchOptions,
+      resuspensionOptionIncompatibleSourceOptions,
+      resuspensionMixMismatchOptions,
+      invalidResuspensionContainerWellOptions,
+      invalidDilutionOptions
     }
   ];
 
@@ -3513,6 +4387,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
     {
       sanitizationOptionInvalidInputs,
       nonLiquidInvalidInputs,
+      multipleInoculationSourceInputs,
       discardedInvalidInputs
     }
   ];
@@ -3531,6 +4406,16 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
   resolvedOptions = Join[
     {
       Instrument->resolvedInstrument,
+      InoculationSource -> resolvedInoculationSource,
+      ResuspensionMedia -> resolvedResuspensionMedias,
+      ResuspensionMediaVolume -> resolvedResuspensionMediaVolumes,
+      ResuspensionContainer -> resolvedResuspensionContainers,
+      ResuspensionContainerWell -> resolvedResuspensionContainerWells,
+      ResuspensionMix -> resolvedResuspensionMixes,
+      ResuspensionMixType -> resolvedResuspensionMixTypes,
+      ResuspensionMixVolume -> resolvedResuspensionMixVolumes,
+      NumberOfResuspensionMixes -> resolvedNumberOfResuspensionMixess,
+      NumberOfSourceScrapes -> resolvedNumberOfSourceScrapess,
       DilutionType -> resolvedDilutionTypes,
       DilutionStrategy -> resolvedDilutionStrategies,
       NumberOfDilutions -> resolvedNumberOfDilutions,
@@ -3612,6 +4497,7 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
 
     Tests -> Flatten[{
       discardedTest,
+      multipleInoculationSourceInInputTests,
       nonLiquidTest,
       destinationMediaNotSolidTests,
       conflictingDestinationMediaTests,
@@ -3630,7 +4516,10 @@ resolveExperimentSpreadAndStreakCellsOptions[mySamples:{ObjectP[Object[Sample]].
       sampleOutLabelMismatchTests,
       containerOutLabelMismatchTests,
       sanitizationOptionTests,
-      compatibleMaterialsTests
+      compatibleMaterialsTests,
+      resuspensionOptionIncompatibleSourceTests,
+      resuspensionMixMismatchTests,
+      invalidResuspensionContainerWellTests
     }]
   }
 ];
@@ -3653,39 +4542,38 @@ streakAndSpreadCellsResourcePackets[
   ops:OptionsPattern[streakAndSpreadCellsResourcePackets]
 ] := Module[
   {
-    unresolvedOptionsNoHidden,resolvedOptionsNoHidden,outputSpecification,output,
-    gatherTests,messages,inheritedCache,simulation,currentSimulation,resolvedPreparation,
-    specifiedInstrument, specifiedDilutionType, specifiedDilutionStrategy, specifiedDilutionTransferVolume,
-    specifiedDiluent, specifiedDiluentVolume, specifiedConcentratedBuffer, specifiedConcentratedBufferVolume,
-    specifiedConcentratedBufferDiluent, specifiedConcentratedBufferDiluentVolume, specifiedDilutionFinalVolume,specifiedNumberOfDilutions,
-    specifiedTotalDilutionVolumes,specifiedDilutionIncubation,
+    unresolvedOptionsNoHidden, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, inheritedCache,
+    simulation, currentSimulation, resolvedPreparation, specifiedInoculationSource, specifiedInstrument, specifiedResuspensionMix,
+    specifiedResuspensionMixType, specifiedNumberOfResuspensionMixes, specifiedResuspensionMixVolume, specifiedResuspensionMedia,
+    specifiedResuspensionMediaVolume, specifiedResuspensionContainer, specifiedResuspensionContainerWell, specifiedNumberOfSourceScrapes,
+    specifiedDilutionType, specifiedDilutionStrategy, specifiedDilutionTransferVolume, specifiedDiluent, specifiedDiluentVolume,
+    specifiedConcentratedBuffer, specifiedConcentratedBufferVolume, specifiedConcentratedBufferDiluent, specifiedConcentratedBufferDiluentVolume,
+    specifiedDilutionFinalVolume,specifiedNumberOfDilutions, specifiedTotalDilutionVolumes, specifiedDilutionIncubation,
     specifiedDilutionIncubationTime, specifiedDilutionIncubationInstrument, specifiedDilutionIncubationTemperature, specifiedDilutionMixType,
     specifiedDilutionNumberOfMixes, specifiedDilutionMixRate, specifiedDilutionMixOscillationAngle, specifiedSpreadStreakVolume,
     specifiedColonyStreakSpreadTool, specifiedDispenseCoordinate, specifiedDestinationContainer, specifiedDestinationWell,
     specifiedDestinationMedia, specifiedPrimaryWashSolution, specifiedSecondaryWashSolution, specifiedTertiaryWashSolution,
-    specifiedQuaternaryWashSolution,dilutionConflictErrors,
-
+    specifiedQuaternaryWashSolution, dilutionConflictErrors,
     (* Download *)
-    sampleContainerPackets,sampleContainerModelPackets,specifiedDestinationContainerObjectPackets,specifiedDestinationContainerModelPackets,
-    fastAssoc,
-
+    sampleContainerPackets, sampleContainerModelPackets, specifiedResuspensionDestinationContainerObjectPackets,
+    specifiedResuspensionDestinationContainerModelPackets, specifiedColonyHandlingToolObjectPackets, fastAssoc,
+    defaultAssayContainerModelPackets,
     (* Gathering resources *)
-    runTime,instrumentResource,
-    samplesInVolumesRequired,samplesInAndVolumes,samplesInResourceReplaceRules,samplesInResources,
-    colonyStreakSpreadToolResourceReplaceRules,colonyStreakSpreadToolResources,uniqueWashSolutions,
-    uniqueWashSolutionVolumes,washSolutionsAndVolumes,washSolutionResourceLookup,primaryWashSolutionResources,
-    secondaryWashSolutionResources,tertiaryWashSolutionResources,quaternaryWashSolutionResources,
-
-    qpixCompatibleContainers,assayContainerResources,assayContainerPrimitives, sampleToWellLabelMapping,
-    destinationContainerResources, destinationContainerResourceLengths,mySampleToContainersSpreadMapping,assayContainerLabelLookup,
-    splitOptionPackets,samplePackets,
-    unitOpGroupedByColonyHandlerHeadCassette,finalPhysicalGroups,carrierDeckPlateLocations,numTipsRequired,riserPlacements,
-    carrierPlacements, riserReturns, carrierReturns, initialCarrierAndRiserResourcesToPick, colonyHandlerHeadCassetteAdds,
-    colonyHandlerHeadCassetteRemovals,flatLightTableContainersPerPhysicalBatch,flatLightTableContainerPlacementsPerPhysicalBatch,
-    lightTableContainerLengthsPerPhysicalBatch,carrierContainerDeckPlacements, tipRackPlacements,tipRackReturns,
-    batchedUnitOperationPackets, batchedUnitOperationPacketsWithID,streakSpreadUnitOperationPacket,
-    rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,allResourceBlobs,
-    fulfillable,frqTests,previewRule,optionsRule,resultRule,testsRule
+    runTime, instrumentResource, samplesInVolumesRequired, samplesInAndVolumes, samplesInResourceReplaceRules, samplesInResources,
+    colonyStreakSpreadToolResourceReplaceRules, colonyStreakSpreadToolResources, uniqueWashSolutions, uniqueWashSolutionVolumes, washSolutionsAndVolumes, washSolutionResourceLookup,
+    primaryWashSolutionResources, secondaryWashSolutionResources, tertiaryWashSolutionResources, quaternaryWashSolutionResources,
+    resuspensionContainerResources, resuspensionMediaResources, postResuspensionSamples, postResuspensionSampleLabels,
+    sampleToPostResuspensionSampleLabelMapping, postResuspensionSampleContainerLabels, resuspensionUnitOperations,
+    resuspensionSampleLabelRules, resuspensionSampleContainerLabelReplaceRules, qpixCompatibleContainers, assayContainerResources,
+    assayContainerUnitOperations, sampleToWellLabelMapping, destinationContainerResources, destinationContainerResourceLengths,
+    mySampleToContainersSpreadMapping, assayContainerLabelLookup, splitOptionPackets, samplePackets,
+    unitOpGroupedByColonyHandlerHeadCassette, finalPhysicalGroups, carrierDeckPlateLocations, tipResources, partitionedLists,
+    numTipsRequired, riserPlacements, carrierPlacements, riserReturns, carrierReturns, initialCarrierAndRiserResourcesToPick,
+     colonyHandlerHeadCassettePlacements, colonyHandlerHeadCassetteRemovals,
+    flatLightTableContainersPerPhysicalBatch, flatLightTableContainerPlacementsPerPhysicalBatch, lightTableContainerLengthsPerPhysicalBatch, carrierContainerDeckPlacements,
+    tipRackPlacements, tipRackReturns, batchedUnitOperationPackets, batchedUnitOperationPacketsWithID, streakSpreadUnitOperationPacket,
+    rawResourceBlobs, resourcesWithoutName, resourceToNameReplaceRules, allResourceBlobs, fulfillable, frqTests, previewRule,
+    optionsRule, resultRule, testsRule
   },
   
   (* Get the collapsed unresolved index-matching options that don't include hidden options *)
@@ -3725,7 +4613,17 @@ streakAndSpreadCellsResourcePackets[
   
   (* Extract necessary resolved options *)
   {
+    specifiedInoculationSource,
     specifiedInstrument,
+    specifiedResuspensionMix,
+    specifiedResuspensionMixType,
+    specifiedNumberOfResuspensionMixes,
+    specifiedResuspensionMixVolume,
+    specifiedResuspensionMedia,
+    specifiedResuspensionMediaVolume,
+    specifiedResuspensionContainer,
+    specifiedResuspensionContainerWell,
+    specifiedNumberOfSourceScrapes,
     specifiedDilutionType,
     specifiedDilutionStrategy,
     specifiedDilutionTransferVolume,
@@ -3759,7 +4657,17 @@ streakAndSpreadCellsResourcePackets[
     dilutionConflictErrors
   } = Lookup[myResolvedOptions,
     {
+      InoculationSource,
       Instrument,
+      ResuspensionMix,
+      ResuspensionMixType,
+      NumberOfResuspensionMixes,
+      ResuspensionMixVolume,
+      ResuspensionMedia,
+      ResuspensionMediaVolume,
+      ResuspensionContainer,
+      ResuspensionContainerWell,
+      NumberOfSourceScrapes,
       DilutionType,
       DilutionStrategy,
       DilutionTransferVolume,
@@ -3800,23 +4708,34 @@ streakAndSpreadCellsResourcePackets[
     }
   ];
 
+  (* Define the list of default assay container models *)
+  (* Create a list of qpix compatible containers *)
+  qpixCompatibleContainers = {
+    Model[Container, Plate, "id:4pO6dMmErzez"], (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)
+    Model[Container, Plate, "id:n0k9mGzRaaBn"] (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+  };
+
   (* Download information *)
   (* Split the destination containers into models and objects *)
   {
     samplePackets,
     sampleContainerPackets,
     sampleContainerModelPackets,
-    specifiedDestinationContainerObjectPackets,
-    specifiedDestinationContainerModelPackets
+    defaultAssayContainerModelPackets,
+    specifiedResuspensionDestinationContainerObjectPackets,
+    specifiedResuspensionDestinationContainerModelPackets,
+    specifiedColonyHandlingToolObjectPackets(*if its a model, it does not have holder info and we dont need it*)
   } = Quiet[
     Download[
       {
         mySamples,
         mySamples,
         mySamples,
+        qpixCompatibleContainers,
         (* Split the destination containers into models and objects *)
-        Cases[specifiedDestinationContainer,ObjectP[Object[Container]]],
-        Cases[specifiedDestinationContainer,ObjectP[Model[Container]]]
+        Cases[Flatten[{specifiedResuspensionContainer,specifiedDestinationContainer}],ObjectP[Object[Container]]],
+        Cases[Flatten[{specifiedResuspensionContainer,specifiedDestinationContainer}],ObjectP[Model[Container]]],
+        Cases[specifiedColonyStreakSpreadTool,ObjectP[Object[Part]]]
       },
       {
         {
@@ -3829,13 +4748,20 @@ streakAndSpreadCellsResourcePackets[
           Packet[Container[Model][WellDepth]]
         },
         {
+          Packet[WellDepth]
+        },
+        {
           Packet[Model,Contents],
           Packet[Model[Positions, WellDepth]]
         },
         {
           Packet[Positions, WellDepth]
+        },
+        {
+          Packet[ColonyHandlerHeadCassetteHolder]
         }
-      }
+      },
+      Simulation -> simulation
     ],
     {Download::FieldDoesntExist}
   ];
@@ -3845,8 +4771,10 @@ streakAndSpreadCellsResourcePackets[
     samplePackets,
     sampleContainerPackets,
     sampleContainerModelPackets,
-    specifiedDestinationContainerObjectPackets,
-    specifiedDestinationContainerModelPackets
+    defaultAssayContainerModelPackets,
+    specifiedResuspensionDestinationContainerObjectPackets,
+    specifiedResuspensionDestinationContainerModelPackets,
+    specifiedColonyHandlingToolObjectPackets
   }]];
   
   (* ---------------- First make resources for instrument, samplesIn, tools, destination containers ------------------------------ *)
@@ -3860,8 +4788,14 @@ streakAndSpreadCellsResourcePackets[
   (* SamplesIn *)
   (* Calculate the total volume we need of each sample in.  *)
   samplesInVolumesRequired = MapThread[
-    Function[{spreadStreakVolume,transferVolume,dispenseCoordinates,dilutionType,dilutionStrategy},
+    Function[{spreadStreakVolume,transferVolume,dispenseCoordinates,dilutionType,dilutionStrategy,resuspensionMedia,numberOfSourceScrapes},
       Which[
+        (*If we are resuspending from scrapes oif frozen glycerol, we need only a minimal from the source sample, and we do a rough estimate by number of scrapes *)
+        MatchQ[numberOfSourceScrapes,GreaterQ[0]],
+          5 Microliter *numberOfSourceScrapes,
+        (*Otherwise, no scrape, we are working with freeze dried sample. we need all the solid samples in. *)
+        MatchQ[specifiedInoculationSource,FreezeDried],
+          Null,
         (* If we aren't diluting - only need amount we are streaking/spreading *)
         MatchQ[dilutionType,Null],
           spreadStreakVolume * Length[dispenseCoordinates],
@@ -3879,7 +4813,7 @@ streakAndSpreadCellsResourcePackets[
           First[transferVolume] + (spreadStreakVolume * Length[dispenseCoordinates])
       ]
     ],
-    {specifiedSpreadStreakVolume,specifiedDilutionTransferVolume,specifiedDispenseCoordinate,specifiedDilutionType,specifiedDilutionStrategy}
+    {specifiedSpreadStreakVolume,specifiedDilutionTransferVolume,specifiedDispenseCoordinate,specifiedDilutionType,specifiedDilutionStrategy,specifiedResuspensionMedia,specifiedNumberOfSourceScrapes}
   ];
 
   (* Pair up each sample with its volume *)
@@ -3890,6 +4824,7 @@ streakAndSpreadCellsResourcePackets[
 
   (* Create a resource for the ColonySpreading/StreakingTool *)
   colonyStreakSpreadToolResourceReplaceRules = (# -> Resource[Sample -> #, Name -> ToString[Unique[]]])&/@DeleteDuplicates[Download[specifiedColonyStreakSpreadTool,Object]];
+
   colonyStreakSpreadToolResources = specifiedColonyStreakSpreadTool /. colonyStreakSpreadToolResourceReplaceRules;
 
   (* -- Create a resource for each unique wash solution -- *)
@@ -3903,26 +4838,212 @@ streakAndSpreadCellsResourcePackets[
   washSolutionsAndVolumes = MapThread[Rule,{uniqueWashSolutions,uniqueWashSolutionVolumes}];
 
   (* Create a lookup of Sample -> Resource *)
-  washSolutionResourceLookup = (#[[1]] -> Resource[Sample -> #[[1]], Amount -> #[[2]], Container -> First[ToList@PreferredContainer[#[[1]], #[[2]]]], Name -> ToString[Unique[]]])&/@washSolutionsAndVolumes;
+  washSolutionResourceLookup = Map[
+    Function[{solutionVolumeRule},
+      Module[{sample,volume},
+        (* Split the tuple into sample and volume *)
+        sample = First[solutionVolumeRule];
+        volume = Last[solutionVolumeRule];
+
+        (* Create the proper resource based on whether we have an object or a model *)
+        If[MatchQ[sample,ObjectP[Object[Sample]]],
+          sample -> Resource[Sample->sample,Name -> CreateUUID[]],
+          sample -> Resource[Sample -> sample, Amount -> volume, Container -> First[ToList@PreferredContainer[sample, volume]], RentContainer -> True, Name -> CreateUUID[]]
+        ]
+      ]
+    ],
+    washSolutionsAndVolumes
+  ];
 
   (* Use the lookup to assign resources  *)
   primaryWashSolutionResources = specifiedPrimaryWashSolution /. washSolutionResourceLookup;
   secondaryWashSolutionResources = specifiedSecondaryWashSolution /. washSolutionResourceLookup;
   tertiaryWashSolutionResources = specifiedTertiaryWashSolution /. washSolutionResourceLookup;
   quaternaryWashSolutionResources = specifiedQuaternaryWashSolution /. washSolutionResourceLookup;
+  {resuspensionContainerResources, resuspensionMediaResources} = If[
+    MatchQ[specifiedInoculationSource,FreezeDried|FrozenGlycerol],
+    Module[{uniqueResuspensionContainerObjects,resuspensionContainerObjectResourceLookup,containerResources,mediaResources},
+      (* Create resources for resuspension: container and media *)
+      uniqueResuspensionContainerObjects = DeleteDuplicates[Cases[Flatten[specifiedResuspensionContainer],ObjectP[Object[Container]]]];
+
+      resuspensionContainerObjectResourceLookup = # -> Resource[Sample -> #, Name -> ToString[experimentFunction]<>" Resuspension Container " <> CreateUUID[]]&/@uniqueResuspensionContainerObjects;
+
+     containerResources = Map[
+        Function[{container},
+          Which[
+            MatchQ[container,ObjectP[Object[Container]]],
+            container /. resuspensionContainerObjectResourceLookup,
+            MatchQ[container, ObjectP[Model[Container]]],
+            Resource[Sample -> container, Name -> ToString[experimentFunction]<>" Resuspension Container " <> CreateUUID[]]
+          ]
+        ],
+        specifiedResuspensionContainer
+      ];
+
+      mediaResources = generateMediaResources[myResolvedOptions,ResuspensionMedia,ResuspensionMediaVolume,ToString[experimentFunction]];
+
+      (*Return the resources*)
+      {containerResources,mediaResources}
+    ],
+    {{},{}}
+  ];
 
   (* -------------------------- Make resources for assay container/dilutions -------------------------- *)
-  (* Create a list of qpix compatible containers *)
-  (* TODO: Swap current DWP for Sterile DWP *)
-  qpixCompatibleContainers = {
-    Model[Container, Plate, "id:L8kPEjkmLbvW"], (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
-    Model[Container, Plate, "id:n0k9mGzRaaBn"] (* Model[Container, Plate, "96-well UV-Star Plate"] *)
-  };
+  (*Are we doing any resuspension? *)
+  {postResuspensionSamples,resuspensionSampleLabelRules,resuspensionSampleContainerLabelReplaceRules, resuspensionUnitOperations} = If[MatchQ[specifiedInoculationSource,FreezeDried|FrozenGlycerol],
+    (*Yes we are doing resuspension, we need to populate the field ResuspensionUnitOperations and simulate the samples that proceed to dilution as input samples*)
+    Module[{resusNewDestinations,resuspensionContainersWithModelsSubstituted,uploadResuspensionSamplePackets,resuspensionContainerPackets,resuspensionSamples,resuspensionSamplePackets,sampleLabelReplaceRules,sampleContainerLabelReplaceRules,inoculateLiquidMediaUnitOperation, updatePackets},
+      (*Find which position in resuspension container/well pair does not have a sample yet. Will need to create a simulated one with model of resuspension media*)
+      {resuspensionContainersWithModelsSubstituted,resusNewDestinations}= Transpose@MapThread[
+        Function[{container,well},
+          Module[{containerContents,simulatedContainer,destContainer},
+            (* Lookup the contents of the container *)
+            containerContents = fastAssocLookup[fastAssoc,container,Contents];
+            (*If the container is a model, we need to simulate an object for it*)
+            currentSimulation = If[MatchQ[container,ObjectP[Model[Container]]],
+              (*first create IDs for simulated container*)
+              simulatedContainer = CreateID[container[Type]/.{Model[Container,Vessel]->Object[Container,Vessel],Model[Container,Plate]->Object[Container,Plate]}];
+              (*update the simulation with the packet*)
+              UpdateSimulation[currentSimulation,Simulation[<|Object->simulatedContainer,Model->Link[container,Objects]|>]],
+              (*Otherwise, no update*)
+              currentSimulation
+            ];
+            (*The returned container for calling UploadSample later. Use the simulated if the container is a model, otherwise use the object as it is*)
+            destContainer = If[MatchQ[container,ObjectP[Model[Container]]],
+              simulatedContainer,
+              container
+            ];
+            (* If there is an object sample at the well in question, skip it*)
+            If[!NullQ[FirstCase[containerContents, {well, ObjectP[Object[Sample]]}, Null]],
+              {container,Nothing},
+              (* Otherwise record the uploadcontainer packets well, container pairing*)
+              {destContainer,{well, destContainer}}
+            ]
+          ]
+        ],
+        {
+          specifiedResuspensionContainer,
+          specifiedResuspensionContainerWell
+        }
+      ];
+      (* Upload an sample of the resuspension media to all of empty locations *)
+      uploadResuspensionSamplePackets = UploadSample[
+        ConstantArray[{}, Length[resusNewDestinations]],
+        resusNewDestinations,
+        State -> Liquid,
+        InitialAmount -> ConstantArray[Null, Length[resusNewDestinations]],
+        Simulation -> currentSimulation,
+        SimulationMode -> True,
+        FastTrack -> True,
+        Upload -> False
+      ];
+      (* Update the simulation *)
+      currentSimulation = UpdateSimulation[currentSimulation,Simulation[uploadResuspensionSamplePackets]];
+      (* Retrieve samples inside all containers of interest *)
+      resuspensionContainerPackets = Download[
+        resuspensionContainersWithModelsSubstituted,
+        Packet[Contents],
+        Cache -> inheritedCache,
+        Simulation -> currentSimulation
+      ];
+      (* Convert, {well, container} pairs to the corresponding sample *)
+      resuspensionSamples = MapThread[
+        Function[{containerPacket,well},
+          Download[Last[FirstCase[Lookup[containerPacket,Contents], {well, _}]],Object]
+        ],
+        {
+          resuspensionContainerPackets,
+          specifiedResuspensionContainerWell
+        }
+      ];
+      resuspensionSamplePackets = Download[
+        resuspensionSamples,
+        Packet[Volume],
+        Cache -> inheritedCache,
+        Simulation -> currentSimulation
+      ];
+
+      (*Create sample lables*)
+      sampleLabelReplaceRules = Map[
+        # -> CreateUniqueLabel[ToString[experimentFunction] <> " Resuspended Sample"]&,
+        DeleteDuplicates[resuspensionSamples]
+      ];
+      (*Create resuspended sample container labels*)
+      sampleContainerLabelReplaceRules = Map[
+        # -> CreateUniqueLabel[ToString[experimentFunction] <> " Resuspended Sample Container"]&,
+        DeleteDuplicates[resuspensionSamples]
+      ];
+
+      (*MapThread over the samples to get a list of new volume and composition*)
+      updatePackets=MapThread[
+        Function[{resuspensionSample, resuspensionSamplePacket,numberOfScrapes, volume},
+          Module[{initialVolume, scrapedVolume, newVolume},
+            initialVolume = Lookup[resuspensionSamplePacket,Volume];
+            (*Roughly estimate the volume added by scrapes if any*)
+            scrapedVolume = 5 Microliter * numberOfScrapes;
+            (*Estimate the new volume by the sum of the 3*)
+            newVolume = Total[Cases[{initialVolume,scrapedVolume, volume}, VolumeP]];
+
+            (*Return the update packet for this sample*)
+            <|Object -> resuspensionSample,
+              Volume -> newVolume|>
+          ]
+        ],
+        {resuspensionSamples, resuspensionSamplePackets, specifiedNumberOfSourceScrapes, specifiedResuspensionMediaVolume}
+      ];
+      (* Update the simulation *)
+      currentSimulation = UpdateSimulation[currentSimulation,Simulation[updatePackets]];
+
+      (*Create the InoculateLiquidMediaUnitOperation*)
+      inoculateLiquidMediaUnitOperation = If[MatchQ[specifiedInoculationSource,FreezeDried],
+        (*For freeze dried, we are using resuspension options as they are, but need to force destination container to be our resuspension container while not having destination media*)
+        InoculateLiquidMedia[
+          Sample -> mySamples,
+          InoculationSource -> FreezeDried,
+          ResuspensionMedia -> specifiedResuspensionMedia,
+          ResuspensionMediaVolume -> specifiedResuspensionMediaVolume,
+          ResuspensionMix -> specifiedResuspensionMix,
+          NumberOfResuspensionMixes -> specifiedNumberOfResuspensionMixes,
+          ResuspensionMixVolume -> specifiedResuspensionMixVolume,
+          DestinationMediaContainer -> specifiedResuspensionContainer/.x:ObjectP[]:>{x},
+          DestinationMedia -> Null,
+          DestinationWell -> specifiedResuspensionContainerWell,
+          DestinationMix -> False,
+          DestinationMixType -> Null,
+          SampleOutLabel -> ((resuspensionSamples/.x:ObjectP[]:>{x})/.sampleLabelReplaceRules),
+          ContainerOutLabel -> ((resuspensionSamples/.x:ObjectP[]:>{x})/.sampleContainerLabelReplaceRules)
+        ],
+        (*Otherwise for frozen glycerol, we are using destination options as the resuspension blahs*)
+        InoculateLiquidMedia[
+          Sample -> mySamples,
+          InoculationSource -> FrozenGlycerol,
+          NumberOfSourceScrapes -> specifiedNumberOfSourceScrapes,
+          DestinationMedia -> specifiedResuspensionMedia,
+          MediaVolume -> specifiedResuspensionMediaVolume,
+          DestinationMix -> specifiedResuspensionMix,
+          DestinationNumberOfMixes -> specifiedNumberOfResuspensionMixes,
+          DestinationMixVolume -> specifiedResuspensionMixVolume,
+          DestinationMediaContainer -> specifiedResuspensionContainer,
+          DestinationWell -> specifiedResuspensionContainerWell,
+          SampleOutLabel -> ((resuspensionSamples/.x:ObjectP[]:>{x})/.sampleLabelReplaceRules),
+          ContainerOutLabel ->  ((resuspensionSamples/.x:ObjectP[]:>{x})/.sampleContainerLabelReplaceRules)
+        ]
+      ];
+      (*Return the samples and primitives*)
+      {resuspensionSamples,sampleLabelReplaceRules,sampleContainerLabelReplaceRules,inoculateLiquidMediaUnitOperation}
+    ],
+    (*Otherwise, no resuspension. The samples proceeding to dilution is just input samples, and Null for ResuspensionUnitOperations*)
+    {mySamples, {},{},{}}
+  ];
+
+  postResuspensionSampleLabels = postResuspensionSamples/.resuspensionSampleLabelRules;
+  postResuspensionSampleContainerLabels = postResuspensionSamples/.resuspensionSampleContainerLabelReplaceRules;
+  sampleToPostResuspensionSampleLabelMapping = AssociationThread[mySamples,postResuspensionSampleLabels];
 
   (* Are we doing any dilutions? *)
   {
     assayContainerResources,
-    assayContainerPrimitives,
+    assayContainerUnitOperations,
     sampleToWellLabelMapping
   } = If[MemberQ[specifiedDilutionType,Except[Null]] && !MemberQ[dilutionConflictErrors[[All,1]], True],
     (* Yes *)
@@ -3950,7 +5071,7 @@ streakAndSpreadCellsResourcePackets[
         {
           False,
           {},
-          Model[Container, Plate, "id:L8kPEjkmLbvW"] (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+          Model[Container, Plate, "id:4pO6dMmErzez"](* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"]*)
         },
         Module[{maxTotalDilutionVolume},
           (* Get the preferred vessel for dilutions *)
@@ -3962,17 +5083,20 @@ streakAndSpreadCellsResourcePackets[
               maxTotalDilutionVolume,
               Sterile -> True,
               Type -> Vessel,
-              LiquidHandlerCompatible->True,
               Messages -> False
             ],
-            Model[Container, Plate, "id:L8kPEjkmLbvW"] (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+            Model[Container, Plate, "id:4pO6dMmErzez"](* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)
           }
         ]
       ];
 
       (* Get the available wells in the assay container *)
-      (* TODO: Cache AllWells *)
-      assayContainerAvailableWells = Flatten[AllWells[assayContainerModel]];
+      assayContainerAvailableWells = If[GreaterQ[Length[assayContainerModel],0],
+        (*If the assay container model is populated, get the availabel wells*)
+        Flatten[AllWells[assayContainerModel,Cache->inheritedCache]],
+        (* Otherwise don't bother*)
+        {}
+      ];
       qpixAssayContainerAvailableWells = Flatten[AllWells[qpixAssayContainerModel]];
 
       (* Figure out how many assay containers we will need and then make a label container primitive *)
@@ -4010,15 +5134,24 @@ streakAndSpreadCellsResourcePackets[
         totalNumberOfAssayContainers,
         totalNumberOfQPixAssayContainers
       } = {
-        Ceiling[N[assayContainerTotalNumberOfWells / Length[assayContainerAvailableWells]]],
+        If[GreaterQ[Length[assayContainerModel],0],
+          (*If the assay container model is populated, number of needed containers*)
+          Ceiling[N[assayContainerTotalNumberOfWells / Length[assayContainerAvailableWells]]],
+          (*Otherwise it is zero*)
+          0],
         Ceiling[N[qpixAssayContainerTotalNumberOfWells / Length[qpixAssayContainerAvailableWells]]]
       };
 
       (* Create the labels for the assay containers *)
-      assayContainerLabels = Map[If[MatchQ[experimentFunction,ExperimentSpreadCells],
+      assayContainerLabels = If[GreaterQ[Length[assayContainerModel],0],
+        (*If the assay container model is populated, generate the labels*)
+        Map[If[MatchQ[experimentFunction,ExperimentSpreadCells],
         "Experiment spread cells assay container " <> ToString[#],
         "Experiment streak cells assay container " <> ToString[#]
-      ]&,Range[totalNumberOfAssayContainers]];
+      ]&,Range[totalNumberOfAssayContainers]],
+        (*Otherwise the labels are empty list*)
+        {}
+      ];
 
       qpixAssayContainerLabels = Map[If[MatchQ[experimentFunction,ExperimentSpreadCells],
         "Experiment spread cells qpix assay container " <> ToString[#],
@@ -4271,7 +5404,12 @@ streakAndSpreadCellsResourcePackets[
       (* Assay Container *)
       assayContainerCurrentWell = "A1";
       assayContainerPreviousWell = Null;
-      assayContainerNextWells = Rest[assayContainerAvailableWells];
+      assayContainerNextWells = If[GreaterQ[Length[assayContainerModel],0],
+        (*If the assayContainerModel is populated, take the rest of the available wells*)
+        Rest[assayContainerAvailableWells],
+        (*Otherwise just set it to Null*)
+        Null
+      ];
       currentAssayContainerLabel = FirstOrDefault[assayContainerLabels,Null];
       previousAssayContainerLabel = Null;
       nextAssayContainerLabels = RestOrDefault[assayContainerLabels,{}];
@@ -4355,11 +5493,15 @@ streakAndSpreadCellsResourcePackets[
         ]
       ];
 
+      (*Loop Though resupensions to create the transfer primitives*)
+
       (* Loop through the dilutions to create the mix/transfer primitives *)
       {dilutionPrimitives,finalTransferTuples,sampleToSpreadSourceMapping} = Transpose@MapThread[
         Function[
           {
             mySample,
+            postResuspensionSample,
+            postResuspensionSampleLabel,
             streakSpreadVolume,
             dispenseCoordinates,
             transferVolumes,
@@ -4390,7 +5532,7 @@ streakAndSpreadCellsResourcePackets[
 
               (* Create the Transfer Primitive *)
               transferPrimitive = Transfer[
-                Source -> {mySample},
+                Source -> {postResuspensionSampleLabel},
                 Destination -> {currentQPixAssayContainerLabel},
                 Amount -> {amountToTransfer},
                 DestinationWell -> {qpixAssayContainerCurrentWell}
@@ -4405,7 +5547,7 @@ streakAndSpreadCellsResourcePackets[
                 transferPrimitive,
                 Null,
                 (* NOTE: Make sure we use the "previous" label and well because we have already updated them *)
-                {<|mySample -> {{previousQPixAssayContainerLabel, qpixAssayContainerPreviousWell}}|>}
+                {<|postResuspensionSampleLabel -> {{previousQPixAssayContainerLabel, qpixAssayContainerPreviousWell}}|>}
               }
             ],
 
@@ -4445,7 +5587,7 @@ streakAndSpreadCellsResourcePackets[
                       Module[{transferTuple,finalTransferTuple},
                         (* Make the transfer tuple *)
                         transferTuple = {
-                          mySample,
+                          postResuspensionSampleLabel,
                           currentAssayContainerLabel,
                           transferVolume,
                           assayContainerCurrentWell
@@ -4476,7 +5618,7 @@ streakAndSpreadCellsResourcePackets[
                       Module[{transferTuple},
                         (* Make the transfer tuple *)
                         transferTuple = {
-                          mySample,
+                          postResuspensionSampleLabel,
                           currentQPixAssayContainerLabel,
                           transferVolume,
                           qpixAssayContainerCurrentWell
@@ -4554,8 +5696,8 @@ streakAndSpreadCellsResourcePackets[
                   (* Sample Transfer Tuple *)
                   (* First determine if we pull from the main sample, or from the previous well *)
                   sampleToTransfer = Which[
-                    MatchQ[dilutionType, Linear], mySample,
-                    firstTransferBool, mySample,
+                    MatchQ[dilutionType, Linear], postResuspensionSampleLabel,
+                    firstTransferBool, postResuspensionSampleLabel,
                     multipleAssayContainerBool, {assayContainerPreviousWell, previousAssayContainerLabel},
                     True, {qpixAssayContainerPreviousWell, previousQPixAssayContainerLabel}
                   ];
@@ -4666,7 +5808,7 @@ streakAndSpreadCellsResourcePackets[
                       MatchQ[dilutionStrategy, Endpoint] && !lastTransferBool,
                       <||>,
                       True,
-                      <|mySample -> {initialSourceTransferTupleSpreadMapping /. Null -> Nothing,{previousQPixAssayContainerLabel, qpixAssayContainerPreviousWell}}|>
+                      <|postResuspensionSampleLabel  -> {initialSourceTransferTupleSpreadMapping /. Null -> Nothing,{previousQPixAssayContainerLabel, qpixAssayContainerPreviousWell}}|>
                     ]
                   }
                 ]
@@ -4688,6 +5830,8 @@ streakAndSpreadCellsResourcePackets[
         ],
         {
           mySamples,
+          postResuspensionSamples,
+          postResuspensionSampleLabels,
           specifiedSpreadStreakVolume,
           specifiedDispenseCoordinate,
           specifiedDilutionTransferVolume,
@@ -4749,7 +5893,12 @@ streakAndSpreadCellsResourcePackets[
     (* No *)
     Module[{inputSampleContainerModels},
       (* Get the container model of each input sample *)
-      inputSampleContainerModels = Download[fastAssocLookup[fastAssoc,mySamples,{Container,Model}],Object];
+      inputSampleContainerModels = If[MatchQ[specifiedInoculationSource,LiquidMedia],
+        (*If the source is liquid media, no resuspension, the current sample is still the input sample. The container info is in the fastAssoc*)
+        Download[fastAssocLookup[fastAssoc,mySamples,{Container,Model}],Object],
+        (*Otherwise, the samples are sitting in resuspension container that might be simulated*)
+        Download[postResuspensionSamples,Container[Model][Object],Simulation->currentSimulation,Cache->inheritedCache]
+      ];
 
       (* Are all input samples in a QPix Compatible container? *)
       If[And@@Map[MemberQ[qpixCompatibleContainers,#]&,inputSampleContainerModels],
@@ -4757,23 +5906,26 @@ streakAndSpreadCellsResourcePackets[
         Module[{sampleToWellRules},
 
           (* Determine the well of the input sample *)
-          sampleToWellRules = Function[{mySample},
-            Module[{sampleContainer,sampleContainerContents,mySampleWell},
-
+          sampleToWellRules = If[MatchQ[mySamples,postResuspensionSamples],
+            (*If no resuspension, the sample is still input sample*)
+            Function[{mySample},
+             Module[{sampleContainer,sampleContainerContents,mySampleWell},
               sampleContainer = Download[fastAssocLookup[fastAssoc,mySample,{Container}],Object];
-
               (* Get the contents of the container of the input sample *)
               sampleContainerContents = fastAssocLookup[fastAssoc, sampleContainer, {Contents}];
-
               (* Get the well *)
               mySampleWell = First[FirstCase[sampleContainerContents, {_,ObjectP[mySample]}]];
-
               (* Return the sample and well *)
               mySample -> {{{sampleContainer, mySampleWell}}}
-
+             ]
+            ]/@mySamples,
+            (*If we do resuspension, it is resuspension container and well*)
+            MapThread[Function[{mySample,container,well},
+              mySample -> {{{container,well}}}
+            ],
+              {postResuspensionSampleLabels,postResuspensionSampleContainerLabels,specifiedResuspensionContainerWell}
             ]
-          ]/@mySamples;
-
+          ];
           (* Return the rules in an association *)
           {
             {},
@@ -4793,12 +5945,12 @@ streakAndSpreadCellsResourcePackets[
           (* NOTE: These need to stay in lists to make future resolution consistent *)
           labelContainerPrimitive = LabelContainer[
             Label -> {assayContainerLabel},
-            Container -> {Model[Container, Plate, "id:L8kPEjkmLbvW"]}
+            Container -> {Model[Container, Plate, "id:4pO6dMmErzez"](* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)}
           ];
 
           (* Create a Transfer tuple for each sample *)
           transferTuples = MapThread[
-            Function[{sample, depositVolume, dispenseCoords, well},
+            Function[{sample,depositVolume, dispenseCoords, well},
               {
                 sample,
                 assayContainerLabel,
@@ -4807,11 +5959,10 @@ streakAndSpreadCellsResourcePackets[
               }
             ],
             {
-              mySamples,
+              postResuspensionSampleLabels,
               specifiedSpreadStreakVolume,
               specifiedDispenseCoordinate,
-              (* TODO: Cache the AllWells call *)
-              Flatten[AllWells[Model[Container, Plate, "id:L8kPEjkmLbvW"]]][[1;;Length[mySamples]]] (* 96 well plate *)
+              Flatten[AllWells[Model[Container, Plate, "id:4pO6dMmErzez"],Cache->inheritedCache]][[1;;Length[mySamples]]] (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)
             }
           ];
 
@@ -4835,7 +5986,7 @@ streakAndSpreadCellsResourcePackets[
               (* Return the rule for the sample *)
               inputSample -> containerWellPairs
             ]
-          ]/@DeleteDuplicates[mySamples];
+          ]/@DeleteDuplicates[postResuspensionSamples];
 
           (* Return *)
           {
@@ -4857,39 +6008,39 @@ streakAndSpreadCellsResourcePackets[
       Which[
         (* If the destination container is an object, just create the resource *)
         (* NOTE: We have a guarantee from the option resolver that if the dest container is an object, dilution strategy is Null *)
-        MatchQ[destinationContainer,ObjectP[Object[Container]]],
-          If[Length[fastAssocLookup[fastAssoc,destinationContainer,Contents]] > 0,
+        MatchQ[destinationContainer, ObjectP[Object[Container]]],
+          If[Length[fastAssocLookup[fastAssoc, destinationContainer, Contents]] > 0,
             {Resource[Sample -> destinationContainer, Name -> StringJoin[If[MatchQ[experimentFunction, ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]},
             (* Otherwise, create a resource of the media in the container *)
-            {Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Milliliter, Name -> StringJoin[If[MatchQ[experimentFunction, ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]}
+            {Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Gram, Name -> StringJoin[If[MatchQ[experimentFunction, ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]}
           ],
 
         (* If we have a dilution conflict error, default to 1 *)
         NullQ[numberOfDilutions],
-        Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Milliliter, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", ToString[i], " ", CreateUUID[]]],
+          {Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Gram, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]},
 
         (* If Dilution strategy is Series, make numberOfDilutions + 1 duplicate resources of the media in the plate model *)
         MatchQ[dilutionStrategy,Series],
           Table[
-            Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Milliliter, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", ToString[i], " ", CreateUUID[]]],
+            Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Gram, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", ToString[i], " ", CreateUUID[]]],
             {i,1,numberOfDilutions + 1}
           ],
 
         (* If DilutionType is Linear, make NumberOfDilutions destination plate resources *)
         MatchQ[dilutionType,Linear],
           Table[
-            Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Milliliter, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", ToString[i], " ", CreateUUID[]]],
+            Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Gram, Name -> StringJoin[If[MatchQ[experimentFunction,ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", ToString[i], " ", CreateUUID[]]],
             {i,1,numberOfDilutions}
           ],
 
         (* Otherwise, DilutionStrategy is Null or Endpoint, so just make a single resource *)
         True,
-          {Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Milliliter, Name -> StringJoin[If[MatchQ[experimentFunction, ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]}
+          {Resource[Sample -> destinationMedia, Container -> destinationContainer, Amount -> 50 Gram, Name -> StringJoin[If[MatchQ[experimentFunction, ExperimentSpreadCells], "spread cells", "streak cells"], " destination plate ", CreateUUID[]]]}
       ]
     ],
     {
-      Download[specifiedDestinationContainer,Object],
-      Download[specifiedDestinationMedia,Object],
+      Download[specifiedDestinationContainer, Object],
+      Download[specifiedDestinationMedia, Object],
       specifiedDilutionType,
       specifiedDilutionStrategy,
       specifiedNumberOfDilutions
@@ -4906,39 +6057,42 @@ streakAndSpreadCellsResourcePackets[
 
   (* Add to the lookup based on the AssayContainerPrimitive *)
   (* NOTE: This is {Label_String -> Model[Container]...} *)
-  assayContainerLabelLookup = If[MatchQ[assayContainerPrimitives,{}],
+  assayContainerLabelLookup = If[MatchQ[assayContainerUnitOperations,{}],
     (* {} means to just use the source containers for all input samples, add those to the mapping *)
-    Module[{},
+    Module[{sampleContainerObjects},
+      sampleContainerObjects = If[MatchQ[mySamples,postResuspensionSamples],
+        (*If there is no change of container due to resuspension, just use the source sample containers*)
+        {Download[Experiment`Private`fastAssocLookup[fastAssoc,#,Container],Object]}&/@mySamples,
+        (*Otherwise will need to put the container label here as a placeholder first *)
+        {#/.resuspensionSampleContainerLabelReplaceRules}&/@postResuspensionSamples
+      ];
       (* Add to the mapping *)
-      (mySampleToContainersSpreadMapping[#] = {Download[Experiment`Private`fastAssocLookup[fastAssoc,#,Container],Object]})&/@mySamples;
+      mySampleToContainersSpreadMapping = AssociationThread[mySamples,sampleContainerObjects];
 
       (* we have no assay containers *)
       {}
     ],
 
     (* Anything else means we have a list of primitives to unpack *)
-    Module[{labelContainerPrimitive,labelContainerLookup,transferPrimitives,allTransferTuples},
+    Module[{labelContainerPrimitive,labelContainerLookup},
 
       (* Extract the label container primitive *)
-      labelContainerPrimitive = FirstCase[assayContainerPrimitives, _LabelContainer,LabelContainer[<||>]];
+      labelContainerPrimitive = FirstCase[assayContainerUnitOperations, _LabelContainer,LabelContainer[<||>]];
 
       (* Transform the label container into a lookup *)
       labelContainerLookup = Rule@@@Transpose@Lookup[labelContainerPrimitive[[1]], {Label, Container}];
 
-      (* Extract any transfer primitives *)
-      transferPrimitives = Cases[assayContainerPrimitives, _Transfer];
-
-      (* Combine the transfer primitives into a big list of transfer tuples *)
-      allTransferTuples = Flatten[Transpose/@({
-        Lookup[#[[1]], Source],
-        Lookup[#[[1]], Destination],
-        Lookup[#[[1]], Amount]
-      }&/@transferPrimitives),1];
-
-      (* Create a rule for each input sample *)
-      (
-        mySampleToContainersSpreadMapping[#] = DeleteDuplicates[Cases[allTransferTuples,{#,_,_}][[All,2]]]
-      )&/@mySamples;
+      (* Create a rule for each input sample. The rule is input sample -> post resuspension sample container, which may or may not be the input sample container *)
+      (* Add to the mapping *)
+      mySampleToContainersSpreadMapping = Join[
+        mySampleToContainersSpreadMapping,
+        AssociationMap[
+          DeleteDuplicates[
+            Flatten[Lookup[sampleToWellLabelMapping, #],1][[All,1]]
+          ]&,
+          mySamples/.sampleToPostResuspensionSampleLabelMapping
+        ]
+      ];
 
       (* Return the assay container lookup *)
       labelContainerLookup
@@ -5062,7 +6216,7 @@ streakAndSpreadCellsResourcePackets[
 
                 (* Get the requirements for this sample *)
                 (* TODO: Explain why this is ok *)
-                sourceContainers = Lookup[mySampleToContainersSpreadMapping,Download[Lookup[samplePacket,Sample],Object]];
+                sourceContainers = Lookup[mySampleToContainersSpreadMapping,Download[Lookup[samplePacket,Sample],Object]/.sampleToPostResuspensionSampleLabelMapping,Lookup[mySampleToContainersSpreadMapping,Download[Lookup[samplePacket,Sample],Object]]];
 
                 (* Determine whether the container(s) are deep well or not *)
                 deepWellContainerQ = deepWellQ[# /. assayContainerLabelLookup, fastAssoc]&/@sourceContainers;
@@ -5258,13 +6412,17 @@ streakAndSpreadCellsResourcePackets[
     expandedAndSortedPhysicalGroups = Map[Function[{physicalGroupSamplePackets},
       Module[{flattenedTransferSources,flattenedExpandedGroups,flattenedDestinationContainers,correctedFlattenedExpandedGroups},
         (* Create a list of the transfer sources that need to occur for this batch *)
-        flattenedTransferSources = Flatten[Function[{sample},Flatten[Lookup[sampleToWellLabelMapping, sample] /. {x:ObjectP[] :> Download[x, ID]},1]]/@Lookup[physicalGroupSamplePackets,Sample],1];
+        flattenedTransferSources = Flatten[Function[{sample},
+          Flatten[
+            (*If resuspension happened, use resuspension sample to look up the wells*)
+            Lookup[sampleToWellLabelMapping, sample/.sampleToPostResuspensionSampleLabelMapping] /. {x:ObjectP[] :> Download[x, Object]},1]
+        ]/@Lookup[physicalGroupSamplePackets,Sample(*Input Samples*)],1];
 
         (* Also create a list of our flattened expanded groups *)
         flattenedExpandedGroups = Flatten[Function[{samplePacket},ConstantArray[samplePacket,Length[Lookup[samplePacket,DestinationContainerResources]]]]/@physicalGroupSamplePackets];
 
         (* We also want to update our batching packets to properly reflect the DestinationContainers for each *)
-        flattenedDestinationContainers = Flatten[Lookup[physicalGroupSamplePackets,DestinationContainerResources]];
+        flattenedDestinationContainers = Flatten[Lookup[physicalGroupSamplePackets,DestinationContainerResources],1];
 
         (* Thread the DestinationContainers into the expanded groups *)
         (* Also add a key to store the corresponding transfer (this will be used when making the routine) *)
@@ -5358,6 +6516,7 @@ streakAndSpreadCellsResourcePackets[
     ];
 
     (* Now we can take the expanded and sorted groups and partition them *)
+    (* For example, in {{{a,b},{c}},{{d,e}}}, abc are from the same physical batch, de are from the same physical batch, ab and c are from different source group. *)
     {
       Partition[#,UpTo[2]]&/@expandedAndSortedPhysicalGroups,
 
@@ -5394,10 +6553,12 @@ streakAndSpreadCellsResourcePackets[
   (* at the beginning of the physical batch *)
   (* NOTE: This helper function is defined in Experiment/sources/PickColonies/Experiment.m *)
   {
-    colonyHandlerHeadCassetteAdds,
+    colonyHandlerHeadCassettePlacements,
     colonyHandlerHeadCassetteRemovals
   } = getColonyHandlerHeadCassetteBatchingFields[
-    finalPhysicalGroups /. colonyStreakSpreadToolResourceReplaceRules,
+    finalPhysicalGroups,
+    colonyStreakSpreadToolResourceReplaceRules,
+    instrumentResource,
     If[MatchQ[experimentFunction,ExperimentSpreadCells], ColonySpreadingTool, ColonyStreakingTool]
   ];
 
@@ -5435,7 +6596,7 @@ streakAndSpreadCellsResourcePackets[
   {
     tipRackPlacements,
     tipRackReturns
-  } = Module[{tipCountsWithBuffer,partitionedLists,accumulatedList,tipResources,currentTipRackResource},
+  } = Module[{tipCountsWithBuffer,accumulatedList,currentTipRackResource},
     (* First, we need to translate the number of tips required for each batch into actual tip resources *)
     (* However, note that the qpix can only have 1 tip box on the deck at a time and you cannot swap out  *)
     (* tip boxes during the middle of a routine. This means it is vital that we request the resources  *)
@@ -5488,7 +6649,7 @@ streakAndSpreadCellsResourcePackets[
     (* Loop over our tip resources per physical batch *)
     Transpose[Function[{nextTipResource},
       Module[{tipRackToAddPlacement,tipRackToRemove},
-        (* Determine if we need to remve the current tip rack *)
+        (* Determine if we need to remove the current tip rack *)
         (* If the tip rack resources match, don't remove. Otherwise, remove *)
         {
           tipRackToAddPlacement,
@@ -5509,7 +6670,6 @@ streakAndSpreadCellsResourcePackets[
       ]
     ]/@tipResources]
   ];
-
   (* Stage 1.7: Gather into Batched unit operation packets based on unit operation type *)
   (* For each physical batch, create a batched unit operation packet that contains the information to pass through to the *)
   (* procedure *)
@@ -5517,8 +6677,7 @@ streakAndSpreadCellsResourcePackets[
     Function[
       {
         physicalBatchSamplePackets, physicalBatchRiserReturns, physicalBatchCarrierReturns, physicalBatchRiserPlacements,
-        physicalBatchCarrierPlacements, colonyHandlerHeadCassetteToAdd, colonyHandlerHeadCassetteToRemove,
-        flatLightTableContainers, flatLightTableContainerPlacements, lightTableContainerLengths,
+        physicalBatchCarrierPlacements, colonyHandlerHeadCassettePlacement,colonyHandlerHeadCassetteToRemove, flatLightTableContainers, flatLightTableContainerPlacements, lightTableContainerLengths,
         physicalBatchCarrierContainerDeckPlacements, tipRackPlacement, tipRackReturn
       },
       <|
@@ -5537,11 +6696,12 @@ streakAndSpreadCellsResourcePackets[
         Replace[CarrierDeckPlacements] -> physicalBatchCarrierPlacements,
         Replace[RiserReturns] -> physicalBatchRiserReturns,
         Replace[CarrierReturns] -> physicalBatchCarrierReturns,
-        ColonyHandlerHeadCassette -> colonyHandlerHeadCassetteToAdd,
+        ColonyHandlerHeadCassette -> First[colonyHandlerHeadCassettePlacement],
+        ColonyHandlerHeadCassettePlacement -> colonyHandlerHeadCassettePlacement,
         ColonyHandlerHeadCassetteReturn -> colonyHandlerHeadCassetteToRemove,
         Replace[IntermediateSourceContainerDeckPlacements] -> physicalBatchCarrierContainerDeckPlacements /. samplesInResourceReplaceRules,
         Replace[FlatBatchedSamplesOutStorageConditions] -> Lookup[Flatten[physicalBatchSamplePackets], SamplesOutStorageCondition],
-        TipRackDeckPlacement -> tipRackPlacement,
+        Replace[TipRackDeckPlacements] -> {tipRackPlacement},(*We need an extra list here because deckPlacementAssociation does not deal well with traveling through links to a single field and will break with wall of errors*)
         TipRackReturn -> tipRackReturn
       |>
     ],
@@ -5551,7 +6711,7 @@ streakAndSpreadCellsResourcePackets[
       carrierReturns,
       riserPlacements,
       carrierPlacements,
-      colonyHandlerHeadCassetteAdds,
+      colonyHandlerHeadCassettePlacements,
       colonyHandlerHeadCassetteRemovals,
       flatLightTableContainersPerPhysicalBatch,
       flatLightTableContainerPlacementsPerPhysicalBatch,
@@ -5587,7 +6747,7 @@ streakAndSpreadCellsResourcePackets[
   (* Create the streak/spread unit operation *)
   streakSpreadUnitOperationPacket=UploadUnitOperation[
     Module[{nonHiddenOptions,unitOpHead},
-      (* Only include non-hidden options from ExperimentPickColonies. *)
+      (* Only include non-hidden options from ExperimentSpreadCells. *)
       nonHiddenOptions=Lookup[
         Cases[OptionDefinition[experimentFunction], KeyValuePattern["Category"->Except["Hidden"]]],
         "OptionSymbol"
@@ -5603,14 +6763,15 @@ streakAndSpreadCellsResourcePackets[
       unitOpHead@@Join[
         {
           Sample->samplesInResources,
-          AssayContainerPrimitives -> assayContainerPrimitives,
+          ResuspensionUnitOperations -> Flatten[resuspensionUnitOperations],
+          AssayContainerUnitOperations -> assayContainerUnitOperations,
           AssayContainerResources -> Flatten@assayContainerResources,
-          DestinationContainerResources -> Flatten@destinationContainerResources,
           DestinationContainerResourceLengths -> destinationContainerResourceLengths,
           SampleToSourceWellMapping -> sampleToWellLabelMapping,
           BatchedUnitOperations -> (Link/@Lookup[batchedUnitOperationPacketsWithID, Object]),
           PhysicalBatchingGroups -> finalPhysicalGroups /. {_Resource:> Nothing},
-          CarrierAndRiserInitialResources -> First[initialCarrierAndRiserResourcesToPick]
+          CarrierAndRiserInitialResources -> Link/@initialCarrierAndRiserResourcesToPick,
+          Replace[NumberOfTipsRequired]-> Transpose[{tipResources,Flatten[partitionedLists]}]
         },
 
         (* Put all of our resources in *)
@@ -5622,10 +6783,13 @@ streakAndSpreadCellsResourcePackets[
               ColonySpreadingTool -> colonyStreakSpreadToolResources,
               ColonyStreakingTool -> colonyStreakSpreadToolResources
             ],
+            DestinationContainerResources -> Flatten@destinationContainerResources,
             PrimaryWashSolution -> primaryWashSolutionResources,
             SecondaryWashSolution -> secondaryWashSolutionResources,
             TertiaryWashSolution -> tertiaryWashSolutionResources,
-            QuaternaryWashSolution -> quaternaryWashSolutionResources
+            QuaternaryWashSolution -> quaternaryWashSolutionResources,
+            ResuspensionMedia -> Link/@resuspensionMediaResources,
+            ResuspensionContainer -> Link/@resuspensionContainerResources
           }
         ]
       ]
@@ -5688,60 +6852,67 @@ streakAndSpreadCellsResourcePackets[
 (* ::Subsection::Closed:: *)
 (*Simulation Function*)
 DefineOptions[simulateExperimentSpreadAndStreakCells,
-  Options :> {CacheOption, SimulationOption}
+  Options :> {
+    CacheOption,
+    SimulationOption,
+    ParentProtocolOption
+  }
 ];
 
 simulateExperimentSpreadAndStreakCells[
-  myUnitOperationPacket : PacketP[{Object[UnitOperation, SpreadCells], Object[UnitOperation,StreakCells]}],
-  mySamples : {ObjectP[Object[Sample]]..},
-  myResolvedOptions : {_Rule..},
-  experimentFunction :  Alternatives[ExperimentSpreadCells, ExperimentStreakCells],
-  myResolutionOptions :OptionsPattern[simulateExperimentPickColonies]
+  myUnitOperationPacket: PacketP[{Object[UnitOperation, SpreadCells], Object[UnitOperation, StreakCells]}],
+  mySamples: {ObjectP[Object[Sample]]..},
+  myResolvedOptions: {_Rule..},
+  experimentFunction:  Alternatives[ExperimentSpreadCells, ExperimentStreakCells],
+  myResolutionOptions: OptionsPattern[simulateExperimentSpreadAndStreakCells]
 ] := Module[
   {
-    inheritedCache,currentSimulation,inheritedFastAssoc,testProtocolObject,protocolPacket,volumeSymbol,relevantUnitOpInfo,
-    sampleContainerPackets,sampleContainerObjects,flattenedContainerPackets,fulfilledDestinationContainerResources,destinationSamples,destinationSampleBatchLengths,platingVolume,dispenses,
-    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,simulatedLabels
+    inheritedCache,currentSimulation,inheritedFastAssoc,testProtocolObject,protocolPacket,volumeSymbol,relevantUnitOpInfo, sampleOutContainerOutLabelTuples,
+    sampleContainerPackets,sampleContainerObjects,flattenedContainerPackets,
+    fulfilledDestinationContainerResources,fulfilledResuspensionMedias, fulfilledResuspensionContainers,
+    postResuspensionSamples,resolvedInoculationSource,resolvedResuspensionContainerWells,resolvedResuspensionMediaVolumes,
+    resolvedNumberOfSourceScrapes, destinationContainers, destinationSamples,destinationSampleBatchLengths,platingVolume,dispenses,
+    sanitizedDestinationSamples,transferTuples,uploadSampleTransferPackets,simulatedLabels, coverSimulation
   },
 
   (* Get simulation and cache *)
-  {inheritedCache, currentSimulation} = Lookup[ToList[myResolutionOptions], {Cache,Simulation}, {}];
-  currentSimulation = If[MatchQ[currentSimulation,Null],
+  {inheritedCache, currentSimulation} = Lookup[ToList[myResolutionOptions], {Cache, Simulation}, {}];
+  currentSimulation = If[MatchQ[currentSimulation, Null|{}],
     Simulation[],
     currentSimulation
   ];
 
   (* Create a faster version of the cache to improve speed *)
-  inheritedFastAssoc=makeFastAssocFromCache[inheritedCache];
+  inheritedFastAssoc = makeFastAssocFromCache[inheritedCache];
 
   (* Simulate a protocol ID. *)
-  testProtocolObject=SimulateCreateID[Object[Protocol,RoboticCellPreparation]];
+  testProtocolObject = SimulateCreateID[Object[Protocol, RoboticCellPreparation]];
 
   (* Make a test protocol packet *)
   protocolPacket = <|
     Object -> testProtocolObject,
-    Replace[OutputUnitOperations] -> {Link[myUnitOperationPacket,Protocol]},
+    Replace[OutputUnitOperations] -> {Link[myUnitOperationPacket, Protocol]},
     ResolvedOptions -> {}
   |>;
 
   (* Simulate the fulfillment of all resources by the procedure. *)
-  currentSimulation=UpdateSimulation[
+  currentSimulation = UpdateSimulation[
     currentSimulation,
     SimulateResources[
       protocolPacket,
       {myUnitOperationPacket},
-      ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null],
-      Simulation->currentSimulation
+      ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol, Null],
+      Simulation -> currentSimulation
     ]
   ];
 
   (* Get the volume symbol from the experiment function *)
-  volumeSymbol = If[MatchQ[experimentFunction,ExperimentSpreadCells],
+  volumeSymbol = If[MatchQ[experimentFunction, ExperimentSpreadCells],
     SpreadVolume,
     StreakVolume
   ];
 
-  (* Download the destination container samples, volume to spread, and number of dispenses *)
+  (* Download the InoculateLiquidMedia primitive, destination container samples, volume to spread, and number of dispenses *)
   {
     relevantUnitOpInfo,
     sampleContainerPackets,
@@ -5756,6 +6927,8 @@ simulateExperimentSpreadAndStreakCells[
       {
         {
           Packet[OutputUnitOperations[{
+            ResuspensionMediaLink,
+            ResuspensionContainerLink,
             DestinationContainerResources,
             DestinationContainerResourceLengths,
             volumeSymbol,
@@ -5770,7 +6943,7 @@ simulateExperimentSpreadAndStreakCells[
           Container
         }
       },
-      Simulation->currentSimulation
+      Simulation -> currentSimulation
     ],
     {Download::FieldDoesntExist}
   ];
@@ -5780,13 +6953,17 @@ simulateExperimentSpreadAndStreakCells[
 
   (* Get the info into a usable form *)
   {
+    fulfilledResuspensionMedias,
+    fulfilledResuspensionContainers,
     fulfilledDestinationContainerResources,
     destinationSampleBatchLengths,
     platingVolume,
     dispenses
   } = Lookup[
-    relevantUnitOpInfo[[1,1,1]],
+    relevantUnitOpInfo[[1, 1, 1]],
     {
+      ResuspensionMediaLink,
+      ResuspensionContainerLink,
       DestinationContainerResources,
       DestinationContainerResourceLengths,
       volumeSymbol,
@@ -5794,21 +6971,167 @@ simulateExperimentSpreadAndStreakCells[
     }
   ];
 
+  (* Lookup necessary resolved options *)
+  {
+    resolvedInoculationSource,
+    resolvedResuspensionContainerWells,
+    resolvedResuspensionMediaVolumes,
+    resolvedNumberOfSourceScrapes
+  } = Lookup[
+    myResolvedOptions,
+    {
+      InoculationSource,
+      ResuspensionContainerWell,
+      ResuspensionMediaVolume,
+      NumberOfSourceScrapes
+    }
+  ];
+
+  (* Here we also want to update the sample with simulated volume and composition if resuspension happens. Following transfer tuples will be from post-resuspension samples. *)
+  (* This is different from the similar section in resolver because we will have objects instead of possibly models for containers and samples. So we can use UploadSampleTransfer for most cases. *)
+  postResuspensionSamples = If[MatchQ[resolvedInoculationSource, FreezeDried|FrozenGlycerol],
+    Module[
+      {
+        resusNewDestinations, resuspensionContainerPackets, uploadResuspensionSamplePackets ,uploadSampleTransferPackets,
+        updatedResuspensionContainerPackets, resuspensionSamplesFromContainer, resuspensionSamples
+      },
+
+      resuspensionContainerPackets = Download[
+        fulfilledResuspensionContainers,
+        Packet[Contents],
+        Cache -> inheritedCache,
+        Simulation -> currentSimulation
+      ];
+      (* Find which position in resuspension container/well pair does not have a sample yet. Will need to create a simulated one with model of resuspension media *)
+      resusNewDestinations = MapThread[
+        Function[{container, containerPacket, well},
+            (* If there is an object sample at the well in question, skip it*)
+            If[!NullQ[FirstCase[Lookup[containerPacket, Contents], {well, ObjectP[Object[Sample]]}, Null]],
+              Nothing,
+              (* Otherwise record the uploadcontainer packets well, container pairing*)
+             {well, container}
+            ]
+        ],
+        {
+          fulfilledResuspensionContainers,
+          resuspensionContainerPackets,
+          resolvedResuspensionContainerWells
+        }
+      ];
+
+      (* Upload an sample of the resuspension media to all of empty locations *)
+      uploadResuspensionSamplePackets = UploadSample[
+        ConstantArray[{}, Length[resusNewDestinations]],
+        resusNewDestinations,
+        State -> Liquid,
+        Living -> False,
+        InitialAmount -> ConstantArray[Null, Length[resusNewDestinations]],
+        Simulation -> currentSimulation,
+        SimulationMode -> True,
+        FastTrack -> True,
+        Upload -> False
+      ];
+
+      (* Update the simulation *)
+      currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadResuspensionSamplePackets]];
+
+      (*Get the updated contents of the resuspension containers*)
+      updatedResuspensionContainerPackets = Download[
+        fulfilledResuspensionContainers,
+        Packet[Contents],
+        Cache -> inheritedCache,
+        Simulation -> currentSimulation
+      ];
+      resuspensionSamplesFromContainer = MapThread[
+        Function[{containerPacket, well},
+          Last[FirstCase[Lookup[containerPacket, Contents], {well, _}]]
+        ],
+        {
+          updatedResuspensionContainerPackets,
+          resolvedResuspensionContainerWells
+        }
+      ];
+      (* Convert, {well, container} pairs to the corresponding sample *)
+      resuspensionSamples = Download[resuspensionSamplesFromContainer, Object, Simulation -> currentSimulation];
+
+      (* Create transfer tuples to pass to UploadSampleTransfer *)
+      transferTuples = Flatten[
+        MapThread[
+          Function[{mySample, resuspensionSample, resuspensionMediaSample, resuspensionMediaVolume, numberOfSourceScrapes},
+            If[GreaterQ[numberOfSourceScrapes,0],
+              (* If NumberOfSourceScrapes is populated with a number, we are working with frozen glycerol sample. *)
+              (* Two transfer will occur: from media sample to resuspension container, and from input sample to resuspension container. *)
+              {{resuspensionMediaSample, resuspensionSample, resuspensionMediaVolume},
+                {mySample, resuspensionSample, 5 Microliter * numberOfSourceScrapes}},
+
+              (* Otherwise we are dealing with freeze dried powders. Two transfers occurs *)
+              (* 1.resuspension media is added to the input sample (but for the sake of using UploadSampleTransfer without having to create an intermediate sample, we had media add to final resuspension sample as well) *)
+              (* 2.and then the combined sample is added to the resuspension container *)
+              {{mySample, resuspensionSample, All},
+                {resuspensionMediaSample, resuspensionSample, resuspensionMediaVolume}
+                }
+            ]
+          ],
+          {
+            mySamples,
+            resuspensionSamples,
+            fulfilledResuspensionMedias,
+            resolvedResuspensionMediaVolumes,
+            resolvedNumberOfSourceScrapes
+          }
+        ],
+        {1, 2}
+      ];
+
+      uploadSampleTransferPackets = UploadSampleTransfer[
+        transferTuples[[All, 1]],
+        transferTuples[[All, 2]],
+        transferTuples[[All, 3]],
+        Upload -> False,
+        UpdateComposition -> True,
+        Simulation -> currentSimulation,
+        FastTrack -> True
+      ];
+
+      (* Update the simulation *)
+      currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadSampleTransferPackets]];
+
+      (*Return the samples to proceed*)
+      resuspensionSamples
+    ],
+    (*Otherwise, they are the same as mySamples*)
+    mySamples
+  ];
+
   (* Sanitize the destination samples *)
   (* 1. Group them by their batching lengths *)
   (* 2. Remove any links *)
-  sanitizedDestinationSamples = Download[TakeList[fulfilledDestinationContainerResources, destinationSampleBatchLengths],Object];
+  sanitizedDestinationSamples = Download[TakeList[fulfilledDestinationContainerResources, destinationSampleBatchLengths], Object];
 
   (* Make sure everything is a sample. If a resource is a container, then lookup the "A1" contents *)
-  destinationSamples = Map[Function[{containerOrSample},
-    If[MatchQ[containerOrSample, ObjectP[Object[Container]]],
-      Download[Last[FirstCase[Lookup[fetchPacketFromCache[containerOrSample, flattenedContainerPackets],Contents],{"A1",_},{Null,Null}]],Object],
-      containerOrSample
-    ]
-  ],
+  destinationSamples = Map[
+    Function[{containerOrSample},
+      If[MatchQ[containerOrSample, ObjectP[Object[Container]]],
+        Download[Last[FirstCase[Lookup[fetchPacketFromCache[containerOrSample, flattenedContainerPackets], Contents], {"A1", _}, {Null, Null}]], Object],
+        containerOrSample
+      ]
+    ],
     sanitizedDestinationSamples,
     2
   ];
+  (* Make sure everything is a container for the destination samples. This can be a flat list since it is only for calculating the simulated labels *)
+  destinationContainers = Map[
+    Function[{containerOrSample},
+      If[MatchQ[containerOrSample, ObjectP[Object[Sample]]],
+        (* If it is a sample, the flattenedContainerPackets would also store the packet as a sample, get the packet check its container *)
+        Download[Lookup[fetchPacketFromCache[containerOrSample, flattenedContainerPackets], Container], Object],
+        (*Otherwise it is already a container *)
+        containerOrSample
+      ]
+    ],
+    Flatten@sanitizedDestinationSamples
+  ];
+
 
   (* Create transfer tuples to pass to UploadSampleTransfer *)
   transferTuples = Flatten[
@@ -5826,47 +7149,89 @@ simulateExperimentSpreadAndStreakCells[
         ]
       ],
       {
-        mySamples,
+        postResuspensionSamples,
         destinationSamples,
         platingVolume,
-        Length/@dispenses
+        Length /@ dispenses
       }
     ],
-    {1,2}
+    {1, 2}
   ];
 
   (* Pass the transfers to UploadSampleTransfer to get upload packets *)
   uploadSampleTransferPackets = UploadSampleTransfer[
-    transferTuples[[All,1]],
-    transferTuples[[All,2]],
-    transferTuples[[All,3]],
+    transferTuples[[All, 1]],
+    transferTuples[[All, 2]],
+    transferTuples[[All, 3]],
     Upload -> False,
-    Simulation -> currentSimulation,
-    FastTrack -> True
+    FastTrack -> True,
+    UpdateComposition -> True,
+    Simulation -> currentSimulation
   ];
 
   (* UpdateSimulation *)
-  currentSimulation=UpdateSimulation[currentSimulation,Simulation[uploadSampleTransferPackets]];
+  currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadSampleTransferPackets]];
+
+  (* Make sure we have cover simulated so that when called in framework, next UO will not yell about cover *)
+  coverSimulation = ExperimentCover[
+    fulfilledDestinationContainerResources,
+    Cover -> Model[Item, Lid, "Universal Clear Lid, Sterile"],(* So far we only have omnitrays *)
+    Simulation -> currentSimulation,
+    Output -> Simulation,
+    FastTrack -> True
+  ];
+  (* UpdateSimulation *)
+  currentSimulation = UpdateSimulation[currentSimulation,
+    Simulation[Lookup[coverSimulation[[1]], Packets]]
+  ];
+  (* Build tuples for pairs of Label, label field. Because DestinationContainerResources could be sample or container. *)
+  sampleOutContainerOutLabelTuples = MapThread[
+    Function[{fieldValue, sampleOutLabel, containerOutLabel, index},
+      If[MatchQ[fieldValue, ObjectP[Object[Sample]]],
+        (* If it is a sample, point the sample label to the field *)
+        {sampleOutLabel, (Field[DestinationContainerResources[[index]]])},
+        (* Otherwise it is a plate, point the container label to the field *)
+        {containerOutLabel, (Field[DestinationContainerResources[[index]]])}
+      ]
+    ],
+    {
+      fulfilledDestinationContainerResources,
+      Flatten@Lookup[myResolvedOptions, SampleOutLabel],
+      Flatten@Lookup[myResolvedOptions, ContainerOutLabel],
+      Range[Length[fulfilledDestinationContainerResources]]
+    }
+  ];
 
   (* Update the simulated labels *)
   simulatedLabels = Simulation[
-    Labels->Join[
-      Rule@@@Cases[
+    Labels -> Join[
+      Rule @@@ Cases[
         Transpose[{Lookup[myResolvedOptions, SampleLabel], mySamples}],
         {_String, ObjectP[]}
       ],
-      Rule@@@Cases[
-        Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], Download[Flatten[sampleContainerObjects],Object]}],
+      Rule @@@ Cases[
+        Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], Download[Flatten[sampleContainerObjects], Object]}],
         {_String, ObjectP[]}
       ],
-      Rule@@@Cases[
-        Transpose[{Flatten@Lookup[myResolvedOptions, SampleOutLabel], Flatten@sanitizedDestinationSamples}],
+      Rule @@@ Cases[
+        Transpose[{Flatten@Lookup[myResolvedOptions, SampleOutLabel], Flatten@destinationSamples}],
         {_String, ObjectP[]}
       ],
-      Rule@@@Cases[
-        Transpose[{Flatten@Lookup[myResolvedOptions, ContainerOutLabel],Lookup[sampleContainerPackets[[1,1,1]],Object]}],
+      Rule @@@ Cases[
+        Transpose[{Flatten@Lookup[myResolvedOptions, ContainerOutLabel], Flatten@destinationContainers}],
         {_String, ObjectP[]}
       ]
+    ],
+    LabelFields->Join[
+      Rule@@@Cases[
+        Transpose[{Lookup[myResolvedOptions, SampleLabel], (Field[SampleLink[[#]]]&)/@Range[Length[mySamples]]}],
+        {_String, _}
+      ],
+      Rule@@@Cases[
+        Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], (Field[SampleLink[Container][[#]]]&)/@Range[Length[mySamples]]}],
+        {_String, _}
+      ],
+      Rule@@@Cases[sampleOutContainerOutLabelTuples, {_String, _}]
     ]
   ];
 
@@ -5902,7 +7267,7 @@ resolveSpreadAndStreakMethod[
 ]:=Module[
   {method},
 
-  method=Lookup[myOptions,Method,Automatic];
+  method=Lookup[myOptions,Preparation,Automatic];
 
   (* Determine the Method that can be used *)
   If[MatchQ[method,Except[Automatic]],
@@ -6011,4 +7376,22 @@ ValidExperimentSpreadCellsQ[
   (*Run the tests as requested*)
   Lookup[RunUnitTest[<|"ValidExperimentSpreadCellsQ"->allTests|>,Verbose->verbose,
     OutputFormat->outputFormat],"ValidExperimentSpreadCellsQ"]
+];
+(* ::Subsubsection:: *)
+(* ExperimentSpreadCellsPreview *)
+DefineOptions[ExperimentSpreadCellsPreview,
+  SharedOptions :> {ExperimentSpreadCells}
+];
+
+ExperimentSpreadCellsPreview[myInputs : ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions : OptionsPattern[ExperimentSpreadCellsPreview]] := Module[
+  {listedOptions, noOutputOptions},
+
+  (* get the options as a list *)
+  listedOptions = ToList[myOptions];
+
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
+  noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+  (* return only the options for ExperimentGrind *)
+  ExperimentSpreadCells[myInputs, Append[noOutputOptions, Output -> Preview]]
 ];

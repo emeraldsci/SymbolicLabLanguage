@@ -250,7 +250,7 @@ FieldComparisonTest[packet,{MinBubbleCount,MaxBubbleCount},LessEqual]
 
 
 (* ::Subsection::Closed:: *)
-(*validModelSensorVibrationQTests*)
+(*FvalidModelSensorVibrationQTests*)
 
 
 validModelSensorVibrationQTests[packet:PacketP[Model[Sensor,Vibration]]]:={

@@ -159,6 +159,14 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The method by which this sample should be manipulated in the lab when transfers out of the sample are requested.",
 				Category -> "Physical Properties"
 			},
+			Density -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Gram / Milliliter],
+				Units -> Gram / Milliliter,
+				Description -> "The ratio of weight and volume of the sample.",
+				Category -> "Physical Properties"
+			},
 			CellType -> {
 				Format -> Multiple,
 				Class -> Expression,
@@ -177,7 +185,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 			IncompatibleMaterials -> {
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> MaterialP | None,
+				Pattern :> MaterialP | {MaterialP..} | None,
 				Description -> "A list of materials that would be damaged if wetted by this model.",
 				Category -> "Compatibility"
 			},
@@ -207,7 +215,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Format -> Multiple,
 				Class -> Boolean,
 				Pattern :> BooleanP,
-				Description -> "Indicates that this sample is sterile.",
+				Description -> "Indicates that this sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during experimentation and storage.",
 				Category -> "Health & Safety"
 			},
 			RNaseFree -> {
@@ -257,6 +265,13 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Class -> Boolean,
 				Pattern :> BooleanP,
 				Description -> "Indicates if this sample must be handled in a biosafety cabinet.",
+				Category -> "Health & Safety"
+			},
+			AsepticHandling -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if aseptic techniques are followed for this sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 				Category -> "Health & Safety"
 			},
 			AutoclaveUnsafe->{
@@ -400,6 +415,15 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The Biosafety classification of the substance.",
 				Category -> "Health & Safety"
 			},
+			DoubleGloveRequired -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> BooleanP,
+				Description -> "Indication that the double gloves are required for the substance.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+
 			StorageConditionLink -> {
 				Format -> Multiple,
 				Class -> Link,
@@ -459,6 +483,13 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "Indicates that this sample reacts or degrades in the presence of light and should be stored in the dark to avoid exposure.",
 				Category -> "Storage Information"
 			},
+			AsepticTransportContainerType -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> AsepticTransportContainerTypeP,
+				Description -> "Indicates how this sample is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+				Category -> "Storage Information"
+			},
 			TransferTemperature -> {
 				Format -> Multiple,
 				Class -> Real,
@@ -467,15 +498,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The temperature that this sample should be at before any transfers using this sample occur.",
 				Category -> "Storage Information"
 			},
-			(* TODO: Deprecate TransportChilled and TransportWarmed fields after TransportCondition is in play. *)
-			TransportChilled -> {
-				Format -> Multiple,
-				Class -> Boolean,
-				Pattern :> BooleanP,
-				Description -> "Indicates if this sample should be refrigerated while transported between instruments during experimentation.",
-				Category -> "Storage Information"
-			},
-			TransportWarmed -> {
+			TransportTemperature -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterP[0 * Kelvin],

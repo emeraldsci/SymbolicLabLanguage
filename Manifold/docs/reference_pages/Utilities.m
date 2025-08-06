@@ -68,5 +68,5 @@ DefineUsage[ManifoldEcho,{
 	SeeAlso->{
 		"Compute"
 	},
-	Author->{"derek.machalek", "platform"}
+	Author->{"steven", "derek.machalek", "platform"}
 }];

@@ -7,7 +7,7 @@ DefineOptions[ExperimentELISAPreview,
 	SharedOptions:>{ExperimentELISA}
 ];
 
-ExperimentELISAPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentELISAPreview]]:=Module[
+ExperimentELISAPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentELISAPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentELISAOptions,
 	SharedOptions :> {ExperimentELISA}
 ];
 
-ExperimentELISAOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentELISAOptions]]:=Module[
+ExperimentELISAOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentELISAOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -62,7 +62,7 @@ DefineOptions[ValidExperimentELISAQ,
 	SharedOptions:>{ExperimentELISA}
 ];
 
-ValidExperimentELISAQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentELISAQ]]:=Module[
+ValidExperimentELISAQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentELISAQ]]:=Module[
 	{listedOptions,preparedOptions,experimentELISATests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)

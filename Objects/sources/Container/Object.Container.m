@@ -222,7 +222,7 @@ DefineObjectType[Object[Container], {
 			Format -> Multiple,
 			Class -> {Date, Expression, Link, Link},
 			Pattern :> {_?DateObjectQ, On|Off, _Link, _Link},
-			Relation -> {Null, Null, Alternatives@@Patterns`Private`coveringTypesObjects, Object[Protocol]|Object[User]|Object[Maintenance]|Object[Qualification]},
+			Relation -> {Null, Null, Alternatives@@CoverObjectTypes, Object[Protocol]|Object[User]|Object[Maintenance]|Object[Qualification]},
 			Units -> {None, None, None, None},
 			Description -> "A historical record of the covering or uncovering of the container.",
 			Category -> "Cover Information",
@@ -680,6 +680,20 @@ DefineObjectType[Object[Container], {
 			Headers -> {"Date","Awaiting Disposal","Responsible Party"},
 			Category -> "Storage & Handling"
 		},
+		BiohazardDisposal -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the container should be disposed of as biohazardous waste if disposed of, though it is not necessarily designated for disposal at this time.",
+			Category -> "Storage & Handling"
+		},
+		StoreInverted -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this container is stored upside down.  This is primarily used for solid media to prevent condensation from forming on the lids and dripping into the samples.",
+			Category -> "Storage & Handling"
+		},
 		Expires -> {
 			Format -> Single,
 			Class -> Expression,
@@ -706,11 +720,11 @@ DefineObjectType[Object[Container], {
 			Category -> "Storage & Handling",
 			Abstract -> True
 		},
-		SampleHandlingCategories -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> HandlingCategoryP,
-			Description -> "The handling restrictions and conventions that need to be followed for all items in this container.",
+		AsepticHandling -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if aseptic techniques are followed when moving or using the samples in this container. Aseptic techniques include sanitization, autoclaving, sterile filtration, or transferring in a biosafety cabinet during experimentation and storage.",
 			Category -> "Storage & Handling"
 		},
 		ProvidedStorageCondition -> {
@@ -742,7 +756,20 @@ DefineObjectType[Object[Container], {
 			Description -> "Indicates if containers of this model should be wrapped in aluminum foil to protect the container contents from light the next time it is re-covered.",
 			Category -> "Storage & Handling"
 		},
-
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how this container is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage & Handling"
+		},
+		AsepticTechniqueEnvironment -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], AsepticTechniqueEnvironment]],
+			Pattern :> BooleanP,
+			Description -> "Indicates if interactions with the interior of the container should be done using aseptic practices.",
+			Category -> "Storage & Handling"
+		},
 		(* --- Sensor Information --- *)
 		Cameras -> {
 			Format -> Multiple,
@@ -1111,7 +1138,7 @@ DefineObjectType[Object[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this container is presently considered sterile.",
+			Description -> "Indicates that this container is presently considered free of both microbial contamination and any microbial cell samples. To preserve this sterile state, the container is handled with aseptic techniques during experimentation and storage.",
 			Category -> "Health & Safety"
 		},
 		RNaseFree -> {

@@ -50,6 +50,17 @@ DefineObjectType[Object[Company], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+
+		(* Object Certificates *)
+		CertificatesCreated -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Report, Certificate][CertificationSource],
+			Description -> "Quality documentation that this company is responsible for attesting to the accuracy of the data contained therein.",
+			Category -> "Certification Information"
+		},
+
 		(* This is NOT a developer field but we do NOT want it to be in UploadCompany either. Updating this field should be limited to developers only and the external users are not supposed to upload to this field. *)
 		ManufacturingSpecifications -> {
 			Format -> Multiple,

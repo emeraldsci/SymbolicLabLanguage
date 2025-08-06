@@ -228,7 +228,7 @@ DefineUsage[Fields,
 			{"fields", {((Object | Model)[__Symbol][_Symbol, Repeated[_Symbol | _Integer, {0, 1}]])...}, "List of fields."}
 		},
 		SeeAlso -> {"Types", "TypeQ", "TypeP", "ObjectReferenceQ", "ObjectReferenceP", "FieldQ", "FieldP"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}];
 
 
@@ -536,7 +536,7 @@ DefineUsage[SameObjectQ,
 			{"bool", True | False, "True if all expressions are the same object."}
 		},
 		SeeAlso -> {"ObjectReferenceP", "ObjectP", "LinkP", "ObjectQ", "ObjectReferenceQ"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}];
 
 

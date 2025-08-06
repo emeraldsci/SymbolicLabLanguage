@@ -34,6 +34,24 @@ DefineObjectType[Object[Data, AlphaScreen], {
 			Description -> "The temperature at which the measurement was taken in the plate reader.",
 			Category -> "General"
 		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
 		Gain -> {
 			Format -> Single,
 			Class -> Real,
@@ -45,7 +63,7 @@ DefineObjectType[Object[Data, AlphaScreen], {
 		FocalHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0 Millimeter],
+			Pattern :> DistanceP,
 			Units -> Millimeter,
 			Description -> "The distance from the focal point to the lens that collected the light to the primary detector photomultiplier tube (PMT).",
 			Category -> "General"
@@ -143,6 +161,22 @@ DefineObjectType[Object[Data, AlphaScreen], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if any of the recorded intensities are below 0 RFU and have been deleted from the final result.",
+			Category -> "Experimental Results"
+		},
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The average oxygen level inside the sample chamber during spectrum acquisition.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The average carbon dioxide level inside the sample chamber during spectrum acquisition.",
 			Category -> "Experimental Results"
 		}
 	}

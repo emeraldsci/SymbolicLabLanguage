@@ -125,13 +125,7 @@ DefineUsage[PlotTrajectory,
 			"SimulateKinetics",
 			"EmeraldListLinePlot"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"brad",
-			"alice",
-			"qian",
-			"thomas"			
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "brad", "alice", "qian", "thomas"},
 		Preview->True
 	}
 ];

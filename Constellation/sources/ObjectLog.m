@@ -372,7 +372,7 @@ formatObjectLogRecord[record_Association]:=TraceExpression["formatObjectLogRecor
 		formattedRecord=Append[record, "fields" -> fieldValuesWithNullRemoved];
 		formattedRecord=Append[formattedRecord, "resolved_object" -> objectInfo];
 		formattedRecord=Append[formattedRecord, "date" -> timeString];
-		fieldAssociations=responseToSeperateCacheAssociations[formattedRecord];
+		fieldAssociations=responseToSeparateCacheAssociations[formattedRecord];
 		fieldValues=getCacheValue[object, Rfc3339ToDateObject[timeString], fieldTraversals, fieldAssociations];
 		fieldLog=AssociationThread[fieldNames, fieldValues];
 		(* If any values failed (usually because of the field has been renamed), just display the raw value *)

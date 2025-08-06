@@ -16,11 +16,32 @@ DefineUsage[ExperimentSpreadCells,
             {
               InputName -> "objects",
               Description-> "The samples that cells are spread from.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to "<>ConvertWell[$MaxNumberOfWells, NumberOfWells -> $MaxNumberOfWells] -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to "<>ConvertWell[$MaxNumberOfWells, NumberOfWells -> $MaxNumberOfWells]<>"."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
                 }
               ],
               Expandable->False
@@ -43,7 +64,6 @@ DefineUsage[ExperimentSpreadCells,
     SeeAlso -> {
       "ValidExperimentSpreadCellsQ",
       "ExperimentSpreadCellsOptions",
-      "ExperimentSpreadCellsPreview",
       "ExperimentInoculateLiquidMedia",
       "ExperimentPickColonies",
       "ExperimentStreakCells"
@@ -59,7 +79,7 @@ DefineUsage[ExperimentSpreadCellsOptions,
     BasicDefinitions->{
       {
         Definition->{"ExperimentSpreadCellsOptions[Samples]","ResolvedOptions"},
-        Description->"returns the resolved options for ExperimentSpreadCells when it is called on",
+        Description->"generates a 'ResolvedOptions' object to spread the input 'Samples' onto agar culture plates.",
         Inputs:> {
           IndexMatching[
             {
@@ -133,5 +153,51 @@ DefineUsage[ValidExperimentSpreadCellsQ,
       "ExperimentSpreadCellsOptions"
     },
     Author->{"harrison.gronlund", "taylor.hochuli"}
+  }
+];
+(* ::Section:: *)
+(* ExperimentSpreadCellsPreview *)
+DefineUsage[ExperimentSpreadCellsPreview,
+  {
+    BasicDefinitions -> {
+      {
+        Definition -> {"ExperimentSpreadCellsPreview[Samples]", "Preview"},
+        Description -> "generates a graphical 'Preview' for spreading cell suspension 'Samples' onto an agar culture plate.",
+        Inputs:> {
+          IndexMatching[
+            {
+              InputName->"Samples",
+              Description->"The suspension culture that is spread.",
+              Widget->Widget[
+                Type->Object,
+                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                Dereference->{
+                  Object[Container]->Field[Contents[[All,2]]]
+                }
+              ],
+              Expandable->False
+            },
+            IndexName->"experiment samples"
+          ]
+        },
+        Outputs :> {
+          {
+            OutputName -> "Preview",
+            Description -> "A graphical representation of the provided SpreadCells experiment. This value is always Null.",
+            Pattern :> Null
+          }
+        }
+      }
+    },
+    MoreInformation -> {},
+    SeeAlso -> {
+      "ExperimentSpreadCells",
+      "ExperimentSpreadCellsOptions",
+      "ValidExperimentSpreadCellsQ"
+    },
+    Tutorials -> {
+
+    },
+    Author -> {"harrison.gronlund"}
   }
 ];

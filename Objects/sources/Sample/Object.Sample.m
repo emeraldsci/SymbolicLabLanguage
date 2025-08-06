@@ -37,20 +37,23 @@ DefineObjectType[Object[Sample], {
 		},
 		Composition->{
 			Format->Multiple,
-			Class->{VariableUnit, Link},
+			Class->{VariableUnit, Link, Date},
 			Pattern:>{
 				CompositionP,
-				_Link
+				_Link,
+				_?DateObjectQ
 			},
 			Relation->{
 				Null,
-				IdentityModelTypeP
+				IdentityModelTypeP,
+				Null
 			},
 			Headers->{
 				"Amount",
-				"Identity Model"
+				"Identity Model",
+				"Date"
 			},
-			Description->"Describes the molecular composition of this sample.",
+			Description->"Records the various molecular components present in this sample, along with their respective concentrations. The recorded composition is associated with the specific time at which it was measured or recorded.",
 			Category->"Organizational Information",
 			Abstract->True
 		},
@@ -143,7 +146,7 @@ DefineObjectType[Object[Sample], {
 			Pattern:>{_?DateObjectQ, BooleanP, _Link},
 			Relation->{Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
 			Description->"A log of changes made to this sample's Missing status.",
-			Headers->{"Date", "Restricted", "Responsible Party"},
+			Headers->{"Date", "Missing", "Responsible Party"},
 			Category->"Organizational Information"
 		},
 		Restricted->{
@@ -304,6 +307,26 @@ DefineObjectType[Object[Sample], {
 			Description->"Melting temperature of the pure substance at atmospheric pressure.",
 			Category->"Physical Properties",
 			Abstract->False
+		},
+		PharmacopeiaMeltingPoint->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0*Kelvin],
+			Units->Celsius,
+			Description->"Nominal pharmacopeia melting temperature of a melting point standard at atmospheric pressure.",
+			Category->"Physical Properties",
+			Abstract->False,
+			Developer -> True
+		},
+		ThermodynamicMeltingPoint->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterP[0*Kelvin],
+			Units->Celsius,
+			Description->"Nominal thermodynamic melting temperature of a melting point standard at atmospheric pressure.",
+			Category->"Physical Properties",
+			Abstract->False,
+			Developer -> True
 		},
 		VaporPressure->{
 			Format->Single,
@@ -574,19 +597,26 @@ DefineObjectType[Object[Sample], {
 			Description->"Indicates if this model is in the form of a small disk or cylinder of compressed solid substance in a measured amount.",
 			Category->"Physical Properties"
 		},
-		TabletWeight->{
+		SolidUnitWeight->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Gram],
 			Units->Gram,
-			Description->"The mean mass of a single tablet of this model.",
+			Description->"The mean mass of a single tablet or sachet of this model.",
 			Category->"Physical Properties"
 		},
-		TabletWeightDistribution->{
+		SolidUnitWeightDistribution->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>DistributionP[Gram],
-			Description-> "The distribution of the single tablet weights measured from multiple samplings.",
+			Description-> "The distribution of the single tablet or sachet weights measured from multiple samplings.",
+			Category->"Physical Properties"
+		},
+		Sachet->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this object is in the form of a small pouch filled with a measured amount of loose solid substance.",
 			Category->"Physical Properties"
 		},
 		TotalProteinConcentration->{
@@ -690,7 +720,7 @@ DefineObjectType[Object[Sample], {
 			Pattern:>{_?DateObjectQ, GreaterEqualP[0*Milliliter] | GreaterEqualP[0*Milligram] | GreaterEqualP[0*Unit, 1*Unit], _Link, _Link, TransferCompletenessP},
 			Relation->{Null, Null, Object[Sample][TransfersOut,3] | Object[Item][TransfersOut, 3], Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Units->{None, None, None, None, None},
-			Description->"Materials transfered into this item from other samples.",
+			Description->"Materials transfered into this item from other samples, in the form: {Date, Nominal amount transferred, Source sample, Responsible party, Completeness of transfer (specified Partial amount vs All)}.",
 			Category->"Sample History",
 			Headers ->{"Date","Target Amount","Origin Sample","Responsible Party","Transfer Type"}
 		},
@@ -700,9 +730,9 @@ DefineObjectType[Object[Sample], {
 			Pattern:>{_?DateObjectQ, GreaterEqualP[0*Milliliter] | GreaterEqualP[0*Milligram] | GreaterEqualP[0*Unit, 1*Unit], _Link, _Link, TransferCompletenessP},
 			Relation->{Null, Null, Object[Sample][TransfersIn,3] | Object[Item][TransfersIn,3], Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Units->{None, None, None, None, None},
-			Description->"Materials transfered out of this item and into other samples.",
+			Description->"Materials transfered out of this item and into other samples, in the form: {Date, Nominal amount transferred, Destination sample, Responsible party, Completeness of transfer (specified Partial amount vs All)}.",
 			Category->"Sample History",
-			Headers ->{"Date","Target Amount","Origin Sample","Responsible Party","Transfer Type"}
+			Headers ->{"Date","Target Amount","Destination Sample","Responsible Party","Transfer Type"}
 		},
 		AutoclaveLog->{
 			Format->Multiple,
@@ -722,7 +752,14 @@ DefineObjectType[Object[Sample], {
 				Object[Protocol][SamplesIn],
 				Object[Protocol][SamplesOut],
 				Object[Protocol, UVMelting][SamplesInAliquots, 1],
-				Object[Protocol, DynamicFoamAnalysis][AdditiveSamplesIn]
+				Object[Protocol, DynamicFoamAnalysis][AdditiveSamplesIn],
+				Object[Protocol, SolidPhaseExtraction][PreFlushingSampleOut],
+				Object[Protocol, SolidPhaseExtraction][ConditioningSampleOut],
+				Object[Protocol, SolidPhaseExtraction][LoadingSampleFlowthroughSampleOut],
+				Object[Protocol, SolidPhaseExtraction][WashingSampleOut],
+				Object[Protocol, SolidPhaseExtraction][SecondaryWashingSampleOut],
+				Object[Protocol, SolidPhaseExtraction][TertiaryWashingSampleOut],
+				Object[Protocol, SolidPhaseExtraction][ElutingSampleOut]
 			],
 			Description->"All protocols that used this sample at any point during their execution in the lab.",
 			Category->"Sample History"
@@ -765,7 +802,8 @@ DefineObjectType[Object[Sample], {
 				Object[Data, DigitalPCR][AssaySample],
 				Object[Data, DynamicFoamAnalysis][AdditiveSamplesIn],
 				Object[Data, CoulterCount][DilutionSamples],
-				Object[Data, MeltingPoint][AssaySample]
+				Object[Data, MeltingPoint][AssaySample],
+				Object[Data, QuantifyColonies][QuantificationColonySamples]
 			],
 			Description->"Experimental data involved in the creation or consumption of the sample.",
 			Category->"Experimental Results"
@@ -863,6 +901,21 @@ DefineObjectType[Object[Sample], {
 			Pattern:>WasteTypeP,
 			Description->"Indicates the type of waste collected in this sample.",
 			Category->"Storage & Handling"
+		},
+		BiohazardDisposal->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates whether the sample should be disposed of as biohazardous waste if disposed of, though it is not necessarily designated for disposal at this time.",
+			Category->"Storage & Handling"
+		},
+		DiscardThreshold -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "The volume below which this sample is automatically marked as AwaitingDisposal.",
+			Category -> "Storage & Handling"
 		},
 		CrystallizationTerminationDate->{
 			Format->Single,
@@ -1021,21 +1074,27 @@ DefineObjectType[Object[Sample], {
 			Description->"Indicates if this sample's container should be wrapped in aluminum foil to protect the sample from light.",
 			Category->"Storage & Handling"
 		},
-		(* TODO: Deprecate TransportChilled and TransportWarmed fields after TransportCondition is in play. *)
-		TransportChilled->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if this sample should be refrigerated while transported between instruments during experimentation.",
-			Category->"Storage & Handling"
-		},
-		TransportWarmed->{
+		TransportTemperature->{
 			Format->Single,
 			Class->Real,
 			Pattern:>GreaterP[0 * Kelvin],
 			Units->Celsius,
 			Description->"The temperature at which the sample should be incubated while transported between instruments during experimentation.",
 			Category->"Storage & Handling"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how this sample is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage & Handling"
+		},
+		AsepticHandling -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if aseptic techniques are followed for handling this sample in lab. Aseptic techniques include sanitization, autoclaving, sterile filtration, or transferring in a biosafety cabinet during experimentation and storage.",
+			Category -> "Storage & Handling"
 		},
 
 		(* --- Inventory --- *)
@@ -1214,12 +1273,26 @@ DefineObjectType[Object[Sample], {
 			Category->"Inventory"
 		},
 
+		(* --- Quality Assurance --- *)
+		(* TODO: migrate Certificates field to Object[Batch] and link Object[Sample] to Object[Batch]*)
+		Certificates -> {
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Object[Report, Certificate, Analysis][MaterialCertified],
+				Object[Report, Certificate, Analysis][DownstreamSamplesCertified]
+			],
+			Description->"The quality assurance documentation and data for this sample or its components.",
+			Category->"Quality Assurance"
+		},
+
 		(* --- Health & Safety --- *)
 		Sterile->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>BooleanP,
-			Description->"Indicates that this sample is sterile.",
+			Description->"Indicates that this sample is presently considered free of both microbial contamination and any microbial cell samples. To preserve this sterile state, the sample is handled with aseptic techniques during experimentation and storage.",
 			Category->"Health & Safety"
 		},
 		RNaseFree->{
@@ -1262,13 +1335,6 @@ DefineObjectType[Object[Sample], {
 			Class->Expression,
 			Pattern:>BooleanP,
 			Description->"Indicates if this sample must be handled in a glove box.",
-			Category->"Health & Safety"
-		},
-		BiosafetyHandling->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if this sample must be handled in a biosafety cabinet.",
 			Category->"Health & Safety"
 		},
 		GloveBoxIncompatible->{
@@ -1412,6 +1478,15 @@ DefineObjectType[Object[Sample], {
 			Description->"The Biosafety classification of the substance.",
 			Category->"Health & Safety"
 		},
+		DoubleGloveRequired -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if working with this molecule requires to wear two pairs of gloves.",
+			Category -> "Health & Safety",
+			Developer -> True
+		},
+
 		AutoclaveUnsafe->{
 			Format->Single,
 			Class->Boolean,

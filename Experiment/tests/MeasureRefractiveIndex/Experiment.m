@@ -196,6 +196,80 @@ DefineTests[
 		],
 
 		(* Messages *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureRefractiveIndex[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureRefractiveIndex[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureRefractiveIndex[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureRefractiveIndex[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 50 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureRefractiveIndex[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 50 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureRefractiveIndex[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		(* Invalid inputs checks *)
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentMeasureRefractiveIndex[
@@ -1059,34 +1133,29 @@ DefineTests[
 			{ManualSamplePreparationP..},
 			Variables :> {protocol}
 		],
-		Example[{Options,PreparatoryPrimitives,"Make a new stock solution model and measure its refractive index:"},
-			ExperimentMeasureRefractiveIndex[
-				"My New StockSolution",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My New StockSolution",
-						Container -> Model[Container, Vessel, "50mL Tube"],
-						ModelType -> Model[Sample,StockSolution],
-						ModelName -> "A Brand New StockSolution"
-					],
-					Transfer[
-						Source -> Model[Sample, "id:BYDOjvG9z6Jl"],
-						Destination -> "My New StockSolution",
-						Amount -> 2.5*Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My New StockSolution",
-						Amount -> 10*Milliliter
-					]
-				}
-			],
-			ObjectP[Object[Protocol,MeasureRefractiveIndex]],
-			SetUp :> {
-				InternalUpload`Private`$UploadSampleTransferSolventDilutionLookup = Association[];
-				InternalUpload`Private`$UploadSampleTransferSolventMixtureLookup = Association[];
-				InternalUpload`Private`$UploadSampleTransferMediaMixtureLookup = Association[];
-			}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureRefractiveIndex[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+				PreparedModelAmount -> 20 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]..},
+				{EqualP[20 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options, IncubateAliquotDestinationWell, "Set the IncubateAliquotDestinationWell option:"},
 			options = ExperimentMeasureRefractiveIndex[
@@ -1129,7 +1198,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentMeasureRefractiveIndex 1",
+			{"Test Label for ExperimentMeasureRefractiveIndex 1"},
 			Variables:>{options}
 		],
 		Example[{Options, AliquotAmount, "Set the AliquotAmount option:"},
@@ -1162,7 +1231,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotPreparation, "Set the AliquotPreparation option:"},
@@ -1500,7 +1569,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureRefractiveIndex[Object[Sample, "Test water sample 1 for ExperimentMeasureRefractiveIndex"<>$SessionUUID], AliquotContainer -> Model[Container,Vessel,"50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -1673,7 +1742,7 @@ DefineTests[
 					Object -> waterSample1,
 					Status -> Available,
 					DeveloperObject -> True,
-					Replace[Composition] ->  {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}}
+					Replace[Composition] ->  {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}}
 				|>,
 				<|
 					Object -> waterSample2,

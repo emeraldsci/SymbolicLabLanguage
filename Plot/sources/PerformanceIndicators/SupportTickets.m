@@ -85,9 +85,9 @@ PlotSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ]:=Module[{allProtoco
 	allProtocols=Search[Object[Protocol],DateCompleted>=startTime&&DateCompleted<=endTime];
 
 	(* Download all the TS tickets causitively linked for each type for each protocol so we can process the counts by type for each entry *)
-	packetInfo=Download[allProtocols,{Type,ProtocolSpecificTickets}];
+	packetInfo=Download[allProtocols,{Type,ProtocolSpecificInternalCommunications}];
 
-	(* For each packet, count and sum the number of TS reports and tickets and leave the type at the front of the list *)
+	(* For each packet, count and sum the number of user coms and tickets and leave the type at the front of the list *)
 	packetSums={First[#],Length[Last[#]]}&/@packetInfo;
 
 	(* Gather the results by Type and then strip the types off the counts on the right hand side of the rules *)
@@ -106,13 +106,13 @@ PlotSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ]:=Module[{allProtoco
 			Zoomable@ListPlot[labeledData,
 				ImageSize->Large,
 				Frame->{True,True,False,False},
-				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Troubleshooting Rate (%)",14,Gray]},
+				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Support Rate (%)",14,Gray]},
 				PlotRange->{Full,{0,Full}}
 			],
 			Zoomable@ListLogLinearPlot[labeledData,
 				ImageSize->Large,
 				Frame->{True,True,False,False},
-				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Troubleshooting Rate (%)",14,Gray]},
+				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Support Rate (%)",14,Gray]},
 				PlotRange->{Full,{0,Full}}
 			]
 		},
@@ -120,13 +120,13 @@ PlotSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ]:=Module[{allProtoco
 			Zoomable@ListLogPlot[labeledData,
 				ImageSize->Large,
 				Frame->{True,True,False,False},
-				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Troubleshooting Rate (%)",14,Gray]},
+				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Support Rate (%)",14,Gray]},
 				PlotRange->{Full,{0,Full}}
 			],
 			Zoomable@ListLogLogPlot[labeledData,
 				ImageSize->Large,
 				Frame->{True,True,False,False},
-				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Troubleshooting Rate (%)",14,Gray]},
+				FrameLabel->{Style["Number of Protocols Run",14,Gray],Style["Support Rate (%)",14,Gray]},
 				PlotRange->{Full,{0,Full}}
 			]
 		}
@@ -158,10 +158,10 @@ PlotSupportDistributions[types:ListableP[TypeP[Object[Protocol]]],startTime_?Dat
 		Message[PlotSupportDistributions::NoProtocols];Return[$Failed]
 	];
 
-	(* Download all the TS reports and tickets for all the protocols *)
-	allTS=Download[allProtocols,{Type,ProtocolSpecificTickets}];
+	(* Download all the user coms and tickets for all the protocols *)
+	allTS=Download[allProtocols,{Type,ProtocolSpecificInternalCommunications}];
 
-	(* Count all the TS reports / tickets for each of the type pairs *)
+	(* Count all the user coms / tickets for each of the type pairs *)
 	allTSCounts={First[#],Length[Last[#]]}&/@allTS;
 
 	(* Regroup by type *)
@@ -176,7 +176,7 @@ PlotSupportDistributions[types:ListableP[TypeP[Object[Protocol]]],startTime_?Dat
 		ImageSize->Large,
 		ChartLegends->typeLabels,
 		Frame->{True,True,False,False},
-		FrameLabel->{Style["Number of TS per Protocol",Bold,16,Gray],Style["Count",Bold,16,Gray]}
+		FrameLabel->{Style["Number of Operations Support Tickets per Protocol",Bold,16,Gray],Style["Count",Bold,16,Gray]}
 	]
 ];
 
@@ -186,17 +186,37 @@ PlotSupportDistributions[types:ListableP[TypeP[Object[Protocol]]],startTime_?Dat
 (* ::Subsubsection:: *)
 (*DefineOptions*)
 DefineOptions[PlotTotalSupportRate,
-	Options:>{}
+	Options:>{
+		{Site->$Site,(Null|ObjectP[Object[Container, Site]]),"The site for which the data is generated."},
+		{Category -> All, (All|Blocker|Protocol|Other|Storage), "The type of tickets to count. Blockers will only track tickets for which Blocked-> True at some point. Protocol will only include tickets filed by operators about a protocol. Other will include all non protocol tickets, and Storage will include only those created via the ReportInvalidStorage button in Engine."},
+		{Type -> ProtocolTypes[],{TypeP[]..}, "The types of protocols that will be considered. For example, if Object[Protocol, HPLC] is used, only tickets related to this protocol type are reported."}
+	}
 ];
+
+PlotTotalSupportRate::MisleadingBaseline = "When using Category -> `1`, all protocol types must be used as the baseline. Values other than ProtocolTypes[] are only allowed when Category is Protocol or Blocker.";
+
 (* ::Subsubsection:: *)
 (*Implementation*)
-PlotTotalSupportRate[]:=PlotTotalSupportRate[Month,Day];
-PlotTotalSupportRate[timeSpan_?TimeQ]:=PlotTotalSupportRate[timeSpan,timelineBin[timeSpan]];
-PlotTotalSupportRate[timeSpan_?TimeQ,bin_?TimeQ]:=PlotTotalSupportRate[Today-timeSpan,Today,bin];
-PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ]:=PlotTotalSupportRate[startTime,endTime,timelineBin[endTime-startTime]];
-PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ]:=Module[
-	{dateTicks,dateBins,datePoints,allTS,allTSandProtocolTimes,allProtocols,allParentProtocols,allParentProtocolTimes,allTSTimes,allProtocolTimes,
-		allTSBins,allProtocolBins,allParentProtocolBins,ratePoints,normalizedRatePoints,normalizedParentRatePoints,defaultBlue},
+PlotTotalSupportRate[ops:OptionsPattern[PlotTotalSupportRate]]:=PlotTotalSupportRate[Month,Day, ops];
+PlotTotalSupportRate[timeSpan_?TimeQ,ops:OptionsPattern[PlotTotalSupportRate]]:=PlotTotalSupportRate[timeSpan,timelineBin[timeSpan], ops];
+PlotTotalSupportRate[timeSpan_?TimeQ,bin_?TimeQ,ops:OptionsPattern[PlotTotalSupportRate]]:=PlotTotalSupportRate[Today-timeSpan,Today,bin,ops];
+PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ,ops:OptionsPattern[PlotTotalSupportRate]]:=PlotTotalSupportRate[startTime,endTime,timelineBin[endTime-startTime], ops];
+PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ,ops:OptionsPattern[PlotTotalSupportRate]]:=Module[
+	{
+		safeOps, dateTicks,dateBins,datePoints,allTS,allProtocols,allParentProtocols,allParentProtocolTimes,allTSTimes,allProtocolTimes,
+		allTSBins,allProtocolBins,allParentProtocolBins,ratePoints,normalizedRatePoints,normalizedParentRatePoints,defaultBlue,siteOption,
+		sitesPerTicket, tsTuples, nestedProtocolTimes, nestedParentProtocolTimes,siteName,type,category,searchCondition
+	},
+
+	safeOps = SafeOptions[PlotTotalSupportRate,ToList[ops]];
+	{siteOption, type, category} = {Download[Lookup[safeOps,Site], Object], Lookup[safeOps, Type], Lookup[safeOps, Category]};
+
+	(* some error checking to prevent misleading stats - if you are doing anything but a protocol specific search on tickets, you must use all protocols as the baseline*)
+	If[!MatchQ[type, ProtocolTypes[]]&&!MatchQ[category, (Blocker|Protocol)],
+		Message[PlotTotalSupportRate::MisleadingBaseline, category];
+		Return[$Failed]
+	];
+
 
 	(* Generate bins of dates for calculating the rates *)
 	dateTicks=DateRange[startTime,endTime,bin];
@@ -205,26 +225,87 @@ PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ]:=Mo
 	(* Calculate the center of the date bins *)
 	datePoints=DateObject[Mean[{AbsoluteTime[First[#]],AbsoluteTime[Last[#]]}]]&/@dateBins;
 
-	(* Find all the troubleshooting reports and tickets Generated in the date range *)
-	allTS=Search[Object[SupportTicket],DateCreated>=startTime&&DateCreated<=endTime];
+	(* Find all the support tickets (internal and external) generated in the date range. Use SupportTicketSource to prefilter results *)
+	(*Protocol | General | Transaction | LongTask | QueueReordering | ForceQuit*)
+	searchCondition = And@@{
+		DateCreated >= startTime,
+		DateCreated <= endTime,
+		Switch[category,
+			All, Nothing,
+			Storage, SupportTicketSource == General,
+			(Blocker | Protocol), SupportTicketSource == Protocol,
+			Other, SupportTicketSource != Protocol
+		]
+	};
+	allTS=Search[
+		Object[SupportTicket, Operations],
+		searchCondition
+	];
 
-	(* Also find all the protocols completed in this time range *)
-	allProtocols=Search[ProtocolTypes[],DateCompleted>=startTime&&DateCompleted<=endTime];
+	(* Also find all the protocols completed in this time range for the specified types *)
+	allProtocols=If[MatchQ[siteOption, ObjectP[]],
+		Search[type,DateCompleted>=startTime&&DateCompleted<=endTime&&Site==siteOption],
+		Search[type,DateCompleted>=startTime&&DateCompleted<=endTime]
+	];
 
-	(* Also find all the protocols that are just parent protocols completed in this time range *)
-	allParentProtocols=Search[ProtocolTypes[],ParentProtocol==Null&&DateCompleted>=startTime&&DateCompleted<=endTime];
+	(* Also find all the protocols that are just parent protocols completed in this time range for the specified types *)
+	allParentProtocols=If[MatchQ[siteOption, ObjectP[]],
+		Search[type,ParentProtocol==Null&&DateCompleted>=startTime&&DateCompleted<=endTime&&Site==siteOption],
+		Search[type,ParentProtocol==Null&&DateCompleted>=startTime&&DateCompleted<=endTime]
+	];
 
-	(* Download all the actual create dates for the TS reports/tickets and all of the complete dates for all the protocols in that time range in the time range *)
-	allTSandProtocolTimes=Download[{allTS,allProtocols,allParentProtocols},{{DateCreated},{DateCompleted},{DateCompleted}}];
+	(* Download all the actual create dates for the user coms/tickets and all of the complete dates for all the protocols in that time range in the time range *)
+	{
+		tsTuples,
+		nestedProtocolTimes,
+		nestedParentProtocolTimes
+	}=Quiet[
+		Download[
+			{
+				allTS,
+				allProtocols,
+				allParentProtocols
+			},
+			{
+				{DateCreated, AffectedProtocol[Site], Site, AffectedProtocol[Type], Headline, BlockedLog},
+				{DateCompleted},
+				{DateCompleted}
+			}
+		],
+		Download::FieldDoesntExist
+	];
 
-	(* Split out the TS times into their own varabile *)
-	allTSTimes=Flatten[First[allTSandProtocolTimes]];
+	allProtocolTimes = Flatten[nestedProtocolTimes];
+	allParentProtocolTimes = Flatten[nestedParentProtocolTimes];
 
-	(* Split out all the protocol times into their own variable *)
-	allProtocolTimes=Flatten[allTSandProtocolTimes[[2]]];
+	(*determine a site for each ticket, defaulting any site-less ones to ECL-2*)
+	sitesPerTicket = Download[FirstCase[#, ObjectP[], Object[Container, Site, "id:kEJ9mqJxOl63"]], Object]&/@(tsTuples[[All,2;;3]]);
 
-	(* Split out the only protocols *)
-	allParentProtocolTimes=Flatten[Last[allTSandProtocolTimes]];
+	(* extract the relevant times given the options *)
+	allTSTimes = Module[{perSiteTuples,filteredTuples},
+		perSiteTuples = If[MatchQ[siteOption, ObjectP[]],
+			PickList[tsTuples, sitesPerTicket, ObjectP[siteOption]],
+			tsTuples
+		];
+
+		(* select only those with the correct protocol types *)
+		filteredTuples = If[MatchQ[category, (Protocol|Blocker)],
+			Select[perSiteTuples, MatchQ[#[[4]], TypeP[type]]&],
+			perSiteTuples
+		];
+
+		(* select only tickets meeting our option criteria *)
+		Switch[category,
+			All,filteredTuples[[All,1]],
+			(* find any tickets that had a blocking element *)
+			Blocker,Select[filteredTuples, MemberQ[#[[6]], {_,_, True}]&][[All,1]],
+			(* the earlier search already took out all the non-protocol stuff *)
+			Protocol,filteredTuples[[All,1]],
+			Other, Select[filteredTuples, !StringContainsQ[ToString[#[[5]]], "Invalid storage destination:"]&][[All,1]],
+			Storage,Select[filteredTuples, StringContainsQ[ToString[#[[5]]], "Invalid storage destination:"]&][[All,1]],
+			_,filteredTuples[[All,1]]
+		]
+	];
 
 	(* break up the TS times into the time bins *)
 	allTSBins=Function[singleBin,Select[allTSTimes,GreaterEqualDateQ[#,First[singleBin]]&&LessEqualDateQ[#,Last[singleBin]]&]]/@dateBins;
@@ -256,30 +337,35 @@ PlotTotalSupportRate[startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ]:=Mo
 
 	defaultBlue=ColorData[97, "ColorList"][[1]];
 
+	siteName=If[MatchQ[siteOption, ObjectP[]],
+		ToString[Download[siteOption, Name]]<>": ",
+		"All Sites: "
+	];
+
 	(* Plot the results *)
 	Grid[{{
-		Zoomable@EmeraldDateListPlot[divideByLabClosure[ratePoints],
+		EmeraldDateListPlot[divideByLabClosure[ratePoints],
 			ImageSize->Large,
 			Frame->{True,True,False,False},
-			FrameLabel->{None,Style["Total Troubleshooting Rate\n(Reports & Tickets per day)",Bold,16,Gray]},
+			FrameLabel->{None,Style["Total Support Rate\n(All Tickets per day)",Bold,16,Gray]},
 			PlotRange->Automatic,
-			PlotLabel->"Total TS Tickets"<>"\nPer "<>ToString[bin]<>" Averaging",
+			PlotLabel->siteName<>"Total Support Tickets"<>"\nPer "<>ToString[bin]<>" Averaging",
 			PlotStyle->defaultBlue
 		],
-		Zoomable@EmeraldDateListPlot[divideByLabClosure[normalizedParentRatePoints],
+		EmeraldDateListPlot[divideByLabClosure[normalizedParentRatePoints],
 			ImageSize->Large,
 			Frame->{True,True,False,False},
-			FrameLabel->{None,Style["Parent Protocol Troubleshooting Rate (%)",Bold,16,Gray]},
+			FrameLabel->{None,Style["Experiment Support Rate (%)",Bold,16,Gray]},
 			PlotRange->Automatic,
-			PlotLabel->"TS Tickets Per Parent Protocol (%)"<>"\nPer "<>ToString[bin]<>" Averaging",
+			PlotLabel->siteName<>"Support Tickets Per Experiment (%)"<>"\nPer "<>ToString[bin]<>" Averaging",
 			PlotStyle->defaultBlue
 		],
-		Zoomable@EmeraldDateListPlot[divideByLabClosure[normalizedRatePoints],
+		EmeraldDateListPlot[divideByLabClosure[normalizedRatePoints],
 			ImageSize->Large,
 			Frame->{True,True,False,False},
-			FrameLabel->{None,Style["Total Protocol Troubleshooting Rate (%)",Bold,16,Gray]},
+			FrameLabel->{None,Style["Total Protocol Support Rate (%)",Bold,16,Gray]},
 			PlotRange->Automatic,
-			PlotLabel->"TS Tickets Per Protocol (%)"<>"\nPer "<>ToString[bin]<>" Averaging",
+			PlotLabel->siteName<>"Support Tickets Per Protocol (%)"<>"\nPer "<>ToString[bin]<>" Averaging",
 			PlotStyle->defaultBlue
 		]
 	}}]
@@ -298,55 +384,59 @@ divideByLabClosure[dataPoints_]:=Module[{preClosure, postOpen},
 (* ::Subsubsection:: *)
 (*DefineOptions*)
 DefineOptions[PlotSupportTimeline,
-	Options:>{
-		{Tags->{},{}|ListableP[_String],"Indicates which tags tracking different types of error sources are to have their troubleshooting rates displayed."},
-		{Annotation->{},{}|ListableP[{_DateObject, _String}],"Indicates the vertical lines that are to be added to the plot to show certain key events."},
-		{SampleManipulationSplit->False,BooleanP,"Indicates if SampleManipulation protocols are to be displayed as MicroLiquidHandling or MacroLiquidHandling."},
-		{SearchCriteria->True,_And|_Or|_Equal|_Unequal|_,"Additional elements to be included in the And used to find protocols (for instance specify protocols run on only certain instrument models)."},
-		{LiquidHandlerSplit->False,BooleanP,"Indicates if SampleManipulation/RoboticSamplePreparation protocols are to be displayed by the liquid handler that they ran on."},
-		{Display->Relative,Relative|Absolute|Both,"Indicates if the number of tickets, the percentage of tickets per protocol or both metrics are to be displayed."},
-		{RemoveMonitoringTickets->True,BooleanP,"Indicates if tickets used to track daily operations, such as long task tickets are to be shown."},
-		{ExcludeCanaryProtocols->False,BooleanP,"Indicates if the tickets generated generated from a root canary protocol should be excluded from the plot."}
+	Options :> {
+		{Tags -> {}, {} | ListableP[_String], "Indicates which tags tracking different types of error sources are to have their support rates displayed."},
+		{Annotation -> {}, {} | ListableP[{_DateObject, _String}], "Indicates the vertical lines that are to be added to the plot to show certain key events."},
+		{SampleManipulationSplit -> False, BooleanP, "Indicates if SampleManipulation protocols are to be displayed as MicroLiquidHandling or MacroLiquidHandling."},
+		{SearchCriteria -> True, _And | _Or | _Equal | _Unequal | _, "Additional elements to be included in the And used to find protocols (for instance specify protocols run on only certain instrument models)."},
+		{LiquidHandlerSplit -> False, BooleanP, "Indicates if SampleManipulation/RoboticSamplePreparation protocols are to be displayed by the liquid handler that they ran on."},
+		{Display -> Relative, Relative | Absolute | Both, "Indicates if the number of tickets, the percentage of tickets per protocol or both metrics are to be displayed."},
+		{RemoveMonitoringTickets -> True, BooleanP, "Indicates if tickets used to track daily operations, such as long task tickets are to be shown."},
+		{ExcludeCanaryProtocols -> False, BooleanP, "Indicates if the tickets generated generated from a root canary protocol should be excluded from the plot."},
+		{ExcludedCategories -> {}, {} | ListableP[SupportTicketErrorSubcategoryP], "Tickets with the specified error categories are excluded from the plot."}
 	},
-	SharedOptions:>{EmeraldDateListPlot}
+	SharedOptions :> {EmeraldDateListPlot}
 ];
 
-PlotSupportTimeline::NoProtocols="No completed protocols could be found within the specified time period. If you aren't already doing so you may want to specify the exact dates of interest using PlotSupportTimeline[(protocol), startDate, endDate, bin].";
+PlotSupportTimeline::NoProtocols = "No completed protocols could be found within the specified time period. If you aren't already doing so you may want to specify the exact dates of interest using PlotSupportTimeline[(protocol), startDate, endDate, bin].";
 
 (* ::Subsubsection:: *)
 (*Implementation*)
 
 (* No input: Show all protocols for the last month *)
-PlotSupportTimeline[ops:OptionsPattern[]]:=PlotSupportTimeline[All,Month,Day,ops];
-PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]]),ops:OptionsPattern[]]:=PlotSupportTimeline[specifiedProtocols,Month,Day,ops];
+PlotSupportTimeline[ops : OptionsPattern[]] := PlotSupportTimeline[All, Month, Day, ops];
+PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]]), ops : OptionsPattern[]] := PlotSupportTimeline[specifiedProtocols, Month, Day, ops];
 
 (* Time Span Shortcut (no bin): Year shortcut : Specify just the 'time ago' (e.g. Month to ultimately mean one month ago to now, auto calculate bin *)
-PlotSupportTimeline[timeSpan_?TimeQ,ops:OptionsPattern[]]:=PlotSupportTimeline[All,timeSpan,ops];
-PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]]),timeSpan_?TimeQ,ops:OptionsPattern[]]:=PlotSupportTimeline[specifiedProtocols,timeSpan,timelineBin[timeSpan],ops];
+PlotSupportTimeline[timeSpan_?TimeQ, ops : OptionsPattern[]] := PlotSupportTimeline[All, timeSpan, ops];
+PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]]), timeSpan_?TimeQ, ops : OptionsPattern[]] := PlotSupportTimeline[specifiedProtocols, timeSpan, timelineBin[timeSpan], ops];
 
 (* Time Span Shortcut (bin): Specify the 'time ago' and bin size *)
-PlotSupportTimeline[timeSpan_?TimeQ,bin_?TimeQ,ops:OptionsPattern[]]:=PlotSupportTimeline[All,Today-timeSpan,Today,bin,ops];
-PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]]),timeSpan_?TimeQ,bin_?TimeQ,ops:OptionsPattern[]]:=PlotSupportTimeline[specifiedProtocols,Today-timeSpan,Today,bin,ops];
+PlotSupportTimeline[timeSpan_?TimeQ, bin_?TimeQ, ops : OptionsPattern[]] := PlotSupportTimeline[All, Today - timeSpan, Today, bin, ops];
+PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]]), timeSpan_?TimeQ, bin_?TimeQ, ops : OptionsPattern[]] := PlotSupportTimeline[specifiedProtocols, Today - timeSpan, Today, bin, ops];
 
 (* Start time, end time, no bin *)
-PlotSupportTimeline[startTime_?DateObjectQ,endTime_?DateObjectQ,ops:OptionsPattern[]]:=PlotSupportTimeline[All,startTime,endTime,ops];
-PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]]),startTime_?DateObjectQ,endTime_?DateObjectQ,ops:OptionsPattern[]]:=PlotSupportTimeline[specifiedProtocols,startTime,endTime,timelineBin[endTime-startTime],ops];
+PlotSupportTimeline[startTime_?DateObjectQ, endTime_?DateObjectQ, ops : OptionsPattern[]] := PlotSupportTimeline[All, startTime, endTime, ops];
+PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]]), startTime_?DateObjectQ, endTime_?DateObjectQ, ops : OptionsPattern[]] := PlotSupportTimeline[specifiedProtocols, startTime, endTime, timelineBin[endTime - startTime], ops];
 
 (* Full specification: Indicate protocols, start time, end time and bin *)
-PlotSupportTimeline[startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ,ops:OptionsPattern[]]:=PlotSupportTimeline[All,startTime,endTime,bin,ops];
-PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]]),startTime_?DateObjectQ,endTime_?DateObjectQ,bin_?TimeQ,ops:OptionsPattern[]]:=Module[
-	{safeOps,splitSampleManips,splitLiquidHandlers,specifiedTags,specifiedAnnotation,display,removeMonitoringTickets,excludeCanaryProtocols,searchCriteria,plotStype,protocols,expandedProtocols,
-	tags,allTypes,dateTicks,dateBins,datePoints,allProtocols,taggedTroubleshooting, annotations,taggedBins,summarizedBins,
-	relativeCoordinates,minPercent,maxPercent,annotationEpilogs, packetInfo,packetInfoTSCounted,dateBinnedInfo,groupedBins,
-	troubleshootingTypePattern,averagedBins,typeCounts,protocolCountCoordinates,absoluteCountCoordinates,typedData,legend,
-	calculatedOptions,optionsToPass,primaryDataColor,absolutePlot,relativePlot,successPercent,betaSuccessEpilog},
+PlotSupportTimeline[startTime_?DateObjectQ, endTime_?DateObjectQ, bin_?TimeQ, ops : OptionsPattern[]] := PlotSupportTimeline[All, startTime, endTime, bin, ops];
+PlotSupportTimeline[specifiedProtocols : (All | ListableP[TypeP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]]), startTime_?DateObjectQ, endTime_?DateObjectQ, bin_?TimeQ, ops : OptionsPattern[]] := Module[
+	{
+		safeOps, splitSampleManips, splitLiquidHandlers, specifiedTags, specifiedAnnotation, display, removeMonitoringTickets,
+		excludeCanaryProtocols, searchCriteria, plotStyle, protocols, expandedProtocols, excludedCategories, excludedCategoriesPattern,
+		tags, allTypes, dateTicks, dateBins, datePoints, allProtocols, taggedSupport, annotations, taggedBins, summarizedBins,
+		relativeCoordinates, minPercent, maxPercent, annotationEpilogs, packetInfo, packetInfoTSCounted, dateBinnedInfo, groupedBins,
+		monitoringTicketsPattern, averagedBins, typeCounts, protocolCountCoordinates, absoluteCountCoordinates, typedData, legend,
+		calculatedOptions, optionsToPass, primaryDataColor, absolutePlot, relativePlot, successPercent, betaSuccessEpilog, plotEndTime
+	},
 
-	safeOps=SafeOptions[PlotSupportTimeline,ToList[ops]];
+	safeOps = SafeOptions[PlotSupportTimeline, ToList[ops]];
 
 	(* Extract the protocols options *)
-	{splitSampleManips,splitLiquidHandlers,specifiedTags,specifiedAnnotation,display,removeMonitoringTickets,excludeCanaryProtocols,searchCriteria,plotStype}=Lookup[
+	{splitSampleManips, splitLiquidHandlers, specifiedTags, specifiedAnnotation, display, removeMonitoringTickets, excludeCanaryProtocols, searchCriteria, plotStyle, excludedCategories} = Lookup[
 		safeOps,
-		{SampleManipulationSplit,LiquidHandlerSplit,Tags,Annotation,Display,RemoveMonitoringTickets,ExcludeCanaryProtocols,SearchCriteria,PlotStype}
+		{SampleManipulationSplit, LiquidHandlerSplit, Tags, Annotation, Display, RemoveMonitoringTickets, ExcludeCanaryProtocols, SearchCriteria, PlotStyle, ExcludedCategories}
 	];
 
 	tags=ToList[specifiedTags];
@@ -391,26 +481,29 @@ PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Ob
 	];
 
 	(* Generate bins of dates for calculating the rates *)
-	dateTicks=DateRange[startTime,endTime,bin];
-	dateBins = MapThread[{#1,#2}&, {Most[dateTicks],Rest[dateTicks]}];
+	(* DateRange truncates the end date if (endTime - startTime) is not divisible by bin. so extend the end date a little bit to make sure all completed protocols are included *)
+	plotEndTime = Ceiling[(endTime - startTime) / bin] * bin + startTime;
+	dateTicks = DateRange[startTime, plotEndTime, bin];
+
+	dateBins = MapThread[{#1, #2}&, {Most[dateTicks], Rest[dateTicks]}];
 
 	(* Calculate the center of the date bins *)
-	datePoints=DateObject[Mean[{AbsoluteTime[First[#]],AbsoluteTime[Last[#]]}]]&/@dateBins;
+	datePoints = DateObject[Mean[{AbsoluteTime[First[#]], AbsoluteTime[Last[#]]}]]& /@ dateBins;
 
 	(* Find all the protocols completed inside the time range *)
-	allProtocols=If[MatchQ[protocols,All],
+	allProtocols = If[MatchQ[protocols, All],
 		Search[
-			{Object[Protocol],Object[Qualification],Object[Maintenance]},
-			DateCompleted>=startTime&&DateCompleted<=endTime&&searchCriteria
+			{Object[Protocol], Object[Qualification], Object[Maintenance]},
+			DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria
 		],
-		Search[allTypes,DateCompleted>=startTime&&DateCompleted<=endTime&&searchCriteria]
+		Search[allTypes, DateCompleted >= startTime && DateCompleted <= endTime && searchCriteria]
 	];
 
 	(* Download all the TS tickets/reports and type for each protocol so we can process the counts by type for each entry *)
 	packetInfo=Quiet[
 		Download[
 			allProtocols,
-			{Packet[DateCompleted,Type,LiquidHandlingScale,LiquidHandler,ParentProtocol,CanaryBranch],Packet[ProtocolSpecificTickets[ErrorSource,SupportTicketSource]]}
+			{Packet[DateCompleted,Type,LiquidHandlingScale,LiquidHandler,ParentProtocol,CanaryBranch],Packet[ProtocolSpecificInternalCommunications[ErrorCategory,SupportTicketSource]]}
 		],
 		{Download::FieldDoesntExist}
 	];
@@ -478,21 +571,22 @@ PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Ob
 	];
 
 	(* By default we remove 'monitoring' tickets that typically aren't directly tied to the protocol in question *)
-	troubleshootingTypePattern=If[removeMonitoringTickets,Except[Alternatives@@MonitoringTicketTypes],_];
+	monitoringTicketsPattern = Alternatives @@ If[removeMonitoringTickets, MonitoringTicketTypes, {}];
+	excludedCategoriesPattern = Alternatives @@ excludedCategories;
 
-	taggedBins=Map[
+	taggedBins = Map[
 		Function[
 			typesPerDate,
 			(* If there are no tags we just want to count up the total number of tickets *)
 			(* Exclude 'monitoring' TS types which will be converted to a new object type in the future *)
-			If[MatchQ[tags,{}],
-				{Map[Function[ticketPackets,Count[Lookup[ticketPackets,SupportTicketSource,{}],troubleshootingTypePattern]]/@#[[All,2]]&,typesPerDate]},
+			If[MatchQ[tags, {}],
+				{Map[Function[ticketPackets, Length[DeleteCases[Lookup[ticketPackets, {SupportTicketSource, ErrorCategory}, Nothing], {monitoringTicketsPattern, _} | {_, excludedCategoriesPattern}]]] /@ #[[All, 2]]&, typesPerDate]},
 				Map[
 					Function[tag,
 						Map[
 							Function[
 								dateBin,
-								Count[Lookup[#[[2]],ErrorSource,{}],tag]&/@dateBin
+								Count[Lookup[#[[2]], ErrorCategory, {}], tag]& /@ dateBin
 							],
 							typesPerDate
 						]
@@ -582,12 +676,12 @@ PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Ob
 
 	(*Show our current cut-off for*)
 	successPercent=33;
-	betaSuccessEpilog={Line[{{startTime,successPercent},{endTime,successPercent}}]};
+	betaSuccessEpilog={Line[{{startTime,successPercent},{plotEndTime,successPercent}}]};
 
 	(* Options to use if the user didn't ask for anything more specific *)
 	calculatedOptions={
 		ImageSize->Large,
-		PlotRange->{{startTime,endTime},Full},
+		PlotRange->{{startTime,plotEndTime},Full},
 		Legend->legend,
 		Zoomable->True,
 		(* We want our epilogs to stand out a bit more. MM handles this in an insane way where you just put random style words in front of the graphics you want *)
@@ -608,12 +702,12 @@ PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Ob
 				PlotSupportTimeline,
 				EmeraldDateListPlot,
 				ReplaceRule[optionsToPass,{
-					PlotStyle->If[MatchQ[plotStype,Automatic],
+					PlotStyle->If[MatchQ[plotStyle,Automatic],
 						primaryDataColor,
-						plotStype
+						plotStyle
 					],
 					FrameLabel->{Automatic, Style["# Tickets / # Completed Protocols (%)",primaryDataColor]},
-					Title->"Troubleshooting Rate"
+					Title->"Support Rate"
 				}]
 			]
 		],
@@ -627,19 +721,19 @@ PlotSupportTimeline[specifiedProtocols:(All|ListableP[TypeP[{Object[Protocol],Ob
 				PlotSupportTimeline,
 				EmeraldDateListPlot,
 				ReplaceRule[optionsToPass,{
-					PlotStyle->If[MatchQ[plotStype,Automatic],
+					PlotStyle->If[MatchQ[plotStyle,Automatic],
 						primaryDataColor,
-						plotStype
+						plotStyle
 					],
 					SecondYCoordinates->protocolCountCoordinates,
 					SecondYColors -> {Gray},
 					FrameLabel->{
 						Automatic,
-						Style["# of Troubleshooting Tickets (per "<>ToString[bin]<>")",primaryDataColor],
+						Style["# of Support Tickets (per "<>ToString[bin]<>")",primaryDataColor],
 						Automatic,
 						"# Protocols Completed (per "<>ToString[bin]<>")"
 					},
-					Title->"Troubleshooting Counts"
+					Title->"Support Counts"
 				}]
 			]
 		],
@@ -689,9 +783,9 @@ PlotSampleManipulationSupportTimeline[startTime_?DateObjectQ,endTime_?DateObject
 	allProtocols=Search[Object[Protocol,SampleManipulation],DateCompleted>=startTime&&DateCompleted<=endTime];
 
 	(* Download all the TS tickets/reports and type for each protocol so we can process the counts by type for each entry *)
-	packetInfo=Download[allProtocols,{DateCompleted,LiquidHandlingScale,ProtocolSpecificTickets}];
+	packetInfo=Download[allProtocols,{DateCompleted,LiquidHandlingScale,ProtocolSpecificInternalCommunications}];
 
-	(* Process the info to tally up the troubleshooting reports and tickets for each protocol *)
+	(* Process the info to tally up the tickets for each protocol *)
 	packetInfoTSCounted={#[[1]],#[[2]],Length[#[[3]]]}&/@packetInfo;
 
 	(* For each type, bin the protocols by date completed into the date bins to generate a line *)
@@ -710,7 +804,7 @@ PlotSampleManipulationSupportTimeline[startTime_?DateObjectQ,endTime_?DateObject
 	Zoomable@DateListPlot[typedData,
 		ImageSize->Large,
 		Frame->{True,True,False,False},
-		FrameLabel->{None,Style["Troubleshooting Rate (%)",Bold,16,Gray]},
+		FrameLabel->{None,Style["Support Rate (%)",Bold,16,Gray]},
 		PlotRange->Automatic,
 		PlotLegends->{MicroLiquidHandling,MacroLiquidHandling}
 	]
@@ -736,11 +830,19 @@ DefineOptions[TroubleshootingTable,
 			Category -> "General"
 		},
 		{
-			OptionName -> ErrorSource,
+			OptionName -> ErrorCategory,
 			Default -> All,
 			AllowNull -> True,
 			Pattern:>(Null|All|ListableP[_String]),
-			Description -> "Indicates if only tickets with a certain ErrorSource value (or with ErrorSource not populated) are displayed.",
+			Description -> "Indicates if only tickets with a certain ErrorCategory value (or with ErrorCategory not populated) are displayed.",
+			Category -> "General"
+		},
+		{
+			OptionName -> ExcludedCategories,
+			Default -> Null,
+			AllowNull -> True,
+			Pattern :> ListableP[SupportTicketErrorSubcategoryP] | Null,
+			Description -> "Tickets with the specified error categories are excluded from the table. Categories specified here are considered only if ErrorCategory is set to All.",
 			Category -> "General"
 		},
 		{
@@ -793,51 +895,55 @@ TroubleshootingTable[protocolTypes:(All|{}|ListableP[Alternatives@@ProtocolTypes
 TroubleshootingTable[startTime_?DateObjectQ,endTime_?DateObjectQ,ops:OptionsPattern[]]:=TroubleshootingTable[All,startTime,endTime,ops];
 
 (* List of types or list of objects *)
-TroubleshootingTable[protocolRequest:(All|{}|ListableP[Alternatives@@ProtocolTypes[]]|ListableP[ObjectP[ProtocolTypes[]]]),startTime_?DateObjectQ,endTime_?DateObjectQ,ops:OptionsPattern[]]:=Module[
-	{safeOps,resolved,systematicChanges,errorSource,blocker,detailed,criteria,tickets,microOnly,removeMonitoringTickets},
+TroubleshootingTable[protocolRequest : (All | {} | ListableP[Alternatives @@ ProtocolTypes[]] | ListableP[ObjectP[ProtocolTypes[]]]), startTime_?DateObjectQ, endTime_?DateObjectQ, ops : OptionsPattern[]] := Module[
+	{safeOps, resolved, systematicChanges, errorCategory, blocker, detailed, criteria, tickets, microOnly, removeMonitoringTickets, excludedCategories},
 
-	If[MatchQ[protocolRequest,{}],
+	If[MatchQ[protocolRequest, {}],
 		Return[Null]
 	];
 
 	(* Grab our options *)
-	safeOps=SafeOptions[TroubleshootingTable,ToList[ops]];
-	{resolved,systematicChanges,errorSource,blocker,detailed,microOnly,removeMonitoringTickets}=Lookup[
+	safeOps = SafeOptions[TroubleshootingTable, ToList[ops]];
+	{resolved, systematicChanges, errorCategory, excludedCategories, blocker, detailed, microOnly, removeMonitoringTickets} = Lookup[
 		safeOps,
-		{Resolved,SystematicChanges,ErrorSource,Blocker,Detailed,MicroLiquidHandling,RemoveMonitoringTickets}
+		{Resolved, SystematicChanges, ErrorCategory, ExcludedCategories, Blocker, Detailed, MicroLiquidHandling, RemoveMonitoringTickets}
 	];
 
 	(* Search for our requests - Trues will get auto simplified out *)
-	criteria=And[
-		DateCreated>=startTime,
-		DateCreated<=endTime,
+	criteria = And[
+		DateCreated >= startTime,
+		DateCreated <= endTime,
 		Switch[protocolRequest,
 			All, True,
 			(* Get only tickets whose SourceProtocol is one of the provided protocol objects *)
-			ListableP[ObjectP[ProtocolTypes[]]],SourceProtocol==(Alternatives@@ToList[protocolRequest]),
+			ListableP[ObjectP[ProtocolTypes[]]], SourceProtocol == (Alternatives @@ ToList[protocolRequest]),
 			(* This is a bit wild - we want to allow searching on just Object[Protocol] and the like but this causes search to error and we can't actually match on TypeP *)
 			(* Instead search for all the possible subtypes and remove the top level Object[Protocol], etc. *)
-			_,SourceProtocol[Type]==(Alternatives@@DeleteCases[Types[ToList[protocolRequest]],(Object[Protocol]|Object[Qualification]|Object[Maintenance])])
+			_, SourceProtocol[Type] == (Alternatives @@ DeleteCases[Types[ToList[protocolRequest]], (Object[Protocol] | Object[Qualification] | Object[Maintenance])])
 		],
-		If[MatchQ[resolved,All],
+		If[MatchQ[resolved, All],
 			True,
-			Resolved==resolved
+			Resolved == resolved
 		],
-		If[MatchQ[systematicChanges,All],
+		If[MatchQ[systematicChanges, All],
 			True,
-			SystematicChanges==systematicChanges
+			SystematicChanges == systematicChanges
 		],
-		If[MatchQ[errorSource,All],
+		Which[
+			MatchQ[{errorCategory, excludedCategories}, {All, Null}],
+				True,
+			MatchQ[{errorCategory, excludedCategories}, {All, Except[Null]}],
+				ErrorCategory == (Complement[Join[SupportTicketErrorSubcategoryP, Alternatives[Null]], Alternatives @@ ToList[excludedCategories]]),
 			True,
-			ErrorSource==(Alternatives@@ToList[errorSource])
+				ErrorCategory == (Alternatives @@ ToList[errorCategory])
 		],
 		If[removeMonitoringTickets,
-			SupportTicketSource!=(Alternatives@@MonitoringTicketTypes),
+			SupportTicketSource != (Alternatives @@ MonitoringTicketTypes),
 			True
 		],
 		Switch[blocker,
-			True, (Blocked==True || Length[BlockedLog] > 1),
-			False, (Blocked==(False|Null) && Length[BlockedLog] <= 1),
+			True, (Blocked == True || Length[BlockedLog] > 1),
+			False, (Blocked == (False | Null) && Length[BlockedLog] <= 1),
 			All, True
 		]
 	];
@@ -859,13 +965,13 @@ TroubleshootingTable[protocolRequest:(All|{}|ListableP[Alternatives@@ProtocolTyp
 TroubleshootingTable[inputTickets:ListableP[ObjectP[Object[SupportTicket,Operations]]],ops:OptionsPattern[]]:=troubleshootingTable[inputTickets,All,ops];
 
 troubleshootingTable[inputTickets:ListableP[ObjectP[Object[SupportTicket,Operations]]],specificProtocols:All|ListableP[ObjectP[ProtocolTypes[]]],ops:OptionsPattern[]]:=Module[
-	{safeOps,resolved,systematicChanges,errorSource,blocker,detailed,tickets,protocolsToDownload,creationDates,microOnly,
+	{safeOps,resolved,systematicChanges,errorCategory,blocker,detailed,tickets,protocolsToDownload,creationDates,microOnly,
 	ticketTuples,protocolDownload,rootProtocol,rootProtocolPackets,statusLogTimes,totalTimeTroubleshooting,filteredTickets,filteredTuples,
 	requestedProtocols,ticketTimeTroubleshooting,sources,errorSources,headlines,assignee,financingTeam,tableContent,tableHeaders},
 
 	(* Grab our options *)
 	safeOps=SafeOptions[TroubleshootingTable,ToList[ops]];
-	{resolved,systematicChanges,errorSource,blocker,detailed,microOnly}=Lookup[safeOps,{Resolved,SystematicChanges,ErrorSource,Blocker,Detailed,MicroLiquidHandling}];
+	{resolved,systematicChanges,errorCategory,blocker,detailed,microOnly}=Lookup[safeOps,{Resolved,SystematicChanges,ErrorCategory,Blocker,Detailed,MicroLiquidHandling}];
 
 	(* Search for tickets using our criteria specified in our options *)
 	tickets=ToList@inputTickets;
@@ -892,7 +998,7 @@ troubleshootingTable[inputTickets:ListableP[ObjectP[Object[SupportTicket,Operati
 					Headline,
 					Assignee[Name],
 					Notebook[Financers][[1]][Name],
-					ErrorSource,
+					ErrorCategory,
 					SourceProtocol[LiquidHandlingScale],
 					Object
 				},
@@ -948,7 +1054,7 @@ troubleshootingTable[inputTickets:ListableP[ObjectP[Object[SupportTicket,Operati
 	];
 
 	(* Time spent in troubleshooting in all ts tickets *)
-	totalTimeTroubleshooting=Lookup[statusLogTimes,Troubleshooting, 0 Minute];
+	totalTimeTroubleshooting=Lookup[statusLogTimes,ScientificSupport, 0 Minute];
 
 	(* Time spent in troubleshooting for this specific ts ticket *)
 	ticketTimeTroubleshooting=Now-creationDates;
@@ -957,11 +1063,11 @@ troubleshootingTable[inputTickets:ListableP[ObjectP[Object[SupportTicket,Operati
 	{tableContent,tableHeaders}=If[detailed,
 		{
 			Transpose[{filteredTickets,creationDates,ticketTimeTroubleshooting,totalTimeTroubleshooting,rootProtocol,sources,errorSources,financingTeam,assignee,headlines}],
-			{"Ticket","Date Created","Specific TS Time","Overall TS Time","Root Protocol","Source Protocol","Error Source","Financer","Assignee","Headline"}
+			{"Ticket","Date Created","Specific Support Time","Overall Support Time","Root Protocol","Source Protocol","Error Source","Financer","Assignee","Headline"}
 		},
 		{
 			Transpose[{filteredTickets,creationDates,ticketTimeTroubleshooting,totalTimeTroubleshooting,sources,errorSources,headlines}],
-			{"Ticket","Date Created","Specific TS Time","Overall TS Time","Source Protocol","Error Source","Headline"}
+			{"Ticket","Date Created","Specific Support Time","Overall Support Time","Source Protocol","Error Source","Headline"}
 		}
 	];
 
@@ -977,8 +1083,8 @@ TroubleshootingErrorSources[string_String]:=TroubleshootingErrorSources[string] 
 		AppendTo[ECL`$Memoization, TroubleshootingErrorSources]
 	];
 
-	allTickets=Search[Object[SupportTicket],ErrorSource!=Null];
-	DeleteDuplicates[Download[allTickets,ErrorSource]]
+	allTickets=Search[Object[SupportTicket],ErrorCategory!=Null];
+	DeleteDuplicates[Download[allTickets,ErrorCategory]]
 ];
 
 
@@ -1128,7 +1234,7 @@ PlotLongTaskTimeline[protocolTypes:(All|ListableP[TypeP[{Object[Protocol],Object
 		longTasksByDate
 	];
 
-	(* dont do the calculation if there are now tasks in that range for some reason *)
+	(* don't do the calculation if there are now tasks in that range for some reason *)
 	longTaskNetTimePercentages = MapThread[
 		If[Or[MatchQ[#1, {}],MatchQ[#2, {}]],
 			0,

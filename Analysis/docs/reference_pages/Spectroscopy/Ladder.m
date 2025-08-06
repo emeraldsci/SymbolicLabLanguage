@@ -67,7 +67,7 @@ DefineUsageWithCompanions[AnalyzeLadder,
 		"PlotLadder",
 		"AnalyzeFit"
 	},
-	Author -> {"brian.day", "brad", "kevin.hou"},
+	Author -> {"scicomp"},
 	Guides -> {
 		"AnalysisCategories",
 		"ExperimentAnalysis"

@@ -25,6 +25,11 @@ DefineTests[PlotFlowCytometry,{
 		ValidGraphicsP[],
 		TimeConstraint -> 120
 	],
+	Example[{Basic,"Plot flow cytometry data from a protocol object:"},
+		PlotFlowCytometry[Object[Protocol,FlowCytometry,"Test FlowCytometry Protocol for PlotFlowCytometry tests"<>$SessionUUID]],
+		ValidGraphicsP[],
+		TimeConstraint -> 120
+	],
 	Example[{Basic,"Compare mutliple flow cytometry data sets:"},
 		PlotFlowCytometry[{Object[Data, FlowCytometry, "id:qdkmxzqzDx4m"],Object[Data,FlowCytometry,"Test FlowCytometry Data for PlotFlowCytometry tests"<>$SessionUUID]}],
 		ValidGraphicsP[],

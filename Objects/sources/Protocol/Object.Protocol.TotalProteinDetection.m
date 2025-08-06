@@ -229,17 +229,17 @@ DefineObjectType[Object[Protocol,TotalProteinDetection],{
 		SamplePlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the SamplePlate with input samples and LoadingBuffer.",
 			Category -> "Matrix & Sample Loading"
 		},
-		SamplePlateManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to load the SamplePlate.",
-			Category->"Matrix & Sample Loading"
+		SamplePlateManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
+			Description -> "A sample manipulation protocol used to load the SamplePlate.",
+			Category -> "Matrix & Sample Loading"
 		},
 		AssayPlate->{
 			Format->Single,
@@ -252,7 +252,7 @@ DefineObjectType[Object[Protocol,TotalProteinDetection],{
 		AssayPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the AssayPlate with denatured input samples, detection agents, and buffers.",
 			Category -> "Matrix & Sample Loading"
 		},
@@ -260,23 +260,8 @@ DefineObjectType[Object[Protocol,TotalProteinDetection],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation],
 			Description->"A sample manipulation protocol used to load the AssayPlate.",
-			Category->"Matrix & Sample Loading"
-		},
-		LabelingReagentPrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Description -> "A set of instructions specifying the loading of the AssayPlate with the LabelingReagent.",
-			Category -> "Matrix & Sample Loading"
-		},
-		LabelingReagentManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to load the AssayPlate with LabelingReagent.",
 			Category->"Matrix & Sample Loading"
 		},
 		AssayPlatePlacements->{

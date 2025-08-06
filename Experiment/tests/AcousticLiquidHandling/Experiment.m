@@ -25,81 +25,66 @@ DefineTests[
 	{
 		Example[{Basic,"Transfer a specified volume of a sample to an empty container:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1",Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
 		Example[{Basic,"Transfer a specified volume of a sample into another sample in a different container:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->Object[Sample,"AcousticLiquidHandling Test Destination Sample"<>$SessionUUID]
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				Object[Sample,"AcousticLiquidHandling Test Destination Sample"<>$SessionUUID],
+				100 Nanoliter
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
 		Test["Transfer a specified volume of a sample to an empty container specified as a model:",
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1",Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"]},
+				100 Nanoliter
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
 		Example[{Basic,"Aliquot specified volumes of a sample into multiple destination containers:"},
 			ExperimentAcousticLiquidHandling[
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{25 Nanoliter,50 Nanoliter,100 Nanoliter}
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
 		Example[{Basic,"Consolidate specific volumes of multiple samples from different containers into a single destination well:"},
 			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				{50 Nanoliter,100 Nanoliter}
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
-		Test["Handle a series of manipulations with input SampleManipulation Primitives of different types:",
-			ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			}],
-			ObjectP[Object[Protocol,AcousticLiquidHandling]]
+		Test["Handle mixed input specifications:",
+			ExperimentAcousticLiquidHandling[
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Container, Plate, "AcousticLiquidHandling Test Source Plate 1"<>$SessionUUID],
+					{"A1", Object[Container, Plate, "AcousticLiquidHandling Test Source Plate 2"<>$SessionUUID]}
+				},
+				{
+					Object[Sample,"AcousticLiquidHandling Test Destination Sample"<>$SessionUUID],
+					{"A1", {1,Model[Container, Plate, "384-well Polypropylene Echo Qualified Plate"]}},
+					{"A1", {2,Model[Container, Plate, "384-well Polypropylene Echo Qualified Plate"]}},
+					{"A1", {3,Model[Container, Plate, "384-well Polypropylene Echo Qualified Plate"]}}
+				},
+				100 Nanoliter
+			],
+			ObjectP[Object[Protocol,AcousticLiquidHandling]],
+			Messages :> {Warning::SampleAndContainerSpecified}
 		],
 
 		(* ---------------- *)
@@ -107,121 +92,45 @@ DefineTests[
 		(* ---------------- *)
 
 		(* ---main function messages--- *)
-
-		Example[{Messages,"InvalidPrimitiveType","Only input primitives of type Transfer, Aliquot, or Consolidation are supported:"},
+		Example[{Messages, "ObjectDoesNotExist", "Throws an error and fails cleanly if an object is specified in the unit operations that does not exist (ID form):"},
 			ExperimentAcousticLiquidHandling[
-				Resuspend[
-					Sample->Object[Sample,"AcousticLiquidHandling Test Solid Sample"<>$SessionUUID],
-					Volume->5 Microliter
-				]
+				Object[Sample,"id:123456"],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
-			Messages:>{Error::InvalidPrimitiveType}
+			Messages :> {Download::ObjectDoesNotExist}
 		],
-		Example[{Messages,"PrimitivesWithIncompatibleKeys","Throws a warning message if input primitives have Keys that are not supported by ExperimentAcousticLiquidHandling:"},
+		Example[{Messages, "ObjectDoesNotExist", "Throws an error and fails cleanly if an object is specified in the unit operations that does not exist (name form):"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"},
-					TransferType->Solid
-				]
-			],
-			ObjectP[Object[Protocol,AcousticLiquidHandling]],
-			Messages:>{Warning::PrimitivesWithIncompatibleKeys}
-		],
-		Example[{Messages,"InvalidPrimitiveKeyValue","Keys defined in input primitives much match the expected pattern:"},
-			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->"This is not Amount",
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"Nonexistent object"],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
-			Messages:>{Error::InvalidPrimitiveKeyValue}
+			Messages :> {Download::ObjectDoesNotExist}
 		],
-		Example[{Messages,"InvalidAmountLength","The length of Amounts Key values defined in input primitives much match the length of Sources in Aliquot primitive and Destinations in Consolidation primitive:"},
-			ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			}],
-			$Failed,
-			Messages:>{Error::InvalidAmountLength}
-		],
-		Test["Expands Amounts Key values when specified as a list of length 1 in Aliquot and Consolidation primitives:",
-			ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{25 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			}],
-			ObjectP[Object[Protocol,AcousticLiquidHandling]]
-		],
-		Example[{Messages,"InvalidSourceObjectType","Source samples defined in the input primitives must be sample objects:"},
+		Example[{Messages,"InputLengthMismatch","The length of Amounts Key values defined in input primitives much match the length of Sources in Aliquot primitive and Destinations in Consolidation primitive:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Model[Sample,"Milli-Q water"],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				{
+					Object[Sample, "AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID]
+				},
+				{
+					{"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{
+					50 Nanoliter, 100 Nanoliter
+				}
 			],
 			$Failed,
-			Messages:>{Error::InvalidSourceObjectType}
-		],
-		Example[{Messages,"InvalidDestinationDefinition","Input primitives must have Destination objects that are Object[Sample], Object[Container,Plate], or Model[Container,Plate]:"},
-			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Model[Container,Vessel,"50mL Tube"],"A1"}
-				]
-			],
-			$Failed,
-			Messages:>{Error::InvalidDestinationDefinition}
+			Messages:>{Error::InputLengthMismatch}
 		],
 
 		(* ---resolver messages--- *)
 
 		Example[{Messages,"AliquotContainerOccupied","If the AliquotContainer option is specified as a plate object, the plate must be empty:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID], {"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]}, 100 Nanoliter,
 				AliquotContainer->{Object[Container,Plate,"AcousticLiquidHandling Test Occupied Destination Plate"<>$SessionUUID]}
 			],
 			$Failed,
@@ -233,11 +142,7 @@ DefineTests[
 		],
 		Example[{Messages,"TotalAliquotVolumeTooLarge","If the Aliquot option is True, the sample must have enough volume to be aliquoted:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Low Volume Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Low Volume Sample in 50mL Tube"<>$SessionUUID], {"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]}, 100 Nanoliter,
 				Aliquot->True
 			],
 			$Failed,
@@ -247,18 +152,12 @@ DefineTests[
 			}
 		],
 		Example[{Messages,"MultipleSourceContainerModels","All source containers must have the same model:"},
-			ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
-			},Aliquot->False],
+			ExperimentAcousticLiquidHandling[
+				{Object[Sample, "AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID], Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID]},
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
+				Aliquot->False
+			],
 			$Failed,
 			Messages:>{
 				Error::MultipleSourceContainerModels,
@@ -267,25 +166,21 @@ DefineTests[
 		],
 		Example[{Messages,"ContainerWithNonInputSamples","Throws a warning message if source container has non-input samples:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]],
 			Messages:>{Warning::ContainerWithNonInputSamples}
 		],
 		Example[{Messages,"MultipleDestinationContainerModels","All destination containers must have the same model:"},
 			ExperimentAcousticLiquidHandling[
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->100 Nanoliter,
-					Destinations->{
-						{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"},
-						{Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"],"A1"}
-					}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{
+					{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+					{"A1", Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"]}
+				},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -295,11 +190,9 @@ DefineTests[
 		],
 		Example[{Messages,"DiscardedSourceSamples","Source samples that are discarded cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Discarded Source Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Discarded Source Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -309,11 +202,9 @@ DefineTests[
 		],
 		Example[{Messages,"DeprecatedSourceModels","Source samples whose models are deprecated cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Deprecated Source Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Deprecated Source Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -323,11 +214,9 @@ DefineTests[
 		],
 		Example[{Messages,"NonLiquidSourceSamples","Source samples whose states are not liquid cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Solid Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Solid Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -338,11 +227,9 @@ DefineTests[
 		],
 		Example[{Messages,"PrimitivesWithContainerlessSamples","Source samples are required to be in a container:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Containerless Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Containerless Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
 				Aliquot->False
 			],
 			$Failed,
@@ -354,11 +241,9 @@ DefineTests[
 		],
 		Example[{Messages,"IncompatibleSourceContainer","Source samples are required to be in a container compatible with an acoustic liquid handling:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->{Object[Container,Plate,"AcousticLiquidHandling Test Invalid Source Plate"<>$SessionUUID],"A1"},
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Invalid Source Plate"<>$SessionUUID]},
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
 				Aliquot->False
 			],
 			$Failed,
@@ -369,11 +254,9 @@ DefineTests[
 		],
 		Example[{Messages,"DiscardedDestinationContainer","Destination containers that are discarded cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Discarded Destination Container"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Discarded Destination Container"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -383,57 +266,49 @@ DefineTests[
 		],
 		Example[{Messages,"DeprecatedDestinationContainerModel","Destination containers whose models are deprecated cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Model[Container, Plate, "384-well Optical Reaction Plate"],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Model[Container, Plate, "384-well Optical Reaction Plate"]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
 				Error::DeprecatedDestinationContainerModel,
-				Error::IncompatibleDestinationContainer,
+				Error::IncompatibleAcousticLiquidHandlingDestinationContainer,
 				Error::MissingLabwareDefinitionFields,
 				Error::InvalidInput
 			}
 		],
 		Example[{Messages,"IncompatibleDestinationContainer","Destination containers whose models are incompatible with an acoustic liquid handler cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Model[Container,Plate,"96-well 2mL Deep Well Plate"],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Model[Container,Plate,"96-well 2mL Deep Well Plate"]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
-				Error::IncompatibleDestinationContainer,
+				Error::IncompatibleAcousticLiquidHandlingDestinationContainer,
 				Error::MissingLabwareDefinitionFields,
 				Error::InvalidInput
 			}
 		],
 		Example[{Messages,"MissingLabwareDefinitionFields","Destination containers whose models are missing required Fields for creating labware definition cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Model[Container,Plate,"96-well 2mL Deep Well Plate"],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Model[Container,Plate,"96-well 2mL Deep Well Plate"]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
-				Error::IncompatibleDestinationContainer,
+				Error::IncompatibleAcousticLiquidHandlingDestinationContainer,
 				Error::MissingLabwareDefinitionFields,
 				Error::InvalidInput
 			}
 		],
 		Example[{Messages,"UnsafeDestinationVolume","Destination containers with volumes that may spill during manipulation cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Destination Plate With Unsafe Volume"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Destination Plate With Unsafe Volume"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -443,11 +318,9 @@ DefineTests[
 		],
 		Example[{Messages,"AmountOutOfRange","The Amount defined in the input primitives must be withing the volume range supported by the instrument:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->10 Microliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				10 Microliter
 			],
 			$Failed,
 			Messages:>{
@@ -457,16 +330,14 @@ DefineTests[
 		],
 		Example[{Messages,"InsufficientSourceVolume","The source samples with insufficient volume to satisfy all manipulations cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->5 Microliter,
-					Destinations->{
-						{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"},
-						{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A2"},
-						{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A3"},
-						{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A4"}
-					}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{
+					{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+					{"A2", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+					{"A3", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+					{"A4", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]}
+				},
+				5 Microliter
 			],
 			$Failed,
 			Messages:>{
@@ -476,11 +347,9 @@ DefineTests[
 		],
 		Example[{Messages,"SamePlateTransfer","Transfer between wells in the same container is not supported by ExperimentAcousticLiquidHandling:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Source Plate 1"<>$SessionUUID],"C1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"C1", Object[Container,Plate,"AcousticLiquidHandling Test Source Plate 1"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -490,11 +359,9 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidDestinationWellAcousticLiquidHandling","Destination Wells that are not in the AllowedPositions of the container cannot be provided:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"S20"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"S20", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -504,16 +371,14 @@ DefineTests[
 		],
 		Example[{Messages,"OverFilledDestinationVolume","Destination Wells cannot be over-filled:"},
 			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
-					},
-					Amounts->4 Microliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Low Dead Volume Plate"<>$SessionUUID],"A1"}
-				]
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
+				},
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Low Dead Volume Plate"<>$SessionUUID]},
+				4 Microliter
 			],
 			$Failed,
 			Messages:>{
@@ -521,77 +386,29 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
-		Example[{Messages,"InvalidInWellSeparationKey","The primitive's InWellSeparation Key cannot be set to True when physical separation of droplets in the destination well is not possible to achieve:"},
-			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
-					},
-					Amounts->200 Nanoliter,
-					Destination->{Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"],"A1"},
-					InWellSeparation->True
-				]
-			],
-			$Failed,
-			Messages:>{
-				Error::InvalidInWellSeparationKey,
-				Error::InvalidInput
-			}
-		],
-		Example[{Messages,"InWellSeparationKeyOptionMismatch","The primitive's InWellSeparation Key is specified, it must agree with the InWellSeparation Option Value:"},
-			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
-					},
-					Amounts->50 Nanoliter,
-					Destination->{Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"],"A1"},
-					InWellSeparation->True
-				],
-				InWellSeparation->False
-			],
-			$Failed,
-			Messages:>{
-				Error::InWellSeparationKeyOptionMismatch,
-				Error::InvalidInWellSeparationOption,
-				Error::InvalidOption
-			}
-		],
 		Example[{Messages,"InvalidInWellSeparationOption","The InWellSeparation Option cannot be set to True when physical separation of droplets in the destination well is not possible to achieve:"},
 			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
-						Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
-					},
-					Amounts->200 Nanoliter,
-					Destination->{Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"],"A1"}
-				],
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 4"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 5"<>$SessionUUID]
+				},
+				{"A1", Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},
+				200 Nanoliter,
 				InWellSeparation->True
 			],
 			$Failed,
 			Messages:>{
 				Error::InvalidInWellSeparationOption,
-				Error::InvalidOption,
-				Error::InvalidInWellSeparationKey,
-				Error::InvalidInput
+				Error::InvalidOption
 			}
 		],
 		Example[{Messages,"GlycerolConcentrationTooHigh","If the samples contain glycerol, the concentration cannot exceed 50 VolumePercent:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 100% Glycerol Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				]
+				Object[Sample,"AcousticLiquidHandling Test 100% Glycerol Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter
 			],
 			$Failed,
 			Messages:>{
@@ -601,11 +418,9 @@ DefineTests[
 		],
 		Example[{Messages,"CalibrationAndMeasurementTypeMismatch","The options FluidTypeCalibration and FluidAnalysisMeasurement cannot conflict each other:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
 				FluidTypeCalibration->AqueousWithSurfactant,
 				FluidAnalysisMeasurement->DMSO
 			],
@@ -618,11 +433,9 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidFluidTypeCalibration","FluidTypeCalibration cannot be set to Glycerol when a low-dead-volume plate is used:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID],
-					Amount->5 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				5 Nanoliter,
 				FluidTypeCalibration->Glycerol
 			],
 			$Failed,
@@ -633,11 +446,9 @@ DefineTests[
 		],
 		Example[{Messages,"InvalidFluidAnalysisMeasurement","FluidAnalysisMeasurement cannot be set to Glycerol when a low-dead-volume plate is used:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID],
-					Amount->5 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Low Dead Volume Sample"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				5 Nanoliter,
 				FluidAnalysisMeasurement->Glycerol
 			],
 			$Failed,
@@ -648,11 +459,9 @@ DefineTests[
 		],
 		Example[{Messages,"FluidTypeCalibrationMismatch","It is recommended that FluidTypeCalibration be set to a value not intended for the composition of samples:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
 				FluidTypeCalibration->DMSO,
 				Aliquot->False
 			],
@@ -661,11 +470,9 @@ DefineTests[
 		],
 		Example[{Messages,"FluidAnalysisMeasurementMismatch","It is recommended that FluidAnalysisMeasurement be set to a value not intended for the composition of samples:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test 10% Triton-X"<>$SessionUUID],
+				{"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]},
+				100 Nanoliter,
 				FluidAnalysisMeasurement->DMSO,
 				Aliquot->False
 			],
@@ -677,11 +484,7 @@ DefineTests[
 
 		Example[{Options,Instrument,"Specify the instrument to perform acoustic liquid handling:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID],"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID], {"A1", Object[Container,Plate,"AcousticLiquidHandling Test Empty Destination Plate"<>$SessionUUID]}, 100 Nanoliter,
 				Instrument->Model[Instrument,LiquidHandler,AcousticLiquidHandler,"id:o1k9jAGrz9MG"],
 				Output->Options
 			];
@@ -690,27 +493,26 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,OptimizePrimitives,"Specify how the manipulations should be rearranged to improve transfer throughput:"},
-			options=ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			},
+			options=ExperimentAcousticLiquidHandling[
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]
+				},
+				{
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{
+					100 Nanoliter, 25 Nanoliter, 50 Nanoliter, 100 Nanoliter, 50 Nanoliter, 100 Nanoliter
+				},
 				OptimizePrimitives->SourcePlateCentric,
 				Output->Options
 			];
@@ -719,27 +521,26 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,FluidAnalysisMeasurement,"Specify the measurement type used to determine the fluid properties of the source samples:"},
-			options=ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			},
+			options=ExperimentAcousticLiquidHandling[
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]
+				},
+				{
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{
+					100 Nanoliter,25 Nanoliter,50 Nanoliter,100 Nanoliter,50 Nanoliter,100 Nanoliter
+				},
 				FluidAnalysisMeasurement->AcousticImpedance,
 				Output->Options
 			];
@@ -748,27 +549,26 @@ DefineTests[
 			Variables:>{options}
 		],
 		Test["Measurement type automatically resolves based on source samples' compositions and expanded with respect to each transfer pair:",
-			options=ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			},
+			options=ExperimentAcousticLiquidHandling[
+				{
+					Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]
+				},
+				{
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{
+					100 Nanoliter,25 Nanoliter,50 Nanoliter,100 Nanoliter,50 Nanoliter,100 Nanoliter
+				},
 				FluidAnalysisMeasurement->Automatic,
 				Output->Options
 			];
@@ -778,11 +578,7 @@ DefineTests[
 		],
 		Example[{Options,FluidTypeCalibration,"Specify the calibration used by the acoustic liquid handler to transfer liquid of different types:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				FluidTypeCalibration->DMSO,
 				Output->Options
 			];
@@ -791,27 +587,26 @@ DefineTests[
 			Variables:>{options}
 		],
 		Test["Calibration type automatically resolves based on source samples' compositions and expanded with respect to each transfer pair:",
-			options=ExperimentAcousticLiquidHandling[{
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
-					Amounts->{25 Nanoliter,50 Nanoliter,100 Nanoliter},
-					Destinations->{
-						{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"},
-						{{3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-					}
-				],
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				]
-			},
+			options=ExperimentAcousticLiquidHandling[
+				{
+					Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test 30% Glycerol Sample"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]
+				},
+				{
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {3,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+					{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}
+				},
+				{
+					100 Nanoliter,25 Nanoliter,50 Nanoliter,100 Nanoliter,50 Nanoliter,100 Nanoliter
+				},
 				FluidTypeCalibration->Automatic,
 				Output->Options
 			];
@@ -821,11 +616,12 @@ DefineTests[
 		],
 		Example[{Options,InWellSeparation,"Specify whether the droplets transfer to the same destination well are physically separated:"},
 			options=ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]},
-					Amounts->{50 Nanoliter,100 Nanoliter},
-					Destination->{{2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				{
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+					Object[Sample,"AcousticLiquidHandling Test Water Sample 2"<>$SessionUUID]
+				},
+				{"A1", {2,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				{50 Nanoliter,100 Nanoliter},
 				InWellSeparation->True,
 				Output->Options
 			];
@@ -838,11 +634,7 @@ DefineTests[
 
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Incubate->True,Centrifuge->True,Filtration->True,Aliquot->True,Output->Options
 			];
 			{Lookup[options,Incubate],Lookup[options,Centrifuge],Lookup[options,Filtration],Lookup[options,Aliquot]},
@@ -853,11 +645,7 @@ DefineTests[
 		(* ---incubate tests--- *)
 		Example[{Options,Incubate,"Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Incubate->True,
 				Output->Options
 			];
@@ -867,11 +655,7 @@ DefineTests[
 		],
 		Example[{Options,IncubationTemperature,"Temperature at which the SamplesIn should be incubated for the duration of the IncubationTime prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				IncubationTemperature->40*Celsius,
 				Output->Options
 			];
@@ -882,11 +666,7 @@ DefineTests[
 		],
 		Example[{Options,IncubationTime,"Duration for which SamplesIn should be incubated at the IncubationTemperature, prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				IncubationTime->40*Minute,
 				Output->Options
 			];
@@ -897,11 +677,7 @@ DefineTests[
 		],
 		Example[{Options,MaxIncubationTime,"Maximum duration of time for which the samples will be mixed while incubated in an attempt to dissolve any solute, if the MixUntilDissolved option is chosen: This occurs prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				MaxIncubationTime->40*Minute,
 				Output->Options
 			];
@@ -912,11 +688,7 @@ DefineTests[
 		],
 		Example[{Options,IncubationInstrument,"The instrument used to perform the Mix and/or Incubation, prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample in 2mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Water Sample in 2mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				IncubationInstrument->Model[Instrument,HeatBlock,"id:WNa4ZjRDVw64"],
 				Output->Options
 			];
@@ -927,11 +699,7 @@ DefineTests[
 		],
 		Example[{Options,AnnealingTime,"Minimum duration for which the SamplesIn should remain in the incubator allowing the system to settle to room temperature after the IncubationTime has passed but prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				AnnealingTime->40*Minute,
 				Output->Options
 			];
@@ -942,11 +710,9 @@ DefineTests[
 		],
 		Example[{Options,IncubateAliquot,"The amount of each sample that should be transferred from the SamplesIn into the IncubateAliquotContainer when performing an aliquot before incubation:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				IncubateAliquot->30 Microliter,
 				Output->Options
 			];
@@ -958,11 +724,7 @@ DefineTests[
 		],
 		Example[{Options,IncubateAliquotContainer,"The desired type of container that should be used to prepare and house the incubation samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				IncubateAliquotContainer->Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"],
 				Output->Options
 			];
@@ -972,11 +734,7 @@ DefineTests[
 		],
 		Example[{Options,Mix,"Indicates if this sample should be mixed while incubated, prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Mix->True,
 				Output->Options
 			];
@@ -986,11 +744,9 @@ DefineTests[
 		],
 		Example[{Options,MixType,"Indicates the style of motion used to mix the sample, prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				MixType->Shake,
 				Output->Options
 			];
@@ -1001,11 +757,7 @@ DefineTests[
 		],
 		Example[{Options,MixUntilDissolved,"Indicates if the mix should be continued up to the MaxIncubationTime or MaxNumberOfMixes (chosen according to the mix Type), in an attempt dissolve any solute: Any mixing/incbation will occur prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				MixUntilDissolved->True,
 				Output->Options
 			];
@@ -1016,11 +768,9 @@ DefineTests[
 		Example[
 			{Options,IncubateAliquotDestinationWell,"Specify the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				IncubateAliquotDestinationWell->"A1",
 				Output->Options
 			];
@@ -1033,11 +783,7 @@ DefineTests[
 
 		Example[{Options,Centrifuge,"Indicates if the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Centrifuge->True,
 				Output->Options
 			];
@@ -1048,11 +794,7 @@ DefineTests[
 		(* Note: Put your sample in a 2mL tube for the following test. *)
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample in 2mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Water Sample in 2mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				CentrifugeInstrument->Model[Instrument,Centrifuge,"Microfuge 16"],
 				Output->Options
 			];
@@ -1063,11 +805,7 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeIntensity,"The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				CentrifugeIntensity->1000*RPM,
 				Output->Options
 			];
@@ -1079,11 +817,7 @@ DefineTests[
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				CentrifugeTime->5*Minute,
 				Output->Options
 			];
@@ -1094,11 +828,7 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeTemperature,"The temperature at which the centrifuge chamber should be held while the samples are being centrifuged prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				CentrifugeTemperature->10*Celsius,
 				Output->Options
 			];
@@ -1109,11 +839,9 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeAliquot,"The amount of each sample that should be transferred from the SamplesIn into the CentrifugeAliquotContainer when performing an aliquot before centrifugation:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				CentrifugeAliquot->30 Microliter,
 				Output->Options
 			];
@@ -1125,11 +853,9 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeAliquotContainer,"The desired type of container that should be used to prepare and house the centrifuge samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				CentrifugeAliquotContainer->Model[Container,Vessel,"2mL Tube"],
 				Output->Options
 			];
@@ -1140,11 +866,9 @@ DefineTests[
 		],
 		Example[{Options,CentrifugeAliquotDestinationWell,"Specify The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				CentrifugeAliquotDestinationWell->"A1",
 				Output->Options
 			];
@@ -1158,11 +882,9 @@ DefineTests[
 
 		Example[{Options,Filtration,"Indicates if the SamplesIn should be filtered prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				Filtration->True,
 				Output->Options
 			];
@@ -1173,11 +895,7 @@ DefineTests[
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FiltrationType->Syringe,
 				Output->Options
 			];
@@ -1188,11 +906,7 @@ DefineTests[
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],
 				Output->Options
 			];
@@ -1203,11 +917,7 @@ DefineTests[
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],
 				Output->Options
 			];
@@ -1218,11 +928,7 @@ DefineTests[
 		],
 		Example[{Options,PrefilterMaterial,"Set the PrefilterMaterial option:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterMaterial->PTFE,
 				PrefilterMaterial->GxF,
 				AliquotAmount->60 Microliter,
@@ -1234,11 +940,7 @@ DefineTests[
 		],
 		Example[{Options,FilterMaterial,"The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterMaterial->PES,
 				Output->Options
 			];
@@ -1249,11 +951,7 @@ DefineTests[
 		],
 		Example[{Options,PrefilterPoreSize,"Set the PrefilterPoreSize option:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterMaterial->PTFE,
 				PrefilterPoreSize->1. Micrometer,
 				AliquotAmount->60 Microliter,
@@ -1265,11 +963,7 @@ DefineTests[
 		],
 		Example[{Options,FilterPoreSize,"The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterPoreSize->0.22 Micrometer,
 				Output->Options
 			];
@@ -1280,11 +974,7 @@ DefineTests[
 		],
 		Example[{Options,FilterSyringe,"The syringe used to force that sample through a filter:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FiltrationType->Syringe,
 				FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],
 				Output->Options
@@ -1296,11 +986,7 @@ DefineTests[
 		],
 		Example[{Options,FilterHousing,"The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				FiltrationType->PeristalticPump,
 				FilterHousing->Model[Instrument,FilterHousing,"Filter Membrane Housing, 142 mm"],
 				Output->Options
@@ -1312,11 +998,7 @@ DefineTests[
 		],
 		Example[{Options,FilterIntensity,"The rotational speed or force at which the samples will be centrifuged during filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FiltrationType->Centrifuge,
 				FilterIntensity->1000 RPM,
 				Output->Options
@@ -1329,11 +1011,7 @@ DefineTests[
 		],
 		Example[{Options,FilterTime,"The amount of time for which the samples will be centrifuged during filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FiltrationType->Centrifuge,
 				FilterTime->20 Minute,
 				Output->Options
@@ -1346,11 +1024,7 @@ DefineTests[
 		],
 		Example[{Options,FilterTemperature,"The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FiltrationType->Centrifuge,
 				FilterTemperature->10 Celsius,
 				Output->Options
@@ -1363,11 +1037,7 @@ DefineTests[
 		],
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterSterile->True,
 				FilterInstrument->Model[Instrument,Centrifuge,"id:WNa4ZjKxm86R"],
 				Output->Options
@@ -1379,11 +1049,7 @@ DefineTests[
 		],
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterAliquot->1 Milliliter,
 				Output->Options
 			];
@@ -1395,11 +1061,7 @@ DefineTests[
 		],
 		Example[{Options,FilterAliquotContainer,"The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterAliquotContainer->Model[Container,Vessel,"2mL Tube"],
 				Output->Options
 			];
@@ -1410,11 +1072,7 @@ DefineTests[
 		],
 		Example[{Options,FilterContainerOut,"The desired container filtered samples should be produced in or transferred into by the end of filtration, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterContainerOut->Model[Container,Vessel,"15mL Tube"],
 				Output->Options
 			];
@@ -1425,11 +1083,7 @@ DefineTests[
 		],
 		Example[{Options,FilterAliquotDestinationWell,"Specify The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				FilterAliquotDestinationWell->"A1",
 				Output->Options
 			];
@@ -1443,11 +1097,7 @@ DefineTests[
 
 		Example[{Options,Aliquot,"Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment: Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times: Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				AliquotAmount->30 Microliter,
 				Output->Options
 			];
@@ -1458,11 +1108,7 @@ DefineTests[
 		],
 		Example[{Options,AliquotAmount,"The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				AliquotAmount->0.03 Milliliter,
 				Output->Options
 			];
@@ -1473,11 +1119,7 @@ DefineTests[
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				AssayVolume->30 Microliter,
 				Output->Options
 			];
@@ -1488,11 +1130,7 @@ DefineTests[
 		],
 		Example[{Options,TargetConcentration,"The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				TargetConcentration->0.125 Gram/Liter,
 				Output->Options
 			];
@@ -1503,11 +1141,7 @@ DefineTests[
 		],
 		Example[{Options,TargetConcentrationAnalyte,"Set the TargetConcentrationAnalyte option:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				TargetConcentration->0.125 Gram/Liter,
 				TargetConcentrationAnalyte->Model[Molecule,Protein,"Bovine Serum Albumin"],
 				Output->Options
@@ -1518,11 +1152,7 @@ DefineTests[
 		],
 		Example[{Options,ConcentratedBuffer,"The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->15 Microliter,
 				AssayVolume->30 Microliter,
@@ -1534,11 +1164,7 @@ DefineTests[
 		],
 		Example[{Options,BufferDilutionFactor,"The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				BufferDilutionFactor->10,
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->15 Microliter,
@@ -1552,11 +1178,7 @@ DefineTests[
 		],
 		Example[{Options,BufferDiluent,"The buffer used to dilute the concentration of the ConcentratedBuffer by BufferDilutionFactor; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				BufferDiluent->Model[Sample,"Milli-Q water"],
 				BufferDilutionFactor->10,
 				ConcentratedBuffer->Model[Sample,StockSolution,"10x UV buffer"],
@@ -1570,11 +1192,7 @@ DefineTests[
 		],
 		Example[{Options,AssayBuffer,"The buffer that should be added to any aliquots requiring dilution, where the volume of this buffer added is the difference between the AliquotVolume and the total AssayVolume:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				AssayBuffer->Model[Sample,StockSolution,"10x UV buffer"],
 				AliquotAmount->15 Microliter,
 				AssayVolume->30 Microliter,
@@ -1586,11 +1204,7 @@ DefineTests[
 		],
 		Example[{Options,AliquotSampleStorageCondition,"The non-default conditions under which any aliquot samples generated by this experiment should be stored after the protocol is completed:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				AliquotSampleStorageCondition->Refrigerator,
 				Output->Options
 			];
@@ -1600,11 +1214,7 @@ DefineTests[
 		],
 		Example[{Options,ConsolidateAliquots,"Indicates if identical aliquots should be prepared in the same container/position:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				ConsolidateAliquots->True,
 				Output->Options
 			];
@@ -1614,11 +1224,7 @@ DefineTests[
 		],
 		Example[{Options,AliquotPreparation,"Indicates the desired scale at which liquid handling used to generate aliquots will occur:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Aliquot->True,
 				AliquotPreparation->Manual,
 				Output->Options
@@ -1629,30 +1235,22 @@ DefineTests[
 		],
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				AliquotContainer->Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"],
 				Output->Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "384-well Polypropylene Echo Qualified Plate"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Specify The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				DestinationWell->"A1",
 				Output->Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
@@ -1660,11 +1258,7 @@ DefineTests[
 
 		Example[{Options,ImageSample,"Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				ImageSample->True,
 				Output->Options
 			];
@@ -1674,11 +1268,7 @@ DefineTests[
 		],
 		Example[{Options,MeasureVolume,"Indicate if any samples that are modified in the course of the experiment should have their volumes measured after running the experiment:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				MeasureVolume->True,
 				Output->Options
 			];
@@ -1691,11 +1281,7 @@ DefineTests[
 
 		Example[{Options,Name,"Specify a name for AcousticLiquidHandling protocol:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Name->"AcousticLiquidHandling Unit Test Protocol",
 				Output->Options
 			];
@@ -1705,11 +1291,7 @@ DefineTests[
 		],
 		Example[{Options,Template,"Inherit options from a previously run protocol:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Protein Sample in 50mL Tube"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter ,
 				Template->Object[Protocol,AcousticLiquidHandling,"AcousticLiquidHandling Test Template Protocol"<>$SessionUUID],
 				Output->Options
 			];
@@ -1719,33 +1301,23 @@ DefineTests[
 		],
 		Example[{Options,Upload,"Specify if the database changes resulting from this function should be made immediately or if upload packets should be returned:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Upload->False
 			],
 			{PacketP[]..}
 		],
-		Example[{Options,Output,"Specify Indicate what the function should return:"},
+		Example[{Options,Output,"Indicate what the function should return:"},
 			ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Output->Result
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
-		Example[{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+		Example[{Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
 			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{"My Sample 1","My Sample 2"},
-					Amounts->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				{"My Sample 1","My Sample 2"},
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				PreparatoryUnitOperations->{
 					LabelContainer[
 						Label->"My Plate",
@@ -1761,42 +1333,9 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,AcousticLiquidHandling]]
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-			ExperimentAcousticLiquidHandling[
-				Consolidation[
-					Sources->{"My Sample 1","My Sample 2"},
-					Amounts->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
-				PreparatoryPrimitives->{
-					Define[
-						Name->"My Plate",
-						Container->Model[Container,Plate,"384-well Polypropylene Echo Qualified Plate"]
-					],
-					Define[
-						Name->"My Sample 1",
-						Sample->{"My Plate","A1"}
-					],
-					Define[
-						Name->"My Sample 2",
-						Sample->{"My Plate","A2"}
-					],
-					Aliquot[
-						Source->Model[Sample,"Milli-Q water"],
-						Amounts->60 Microliter,
-						Destinations->{"My Sample 1","My Sample 2"}
-					]
-				}
-			],
-			ObjectP[Object[Protocol,AcousticLiquidHandling]]
-		],
 		Example[{Options,SamplesInStorageCondition,"Specify The non-default conditions under which the SamplesIn of this experiment should be stored after the protocol is completed. If left unset, SamplesIn will be stored according to their current StorageCondition:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test 80% DMSO Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				SamplesInStorageCondition->Disposal,
 				Output->Options
 			];
@@ -1806,11 +1345,9 @@ DefineTests[
 		],
 		Example[{Options,SamplesOutStorageCondition,"Specify The non-default conditions under which the SampleOut of this experiment should be stored after the protocol is completed. If left unset, SamplesOut will be stored according to their current StorageCondition:"},
 			options=ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Water Sample 1"<>$SessionUUID],
+				{"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}},
+				100 Nanoliter,
 				SamplesOutStorageCondition->Refrigerator,
 				Output->Options
 			];
@@ -2124,11 +1661,7 @@ DefineTests[
 
 			(* create a fake protocol to test Template option *)
 			fakeProtocol=Quiet[ExperimentAcousticLiquidHandling[
-				Transfer[
-					Source->Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{{1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]},"A1"}
-				],
+				Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
 				Name->"AcousticLiquidHandling Test Template Protocol"<>$SessionUUID
 			]];
 

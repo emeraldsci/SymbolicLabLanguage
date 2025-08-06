@@ -7,7 +7,7 @@ DefineOptions[ExperimentWesternPreview,
 	SharedOptions:>{ExperimentWestern}
 ];
 
-ExperimentWesternPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentWesternPreview]]:=Module[
+ExperimentWesternPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentWesternPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentWesternOptions,
 	SharedOptions :> {ExperimentWestern}
 ];
 
-ExperimentWesternOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentWesternOptions]]:=Module[
+ExperimentWesternOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentWesternOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -62,7 +62,7 @@ DefineOptions[ValidExperimentWesternQ,
 	SharedOptions:>{ExperimentWestern}
 ];
 
-ValidExperimentWesternQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentWesternQ]]:=Module[
+ValidExperimentWesternQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myAntibodies:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentWesternQ]]:=Module[
 	{listedOptions,preparedOptions,experimentWesternTests,initialTestDescription,allTests,verbose,outputFormat},
 
 (* Get the options as a list *)

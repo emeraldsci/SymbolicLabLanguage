@@ -15,7 +15,7 @@ DefineObjectType[Object[Qualification, Diffractometer],{
 				Model[Container],
 				Object[Container]
 			],
-			Description -> "The crystallization plate in which the samples will be during x-ray data collection.",
+			Description -> "The crystallization plate in which the samples will be during X-ray data collection.",
 			Category -> "General"
 		},
 		LiquidHandler -> {
@@ -44,6 +44,13 @@ DefineObjectType[Object[Qualification, Diffractometer],{
 			Description -> "The primitives used by Sample Manipulation to generate the XRD Blanks and Standards.",
 			Category -> "Sample Preparation"
 		},
+		TransferType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[MassTransfer, SlurryTransfer, Automatic],
+			Description -> "The transfer type required for preparing the samples in the crystallization plate.",
+			Category -> "Sample Preparation"
+		},
 
 		(* Analytes *)
 		LinePositionTestSample -> {
@@ -65,7 +72,7 @@ DefineObjectType[Object[Qualification, Diffractometer],{
 				Object[Sample],
 				Model[Sample]
 			],
-			Description -> "Input samples for negative control wells in this qualification.",
+			Description -> "Input samples for control wells in this qualification.",
 			Category -> "Analytes"
 		},
 

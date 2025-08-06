@@ -9,7 +9,6 @@ DefineObjectType[Object[Part, Lamp], {
 	CreatePrivileges->None,
 	Cache->Download,
 	Fields -> {
-		
 		MaxLifeTime -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],MaxLifeTime]],
@@ -74,10 +73,18 @@ DefineObjectType[Object[Part, Lamp], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Instrument,LiquidHandler][TopLight],Object[Instrument, SampleImager][TopLight],Object[Instrument, SampleImager][TopLight],Object[Instrument, SampleImager][BottomLight],Object[Instrument, SampleInspector][TopLight],Object[Instrument, SampleInspector][FrontLight],Object[Instrument, SampleInspector][BackLight]],
+			Relation -> Alternatives[Object[Instrument,LiquidHandler][TopLight], Object[Instrument, SampleImager][TopLight], Object[Instrument, SampleImager][TopLight], Object[Instrument, SampleImager][BottomLight], Object[Instrument, SampleInspector][TopLight], Object[Instrument, SampleInspector][FrontLight], Object[Instrument, SampleInspector][BackLight], Object[Instrument, HandlingStation][TopLight]],
 			Description -> "The instrument for which this lamp provides illumination.",
 			Category -> "Part Specifications",
 			Abstract -> True
+		},
+		HandlingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HandlingStation][TopLight],
+			Description -> "The instrument that provides the handling environment that this lamp services in order to illuminate samples during transfer.",
+			Category -> "Part Specifications"
 		},
 		IntegratedLiquidHandler -> {
 			Format-> Single,

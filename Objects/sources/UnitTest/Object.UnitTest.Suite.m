@@ -35,7 +35,7 @@ DefineObjectType[Object[UnitTest, Suite], {
     UnitTestedItems -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String|TypeP[],
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that are tested in this unit test suite.",
       Category -> "Organizational Information"
     },
@@ -59,70 +59,70 @@ DefineObjectType[Object[UnitTest, Suite], {
     PassingFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that have been fully evaluated and passed their unit tests.",
       Category -> "Test Results"
     },
     FailingFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that have been fully evaluated and failed their unit tests.",
       Category -> "Test Results"
     },
     TimedOutFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that have been fully evaluated and didn't finish their unit tests within the TimeOut.",
       Category -> "Test Results"
     },
     SuiteTimedOutFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that have been fully evaluated and didn't finish their unit tests within this suite's overall TimeOut.",
       Category -> "Test Results"
     },
     ManifoldBackendErrorFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions whose tests failed to complete because of some error on the Manifold backend.",
       Category -> "Test Results"
     },
     MathematicaErrorFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions whose tests failed to complete because of some error on the Mathematica testing framework.",
       Category -> "Test Results"
     },
     AbortedFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions whose tests were aborted before they were able to complete.",
       Category -> "Test Results"
     },
     CrashedFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that crashed the Mathematica kernel while evaluating.",
       Category -> "Test Results"
     },
     UntestedFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _Symbol|_String,
+      Pattern :> Authors`Private`authoredCodeP,
       Description -> "The Symbolic Lab Language (SLL) functions that currently do not have unit tests for this branch and should have tests added by a developer immediately.",
       Category -> "Test Results"
     },
     StressTestFunctions -> {
       Format -> Multiple,
       Class -> Expression,
-      Pattern :> _String | _Symbol,
+      Pattern :> Authors`Private`authoredCodeP,
       Relation -> Null,
       Description -> "The Symbolic Lab Language (SLL) functions that failed in the last unit testing run and should be run multiple times in the current unit testing run in order to make sure that they are passing robustly. These functions will be run up to 10 times (stopping early if they fail), as long as there is enough time in the unit testing suite to run additional tests.",
       Category -> "Test Results"

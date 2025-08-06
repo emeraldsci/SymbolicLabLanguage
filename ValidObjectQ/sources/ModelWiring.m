@@ -94,6 +94,16 @@ validModelWiringQTests[packet:PacketP[Model[Wiring]]] := {
 
 
 (* ::Subsection:: *)
+(*validModelWiringCableQTests*)
+
+validModelWiringCableQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+
+(* ::Subsection:: *)
+(*validModelWiringCableAdapterQTests*)
+
+validModelWiringCableAdapterQTests[packet:PacketP[Model[Wiring,CircuitBreaker]]]:={};
+
+(* ::Subsection:: *)
 (*validModelWiringCircuitBreakerQTests*)
 
 
@@ -182,6 +192,8 @@ validModelWiringTransformerQTests[packet:PacketP[Model[Wiring,Transformer]]]:={
 
 
 registerValidQTestFunction[Model[Wiring],validModelWiringQTests];
+registerValidQTestFunction[Model[Wiring,Cable],validModelWiringCableQTests];
+registerValidQTestFunction[Model[Wiring,CableAdapter],validModelWiringCableAdapterQTests];
 registerValidQTestFunction[Model[Wiring,CircuitBreaker],validModelWiringCircuitBreakerQTests];
 registerValidQTestFunction[Model[Wiring,NetworkHub],validModelWiringNetworkHubQTests];
 registerValidQTestFunction[Model[Wiring,PLCComponent],validModelWiringPLCComponentQTests];

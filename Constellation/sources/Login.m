@@ -106,6 +106,8 @@ handleLoginResponse[response_Association, remember:True | False, email_String]:=
 	];
 
 	Global`$ConstellationDomain=domain;
+
+
 	If[Not[Lookup[response, "Success"]],
 		GoLink`Private`stashedJwt=Null;
 		GoLink`Private`stashedDomain=Null;
@@ -176,7 +178,7 @@ handleLoginResponse[response_Association, remember:True | False, email_String]:=
 	];
 
 	(* 
-		log some deatils about loading and building (if it happened)
+		log some details about loading and building (if it happened)
 		these use TraceExpression so can't run it until logged in
 		it memoizes so will only evaluate during first login of a session
 	*)
@@ -219,7 +221,7 @@ loginUsernamePassword[username_String, password_String, domain_String, remember:
 loggedInQ[]:=With[{jwt=GoCall["GetJWT"]}, StringQ[jwt] && jwt =!= ""];
 
 (* Takes username/password *)
-Login[username_String, password_String, ops:OptionsPattern[]]:=Module[
+Login[username_String, password_String, ops:OptionsPattern[]]:=TraceExpression["Login",Module[
 	{safeOps, domain, quietDomainChange},
 	safeOps=ECL`OptionsHandling`SafeOptions[Login, ToList[ops], ECL`OptionsHandling`AutoCorrect->False];
 
@@ -236,12 +238,12 @@ Login[username_String, password_String, ops:OptionsPattern[]]:=Module[
 	];
 
 	loginUsernamePassword[username, password, domain, Lookup[safeOps, Remember]]
-];
+]];
 
 Login[username_String, ops:OptionsPattern[]]:=Login[Email -> username, ops];
 
 (*Pops up an inline form to enter username/password*)
-Login[ops:OptionsPattern[]]:=Module[
+Login[ops:OptionsPattern[]]:=TraceExpression["Login",Module[
 	{safeOps, domain, quietDomainChange, remember, newEmail, newToken, jwtData, oldToken, reLogin, formResults, matchingEmail, oldEmail},
 	safeOps=ECL`OptionsHandling`SafeOptions[Login, ToList[ops], ECL`OptionsHandling`AutoCorrect->False];
 
@@ -313,7 +315,7 @@ Login[ops:OptionsPattern[]]:=Module[
 		Return[formResults]
 	];
 	loginUsernamePassword[formResults["Username"], formResults["Password"], domain, remember]
-];
+]];
 
 (* ::Subsection::Closed:: *)
 (*ManifoldLogin*)

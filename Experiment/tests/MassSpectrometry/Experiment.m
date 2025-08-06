@@ -16,8 +16,7 @@
 (*ExperimentMassSpectrometry*)
 
 
-DefineTests[
-	ExperimentMassSpectrometry,
+DefineTests[ExperimentMassSpectrometry,
 	{
 		Example[{Basic,"Generates a protocol used to measure the molecular weights of compounds within the input samples using ESI-QTOF mass spectrometry:"},
 			ExperimentMassSpectrometry[{Object[Sample,"Direct infusion oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],Object[Sample,"Direct infusion oligomer 2 Sample for ExperimentMassSpectrometry"<>$SessionUUID]},
@@ -136,7 +135,9 @@ DefineTests[
 						NeedleWashSolution, SystemPrimeBuffer, SystemPrimeBufferPlacements,
 						SystemFlushBuffer, SystemFlushContainerPlacements,
 						NeedleWashPlacements, SystemPrimeFlushPlate, PlateSeal,
-						TubingRinseSolution, Checkpoints}
+						TubingRinseSolution, MassSpectrometryInstrument, Checkpoints, CalibrantPrimeBuffer, CalibrantPrimeInfusionSyringe,
+						CalibrantPrimeInfusionSyringeNeedle, CalibrantFlushBuffer,
+						CalibrantFlushInfusionSyringe, CalibrantFlushInfusionSyringeNeedle}
 				]
 			],
 			True
@@ -162,7 +163,11 @@ DefineTests[
 				allResourcesMade = ContainsExactly[
 					resourceFields, {SamplesIn, ContainersIn, Instrument, UniqueCalibrants,
 						CalibrantInfusionSyringes, CalibrantInfusionSyringeNeedles,
-						InfusionSyringes, InfusionSyringeNeedles, Checkpoints}
+						InfusionSyringes, InfusionSyringeNeedles, MassSpectrometryInstrument,
+						Checkpoints, CalibrantPrimeBuffer, CalibrantPrimeInfusionSyringe,
+						CalibrantPrimeInfusionSyringeNeedle, CalibrantFlushBuffer,
+						CalibrantFlushInfusionSyringe, CalibrantFlushInfusionSyringeNeedle,
+						FlushBuffer, FlushInfusionSyringe, FlushInfusionSyringeNeedle}
 				]
 			],
 			True
@@ -210,52 +215,6 @@ DefineTests[
 			{SamplePreparationP..}
 		],
 
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentMassSpectrometry:"},
-			Download[ExperimentMassSpectrometry["My Pooled Sample",
-				PreparatoryPrimitives-> {
-					Define[
-						Name -> "My Pooled Sample",
-						Container -> Model[Container, Vessel, "Narrow Mouth Plastic Reservoir Bottle, 30mL, for Xevo G2-XS QTOF"]
-					],
-					Consolidation[
-						Sources -> {
-							Object[Sample,"Direct infusion oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
-							Object[Sample,"Direct infusion oligomer 2 Sample for ExperimentMassSpectrometry"<>$SessionUUID]
-						},
-						Destination -> "My Pooled Sample",
-						Amounts -> {3000 Microliter, 2600 Microliter}
-					]
-				},
-				IonSource-> ESI
-			],PreparatoryPrimitives],
-			{_Define,_Consolidation}
-		],
-
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentMassSpectrometry in ESI-QQQ:"},
-			Download[ExperimentMassSpectrometry["My Pooled Sample",
-				PreparatoryPrimitives-> {
-					Define[
-						Name -> "My Pooled Sample",
-						Container -> Model[Container, Vessel, "Narrow Mouth Plastic Reservoir Bottle, 30mL, for Xevo G2-XS QTOF"]
-					],
-					Consolidation[
-						Sources -> {
-							Object[Sample,"Direct infusion oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
-							Object[Sample,"Direct infusion oligomer 2 Sample for ExperimentMassSpectrometry"<>$SessionUUID]
-						},
-						Destination -> "My Pooled Sample",
-						Amounts -> {2000 Microliter, 1000 Microliter}
-					]
-				},
-				IonSource-> ESI,
-				MassAnalyzer->TripleQuadrupole
-			],{PreparedSamples,PreparatoryPrimitives}],
-			{
-				{{"My Pooled Sample", SamplesIn,1,Null,"A1"},{"My Pooled Sample", ContainersIn,1,Null,Null}},
-				{_Define,_Consolidation}
-			}
-		],
-
 		(* == SHARED OPTIONS == *)
 
 		Example[{Options,Confirm,"Indicate that the protocol should be moved directly into the queue:"},
@@ -264,6 +223,14 @@ DefineTests[
 				Status
 			],
 			Processing|ShippingMaterials|Backlogged
+		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentMassSpectrometry[Object[Sample,"Direct infusion oligomer 2 Sample for ExperimentMassSpectrometry"<>$SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Template,"Indicate that all the same options used for a previous protocol should be used again for the current protocol:"},
 			Module[{templateMassSpecProtocol,repeatProtocol},
@@ -1253,7 +1220,7 @@ DefineTests[
 		],
 		(*RunDuration*)
 		Example[
-			{Options,RunDuration,"In ESI-QQQ, specified the lenght of time for each reaction :"},
+			{Options,RunDuration,"In ESI-QQQ, specified the length of time for each reaction :"},
 			option = ExperimentMassSpectrometry[
 				Object[Sample,
 					"Direct infusion oligomer 2 Sample for ExperimentMassSpectrometry"<>$SessionUUID], MassAnalyzer -> TripleQuadrupole,
@@ -1647,11 +1614,62 @@ DefineTests[
 			{"Test Label For ExpMS Unit Test"},
 			Variables:>{option}
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMassSpectrometry[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "HPLC vial (high recovery)"],
+				PreparedModelAmount -> 1000 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "HPLC vial (high recovery)"]]..},
+				{EqualP[1000 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMassSpectrometry[
+				Model[Sample, "Milli-Q water"],
+				PreparedModelAmount -> 350 Microliter,
+				Aliquot -> True
+			],
+			ObjectP[Object[Protocol, MassSpectrometry]]
+		],
 
 		(* --- MESSAGES --- *)
-
 		(* == SHARED ERRORS BETWEEN ESI AND MALDI == *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMassSpectrometry[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMassSpectrometry[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMassSpectrometry[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMassSpectrometry[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"DiscardedSamples","The input samples cannot be discarded:"},
 			ExperimentMassSpectrometry[{
 				Object[Sample,"Discarded Sample for ExperimentMassSpectrometry"<>$SessionUUID]
@@ -1735,6 +1753,15 @@ DefineTests[
 				Calibrant -> Model[Sample, StockSolution, Standard, "Deprecated Calibrant for ExpMS Tests"<>$SessionUUID], MassAnalyzer -> QTOF],
 			$Failed,
 			Messages:>{Error::MassSpectrometryInvalidCalibrants,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidESIQTOFScanTimeOption","For ESI-QTOF, ScanTime cannot be higher than 10 seconds:"},
+			ExperimentMassSpectrometry[
+				Object[Sample,"Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
+				MassAnalyzer -> QTOF,
+				ScanTime -> 20 Second
+			],
+			$Failed,
+			Messages:>{Error::InvalidESIQTOFScanTimeOption,Error::InvalidOption,Warning::AliquotRequired}
 		],
 		Example[{Messages,"MassSpectrometryInvalidCalibrants","For ESI-QQQ, Calibrants that are deprecated and without ReferencePeaksPositiveMode and ReferencePeaksNegativeMode filled cannot be used:"},
 			ExperimentMassSpectrometry[{Object[Sample,"Direct infusion oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],Object[Sample,"Direct infusion oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID]},
@@ -2132,21 +2159,8 @@ DefineTests[
 			False
 		],
 		Test["When running tests they will still pass if the molecular weight of the sample is outside of the supplied mass range:",
-			ValidExperimentMassSpectrometryQ[Object[Sample,"Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],IonSource->MALDI,MassDetection->Span[3500 Dalton,6500 Dalton]],
+			ValidExperimentMassSpectrometryQ[Object[Sample,"Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],IonSource->MALDI,MassDetection->Span[3000 Dalton,6500 Dalton]],
 			True
-		],
-		Test["Resolves the mass range when there are only two calibrant peaks, both to the left of the sample:",
-			Download[
-				ExperimentMassSpectrometry[Object[Sample,"Oligomer 4 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
-					Calibrant->Model[Sample,StockSolution,Standard,"Two Peak Calibrant Model for ExperimentMassSpectrometry"<>$SessionUUID],
-					IonSource->MALDI
-				],
-				{MinMasses,MaxMasses}
-			],
-			{{9750 Dalton},{15250 Dalton}},
-			Messages:>{Warning::IncompatibleCalibrant,Warning::LimitedReferencePeaks, Warning::AliquotRequired},
-			EquivalenceFunction->Equal,
-			Stubs:>{$DeveloperSearch=True, $RequiredSearchName = $SessionUUID}
 		],
 		Test["Gracefully handles the case where the calibrant only has a single reference peak:",
 			Lookup[
@@ -2261,17 +2275,17 @@ DefineTests[
 			False
 		],
 
-		Example[{Messages,"LimitedReferencePeaks","If there are only two calibrant peaks in the mass range,	the instrument can still be calibrated, but there may be more error in the calibration:"},
+		Example[{Messages,"NotEnoughReferencePeaks","If there are only two calibrant peaks in the mass range, the instrument cannot be calibrated automatically:"},
 			ExperimentMassSpectrometry[Object[Sample,"Oligomer 3 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
 				MassDetection->Span[7500 Dalton,9200 Dalton],
 				IonSource->MALDI
 			],
-			ObjectP[Object[Protocol,MassSpectrometry]],
-			Messages:>{Warning::LimitedReferencePeaks}
+			$Failed,
+			Messages:>{Error::NotEnoughReferencePeaks,Error::InvalidOption}
 		],
-		Test["When running tests if there are only two calibrant peaks in the mass range, the instrument can still be calibrated, but there may be more error in the calibration:",
+		Test["When running tests if there are only two calibrant peaks in the mass range, the instrument cannot still be calibrated:",
 			ValidExperimentMassSpectrometryQ[Object[Sample,"Oligomer 3 Sample for ExperimentMassSpectrometry"<>$SessionUUID],IonSource->MALDI,MassDetection->Span[7500 Dalton,9200 Dalton]],
-			True
+			False
 		],
 		Test["When running tests for the most accurate results the calibrant peaks in the mass range should flank the sample's molecular weight:",
 			ValidExperimentMassSpectrometryQ[Object[Sample, "Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],IonSource->MALDI,MassDetection->Span[3000 Dalton,6500 Dalton]],
@@ -2288,10 +2302,10 @@ DefineTests[
 			False
 		],
 
-		Example[{Messages,"AliquotOptionConflict","Aliquot cannot be set to false if the current sample container cannot fit on the liquid handler deck:"},
+		Example[{Messages,"AliquotOptionMismatch","Aliquot cannot be set to false if the current sample container cannot fit on the liquid handler deck:"},
 			ExperimentMassSpectrometry[Object[Sample,"Large Container Sample for ExperimentMassSpectrometry"<>$SessionUUID],IonSource->MALDI,Aliquot->False],
 			$Failed,
-			Messages:>{Error::AliquotOptionConflict,Error::InvalidOption}
+			Messages:>{Error::AliquotOptionMismatch,Error::InvalidOption}
 		],
 
 		Example[{Messages,"AliquotRequired","For MALDI mass spectrometry measurements, if the current sample container cannot fit on the liquid handler deck, it must be aliquoted:"},
@@ -2722,7 +2736,7 @@ DefineTests[
 				resources=Download[protocol,RequiredResources];
 
 				resourceFields=DeleteDuplicates[resources[[All,2]]];
-				allResourcesMade=ContainsExactly[resourceFields,{SamplesIn,ContainersIn,Calibrants,Instrument,Buffer,NeedleWashSolution,SystemPrimeBuffer,SystemPrimeBufferPlacements,SystemFlushBuffer,SystemFlushContainerPlacements,NeedleWashPlacements,TubingRinseSolution,Checkpoints,Null}];
+				allResourcesMade=ContainsExactly[resourceFields,{SamplesIn,ContainersIn,Calibrants,Instrument,Buffer,NeedleWashSolution,SystemPrimeBuffer,SystemPrimeBufferPlacements,SystemFlushBuffer,SystemFlushContainerPlacements,NeedleWashPlacements,TubingRinseSolution,PrimingSyringe,Checkpoints, MassSpectrometryInstrument, Null}];
 
 				(* we should have a single needle wash resource for all samples *)
 				needleWashResources=Cases[resources,{_,NeedleWashSolution,___}][[All,1]][Object];
@@ -3133,7 +3147,7 @@ DefineTests[
 				IonSource->MALDI,
 				Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"96-well 2mL Deep Well Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -3192,7 +3206,7 @@ DefineTests[
 				DestinationWell -> "A1",
 				Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options, ImageSample, "Indicate if any samples that are modified in the course of the experiment should be imaged after running the experiment:"},
@@ -3242,6 +3256,8 @@ DefineTests[
 			ObjectP[Object[Protocol,MassSpectrometry]]
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Parallel -> True,
 	Stubs:>{
 		(* I am an important stub that prevents the tester from getting a bunch of notifications *)
@@ -3506,7 +3522,7 @@ DefineTests[
 						|>
 					},
 
-					{(*Test oligmer models*)
+					{(*Test oligomer models*)
 						<|Type->Model[Sample],
 							Replace[Composition]->{
 								{100*VolumePercent,Link[Model[Molecule, "Water"]]},

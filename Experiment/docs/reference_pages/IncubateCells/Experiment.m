@@ -54,11 +54,12 @@ DefineUsage[ExperimentIncubateCells,
 			}
 		},
 		SeeAlso -> {
-			ValidExperimentIncubateCellsQ,
-			ExperimentIncubateCellsOptions,
-			IncubateCellsDevices,
-			ExperimentRoboticCellPreparation,
-			ExperimentCellPreparation
+			"ValidExperimentIncubateCellsQ",
+			"ExperimentIncubateCellsOptions",
+			"IncubateCellsDevices",
+			"ExperimentManualCellPreparation",
+			"ExperimentRoboticCellPreparation",
+			"ExperimentCellPreparation"
 		},
 		Tutorials -> {},
 		Author -> {"harrison.gronlund", "lige.tonggu", "steven"}
@@ -179,8 +180,8 @@ DefineUsage[ExperimentIncubateCellsOptions,
 			}
 		},
 		SeeAlso -> {
-			ValidExperimentIncubateCellsQ,
-			ExperimentIncubateCells
+			"ValidExperimentIncubateCellsQ",
+			"ExperimentIncubateCells"
 		},
 		Tutorials -> {},
 		Author -> {"harrison.gronlund", "lige.tonggu", "steven"}
@@ -237,9 +238,9 @@ DefineUsage[ExperimentIncubateCellsPreview,
 			}
 		},
 		SeeAlso -> {
-			ValidExperimentIncubateCellsQ,
-			ExperimentIncubateCells,
-			ExperimentIncubateCellsOptions
+			"ValidExperimentIncubateCellsQ",
+			"ExperimentIncubateCells",
+			"ExperimentIncubateCellsOptions"
 		},
 		Tutorials -> {},
 		Author -> {"harrison.gronlund", "lige.tonggu", "steven"}
@@ -296,8 +297,8 @@ DefineUsage[ValidExperimentIncubateCellsQ,
 			}
 		},
 		SeeAlso -> {
-			ExperimentIncubateCells,
-			ExperimentIncubateCellsOptions
+			"ExperimentIncubateCells",
+			"ExperimentIncubateCellsOptions"
 		},
 		Tutorials -> {},
 		Author -> {"harrison.gronlund", "lige.tonggu", "steven"}

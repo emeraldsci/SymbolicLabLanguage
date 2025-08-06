@@ -279,7 +279,7 @@ DefineObjectType[Model[Container, Plate], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*GravitationalAcceleration],
 			Units -> GravitationalAcceleration,
-			Description -> "The maxiumum relative centrifugal force this plate is capable of withstanding.",
+			Description -> "The maximum relative centrifugal force this plate is capable of withstanding.",
 			Category -> "Operating Limits"
 		},
 		ReferenceVolumeData -> {

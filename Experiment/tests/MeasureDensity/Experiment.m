@@ -21,8 +21,7 @@
 (*ExperimentMeasureDensity*)
 
 
-DefineTests[
-	ExperimentMeasureDensity,
+DefineTests[ExperimentMeasureDensity,
 	{
 		Example[{Basic,"Measure the density of a single sample:"},
 			ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID]],
@@ -59,6 +58,16 @@ DefineTests[
 				Download[myProtocol,Status]
 			],
 			Processing|ShippingMaterials|Backlogged
+		],
+
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Module[
+				{myProtocol},
+				myProtocol = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"];
+				Download[myProtocol,CanaryBranch]
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 
 		Example[{Options, Volume, "Volume option allows specification of volume of the sample to be used for each measurement:"},
@@ -99,6 +108,13 @@ DefineTests[
 				Instrument
 			],
 			Model[Instrument, DensityMeter, "id:P5ZnEjdbXEbE"]
+		],
+		Example[{Options, Instrument, "If specifying a microbalance, properly resolves everything:"},
+			Lookup[
+				ExperimentMeasureDensity[Object[Sample, "Measure Density Test Sample" <> $SessionUUID], Instrument -> Model[Instrument, Balance, "Mettler Toledo XPR6U Ultra-Microbalance"], Output -> Options],
+				Instrument
+			],
+			ObjectP[Model[Instrument, Balance, "Mettler Toledo XPR6U Ultra-Microbalance"]]
 		],
 
 		Example[{Options, Temperature, "Temperature option determines the temperature at which the sample measurement will be performed when using the DensityMeter method (the FixedVolumeWeight method can only be performed at Ambient temperature):"},
@@ -185,6 +201,27 @@ DefineTests[
 		],
 
 		(*Messages: Errors*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureDensity[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureDensity[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureDensity[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureDensity[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+
 		Example[{Messages,"MeasureDensityVentilatedSamples","An error is thrown if a ventilated sample is specified to be measured with the DensityMeter method:"},
 			ExperimentMeasureDensity[{Object[Sample,"Measure Density Ventilated Sample"<> $SessionUUID],Object[Sample,"Measure Density Test Sample"<> $SessionUUID]}, Method -> DensityMeter],
 			$Failed,
@@ -395,87 +432,6 @@ DefineTests[
 		(* ------------ FUNTOPIA SHARED OPTION TESTING ------------ *)
 		(* -------------------------------------------------------- *)
 		(* -------------------------------------------------------- *)
-		Example[{Options,PreparatoryPrimitives,"Make a new stock solution model and measure its density:"},
-			ExperimentMeasureDensity[
-				"My New StockSolution",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My New StockSolution",
-						Container -> Model[Container, Vessel, "50mL Tube"],
-						ModelType -> Model[Sample,StockSolution],
-						ModelName -> "A Brand New StockSolution"
-					],
-					Transfer[
-						Source -> Model[Sample, "id:BYDOjvG9z6Jl"],
-						Destination -> "My New StockSolution",
-						Amount -> 2.5*Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My New StockSolution",
-						Amount -> 10*Milliliter
-					]
-				}
-			],
-			ObjectP[Object[Protocol,MeasureDensity]]
-		],
-		Example[{Options,PreparatoryPrimitives,"Transfer water to use as control samples to qualify the accuracy of density measurement:"},
-			ExperimentMeasureDensity[
-				"My Controls Plate",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Controls Plate",
-						Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Controls Plate","A1"},
-						Amount -> 2.*Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Controls Plate","A2"},
-						Amount -> 2.*Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Controls Plate","A3"},
-						Amount -> 2.*Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Controls Plate","A4"},
-						Amount -> 2.*Milliliter
-					]
-				},
-				Volume -> {100.*Microliter, 250.*Microliter, 500.*Microliter, 1000.*Microliter}
-			],
-			ObjectP[Object[Protocol,MeasureDensity]],
-			Messages:>{Warning::ModelDensityNotUpdated}
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Add food dye to a 50 milliliter tube, fill to 45 milliliters with dH2O, and then measure the density:"},
-			ExperimentMeasureDensity[
-				{"My 50mL Tube for density measurement"},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 50mL Tube for density measurement",
-						Container -> Model[Container, Vessel, "50mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample, "id:BYDOjvG9z6Jl"],
-						Destination -> "My 50mL Tube for density measurement",
-						Amount -> 7.5 Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "id:8qZ1VWNmdLBD"],
-						Destination -> "My 50mL Tube for density measurement",
-						Amount -> 35 Milliliter
-					]
-				}
-			],
-			ObjectP[Object[Protocol,MeasureDensity]]
-		],
 		Example[{Options,PreparatoryUnitOperations,"Transfer water to use as control samples to qualify the accuracy of density measurement:"},
 			ExperimentMeasureDensity[
 				"My Controls Plate",
@@ -533,6 +489,42 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,MeasureDensity]]
 		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureDensity[
+				Model[Sample, "Milli-Q water"],
+				PreparedModelContainer -> Model[Container,Vessel,"id:3em6Zv9NjjN8"],(*2mL Tube*)
+				PreparedModelAmount -> 1 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, MeasureDensity]],
+			Messages:>{Warning::ModelDensityNotUpdated}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureDensity[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"id:3em6Zv9NjjN8"],(*2mL Tube*)
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"id:3em6Zv9NjjN8"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{Warning::ModelDensityNotUpdated}
+		],
 		Example[{Options,IncubateAliquotDestinationWell, "Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID], IncubateAliquotDestinationWell -> "A1", Output -> Options];
 			Lookup[options,IncubateAliquotDestinationWell],
@@ -557,7 +549,7 @@ DefineTests[
 		Example[{Options,DestinationWell, "Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1","A1","A1","A1","A1"},
 			Variables:>{options}
 		],
 
@@ -925,7 +917,7 @@ DefineTests[
 			Object[Sample,"Measure Density Test Sample In Tube Without Tare"<> $SessionUUID],
 			Object[Sample,"Measure Density Test Solid Sample"<> $SessionUUID],
 			Model[Sample,StockSolution,"Fake MeasureDensity Testing Model"<> $SessionUUID],
-			Object[Protocol,SampleManipulation,"A fake Parent Protocol for ExperimentMeasureDensity testing"<> $SessionUUID],
+			Object[Protocol,ManualSamplePreparation,"A fake Parent Protocol for ExperimentMeasureDensity testing"<> $SessionUUID],
 			Object[Container,Vessel,"MeasureDensity Reaction Vial1"<> $SessionUUID],
 			Object[Container,Vessel,"MeasureDensity Reaction Vial2"<> $SessionUUID],
 			Object[Container,Vessel,"MeasureDensity Reaction Vial3"<> $SessionUUID],
@@ -1043,9 +1035,9 @@ DefineTests[
 			<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],Site->Link[$Site],Name -> "MeasureDensity Test Container4"<> $SessionUUID,DeveloperObject->True|>,
 			<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"2mL Tube"],Objects],Site->Link[$Site],TareWeight -> 1.27*Gram,Name->"MeasureDensity Test Container5"<> $SessionUUID,DeveloperObject->True|>,
 			<|Type->Model[Sample,StockSolution],Name->"Fake MeasureDensity Testing Model"<> $SessionUUID,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]],DeveloperObject->True|>,
-			<|Type->Model[Sample,StockSolution],Name->"Fake MeasureDensity Heated Model"<> $SessionUUID,TransportWarmed->85Celsius,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]],DeveloperObject->True|>,
-			<|Type->Model[Sample,StockSolution],Name->"Fake MeasureDensity Chilled Model"<> $SessionUUID,TransportChilled->True,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]],DeveloperObject->True|>,
-			<|Type->Object[Protocol,SampleManipulation],Name->"A fake Parent Protocol for ExperimentMeasureDensity testing"<> $SessionUUID,Status->Processing,DeveloperObject->True|>,
+			<|Type->Model[Sample,StockSolution],Name->"Fake MeasureDensity Heated Model"<> $SessionUUID,TransportTemperature->85Celsius,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]],DeveloperObject->True|>,
+			<|Type->Model[Sample,StockSolution],Name->"Fake MeasureDensity Chilled Model"<> $SessionUUID,TransportTemperature->4 Celsius,DefaultStorageCondition->Link[Model[StorageCondition, "id:7X104vnR18vX"]],DeveloperObject->True|>,
+			<|Type->Object[Protocol,ManualSamplePreparation],Name->"A fake Parent Protocol for ExperimentMeasureDensity testing"<> $SessionUUID,Status->Processing,DeveloperObject->True|>,
 			<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"8x43mm Glass Reaction Vial"],Objects],Site->Link[$Site],Name->"MeasureDensity Reaction Vial1"<> $SessionUUID,DeveloperObject->True|>,
 			<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"8x43mm Glass Reaction Vial"],Objects],Site->Link[$Site],Name->"MeasureDensity Reaction Vial2"<> $SessionUUID,DeveloperObject->True|>,
 			<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"8x43mm Glass Reaction Vial"],Objects],Site->Link[$Site],Name->"MeasureDensity Reaction Vial3"<> $SessionUUID,DeveloperObject->True|>,
@@ -1146,7 +1138,7 @@ DefineTests[
 			<|Object->waterSample,Name->"Measure Density Test Water Sample2",Status->Available,Replace[IncompatibleMaterials]->{None},DeveloperObject->True|>,
 			<|Object->waterSample,Name->"Measure Density Test Water Sample3",Status->Available,Replace[IncompatibleMaterials]->{None},DeveloperObject->True|>,
 			<|Object->oligoSample,Name->"Measure Density Oligo Sample"<> $SessionUUID,Status->Available,Replace[IncompatibleMaterials]->{None},DeveloperObject->True|>,
-			<|Object->heatedSample,Name->"Measure Density Heated Sample"<> $SessionUUID,Status->Available,Replace[IncompatibleMaterials]->{None},TransportWarmed->85 Celsius,DeveloperObject->True|>,
+			<|Object->heatedSample,Name->"Measure Density Heated Sample"<> $SessionUUID,Status->Available,Replace[IncompatibleMaterials]->{None},TransportTemperature->85 Celsius,DeveloperObject->True|>,
 			<|Object->chilledSample,Name->"Measure Density Chilled Sample"<> $SessionUUID,Status->Available,Replace[IncompatibleMaterials]->{None},DeveloperObject->True|>,
 			<|Object->ventilatedSample,Name->"Measure Density Ventilated Sample"<> $SessionUUID,Status->Available,Replace[IncompatibleMaterials]->{None},DeveloperObject->True|>,
 			(*Added model severed object by setting model-> null here*)
@@ -1160,7 +1152,7 @@ DefineTests[
 		(*Create a protocol that we'll use for template testing*)
 		Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
 			(*Create a protocol that we'll use for template testing*)
-			templateHPLCProtocol = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID],
+			ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID],
 				Name -> "Test Template Protocol for ExperimentMeasureDensity"<> $SessionUUID,
 				Method->FixedVolumeWeight,
 				NumberOfReplicates->4
@@ -1171,7 +1163,7 @@ DefineTests[
 	],
 
 	Stubs :> {$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-
+	HardwareConfiguration -> HighRAM,
 	SymbolTearDown :> {
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];

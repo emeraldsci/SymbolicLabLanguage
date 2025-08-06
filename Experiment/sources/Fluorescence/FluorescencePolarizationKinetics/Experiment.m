@@ -140,7 +140,7 @@ DefineOptions[ExperimentFluorescencePolarizationKinetics,
 			Category->"Sample Handling"
 		},
 		FluorescenceBaseOptions,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		(* Overwrite ConsolidateAliquots pattern since it can never be set to True since we will never read the same well multiple times *)
 		{
 			OptionName -> ConsolidateAliquots,
@@ -200,12 +200,26 @@ DefineOptions[ExperimentFluorescencePolarizationKinetics,
 			Description->"The time at which the fourth round of injections should start.",
 			AllowNull->True,
 			Widget->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Second],Units->Second]
-		}
+		},
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 200 Microliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well UV-Star Plate\"]."
+			}
+		]
 	}
 ];
 
 
-ExperimentFluorescencePolarizationKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentFluorescencePolarizationKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
 		samples,sampleOptions,containerToSampleTests,validSamplePreparationResult,mySamplesWithPreparedSamples,containerToSampleSimulation,
 		myOptionsWithPreparedSamples,samplePreparationSimulation},
@@ -217,8 +231,8 @@ ExperimentFluorescencePolarizationKinetics[myContainers:ListableP[ObjectP[{Objec
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Remove temporal links and throw warnings *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+	(* convert inoput into links *)
+	{listedContainers,listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -226,10 +240,12 @@ ExperimentFluorescencePolarizationKinetics[myContainers:ListableP[ObjectP[{Objec
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentFluorescencePolarizationKinetics,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 200 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well UV-Star Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -290,7 +306,7 @@ ExperimentFluorescencePolarizationKinetics[myContainers:ListableP[ObjectP[{Objec
 
 ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[Sample]}]],myOptions:OptionsPattern[]]:=Module[{
 	listedSamples,listedOptions,outputSpecification,output,gatherTestsQ,messagesBoolean,validSamplePreparationResult,
-	upload, confirm, fastTrack, parentProt, estimatedRunTime,
+	upload, confirm, canaryBranch, fastTrack, parentProt, estimatedRunTime,
 	mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOptionsNamed,
 	mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation,safeOptions,safeOptionTests,
 	validLengthsQ,validLengthTests,templateOptions,templateOptionsTests,inheritedOptions,expandedSafeOps,
@@ -318,7 +334,7 @@ ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[S
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -336,7 +352,7 @@ ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[S
 		{SafeOptions[ExperimentFluorescencePolarizationKinetics,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],Null}
 	];
 
-	{mySamplesWithPreparedSamples,safeOptions,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOptions,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed,Simulation->samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions,$Failed],
@@ -367,7 +383,7 @@ ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[S
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options - no need to specify the definition number since we only have samples defined as input *)
 	{templateOptions, templateOptionsTests} = If[gatherTestsQ,
@@ -562,6 +578,7 @@ ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[S
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -578,6 +595,7 @@ ExperimentFluorescencePolarizationKinetics[mySamples:ListableP[ObjectP[{Object[S
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],

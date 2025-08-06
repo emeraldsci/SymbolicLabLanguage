@@ -68,6 +68,88 @@ DefineTests[ExperimentMagneticBeadSeparation,
 		],
 
 		(*===Error messages tests===*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMagneticBeadSeparation[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMagneticBeadSeparation[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMagneticBeadSeparation[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMagneticBeadSeparation[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "2mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{{100 VolumePercent, Model[Molecule, "Water"]}},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 1 Milliliter,
+					State -> Liquid
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMagneticBeadSeparation[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{
+				Warning::GeneralResolvedMagneticBeads
+			}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "2mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					{{100 VolumePercent, Model[Molecule, "Water"]}},
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 1 Milliliter,
+					State -> Liquid
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMagneticBeadSeparation[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages:>{
+				Warning::GeneralResolvedMagneticBeads
+			}
+		],
 		Example[{Messages,"DiscardedSamples","The sample cannot have a Status of Discarded:"},
 			ExperimentMagneticBeadSeparation[
 				Object[Container,Vessel,"ExperimentMagneticBeadSeparation"<>" test discarded 2mL tube" <> $SessionUUID]
@@ -111,7 +193,7 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"IncompatibleMagnetizationRack","If Preparation is Robotic, MagnetizationRack must be Model[Container,Rack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"]:"},
+		Example[{Messages,"IncompatibleMagnetizationRack","If Preparation is Robotic, MagnetizationRack must be a Model[Item,Magnetization]:"},
 			ExperimentMagneticBeadSeparation[
 				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
 				MagnetizationRack->Model[Container,Rack,"DynaMag Magnet 96-well Skirted Plate Rack"],
@@ -346,7 +428,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			$Failed,
 			Messages :> {Error::NumberOfPreWashesMismatch,Error::InvalidOption}
 		],
-
+		Example[{Messages,"PreWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in PreWashAspirationPosition and PreWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				PreWashAspirationPosition -> Top,
+				PreWashAspirationPositionOffset ->Null
+			],
+			$Failed,
+			Messages :> {Error::PreWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*==Equilibration==*)
 		Example[{Messages,"EquilibrationMismatch","The Equilibration options cannot be in conflict with Equilibration:"},
@@ -466,6 +561,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			$Failed,
 			Messages :> {Error::NumberOfEquilibrationsMismatch,Error::InvalidOption}
 		],
+		Example[{Messages,"EquilibrationAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in EquilibrationAspirationPosition and EquilibrationAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				EquilibrationAspirationPosition -> Null,
+				EquilibrationAspirationPositionOffset -> 5 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::EquilibrationAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*==Loading==*)
 
@@ -573,6 +682,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			],
 			$Failed,
 			Messages :> {Error::NumberOfLoadingsMismatch,Error::InvalidOption}
+		],
+		Example[{Messages,"LoadingAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in LoadingAspirationPosition and LoadingAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				LoadingAspirationPosition -> Bottom,
+				LoadingAspirationPositionOffset -> Null
+			],
+			$Failed,
+			Messages :> {Error::LoadingAspirationPipettingOptionsMismatch,Error::InvalidOption}
 		],
 
 		(*==Wash==*)
@@ -693,6 +816,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			],
 			$Failed,
 			Messages :> {Error::NumberOfWashesMismatch,Error::InvalidOption}
+		],
+		Example[{Messages,"WashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in WashAspirationPosition and WashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				WashAspirationPosition -> Bottom,
+				WashAspirationPositionOffset -> Null
+			],
+			$Failed,
+			Messages :> {Error::WashAspirationPipettingOptionsMismatch,Error::InvalidOption}
 		],
 
 
@@ -835,6 +972,21 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidSecondaryWash,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages,"SecondaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in SecondaryWashAspirationPosition and SecondaryWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,
+				SecondaryWashAspirationPosition -> Null,
+				SecondaryWashAspirationPositionOffset -> 2 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::SecondaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
 		],
 
 		(*==TertiaryWash==*)
@@ -985,6 +1137,21 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"TertiaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in TertiaryWashAspirationPosition and TertiaryWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,SecondaryWash->True,
+				TertiaryWashAspirationPosition -> Bottom,
+				TertiaryWashAspirationPositionOffset -> Null
+			],
+			$Failed,
+			Messages :> {Error::TertiaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*==QuaternaryWash==*)
 		Example[{Messages,"QuaternaryWashMismatch","The QuaternaryWash options cannot be in conflict with QuaternaryWash:"},
@@ -1127,6 +1294,21 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"QuaternaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in QuaternaryWashAspirationPosition and QuaternaryWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,SecondaryWash->True,TertiaryWash->True,
+				QuaternaryWashAspirationPosition -> Null,
+				QuaternaryWashAspirationPositionOffset -> 3 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::QuaternaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*==QuinaryWash==*)
 		Example[{Messages,"QuinaryWashMismatch","The QuinaryWash options cannot be in conflict with QuinaryWash:"},
@@ -1266,6 +1448,21 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidQuinaryWash,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages,"QuinaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in QuinaryWashAspirationPosition and QuinaryWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,
+				QuinaryWashAspirationPosition -> Null,
+				QuinaryWashAspirationPositionOffset -> 3 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::QuinaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
 		],
 
 		(*==SenaryWash==*)
@@ -1407,6 +1604,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages,"SenaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in SenaryWashAspirationPosition and SenaryWashAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,QuinaryWash->True,				SenaryWashAspirationPosition -> Null,
+				SenaryWashAspirationPositionOffset -> 3 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::SenaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*==SeptenaryWash==*)
 		Example[{Messages,"SeptenaryWashMismatch","The SeptenaryWash options cannot be in conflict with SeptenaryWash:"},
@@ -1546,7 +1757,21 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Error::InvalidSeptenaryWash,
 				Error::InvalidOption
 			}
+		],	
+		Example[{Messages,"SeptenaryWashAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in SeptenaryWashAspirationPosition and SeptenaryWashAspirationPositionOffset options:"},
+		ExperimentMagneticBeadSeparation[
+			{
+				{
+					Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+					Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+				}
+			},
+			Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,QuinaryWash->True,	SenaryWash->True,			SeptenaryWashAspirationPosition -> Null,
+			SeptenaryWashAspirationPositionOffset -> 3 Millimeter
 		],
+		$Failed,
+		Messages :> {Error::SeptenaryWashAspirationPipettingOptionsMismatch,Error::InvalidOption}
+	],
 		(*==Elution==*)
 		Example[{Messages,"ElutionMismatch","The Elution options cannot be in conflict with Elution:"},
 			ExperimentMagneticBeadSeparation[
@@ -1656,6 +1881,20 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			$Failed,
 			Messages :> {Error::CollectionContainerConflictingStorageCondition,Error::InvalidOption}
 		],
+		Example[{Messages,"ElutionAspirationPipettingOptionsMismatch","An error is thrown if there is mismatch in ElutionAspirationPosition and ElutionAspirationPositionOffset options:"},
+			ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,QuinaryWash->True,	SenaryWash->True,			ElutionAspirationPosition -> Null,
+				ElutionAspirationPositionOffset -> 3 Millimeter
+			],
+			$Failed,
+			Messages :> {Error::ElutionAspirationPipettingOptionsMismatch,Error::InvalidOption}
+		],
 
 		(*===Options tests===*)
 
@@ -1676,17 +1915,57 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Warning::GeneralResolvedMagneticBeads
 			}
 		],
-		Example[{Options,PreparatoryPrimitives,"Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol=ExperimentMagneticBeadSeparation[
-				"ExperimentMagneticBeadSeparation PreparatoryPrimitives test vessel 1",
-				PreparatoryPrimitives->{
-					Define[Name->"ExperimentMagneticBeadSeparation PreparatoryPrimitives test vessel 1",Container->Model[Container,Vessel,"2mL Tube"]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Destination->"ExperimentMagneticBeadSeparation PreparatoryPrimitives test vessel 1",Amount->100 Microliter]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMagneticBeadSeparation[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
 			];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables:>{protocol},
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{
+				Warning::GeneralResolvedMagneticBeads
+			}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared, even if Preparation -> Robotic:"},
+			output = ExperimentMagneticBeadSeparation[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Preparation -> Robotic,
+				Output -> Result
+			];
+			Quiet@Download[
+				output[OutputUnitOperations][[1]],
+				{
+					RoboticUnitOperations[[2]][SampleLink],
+					RoboticUnitOperations[[2]][Label],
+					RoboticUnitOperations[[1]][ContainerLink],
+					RoboticUnitOperations[[1]][Label]
+				}
+			],
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]],ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]],__},(*LabelSample primitive might combined labeling input samples along with other reagents e.g. buffer or magnetic beads*)
+				{(_String)..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{_String, _String}
+			},
+			Variables :> {output},
 			Messages:>{
 				Warning::GeneralResolvedMagneticBeads
 			}
@@ -1866,11 +2145,11 @@ DefineTests[ExperimentMagneticBeadSeparation,
 		Example[{Options,MagnetizationRack,"MagnetizationRack can be specified:"},
 			options=ExperimentMagneticBeadSeparation[
 				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
-				MagnetizationRack->Model[Container,Rack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"],
+				MagnetizationRack->Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"],(*Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"*)
 				Output->Options
 			];
 			Lookup[options,MagnetizationRack],
-			ObjectP[Model[Container,Rack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"]],
+			ObjectP[Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"](*Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"*)],
 			Variables:>{options}
 		],
 		(*==PreWash==*)
@@ -2098,6 +2377,17 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{PreWashAspirationPosition, PreWashAspirationPositionOffset},"PreWashAspirationPosition and PreWashAspirationPositionOffset are set to Bottom and 0 Millimeter if PreWash is performed using the default magnet Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] :"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				PreWash->True, 
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{PreWashAspirationPosition, PreWashAspirationPositionOffset}],
+			{Bottom, EqualP[0 Millimeter]},
+			Variables:>{options}
+		],
 
 		(*==Equilibration==*)
 
@@ -2313,6 +2603,22 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset},"EquilibrationAspirationPosition and EquilibrationAspirationPositionOffset are set to Bottom and 0 Millimeter if Equilibration is performed using the default magnet Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				{
+					{
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+						Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 2 sample" <> $SessionUUID]
+					}
+				},
+				Equilibration->True,
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset}],
+			{Bottom, EqualP[0 Millimeter]},
+			Variables:>{options}
+		],
 
 		(*==Loading==*)
 
@@ -2498,6 +2804,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			];
 			Lookup[options,LoadingAirDryTime],
 			1 Minute,
+			Variables:>{options}
+		],
+		Example[{Options,{LoadingAspirationPosition, LoadingAspirationPositionOffset},"LoadingAspirationPosition and LoadingAspirationPositionOffset can be specified:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Preparation -> Robotic,
+				LoadingAspirationPosition -> Bottom,
+				LoadingAspirationPositionOffset -> 5 Millimeter,
+				Output->Options
+			];
+			Lookup[options,{LoadingAspirationPosition, LoadingAspirationPositionOffset}],
+			{Bottom, EqualP[5 Millimeter]},
 			Variables:>{options}
 		],
 
@@ -2709,6 +3027,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			];
 			Lookup[options,WashAirDryTime],
 			1 Minute,
+			Variables:>{options}
+		],
+		Example[{Options,{WashAspirationPosition, WashAspirationPositionOffset},"WashAspirationPosition is set to Bottom if WashAspirationPositionOffset is specified if Wash is performed:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,
+				WashAspirationPositionOffset -> 4 Millimeter,
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{WashAspirationPosition, WashAspirationPositionOffset}],
+			{Bottom, EqualP[4 Millimeter]},
 			Variables:>{options}
 		],
 
@@ -2968,6 +3298,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{SecondaryWashAspirationPosition, SecondaryWashAspirationPositionOffset},"SecondaryWashAspirationPosition and SecondaryWashAspirationPositionOffset are set to Bottom and 0 Millimeter if SecondaryWash is performed using the default magnet Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,
+				SecondaryWash->True,
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{SecondaryWashAspirationPosition, SecondaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[0 Millimeter]},
+			Variables:>{options}
+		],
 
 
 		(*==TertiaryWash==*)
@@ -3205,6 +3547,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{TertiaryWashAspirationPosition, TertiaryWashAspirationPositionOffset},"TertiaryWashAspirationPosition and TertiaryWashAspirationPositionOffset are set to Bottom and 0 Millimeter if TertiaryWash is performed using the default magnet Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,SecondaryWash->True,
+				TertiaryWash->True,
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{TertiaryWashAspirationPosition, TertiaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[0 Millimeter]},
+			Variables:>{options}
+		],
 
 
 		(*==QuaternaryWash==*)
@@ -3436,6 +3790,19 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{QuaternaryWashAspirationPosition, QuaternaryWashAspirationPositionOffset},"QuaternaryWashAspirationPosition and QuaternaryWashAspirationPositionOffset are set to Bottom and 2 Millimeter if QuaternaryWash is performed using Model[Item,MagnetizationRack,\"Alpaqua 96S Super Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,SecondaryWash->True,TertiaryWash->True,
+				QuaternaryWash->True,
+				Preparation -> Robotic,
+				MagnetizationRack -> Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],
+				Output->Options
+			];
+			Lookup[options,{QuaternaryWashAspirationPosition, QuaternaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[2 Millimeter]},
+			Variables:>{options}
+		],
 
 		(*==QuinaryWash==*)
 
@@ -3664,6 +4031,19 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			];
 			Lookup[options,QuinaryWashAirDryTime],
 			1 Minute,
+			Variables:>{options}
+		],
+		Example[{Options,{QuinaryWashAspirationPosition, QuinaryWashAspirationPositionOffset},"QuinaryAspirationPosition and QuinaryAspirationPositionOffset are set to Bottom and 2 Millimeter if QuinaryWash is performed using Model[Item,MagnetizationRack,\"Alpaqua 96S Super Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,
+				QuinaryWash->True,
+				Preparation -> Robotic,
+				MagnetizationRack -> Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],
+				Output->Options
+			];
+			Lookup[options,{QuinaryWashAspirationPosition, QuinaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[2 Millimeter]},
 			Variables:>{options}
 		],
 
@@ -3897,6 +4277,19 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			1 Minute,
 			Variables:>{options}
 		],
+		Example[{Options,{SenaryWashAspirationPosition, SenaryWashAspirationPositionOffset},"SenaryWashAspirationPosition and SenaryWashAspirationPositionOffset are set to Bottom and 2 Millimeter if SenaryWash is performed using Model[Item,MagnetizationRack,\"Alpaqua 96S Super Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,QuinaryWash->True,
+				SenaryWash->True,
+				Preparation -> Robotic,
+				MagnetizationRack -> Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],
+				Output->Options
+			];
+			Lookup[options,{SenaryWashAspirationPosition, SenaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[2 Millimeter]},
+			Variables:>{options}
+		],
 
 
 		(*==SeptenaryWash==*)
@@ -4126,6 +4519,19 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			];
 			Lookup[options,SeptenaryWashAirDryTime],
 			1 Minute,
+			Variables:>{options}
+		],
+		Example[{Options,{SeptenaryWashAspirationPosition, SeptenaryWashAspirationPositionOffset},"SeptenaryWashAspirationPosition and SeptenaryWashAspirationPositionOffset are set to Bottom and 2 Millimeter if SeptenaryWash is performed using Model[Item,MagnetizationRack,\"Alpaqua 96S Super Magnet 96-well Plate Rack\"]:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Wash->True,SecondaryWash->True,TertiaryWash->True,QuaternaryWash->True,QuinaryWash->True,SenaryWash->True,
+				SeptenaryWash->True,
+				Preparation -> Robotic,
+				MagnetizationRack ->  Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],
+				Output->Options
+			];
+			Lookup[options,{SeptenaryWashAspirationPosition, SeptenaryWashAspirationPositionOffset}],
+			{Bottom, EqualP[2 Millimeter]},
 			Variables:>{options}
 		],
 
@@ -4372,6 +4778,18 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			];
 			Lookup[options,NumberOfElutions],
 			1,
+			Variables:>{options}
+		],
+		Example[{Options,{ElutionAspirationPosition, ElutionAspirationPositionOffset},"ElutionAspirationPositionOffset is set to 2 Millimeter if ElutionAspirationPosition is specified to be not Bottom:"},
+			options=ExperimentMagneticBeadSeparation[
+				Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+				Elution->True,
+				ElutionAspirationPosition -> LiquidLevel,
+				Preparation -> Robotic,
+				Output->Options
+			];
+			Lookup[options,{ElutionAspirationPosition, ElutionAspirationPositionOffset}],
+			{LiquidLevel, EqualP[2 Millimeter]},
 			Variables:>{options}
 		],
 
@@ -4757,7 +5175,7 @@ DefineTests[ExperimentMagneticBeadSeparation,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentMagneticBeadSeparation 1",
+			{"Test Label for ExperimentMagneticBeadSeparation 1"},
 			Variables:>{options}
 		],
 		Example[{Options,ConsolidateAliquots,"Indicates if identical aliquots should be prepared in the same container/position:"},
@@ -4775,13 +5193,13 @@ DefineTests[ExperimentMagneticBeadSeparation,
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentMagneticBeadSeparation[Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],AliquotContainer->Model[Container,Vessel,"2mL Tube"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentMagneticBeadSeparation[Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
@@ -5303,7 +5721,7 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			],
 			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		],
-		Test["The correct amount of resources are made per input sample when the sample has to be aliquotted into a new container for the liquid handler",
+		Test["The correct amount of resources are made per input sample when the sample has to be aliquoted into a new container for the liquid handler",
 			protocol=ExperimentMagneticBeadSeparation[
 				Object[Sample,"ExperimentMagneticBeadSeparation test 50mL tube 4 sample" <> $SessionUUID],
 				Volume->1 Milliliter,
@@ -5317,6 +5735,17 @@ DefineTests[ExperimentMagneticBeadSeparation,
 			ExperimentMagneticBeadSeparation[Object[Sample,"ExperimentMagneticBeadSeparation"<>" test falcon tube sample" <> $SessionUUID],Preparation->Robotic],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::ConflictingMagneticBeadSeparationMethodRequirements}
+		],
+		Test["Accepts sample object as an option value for MagneticBeads:",
+			ExperimentMagneticBeadSeparation[
+				{
+					Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube 1 sample" <> $SessionUUID],
+					Object[Container, Vessel, "ExperimentMagneticBeadSeparation test 2mL tube 2"<> $SessionUUID]
+				},
+				MagneticBeads -> Object[Sample,"ExperimentMagneticBeadSeparation test 2mL tube magnetic bead sample" <> $SessionUUID],
+				Preparation->Robotic
+			],
+			ObjectP[Object[Protocol,RoboticSamplePreparation]]
 		]
 	},
 

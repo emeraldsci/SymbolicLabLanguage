@@ -22,12 +22,46 @@ DefineUsage[ExperimentGrind,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are ground into fine powders.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
 								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
+							],
 							Expandable -> False
 						},
 						IndexName -> "experiment samples"
@@ -74,11 +108,39 @@ DefineUsage[ValidExperimentGrindQ,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are ground into fine powders.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -126,11 +188,39 @@ DefineUsage[ExperimentGrindOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are ground into fine powders.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -177,11 +267,39 @@ DefineUsage[ExperimentGrindPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The input samples that are ground into fine powders.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes -> {Object[Sample], Object[Container]},
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -211,27 +329,56 @@ DefineUsage[ExperimentGrindPreview,
 		Author -> {"mohamad.zandian"}
 	}
 ];
+
 (* ::Subsection:: *)
 (*PreferredGrinder*)
 
 DefineUsage[PreferredGrinder,
 	{
 		BasicDefinitions -> {
-			{"PreferredGrinder[volume]","grinder","returns the preferred model of ECL 'grinder' which can efficiently grind the specified 'volume' of a sample."},
-			{"PreferredContainer[mass]","grinder","returns the preferred model of ECL 'grinder' which can efficiently grind the specified 'mass' of a sample.."}
-
+			{"PreferredGrinder[volume]", "grinder", "returns the preferred model of ECL 'grinder' which can efficiently grind the specified 'volume' of a sample."},
+			{"PreferredGrinder[mass]", "grinder", "returns the preferred model of ECL 'grinder' which can efficiently grind the specified 'mass' of a sample."}
 		},
 		AdditionalDefinitions -> {},
 		MoreInformation -> {},
 		Input :> {
-			{"volume",GreaterP[0 Milliliter],"The samples' volume to be ground by a preferred grinder."},
-			{"mass",GreaterP[0 Gram],"The samples' mass to be ground by a preferred grinder."}
+			{"volume", GreaterP[0 Milliliter], "The samples' volume to be ground by a preferred grinder."},
+			{"mass", GreaterP[0 Gram], "The samples' mass to be ground by a preferred grinder."}
 		},
 		Output :> {
-			{"grinder",Model[Instrument, Grinder],"The grinder model best suited to grind the input volume/mass."}
+			{"grinder", Model[Instrument, Grinder], "The grinder model best suited to grind the input volume/mass."}
 		},
 		SeeAlso -> {
-			"ExperimentGrind"
+			"ExperimentGrind",
+			"PreferredGrindingContainer",
+			"ExperimentGrindOptions"
+		},
+		Author -> {"mohamad.zandian"}
+	}
+];
+
+(* ::Subsection:: *)
+(*PreferredGrindingContainer*)
+
+DefineUsage[PreferredGrindingContainer,
+	{
+		BasicDefinitions -> {
+			{"PreferredGrindingContainer[grinder, amount, bulk density]", "grinding container", "returns the preferred model of ECL 'grinding container' for the selected 'grinder' to efficiently grind the given sample 'amount'. If 'amount' is in mass units, 'bulk density' converts it to volume. 'bulk density' is the mass of a material divided by its total volume, including the space between particles."}
+		},
+		AdditionalDefinitions -> {},
+		MoreInformation -> {},
+		Input :> {
+			{"grinder", ObjectP[{Model[Instrument, Grinder], Object[Instrument, Grinder]}], "The specified grinder to grind the sample."},
+			{"amount", MassP | VolumeP, "The samples' amount (volume or mass) to be ground by the specified grinder."},
+			{"bulk density", GreaterP[0 Gram/Milliliter], "The mass of a material divided by its total volume, including the space between particles. If amount is provided in mass units, bulk density converts it to volume."}
+		},
+		Output :> {
+			{"grinding container", Model[Container, GrindingContainer] | Model[Container, Vessel], "The grinding container model best suited to grind the input volume/mass."}
+		},
+		SeeAlso -> {
+			"ExperimentGrind",
+			"PreferredGrinder",
+			"ExperimentGrindOptions"
 		},
 		Author -> {"mohamad.zandian"}
 	}

@@ -5,16 +5,50 @@
 
 
 getStreamObjectFromProtocol[protocol: ObjectP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]] := Module[{stream},
-	stream = Quiet[Download[protocol, Streams[[-1]][Object]]];
-	If[!MatchQ[stream, ObjectP[Object[Stream]]],
-		Message[WatchProtocol::StreamNotFound];
-		Return[$Failed];
+	(* $Simulation being True means we are in simulation land and can short circuit some of the goofy checks *)
+	If[MatchQ[protocol, ObjectP[Object[Protocol, Incubate]]] && Not[$Simulation],
+		(* Because mixer set up to work in parallel in Incubate protocol, we need to find the latest stream of the current iteration instrument *)
+		stream = getStreamObjectFromIncubationProtocol[protocol],
+		(* Typically, the last stream should be the one waiting to be stopped *)
+		stream = Quiet[Download[protocol, Streams[[-1]][Object]]];
+		If[!MatchQ[stream, ObjectP[Object[Stream]]],
+			Message[WatchProtocol::StreamNotFound];
+			Return[$Failed];
+		]
 	];
 	stream
 ];
 
+getStreamObjectFromIncubationProtocol[protocol: ObjectP[Object[Protocol, Incubate]]] := Module[{iteration, streams, incubationPC, filteredStreams, stream},
+	(* extract the PC information of the current iteration instrument*)
+	iteration = Lookup[CurrentIterations[protocol], Field[CurrentIncubationParameters]];
+	{
+		streams,
+		incubationPC
+	} = Quiet[Download[
+		protocol,
+		{
+			Packet[Streams[VideoCaptureComputer]],
+			CurrentIncubationParameters[[iteration, Instrument]][VideoCaptureComputer][Object]
+		}
+	]];
+	(* find out the streams corresponding to the current iteration instrument*)
+	filteredStreams = If[streams == {},
+		Message[WatchProtocol::StreamNotFound];
+		Return[$Failed],
+		Cases[streams, KeyValuePattern[VideoCaptureComputer->ObjectP[incubationPC]]]
+	];
+	(* return the last stream if multiple streams found *)
+	stream = If[filteredStreams == {},
+		Message[WatchProtocol::StreamNotFound];
+		Return[$Failed],
+		Lookup[filteredStreams, Object][[-1]]
+	];
+	stream
+]
 
 WatchProtocol::StreamNotFound = "A live stream was not found for this object.";
+WatchProtocol::CannotOffset = "Video cannot be launched at the selected time offset. The video is still post-processing. Please try again in a few hours."
 
 WatchProtocol[protocol: ObjectP[{Object[Protocol],Object[Maintenance],Object[Qualification]}]] := Module[{streamObject},
 	streamObject = getStreamObjectFromProtocol[protocol];
@@ -50,12 +84,22 @@ WatchProtocol[stream: ObjectP[Object[Stream]]] := Module[{urls,  cloudfile},
 	cloudfile = Download[stream, VideoFile];
 	If[!NullQ[cloudfile],
 		launchCloudFileVideoHTML[Download[cloudfile, CloudFile]];
-		Return[];
+		Return[$Failed];
 	];
 
 	urls = getStreamUrls[stream];
 
 	launchStreamViewer[urls];
+];
+
+WatchProtocol[stream: ObjectP[Object[Stream]], startOffsetInSeconds_Integer] := Module[{cloudfile},
+	cloudfile = Download[stream, VideoFile];
+    If[NullQ[cloudfile],
+        Message[WatchProtocol::CannotOffset];
+        Return[$Failed];
+    ];
+
+    launchCloudFileVideoHTML[Download[cloudfile, CloudFile], startOffsetInSeconds];
 ];
 
 launchStreamViewer[urls: {_String..}] := Module[{urlManifests, urlManifestJSON, pluginDir,videoJSDir, html, shouldUsePlugin, script, filename},

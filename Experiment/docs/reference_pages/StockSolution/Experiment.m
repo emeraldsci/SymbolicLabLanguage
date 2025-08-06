@@ -21,7 +21,13 @@ DefineUsage[ExperimentStockSolution,
 							Description -> "The model of stock solution to be prepared during this protocol.",
 							Widget -> Widget[
 								Type -> Object,
-								Pattern :> ObjectP[{Model[Sample, StockSolution], Model[Sample, Matrix], Model[Sample, Media]}]
+								Pattern :> ObjectP[{Model[Sample, StockSolution], Model[Sample, Matrix], Model[Sample, Media]}],
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
 							],
 							Expandable -> False
 						},
@@ -64,7 +70,13 @@ DefineUsage[ExperimentStockSolution,
 									],
 									"Sample" -> Widget[
 										Type -> Object,
-										Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+										Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Materials"
+											}
+										}
 									]
 								},
 								Orientation -> Vertical
@@ -80,7 +92,27 @@ DefineUsage[ExperimentStockSolution,
 							Widget -> Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Sample]}],
-								PreparedSample->False
+								PreparedSample->False,
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials",
+										"Reagents",
+										"Water"
+									},
+									{
+										Object[Catalog, "Root"],
+										"Materials",
+										"Reagents",
+										"Solvents"
+									},
+									{
+										Object[Catalog, "Root"],
+										"Materials",
+										"Reagents",
+										"Buffers"
+									}
+								}
 							],
 							Expandable -> False
 						},
@@ -137,7 +169,13 @@ DefineUsage[ExperimentStockSolution,
 									"Component" -> Widget[
 										Type -> Object,
 										Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-										PreparedSample->False
+										PreparedSample->False,
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Materials"
+											}
+										}
 									]
 								},
 								Orientation -> Vertical
@@ -203,13 +241,13 @@ DefineUsage[ExperimentStockSolution,
 			"ExperimentStockSolutionOptions",
 			"ExperimentStockSolutionPreview",
 			"UploadStockSolution",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentAliquot",
 			"ExperimentIncubate",
 			"ExperimentFilter",
 			"UploadSampleModel"
 		},
-		Author -> {"tim.pierpont", "steven", "hayley"}
+		Author -> {"lei.tian", "tim.pierpont", "steven", "hayley"}
 	}
 ];
 
@@ -408,13 +446,13 @@ DefineUsage[ExperimentStockSolutionOptions,
 			"ValidExperimentStockSolutionQ",
 			"ExperimentStockSolutionPreview",
 			"UploadStockSolution",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentAliquot",
 			"ExperimentIncubate",
 			"ExperimentFilter",
 			"UploadSampleModel"
 		},
-		Author -> {"tim.pierpont", "steven"}
+		Author -> {"lei.tian", "tim.pierpont", "steven"}
 	}
 ];
 
@@ -650,13 +688,13 @@ DefineUsage[ExperimentStockSolutionPreview,
 			"ValidExperimentStockSolutionQ",
 			"ExperimentStockSolutionOptions",
 			"UploadStockSolution",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentAliquot",
 			"ExperimentIncubate",
 			"ExperimentFilter",
 			"UploadSampleModel"
 		},
-		Author -> {"tim.pierpont", "nont.kosaisawe", "steven"}
+		Author -> {"lei.tian", "tim.pierpont", "nont.kosaisawe", "steven"}
 	}
 ];
 
@@ -855,12 +893,12 @@ DefineUsage[ValidExperimentStockSolutionQ,
 			"ExperimentStockSolutionOptions",
 			"ExperimentStockSolutionPreview",
 			"UploadStockSolution",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentAliquot",
 			"ExperimentIncubate",
 			"ExperimentFilter",
 			"UploadSampleModel"
 		},
-		Author -> {"tim.pierpont", "steven"}
+		Author -> {"lei.tian", "tim.pierpont", "steven"}
 	}
 ];

@@ -134,7 +134,7 @@ DefineTests[
 				FlowRateProfile -> {{1 Liter/Minute,60 Minute},{2 Liter/Minute, 45 Minute},{3 Liter/Minute, 30 Minute},{3.5 Liter/Minute, 30 Minute}}
 			],Warning::InstrumentUndergoingMaintenance],
 			_Grid,
-			Messages:>{Error::InvalidOption,Error::FlowRateProfileLength}
+			Messages:>{Error::InvalidOption,Error::FlowRateProfileLength, Warning::AliquotRequired}
 		],
 		Example[
 			{Options,OutputFormat,"If OutputFormat -> List, return a list of options:"},
@@ -238,22 +238,22 @@ DefineTests[
 	ValidExperimentEvaporateQ,
 	{
 		Example[{Basic,"Verify that the experiment can be run without issue:"},
-			ValidExperimentEvaporateQ[{Object[Sample,"ValidExperimentEvaporateQ Test Water Sample"],Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2"]}],
+			ValidExperimentEvaporateQ[{Object[Sample,"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID],Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2 "<>$SessionUUID]}],
 			True
 		],
 		Example[{Basic,"Return False if there are problems with the inputs or options:"},
-			ValidExperimentEvaporateQ[{Object[Sample,"ValidExperimentEvaporateQ Test Water Sample"],Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2"]},
+			ValidExperimentEvaporateQ[{Object[Sample,"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID],Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2 "<>$SessionUUID]},
 				EvaporationTemperature -> 95*Celsius,
 				EvaporationType->SpeedVac
 			],
 			False
 		],
 		Example[{Options,OutputFormat,"Return a test summary:"},
-			ValidExperimentEvaporateQ[Object[Sample,"ValidExperimentEvaporateQ Test Water Sample"],OutputFormat->TestSummary],
+			ValidExperimentEvaporateQ[Object[Sample,"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID],OutputFormat->TestSummary],
 			_EmeraldTestSummary
 		],
 		Example[{Options,Verbose,"Print verbose messages reporting test passage/failure:"},
-			ValidExperimentEvaporateQ[Object[Sample,"ValidExperimentEvaporateQ Test Water Sample"],Verbose->True],
+			ValidExperimentEvaporateQ[Object[Sample,"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID],Verbose->True],
 			True
 		]
 	},
@@ -271,11 +271,11 @@ DefineTests[
 		(* Erase any objects that we failed to erase in the last unit test. *)
 		Module[{namedObjects},
 			namedObjects={
-				Object[Container,Plate,"ValidExperimentEvaporateQ Test Plate"],
-				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample"],
-				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2"],
-				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample3"],
-				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample4"]
+				Object[Container,Plate,"ValidExperimentEvaporateQ Test Plate "<>$SessionUUID],
+				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID],
+				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample2 "<>$SessionUUID],
+				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample3 "<>$SessionUUID],
+				Object[Sample,"ValidExperimentEvaporateQ Test Water Sample4 "<>$SessionUUID]
 			};
 
 			EraseObject[
@@ -284,55 +284,58 @@ DefineTests[
 				Verbose->False
 			]
 		];
+		Module[
+			{testPlate,waterSample,waterSample2,waterSample3,waterSample4},
 
-		(* Create some containers *)
-		{
-			testPlate
-		} = Upload[{
-			<|Type->Object[Container,Plate],Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],Name->"ValidExperimentEvaporateQ Test Plate",Site->Link[$Site],DeveloperObject->True|>
-		}];
+			(* Create some containers *)
+			{
+				testPlate
+			} = Upload[{
+				<|Type->Object[Container,Plate],Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],Name->"ValidExperimentEvaporateQ Test Plate "<>$SessionUUID,Site->Link[$Site],DeveloperObject->True|>
+			}];
 
-		(* Create some samples *)
-		{
-			waterSample,
-			waterSample2,
-			waterSample3,
-			waterSample4
-		} = ECL`InternalUpload`UploadSample[
+			(* Create some samples *)
 			{
-				Model[Sample,"Milli-Q water"],
-				Model[Sample,"Milli-Q water"],
-				Model[Sample,"Milli-Q water"],
-				Model[Sample,"Milli-Q water"]
-			},
-			{
-				{"A1",testPlate},
-				{"A2",testPlate},
-				{"A3",testPlate},
-				{"B1",testPlate}
-			},
-			InitialAmount->{
-				10 Microliter,
-				100 Microliter,
-				1 Milliliter,
-				1.75 Milliliter
-			},
-			StorageCondition -> AmbientStorage
+				waterSample,
+				waterSample2,
+				waterSample3,
+				waterSample4
+			} = ECL`InternalUpload`UploadSample[
+				{
+					Model[Sample,"Milli-Q water"],
+					Model[Sample,"Milli-Q water"],
+					Model[Sample,"Milli-Q water"],
+					Model[Sample,"Milli-Q water"]
+				},
+				{
+					{"A1",testPlate},
+					{"A2",testPlate},
+					{"A3",testPlate},
+					{"B1",testPlate}
+				},
+				InitialAmount->{
+					10 Microliter,
+					100 Microliter,
+					1 Milliliter,
+					1.75 Milliliter
+				},
+				StorageCondition -> AmbientStorage
+			];
+
+			(* Secondary uploads *)
+			Upload[{
+				<|Object->waterSample,Name->"ValidExperimentEvaporateQ Test Water Sample "<>$SessionUUID,Status->Available,DeveloperObject->True|>,
+				<|Object->waterSample2,Name->"ValidExperimentEvaporateQ Test Water Sample2 "<>$SessionUUID,Status->Available,DeveloperObject->True|>,
+				<|Object->waterSample3,Name->"ValidExperimentEvaporateQ Test Water Sample3 "<>$SessionUUID,Status->Available,DeveloperObject->True|>,
+				<|Object->waterSample4,Name->"ValidExperimentEvaporateQ Test Water Sample4 "<>$SessionUUID,Status->Available,DeveloperObject->True|>
+			}];
 		];
-
-		(* Secondary uploads *)
-		Upload[{
-			<|Object->waterSample,Name->"ValidExperimentEvaporateQ Test Water Sample",Status->Available,DeveloperObject->True|>,
-			<|Object->waterSample2,Name->"ValidExperimentEvaporateQ Test Water Sample2",Status->Available,DeveloperObject->True|>,
-			<|Object->waterSample3,Name->"ValidExperimentEvaporateQ Test Water Sample3",Status->Available,DeveloperObject->True|>,
-			<|Object->waterSample4,Name->"ValidExperimentEvaporateQ Test Water Sample4",Status->Available,DeveloperObject->True|>
-		}];
 	},
 
 	SymbolTearDown :> {
 		(* Erase all objects that were created in the course of these tests *)
 		EraseObject[
-			PickList[	$CreatedObjects,
+			PickList[$CreatedObjects,
 				DatabaseMemberQ[$CreatedObjects]
 			],
 			Force->True,

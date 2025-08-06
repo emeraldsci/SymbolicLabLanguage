@@ -172,7 +172,7 @@ DefineUsage[PassOptions,
 	{
 		BasicDefinitions->{
 			{"PassOptions[function,ops]","out","returns a sequence of all the options for 'function'.  Values specified in 'ops' take precedence over default values, illegal values are defaulted, and duplicate options are deleted from the end."},
-			{"PassOptions[function,receivingFunction,ops]","out","returns a sequence of all the options for 'receivingFunction'.  Values specified in 'ops' take precedence over default values, defaults for 'function' take precendence over defaults for 'receivingFucntion', illegal values are defaulted with respect to 'receivingFunction', and duplicate options are deleted from the end."}
+			{"PassOptions[function,receivingFunction,ops]","out","returns a sequence of all the options for 'receivingFunction'.  Values specified in 'ops' take precedence over default values, defaults for 'function' take precendence over defaults for 'receivingFunction', illegal values are defaulted with respect to 'receivingFunction', and duplicate options are deleted from the end."}
 		},
 		Input:>{
 			{"function",_Symbol,"A function whose options and defaults will be taken."},

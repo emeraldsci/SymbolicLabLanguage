@@ -367,7 +367,7 @@ SimulateHybridizationOptions[in: ListableP[InputPatternSimulateHybridizationP], 
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output->_];
 
 	SimulateHybridization[in, Sequence@@Append[noOutputOptions,Output->Options]]
@@ -384,7 +384,7 @@ SimulateHybridizationPreview[in: ListableP[InputPatternSimulateHybridizationP], 
 	
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output->_];
 
 	SimulateHybridization[in, Sequence@@Append[noOutputOptions,Output->Preview]]

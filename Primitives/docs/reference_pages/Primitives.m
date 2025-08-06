@@ -24,7 +24,7 @@ DefineUsage[DefinePrimitiveSet,
       {"DefinePrimitiveSet[primitiveSetPattern, primitiveList]", "null", "defines primitiveSetPattern via the list of primitive information created by DefinePrimitive."}
     },
     MoreInformation -> {
-      "DefinePrimitiveSet stores all the information about the primitives given in primtiiveList in $PrimitiveSetPrimitiveLookup."
+      "DefinePrimitiveSet stores all the information about the primitives given in primitiveList in $PrimitiveSetPrimitiveLookup."
     },
     Input :> {
       {"primitiveSetPattern", _Symbol, "The symbol to install the pattern of the primitive set in."},

@@ -479,7 +479,6 @@ syncBacklog[myTeams : {ObjectP[Object[Team, Financing]]..}, myOptions : OptionsP
 
 	(* These are fields we are caching for UploadProtocolStatus *)
 	uploadProtocolStatusFields = {ShippingMaterials, OperationStatus, DeveloperObject, Author, Notebook, UserCommunications, DateEnqueued, DateStarted, SubprotocolRequiredResources, StartDate, Overclock};
-
 	(* Download the financing teams of the user and the status of any backlogged protocols -- since is it important to have the newest cache, we are forcing its download *)
 	allDownloads = Download[
 		{
@@ -493,8 +492,7 @@ syncBacklog[myTeams : {ObjectP[Object[Team, Financing]]..}, myOptions : OptionsP
 				Packet[Queue[{OperationStatus, Status, Overclock}]]
 			},
 			{Evaluate[Packet[DateCompleted, Script, Notebook, Sequence @@ uploadProtocolStatusFields]], Packet[Script[{CurrentProtocols, TimeConstraint, Notebook}]], Packet[Script[CurrentProtocols][{Status}]]}
-		},
-		Cache -> Download
+		}
 	];
 
 	(* Split up the download packets for teams *)
@@ -513,8 +511,9 @@ syncBacklog[myTeams : {ObjectP[Object[Team, Financing]]..}, myOptions : OptionsP
 	scriptsStillProcessingPackets = Function[recentlyCompletedScriptProtocol,
 		Module[{recentlyCompletedScriptProtocolPacket, correspondingScript, correspondingScriptPacket, correspondingScriptCurrentProtocols, correspondingScriptCurrentProtocolPackets},
 
-			(* Find the script protocol packet *)
-			recentlyCompletedScriptProtocolPacket = FirstCase[recentlyCompletedScriptProtocolPackets, KeyValuePattern[Object -> ObjectP[recentlyCompletedScriptProtocol]]];
+			(* Find the script protocol packet. Adding the Script -> _ to ensure the packet we found has Script key. *)
+			(* Doing so because it's possible that we get duplicated protocol packets from Packet[DateCompleted, Script, Notebook, Sequence @@ uploadProtocolStatusFields] download and Packet[Script[CurrentProtocols][{Status}]] download, if any Script's CurrentProtocols is the same as the recently completed one *)
+			recentlyCompletedScriptProtocolPacket = FirstCase[recentlyCompletedScriptProtocolPackets, KeyValuePattern[{Object -> ObjectP[recentlyCompletedScriptProtocol], Script -> _}]];
 
 			(* Find the protocol's script *)
 			correspondingScript = Lookup[recentlyCompletedScriptProtocolPacket, Script];
@@ -682,7 +681,7 @@ syncShippingMaterials[myTeams:{ObjectP[Object[Team,Financing]]..},myOptions:Opti
 	];
 	
 	(* These are fields we are caching for UploadProtocolStatus *)
-	uploadProtocolStatusFields={Status,ParentProtocol,DateConfirmed,ShippingMaterials,OperationStatus,DeveloperObject,Author,Notebook,UserCommunications,DateEnqueued,DateStarted,SubprotocolRequiredResources,Subprotocols,StartDate,RequiredResources};
+	uploadProtocolStatusFields={Status,ParentProtocol,DateConfirmed,ShippingMaterials,OperationStatus,DeveloperObject,Author,Notebook,UserCommunications,DateEnqueued,DateStarted,SubprotocolRequiredResources,Subprotocols,StartDate,RequiredResources,Overclock};
 	
 	(* Download the status log and notebook of the protocols, and the status of the outstanding transactions -- since is it important to have the newest cache, we are forcing its download *)
 	rawDownloads=Download[
@@ -692,8 +691,7 @@ syncShippingMaterials[myTeams:{ObjectP[Object[Team,Financing]]..},myOptions:Opti
 			Packet[ShippingMaterials[[All,1]][{Object,Status}]],
 			(* Additional fields required for UploadProtocolStatus *)
 			Packet[Repeated[Subprotocols][{ShippingMaterials,Status,OperationStatus,ParentProtocol,DeveloperObject,DateConfirmed,DateEnqueued,DateStarted,StartDate,RequiredResources}]]
-		},
-		Cache->Download
+		}
 	];
 
 	(* Separate key packets from those only needed for cache *)
@@ -774,7 +772,7 @@ Authors[PrioritizeBacklog]:={"robert"};
 PrioritizeBacklog[myProtocol:ObjectP[ProtocolTypes[]]]:=PrioritizeBacklog[{myProtocol}];
 
 (* Core listable overload *)
-PrioritizeBacklog[myProtocols:{ObjectP[ProtocolTypes[]]...}]:=Module[
+PrioritizeBacklog[myProtocols:{ObjectP[ProtocolTypes[Output -> Short]]...}]:=Module[
 	{downloadTuples, statuses, financerPackets, nonBackloggedProtocols, uniqueFinancerPackets,
 		financer, oldBacklog, newBacklog},
 
@@ -822,7 +820,7 @@ PrioritizeBacklog[myProtocols:{ObjectP[ProtocolTypes[]]...}]:=Module[
 	oldBacklog=Download[Lookup[First[uniqueFinancerPackets], Backlog], Object];
 
 	(* Construct new backlog order by prepending myProtocols and removing them from existing backlog list *)
-	newBacklog=Link[Join[myProtocols, DeleteCases[oldBacklog, Alternatives @@ myProtocols]]];
+	newBacklog=Link[Join[myProtocols, DeleteCases[oldBacklog, ObjectP[myProtocols]]]];
 
 	(* Create change packet to replace Backlog and Upload *)
 	Upload[
@@ -884,7 +882,7 @@ DefineOptions[UploadProtocolPriority,
 
 UploadProtocolPriority::ProtocolAlreadyStarted="The options Priority, StartDate, and HoldOrder cannot be changed once a protocol has already started running. Please only include protocols that have not started running.";
 
-UploadProtocolPriority[myProtocol:ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}], myOptions:OptionsPattern[]]:=Module[
+UploadProtocolPriority[myProtocol:ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}], myOptions:OptionsPattern[]]:=Block[{ECL`Web`$ECLTracing:=!MatchQ[ECL`$UnitTestObject, _ECL`Object]},ECL`Web`TraceExpression["UploadProtocolPriority",Module[
 	{downloadSource, financingTeam, queue, protocolUpdatePacket, listedOptions, queueUpdatePacket, protocolStatus, operationStatus},
 
 	(* due to a bug in $FastDownload we need to be safe here and drop potentially heavy fields like ResolvedOptions, UnresolvedOptions, Cache, Simulation *)
@@ -979,4 +977,4 @@ UploadProtocolPriority[myProtocol:ObjectP[{Object[Protocol], Object[Qualificatio
 		myProtocol,
 		{protocolUpdatePacket, queueUpdatePacket}
 	]
-];
+]]];

@@ -98,7 +98,7 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			Class -> Expression,
 			Pattern :> GrinderTypeP,
 			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, the method for reducing the size of the powder particles (grinding the sample into a fine powder). Options include BalllMill, KnifeMill, and automated MortarGrinder. BallMill consists of a rotating or vibrating grinding container with sample and hard balls inside in which the size reduction occurs through impact/friction of hard balls on/with the solid particles. KnifeMill consists of rotating sharp blades in which size reduction occurs through cutting of the solid particles into smaller pieces. Automated MortarGrinder consists of a rotating bowl (mortar) with the sample inside and an angled revolving column (pestle) in which size reduction occurs through pressure and friction between mortar, pestle, and sample particles.",
+			Description -> "For each member of SampleLink, the method for reducing the size of the powder particles (grinding the sample into a fine powder). Options include BallMill, KnifeMill, and automated MortarGrinder. BallMill consists of a rotating or vibrating grinding container with sample and hard balls inside in which the size reduction occurs through impact/friction of hard balls on/with the solid particles. KnifeMill consists of rotating sharp blades in which size reduction occurs through cutting of the solid particles into smaller pieces. Automated MortarGrinder consists of a rotating bowl (mortar) with the sample inside and an angled revolving column (pestle) in which size reduction occurs through pressure and friction between mortar, pestle, and sample particles.",
 			Category -> "General"
 		},
 		Instrument -> {
@@ -113,10 +113,10 @@ DefineObjectType[Object[UnitOperation, Grind], {
 		AmountVariableUnit -> {
 			Format -> Multiple,
 			Class -> VariableUnit,
-			Pattern :> GreaterEqualP[0*Milliliter] | GreaterEqualP[0*Milligram],
+			Pattern :> GreaterEqualP[0 * Milliliter] | GreaterEqualP[0 * Milligram] | GreaterEqualP[0 Unit],
 			Description -> "For each member of SampleLink, the mass of the sample to be ground into a fine powder via a grinder.",
 			Category -> "General",
-			Migration->SplitField
+			Migration -> SplitField
 		},
 		AmountExpression -> {
 			Format -> Multiple,
@@ -125,12 +125,13 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the mass of the sample to be ground into a fine powder via a grinder.",
 			Category -> "General",
-			Migration->SplitField
+			Migration -> SplitField
 		},
 		Fineness -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Millimeter],
+			Pattern :> GreaterP[0Millimeter],
+			Units -> Millimeter,
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the approximate size of the largest particle of the sample.",
 			Category -> "General"
@@ -138,7 +139,8 @@ DefineObjectType[Object[UnitOperation, Grind], {
 		BulkDensity -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Gram/Milliliter],
+			Pattern :> GreaterP[0 * Gram/Milliliter],
+			Units -> Gram/Milliliter,
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the mass of a volume unit of the powder. The volume for calculating BulkDensity includes the volumes of particles, internal pores, and inter-particle void spaces. This parameter is used to calculate the volume of a powder from its mass (Amount). The volume, in turn, is used along with the fineness in PreferredGrinder to determine a suitable grinder instrument if Instrument is not specified.",
 			Category -> "General"
@@ -152,15 +154,14 @@ DefineObjectType[Object[UnitOperation, Grind], {
 				Model[Container]
 			],
 			IndexMatching -> SampleLink,
-			(*TODO Table x.x*)
-			Description -> "For each member of SampleLink, the container that the sample is transferred into during the grinding process. Refer to Table x.x for more information about the containers that are used for each model of grinders.",
+			Description -> "For each member of SampleLink, the container that the sample is transferred into during the grinding process. Refer to the instrumentation table in the help files for more information about the containers that are used for each model of grinders.",
 			Category -> "General"
 		},
 		GrindingBead -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Item],Model[Item]],
+			Relation -> Alternatives[Object[Item], Model[Item]],
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the grinding beads or grinding balls that are used along with the sample inside the grinding container to beat and crush the sample into fine particles as a result rapid mechanical movements of the grinding container.",
 			Category -> "General"
@@ -176,29 +177,11 @@ DefineObjectType[Object[UnitOperation, Grind], {
 		GrindingRate -> {
 			Format -> Multiple,
 			Class -> VariableUnit,
-			Pattern :> GreaterEqualP[0 RPM]|GreaterEqualP[0 Hertz](*|GreaterEqualP[Quantity[0, IndependentUnit["StrokesPerMinute"]]]*),
+			Pattern :> GreaterEqualP[0 RPM] | GreaterEqualP[0 Hertz],
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the speed of the circular motion of the grinding tool at which the sample is ground into a fine powder.",
 			Category -> "General"
 		},
-(*		PestleRate -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0 RPM],
-			Units -> RPM,
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, the speed of the circular motion of the pestle at which the sample is ground into a fine powder in an automated mortar grinder.",
-			Category -> "General"
-		},
-		MortarRate -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0 RPM],
-			Units -> RPM,
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, the speed of the circular motion of the mortar at which the sample is ground into a fine powder in an automated mortar grinder.",
-			Category -> "General"
-		},*)
 		Time -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -220,6 +203,7 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the duration of time that the grinder is switched off between after each grinding step to cool down the sample and prevent overheating.",
 			Category -> "General"
@@ -227,7 +211,10 @@ DefineObjectType[Object[UnitOperation, Grind], {
 		GrindingProfile -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {{Alternatives[Grinding, Cooling], Alternatives[GreaterEqualP[0 RPM],GreaterEqualP[0 Hertz](*,GreaterEqualP[Quantity[0,IndependentUnit["StrokesPerMinute"]]]*)], GreaterEqualP[0 Minute]}..},
+			Pattern :> Alternatives[
+				{{Alternatives[Grinding, Cooling], Alternatives[GreaterEqualP[0 RPM], GreaterEqualP[0 Hertz]], GreaterEqualP[0 Minute]}..},
+				{Alternatives[{GreaterEqualP[0 RPM] | GreaterEqualP[0 Hertz], GreaterEqualP[0 Minute]}, {GreaterEqualP[0 Minute]}]..}
+			],
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, determines the grinding activity (Grinding/GrindingRate or Cooling) over the course of time, in the form of {{Grinding, GrindingRate, Time}..}.",
 			Category -> "General"
@@ -239,14 +226,6 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			Description -> "Similar to GrindingProfile, the only difference is that the rate is unitless and corrected depending on the instrument. Foe example, for BeadGenie, the operator should insert 200 for a grinding rate of 2000 RPM.",
 			Category -> "General",
 			Developer -> True
-		},
-		GrindingVideo -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> {LinkP[Object[EmeraldCloudFile]]..},
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, a link to a video file that displays the process of grinding the sample if Instrument is set to MortarGrinder.",
-			Category -> "General"
 		},
 		GrinderTubeHolder -> {
 			Format -> Multiple,
@@ -272,7 +251,7 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			Category -> "General",
 			Developer -> True
 		},
-		WeighingContainer->{
+		WeighingContainer -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
@@ -287,6 +266,37 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			Developer -> True
 		},
 		(* output object *)
+		SampleOutLink -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "For each member of SampleLink, the output sample after being ground by this unit operation.",
+			Category -> "General",
+			Migration -> SplitField
+		},
+		SampleOutString -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Relation -> Null,
+			Description -> "For each member of SampleLink, the output sample after being ground by this unit operation.",
+			Category -> "General",
+			Migration -> SplitField
+		},
+		SampleOutExpression -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {ObjectP[Object[Sample]]..} | {_String..},
+			Relation -> Null,
+			IndexMatching -> SampleLink,
+			Description -> "For each member of SampleLink, the output sample after being ground by this unit operation.",
+			Category -> "General",
+			Migration -> SplitField
+		},
 		ContainerOut -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -306,7 +316,7 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the non-default condition under which the ground sample is stored after the protocol is completed.",
 			Category -> "Storage Information",
-			Migration->SplitField
+			Migration -> SplitField
 		},
 		SamplesOutStorageConditionLink -> {
 			Format -> Multiple,
@@ -316,9 +326,9 @@ DefineObjectType[Object[UnitOperation, Grind], {
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the non-default condition under which the ground sample is stored after the protocol is completed.",
 			Category -> "Storage Information",
-			Migration->SplitField
+			Migration -> SplitField
 		},
-		
+
 		(* output label *)
 		SampleOutLabel -> {
 			Format -> Multiple,

@@ -1177,28 +1177,28 @@ DefineObjectType[Object[Data,Microscope],{
 		},
 		PhaseContrastCellCount -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[CellCountAnalyses]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], PhaseContrastImage]],
+			Expression :> SafeEvaluate[{Field[CellCountAnalyses],Field[PhaseContrastImage]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], Field[PhaseContrastImage]]],
 			Pattern :> GreaterEqualP[0],
 			Description -> "The most recent cell count of the phase contrast image analysis.",
 			Category -> "Analysis & Reports"
 		},
 		FluorescenceCellCount -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[CellCountAnalyses]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], FluorescenceImage]],
+			Expression :> SafeEvaluate[{Field[CellCountAnalyses],Field[FluorescenceImage]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], Field[FluorescenceImage]]],
 			Pattern :> GreaterEqualP[0],
 			Description -> "The most recent cell count of the image analysis on the primary fluorescence image.",
 			Category -> "Analysis & Reports"
 		},
 		SecondaryFluorescenceCellCount -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[CellCountAnalyses]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], SecondaryFluorescenceImage]],
+			Expression :> SafeEvaluate[{Field[CellCountAnalyses],Field[SecondaryFluorescenceImage]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], Field[SecondaryFluorescenceImage]]],
 			Pattern :> GreaterEqualP[0],
 			Description -> "The most recent cell count of the image analysis on the secondary fluorescence image.",
 			Category -> "Analysis & Reports"
 		},
 		TertiaryFluorescenceCellCount -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[CellCountAnalyses]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], TertiaryFluorescenceImage]],
+			Expression :> SafeEvaluate[{Field[CellCountAnalyses],Field[TertiaryFluorescenceImage]}, Computables`Private`cellCountComputable[Field[CellCountAnalyses], Field[TertiaryFluorescenceImage]]],
 			Pattern :> GreaterEqualP[0],
 			Description -> "The most recent cell count of the image analysis on the tertiary fluorescence image.",
 			Category -> "Analysis & Reports"

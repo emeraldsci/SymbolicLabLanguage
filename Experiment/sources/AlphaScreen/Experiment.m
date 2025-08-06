@@ -20,7 +20,7 @@ DefineOptions[ExperimentAlphaScreen,
 		},
 		{
 			OptionName -> Instrument,
-			Default -> Model[Instrument, PlateReader, "CLARIOstar"],
+			Default -> Automatic,
 			Description -> "The plate reader for the signal measurement in AlphaScreen.",
 			AllowNull -> False,
 			Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Instrument, PlateReader], Object[Instrument, PlateReader]}]],
@@ -67,7 +67,8 @@ DefineOptions[ExperimentAlphaScreen,
 			Category -> "Post Experiment",
 			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 		},
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModelInputOptions,
 		(* Overwrite ConsolidateAliquots pattern since it can never be set to True since we will never read the same well multiple times *)
 		(*double check this with Hayley*)
 		{
@@ -82,7 +83,6 @@ DefineOptions[ExperimentAlphaScreen,
 ];
 
 Error::AlphaScreenRepeatedPlateReaderSamples = "Samples can only be repeated in the input if they are set to be aliquoted since repeat readings are performed by reading aliquots of a sample.";
-Error::AlphaScreenObjectNotExist = "The objects `1` do not exist in the database. Please make sure the objects in input samples or options can be found in the database.";
 Error::AlphaScreenNotSupportedPlateReader = "The plate reader `1` does not support AlphaScreen.  Please select a plate reader whose AlphaScreenEmissionFilter and AlphaScreenExcitationLaserWavelength fields are populated.";
 Error::AlphaScreenPreparedPlateIrrelevant = "The `1` options are not relevant to a PreparedPlate measurement. If you would like to measure a PreparedPlate, `1` should be set to Null.";
 Error::AlphaScreenAssayPlateInfoRequired = "The `1` options should not set to Null if PreparedPlate->False. Please specify the options `1` or let them resolve automatically.";
@@ -142,9 +142,8 @@ $AlphaPlates = {
 ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
 	{
 		listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		upload, confirm, fastTrack, parentProt, cache, simulatedProtocol, simulation, estimatedRunTime,
-		samplePreparationSimulation, safeOptions, safeOptionsTests, specifiedObjects,
-		existObjectBoolean, invalidObjects, objectNotExistQ, objectNotExistTest, validLengths, validLengthTests,
+		upload, confirm, canaryBranch, fastTrack, parentProt, cache, simulatedProtocol, simulation, estimatedRunTime,
+		samplePreparationSimulation, safeOptions, safeOptionsTests, validLengths, validLengthTests,
 		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
 		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, returnEarlyQ, performSimulationQ, protocolObject, resourcePackets, resourcePacketTests,
 		optionsWithObjects, allObjects, objectSamplePacketFields, modelSamplePacketFields, objectContainerFields,
@@ -172,7 +171,7 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -188,48 +187,8 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 		{SafeOptions[ExperimentAlphaScreen, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
 	];
 
-	(* Gather all objects in the inputs and options *)
-	(* If we have preparatoryPrimitives, we skip the checking for mySamples, since we currently cannot distinguish the object sample from preparatory primitives. *)
-	specifiedObjects = Flatten[Cases[DeleteCases[safeOptionsNamed, (Simulation -> _) | (Cache -> _)], ObjectReferenceP[], Infinity]];
-
-	(* Gather all the inputs and options that have objects, and check if the objects exist in our database *)
-	(* Quiet normal message since we're going to throw our own - probably don't need to make custom message but this is historical behavior *)
-	existObjectBoolean = Quiet[DatabaseMemberQ[specifiedObjects, Simulation -> samplePreparationSimulation], Download::ObjectDoesNotExist];
-
-	(* Track invalid objects that do not exist in our database *)
-	invalidObjects = Complement[specifiedObjects, PickList[specifiedObjects, existObjectBoolean]];
-
-	(* Not exist object tracking boolean *)
-	objectNotExistQ = Length[invalidObjects] > 0;
-
-	(* If any of the objects in samples or options do not exist in database and we are throwing messages, throw an error message and keep track of the invalid object *)
-	If[objectNotExistQ && !gatherTests,
-		Message[Error::AlphaScreenObjectNotExist, invalidObjects];
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	objectNotExistTest = If[gatherTests,
-		{Test["All specified objects provide as input or as option values exist in database:", objectNotExistQ, False]},
-		{}
-	];
-
-	If[objectNotExistQ,
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOptionsTests, objectNotExistTest],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentAlphaScreen, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentAlphaScreen, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
-	];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions, $Failed],
@@ -240,6 +199,13 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 			Preview -> Null
 		}]
 	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentAlphaScreen, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentAlphaScreen, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
+	];
+
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
@@ -252,7 +218,7 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions, templateTests} = If[gatherTests,
@@ -309,9 +275,9 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 	(* for Downloading not through links through the sample  *)
 	modelPacketFields = Packet @@ modelFields;
 	modelContainerPacketFields = Packet @@ modelContainerFields;
-	modelInstrumentFields = {Object, Name, WettedMaterials, Deprecated, OpticModules, MinTemperature, MaxTemperature, AlphaScreenEmissionFilter, AlphaScreenExcitationLaserWavelength};
+	modelInstrumentFields = {Object, Name, WettedMaterials, Deprecated, OpticModules, MinTemperature, MaxTemperature, AlphaScreenEmissionFilter, AlphaScreenExcitationLaserWavelength, IntegratedLiquidHandlers};
 	modelInstrumentPacketFields = Packet @@ modelInstrumentFields;
-	instrumentPacketFields = Packet[Object, Name, Status, Model, Deprecated, OpticModules, MinTemperature, MaxTemperature, AlphaScreenEmissionFilter, AlphaScreenExcitationLaserWavelength];
+	instrumentPacketFields = Packet[Object, Name, Status, Model, Deprecated, OpticModules, MinTemperature, MaxTemperature, AlphaScreenEmissionFilter, AlphaScreenExcitationLaserWavelength, IntegratedLiquidHandler];
 
 	modelContainerObjects = Cases[allObjects, ObjectReferenceP[Model[Container]]];
 	instrumentObjects = Cases[allObjects, ObjectReferenceP[Object[Instrument, PlateReader]]];
@@ -333,17 +299,21 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 					objectSamplePacketFields,
 					modelSamplePacketFields,
 					Packet[Container[objectContainerFields]],
-					Packet[Container[Model][modelContainerFields]]
+					Packet[Container[Model][modelContainerFields]],
+					Packet[Composition[[All, 2]][{CellType}]]
 				},
 				{
 					modelPacketFields
 				},
 				{
 					instrumentPacketFields,
-					Packet[Model[modelInstrumentFields]]
+					Packet[Model[modelInstrumentFields]],
+					Packet[IntegratedLiquidHandler[Model]],
+					Packet[IntegratedLiquidHandler[Model][Object]]
 				},
 				{
-					modelInstrumentPacketFields
+					modelInstrumentPacketFields,
+					Packet[IntegratedLiquidHandlers[Object]]
 				},
 				{
 					modelContainerPacketFields
@@ -506,6 +476,7 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 					Name -> Lookup[safeOptions, Name],
 					Upload -> Lookup[safeOptions, Upload],
 					Confirm -> Lookup[safeOptions, Confirm],
+					CanaryBranch -> Lookup[safeOptions, CanaryBranch],
 					ParentProtocol -> Lookup[safeOptions, ParentProtocol],
 					Priority -> Lookup[safeOptions, Priority],
 					StartDate -> Lookup[safeOptions, StartDate],
@@ -522,6 +493,7 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload -> Lookup[safeOptions, Upload],
 			Confirm -> Lookup[safeOptions, Confirm],
+			CanaryBranch -> Lookup[safeOptions, CanaryBranch],
 			ParentProtocol -> Lookup[safeOptions, ParentProtocol],
 			Priority -> Lookup[safeOptions, Priority],
 			StartDate -> Lookup[safeOptions, StartDate],
@@ -546,7 +518,7 @@ ExperimentAlphaScreen[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentAlphaScreen[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+ExperimentAlphaScreen[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
 	{listedContainers, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, containerToSampleSimulation,
 		samplePreparationSimulation, containerToSampleResult, containerToSampleOutput, updatedCache, samples, sampleOptions, containerToSampleTests},
 
@@ -557,8 +529,8 @@ ExperimentAlphaScreen[myContainers : ListableP[ObjectP[{Object[Container], Objec
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
-	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	(* convert input into list if they are not already in list form *)
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
@@ -569,7 +541,7 @@ ExperimentAlphaScreen[myContainers : ListableP[ObjectP[{Object[Container], Objec
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -721,13 +693,14 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		resolvedAssayPlateModel, resolvedAssayPlateModelPacket,
 		resolvedGain, resolvedFocalHeight, conflictSampleAliquotOptions, conflictSampleAliquotOptionsQ, conflictSampleAliquotOptionsTest,
 		notAliquotSampleBoolean, falseSampleAliquotQ, invalidSampleAliquotQ, invalidSampleAliquotOptions, invalidSampleAliquotTest,
-		resolvedAliquot, availableAssayWells, suppliedDestinationWells, suppliedDestinationWellsQ, plateWells, reservedMoatWells,
+		resolvedAliquot, resolvedACUOptions, resolvedACUInvalidOptions, resolvedACUTests,
+		availableAssayWells, suppliedDestinationWells, suppliedDestinationWellsQ, plateWells, reservedMoatWells,
 		duplicateDestinationWells, duplicateDestinationWellOption, duplicateDestinationWellTest, requiredNumberOfPlates, allTargetContainers,
 		allDestinationWells, transferredContainers, transferredWells,
 		updateResolvedAliquotOptions, plateReaderMixTime, plateReaderMixRate, plateReaderMixMode, resolvedPlateReaderMix,
 		moatSize, moatVolume, moatBuffer, resolvedPostProcessingOptions, instrument, numberOfReplicates,
 		readDirection, readTemperature, readEquilibrationTime,
-		settlingTime, excitationTime, delayTime, integrationTime, storeMeasuredPlates, confirm, imageSample, name, template,
+		settlingTime, excitationTime, delayTime, integrationTime, storeMeasuredPlates, confirm, canaryBranch, imageSample, name, template,
 		samplesInStorageCondition, preparatoryPrimitives, email, fastTrack, operator, outputOption, parentProtocol, upload,
 		resolvedOptions, allTests, resolvedSampleLabels, resolvedSampleContainerLabels,
 		resolvedWorkCell,nAdd, invalidInstrumentOptionName, invalidAssayPlateModelOptionName,
@@ -775,13 +748,18 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 	sampleContainerModelPackets = fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ simulatedSamples;
 
 	(* Get requested plate reader Object or Model*)
-	suppliedPlateReader = Download[Lookup[alphaScreenOptionsAssociation, Instrument], Object];
+	suppliedPlateReader = Lookup[alphaScreenOptionsAssociation, Instrument];
 
 	(* get the plate reader model and object packets *)
-	suppliedPlateReaderModelPacket = If[MatchQ[suppliedPlateReader, ObjectP[Model[Instrument]]],
+	suppliedPlateReaderModelPacket = Switch[suppliedPlateReader,
+		ObjectP[Model[Instrument]],
 		fetchPacketFromFastAssoc[suppliedPlateReader, fastAssoc],
-		fastAssocPacketLookup[fastAssoc, suppliedPlateReader, Model]
+		ObjectP[Object[Instrument]],
+		fastAssocPacketLookup[fastAssoc, suppliedPlateReader, Model],
+		_,
+		Null
 	];
+
 	suppliedPlateReaderObjPacket = If[MatchQ[suppliedPlateReader, ObjectP[Object[Instrument]]],
 		fetchPacketFromFastAssoc[suppliedPlateReader, fastAssoc],
 		Null
@@ -832,7 +810,7 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 	(* START: -- Retired plate reader check -- *)
 
 	(* Set invalidInstrumentOption to the Instrument option if a non-alpha-screen-compatible plate reader was selected*)
-	{invalidInstrumentOption, invalidInstrumentOptionName} = If[MemberQ[Lookup[suppliedPlateReaderModelPacket, {AlphaScreenExcitationLaserWavelength, AlphaScreenEmissionFilter}], Null],
+	{invalidInstrumentOption, invalidInstrumentOptionName} = If[!NullQ[suppliedPlateReaderModelPacket] && MemberQ[Lookup[suppliedPlateReaderModelPacket, {AlphaScreenExcitationLaserWavelength, AlphaScreenEmissionFilter}], Null],
 		{ToList[suppliedPlateReader], {Instrument}},
 		{{}, {}}
 	];
@@ -874,6 +852,9 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		{TargetSaturationPercentage, 1 Percent},
 		{ReadTemperature, 10^-1 Celsius},
 		{ReadEquilibrationTime, 1 Second},
+		{TargetOxygenLevel,10^-1 Percent},
+		{TargetCarbonDioxideLevel,10^-1 Percent},
+		{AtmosphereEquilibrationTime,1 Second},
 		{PlateReaderMixTime, 1 Second},
 		{PlateReaderMixRate, 100 RPM},
 		{Gain, 1 Microvolt},
@@ -2077,6 +2058,50 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		True, ConstantArray[False, Length[aliquot]]
 	];
 
+	(* Resolve Instrument *)
+	instrument = Which[
+		MatchQ[suppliedPlateReader, Except[Automatic]], suppliedPlateReader,
+		(* if TargetCO2/TargetO2Level is specified, then we only have one option *)
+		Or[
+			MemberQ[Lookup[myOptions, {TargetCarbonDioxideLevel, TargetOxygenLevel}], PercentP],
+			MatchQ[resolvedWorkCell,bioSTAR]
+		],
+		Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		True,
+		Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"] (* Model[Instrument, PlateReader, "CLARIOstar"] *)
+	];
+
+	(* Resolve TargetCarbonDioxideLevel *)
+	{{resolvedACUOptions, resolvedACUInvalidOptions}, resolvedACUTests} = If[gatherTests,
+		resolveACUOptions[
+			Object[Protocol, AlphaScreen],
+			simulatedSamples,
+			Association[roundedAlphaScreenOptionsAssociation,
+				{
+					Instrument -> instrument,
+					Cache -> cache,
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests}
+				}
+			]
+		],
+		{
+			resolveACUOptions[
+				Object[Protocol, AlphaScreen],
+				simulatedSamples,
+				Association[roundedAlphaScreenOptionsAssociation,
+					{
+						Instrument -> instrument,
+						Cache -> cache,
+						Simulation -> updatedSimulation,
+						Output -> Result
+					}
+				]
+			],
+			{}
+		}
+	];
+
 	(* --Unresolvable options check-- *)
 
 	(* --Moat vs DestinationWells check-- *)
@@ -2174,7 +2199,7 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		invalidMoatParametersTogetherOptions, invalidMoatAliquotOptions, invalidMoatVolumeOption, invalidHighMoatVolumeOption,
 		invalidMoatSizeOption, invalidDestinationWellsOptionName, invalidExcitationWavelengthOption,
 		duplicateDestinationWellOption, conflictSampleAliquotOptionsName, invalidSampleAliquotOptionsName, coverOnUnrecommended,
-		If[MatchQ[preparationResult, $Failed], {Preparation}, {}]}]];
+		If[MatchQ[preparationResult, $Failed], {Preparation}, {}], resolvedACUInvalidOptions}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs] > 0 && message,
@@ -2312,8 +2337,6 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
 
-	(*retrieve all the original and rounded options in names if they are not previously defined*)
-	instrument = suppliedPlateReader;
 	(*from original option association*)
 	{
 		numberOfReplicates,
@@ -2326,6 +2349,7 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		integrationTime,
 		storeMeasuredPlates,
 		confirm,
+		canaryBranch,
 		imageSample,
 		name,
 		template,
@@ -2337,7 +2361,7 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		outputOption,
 		parentProtocol,
 		upload
-	} = Lookup[roundedAlphaScreenOptionsAssociation, {NumberOfReplicates, ReadDirection, ReadTemperature, ReadEquilibrationTime, SettlingTime, ExcitationTime, DelayTime, IntegrationTime, StoreMeasuredPlates, Confirm, ImageSample, Name, Template, SamplesInStorageCondition, PreparatoryUnitOperations, Email, FastTrack, Operator, Output, ParentProtocol, Upload}];
+	} = Lookup[roundedAlphaScreenOptionsAssociation, {NumberOfReplicates, ReadDirection, ReadTemperature, ReadEquilibrationTime, SettlingTime, ExcitationTime, DelayTime, IntegrationTime, StoreMeasuredPlates, Confirm, CanaryBranch, ImageSample, Name, Template, SamplesInStorageCondition, PreparatoryUnitOperations, Email, FastTrack, Operator, Output, ParentProtocol, Upload}];
 
 	resolvedOptions = Flatten[{
 		PreparedPlate -> preparedPlate,
@@ -2367,6 +2391,7 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		MoatSize -> resolvedMoatSize,
 		MoatVolume -> resolvedMoatVolume,
 		MoatBuffer -> resolvedMoatBuffer,
+		resolvedACUOptions,
 		resolvedSamplePrepOptions,
 		updateResolvedAliquotOptions,
 		resolvedPostProcessingOptions,
@@ -2375,12 +2400,12 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		Preparation -> resolvedPreparation,
 		WorkCell -> resolvedWorkCell,
 		Confirm -> confirm,
+		CanaryBranch -> canaryBranch,
 		ImageSample -> imageSample,
 		Name -> name,
 		Template -> template,
 		SamplesInStorageCondition -> samplesInStorageCondition,
 		PreparatoryUnitOperations -> preparatoryPrimitives,
-		PreparatoryPrimitives -> Lookup[roundedAlphaScreenOptionsAssociation, PreparatoryPrimitives],
 		Cache -> cache,
 		Email -> email,
 		FastTrack -> fastTrack,
@@ -2421,7 +2446,8 @@ resolveExperimentAlphaScreenOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 		duplicateDestinationWellTest,
 		invalidSampleAliquotTest,
 		conflictSampleAliquotOptionsTest,
-		coverOnUnrecommendedTest
+		coverOnUnrecommendedTest,
+		resolvedACUTests
 	};
 
 	(* Return our resolved options and/or tests. *)
@@ -2653,13 +2679,13 @@ alphaScreenResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolved
 				NumberOfReplicates -> numReplicates,
 				Instrument -> instrumentResource,
 				Replace[Checkpoints] -> {
-					{"Picking Resources", 30 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-					{"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
+					{"Picking Resources", 30 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+					{"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
 					{"Acquiring Data", instrumentTime, "Measurement of the samples in plates for AlphaScreen signal using a plate reader.",
-						Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]
+						Resource[Operator -> $BaselineOperator, Time -> instrumentTime]
 					},
-					{"Sample Post-Processing", 15 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-					{"Returning Materials", 15 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]}
+					{"Sample Post-Processing", 15 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+					{"Returning Materials", 15 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]}
 				},
 				Replace[PreparedPlate] -> preparedPlate,
 				Replace[Instrument] -> instrumentResource,
@@ -2671,6 +2697,9 @@ alphaScreenResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolved
 				(*TBU: AssayPlateLoadingPrimitives,AssayPlateLoadingSampleManipulation*)
 				ReadTemperature -> (Lookup[myResolvedOptions, ReadTemperature] /. Ambient -> Null),
 				ReadEquilibrationTime -> Lookup[myResolvedOptions, ReadEquilibrationTime],
+				TargetCarbonDioxideLevel -> Lookup[myResolvedOptions, TargetCarbonDioxideLevel],
+				TargetOxygenLevel -> Lookup[myResolvedOptions, TargetOxygenLevel],
+				AtmosphereEquilibrationTime -> Lookup[myResolvedOptions, AtmosphereEquilibrationTime],
 				Replace[PlateReaderMix] -> Lookup[myResolvedOptions, PlateReaderMix],
 				Replace[PlateReaderMixTime] -> Lookup[myResolvedOptions, PlateReaderMixTime],
 				Replace[PlateReaderMixRate] -> Lookup[myResolvedOptions, PlateReaderMixRate],

@@ -198,8 +198,8 @@ DefineTests[PlotSubprotocols,
 				Association[Object -> protocol9, Name -> "StockSolution protocol 1 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> InstrumentProcessing, ParentProtocol -> Link[protocol5, Subprotocols]],
 
 				(*OperatorReady *)
-				Association[Object -> protocol6, Name -> "ManualSamplePreparation protocol 4 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> Troubleshooting, ParentProtocol -> Null],
-				Association[Object -> protocol20, Name -> "MeasureWeight protocol 4 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> Troubleshooting, ParentProtocol -> Link[protocol6, Subprotocols]],
+				Association[Object -> protocol6, Name -> "ManualSamplePreparation protocol 4 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> ScientificSupport, ParentProtocol -> Null],
+				Association[Object -> protocol20, Name -> "MeasureWeight protocol 4 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> ScientificSupport, ParentProtocol -> Link[protocol6, Subprotocols]],
 
 				(*no subs*)
 				Association[Object -> protocol2, Name -> "HPLC protocol 2 for PlotSubprotocols tests"<>$SessionUUID, DeveloperObject-> True, Status -> Processing, OperationStatus -> OperatorStart, ParentProtocol -> Null]

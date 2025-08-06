@@ -61,17 +61,16 @@ simulateReadPlateExperiment[
 		(* Download *)
 		injectionDownloadSpec, blankField, fieldSpec,
 		protPacket, instrumentPacket, instrumentModelPacket, instrumentWastePacket, instrumentSecondaryWastePacket, workingSamplePacket,
-		workingSampleContainerPacket, workingSampleContainerModelPacket, workingContainerPacket, blankPackets, primaryPreppingPacket,
-		secondaryPreppingPacket, primaryFlushingPacket, secondaryFlushingPacket, opticModulePacket, moatBufferModelPacket,
+		workingSampleContainerPacket, workingSampleContainerModelPacket, workingContainerPacket, blankPackets, line1PrimaryPurgingPacket,
+		line1SecondaryPurgingPacket, line2PrimaryPurgingPacket, line2SecondaryPurgingPacket, opticModulePacket, moatBufferModelPacket,
 		controlSamplePacket, primaryInjectionPacket, secondaryInjectionPacket, tertiaryInjectionPacket, quaternaryInjectionPacket,
 		focalHeightOptimizationSamplesPacket, gainOptimizationSamplesPacket,
-		cuvetteContainerPacket, cuvetteContainerModelPacket,
 
 		(* Moat *)
 		moatPackets, optimizationSamplePackets,
 
 		(* General Information *)
-		absorbanceQ, temperature, equilibrationTime, numberOfReplicates, uniqueContainerPackets, exportFunction,
+		absorbanceQ, temperature, equilibrationTime,
 
 		(* Plate Reader *)
 		plateReader, chipRack, blankContainers, blankVolumes,
@@ -79,7 +78,7 @@ simulateReadPlateExperiment[
 		(* Sample Injection Prepping, Priming, Flushing *)
 		injectionUpdatePackets,
 
-		resolvedPreparation,simulationWithLabels,expandedBlankLabelsWithReplicates, prepProtocolType,resolvedWorkCell
+		resolvedPreparation,simulationWithLabels,expandedBlankLabelsWithReplicates,blankLinkField,prepProtocolType,resolvedWorkCell
 	},
 
 	(* Lookup our cache and simulation. *)
@@ -320,13 +319,13 @@ simulateReadPlateExperiment[
 				(* 10. Blanks *)
 				Packet[blankField[{Container, Volume, Position, Model}]],
 
-				(* 11/12. Prepping Solvents *)
-				Packet[PrimaryPreppingSolvent[Container]],
-				Packet[SecondaryPreppingSolvent[Container]],
+				(* 11/12. Line1 Purging Solvents *)
+				Packet[Line1PrimaryPurgingSolvent[Container]],
+				Packet[Line1SecondaryPurgingSolvent[Container]],
 
-				(* 13/14. Flushing Solvents *)
-				Packet[PrimaryFlushingSolvent[Container]],
-				Packet[SecondaryFlushingSolvent[Container]],
+				(* 13/14. Line2 Purging Solvents *)
+				Packet[Line2PrimaryPurgingSolvent[Container]],
+				Packet[Line2SecondaryPurgingSolvent[Container]],
 
 				(* 15. OpticModules *)
 				Null,
@@ -418,15 +417,15 @@ simulateReadPlateExperiment[
 				Packet[ContainersIn[Contents]],
 
 				(* 10. Blanks *)
-				Packet[blankField[{Container, Volume, Position, Model}]],
+				Packet[blankField[{Container, Volume, Position, Model, Composition}]],
 
-				(* 11/12. Prepping Solvents *)
-				Packet[PrimaryPreppingSolvent[Container]],
-				Packet[SecondaryPreppingSolvent[Container]],
+				(* 11/12. Line1 Purging Solvents *)
+				Packet[Line1PrimaryPurgingSolvent[Container]],
+				Packet[Line1SecondaryPurgingSolvent[Container]],
 
-				(* 13/14. Flushing Solvents *)
-				Packet[PrimaryFlushingSolvent[Container]],
-				Packet[SecondaryFlushingSolvent[Container]],
+				(* 13/14. Line2 Purging Solvents *)
+				Packet[Line2PrimaryPurgingSolvent[Container]],
+				Packet[Line2SecondaryPurgingSolvent[Container]],
 
 				(* 15. OpticModules *)
 				Packet[OpticModules[Name]],
@@ -458,10 +457,10 @@ simulateReadPlateExperiment[
 		(*8*)workingSampleContainerModelPacket,
 		(*9*)workingContainerPacket,
 		(*10*)blankPackets,
-		(*11*)primaryPreppingPacket,
-		(*12*)secondaryPreppingPacket,
-		(*13*)primaryFlushingPacket,
-		(*14*)secondaryFlushingPacket,
+		(*11*)line1PrimaryPurgingPacket,
+		(*12*)line1SecondaryPurgingPacket,
+		(*13*)line2PrimaryPurgingPacket,
+		(*14*)line2SecondaryPurgingPacket,
 		(*15*)opticModulePacket,
 		(*16*)moatBufferModelPacket,
 		(*17*)controlSamplePacket,
@@ -478,7 +477,7 @@ simulateReadPlateExperiment[
 			(* if it's a robotic protocol, download info from the unit op, if not, then from the protocol *)
 			If[
 				MatchQ[myResourcePacket, Null] && MatchQ[myUnitOperationPackets, {PacketP[]..}],
-				FirstOrDefault@Lookup[myUnitOperationPackets, Object],
+				Last[Lookup[myUnitOperationPackets, Object]],
 				protocolObject
 			],
 			fieldSpec,
@@ -595,7 +594,8 @@ simulateReadPlateExperiment[
 						Upload -> False,
 						FastTrack -> True,
 						Simulation -> updatedSimulation,
-						SimulationMode -> True
+						SimulationMode -> True,
+						UpdatedBy -> protocolObject
 					];
 
 					(* UploadSampleTransfer *)
@@ -714,7 +714,8 @@ simulateReadPlateExperiment[
 								Upload -> False,
 								FastTrack -> True,
 								Simulation -> updatedSimulation,
-								SimulationMode -> True
+								SimulationMode -> True,
+								UpdatedBy -> protocolObject
 							];
 
 							(* UploadSampleTransfer *)
@@ -748,7 +749,8 @@ simulateReadPlateExperiment[
 								Upload -> False,
 								FastTrack -> True,
 								Simulation -> updatedSimulation,
-								SimulationMode -> True
+								SimulationMode -> True,
+								UpdatedBy -> protocolObject
 							];
 
 							(* UploadSampleTransfer *)
@@ -882,7 +884,7 @@ simulateReadPlateExperiment[
 					], 1],
 					Flatten[Map[
 					Function[{blankContainer},
-						{blankContainer, #}& /@ (allWells)
+						{#, blankContainer}& /@ (allWells)
 					],
 					blankContainers
 					], 1]
@@ -951,18 +953,28 @@ simulateReadPlateExperiment[
 
 				(* Otherwise, continue *)
 				Module[
-					{blankSamples, numberOfBlankSamples, uploadPackets, packetsForTransfer, transferPackets},
+					{blankSamples, numberOfBlankSamples, blankModelOrComposition, uploadPackets, packetsForTransfer, transferPackets},
 					blankSamples = Lookup[blanksToMove, Object];
 					numberOfBlankSamples = Length[blankSamples];
 
+					(* If a Blank sample has Model -> Null, use the composition instead. *)
+					blankModelOrComposition = Map[
+						If[!NullQ[Lookup[#, Model, Null]],
+							Lookup[#, Model],
+							Lookup[#, Composition][[All, {1, 2}]] (* drop the time element of the compositions. *)
+						]&,
+						blanksToMove
+					];
+
 					(* UploadSample *)
 					uploadPackets = UploadSample[
-						Lookup[blanksToMove,Model],
+						blankModelOrComposition,
 						allBlankDestinations,
 						Upload -> False,
 						FastTrack -> True,
 						Simulation -> updatedSimulation,
-						SimulationMode -> True
+						SimulationMode -> True,
+						UpdatedBy -> protocolObject
 					];
 
 					(* UploadSampleTransfer *)
@@ -973,7 +985,8 @@ simulateReadPlateExperiment[
 						volumesToMove,
 						Upload -> False,
 						FastTrack -> True,
-						Simulation -> updatedSimulation
+						Simulation -> updatedSimulation,
+						UpdatedBy -> protocolObject
 					];
 
 					(* Return the upload and transfer packets *)
@@ -1279,6 +1292,9 @@ simulateReadPlateExperiment[
 		Lookup[myResolvedOptions, BlankLabel,{}]
 	];
 
+	(* get the blank field ending with ...Link, since these would be split fields in UO object *)
+	blankLinkField = If[nephelometryQ, BlankLink, BlanksLink];
+
 	(* We don't have any SamplesOut for our protocol object, so right now, just tell the simulation where to find the SamplesIn field *)
 	simulationWithLabels=Simulation[
 		Labels->Join[
@@ -1310,7 +1326,7 @@ simulateReadPlateExperiment[
 				],
 				If[MatchQ[blankPackets, {PacketP[]..}],
 					Rule@@@Cases[
-						Transpose[{ToList[expandedBlankLabelsWithReplicates], (With[{insertMe=blankField},Field[insertMe[[#]]]]&)/@Range[Length[blankPackets]]}],
+						Transpose[{ToList[expandedBlankLabelsWithReplicates], (With[{insertMe=blankLinkField},Field[insertMe[[#]]]]&)/@Range[Length[blankPackets]]}],
 						{_String, _}
 					],
 					{}
@@ -1361,7 +1377,8 @@ blankVolumeTuples[blankPackets_,blankVolumes_,numberOfReplicates_]:=Module[
 
 absSpecPlatesToRead[
 	newBlankContainers:Null|{ObjectP[Object[Container,Plate]]...},
-	blankVolumeTuplesMoved:{{ObjectP[{Object[Sample],Model[Sample]}],VolumeP..}...},
+	(* as long as this tuple has the object, and volume to be the first two items then we are fine *)
+	blankVolumeTuplesMoved:{{ObjectP[{Object[Sample],Model[Sample]}],VolumeP,___}...},
 	blankPackets:{PacketP[{Object[Sample],Model[Sample]}]...},
 	sampleContainers:{ObjectP[Object[Container,Plate]]...}
 ]:=Module[{},

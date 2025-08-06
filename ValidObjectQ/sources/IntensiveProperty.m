@@ -47,26 +47,6 @@ validPhysicsOligomerQTests[myPacket:PacketP[Model[Physics,Oligomer]]]:=
   ];
 
 (* ::Subsection::Closed:: *)
-(*validPhysicsModificationQTests*)
-
-validPhysicsModificationQTests[myPacket:PacketP[Model[Physics,Modification]]]:=Module[
-  {
-    maxEmissionWavelength=Lookup[myPacket,MaxEmissionWavelength],
-    lambdaMax=Lookup[myPacket,LambdaMax]
-  },
-  {
-    NotNullFieldTest[
-      myPacket,
-      Mass
-    ],
-    Test["If MaxEmissionWavelength is informed, then LambdaMax should also be informed:",
-      If[!MatchQ[maxEmissionWavelength, Null]&&MatchQ[lambdaMax, Null], False, True],
-      True
-    ]
-  }
-];
-
-(* ::Subsection::Closed:: *)
 (*validPhysicsExtinctionCoefficientsQTests*)
 
 validPhysicsExtinctionCoefficientsQTests[myPacket:PacketP[Model[Physics,ExtinctionCoefficients]]]:=Module[
@@ -122,7 +102,6 @@ validPhysicsThermodynamicsQTests[myPacket:PacketP[Model[Physics,Thermodynamics]]
 
 registerValidQTestFunction[Model[Physics],validPhysicsQTests];
 registerValidQTestFunction[Model[Physics,Oligomer],validPhysicsOligomerQTests];
-registerValidQTestFunction[Model[Physics,Modification],validPhysicsModificationQTests];
 registerValidQTestFunction[Model[Physics,ExtinctionCoefficients],validPhysicsExtinctionCoefficientsQTests];
 registerValidQTestFunction[Model[Physics,Kinetics],validPhysicsKineticsQTests];
 registerValidQTestFunction[Model[Physics,Thermodynamics],validPhysicsThermodynamicsQTests];

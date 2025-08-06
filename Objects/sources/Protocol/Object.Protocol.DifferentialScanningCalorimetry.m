@@ -104,7 +104,7 @@ DefineObjectType[Object[Protocol, DifferentialScanningCalorimetry], {
 		InjectionPlatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of blanks into the injection plate used to house sample for calorimetry measurement.",
 			Category -> "General",
 			Developer -> True
@@ -113,7 +113,7 @@ DefineObjectType[Object[Protocol, DifferentialScanningCalorimetry], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer blanks into the injection plate used to house sample for calorimetry measurement.",
 			Category -> "General"
 		},

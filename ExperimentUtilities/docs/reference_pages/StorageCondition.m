@@ -22,6 +22,6 @@ DefineUsage[
 			"UploadStorageCondition",
 			"Upload"
 		},
-		Author -> {"waseem.vali", "malav.desai", "thomas"}
+		Author -> {"xu.yi", "waseem.vali", "malav.desai", "thomas"}
 	}
 ];

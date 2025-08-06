@@ -25,7 +25,7 @@ DefineUsage[ValidExperimentDynamicLightScatteringQ,
               Widget ->
                   Widget[
                     Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                    Pattern :> ObjectP[{Object[Sample], Object[Container],Model[Sample]}],
                     Dereference -> {
                       Object[Container] -> Field[Contents[[All, 2]]]
                     }
@@ -78,7 +78,7 @@ DefineUsage[ExperimentDynamicLightScatteringOptions,
               Widget ->
                   Widget[
                     Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                    Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Sample]}],
                     Dereference -> {
                       Object[Container] -> Field[Contents[[All, 2]]]
                     }
@@ -131,7 +131,7 @@ DefineUsage[ExperimentDynamicLightScatteringPreview,
               Widget ->
                   Widget[
                     Type -> Object,
-                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                    Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Sample]}],
                     Dereference -> {
                       Object[Container] -> Field[Contents[[All, 2]]]
                     }

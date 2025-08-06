@@ -2,173 +2,6 @@
 
 (*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
 
-(* ::Section:: *)
-(*Widget Memoization*)
-
-
-(* ::Section::Closed:: *)
-(*Primitive Shared Option Set Definitions*)
-
-
-(* ::Code::Initialization:: *)
-(* NOTE: If we add an option here, we have to make sure to resolve it and store it in the Object[Protocol], in the *)
-(* corresponding function. *)
-DefineOptionSet[RoboticSamplePreparationOptions:>
-  {
-    {
-      OptionName->Instrument,
-      Default->Automatic,
-      AllowNull->False,
-      Widget->Widget[Type->Object,Pattern:>ObjectP[{
-        Model[Instrument,LiquidHandler],
-        Object[Instrument,LiquidHandler]
-      }]],
-      Description->"Indicates the liquid handler which should be used to perform the provided manipulations.",
-      ResolutionDescription->"Automatically resolves based on the containers required by the manipulations.",
-      Category->"Protocol"
-    },
-    {
-      OptionName->TareWeighContainers,
-      Default->True,
-      AllowNull->False,
-      Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-      Description->"Indicates if empty containers should be tare weighed prior to running the experiment. Tare weighing of each container improves accuracy of any subsequent weighing or gravimetric volume measurement performed in the container.",
-      Category->"Protocol"
-    },
-    {
-      OptionName -> MeasureWeight,
-      Default -> True,
-      Description -> "Indicates if any solid samples that are modified in the course of the experiment should have their weights measured and updated after running the experiment.",
-      AllowNull -> True,
-      Category -> "Post Experiment",
-      Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-    },
-    {
-      OptionName -> MeasureVolume,
-      Default -> True,
-      Description -> "Indicates if any liquid samples that are modified in the course of the experiment should have their volumes measured and updated after running the experiment.",
-      AllowNull -> True,
-      Category -> "Post Experiment",
-      Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-    },
-    {
-      OptionName -> ImageSample,
-      Default -> True,
-      Description -> "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment.",
-      AllowNull -> True,
-      Category -> "Post Experiment",
-      Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-    }
-  }
-];
-
-(* TODO: Figure out how to get ModifyOptions["ShareAll",...] to be happy with this *)
-DefineOptionSet[RoboticCellPreparationOptions:>
-    {
-     ModifyOptions[RoboticSamplePreparationOptions,
-       OptionName -> Instrument,
-       Widget -> Widget[
-         Type->Object,
-         Pattern:>ObjectP[{
-           Model[Instrument,LiquidHandler],
-           Model[Instrument,ColonyHandler],
-           Object[Instrument,LiquidHandler],
-           Object[Instrument,ColonyHandler]
-         }]
-       ],
-       Description -> "Indicates the liquid handler or colony handler which should be used to perform the provided manipulations."
-     ],
-      ModifyOptions[RoboticSamplePreparationOptions, OptionName -> TareWeighContainers],
-      ModifyOptions[RoboticSamplePreparationOptions, OptionName -> MeasureWeight],
-      ModifyOptions[RoboticSamplePreparationOptions, OptionName -> MeasureVolume],
-      ModifyOptions[RoboticSamplePreparationOptions, OptionName -> ImageSample]
-    }
-];
-
-DefineOptionSet[ManualSamplePreparationOptions:>
-    {
-      {
-        OptionName -> MeasureWeight,
-        Default -> True,
-        Description -> "Indicates if any solid samples that are modified in the course of the experiment should have their weights measured and updated after running the experiment.",
-        AllowNull -> False,
-        Category -> "Post Experiment",
-        Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-      },
-      {
-        OptionName -> MeasureVolume,
-        Default -> True,
-        Description -> "Indicates if any liquid samples that are modified in the course of the experiment should have their volumes measured and updated after running the experiment.",
-        AllowNull -> False,
-        Category -> "Post Experiment",
-        Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-      },
-      {
-        OptionName -> ImageSample,
-        Default -> True,
-        Description -> "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment.",
-        AllowNull -> False,
-        Category -> "Post Experiment",
-        Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
-      }
-    }
-];
-
-DefineOptionSet[OptimizeUnitOperationsOption:>
-    {
-      {
-        OptionName->OptimizeUnitOperations,
-        Default->True,
-        AllowNull->False,
-        Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-        Description->"Indicates if the input list of unit operations should be automatically reordered to optimize the efficiency in which they will be executed in the lab.",
-        Category->"General"
-      }
-    }
-];
-
-DefineOptionSet[CoverAtEndOption:>
-    {
-      {
-        OptionName->CoverAtEnd,
-        Default->Automatic,
-        AllowNull->False,
-        Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
-        Description -> "Indicates if covers are placed on all plates after a group of robotic unit operations to decrease evaporation, if Preparation -> Robotic and WorkCell -> bioSTAR or STAR. Note the qPix does not have the ability to cover plates so CoverAtEnd cannot be set to True for protocols involving PickColonies, StreakCells, or SpreadCells unit operations.",
-        ResolutionDescription -> "Automatically set to True if OptimizeUnitOperations->True.",
-        Category->"General"
-      }
-    }
-];
-
-DefineOptionSet[UnitOperationPacketsOption :>
-    {
-      {
-        OptionName -> UnitOperationPackets,
-        Default -> False,
-        AllowNull -> False,
-        Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-        Description -> "Indicates if instead of returning a protocol object, this experiment function returns a list of unit operation packets containing resources.  This is used for resource generation by experiment functions whose unit operations consist of other unit operations (e.g., Aliquot consisting of Transfer and Mix unit operations). Note that if this option is set to True, fulfillableResourceQ will not be called.",
-        Category -> "Hidden"
-      }
-    }
-];
-
-DefineOptionSet[DelayedMessagesOption :>
-    {
-      {
-        OptionName -> DelayedMessages,
-        Default -> Automatic,
-        AllowNull -> False,
-        Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-        Description -> "Indicates if error messages should be gathered when resolving primitives and all thrown together at the end of the simulation loop, instead of being thrown in real time.",
-        Category -> "Hidden"
-      }
-    }
-];
-
-
-
 (* ::Section::Closed:: *)
 (*Work Cell to Model Lookup*)
 
@@ -215,6055 +48,6 @@ RoboticPrimitiveMethodsP=Experiment|RoboticSamplePreparation|RoboticCellPreparat
 
 PrimitiveMethodsP=Experiment|ManualSamplePreparation|RoboticSamplePreparation|ManualCellPreparation|RoboticCellPreparation;
 
-
-
-(* ::Section:: *)
-(*Primitive Definitions*)
-
-
-(* ::Subsection::Closed:: *)
-(*LabelSample Primitive*)
-
-
-(* ::Code::Initialization:: *)
-(* NOTE: LabelSample/LabelContainer is a little non-standard so if you're looking for a primitive to copy from, don't pick this one. *)
-
-(* NOTE: We also have a special InternalExperiment`Private`parseLabelSamplePrimitive function that we run inside our *)
-(* primitive loop via execute in our manual procedure. This adds sample labels to LabeledObjects if the resources *)
-(* couldn't be created at experiment time (since you can't link a sample resource to a container model resource) and *)
-(* also updates sample EHS information. *)
-labelSamplePrimitive=Module[{labelSampleSharedOptions, labelSampleNonIndexMatchingSharedOptions, labelSampleIndexMatchingSharedOptions},
-  (* Copy over all of the options from the resolver -- except for the protocol shared options (Cache, Upload, etc.) *)
-  labelSampleSharedOptions=UnsortedComplement[
-    Options[Experiment`Private`resolveLabelSamplePrimitive][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "Primitives"}]
-  ];
-
-  labelSampleNonIndexMatchingSharedOptions=UnsortedComplement[
-    labelSampleSharedOptions,
-    Cases[OptionDefinition[Experiment`Private`resolveLabelSamplePrimitive], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  labelSampleIndexMatchingSharedOptions=UnsortedComplement[
-    labelSampleSharedOptions,
-    labelSampleNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[LabelSample,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Label,
-          Default -> Null,
-          Description -> "The label of the samples that are to be prepared.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> String,
-            Pattern :> _String,
-            Size -> Line
-          ],
-          Required -> True
-        },
-        {Experiment`Private`resolveLabelSamplePrimitive, Restricted},
-        IndexMatchingParent->Label
-      ]
-    },
-
-    (* Shared Options *)
-    With[{insertMe = {
-          IndexMatching[
-            Sequence @@ ({Experiment`Private`resolveLabelSamplePrimitive, Symbol[#]}&) /@ labelSampleIndexMatchingSharedOptions,
-            IndexMatchingParent -> Label
-          ],
-          If[Length[labelSampleNonIndexMatchingSharedOptions]==0,
-            Nothing,
-            Sequence @@ ({Experiment`Private`resolveLabelSamplePrimitive, Symbol[#]}&) /@ labelSampleNonIndexMatchingSharedOptions
-          ]
-        }
-      },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR, bioSTAR, microbioSTAR},
-
-    ExperimentFunction -> Experiment`Private`resolveLabelSamplePrimitive,
-    (* NOTE: These functions do very similar things to the manual equivalent InternalExperiment`Private`parseLabelSamplePrimitive. *)
-    RoboticExporterFunction -> InternalExperiment`Private`exportLabelSampleRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseLabelSampleRoboticPrimitive,
-    (* NOTE: This function always returns {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation}. *)
-    MethodResolverFunction -> Experiment`Private`resolveLabelSampleMethod,
-    WorkCellResolverFunction -> Experiment`Private`resolveLabelSampleWorkCell,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseLabelSampleOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","DefineIcon.png"}]],
-    InputOptions->{Label},
-    LabeledOptions->{Sample->Label},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Prepare samples and give them labels that can be used in other downstream unit operations.",
-    Author -> "waseem.vali"
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*LabelContainer Primitive*)
-
-
-(* ::Code::Initialization:: *)
-(* NOTE: LabelSample/LabelContainer is a little non-standard so if you're looking for a primitive to copy from, don't pick this one. *)
-labelContainerPrimitive=Module[{labelContainerSharedOptions,labelContainerNonIndexMatchingSharedOptions,labelContainerIndexMatchingSharedOptions},
-  labelContainerSharedOptions=UnsortedComplement[
-    Options[Experiment`Private`resolveLabelContainerPrimitive][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "Primitives"}]
-  ];
-
-  labelContainerNonIndexMatchingSharedOptions=UnsortedComplement[
-    labelContainerSharedOptions,
-    Cases[OptionDefinition[Experiment`Private`resolveLabelContainerPrimitive], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  labelContainerIndexMatchingSharedOptions=UnsortedComplement[
-    labelContainerSharedOptions,
-    labelContainerNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[LabelContainer,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Label,
-          Default -> Null,
-          Description -> "The label of the samples that are to be prepared.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> String,
-            Pattern :> _String,
-            Size -> Line
-          ],
-          Required -> True
-        },
-        {Experiment`Private`resolveLabelContainerPrimitive, Restricted},
-        IndexMatchingParent->Label
-      ]
-    },
-    (* Shared Options *)
-    RequiredSharedOptions :> {
-      IndexMatching[
-        {Experiment`Private`resolveLabelContainerPrimitive, Container},
-        IndexMatchingParent->Label
-      ]
-    },
-    (* Shared Options *)
-    With[
-      {insertMe =
-        {
-          IndexMatching[
-            Sequence @@ ({Experiment`Private`resolveLabelContainerPrimitive, Symbol[#]}&) /@ labelContainerIndexMatchingSharedOptions,
-            IndexMatchingParent -> Label
-          ],
-          If[Length[labelContainerNonIndexMatchingSharedOptions]==0,
-            Nothing,
-            Sequence @@ ({Experiment`Private`resolveLabelContainerPrimitive, Symbol[#]}&) /@ labelContainerNonIndexMatchingSharedOptions
-          ]
-        }
-      },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR, bioSTAR, microbioSTAR},
-
-    ExperimentFunction -> Experiment`Private`resolveLabelContainerPrimitive,
-    (* NOTE: These functions don't do anything since we are guaranteed for container resources to be created at *)
-    (* experiment time and also since there are no EHS options to LabelContainer, unlike in LabelSample. *)
-    RoboticExporterFunction -> InternalExperiment`Private`exportLabelContainerRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseLabelContainerRoboticPrimitive,
-    (* NOTE: This function always returns {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation}. *)
-    MethodResolverFunction -> Experiment`Private`resolveLabelContainerMethod,
-    WorkCellResolverFunction -> Experiment`Private`resolveLabelContainerWorkCell,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseLabelContainerOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","DefineIcon.png"}]],
-    InputOptions->{Label},
-    LabeledOptions->{Container->Label},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Prepare containers and given them labels that can be used in other downstream unit operations.",
-    Author -> "waseem.vali"
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Wait Primitive*)
-
-
-(* ::Code::Initialization:: *)
-(* NOTE: Wait is a little non-standard so if you're looking for a primitive to copy from, don't pick this one. *)
-waitPrimitive=DefinePrimitive[Wait,
-  (* Input Options *)
-  Options :> {
-    {
-      OptionName -> Duration,
-      Default -> Null,
-      Description -> "The amount of time to pause before continuing the execution of future unit operations.",
-      AllowNull -> False,
-      Category -> "General",
-      Widget -> Widget[
-        Type->Quantity,
-        Pattern:>GreaterP[0 Second],
-        Units->Alternatives[Hour, Minute, Second]
-      ],
-      Required -> True
-    }
-  },
-  Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-  WorkCells -> {STAR, bioSTAR, microbioSTAR},
-  ExperimentFunction -> Experiment`Private`resolveWaitPrimitive,
-  MethodResolverFunction -> Experiment`Private`resolveWaitMethod,
-  WorkCellResolverFunction -> Experiment`Private`resolveWaitWorkCell,
-  RoboticExporterFunction -> InternalExperiment`Private`exportWaitPrimitive,
-  RoboticParserFunction -> InternalExperiment`Private`parseWaitPrimitive,
-  OutputUnitOperationParserFunction -> InternalExperiment`Private`parseWaitOutputUnitOperation,
-
-  Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","WaitIcon.png"}]],
-  InputOptions->{Duration},
-  Generative->False,
-  Category->"Sample Preparation",
-  Description->"Pauses for a specified amount of time."
-];
-
-
-(* ::Subsection::Closed:: *)
-(*Cover Primitive*)
-
-
-(* ::Code::Initialization:: *)
-coverPrimitive = Module[{coverSharedOptions, coverNonIndexMatchingSharedOptions, coverIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  coverSharedOptions=UnsortedComplement[
-    Options[ExperimentCover][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  coverNonIndexMatchingSharedOptions=UnsortedComplement[
-    coverSharedOptions,
-    Cases[OptionDefinition[ExperimentCover], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
- coverIndexMatchingSharedOptions=UnsortedComplement[
-    coverSharedOptions,
-    coverNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Cover,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples or containers that should be covered.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container]}]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-        IndexMatching[
-          Sequence @@ ({ExperimentCover, Symbol[#]}&) /@ coverIndexMatchingSharedOptions,
-          IndexMatchingParent -> Sample
-        ],
-        If[Length[coverNonIndexMatchingSharedOptions]==0,
-          Nothing,
-          Sequence @@ ({ExperimentCover, Symbol[#]}&) /@ coverNonIndexMatchingSharedOptions
-        ]
-      }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentCover,
-    RoboticExporterFunction -> InternalExperiment`Private`exportCoverRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseCoverRoboticPrimitive,
-    MethodResolverFunction -> Experiment`Private`resolveCoverMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseCoverOutputUnitOperation,
-    WorkCellResolverFunction -> Experiment`Private`resolveExperimentCoverWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","CoverIcon.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Attach caps, lids, or plate seals to the tops of containers in order to secure their contents.",
-    Author -> {"robert", "alou"}
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*Uncover Primitive*)
-
-
-(* ::Code::Initialization:: *)
-uncoverPrimitive = Module[{uncoverSharedOptions, uncoverNonIndexMatchingSharedOptions, uncoverIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  uncoverSharedOptions=UnsortedComplement[
-    Options[ExperimentUncover][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  uncoverNonIndexMatchingSharedOptions=UnsortedComplement[
-    uncoverSharedOptions,
-    Cases[OptionDefinition[ExperimentUncover], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  uncoverIndexMatchingSharedOptions=UnsortedComplement[
-    uncoverSharedOptions,
-    uncoverNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Uncover,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples or containers that should be uncovered.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container]}]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentUncover, Symbol[#]}&) /@ uncoverIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[coverNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentUncover, Symbol[#]}&) /@ uncoverNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentUncover,
-    RoboticExporterFunction -> InternalExperiment`Private`exportUncoverRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseUncoverRoboticPrimitive,
-    MethodResolverFunction -> Experiment`Private`resolveUncoverMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseUncoverOutputUnitOperation,
-    WorkCellResolverFunction -> Experiment`Private`resolveExperimentUncoverWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","CoverIcon.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Removes caps, lids, or plate seals to the tops of containers in order to expose their contents.",
-    Author -> {"robert", "alou"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Incubate Primitive*)
-
-
-(* ::Code::Initialization:: *)
-incubatePrimitive = Module[{incubateSharedOptions, incubateNonIndexMatchingSharedOptions, incubateIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  incubateSharedOptions=UnsortedComplement[
-    Options[ExperimentIncubate][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives", "ExperimentFunction"}]
-  ];
-
-  incubateNonIndexMatchingSharedOptions=UnsortedComplement[
-    incubateSharedOptions,
-    Cases[OptionDefinition[ExperimentIncubate], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  incubateIndexMatchingSharedOptions=UnsortedComplement[
-    incubateSharedOptions,
-    incubateNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Incubate,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be incubated.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentIncubate, Symbol[#]}&) /@ incubateIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[incubateNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentIncubate, Symbol[#]}&) /@ incubateNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentIncubate,
-    RoboticExporterFunction -> InternalExperiment`Private`exportIncubateRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseIncubateRoboticPrimitive,
-    MethodResolverFunction -> Experiment`Private`resolveIncubateMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseIncubateOutputUnitOperation,
-    WorkCellResolverFunction -> Experiment`Private`resolveExperimentIncubateWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","IncubateIcon.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Heat and/or mix samples for a specified period of time."
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Mix Primitive*)
-
-
-(* ::Code::Initialization:: *)
-mixPrimitive = Module[{mixSharedOptions, mixNonIndexMatchingSharedOptions, mixIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentMix -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  mixSharedOptions=UnsortedComplement[
-    Options[ExperimentMix][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "ExperimentFunction", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  mixNonIndexMatchingSharedOptions=UnsortedComplement[
-    mixSharedOptions,
-    Cases[OptionDefinition[ExperimentMix], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  mixIndexMatchingSharedOptions=UnsortedComplement[
-    mixSharedOptions,
-    mixNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Mix,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be mixed.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentMix, Symbol[#]}&) /@ mixIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[mixNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentMix, Symbol[#]}&) /@ mixNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentMix,
-    RoboticExporterFunction -> InternalExperiment`Private`exportMixRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseMixRoboticPrimitive,
-    MethodResolverFunction -> Experiment`Private`resolveIncubateMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseMixOutputUnitOperation,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentMixWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","MixIcon.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    CompletedOptions->{
-      AspirationDate, AspirationPressure, AspirationLiquidLevelDetected, AspirationErrorMessage, AspirationDetectedLiquidLevel
-    },
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Heat and/or mix samples for a specified period of time."
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*Transfer Primitive*)
-
-
-(* ::Code::Initialization:: *)
-transferPrimitive = Module[{transferSharedOptions, transferNonIndexMatchingSharedOptions, transferIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentTransfer -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  transferSharedOptions =UnsortedComplement[
-    Options[ExperimentTransfer][[All, 1]],
-    (* NOTE: Amount is a hidden option in the macro experiment function that we use for the resource packets function. *)
-    (* MultichannelTransferName is also a hidden option that we use for the resource packets function. *)
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "MultichannelTransferName", "Amount"}]
-  ];
-
-  transferNonIndexMatchingSharedOptions=UnsortedComplement[
-    transferSharedOptions,
-    Cases[OptionDefinition[ExperimentTransfer], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  transferIndexMatchingSharedOptions=UnsortedComplement[
-    transferSharedOptions,
-    transferNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Transfer,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Source,
-          Default -> Null,
-          Description -> "The samples or locations from which liquid or solid is transferred.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "New Container with Index"->{
-              "Index" -> Widget[
-                Type -> Number,
-                Pattern :> GreaterEqualP[1, 1]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Model[Container]}],
-                PreparedSample -> False,
-                PreparedContainer -> False
-              ]
-            },
-            "Existing Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        {
-          OptionName -> Destination,
-          Default -> Null,
-          Description -> "The sample or location to which the liquids/solids are transferred.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Item],Object[Container],Model[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "New Container with Index"->{
-              "Index" -> Widget[
-                Type -> Number,
-                Pattern :> GreaterEqualP[1, 1]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Model[Container]}],
-                PreparedSample -> False,
-                PreparedContainer -> False
-              ]
-            },
-            "Existing Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            },
-            "Waste"->Widget[
-              Type->Enumeration,
-              Pattern:>Alternatives[Waste]
-            ]
-          ],
-          Required -> True
-        },
-        {
-          OptionName -> Amount,
-          Default -> Null,
-          Description -> "The volumes of the samples to be transferred.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Volume" -> Widget[
-              Type -> Quantity,
-              Pattern :> RangeP[0.1 Microliter, 20 Liter],
-              Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
-            ],
-            "Mass" -> Widget[
-              Type -> Quantity,
-              Pattern :> RangeP[1 Milligram, 20 Kilogram],
-              Units -> {1, {Milligram, {Milligram, Gram, Kilogram}}}
-            ],
-            "Count" -> Widget[
-              Type -> Number,
-              Pattern :> GreaterP[0., 1.]
-            ],
-            "All" -> Widget[
-              Type -> Enumeration,
-              Pattern :> Alternatives[All]
-            ]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Source
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-          IndexMatching[
-            Sequence @@ ({ExperimentTransfer, Symbol[#]}&) /@ transferIndexMatchingSharedOptions,
-            IndexMatchingParent -> Source
-          ],
-          If[Length[transferNonIndexMatchingSharedOptions]==0,
-            Nothing,
-            Sequence @@ ({ExperimentTransfer, Symbol[#]}&) /@ transferNonIndexMatchingSharedOptions
-          ]
-        }
-      },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentTransfer,
-    RoboticExporterFunction -> InternalExperiment`Private`exportTransferRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseTransferRoboticPrimitive,
-    MethodResolverFunction -> resolveTransferMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseTransferOutputUnitOperation,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentTransferWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "TransferIcon.png"}]],
-    LabeledOptions -> {Source -> SourceLabel, Destination -> DestinationLabel, Null->SourceContainerLabel, Null->DestinationContainerLabel},
-    InputOptions -> {Source, Destination, Amount},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      (* NOTE: Manual only keys. *)
-      EnvironmentalData, DefinedSourceLayers, DefinedDestinationLayers, MeasuredSourceTemperatures,
-      MeasuredSourceTemperatureData, MeasuredDestinationTemperatures, MeasuredDestinationTemperatureData,
-      MeasuredTransferWeights, MeasuredTransferWeightData, DestinationSampleHandling, PercentTransferred,
-      MagneticSeparation,
-
-      (* NOTE: These are the keys for TADM data. *)
-      AspirationDate, AspirationPressure, AspirationLiquidLevelDetected, AspirationErrorMessage, AspirationDetectedLiquidLevel,
-      DispenseDate, DispensePressure, DispenseLiquidLevelDetected, DispenseErrorMessage, DispenseDetectedLiquidLevel,
-      AspirationClassifications, AspirationClassificationConfidences
-    },
-    Generative -> True,
-    GenerativeLabelOption -> DestinationLabel,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample from the given sources to the given destinations."
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*Pellet Primitive*)
-
-
-(* ::Code::Initialization:: *)
-pelletPrimitive = Module[{pelletSharedOptions, pelletNonIndexMatchingSharedOptions, pelletIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  pelletSharedOptions=UnsortedComplement[
-    Options[ExperimentPellet][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives", "ExperimentFunction"}]
-  ];
-
-  pelletNonIndexMatchingSharedOptions=UnsortedComplement[
-    pelletSharedOptions,
-    Cases[OptionDefinition[ExperimentPellet], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  pelletIndexMatchingSharedOptions=UnsortedComplement[
-    pelletSharedOptions,
-    pelletNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Pellet,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be pelleted.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-        IndexMatching[
-          Sequence @@ ({ExperimentPellet, Symbol[#]}&) /@ pelletIndexMatchingSharedOptions,
-          IndexMatchingParent -> Sample
-        ],
-        If[Length[pelletNonIndexMatchingSharedOptions]==0,
-          Nothing,
-          Sequence @@ ({ExperimentPellet, Symbol[#]}&) /@ pelletNonIndexMatchingSharedOptions
-        ]
-      }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentPellet,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    MethodResolverFunction -> Experiment`Private`resolvePelletMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parsePelletOutputUnitOperation,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentCentrifugeWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","CentrifugeIcon.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Precipitate solids that are present in a solution, aspirate off the supernatant, and optionally resuspend the pellet in a resuspension solution.",
-    Author -> "taylor.hochuli"
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(* Filter Primitive *)
-
-
-(* ::Code::Initialization:: *)
-filterPrimitive = Module[{filterSharedOptions, filterNonIndexMatchingSharedOptions, filterIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentFilter -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  filterSharedOptions =UnsortedComplement[
-    Options[ExperimentFilter][[All, 1]],
-    Complement[
-      Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}],
-      (* NOTE: We DO want to copy over the aliquot options for the manual primitive. *)
-      Options[AliquotOptions][[All, 1]]
-    ]
-  ];
-
-  filterNonIndexMatchingSharedOptions=UnsortedComplement[
-    filterSharedOptions,
-    Cases[OptionDefinition[ExperimentFilter], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  filterIndexMatchingSharedOptions=UnsortedComplement[
-    filterSharedOptions,
-    filterNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Filter,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be filtered.",
-          AllowNull -> True,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-          IndexMatching[
-            Sequence @@ ({ExperimentFilter, Symbol[#]}&) /@ filterIndexMatchingSharedOptions,
-            IndexMatchingParent -> Sample
-          ],
-          If[Length[filterNonIndexMatchingSharedOptions]==0,
-            Nothing,
-            Sequence @@ ({ExperimentFilter, Symbol[#]}&) /@ filterNonIndexMatchingSharedOptions
-          ]
-        }
-      },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR, bioSTAR, microbioSTAR},
-
-    ExperimentFunction -> ExperimentFilter,
-    RoboticExporterFunction -> InternalExperiment`Private`exportFilterRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseFilterRoboticPrimitive,
-    MethodResolverFunction -> resolveFilterMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseFilterOutputUnitOperation,
-    WorkCellResolverFunction -> resolveExperimentFilterWorkCell,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "FilterIcon.png"}]],
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      FiltrateContainerOut -> FiltrateContainerLabel,
-      RetentateContainerOut -> RetentateContainerLabel,
-      ResuspensionBuffer -> ResuspensionBufferLabel,
-      RetentateWashBuffer -> RetentateWashBufferLabel,
-      (* robotic label *)
-      CollectionContainer -> CollectionContainerLabel,
-      Filter -> FilterLabel,
-      Null -> RetentateWashBufferContainerLabel,
-      Null -> ResuspensionBufferContainerLabel,
-      Null -> FiltrateLabel,
-      Null -> RetentateLabel,
-      Null -> SampleContainerLabel,
-      Null -> SampleOutLabel,
-      Null -> ContainerOutLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    CompletedOptions -> {
-      LoadingAspirationDate, LoadingAspirationPressure, LoadingAspirationLiquidLevelDetected, LoadingAspirationErrorMessage, LoadingAspirationDetectedLiquidLevel,
-      LoadingDispenseDate, LoadingDispensePressure, LoadingDispenseLiquidLevelDetected, LoadingDispenseErrorMessage, LoadingDispenseDetectedLiquidLevel,
-
-      RetentateWashAspirationDate, RetentateWashAspirationPressure, RetentateWashAspirationLiquidLevelDetected, RetentateWashAspirationErrorMessage,
-      RetentateWashAspirationDetectedLiquidLevel, RetentateWashDispenseDate, RetentateWashDispensePressure, RetentateWashDispenseLiquidLevelDetected,
-      RetentateWashDispenseErrorMessage, RetentateWashDispenseDetectedLiquidLevel,
-
-      ResuspensionAspirationDate, ResuspensionAspirationPressure, ResuspensionAspirationLiquidLevelDetected, ResuspensionAspirationErrorMessage,
-      ResuspensionAspirationDetectedLiquidLevel, ResuspensionDispenseDate, ResuspensionDispensePressure, ResuspensionDispenseLiquidLevelDetected,
-      ResuspensionDispenseErrorMessage, ResuspensionDispenseDetectedLiquidLevel
-    },
-    Category -> "Sample Preparation",
-    Description -> "Flow samples through various kinds of filters for a specified period of time and at a specified speed, force or pressure.",
-    Author -> {"robert", "alou"}
-  ]
-];
-
-(* ::Subsection:: *)
-(* SPE Primitive *)
-
-spePrimitive = Module[{speSharedOptions, speNonIndexMatchingSharedOptions, speIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentSolidPhaseExtraction -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  speSharedOptions =UnsortedComplement[
-    Options[ExperimentSolidPhaseExtraction][[All, 1]],
-    Complement[
-      Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}],
-      (* NOTE: We DO want to copy over the aliquot options for the manual primitive. *)
-      Options[AliquotOptions][[All, 1]]
-    ]
-  ];
-
-  speNonIndexMatchingSharedOptions=UnsortedComplement[
-    speSharedOptions,
-    Cases[OptionDefinition[ExperimentSolidPhaseExtraction], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  speIndexMatchingSharedOptions=UnsortedComplement[
-    speSharedOptions,
-    speNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[SolidPhaseExtraction,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be extracted by SolidPhaseExtraction.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True,
-          NestedIndexMatching -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentSolidPhaseExtraction, Symbol[#]}&) /@ speIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[speNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentSolidPhaseExtraction, Symbol[#]}&) /@ speNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR, bioSTAR,microbioSTAR},
-
-    ExperimentFunction -> ExperimentSolidPhaseExtraction,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    MethodResolverFunction -> resolveSolidPhaseExtractionMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseSolidPhaseExtractionOutputUnitOperation,
-    WorkCellResolverFunction -> resolveSolidPhaseExtractionWorkCell,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "FilterIcon.png"}]],
-    LabeledOptions -> {
-      (* basic *)
-      Sample -> SampleLabel,
-      Null -> SampleOutLabel,
-      ExtractionCartridge -> ExtractionCartridgeLabel,
-      (* solution in *)
-      PreFlushingSolution -> PreFlushingSolutionLabel,
-      ConditioningSolution -> ConditioningSolutionLabel,
-      WashingSolution -> WashingSolutionLabel,
-      SecondaryWashingSolution -> SecondaryWashingSolutionLabel,
-      TertiaryWashingSolution -> TertiaryWashingSolutionLabel,
-      ElutingSolution -> ElutingSolutionLabel,
-      (* solution out *)
-      Null -> PreFlushingSampleOutLabel,
-      Null -> ConditioningSampleOutLabel,
-      Null -> LoadingSampleFlowthroughSampleOutLabel,
-      Null -> WashingSampleOutLabel,
-      Null -> SecondaryWashingSampleOutLabel,
-      Null -> TertiaryWashingSampleOutLabel,
-      Null -> ElutingSampleOutLabel,
-      (* collection container label *)
-      PreFlushingSolutionCollectionContainer -> PreFlushingCollectionContainerOutLabel,
-      ConditioningSolutionCollectionContainer -> ConditioningCollectionContainerOutLabel,
-      WashingSolutionCollectionContainer -> WashingCollectionContainerOutLabel,
-      SecondaryWashingSolutionCollectionContainer -> SecondaryWashingCollectionContainerOutLabel,
-      TertiaryWashingSolutionCollectionContainer -> TertiaryWashingCollectionContainerOutLabel,
-      ElutingSolutionCollectionContainer -> ElutingCollectionContainerOutLabel,
-      LoadingSampleFlowthroughContainer -> LoadingSampleFlowthroughCollectionContainerOutLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Flow samples through various kinds of ExtractionCartridge for a specified period of time and at a specified speed, force or pressure.",
-    Author -> {"robert", "alou"}
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*IncubateCells Primitive*)
-
-
-(* ::Code::Initialization:: *)
-incubateCellsPrimitive = Module[{incubateCellsSharedOptions, incubateCellsNonIndexMatchingSharedOptions, incubateCellsIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubateCells -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  incubateCellsSharedOptions = UnsortedComplement[
-    Options[ExperimentIncubateCells][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  incubateCellsNonIndexMatchingSharedOptions = UnsortedComplement[
-    incubateCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentIncubateCells], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  incubateCellsIndexMatchingSharedOptions = UnsortedComplement[
-    incubateCellsSharedOptions,
-    incubateCellsNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[IncubateCells,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The cell samples that are incubated.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Widget[
-                Type -> Enumeration,
-                Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
-                PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-          IndexMatching[
-            Sequence @@ ({ExperimentIncubateCells, Symbol[#]}&) /@ incubateCellsIndexMatchingSharedOptions,
-            IndexMatchingParent -> Sample
-          ],
-          If[Length[incubateCellsNonIndexMatchingSharedOptions] == 0,
-            Nothing,
-            Sequence @@ ({ExperimentIncubateCells, Symbol[#]}&) /@ incubateCellsNonIndexMatchingSharedOptions
-          ]
-        }
-      },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualCellPreparation, RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-
-    ExperimentFunction -> ExperimentIncubateCells,
-    RoboticExporterFunction -> InternalExperiment`Private`exportIncubateCellsRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseIncubateCellsRoboticPrimitive,
-    MethodResolverFunction -> resolveIncubateCellsMethod,
-    WorkCellResolverFunction -> Experiment`Private`resolveIncubateCellsWorkCell,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseIncubateCellsOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "IncubateCells.png"}]],
-    (* don't have any labeled options right now and for whatever reason empty list is not allowed so commenting this out so that if we need to add some we can find it easily *)
-    (*LabeledOptions -> {},*)
-    InputOptions -> {Sample},
-    Generative -> False,
-    CompletedOptions -> {
-      Incubation, IncubationCondition, Temperature, CarbonDioxide, RelativeHumidity, IncubationTime, Shake, ShakingRate, ShakingRadius,
-      InvertContainer, CellType, CultureAdhesion
-    },
-    Category -> "Cell Preparation",
-    Description -> "Incubate cell samples for a specified period of time and at a specified temperature, humidity, and carbon dioxide percentage.",
-    Author -> {"harrison.gronlund", "lige.tonggu"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Centrifuge Primitive*)
-
-
-(* ::Code::Initialization:: *)
-centrifugePrimitive=Module[
-  {centrifugeSharedOptions, centrifugeNonIndexMatchingSharedOptions, centrifugeIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentCentrifuge -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  centrifugeSharedOptions =UnsortedComplement[
-    Options[ExperimentCentrifuge][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  centrifugeNonIndexMatchingSharedOptions=UnsortedComplement[
-    centrifugeSharedOptions,
-    Cases[OptionDefinition[ExperimentCentrifuge], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  centrifugeIndexMatchingSharedOptions=UnsortedComplement[
-    centrifugeSharedOptions,
-    centrifugeNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Centrifuge,
-  (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be centrifuged.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-        IndexMatching[
-          Sequence @@ ({ExperimentCentrifuge, Symbol[#]}&) /@ centrifugeIndexMatchingSharedOptions,
-          IndexMatchingParent -> Sample
-        ],
-        If[Length[centrifugeNonIndexMatchingSharedOptions]==0,
-          Nothing,
-          Sequence @@ ({ExperimentCentrifuge, Symbol[#]}&) /@ centrifugeNonIndexMatchingSharedOptions
-        ]
-      }
-      },
-      SharedOptions :> insertMe
-    ],
-    WorkCells -> {STAR,bioSTAR,microbioSTAR},
-    ExperimentFunction -> ExperimentCentrifuge,
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    RoboticExporterFunction -> InternalExperiment`Private`exportCentrifugeRoboticPrimitive,
-    RoboticParserFunction -> InternalExperiment`Private`parseCentrifugeRoboticPrimitive,
-    MethodResolverFunction -> Experiment`Private`resolveCentrifugeMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseCentrifugeOutputUnitOperation,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentCentrifugeWorkCell,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "CentrifugeIcon.png"}]],
-    LabeledOptions -> {
-      Sample -> SampleLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> False,
-    CompletedOptions -> {
-      Instrument, RotorGeometry, RotorAngle, ChilledRotor, Rotor, Temperature, CounterbalanceWeight
-
-    },
-    Category -> "Sample Preparation",
-    Description -> "Centrifuge samples for a specified period of time and at a specified speed or force.",
-    Author -> {"robert", "alou"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*FillToVolume Primitive*)
-
-
-(* ::Code::Initialization:: *)
-fillToVolumePrimitive = Module[{fillToVolumeSharedOptions, fillToVolumeNonIndexMatchingSharedOptions, fillToVolumeIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentFillToVolume -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  fillToVolumeSharedOptions =UnsortedComplement[
-    Options[ExperimentFillToVolume][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  fillToVolumeNonIndexMatchingSharedOptions =UnsortedComplement[
-    fillToVolumeSharedOptions,
-    Cases[OptionDefinition[ExperimentFillToVolume], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  fillToVolumeIndexMatchingSharedOptions =UnsortedComplement[
-    fillToVolumeSharedOptions,
-    fillToVolumeNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[FillToVolume,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "Input samples for this analytical or preparative experiment which will be filled to a specified volume.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        {
-          OptionName -> TotalVolume,
-          Default -> Null,
-          Description -> "The volume to which to fill the destination sample with the source solvent.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Quantity,
-            Pattern :> RangeP[1 Microliter, 20 Liter],
-            Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
-          ],
-          Required -> True
-        },
-        {
-          OptionName -> Solvent,
-          Default -> Automatic,
-          Description -> "Source solvent to be transferred into the destination for this experiment.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container, Vessel],Model[Sample]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentFillToVolume, Symbol[#]}&) /@ fillToVolumeIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[fillToVolumeNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentFillToVolume, Symbol[#]}&) /@ fillToVolumeNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation},
-    ExperimentFunction -> ExperimentFillToVolume,
-    MethodResolverFunction -> resolveFillToVolumeMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseFillToVolumeOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "FillToVolumeIcon.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel, Solvent -> SolventLabel},
-    InputOptions -> {Sample, TotalVolume},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      (* NOTE: Manual only keys. *)
-      EnvironmentalData
-    },
-    Generative -> False,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample from the given sources up to the specified volume of the given destinations."
-  ]
-];
-
-(* ::Subsection:: *)
-(* FlashChromatography Primitive *)
-
-flashChromatographyPrimitive = Module[{flashChromatographySharedOptions, flashChromatographyNonIndexMatchingSharedOptions, flashChromatographyIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentFlashChromatography -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  flashChromatographySharedOptions =UnsortedComplement[
-    Options[ExperimentFlashChromatography][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  flashChromatographyNonIndexMatchingSharedOptions=UnsortedComplement[
-    flashChromatographySharedOptions,
-    Cases[OptionDefinition[ExperimentFlashChromatography], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  flashChromatographyIndexMatchingSharedOptions=UnsortedComplement[
-    flashChromatographySharedOptions,
-    flashChromatographyNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[FlashChromatography,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be separated by flash chromatography.",
-          AllowNull -> True,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentFlashChromatography, Symbol[#]}&) /@ flashChromatographyIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[flashChromatographyNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentFlashChromatography, Symbol[#]}&) /@ flashChromatographyNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-
-    ExperimentFunction -> ExperimentFlashChromatography,
-    MethodResolverFunction -> resolveFlashChromatographyMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseFlashChromatographyOutputUnitOperation,
-
-    (* TODO: Ask Design for an icon, or just save a copy of the HPLC/FPLC icon as FlashChromatography.png *)
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "HPLC.png"}]],
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      Column -> ColumnLabel,
-      Cartridge -> CartridgeLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> False,
-    Category -> "Sample Preparation",
-    Description -> "Separate a sample via flash chromatography by flowing it through a column to which compounds in the sample will differentially adsorb.",
-    Author -> {"Yahya.Benslimane", "dima"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*AdjustpH Primitive*)
-
-
-(* ::Code::Initialization:: *)
-adjustpHPrimitive = Module[{adjustpHSharedOptions, adjustpHNonIndexMatchingSharedOptions, adjustpHIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentAdjustpH -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  adjustpHSharedOptions =UnsortedComplement[
-    Options[ExperimentAdjustpH][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  adjustpHNonIndexMatchingSharedOptions =UnsortedComplement[
-    adjustpHSharedOptions,
-    Cases[OptionDefinition[ExperimentAdjustpH], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  adjustpHIndexMatchingSharedOptions =UnsortedComplement[
-    adjustpHSharedOptions,
-    adjustpHNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[AdjustpH,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be adjusted to a specified pH.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        {
-          OptionName -> NominalpH,
-          Default -> Null,
-          Description -> "The target pH to which the sample is to be adjusted.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget->Widget[
-            Type->Number,
-            Pattern:>RangeP[0,14]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentAdjustpH, Symbol[#]}&) /@ adjustpHIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[adjustpHNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentAdjustpH, Symbol[#]}&) /@ adjustpHNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation},
-    ExperimentFunction -> ExperimentAdjustpH,
-    MethodResolverFunction -> Experiment`Private`resolveAdjustpHMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseAdjustpHOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "AdjustpHIcon.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel},
-    InputOptions -> {Sample, NominalpH},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      pHAchieved, pHMeasurements
-    },
-    Generative -> False,
-    Category -> "Sample Preparation",
-    Description -> "Adjusts the pHs of the given samples to the specified nominal pHs by adding acid and/or base.",
-    Author -> {"daniel.shlian", "tyler.pabst"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Aliquot Primitive*)
-
-
-(* ::Code::Initialization:: *)
-aliquotPrimitive = Module[{aliquotSharedOptions, aliquotNonIndexMatchingSharedOptions, aliquotIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentAliquot -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  aliquotSharedOptions =UnsortedComplement[
-    Options[ExperimentAliquot][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  aliquotNonIndexMatchingSharedOptions =UnsortedComplement[
-    aliquotSharedOptions,
-    Cases[OptionDefinition[ExperimentAliquot], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  aliquotIndexMatchingSharedOptions =UnsortedComplement[
-    aliquotSharedOptions,
-    aliquotNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Aliquot,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Source,
-          Default -> Null,
-          Description -> "The samples that should be aliquoted.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True,
-          NestedIndexMatching -> True
-        },
-        IndexMatchingParent -> Source
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentAliquot, Symbol[#]}&) /@ aliquotIndexMatchingSharedOptions,
-        IndexMatchingParent -> Source
-      ],
-      If[Length[aliquotNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentAliquot, Symbol[#]}&) /@ aliquotNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR},
-    ExperimentFunction -> ExperimentAliquot,
-    MethodResolverFunction -> resolveAliquotMethod,
-
-    (*note that we don't necessarily need these functions because they get called for the constituent RoboticUnitOperations.  However, we could have the parsers at least if we also want to populate fields in the corresponding unit operations *)
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseAliquotOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "AliquotIcon.png"}]],
-    LabeledOptions -> {Source -> SourceLabel, ContainerOut -> ContainerOutLabel, AssayBuffer -> AssayBufferLabel, ConcentratedBuffer -> ConcentratedBufferLabel, BufferDiluent -> BufferDiluentLabel},
-    InputOptions -> {Source},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      EnvironmentalData, Source
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample into a container and dilutes it with buffers as specified."
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Resuspend Primitive*)
-
-
-(* ::Code::Initialization:: *)
-resuspendPrimitive = Module[{resuspendSharedOptions, resuspendNonIndexMatchingSharedOptions, resuspendIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentResuspend -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  resuspendSharedOptions =UnsortedComplement[
-    Options[ExperimentResuspend][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation"}]
-  ];
-
-  resuspendNonIndexMatchingSharedOptions =UnsortedComplement[
-    resuspendSharedOptions,
-    Cases[OptionDefinition[ExperimentResuspend], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  resuspendIndexMatchingSharedOptions =UnsortedComplement[
-    resuspendSharedOptions,
-    resuspendNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Resuspend,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be resuspended.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentResuspend, Symbol[#]}&) /@ resuspendIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[resuspendNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentResuspend, Symbol[#]}&) /@ resuspendNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, RoboticSamplePreparation},
-    WorkCells -> {STAR},
-    ExperimentFunction -> ExperimentResuspend,
-    MethodResolverFunction -> resolveResuspendMethod,
-
-    (*note that we don't necessarily need these functions because they get called for the constituent RoboticUnitOperations.  However, we could have the parsers at least if we also want to populate fields in the corresponding unit operations *)
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseResuspendOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "ResuspendIcon.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel, ContainerOut -> ContainerOutLabel, Diluent -> DiluentLabel, ConcentratedBuffer -> ConcentratedBufferLabel, BufferDiluent -> BufferDiluentLabel},
-    InputOptions -> {Sample},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      EnvironmentalData, Sample
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample into a container and dilutes it with buffers as specified.",
-    Author -> {"daniel.shlian", "tyler.pabst"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Dilute Primitive*)
-
-
-(* ::Code::Initialization:: *)
-dilutePrimitive = Module[{diluteSharedOptions, diluteNonIndexMatchingSharedOptions, diluteIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentDilute -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  diluteSharedOptions =UnsortedComplement[
-    Options[ExperimentDilute][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation"}]
-  ];
-
-  diluteNonIndexMatchingSharedOptions =UnsortedComplement[
-    diluteSharedOptions,
-    Cases[OptionDefinition[ExperimentDilute], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  diluteIndexMatchingSharedOptions =UnsortedComplement[
-    diluteSharedOptions,
-    diluteNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Dilute,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be diluteed.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentDilute, Symbol[#]}&) /@ diluteIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[diluteNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentDilute, Symbol[#]}&) /@ diluteNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, RoboticSamplePreparation},
-    WorkCells -> {STAR},
-    ExperimentFunction -> ExperimentDilute,
-    MethodResolverFunction -> resolveDiluteMethod,
-
-    (*note that we don't necessarily need these functions because they get called for the constituent RoboticUnitOperations.  However, we could have the parsers at least if we also want to populate fields in the corresponding unit operations *)
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "AliquotIcon.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel, ContainerOut -> ContainerOutLabel, Diluent -> DiluentLabel, ConcentratedBuffer -> ConcentratedBufferLabel, BufferDiluent -> BufferDiluentLabel},
-    InputOptions -> {Sample},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      EnvironmentalData, Sample
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample into a container and dilutes it with buffers as specified.",
-    Author -> {"waseem.vali", "ryan.bisbey"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*SerialDilute Primitive*)
-
-
-(* ::Code::Initialization:: *)
-serialDilutePrimitive = Module[{serialDiluteSharedOptions, serialDiluteNonIndexMatchingSharedOptions, serialDiluteSourceIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentAliquot -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  serialDiluteSharedOptions = UnsortedComplement[
-    Options[ExperimentSerialDilute][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  serialDiluteNonIndexMatchingSharedOptions = UnsortedComplement[
-    serialDiluteSharedOptions,
-    Cases[OptionDefinition[ExperimentSerialDilute], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  serialDiluteSourceIndexMatchingSharedOptions = UnsortedComplement[
-    serialDiluteSharedOptions,
-    serialDiluteNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[SerialDilute,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Source,
-          Default -> Null,
-          Description -> "The samples that should be serially diluted.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Source
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      (* options index matched to Source *)
-      IndexMatching[
-        Sequence @@ ({ExperimentSerialDilute, Symbol[#]}&) /@ serialDiluteSourceIndexMatchingSharedOptions,
-        IndexMatchingParent -> Source
-      ],
-      If[Length[serialDiluteNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentSerialDilute, Symbol[#]}&) /@ serialDiluteNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, RoboticCellPreparation},
-    WorkCells -> {STAR},
-    ExperimentFunction -> ExperimentSerialDilute,
-    MethodResolverFunction -> resolveSerialDiluteMethod,
-
-    (*note that we don't necessarily need these functions because they get called for the constituent RoboticUnitOperations.  However, we could have the parsers at least if we also want to populate fields in the corresponding unit operations *)
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "AliquotIcon.png"}]],
-    LabeledOptions -> {Source -> SourceLabel, ContainerOut -> ContainerOutLabel, Diluent -> DiluentLabel, ConcentratedBuffer -> ConcentratedBufferLabel, BufferDiluent -> BufferDiluentLabel},
-    InputOptions -> {Source},
-    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
-    (* if the primitive is fed back into the ExperimentBLAH function. *)
-    CompletedOptions -> {
-      EnvironmentalData, Source
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Transfers an amount of sample into a container and dilutes it with buffers as specified.",
-    Author -> {"daniel.shlian", "tyler.pabst"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*PCR Primitive*)
-
-
-(* ::Code::Initialization:: *)
-pcrPrimitive=Module[
-  {pcrSharedOptions,pcrNonIndexMatchingSharedOptions,pcrIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentPCR -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  pcrSharedOptions=UnsortedComplement[
-    Options[ExperimentPCR][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  pcrNonIndexMatchingSharedOptions=UnsortedComplement[
-    pcrSharedOptions,
-    Cases[OptionDefinition[ExperimentPCR],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  pcrIndexMatchingSharedOptions=UnsortedComplement[
-    pcrSharedOptions,
-    pcrNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[PCR,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        IndexMatchingParent->Sample,
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"The sample containing the nucleic acid template for amplification.",
-          AllowNull->True,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        {
-          OptionName->PrimerPair,
-          Default->Null,
-          Description->"The sample containing pair(s) of oligomer strands designed to bind to the template and serve as anchors for the polymerase.",
-          AllowNull->True,
-          Category->"General",
-          Widget->Alternatives[
-            Adder[{
-              "Forward Primer"->Alternatives[
-                "Sample or Container"->Widget[
-                  Type -> Object,
-                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                  ObjectTypes -> {Object[Sample], Object[Container]},
-                  Dereference -> {
-                    Object[Container] -> Field[Contents[[All, 2]]]
-                  }
-                ],
-                "Container with Well Position"->{
-                  "Well Position" -> Alternatives[
-                    "A1 to P24" -> Widget[
-                      Type -> Enumeration,
-                      Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                    ],
-                    "Container Position" -> Widget[
-                      Type -> String,
-                      Pattern :> LocationPositionP,
-                      PatternTooltip -> "Any valid container position.",
-                      Size->Line
-                    ]
-                  ],
-                  "Container" -> Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Container]}]
-                  ]
-                }
-              ],
-              "Reverse Primer"->Alternatives[
-                "Sample or Container"->Widget[
-                  Type -> Object,
-                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                  ObjectTypes -> {Object[Sample], Object[Container]},
-                  Dereference -> {
-                    Object[Container] -> Field[Contents[[All, 2]]]
-                  }
-                ],
-                "Container with Well Position"->{
-                  "Well Position" -> Alternatives[
-                    "A1 to P24" -> Widget[
-                      Type -> Enumeration,
-                      Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                    ],
-                    "Container Position" -> Widget[
-                      Type -> String,
-                      Pattern :> LocationPositionP,
-                      PatternTooltip -> "Any valid container position.",
-                      Size->Line
-                    ]
-                  ],
-                  "Container" -> Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Container]}]
-                  ]
-                }
-              ]
-            }],
-            Widget[Type->Enumeration,Pattern:>Alternatives[{{Null,Null}}]]
-          ]
-        }
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentPCR,Symbol[#]}&)/@pcrIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[pcrNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentPCR,Symbol[#]}&)/@pcrNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-    Methods->{ManualSamplePreparation, ManualCellPreparation,RoboticCellPreparation},
-    WorkCells->{bioSTAR,microbioSTAR},
-    ExperimentFunction->ExperimentPCR,
-    MethodResolverFunction->Experiment`Private`resolveExperimentPCRMethod,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentPCRWorkCell,
-    RoboticExporterFunction->InternalExperiment`Private`exportPCRRoboticPrimitive,
-    RoboticParserFunction->InternalExperiment`Private`parsePCRRoboticPrimitive,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parsePCROutputUnitOperation,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","PCRIcon.png"}]],
-    InputOptions->{Sample,PrimerPair},
-    LabeledOptions->{
-      Sample->SampleLabel,
-      PrimerPair->PrimerPairLabel,
-      Buffer->BufferLabel,
-      MasterMix->MasterMixLabel,
-      AssayPlate->AssayPlateLabel
-    },
-    Generative->True,
-    Category->"Sample Preparation",
-    Description->"Amplifies target sequences from nucleic acid samples.",
-    Author -> {"tyler.pabst", "daniel.shlian"}
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*FlowCytometry Primitive*)
-
-
-(* ::Code::Initialization:: *)
-flowCytometryPrimitive = Module[{flowCytometrySharedOptions, flowCytometryNonIndexMatchingSharedOptions,
-  flowCytometryIndexMatchingSharedOptions,flowCytometryIndexMatchingSampleSharedOptions,flowCytometryIndexMatchingDetectorSharedOptions,
-  flowCytometryIndexMatchingExcitationWavelengthSharedOptions,flowCytometryIndexMatchingBlankSharedOptions},
-  (* Copy over all of the options from ExperimentTransfer -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  flowCytometrySharedOptions =UnsortedComplement[
-    Options[ExperimentFlowCytometry][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  flowCytometryNonIndexMatchingSharedOptions=UnsortedComplement[
-    flowCytometrySharedOptions,
-    Cases[OptionDefinition[ExperimentFlowCytometry], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  flowCytometryIndexMatchingDetectorSharedOptions=Cases[
-    OptionDefinition[ExperimentFlowCytometry],
-    KeyValuePattern["IndexMatching" -> "Detector"]
-  ][[All, "OptionName"]];
-
-  flowCytometryIndexMatchingExcitationWavelengthSharedOptions=Cases[
-    OptionDefinition[ExperimentFlowCytometry],
-    KeyValuePattern["IndexMatching" -> "ExcitationWavelength"]
-  ][[All, "OptionName"]];
-
-  flowCytometryIndexMatchingBlankSharedOptions=Cases[
-    OptionDefinition[ExperimentFlowCytometry],
-    KeyValuePattern["IndexMatching" -> "Blank"]
-  ][[All, "OptionName"]];
-
-  flowCytometryIndexMatchingSampleSharedOptions=UnsortedComplement[
-    flowCytometrySharedOptions,
-    Join[flowCytometryNonIndexMatchingSharedOptions,flowCytometryIndexMatchingDetectorSharedOptions,flowCytometryIndexMatchingExcitationWavelengthSharedOptions,flowCytometryIndexMatchingBlankSharedOptions]
-  ];
-
-  DefinePrimitive[FlowCytometry,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be analysed with the flow cytometer.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentFlowCytometry, Symbol[#]}&) /@ flowCytometryIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentFlowCytometry, Symbol[#]}&) /@ flowCytometryIndexMatchingDetectorSharedOptions,
-        IndexMatchingParent -> Detector
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentFlowCytometry, Symbol[#]}&) /@ flowCytometryIndexMatchingExcitationWavelengthSharedOptions,
-        IndexMatchingParent -> ExcitationWavelength
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentFlowCytometry, Symbol[#]}&) /@ flowCytometryIndexMatchingBlankSharedOptions,
-        IndexMatchingParent -> Blank
-      ],
-      If[Length[flowCytometryNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentFlowCytometry, Symbol[#]}&) /@ flowCytometryNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    ExperimentFunction -> ExperimentFlowCytometry,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseFlowCytometryOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveFlowCytometryMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "FlowCytometry.png"}]],
-    LabeledOptions ->  {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Category -> "Property Measurement",
-    Description -> "Flows a sample through a flow cytometer.",
-    Methods -> {ManualCellPreparation},
-    Author -> "hanming.yang"
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(* MeasureRefractiveIndex Primitive *)
-
-
-(* ::Code::Initialization:: *)
-measureRefractiveIndexPrimitive = Module[
-  {measureRefractiveIndexSharedOptions, measureRefractiveIndexNonIndexMatchingSharedOptions,measureRefractiveIndexIndexMatchingSharedOptions},
-
-  (* Copy over all of the options from ExperimentMeasureRefractiveIndex -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  measureRefractiveIndexSharedOptions = UnsortedComplement[
-    Options[ExperimentMeasureRefractiveIndex][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All,1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  measureRefractiveIndexNonIndexMatchingSharedOptions = UnsortedComplement[
-    measureRefractiveIndexSharedOptions,
-    Cases[OptionDefinition[ExperimentMeasureRefractiveIndex], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  measureRefractiveIndexIndexMatchingSharedOptions = UnsortedComplement[
-    measureRefractiveIndexSharedOptions,
-    measureRefractiveIndexNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[MeasureRefractiveIndex,
-    (* Input Options*)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be measured with the refractometer.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size -> Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options*)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentMeasureRefractiveIndex, Symbol[#]}&) /@ measureRefractiveIndexIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[measureRefractiveIndexNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence @@ ({ExperimentMeasureRefractiveIndex, Symbol[#]}&) /@ measureRefractiveIndexNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    ExperimentFunction -> ExperimentMeasureRefractiveIndex,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseMeasureRefractiveIndexOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveExperimentMeasureRefractiveIndexMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","MeasureRefractiveIndex.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Category -> "Property Measurement",
-    Description -> "Measure the refractive index of sample.",
-    Methods -> {ManualSamplePreparation},
-    Author -> {"jireh.sacramento", "xu.yi"}
-  ]
-];
-
-
-(* ::Subsection::*)
-(*ExperimentMeasureContactAngle Primitive*)
-measureContactAnglePrimitive = Module[{measureContactAngleSharedOptions, measureContactAngleNonIndexMatchingOptions, measureContactAngleIndexMatchingSharedOptions},
-  (*Copy over all of the options from ExperimentMeasureContactAngle-- except for the funtopia shared options (Cache,Upload,etc.)*)
-  measureContactAngleSharedOptions = UnsortedComplement[
-    Options[ExperimentMeasureContactAngle][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  measureContactAngleNonIndexMatchingOptions = UnsortedComplement[
-    measureContactAngleSharedOptions,
-    Cases[OptionDefinition[ExperimentMeasureContactAngle], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  measureContactAngleIndexMatchingSharedOptions = UnsortedComplement[
-    measureContactAngleSharedOptions,
-    measureContactAngleNonIndexMatchingOptions
-  ];
-
-  DefinePrimitive[MeasureContactAngle,
-    (*Input Options*)
-
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"The samples that should be measured with the single fiber tensiometer.",
-          AllowNull->False,
-          Category->"General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container],Object[Item,WilhelmyPlate]}],
-            ObjectTypes->{Object[Sample],Object[Container],Object[Item,WilhelmyPlate]},
-            Dereference->{
-              Object[Container]->Field[Contents[[All,2]]]
-            }
-          ],
-          Required->True
-        },
-        {
-          OptionName->WettingLiquids,
-          Default->Null,
-          Description->"The liquid samples that are contacted by the solid samples in order to measure the contact angle between them.",
-          AllowNull->False,
-          Category->"General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Model[Sample],Object[Sample],Object[Container]}],
-            ObjectTypes->{Model[Sample],Object[Sample],Object[Container]},
-            Dereference->{
-              Object[Container]->Field[Contents[[All,2]]]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (*Shared Options*)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentMeasureContactAngle,Symbol[#]} &)/@measureContactAngleIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[measureContactAngleNonIndexMatchingOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentMeasureContactAngle,Symbol[#]} &)/@measureContactAngleNonIndexMatchingOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-
-    Methods->{ManualSamplePreparation},
-    ExperimentFunction->ExperimentMeasureContactAngle,
-    MethodResolverFunction->Experiment`Private`resolveExperimentMeasureContactAngleMethod,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseMeasureContactAngleOutputUnitOperation,
-
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","MeasureContactAngle.png"}]],
-    LabeledOptions->{Sample->SampleLabel,WettingLiquids->WettingLiquidLabel},
-    InputOptions->{Sample,WettingLiquids},
-    (*NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped
-	  if the primitive is fed back into the ExperimentBLAH function.*)
-    Generative->False,
-    Category->"Property Measurement",
-    Description->"Measure the contact angle between fiber and wetting liquid.",
-    Author->{"jireh.sacramento", "alou"}
-  ]
-];
-
-
-(* ::Subsection::*)
-(*ExperimentVisualInspection Primitive*)
-visualInspectionPrimitive = Module[{visualInspectionSharedOptions, visualInspectionNonIndexMatchingOptions, visualInspectionIndexMatchingSharedOptions},
-  (*Copy over all of the options from ExperimentVisualInspection-- except for the funtopia shared options (Cache,Upload,etc.)*)
-  visualInspectionSharedOptions = UnsortedComplement[
-    Options[ExperimentVisualInspection][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  visualInspectionNonIndexMatchingOptions = UnsortedComplement[
-    visualInspectionSharedOptions,
-    Cases[OptionDefinition[ExperimentVisualInspection], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  visualInspectionIndexMatchingSharedOptions = UnsortedComplement[
-    visualInspectionSharedOptions,
-    visualInspectionNonIndexMatchingOptions
-  ];
-
-  DefinePrimitive[VisualInspection,
-    (*Input Options*)
-
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be adjusted to a specified pH.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[Object[Sample]]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (*Shared Options*)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentVisualInspection, Symbol[#]} &) /@ visualInspectionIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[visualInspectionNonIndexMatchingOptions] == 0,
-        Nothing,
-        Sequence @@ ({ExperimentVisualInspection, Symbol[#]} &) /@ visualInspectionNonIndexMatchingOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentVisualInspection,
-    MethodResolverFunction -> Experiment`Private`resolveVisualInspectionMethod,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseAdjustpHOutputUnitOperation,
-
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "VisualInspection.png"}]],
-    LabeledOptions -> {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    (*NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped
-      if the primitive is fed back into the ExperimentBLAH function.*)
-    Generative -> False,
-    Category -> "Property Measurement",
-    Description -> "Records a video of a sample container as it is agitated on a shaker/vortex.",
-    Author -> {"eunbin.go", "jihan.kim"}
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*ReadPlate Experiment Primitives*)
-
-
-(* ::Code::Initialization:: *)
-plateReaderPrimitiveTypes = {
-  (* Absorbance *)
-  AbsorbanceSpectroscopy,
-  AbsorbanceIntensity,
-  AbsorbanceKinetics,
-  (* Luminescence *)
-  LuminescenceSpectroscopy,
-  LuminescenceIntensity,
-  LuminescenceKinetics,
-  (* Fluorescence *)
-  FluorescenceSpectroscopy,
-  FluorescenceIntensity,
-  FluorescenceKinetics,
-  FluorescencePolarization,
-  FluorescencePolarizationKinetics,
-  (* AlphaScreen *)
-  AlphaScreen,
-  (* Nephelometry *)
-  Nephelometry,
-  NephelometryKinetics
-};
-
-plateReaderPrimitiveP = Alternatives@@(Blank/@plateReaderPrimitiveTypes);
-
-(* The maximum number of injection samples that each plate reader can hold. *)
-$MaxPlateReaderInjectionSamples=2;
-
-(* == NOTE: CLARIOstar (can be reached by STAR/bioSTAR/microSTAR) experiments: == *)
-(* AbsorbanceSpectrosocopy, AbsorbanceIntensity, AbsorbanceKinetics *)
-(* LuminescenceSpectrosocopy, LuminescenceIntensity, LuminescenceKinetics *)
-(* FluorescenceSpectrosocopy, FluorescenceIntensity, FluorescenceKinetics *)
-(* AlphaScreen *)
-
-(* == NOTE: Omega (can be reached by STAR) experiments: == *)
-(* AbsorbanceSpectrosocopy, AbsorbanceIntensity, AbsorbanceKinetics *)
-(* LuminescenceIntensity, LuminescenceKinetics *)
-(* FluorescenceIntensity, FluorescenceKinetics *)
-
-(* == NOTE: NEPHELOstar (can be reached by bioSTAR/microSTAR) experiments: == *)
-(* Nephelometry, NephelometryKinetics *)
-
-(* == NOTE: PHERAstar (can be reached by manual preparation) experiments: == *)
-(* FluorescencePolarization, FluorescencePolarizationKinetics *)
-
-(* Plate Reader Primitive Definitions *)
-{
-  absorbanceSpectroscopyPrimitive,
-  absorbanceIntensityPrimitive,
-  absorbanceKineticsPrimitive,
-  luminescenceSpectroscopyPrimitive,
-  luminescenceIntensityPrimitive,
-  luminescenceKineticsPrimitive,
-  fluorescenceSpectroscopyPrimitive,
-  fluorescenceIntensityPrimitive,
-  fluorescenceKineticsPrimitive,
-  fluorescencePolarizationPrimitive,
-  fluorescencePolarizationKineticsPrimitive,
-  alphaScreenPrimitive,
-  nephelometryPrimitive,
-  nephelometryKineticsPrimitive
-}=Module[
-  {absorbanceSpectroscopySharedOptions, absorbanceIntensitySharedOptions, absorbanceKineticsSharedOptions,
-  luminescenceSpectroscopySharedOptions, luminescenceIntensitySharedOptions, luminescenceKineticsSharedOptions,
-  fluorescenceSpectroscopySharedOptions, fluorescenceIntensitySharedOptions, fluorescenceKineticsSharedOptions,
-  fluorescencePolarizationSharedOptions, fluorescencePolarizationKineticsSharedOptions, alphaScreenSharedOptions,
-  nephelometrySharedOptions, nephelometryKineticsSharedOptions, absorbanceSpectroscopyNonIndexMatchingSharedOptions,
-  absorbanceIntensityNonIndexMatchingSharedOptions, absorbanceKineticsNonIndexMatchingSharedOptions,
-  luminescenceSpectroscopyNonIndexMatchingSharedOptions, luminescenceIntensityNonIndexMatchingSharedOptions,
-  luminescenceKineticsNonIndexMatchingSharedOptions, fluorescenceSpectroscopyNonIndexMatchingSharedOptions,
-  fluorescenceIntensityNonIndexMatchingSharedOptions, fluorescenceKineticsNonIndexMatchingSharedOptions,
-  fluorescencePolarizationNonIndexMatchingSharedOptions, fluorescencePolarizationKineticsNonIndexMatchingSharedOptions,
-  alphaScreenNonIndexMatchingSharedOptions, nephelometryNonIndexMatchingSharedOptions,
-  nephelometryKineticsNonIndexMatchingSharedOptions, absorbanceSpectroscopyIndexMatchingSharedOptions,
-  absorbanceIntensityIndexMatchingSharedOptions, absorbanceKineticsIndexMatchingSharedOptions,
-  luminescenceSpectroscopyIndexMatchingSharedOptions, luminescenceIntensityIndexMatchingSharedOptions,
-  luminescenceKineticsIndexMatchingSharedOptions, fluorescenceSpectroscopyIndexMatchingSharedOptions,
-  fluorescenceIntensityIndexMatchingSharedOptions, fluorescenceKineticsIndexMatchingSharedOptions,
-  fluorescencePolarizationIndexMatchingSharedOptions, fluorescencePolarizationKineticsIndexMatchingSharedOptions,
-  alphaScreenIndexMatchingSharedOptions, nephelometryIndexMatchingSharedOptions, nephelometryKineticsIndexMatchingSharedOptions},
-
-  (* Copy over all of the options from the experiment itself -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  (* -- SharedOptions -- *)
-  {
-    (* Absorbance *)
-    absorbanceSpectroscopySharedOptions,
-    absorbanceIntensitySharedOptions,
-    absorbanceKineticsSharedOptions,
-
-    (* Luminescence *)
-    luminescenceSpectroscopySharedOptions,
-    luminescenceIntensitySharedOptions,
-    luminescenceKineticsSharedOptions,
-
-    (* Fluorescence *)
-    fluorescenceSpectroscopySharedOptions,
-    fluorescenceIntensitySharedOptions,
-    fluorescenceKineticsSharedOptions,
-    fluorescencePolarizationSharedOptions,
-    fluorescencePolarizationKineticsSharedOptions,
-
-    (* AlphaScreen *)
-    alphaScreenSharedOptions,
-
-    (* Nephelometry *)
-    nephelometrySharedOptions,
-    nephelometryKineticsSharedOptions
-  } = Map[
-    UnsortedComplement[
-      Options[#][[All, 1]],
-      Complement[
-        Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}],
-        (* NOTE: We DO want to copy over the aliquot options for manual experiments. *)
-        Options[AliquotOptions][[All, 1]]
-      ]
-    ]&,
-    {
-      (* Absorbance *)
-      ExperimentAbsorbanceSpectroscopy,
-      ExperimentAbsorbanceIntensity,
-      ExperimentAbsorbanceKinetics,
-
-      (* Luminescence *)
-      ExperimentLuminescenceSpectroscopy,
-      ExperimentLuminescenceIntensity,
-      ExperimentLuminescenceKinetics,
-
-      (* Fluorescence *)
-      ExperimentFluorescenceSpectroscopy,
-      ExperimentFluorescenceIntensity,
-      ExperimentFluorescenceKinetics,
-      ExperimentFluorescencePolarization,
-      ExperimentFluorescencePolarizationKinetics,
-
-      (* AlphaScreen *)
-      ExperimentAlphaScreen,
-
-      (* Nephelometry *)
-      ExperimentNephelometry,
-      ExperimentNephelometryKinetics
-    }
-  ];
-
-  (* -- NonIndexMatchingSharedOptions -- *)
-  {
-    (* Absorbance *)
-    absorbanceSpectroscopyNonIndexMatchingSharedOptions,
-    absorbanceIntensityNonIndexMatchingSharedOptions,
-    absorbanceKineticsNonIndexMatchingSharedOptions,
-
-    (* Luminescence *)
-    luminescenceSpectroscopyNonIndexMatchingSharedOptions,
-    luminescenceIntensityNonIndexMatchingSharedOptions,
-    luminescenceKineticsNonIndexMatchingSharedOptions,
-
-    (* Fluorescence *)
-    fluorescenceSpectroscopyNonIndexMatchingSharedOptions,
-    fluorescenceIntensityNonIndexMatchingSharedOptions,
-    fluorescenceKineticsNonIndexMatchingSharedOptions,
-    fluorescencePolarizationNonIndexMatchingSharedOptions,
-    fluorescencePolarizationKineticsNonIndexMatchingSharedOptions,
-
-    (* AlphaScreen *)
-    alphaScreenNonIndexMatchingSharedOptions,
-
-    (* Nephelometry *)
-    nephelometryNonIndexMatchingSharedOptions,
-    nephelometryKineticsNonIndexMatchingSharedOptions
-  } = MapThread[
-    UnsortedComplement[
-      #1,
-      Cases[OptionDefinition[#2], KeyValuePattern["IndexMatchingInput" -> Except[Null]]][[All, "OptionName"]]
-    ]&,
-    {
-      (* SharedOptions *)
-      {
-        (* Absorbance *)
-        absorbanceSpectroscopySharedOptions,
-        absorbanceIntensitySharedOptions,
-        absorbanceKineticsSharedOptions,
-
-        (* Luminescence *)
-        luminescenceSpectroscopySharedOptions,
-        luminescenceIntensitySharedOptions,
-        luminescenceKineticsSharedOptions,
-
-        (* Fluorescence *)
-        fluorescenceSpectroscopySharedOptions,
-        fluorescenceIntensitySharedOptions,
-        fluorescenceKineticsSharedOptions,
-        fluorescencePolarizationSharedOptions,
-        fluorescencePolarizationKineticsSharedOptions,
-
-        (* AlphaScreen *)
-        alphaScreenSharedOptions,
-
-        (* Nephelometry *)
-        nephelometrySharedOptions,
-        nephelometryKineticsSharedOptions
-
-      },
-      (* ExperimentFunctions *)
-      {
-        (* Absorbance *)
-        ExperimentAbsorbanceSpectroscopy,
-        ExperimentAbsorbanceIntensity,
-        ExperimentAbsorbanceKinetics,
-
-        (* Luminescence *)
-        ExperimentLuminescenceSpectroscopy,
-        ExperimentLuminescenceIntensity,
-        ExperimentLuminescenceKinetics,
-
-        (* Fluorescence *)
-        ExperimentFluorescenceSpectroscopy,
-        ExperimentFluorescenceIntensity,
-        ExperimentFluorescenceKinetics,
-        ExperimentFluorescencePolarization,
-        ExperimentFluorescencePolarizationKinetics,
-
-        (* AlphaScreen *)
-        ExperimentAlphaScreen,
-
-        (* Nephelometry *)
-        ExperimentNephelometry,
-        ExperimentNephelometryKinetics
-      }
-    }
-  ];
-
-  (* -- IndexMatchingSharedOptions -- *)
-  {
-    (* Absorbance *)
-    absorbanceSpectroscopyIndexMatchingSharedOptions,
-    absorbanceIntensityIndexMatchingSharedOptions,
-    absorbanceKineticsIndexMatchingSharedOptions,
-
-    (* Luminescence *)
-    luminescenceSpectroscopyIndexMatchingSharedOptions,
-    luminescenceIntensityIndexMatchingSharedOptions,
-    luminescenceKineticsIndexMatchingSharedOptions,
-
-    (* Fluorescence *)
-    fluorescenceSpectroscopyIndexMatchingSharedOptions,
-    fluorescenceIntensityIndexMatchingSharedOptions,
-    fluorescenceKineticsIndexMatchingSharedOptions,
-    fluorescencePolarizationIndexMatchingSharedOptions,
-    fluorescencePolarizationKineticsIndexMatchingSharedOptions,
-
-    (* AlphaScreen *)
-    alphaScreenIndexMatchingSharedOptions,
-
-    (* Nephelometry *)
-    nephelometryIndexMatchingSharedOptions,
-    nephelometryKineticsIndexMatchingSharedOptions
-  } = MapThread[
-    UnsortedComplement[
-      #1,
-      #2
-    ]&,
-    {
-      (* SharedOptions *)
-      {
-        (* Absorbance *)
-        absorbanceSpectroscopySharedOptions,
-        absorbanceIntensitySharedOptions,
-        absorbanceKineticsSharedOptions,
-
-        (* Luminescence *)
-        luminescenceSpectroscopySharedOptions,
-        luminescenceIntensitySharedOptions,
-        luminescenceKineticsSharedOptions,
-
-        (* Fluorescence *)
-        fluorescenceSpectroscopySharedOptions,
-        fluorescenceIntensitySharedOptions,
-        fluorescenceKineticsSharedOptions,
-        fluorescencePolarizationSharedOptions,
-        fluorescencePolarizationKineticsSharedOptions,
-
-        (* AlphaScreen *)
-        alphaScreenSharedOptions,
-
-        (* Nephelometry *)
-        nephelometrySharedOptions,
-        nephelometryKineticsSharedOptions
-
-      },
-      (* NonIndexMatchingSharedOptions *)
-      {
-        (* Absorbance *)
-        absorbanceSpectroscopyNonIndexMatchingSharedOptions,
-        absorbanceIntensityNonIndexMatchingSharedOptions,
-        absorbanceKineticsNonIndexMatchingSharedOptions,
-
-        (* Luminescence *)
-        luminescenceSpectroscopyNonIndexMatchingSharedOptions,
-        luminescenceIntensityNonIndexMatchingSharedOptions,
-        luminescenceKineticsNonIndexMatchingSharedOptions,
-
-        (* Fluorescence *)
-        fluorescenceSpectroscopyNonIndexMatchingSharedOptions,
-        fluorescenceIntensityNonIndexMatchingSharedOptions,
-        fluorescenceKineticsNonIndexMatchingSharedOptions,
-        fluorescencePolarizationNonIndexMatchingSharedOptions,
-        fluorescencePolarizationKineticsNonIndexMatchingSharedOptions,
-
-        (* AlphaScreen *)
-        alphaScreenNonIndexMatchingSharedOptions,
-
-        (* Nephelometry *)
-        nephelometryNonIndexMatchingSharedOptions,
-        nephelometryKineticsNonIndexMatchingSharedOptions
-      }
-    }
-  ];
-
-  MapThread[
-    Function[
-      {primitiveName, author, experimentName, indexMatchingSharedOptions, nonIndexMatchingSharedOptions, iconFile, description},
-      DefinePrimitive[primitiveName,
-        (* Input Options *)
-        Options :> {
-          IndexMatching[
-            {
-              OptionName -> Sample,
-              Default -> Null,
-              Description -> "The samples that will be measured by the plate reader instrument.",
-              AllowNull -> True,
-              Category -> "General",
-              Widget -> Alternatives[
-                "Sample or Container"->Widget[
-                  Type -> Object,
-                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                  ObjectTypes -> {Object[Sample], Object[Container]},
-                  Dereference -> {
-                    Object[Container] -> Field[Contents[[All, 2]]]
-                  }
-                ],
-                "Container with Well Position"->{
-                  "Well Position" -> Alternatives[
-                    "A1 to P24" -> Widget[
-                      Type -> Enumeration,
-                      Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                    ],
-                    "Container Position" -> Widget[
-                      Type -> String,
-                      Pattern :> LocationPositionP,
-                      PatternTooltip -> "Any valid container position.",
-                      Size->Line
-                    ]
-                  ],
-                  "Container" -> Widget[
-                    Type -> Object,
-                    Pattern :> ObjectP[{Object[Container]}]
-                  ]
-                }
-              ],
-              Required -> True
-            },
-            IndexMatchingParent -> Sample
-          ]
-        },
-        (* Shared Options *)
-        With[{insertMe =
-            {
-              IndexMatching[
-                Sequence @@ ({experimentName, Symbol[#]}&) /@ indexMatchingSharedOptions,
-                IndexMatchingParent -> Sample
-              ],
-              If[Length[nonIndexMatchingSharedOptions]==0,
-                Nothing,
-                Sequence @@ ({experimentName, Symbol[#]}&) /@ nonIndexMatchingSharedOptions
-              ]
-            }
-        },
-          SharedOptions :> insertMe
-        ],
-        Methods->If[
-            MatchQ[primitiveName,Nephelometry|NephelometryKinetics],
-              {ManualCellPreparation,RoboticCellPreparation},
-              {ManualSamplePreparation,RoboticSamplePreparation,ManualCellPreparation,RoboticCellPreparation}],
-        WorkCells->{STAR,bioSTAR,microbioSTAR},
-        ExperimentFunction->experimentName,
-        MethodResolverFunction->Experiment`Private`resolveReadPlateMethod,
-        WorkCellResolverFunction->Experiment`Private`resolveReadPlateWorkCell,
-        RoboticExporterFunction->InternalExperiment`Private`exportReadPlateRoboticPrimitive,
-        RoboticParserFunction->InternalExperiment`Private`parseReadPlateRoboticPrimitive,
-        OutputUnitOperationParserFunction->InternalExperiment`Private`parseReadPlateOutputUnitOperation,
-        Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", iconFile}]],
-        LabeledOptions -> {Sample -> SampleLabel},
-        InputOptions -> {Sample},
-        Generative -> False,
-        Category -> "Sample Preparation",
-        Description -> description,
-        Author -> author
-      ]
-    ],
-    {
-      (* Defined Primitive Name *)
-      {
-        (* Absorbance *)
-        AbsorbanceSpectroscopy,
-        AbsorbanceIntensity,
-        AbsorbanceKinetics,
-        (* Luminescence *)
-        LuminescenceSpectroscopy,
-        LuminescenceIntensity,
-        LuminescenceKinetics,
-        (* Fluorescence *)
-        FluorescenceSpectroscopy,
-        FluorescenceIntensity,
-        FluorescenceKinetics,
-        FluorescencePolarization,
-        FluorescencePolarizationKinetics,
-        (* AlphaScreen *)
-        AlphaScreen,
-        (* Nephelometry *)
-        Nephelometry,
-        NephelometryKinetics
-      },
-
-      (* Authors *)
-      {
-        (* Absorbance *)
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        (* Luminescence *)
-        {"Yahya.Benslimane", "dima"},
-        {"Yahya.Benslimane", "dima"},
-        {"Yahya.Benslimane", "dima"},
-        (* Fluorescence*)
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"},
-        (* AlphaScreen *)
-        {"jireh.sacramento", "alou"},
-        (* Nephelometry *)
-        {"jireh.sacramento", "alou"},
-        {"jireh.sacramento", "alou"}
-      },
-
-      (* Experiment Symbol *)
-      {
-        (* Absorbance *)
-        ExperimentAbsorbanceSpectroscopy,
-        ExperimentAbsorbanceIntensity,
-        ExperimentAbsorbanceKinetics,
-        (* Luminescence *)
-        ExperimentLuminescenceSpectroscopy,
-        ExperimentLuminescenceIntensity,
-        ExperimentLuminescenceKinetics,
-        (* Fluorescence *)
-        ExperimentFluorescenceSpectroscopy,
-        ExperimentFluorescenceIntensity,
-        ExperimentFluorescenceKinetics,
-        ExperimentFluorescencePolarization,
-        ExperimentFluorescencePolarizationKinetics,
-        (* AlphaScreen *)
-        ExperimentAlphaScreen,
-        (* Nephelometry *)
-        ExperimentNephelometry,
-        ExperimentNephelometryKinetics
-      },
-
-      (* IndexMatchingSharedOptions *)
-      {
-        (* Absorbance *)
-        absorbanceSpectroscopyIndexMatchingSharedOptions,
-        absorbanceIntensityIndexMatchingSharedOptions,
-        absorbanceKineticsIndexMatchingSharedOptions,
-        (* Luminescence *)
-        luminescenceSpectroscopyIndexMatchingSharedOptions,
-        luminescenceIntensityIndexMatchingSharedOptions,
-        luminescenceKineticsIndexMatchingSharedOptions,
-        (* Fluorescence *)
-        fluorescenceSpectroscopyIndexMatchingSharedOptions,
-        fluorescenceIntensityIndexMatchingSharedOptions,
-        fluorescenceKineticsIndexMatchingSharedOptions,
-        fluorescencePolarizationIndexMatchingSharedOptions,
-        fluorescencePolarizationKineticsIndexMatchingSharedOptions,
-        (* AlphaScreen *)
-        alphaScreenIndexMatchingSharedOptions,
-        (* Nephelometry *)
-        nephelometryIndexMatchingSharedOptions,
-        nephelometryKineticsIndexMatchingSharedOptions
-      },
-
-      (* NonIndexMatchingSharedOptions *)
-      {
-        (* Absorbance *)
-        absorbanceSpectroscopyNonIndexMatchingSharedOptions,
-        absorbanceIntensityNonIndexMatchingSharedOptions,
-        absorbanceKineticsNonIndexMatchingSharedOptions,
-        (* Luminescence *)
-        luminescenceSpectroscopyNonIndexMatchingSharedOptions,
-        luminescenceIntensityNonIndexMatchingSharedOptions,
-        luminescenceKineticsNonIndexMatchingSharedOptions,
-        (* Fluorescence *)
-        fluorescenceSpectroscopyNonIndexMatchingSharedOptions,
-        fluorescenceIntensityNonIndexMatchingSharedOptions,
-        fluorescenceKineticsNonIndexMatchingSharedOptions,
-        fluorescencePolarizationNonIndexMatchingSharedOptions,
-        fluorescencePolarizationKineticsNonIndexMatchingSharedOptions,
-        (* AlphaScreen *)
-        alphaScreenNonIndexMatchingSharedOptions,
-        (* Nephelometry *)
-        nephelometryNonIndexMatchingSharedOptions,
-        nephelometryKineticsNonIndexMatchingSharedOptions
-      },
-
-      (* Icon File Name *)
-      {
-        (* Absorbance *)
-        "PlateReader-Absorbance.png",
-        "PlateReader-Absorbance.png",
-        "PlateReader-Absorbance.png",
-        (* Luminescence *)
-        "PlateReader-Luminescence.png",
-        "PlateReader-Luminescence.png",
-        "PlateReader-Luminescence.png",
-        (* Fluorescence *)
-        "PlateReader-Luminescence.png",
-        "PlateReader-Luminescence.png",
-        "PlateReader-Luminescence.png",
-        "PlateReader-Combined.png",
-        "PlateReader-Combined.png",
-        (* AlphaScreen *)
-        "PlateReader-Luminescence.png",
-        (* Nephelometry *)
-        "PlateReader-Combined.png",
-        "PlateReader-Combined.png"
-      },
-
-      (* Description *)
-      {
-        (* Absorbance *)
-        "Measures the absorbance spectroscopy data of the input samples.",
-        "Measures the absorbance intensity data of the input samples.",
-        "Measures the absorbance kinetics data of the input samples.",
-        (* Luminescence *)
-        "Measures the luminescence spectroscopy data of the input samples.",
-        "Measures the luminescence intensity data of the input samples.",
-        "Measures the luminescence kinetics data of the input samples.",
-        (* Fluorescence *)
-        "Measures the fluorescence spectroscopy data of the input samples.",
-        "Measures the fluorescence intensity data of the input samples.",
-        "Measures the fluorescence kinetics data of the input samples.",
-        "Measures the fluorescence polarization data of the input samples.",
-        "Measures the fluorescence polarization kinetics data of the input samples.",
-        (* AlphaScreen *)
-        "Measures the alpha screen data of the input samples.",
-        (* Nephelometry *)
-        "Measures the nephelometry data of the input samples.",
-        "Measures the nephelometry kinetics data of the input samples."
-      }
-    }
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*Degas Primitive*)
-
-
-(* ::Code::Initialization:: *)
-degasPrimitive=Module[{degasSharedOptions,degasNonIndexMatchingSharedOptions,degasIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentDegas -- except for the protocol and simulation options (Cache, Upload, etc.) *)
-  degasSharedOptions=UnsortedComplement[
-    Options[ExperimentDegas][[All,1]],
-    Flatten[{Options[FuntopiaSharedOptions][[All,1]],"Simulation"}]
-  ];
-
-  (* get the non-index matching options *)
-  degasNonIndexMatchingSharedOptions=UnsortedComplement[
-    degasSharedOptions,
-    Cases[OptionDefinition[ExperimentDegas],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  (* get the index matching options *)
-  degasIndexMatchingSharedOptions=UnsortedComplement[
-    degasSharedOptions,
-    degasNonIndexMatchingSharedOptions
-  ];
-
-  (* create primitive definition *)
-  DefinePrimitive[Degas,
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"Input samples which will be imaged by a microscope.",
-          AllowNull->True,
-          Pooled->True,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position"->Widget[
-                Type->String,
-                Pattern:>WellPositionP,
-                Size->Line,
-                PatternTooltip->"Enumeration must be any well from A1 to P24."
-              ],
-              "Container"->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentDegas,Symbol[#]}&)/@degasIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[degasNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentDegas,Symbol[#]}&)/@degasNonIndexMatchingSharedOptions
-      ]
-    }},
-      SharedOptions:>insertMe
-    ],
-    Methods->{ManualSamplePreparation},
-    ExperimentFunction->ExperimentDegas,
-    MethodResolverFunction->resolveDegasMethod,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseDegasOutputUnitOperation,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","Degas.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Sample Preparation",
-    Description->"Remove dissolved gases from the samples.",
-    Author -> {"eunbin.go", "axu"}
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*ImageCells Primitive*)
-
-
-(* ::Code::Initialization:: *)
-imageCellsPrimitive=Module[{imageCellsSharedOptions,imageCellsNonIndexMatchingSharedOptions,imageCellsIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentImageCells -- except for the protocol and simulation options (Cache, Upload, etc.) *)
-  imageCellsSharedOptions=UnsortedComplement[
-    Options[ExperimentImageCells][[All,1]],
-    Flatten[{Options[FuntopiaSharedOptions][[All,1]],"Simulation"}]
-  ];
-
-  (* get the non-index matching options *)
-  imageCellsNonIndexMatchingSharedOptions=UnsortedComplement[
-    imageCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentImageCells],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  (* get the index matching options *)
-  imageCellsIndexMatchingSharedOptions=UnsortedComplement[
-    imageCellsSharedOptions,
-    imageCellsNonIndexMatchingSharedOptions
-  ];
-
-  (* create primitive definition *)
-  DefinePrimitive[ImageCells,
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"Input samples which will be imaged by a microscope.",
-          AllowNull->True,
-          NestedIndexMatching->True,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position"->Widget[
-                Type->String,
-                Pattern:>WellPositionP,
-                Size->Line,
-                PatternTooltip->"Enumeration must be any well from A1 to P24."
-              ],
-              "Container"->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentImageCells,Symbol[#]}&)/@imageCellsIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[imageCellsNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentImageCells,Symbol[#]}&)/@imageCellsNonIndexMatchingSharedOptions
-      ]
-    }},
-      SharedOptions:>insertMe
-    ],
-    Methods->{RoboticCellPreparation,ManualCellPreparation},
-    WorkCells->{bioSTAR},
-    ExperimentFunction->ExperimentImageCells,
-    RoboticExporterFunction->InternalExperiment`Private`exportImageCellsRoboticPrimitive,
-    RoboticParserFunction->InternalExperiment`Private`parseImageCellsRoboticPrimitive,
-    MethodResolverFunction->resolveImageCellsMethod,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseImageCellsOutputUnitOperation,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","ImageCells.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Microscopy",
-    Description->"Acquire microscopic images from the samples.",
-    Author -> {"melanie.reschke", "yanzhe.zhu"}
-  ]
-];
-
-
-
-(* ::Subsection::Closed:: *)
-(*ThawCells Primitive*)
-
-
-(* ::Code::Initialization:: *)
-thawCellsPrimitive=Module[{thawCellsSharedOptions,thawCellsNonIndexMatchingSharedOptions,thawCellsIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentThawCells -- except for the protocol and simulation options (Cache, Upload, etc.) *)
-  thawCellsSharedOptions=UnsortedComplement[
-    Options[ExperimentThawCells][[All,1]],
-    Flatten[{Options[FuntopiaSharedOptions][[All,1]],"Simulation"}]
-  ];
-
-  (* get the non-index matching options *)
-  thawCellsNonIndexMatchingSharedOptions=UnsortedComplement[
-    thawCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentThawCells],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  (* get the index matching options *)
-  thawCellsIndexMatchingSharedOptions=UnsortedComplement[
-    thawCellsSharedOptions,
-    thawCellsNonIndexMatchingSharedOptions
-  ];
-
-  (* create primitive definition *)
-  DefinePrimitive[ThawCells,
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"Input samples which will be thawed.",
-          AllowNull->True,
-          NestedIndexMatching->False,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample Model"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[Model[Sample]]
-            ],
-            "Existing Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position"->Widget[
-                Type->String,
-                Pattern:>WellPositionP,
-                Size->Line,
-                PatternTooltip->"Enumeration must be any well from A1 to P24."
-              ],
-              "Container"->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentThawCells,Symbol[#]}&)/@thawCellsIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[thawCellsNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentThawCells,Symbol[#]}&)/@thawCellsNonIndexMatchingSharedOptions
-      ]
-    }},
-      SharedOptions:>insertMe
-    ],
-    Methods->{RoboticCellPreparation,ManualCellPreparation},
-    WorkCells->{bioSTAR, microbioSTAR},
-    ExperimentFunction->ExperimentThawCells,
-    RoboticExporterFunction->InternalExperiment`Private`exportThawCellsRoboticPrimitive,
-    RoboticParserFunction->InternalExperiment`Private`parseThawCellsRoboticPrimitive,
-    MethodResolverFunction->resolveThawCellsMethod,
-    WorkCellResolverFunction->resolveThawCellsWorkCell,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseThawCellsOutputUnitOperation,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","ThawCells.png"}]],
-    LabeledOptions->{Sample->SampleLabel},
-    InputOptions->{Sample},
-    Generative->False,
-    Category->"Cell Maintenance",
-    Description->"Thaw a frozen vial of cells for use in downstream cell culturing.",
-    Author -> "tim.pierpont"
-  ]
-];
-
-
-(* ::Subsection::Closed:: *)
-(*MagneticBeadSeparation Primitive*)
-
-
-(* ::Code::Initialization:: *)
-magneticBeadSeparationPrimitive=Module[
-  {magneticBeadSeparationSharedOptions,magneticBeadSeparationNonIndexMatchingSharedOptions,magneticBeadSeparationIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentMagneticBeadSeparation -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  magneticBeadSeparationSharedOptions=UnsortedComplement[
-    Options[ExperimentMagneticBeadSeparation][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  magneticBeadSeparationNonIndexMatchingSharedOptions=UnsortedComplement[
-    magneticBeadSeparationSharedOptions,
-    Cases[OptionDefinition[ExperimentMagneticBeadSeparation],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  magneticBeadSeparationIndexMatchingSharedOptions=UnsortedComplement[
-    magneticBeadSeparationSharedOptions,
-    magneticBeadSeparationNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[MagneticBeadSeparation,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"Input samples which will be isolated via magnetic bead separation.",
-          AllowNull->True,
-          NestedIndexMatching->True,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position"->Widget[
-                Type->String,
-                Pattern:>WellPositionP,
-                Size->Line,
-                PatternTooltip->"Enumeration must be any well from A1 to P24."
-              ],
-              "Container"->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentMagneticBeadSeparation,Symbol[#]}&)/@magneticBeadSeparationIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[magneticBeadSeparationNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentMagneticBeadSeparation,Symbol[#]}&)/@magneticBeadSeparationNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-    Methods->{ManualSamplePreparation,RoboticSamplePreparation},
-    WorkCells->{STAR,bioSTAR,microbioSTAR},
-    ExperimentFunction->ExperimentMagneticBeadSeparation,
-    MethodResolverFunction->Experiment`Private`resolveExperimentMagneticBeadSeparationMethod,
-    WorkCellResolverFunction->Experiment`Private`resolveExperimentMagneticBeadSeparationWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parseMagneticBeadSeparationRoboticPrimitive,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseMagneticBeadSeparationOutputUnitOperation,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","MoveToMagnetIcon.png"}]],
-    InputOptions->{Sample},
-    LabeledOptions->{
-      Sample->SampleLabel,
-      PreWashCollectionContainer->PreWashCollectionContainerLabel,
-      EquilibrationCollectionContainer->EquilibrationCollectionContainerLabel,
-      LoadingCollectionContainer->LoadingCollectionContainerLabel,
-      WashCollectionContainer->WashCollectionContainerLabel,
-      SecondaryWashCollectionContainer->SecondaryWashCollectionContainerLabel,
-      TertiaryWashCollectionContainer->TertiaryWashCollectionContainerLabel,
-      QuaternaryWashCollectionContainer->QuaternaryWashCollectionContainerLabel,
-      QuinaryWashCollectionContainer->QuinaryWashCollectionContainerLabel,
-      SenaryWashCollectionContainer->SenaryWashCollectionContainerLabel,
-      SeptenaryWashCollectionContainer->SeptenaryWashCollectionContainerLabel,
-      ElutionCollectionContainer->ElutionCollectionContainerLabel,
-      Null->SampleContainerLabel,
-      Null->SampleOutLabel,
-      Null->ContainerOutLabel
-    },
-    Generative->True,
-    GenerativeLabelOption->SampleOutLabel,
-    Category->"Sample Preparation",
-    Description->"Isolates targets from samples by using a magnetic field to separate superparamagnetic particles from suspensions.",
-    Author -> {"Yahya.Benslimane", "dima"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*LiquidLiquidExtraction Primitive*)
-
-liquidLiquidExtractionPrimitive=Module[
-  {liquidLiquidExtractionSharedOptions,liquidLiquidExtractionNonIndexMatchingSharedOptions,liquidLiquidExtractionIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentliquidLiquidExtraction -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  liquidLiquidExtractionSharedOptions=UnsortedComplement[
-    Options[ExperimentLiquidLiquidExtraction][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  liquidLiquidExtractionNonIndexMatchingSharedOptions=UnsortedComplement[
-    liquidLiquidExtractionSharedOptions,
-    Cases[OptionDefinition[ExperimentLiquidLiquidExtraction],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  liquidLiquidExtractionIndexMatchingSharedOptions=UnsortedComplement[
-    liquidLiquidExtractionSharedOptions,
-    liquidLiquidExtractionNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[LiquidLiquidExtraction,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          AllowNull->False,
-          Description->"The samples that contain the target analyte to be isolated via liquid liquid extraction.",
-          Category->"General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-            Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentLiquidLiquidExtraction,Symbol[#]}&)/@liquidLiquidExtractionIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[liquidLiquidExtractionNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentLiquidLiquidExtraction,Symbol[#]}&)/@liquidLiquidExtractionNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-    Methods->{ManualSamplePreparation,RoboticSamplePreparation},
-    WorkCells->{STAR,bioSTAR,microbioSTAR},
-    ExperimentFunction->ExperimentLiquidLiquidExtraction,
-    WorkCellResolverFunction->Experiment`Private`resolveLiquidLiquidExtractionWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","LiquidLiquidExtraction.png"}]],
-    InputOptions->{Sample},
-    LabeledOptions->{
-      Sample->SampleLabel,
-      Null->SampleContainerLabel,
-      Null->TargetLabel,
-      Null->TargetContainerLabel,
-      Null->ImpurityLabel,
-      Null->ImpurityContainerLabel
-    },
-    Generative->True,
-    GenerativeLabelOption->SampleOutLabel,
-    Category->"Sample Preparation",
-    Description->"Separates the aqueous and organic phases of given samples via pipette or phase separator, in order to isolate a target analyte that is more concentrated in either the aqueous or organic phase.",
-    Author -> {"Yahya.Benslimane", "dima"}
-  ]
-];
-
-
-(* ::Subsection:: *)
-(*CoulterCount Primitive*)
-
-
-coulterCountPrimitive=Module[
-  {coulterCountSharedOptions,coulterCountNonIndexMatchingSharedOptions,coulterCountIndexMatchingSuitabilitySharedOptions,coulterCountIndexMatchingSampleSharedOptions},
-
-  (* Copy over all of the options from ExperimentCoulterCount -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* These option names are strings *)
-  coulterCountSharedOptions=UnsortedComplement[
-    Options[ExperimentCoulterCount][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All,1]],"Simulation","PreparatoryUnitOperations","PreparatoryPrimitives"}]
-  ];
-
-  (* All the non-index matching options in string form! *)
-  coulterCountNonIndexMatchingSharedOptions=UnsortedComplement[
-    coulterCountSharedOptions,
-    Cases[OptionDefinition[ExperimentCoulterCount],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  (* All the index matching suitability options in string form! with IndexMatchingParent->SuitabilitySizeStandard *)
-  coulterCountIndexMatchingSuitabilitySharedOptions=Cases[
-    OptionDefinition[ExperimentCoulterCount],
-    KeyValuePattern["IndexMatching"->"SuitabilitySizeStandard"]
-  ][[All,"OptionName"]];
-
-  (* All the index matching sample options in string form! with IndexMatchingInput->"experiment samples" *)
-  coulterCountIndexMatchingSampleSharedOptions=UnsortedComplement[
-    coulterCountSharedOptions,
-    Join[coulterCountNonIndexMatchingSharedOptions,coulterCountIndexMatchingSuitabilitySharedOptions]
-  ];
-
-  DefinePrimitive[CoulterCount,
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"The samples (typically cells) to be counted and sized by the electrical resistance measurement.",
-          AllowNull->False,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              ObjectTypes->{Object[Sample],Object[Container]},
-              Dereference->{
-                Object[Container]->Field[Contents[[All,2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position"->Alternatives[
-                "A1 to P24"->Widget[
-                  Type->Enumeration,
-                  Pattern:>Alternatives@@Flatten[AllWells[NumberOfWells->384]],
-                  PatternTooltip->"Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position"->Widget[
-                  Type->String,
-                  Pattern:>LocationPositionP,
-                  PatternTooltip->"Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container"->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentCoulterCount,Symbol[#]}&)/@coulterCountIndexMatchingSampleSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      IndexMatching[
-        Sequence@@({ExperimentCoulterCount,Symbol[#]}&)/@coulterCountIndexMatchingSuitabilitySharedOptions,
-        IndexMatchingParent->SuitabilitySizeStandard
-      ],
-      If[Length[coulterCountNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentCoulterCount,Symbol[#]}&)/@coulterCountNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-    ExperimentFunction->ExperimentCoulterCount,
-    OutputUnitOperationParserFunction->InternalExperiment`Private`parseCoulterCountOutputUnitOperation,
-    (* CoulterCount is manual for now and not integrated to robotic yet so this function really just outputs Manual ALWAYS *)
-    MethodResolverFunction->Experiment`Private`resolveCoulterCountMethod,
-    (* We are not generating SamplesOut so Generative->False *)
-    Generative->False,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "CoulterCount.png"}]],
-    InputOptions->{Sample},
-    LabeledOptions->{Sample->SampleLabel},
-    Category->"Property Measurement",
-    Description->"Count and size particles (typically cells) of difference sizes in the provided sample by suspending them in a conductive electrolyte solution, pumping them through an aperture, and measuring the corresponding electrical resistance change caused by particles in place of the ions passing through the aperture. The electrical resistance change is measured by a voltage pulse recorded by the electronics such that the particle count is derived from the number of voltage pulses and the particle size is derived from the pulse shape and peak intensities.",
-    Methods->{ManualSamplePreparation},
-    Author->{"lei.tian"}
-  ]
-];
-
-
-(* ::Subsection:: *)
-(* LyseCells Primitive *)
-
-lyseCellsPrimitive = Module[
-  {lyseCellsSharedOptions, lyseCellsNonIndexMatchingSharedOptions, lyseCellsIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentLyseCells -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  lyseCellsSharedOptions = UnsortedComplement[
-    Options[ExperimentLyseCells][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  lyseCellsNonIndexMatchingSharedOptions = UnsortedComplement[
-    lyseCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentLyseCells], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  lyseCellsIndexMatchingSharedOptions = UnsortedComplement[
-    lyseCellsSharedOptions,
-    lyseCellsNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[LyseCells,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          AllowNull -> False,
-          Description -> "The cell samples whose membranes are to be ruptured in the cell lysis experiment.",
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentLyseCells,Symbol[#]}&) /@ lyseCellsIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[lyseCellsNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentLyseCells,Symbol[#]}&) /@ lyseCellsNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentLyseCells,
-    WorkCellResolverFunction -> Experiment`Private`resolveLyseCellsWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parseLyseCellsRoboticPrimitive,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseLyseCellsOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","LyseCells.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      Null -> PreLysisSupernatantLabel,
-      PreLysisSupernatantContainer -> PreLysisSupernatantContainerLabel,
-      Null -> PostClarificationPelletLabel,
-      Null -> PostClarificationPelletContainerLabel,
-      ClarifiedLysateContainer -> ClarifiedLysateContainerLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Ruptures the cell membranes of a cell containing sample to enable extraction of cellular components.",
-    Author -> {"tyler.pabst", "daniel.shlian"}
-  ]
-];
-
-(* ::Subsection:: *)
-(* Precipitate Primitive *)
-
-precipitatePrimitive = Module[
-  {precipitateSharedOptions, precipitateNonIndexMatchingSharedOptions, precipitateIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentPrecipitate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  precipitateSharedOptions = UnsortedComplement[
-    Options[ExperimentPrecipitate][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  precipitateNonIndexMatchingSharedOptions = UnsortedComplement[
-    precipitateSharedOptions,
-    Cases[OptionDefinition[ExperimentPrecipitate], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  precipitateIndexMatchingSharedOptions = UnsortedComplement[
-    precipitateSharedOptions,
-    precipitateNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Precipitate,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          AllowNull -> False,
-          Description -> "The samples which will be precipitated.",
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentPrecipitate,Symbol[#]}&) /@ precipitateIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[precipitateNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentPrecipitate,Symbol[#]}&) /@ precipitateNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {STAR, bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentPrecipitate,
-    WorkCellResolverFunction -> Experiment`Private`resolvePrecipitateWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","Precipitate.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      Null -> PrecipitatedSampleLabel,
-      PrecipitatedSampleContainerOut -> PrecipitatedSampleContainerLabel,
-      Null -> UnprecipitatedSampleLabel,
-      UnprecipitatedSampleContainerOut -> UnprecipitatedSampleContainerLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Combines precipitating reagent with sample and separates the resulting precipitate and liquid phase.",
-    Author -> "tim.pierpont"
-  ]
-];
-
-
-(* ::Subsection:: *)
-(* ExtractRNA Primitive *)
-
-extractRNAPrimitive = Module[
-  {extractRNASharedOptions, extractRNANonIndexMatchingSharedOptions, extractRNAIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentextractRNA -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  extractRNASharedOptions = UnsortedComplement[
-    Options[ExperimentExtractRNA][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  extractRNANonIndexMatchingSharedOptions = UnsortedComplement[
-    extractRNASharedOptions,
-    Cases[OptionDefinition[ExperimentExtractRNA], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  extractRNAIndexMatchingSharedOptions = UnsortedComplement[
-    extractRNASharedOptions,
-    extractRNANonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[ExtractRNA,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          AllowNull -> False,
-          Description -> "The live cell, cell lysate, or partially purified RNA sample(s) from which RNA is extracted.",
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-            Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentExtractRNA,Symbol[#]}&) /@ extractRNAIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[extractRNANonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentExtractRNA,Symbol[#]}&) /@ extractRNANonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentExtractRNA,
-    WorkCellResolverFunction -> Experiment`Private`resolveExtractRNAWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parseExtractRNARoboticPrimitive,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseExtractRNAOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","ExtractRNA.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      ContainerOut -> ExtractedRNAContainerLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> ExtractedRNALabel,
-    Category -> "Sample Preparation",
-    Description -> "Isolates RNA from live cell or cell lysate samples through lysing (if the input sample contains cells, rather than lysate), clearing the lysate of cellular debris by homogenization (optional), followed by one or more rounds of optional crude purification techniques including precipitation (such as a cold ethanol or isopropanol wash), liquid-liquid extraction (such as a phenol-chloroform extraction), solid phase extraction (such as a spin column), and magnetic bead separation (selectively binding RNA to magnetic beads while washing non-binding impurities from the mixture). Digestion enzymes can be added during any of these purification steps to degrade DNA in order to improve the purity of the extracted RNA. Extracted RNA can be further purified and analyzed with experiments including, but not limited to, ExperimentHPLC, ExperimentFPLC, and ExperimentPAGE (see experiment help files to learn more).",
-    Author -> "melanie.reschke"
-  ]
-];
-
-
-(* ::Subsection:: *)
-(* ExtractPlasmidDNA Primitive *)
-
-extractPlasmidDNAPrimitive = Module[
-  {
-    extractPlasmidDNASharedOptions, extractPlasmidDNANonIndexMatchingSharedOptions, extractPlasmidDNAIndexMatchingSharedOptions
-  },
-
-  (* Copy over all of the options from ExperimentExtractPlasmidDNA -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  extractPlasmidDNASharedOptions = UnsortedComplement[
-    Options[ExperimentExtractPlasmidDNA][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  extractPlasmidDNANonIndexMatchingSharedOptions = UnsortedComplement[
-    extractPlasmidDNASharedOptions,
-    Cases[OptionDefinition[ExperimentExtractPlasmidDNA], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  extractPlasmidDNAIndexMatchingSharedOptions = UnsortedComplement[
-    extractPlasmidDNASharedOptions,
-    extractPlasmidDNANonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[ExtractPlasmidDNA,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          AllowNull -> False,
-          Description -> "The live cell, cell lysate, or partially purified plasmid DNA sample(s) from which plasmid DNA is extracted.",
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentExtractPlasmidDNA,Symbol[#]}&) /@ extractPlasmidDNAIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[extractPlasmidDNANonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentExtractPlasmidDNA,Symbol[#]}&) /@ extractPlasmidDNANonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentExtractPlasmidDNA,
-    WorkCellResolverFunction -> Experiment`Private`resolveExtractPlasmidDNAWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","ExtractPlasmidDNA.png"}]],
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> ExtractedPlasmidDNALabel,
-    Category -> "Sample Preparation",
-    Description -> "Isolates plasmid DNA from live cell or cell lysate through lysing (if dealing with cells, rather than lysate), then neutralizing the pH of the solution to keep plasmid DNA soluble (through renaturing) and pelleting out insoluble cell components, followed by one or more rounds of optional purification techniques including  precipitation (such as a cold ethanol or isopropanol wash), liquid-liquid extraction (such as phenol:chloroform extraction), solid phase extraction (such as spin columns), and magnetic bead separation (selectively binding plasmid DNA to magnetic beads while washing non-binding impurities from the mixture).",
-    Author -> "taylor.hochuli"
-  ]
-];
-
-
-(* ::Subsection:: *)
-(* ExtractProtein Primitive *)
-
-extractProteinPrimitive = Module[
-  {extractProteinSharedOptions, extractProteinNonIndexMatchingSharedOptions, extractProteinIndexMatchingSharedOptions},
-
-  extractProteinSharedOptions = UnsortedComplement[
-    Options[ExperimentExtractProtein][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  extractProteinNonIndexMatchingSharedOptions = UnsortedComplement[
-    extractProteinSharedOptions,
-    Cases[OptionDefinition[ExperimentExtractProtein], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  extractProteinIndexMatchingSharedOptions = UnsortedComplement[
-    extractProteinSharedOptions,
-    extractProteinNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[ExtractProtein,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          AllowNull -> False,
-          Description -> "The live cell, cell lysate, or partially purified protein sample(s) from which protein is extracted.",
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentExtractProtein,Symbol[#]}&) /@ extractProteinIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[extractProteinNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentExtractProtein,Symbol[#]}&) /@ extractProteinNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentExtractProtein,
-    WorkCellResolverFunction -> Experiment`Private`resolveExtractProteinWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","ExtractRNA.png"}]],(* TODO change to ExtractProtein icon image *)
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Isolates protein from live cell or cell lysate through lysing (if dealing with cells, rather than lysate), followed by one or more rounds of optional purification techniques including  precipitation (such as by adding ammonium sulfate, TCA (trichloroacetic acid), or acetone etc.), liquid-liquid extraction (e.g. adding C4 and C5 alcohols (butanol, pentanol) followed by ammonium sulfate into the protein-containing aqueous solution), solid phase extraction (such as spin columns), and magnetic bead separation (selectively binding proteins to magnetic beads while washing non-binding impurities from the mixture). Note that ExperimentExtractProtein is intended to extract specific or non-specific proteins from the whole cells or cell lysate.",
-    Author -> "yanzhe.zhu"
-  ]
-];
-
-
-(* ::Subsection:: *)
-(* WashCells Primitive *)
-
-washCellsPrimitive = Module[
-  {washCellsSharedOptions, washCellsNonIndexMatchingSharedOptions, washCellsIndexMatchingSharedOptions},
-  washCellsSharedOptions = UnsortedComplement[
-    Options[ExperimentWashCells][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  washCellsNonIndexMatchingSharedOptions = UnsortedComplement[
-    washCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentWashCells], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  washCellsIndexMatchingSharedOptions = UnsortedComplement[
-    washCellsSharedOptions,
-    washCellsNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[WashCells,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          AllowNull->False,
-          Description->"The cell sample that is going to be washed or changed media.",
-          Category->"General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-            Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentWashCells,Symbol[#]}&) /@ washCellsIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[washCellsNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentWashCells,Symbol[#]}&) /@ washCellsNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentWashCells,
-    WorkCellResolverFunction -> Experiment`Private`resolveWashCellsWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parseWashCellsRoboticPrimitive,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseWashCellsOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","WashCells.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      AliquotMediaContainer -> AliquotMediaContainerLabel,
-      Null -> AliquotMediaLabel,
-      ContainerOut -> ContainerOutLabel,
-      Null -> SampleOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Wash living cells in order to remove impurities, debris, metablis, and media from cell samples that prohibits further cell growth or interfers with downstream experiments.",
-    Author -> "xu.yi"
-  ]
-];
-
-(* ::Subsection:: *)
-(* ChangeMedia Primitive *)
-
-changeMediaPrimitive = Module[
-  {changeMediaSharedOptions, changeMediaNonIndexMatchingSharedOptions, changeMediaIndexMatchingSharedOptions},
-  changeMediaSharedOptions = UnsortedComplement[
-    Options[ExperimentChangeMedia][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  changeMediaNonIndexMatchingSharedOptions = UnsortedComplement[
-    changeMediaSharedOptions,
-    Cases[OptionDefinition[ExperimentChangeMedia], KeyValuePattern["IndexMatching" -> Except["None"]]][[All,"OptionName"]]
-  ];
-
-  changeMediaIndexMatchingSharedOptions = UnsortedComplement[
-    changeMediaSharedOptions,
-    changeMediaNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[ChangeMedia,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          AllowNull->False,
-          Description->"The cell sample that is going to be washed or changed media.",
-          Category->"General",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-            Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentChangeMedia,Symbol[#]}&) /@ changeMediaIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[changeMediaNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentChangeMedia,Symbol[#]}&) /@ changeMediaNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {bioSTAR, microbioSTAR},
-    ExperimentFunction -> ExperimentChangeMedia,
-    WorkCellResolverFunction -> Experiment`Private`resolveWashCellsWorkCell,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parseWashCellsRoboticPrimitive,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseWashCellsOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"],"resources","images","WashCells.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      AliquotMediaContainer -> AliquotMediaContainerLabel,
-      Null -> AliquotMediaLabel,
-      ContainerOut -> ContainerOutLabel,
-      Null -> SampleOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Wash living cells in order to remove impurities, debris, metablis, and media from cell samples that prohibits further cell growth or interfers with downstream experiments.",
-    Author -> "xu.yi"
-  ]
-];
-
-
-(* ::Subsection:: *)
-(*CountLiquidParticles Primitive*)
-
-
-(* ::Code::Initialization:: *)
-countLiquidParticlesPrimitive = Module[
-  {
-    countLiquidParticleSharedOptions, countLiquidParticleNonIndexMatchingSharedOptions, countLiquidParticleIndexMatchingPrimeSolutionSharedOptions,
-    countLiquidParticleIndexMatchingSampleSharedOptions
-  },
-
-  (* Copy over all of the options from ExperimentTransfer -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  countLiquidParticleSharedOptions =UnsortedComplement[
-    Options[ExperimentCountLiquidParticles][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  countLiquidParticleNonIndexMatchingSharedOptions=UnsortedComplement[
-    countLiquidParticleSharedOptions,
-    Cases[OptionDefinition[ExperimentCountLiquidParticles], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  countLiquidParticleIndexMatchingPrimeSolutionSharedOptions=Cases[
-    OptionDefinition[ExperimentCountLiquidParticles],
-    KeyValuePattern["IndexMatching" -> "PrimeSolutions"]
-  ][[All, "OptionName"]];
-
-  countLiquidParticleIndexMatchingSampleSharedOptions=UnsortedComplement[
-    countLiquidParticleSharedOptions,
-    Join[countLiquidParticleNonIndexMatchingSharedOptions,countLiquidParticleIndexMatchingPrimeSolutionSharedOptions]
-  ];
-
-  DefinePrimitive[CountLiquidParticles,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be analysed with the liquid particle counter.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentCountLiquidParticles, Symbol[#]}&) /@ countLiquidParticleIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentCountLiquidParticles, Symbol[#]}&) /@ countLiquidParticleIndexMatchingPrimeSolutionSharedOptions,
-        IndexMatchingParent -> PrimeSolutions
-      ],
-      If[Length[countLiquidParticleNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentCountLiquidParticles, Symbol[#]}&) /@ countLiquidParticleNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    ExperimentFunction -> ExperimentCountLiquidParticles,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseCountLiquidParticlesOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveCountLiquidParticlesMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "CountLiquidParticles.png"}]],
-    LabeledOptions ->  {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Category -> "Property Measurement",
-    Description -> "Count the liquid particle sizes of a liquid sample.",
-    Methods -> {ManualCellPreparation,ManualSamplePreparation}
-  ]
-];
-
-(* ::Subsection:: *)
-(*GrowCrystal Primitive*)
-growCrystalPrimitive = Module[
-  {
-    growCrystalSharedOptions, growCrystalNonIndexMatchingSharedOptions, growCrystalIndexMatchingSampleSharedOptions
-  },
-  (* Copy over all of the options from ExperimentMagneticBeadSeparation -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  growCrystalSharedOptions = UnsortedComplement[
-    Options[ExperimentGrowCrystal][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  growCrystalNonIndexMatchingSharedOptions = UnsortedComplement[
-    growCrystalSharedOptions,
-    Cases[OptionDefinition[ExperimentGrowCrystal], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  growCrystalIndexMatchingSampleSharedOptions = UnsortedComplement[
-    growCrystalSharedOptions,
-    growCrystalNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[GrowCrystal,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The sample solutions containing target proteins or small molecules which will be plated in order to grow crystals.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size -> Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence@@({ExperimentGrowCrystal, Symbol[#]}&) /@ growCrystalIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[growCrystalNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence@@({ExperimentGrowCrystal, Symbol[#]}&) /@ growCrystalNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentGrowCrystal,
-    MethodResolverFunction -> None,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseGrowCrystalOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "GrowCrystal.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      CrystallizationPlate -> CrystallizationPlateLabel,
-      Null -> DropSamplesOutLabel,
-      Null -> ReservoirSamplesOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> DropSamplesOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Prepares crystallization plate designed to grow crystals, and incubate and image the prepared crystallization plate.",
-    Author -> {"lige.tonggu", "thomas"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*ICPMS Primitive*)
-
-Authors[ICPMS]:= {"hanming.yang"}
-
-icpmsPrimitive = Module[
-  {
-    icpmsSharedOptions, icpmsNonIndexMatchingSharedOptions, icpmsIndexMatchingSampleSharedOptions,
-    icpmsIndexMatchingElementsSharedOptions, icpmsIndexMatchingExternalStandardSharedOptions
-  },
-
-  (* Copy over all options from ExperimentICPMS -- except for the funtopia shared options *)
-  icpmsSharedOptions = UnsortedComplement[
-    Options[ExperimentICPMS][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  (* Get non-index-matching options *)
-  icpmsNonIndexMatchingSharedOptions = UnsortedComplement[
-    icpmsSharedOptions,
-    Cases[OptionDefinition[ExperimentICPMS], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  (* Get options index match to Elements *)
-  icpmsIndexMatchingElementsSharedOptions = Cases[
-    OptionDefinition[ExperimentICPMS],
-    KeyValuePattern["IndexMatching" -> "Elements"]
-  ][[All, "OptionName"]];
-
-  (* Get options index match to ExternalStandard *)
-  icpmsIndexMatchingExternalStandardSharedOptions = Cases[
-    OptionDefinition[ExperimentICPMS],
-    KeyValuePattern["IndexMatching" -> "ExternalStandard"]
-  ][[All, "OptionName"]];
-
-  (* Get options index match to sample *)
-  icpmsIndexMatchingSampleSharedOptions = UnsortedComplement[
-    icpmsSharedOptions,
-    Join[icpmsNonIndexMatchingSharedOptions,icpmsIndexMatchingElementsSharedOptions, icpmsIndexMatchingExternalStandardSharedOptions]
-  ];
-
-  DefinePrimitive[ICPMS,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be analyzed with ICP-MS instrument.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentICPMS, Symbol[#]}&) /@ icpmsIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentICPMS, Symbol[#]}&) /@ icpmsIndexMatchingElementsSharedOptions,
-        IndexMatchingParent -> Elements
-      ],
-      IndexMatching[
-        Sequence @@ ({ExperimentICPMS, Symbol[#]}&) /@ icpmsIndexMatchingExternalStandardSharedOptions,
-        IndexMatchingParent -> ExternalStandard
-      ],
-      If[Length[icpmsNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentICPMS, Symbol[#]}&) /@ icpmsNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    ExperimentFunction -> ExperimentICPMS,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseICPMSOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveExperimentICPMSMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "MassSpectometry.png"}]],
-    LabeledOptions ->  {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Category -> "Property Measurement",
-    Description -> "Atomize, ionize and analyze the elemental composition of the input analyte.",
-    Methods -> {ManualSamplePreparation}
-  ]
-];
-
-(* ::Subsection:: *)
-(*MicrowaveDigestion Primitive*)
-
-microwaveDigestionPrimitive = Module[
-  {
-    microwaveDigestionSharedOptions, microwaveDigestionNonIndexMatchingSharedOptions, microwaveDigestionIndexMatchingSampleSharedOptions
-  },
-
-  (* Copy over all options from ExperimentMicrowaveDigestion -- except for the funtopia shared options *)
-  microwaveDigestionSharedOptions = UnsortedComplement[
-    Options[ExperimentMicrowaveDigestion][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  (* Get non-index-matching options *)
-  microwaveDigestionNonIndexMatchingSharedOptions = UnsortedComplement[
-    microwaveDigestionSharedOptions,
-    Cases[OptionDefinition[ExperimentMicrowaveDigestion], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  (* Get options index match to sample *)
-  microwaveDigestionIndexMatchingSampleSharedOptions = UnsortedComplement[
-    microwaveDigestionSharedOptions,
-    microwaveDigestionNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[MicrowaveDigestion,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be digested with microwave reactor.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentMicrowaveDigestion, Symbol[#]}&) /@ microwaveDigestionIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[microwaveDigestionIndexMatchingSampleSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentMicrowaveDigestion, Symbol[#]}&) /@ microwaveDigestionIndexMatchingSampleSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentMicrowaveDigestion,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseMicrowaveDigestionOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveExperimentMicrowaveDigestionMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "autoclave.png"}]],
-    LabeledOptions ->  {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Digest sample with microwave to ensure full solubility for subsequent analysis, especially for ICP-MS.",
-    Methods -> {ManualSamplePreparation},
-    Author -> {"kelmen.low", "harrison.gronlund"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*DynamicLightScattering Primitive*)
-
-dynamicLightScatteringPrimitive=Module[
-  {
-    dynamicLightScatteringSharedOptions,dynamicLightScatteringNonIndexMatchingSharedOptions,
-    dynamicLightScatteringIndexMatchingSampleSharedOptions
-  },
-
-  (* Copy over all of the options from ExperimentTransfer -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  dynamicLightScatteringSharedOptions =UnsortedComplement[
-    Options[ExperimentDynamicLightScattering][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives","StandardDilutionCurve", "SerialDilutionCurve"}]
-  ];
-
-  dynamicLightScatteringNonIndexMatchingSharedOptions=UnsortedComplement[
-    dynamicLightScatteringSharedOptions,
-    Cases[OptionDefinition[ExperimentDynamicLightScattering], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  dynamicLightScatteringIndexMatchingSampleSharedOptions=UnsortedComplement[
-    dynamicLightScatteringSharedOptions,
-    dynamicLightScatteringNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[DynamicLightScattering,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be analzyed by Dynamic Light Scattering (DLS).",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to P24."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentDynamicLightScattering, Symbol[#]}&) /@ dynamicLightScatteringIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[dynamicLightScatteringNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentDynamicLightScattering, Symbol[#]}&) /@ dynamicLightScatteringNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods->{ManualSamplePreparation},
-    ExperimentFunction -> ExperimentDynamicLightScattering,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseDynamicLightScatteringOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveDynamicLightScatteringMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "DynamicLightScattering.png"}]],
-    LabeledOptions ->  {Sample -> SampleLabel},
-    InputOptions -> {Sample},
-    Category -> "Property Measurement",
-    Description -> "Determine the hydrodynamic radius of an analyte via Dynamic Light Scattering.",
-    Author -> {"kelmen.low", "harrison.gronlund"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*Desiccate Primitive*)
-
-desiccatePrimitive = Module[
-  {
-    desiccateSharedOptions,
-    desiccateNonIndexMatchingSharedOptions,
-    desiccateIndexMatchingSharedOptions
-  },
-
-  (* Copy over all of the options from ExperimentDesiccate -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  desiccateSharedOptions =UnsortedComplement[
-    Options[ExperimentDesiccate][[All, 1]],
-    Complement[
-      Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}](*,
-      (* NOTE: We DO want to copy over the aliquot options for the manual primitive. *)
-      Options[AliquotOptions][[All, 1]]*)
-    ]
-  ];
-
-  desiccateNonIndexMatchingSharedOptions=UnsortedComplement[
-    desiccateSharedOptions,
-    Cases[OptionDefinition[ExperimentDesiccate], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  desiccateIndexMatchingSharedOptions=UnsortedComplement[
-    desiccateSharedOptions,
-    desiccateNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Desiccate,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be desiccated.",
-          AllowNull -> True,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            ObjectTypes -> {Object[Sample], Object[Container]},
-            Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentDesiccate, Symbol[#]}&) /@ desiccateIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[desiccateNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentDesiccate, Symbol[#]}&) /@ desiccateNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentDesiccate,
-    MethodResolverFunction -> Null,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseDesiccateOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "Desiccate.png"}]],
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      SampleContainer->SampleContainerLabel,
-      ContainerOut->ContainerOutLabel,
-      Null->SampleOutLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Dries out solid substances by absorbing water molecules from the samples through exposing them to a chemical desiccant in a bell jar desiccator under vacuum or non-vacuum conditions."
-  ]
-];
-
-(* ::Subsection:: *)
-(*Grind Primitive*)
-
-grindPrimitive = Module[{grindSharedOptions, grindNonIndexMatchingSharedOptions, grindIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentGrind -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  grindSharedOptions =UnsortedComplement[
-    Options[ExperimentGrind][[All, 1]],
-    Complement[
-      Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}],
-      (* NOTE: We DO want to copy over the aliquot options for the manual primitive. *)
-      Options[AliquotOptions][[All, 1]]
-    ]
-  ];
-
-  grindNonIndexMatchingSharedOptions=UnsortedComplement[
-    grindSharedOptions,
-    Cases[OptionDefinition[ExperimentGrind], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  grindIndexMatchingSharedOptions=UnsortedComplement[
-    grindSharedOptions,
-    grindNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[Grind,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that should be ground into smaller powder particles by grinders.",
-          AllowNull -> True,
-          Category -> "General",
-          Widget -> Widget[
-            Type -> Object,
-            Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-            ObjectTypes -> {Object[Sample], Object[Container]},
-            Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentGrind, Symbol[#]}&) /@ grindIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[grindNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentGrind, Symbol[#]}&) /@ grindNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentGrind,
-    MethodResolverFunction -> Null,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseGrindOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "Grind.png"}]],
-    LabeledOptions -> {
-      Sample->SampleLabel,
-      ContainerOut->ContainerOutLabel,
-      Null->SampleOutLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Sample Preparation",
-    Description -> "Reduces the size of powder particles by grinding solid substances into fine powders via a grinder (mill)."
-  ]
-];
-(* ::Subsection:: *)
-(*MeasureMeltingPoint Primitive*)
-
-measureMeltingPointPrimitive = Module[{measureMeltingPointSharedOptions, measureMeltingPointNonIndexMatchingSharedOptions, measureMeltingPointIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentMeasureMeltingPoint -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  (* NOTE: If you don't have aliquot options and are reusing an aliquot option symbol, BE CAREFUL because your option will *)
-  (* be complemented out since FuntopiaSharedOptions contains AliquotOptions. *)
-  measureMeltingPointSharedOptions =UnsortedComplement[
-    Options[ExperimentMeasureMeltingPoint][[All, 1]],
-    Complement[
-      Flatten[{Options[ProtocolOptions][[All, 1]], "NumberOfReplicates", "Simulation", "EnableSamplePreparation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}],
-      (* NOTE: We DO want to copy over the aliquot options for the manual primitive. *)
-      Options[AliquotOptions][[All, 1]]
-    ]
-  ];
-
-  measureMeltingPointNonIndexMatchingSharedOptions=UnsortedComplement[
-    measureMeltingPointSharedOptions,
-    Cases[OptionDefinition[ExperimentMeasureMeltingPoint], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  measureMeltingPointIndexMatchingSharedOptions=UnsortedComplement[
-    measureMeltingPointSharedOptions,
-    measureMeltingPointNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[MeasureMeltingPoint,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The input samples whose melting temperatures are measured. The input samples can be solid substances, such as powders or substances that can be easily ground into powders, that will be packed into melting point capillary tubes before measuring their melting points or melting point capillary tubes that were previously packed with powders.",
-          AllowNull -> True,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Solid sample" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Prepacked melting point capillary tube" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Container, Capillary]}],
-              ObjectTypes -> {Object[Container,Capillary]}
-            ]
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentMeasureMeltingPoint, Symbol[#]}&) /@ measureMeltingPointIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[measureMeltingPointNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentMeasureMeltingPoint, Symbol[#]}&) /@ measureMeltingPointNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {ManualSamplePreparation},
-    ExperimentFunction -> ExperimentMeasureMeltingPoint,
-    MethodResolverFunction -> Null,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseMeasureMeltingPointOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "MeltingPoint.png"}]],
-    LabeledOptions -> {
-      Sample->SampleLabel,
-      SampleContainer->SampleContainerLabel,
-      Null->PreparedSampleLabel,
-      PreparedSampleContainer->PreparedSampleContainerLabel
-    },
-    InputOptions -> {Sample},
-    Generative -> False,
-    CompletedOptions -> {
-      GrindingVideos,ValvePosition,DesiccationImages,
-      Sensor,Pressure,Capillaries,NumberOfCapillaries,
-      SealCapillary,Seals
-    },
-    Category -> "Sample Preparation",
-    Description -> "Measures the melting points of the input 'Samples' using a melting point apparatus that applies an increasing temperature gradient to melting point capillary tubes containing a small amount of the input samples. This experiment can be performed on samples that were previously packed into melting point capillary tubes or fresh samples that need to be packed."
-  ]
-];
-
-(* ::Subsection:: *)
-(*CrossFlowFiltration Primitives*)
-
-crossflowFiltrationPrimitive = Module[
-  {
-    crossflowFiltrationSharedOptions, crossflowFiltrationNonIndexMatchingSharedOptions, crossflowFiltrationIndexMatchingPrimeSolutionSharedOptions,
-    crossflowFiltrationIndexMatchingSampleSharedOptions
-  },
-
-  (* Copy over all of the options from ExperimentTransfer -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  crossflowFiltrationSharedOptions =UnsortedComplement[
-    Options[ExperimentCrossFlowFiltration][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  crossflowFiltrationNonIndexMatchingSharedOptions=UnsortedComplement[
-    crossflowFiltrationSharedOptions,
-    Cases[OptionDefinition[ExperimentCrossFlowFiltration], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
-  ];
-
-  crossflowFiltrationIndexMatchingSampleSharedOptions=UnsortedComplement[
-    crossflowFiltrationSharedOptions,
-    crossflowFiltrationNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[CrossFlowFiltration,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "The samples that are filtered by cross-flow filtration technique.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container"->Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              ObjectTypes -> {Object[Sample], Object[Container]},
-              Dereference -> {
-                Object[Container] -> Field[Contents[[All, 2]]]
-              }
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Alternatives[
-                "A1 to P24" -> Widget[
-                  Type -> Enumeration,
-                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                  PatternTooltip -> "Enumeration must be any well from A1 to H12."
-                ],
-                "Container Position" -> Widget[
-                  Type -> String,
-                  Pattern :> LocationPositionP,
-                  PatternTooltip -> "Any valid container position.",
-                  Size->Line
-                ]
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentCrossFlowFiltration, Symbol[#]}&) /@ crossflowFiltrationIndexMatchingSampleSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[crossflowFiltrationNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence @@ ({ExperimentCrossFlowFiltration, Symbol[#]}&) /@ crossflowFiltrationNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    ExperimentFunction -> ExperimentCrossFlowFiltration,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseCrossFlowFiltrationOutputUnitOperation,
-    MethodResolverFunction -> Experiment`Private`resolveCrossFlowFiltrationMethod,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "FilterIcon.png"}]],
-    LabeledOptions ->  {
-      Sample -> SampleLabel,
-      RetentateContainerOut -> RetentateContainerOutLabel,
-      PermeateContainerOut -> PermeateContainerOutLabel,
-      Null -> SampleContainerLabel,
-      Null -> RetentateSampleOutLabel,
-      Null -> PermeateSampleOutLabel
-    },
-    InputOptions -> {Sample},
-    Category -> "Sample Preparation",
-    Description -> "Flow samples tangentially across the surface of the filter to be concentrated and/or exchange its own solution with another buffer solution.",
-    Methods -> {ManualSamplePreparation},
-    CompletedOptions -> {
-      EnvironmentalData, Sample
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel
-  ]
-];
-
-
-
-
-(* ::Subsection:: *)
-(*PickColonies Primitive*)
-pickColoniesPrimitive=Module[
-  {pickColoniesSharedOptions,pickColoniesNonIndexMatchingSharedOptions,pickColoniesIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentPickColonies -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  pickColoniesSharedOptions=UnsortedComplement[
-    Options[ExperimentPickColonies][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  pickColoniesNonIndexMatchingSharedOptions=UnsortedComplement[
-    pickColoniesSharedOptions,
-    Cases[OptionDefinition[ExperimentPickColonies],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  pickColoniesIndexMatchingSharedOptions=UnsortedComplement[
-    pickColoniesSharedOptions,
-    pickColoniesNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[PickColonies,
-    (* Input Options *)
-    Options:>{
-      IndexMatching[
-        {
-          OptionName->Sample,
-          Default->Null,
-          Description->"Input samples that colonies are growing on and are picked from.",
-          AllowNull->False,
-          Category->"General",
-          Widget->Alternatives[
-            "Sample or Container"->Widget[
-              Type->Object,
-              Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-              Dereference->{Object[Container]->Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position"->{
-              "Well Position" -> Widget[
-                Type -> Enumeration,
-                Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                PatternTooltip -> "Enumeration must be any well from A1 to H12."
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required->True
-        },
-        IndexMatchingParent->Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        Sequence@@({ExperimentPickColonies,Symbol[#]}&)/@pickColoniesIndexMatchingSharedOptions,
-        IndexMatchingParent->Sample
-      ],
-      If[Length[pickColoniesNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentPickColonies,Symbol[#]}&)/@pickColoniesNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions:>insertMe
-    ],
-    Methods->{RoboticCellPreparation},
-    WorkCells->{qPix},
-    ExperimentFunction->ExperimentPickColonies,
-    WorkCellResolverFunction->Experiment`Private`resolvePickColoniesWorkCell,
-    MethodResolverFunction-> Experiment`Private`resolvePickColoniesMethod,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parsePickColoniesRoboticPrimitive,
-    OutputUnitOperationParserFunction->None,
-    Icon->Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "MicroPickColonies.png"}]],
-    InputOptions->{Sample},
-    LabeledOptions->{
-      Null->SampleOutLabel,
-      Null->ContainerOutLabel
-    },
-    Generative->True,
-    GenerativeLabelOption->SampleOutLabel,
-    Category->"Cell Preparation",
-    Description->"Moves bacterial colonies growing on solid media to a new liquid or solid media.",
-    Author -> {"harrison.gronlund", "kelmen.low"}
-  ]
-];
-
-
-(* ::Subsection:: *)
-(*InoculateLiquidMedia Primitive*)
-inoculateLiquidMediaPrimitive=Module[
-  {inoculateLiquidMediaSharedOptions,inoculateLiquidMediaNonIndexMatchingSharedOptions,inoculateLiquidMediaIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentInoculateLiquidMedia -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  inoculateLiquidMediaSharedOptions=UnsortedComplement[
-    Options[ExperimentInoculateLiquidMedia][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  inoculateLiquidMediaNonIndexMatchingSharedOptions=UnsortedComplement[
-    inoculateLiquidMediaSharedOptions,
-    Cases[OptionDefinition[ExperimentInoculateLiquidMedia],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  inoculateLiquidMediaIndexMatchingSharedOptions=UnsortedComplement[
-    inoculateLiquidMediaSharedOptions,
-    inoculateLiquidMediaNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[InoculateLiquidMedia,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "Input samples where colonies are growing that need to be transferred.",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-              Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Widget[
-                Type -> Enumeration,
-                Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                PatternTooltip -> "Enumeration must be any well from A1 to H12."
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        },
-        IndexMatchingParent -> Sample
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe = {
-      IndexMatching[
-        Sequence @@ ({ExperimentInoculateLiquidMedia, Symbol[#]}&) /@ inoculateLiquidMediaIndexMatchingSharedOptions,
-        IndexMatchingParent -> Sample
-      ],
-      If[Length[inoculateLiquidMediaNonIndexMatchingSharedOptions] == 0,
-        Nothing,
-        Sequence @@ ({ExperimentInoculateLiquidMedia, Symbol[#]}&) /@ inoculateLiquidMediaNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells -> {qPix},
-    ExperimentFunction -> ExperimentInoculateLiquidMedia,
-    WorkCellResolverFunction -> Experiment`Private`resolveInoculateLiquidMediaWorkCell,
-    MethodResolverFunction -> Experiment`Private`resolveInoculateLiquidMediaMethod,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> InternalExperiment`Private`parsePickColoniesRoboticPrimitive,
-    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseInoculateLiquidMediaOutputUnitOperation,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "InoculateLiquidMedia.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      Null -> SampleContainerLabel,
-      Null -> SampleOutLabel,
-      Null -> ContainerOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Cell Preparation",
-    Description -> "Moves bacterial colonies growing on solid media or in liquid media to fresh liquid media.",
-    Author -> {"harrison.gronlund", "kelmen.low"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*SpreadCells Primitive*)
-spreadCellsPrimitive=Module[
-  {spreadCellsSharedOptions,spreadCellsNonIndexMatchingSharedOptions,spreadCellsIndexMatchingSharedOptions},
-
-  (* Copy over all of the options from ExperimentSpreadCells -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  spreadCellsSharedOptions=UnsortedComplement[
-    Options[ExperimentSpreadCells][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All,1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  spreadCellsNonIndexMatchingSharedOptions=UnsortedComplement[
-    spreadCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentSpreadCells],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  spreadCellsIndexMatchingSharedOptions=UnsortedComplement[
-    spreadCellsSharedOptions,
-    spreadCellsNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[SpreadCells,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        IndexMatchingParent -> Sample,
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "Input samples that are spread on solid media",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-              Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Widget[
-                Type -> Enumeration,
-                Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                PatternTooltip -> "Enumeration must be any well from A1 to H12."
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        }
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        IndexMatchingParent -> Sample,
-        Sequence@@({ExperimentSpreadCells,Symbol[#]}&)/@spreadCellsIndexMatchingSharedOptions
-      ],
-      If[Length[spreadCellsNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentSpreadCells,Symbol[#]}&)/@spreadCellsNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells->{qPix},
-    ExperimentFunction -> ExperimentSpreadCells,
-    WorkCellResolverFunction -> Experiment`Private`resolveSpreadAndStreakWorkCell,
-    MethodResolverFunction -> Experiment`Private`resolveSpreadAndStreakMethod,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "MicroSpreadCells.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      Null -> SampleContainerLabel,
-      Null -> SampleOutLabel,
-      Null -> ContainerOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Cell Preparation",
-    Description -> "Moves suspended colonies growing in liquid media to solid media and moves them across the surface of the media in a pattern to promote growth of the colonies.",
-    Author -> {"Yahya.Benslimane", "dima"}
-  ]
-];
-
-(* ::Subsection:: *)
-(*StreakCells Primitive*)
-streakCellsPrimitive=Module[
-  {streakCellsSharedOptions,streakCellsNonIndexMatchingSharedOptions,streakCellsIndexMatchingSharedOptions},
-
-  (* Copy over all of the options from ExperimentStreakCells -- except for the funtopia shared options (Cache, Upload, etc.) *)
-  streakCellsSharedOptions=UnsortedComplement[
-    Options[ExperimentStreakCells][[All,1]],
-    Flatten[{Options[ProtocolOptions][[All,1]], "Simulation", "PreparatoryUnitOperations", "PreparatoryPrimitives"}]
-  ];
-
-  streakCellsNonIndexMatchingSharedOptions=UnsortedComplement[
-    streakCellsSharedOptions,
-    Cases[OptionDefinition[ExperimentStreakCells],KeyValuePattern["IndexMatching"->Except["None"]]][[All,"OptionName"]]
-  ];
-
-  streakCellsIndexMatchingSharedOptions=UnsortedComplement[
-    streakCellsSharedOptions,
-    streakCellsNonIndexMatchingSharedOptions
-  ];
-
-  DefinePrimitive[StreakCells,
-    (* Input Options *)
-    Options :> {
-      IndexMatching[
-        IndexMatchingParent -> Sample,
-        {
-          OptionName -> Sample,
-          Default -> Null,
-          Description -> "Input samples that are streak on solid media",
-          AllowNull -> False,
-          Category -> "General",
-          Widget -> Alternatives[
-            "Sample or Container" -> Widget[
-              Type -> Object,
-              Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-              Dereference -> {Object[Container] -> Field[Contents[[All,2]]]}
-            ],
-            "Container with Well Position" -> {
-              "Well Position" -> Widget[
-                Type -> Enumeration,
-                Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
-                PatternTooltip -> "Enumeration must be any well from A1 to H12."
-              ],
-              "Container" -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Container]}]
-              ]
-            }
-          ],
-          Required -> True
-        }
-      ]
-    },
-    (* Shared Options *)
-    With[{insertMe={
-      IndexMatching[
-        IndexMatchingParent -> Sample,
-        Sequence@@({ExperimentStreakCells,Symbol[#]}&)/@streakCellsIndexMatchingSharedOptions
-      ],
-      If[Length[streakCellsNonIndexMatchingSharedOptions]==0,
-        Nothing,
-        Sequence@@({ExperimentStreakCells,Symbol[#]}&)/@streakCellsNonIndexMatchingSharedOptions
-      ]
-    }
-    },
-      SharedOptions :> insertMe
-    ],
-    Methods -> {RoboticCellPreparation},
-    WorkCells->{qPix},
-    ExperimentFunction -> ExperimentStreakCells,
-    WorkCellResolverFunction -> Experiment`Private`resolveSpreadAndStreakWorkCell,
-    MethodResolverFunction -> Experiment`Private`resolveSpreadAndStreakMethod,
-    RoboticExporterFunction -> None,
-    RoboticParserFunction -> None,
-    OutputUnitOperationParserFunction -> None,
-    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "MicroStreakCells.png"}]],
-    InputOptions -> {Sample},
-    LabeledOptions -> {
-      Sample -> SampleLabel,
-      Null -> SampleContainerLabel,
-      Null -> SampleOutLabel,
-      Null -> ContainerOutLabel
-    },
-    Generative -> True,
-    GenerativeLabelOption -> SampleOutLabel,
-    Category -> "Cell Preparation",
-    Description -> "Moves suspended colonies growing in liquid media to solid media and moves them across the surface of the media in a pattern to try and isolate individual colonies.",
-    Author -> {"Yahya.Benslimane", "dima"}
-  ]
-];
-
-(* ::Section:: *)
-(*Primitive Set Definitions*)
-
-
-(* ::Code::Initialization:: *)
-Clear[ExperimentP];
-DefinePrimitiveSet[
-  ExperimentP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    fluorescencePolarizationPrimitive,
-    fluorescencePolarizationKineticsPrimitive,
-    alphaScreenPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    filterPrimitive,
-    spePrimitive,
-    pelletPrimitive,
-    fillToVolumePrimitive,
-    adjustpHPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    degasPrimitive,
-    magneticBeadSeparationPrimitive,
-    liquidLiquidExtractionPrimitive,
-    precipitatePrimitive,
-    flashChromatographyPrimitive,
-    coulterCountPrimitive,
-    countLiquidParticlesPrimitive,
-    growCrystalPrimitive,
-    microwaveDigestionPrimitive,
-    dynamicLightScatteringPrimitive,
-    desiccatePrimitive,
-    grindPrimitive,
-    measureMeltingPointPrimitive,
-    crossflowFiltrationPrimitive,
-
-    (* Cell Related Unit Operations *)
-    thawCellsPrimitive,
-    incubateCellsPrimitive,
-    pcrPrimitive,
-    flowCytometryPrimitive,
-    imageCellsPrimitive,
-    lyseCellsPrimitive,
-    washCellsPrimitive,
-    changeMediaPrimitive,
-    pickColoniesPrimitive,
-    spreadCellsPrimitive,
-    streakCellsPrimitive,
-    inoculateLiquidMediaPrimitive,
-    extractPlasmidDNAPrimitive,
-    extractRNAPrimitive,
-    extractProteinPrimitive,
-
-    (* Measure property *)
-    measureRefractiveIndexPrimitive,
-    visualInspectionPrimitive,
-    icpmsPrimitive,
-    measureContactAnglePrimitive
-  },
-  MethodOptions:>{
-    ManualSamplePreparation:>{
-      ManualSamplePreparationOptions
-    },
-    RoboticSamplePreparation:>{
-      RoboticSamplePreparationOptions
-    }
-  }
-];
-
-Clear[SamplePreparationP];
-DefinePrimitiveSet[
-  SamplePreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    fluorescencePolarizationPrimitive,
-    fluorescencePolarizationKineticsPrimitive,
-    alphaScreenPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    filterPrimitive,
-    spePrimitive,
-    pelletPrimitive,
-    fillToVolumePrimitive,
-    adjustpHPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    measureRefractiveIndexPrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    degasPrimitive,
-    magneticBeadSeparationPrimitive,
-    liquidLiquidExtractionPrimitive,
-    precipitatePrimitive,
-    flashChromatographyPrimitive,
-    coulterCountPrimitive,
-    countLiquidParticlesPrimitive,
-    crossflowFiltrationPrimitive,
-    desiccatePrimitive,
-    grindPrimitive,
-    measureMeltingPointPrimitive,
-    visualInspectionPrimitive,
-    growCrystalPrimitive,
-    microwaveDigestionPrimitive,
-    measureContactAnglePrimitive,
-    dynamicLightScatteringPrimitive,
-    washCellsPrimitive,
-    changeMediaPrimitive,
-
-    (* Synthesis *)
-    pcrPrimitive
-
-  },
-  MethodOptions:>{
-    ManualSamplePreparation:>{
-      ManualSamplePreparationOptions
-    },
-    RoboticSamplePreparation:>{
-      RoboticSamplePreparationOptions
-    }
-  }
-];
-
-Clear[ManualSamplePreparationP];
-DefinePrimitiveSet[
-  ManualSamplePreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    fluorescencePolarizationPrimitive,
-    fluorescencePolarizationKineticsPrimitive,
-    alphaScreenPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    filterPrimitive,
-    spePrimitive,
-    pelletPrimitive,
-    fillToVolumePrimitive,
-    adjustpHPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    measureRefractiveIndexPrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    degasPrimitive,
-    magneticBeadSeparationPrimitive,
-    flashChromatographyPrimitive,
-    coulterCountPrimitive,
-    countLiquidParticlesPrimitive,
-    crossflowFiltrationPrimitive,
-    desiccatePrimitive,
-    grindPrimitive,
-    measureMeltingPointPrimitive,
-    visualInspectionPrimitive,
-    growCrystalPrimitive,
-    microwaveDigestionPrimitive,
-    measureContactAnglePrimitive,
-    dynamicLightScatteringPrimitive,
-
-    (* Synthesis *)
-    pcrPrimitive
-  },
-  MethodOptions:>{
-    ManualSamplePreparation:>{
-      ManualSamplePreparationOptions
-    }
-  }
-];
-
-Clear[RoboticSamplePreparationP];
-DefinePrimitiveSet[
-  RoboticSamplePreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    filterPrimitive,
-    spePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    (* FP/FPK can only be done the PheraSTAR, which is not connected to a liquid handler. *)
-    (* Nephelometry can only be done on the bioSTAR/microbioSTAR. *)
-    alphaScreenPrimitive,
-    pelletPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    magneticBeadSeparationPrimitive,
-    liquidLiquidExtractionPrimitive,
-    precipitatePrimitive,
-    washCellsPrimitive,
-    changeMediaPrimitive
-  },
-  MethodOptions:>{
-    RoboticSamplePreparation:>{
-      RoboticSamplePreparationOptions
-    }
-  }
-];
-
-Clear[CellPreparationP];
-DefinePrimitiveSet[
-  CellPreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    fluorescencePolarizationPrimitive,
-    fluorescencePolarizationKineticsPrimitive,
-    alphaScreenPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    filterPrimitive,
-    spePrimitive,
-    pelletPrimitive,
-    fillToVolumePrimitive,
-    adjustpHPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    magneticBeadSeparationPrimitive,
-    liquidLiquidExtractionPrimitive,
-    precipitatePrimitive,
-    extractPlasmidDNAPrimitive,
-    extractRNAPrimitive,
-    extractProteinPrimitive,
-
-    (* Cell Prep *)
-    thawCellsPrimitive,
-    incubateCellsPrimitive,
-    pcrPrimitive,
-    flowCytometryPrimitive,
-    imageCellsPrimitive,
-    lyseCellsPrimitive,
-    washCellsPrimitive,
-    changeMediaPrimitive,
-    imageCellsPrimitive,
-    pickColoniesPrimitive,
-    spreadCellsPrimitive,
-    streakCellsPrimitive,
-    inoculateLiquidMediaPrimitive
-  },
-  MethodOptions :> {
-    ManualCellPreparation :> {
-      ManualSamplePreparationOptions
-    },
-    RoboticCellPreparation :> {
-      RoboticCellPreparationOptions
-    }
-  }
-];
-
-Clear[ManualCellPreparationP];
-DefinePrimitiveSet[
-  ManualCellPreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    fluorescencePolarizationPrimitive,
-    fluorescencePolarizationKineticsPrimitive,
-    alphaScreenPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    filterPrimitive,
-    spePrimitive,
-    pelletPrimitive,
-    fillToVolumePrimitive,
-    adjustpHPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    magneticBeadSeparationPrimitive,
-    inoculateLiquidMediaPrimitive,
-
-    (* Cell Prep *)
-    thawCellsPrimitive,
-    incubateCellsPrimitive,
-    pcrPrimitive,
-    flowCytometryPrimitive,
-    imageCellsPrimitive
-  },
-  MethodOptions :> {
-    ManualCellPreparation :> {
-      ManualSamplePreparationOptions
-    }
-  }
-];
-
-Clear[RoboticCellPreparationP];
-DefinePrimitiveSet[
-  RoboticCellPreparationP,
-  {
-    (* Sample Prep UnitOperations *)
-    labelSamplePrimitive,
-    labelContainerPrimitive,
-    waitPrimitive,
-    transferPrimitive,
-    incubatePrimitive,
-    mixPrimitive,
-    centrifugePrimitive,
-    filterPrimitive,
-    spePrimitive,
-    aliquotPrimitive,
-    absorbanceSpectroscopyPrimitive,
-    absorbanceIntensityPrimitive,
-    absorbanceKineticsPrimitive,
-    luminescenceSpectroscopyPrimitive,
-    luminescenceIntensityPrimitive,
-    luminescenceKineticsPrimitive,
-    fluorescenceSpectroscopyPrimitive,
-    fluorescenceIntensityPrimitive,
-    fluorescenceKineticsPrimitive,
-    nephelometryPrimitive,
-    nephelometryKineticsPrimitive,
-    alphaScreenPrimitive,
-    pelletPrimitive,
-    coverPrimitive,
-    uncoverPrimitive,
-    serialDilutePrimitive,
-    resuspendPrimitive,
-    dilutePrimitive,
-    magneticBeadSeparationPrimitive,
-    liquidLiquidExtractionPrimitive,
-    precipitatePrimitive,
-    extractPlasmidDNAPrimitive,
-    extractRNAPrimitive,
-    extractProteinPrimitive,
-
-    (* Cell Unit Operations *)
-    thawCellsPrimitive,
-    incubateCellsPrimitive,
-    imageCellsPrimitive,
-    pcrPrimitive,
-    lyseCellsPrimitive,
-    washCellsPrimitive,
-    changeMediaPrimitive,
-    pcrPrimitive,
-    pickColoniesPrimitive,
-    spreadCellsPrimitive,
-    streakCellsPrimitive,
-    inoculateLiquidMediaPrimitive
-  },
-  MethodOptions :> {
-    RoboticCellPreparation :> {
-      RoboticCellPreparationOptions
-    }
-  }
-];
-
-
-
 (* ::Section:: *)
 (*Source Code*)
 
@@ -6293,6 +77,10 @@ Error::WorkCellIsIncompatibleWithMethod="The following method, `1`, is set for t
 Error::WorkCellIsIncompatible="The following workcell, `1`, is set for primitive `2`, however, this experiment can only be performed in the following workcells, `3`. Please change the specified workcell or review the required instrumentation for your protocol to make sure it can be fulfilled by the workcell of your choice.";
 Warning::UncoverUnitOperationAdded="The unit operation, `1`, requires that the container(s), `2`, to be uncovered in order to access the samples inside of the container. However, at the time of this unit operation, these containers will be covered with lid(s). An Uncover unit operation has been added automatically before this unit operation in order to uncover the container(s).";
 Warning::NoRunTime="The unit operation at index `1` resolved by function `2` did not return valid RunTime. Please investigate.";
+Error::ConflictingSpecifiedMagnetizationRackWithFilterUnitOperation="The specified magnetization rack `1` for the primitive `2` is a heavy rack that takes a low position and cannot be used together with any Filter unit operation for robotic preparation. Please either specify the lighter rack (Model[Item, MagnetizationRack, \"Alpaqua 96S Super Magnet 96-well Plate Rack\"]) or leave it to be set automatically.";
+Error::ConflictingWorkCells = "The unit operation, `1`, at index, `2`, can only be performed on a `3` work cell that is conflicting with the work cells, `4`, required by the unit operations, `5`. `6` strictly requires that all unit operations be performed on the same work cell. Please change the specified WorkCell option or use Experiment/ExperimentCellPreparation/ExperimentSamplePreparation instead to allow scripts to be generated.";
+Error::RoboticCellPreparationRequired = "The unit operation `1` has Preparation -> Robotic and requires samples `2`, which contain living material according to the information in their Living, CellType, and/or Composition fields. Please use ExperimentRoboticCellPreparation instead of RoboticSamplePreparation to submit a valid experiment.";
+Warning::CellPreparationFunctionRecommended = "The unit operation `1` requires samples `2`, which contain living material according to the information in their Living, CellType, and/or Composition fields. To more rigorously maintain sterility and prevent contamination, consider using ExperimentManualCellPreparation instead of ExperimentManualSamplePreparation.";
 
 (* Cache of previous results in the format {PrimitiveFrameworkFunction, myPrimitives_List} => simulation. *)
 (* NOTE: This is important for simulateSamplePreparationPackets since the container overload call MSP first before *)
@@ -6305,6 +93,16 @@ $PrimitiveFrameworkOutputCache=<||>;
 (* NOTE: We hash our simulations because it's faster than doing a straight MatchQ. Additionally, the SimulatedObjects key *)
 (* in the simulation can change once we upload our unit operations, so we key drop SimulatedObjects before we hash. *)
 $PrimitiveFrameworkResolverOutputCache=<||>;
+
+(* the following heads are dummy primitives, which means that these primitives should not be dictating how the WorkCell/LiquidHandler is resolved *)
+$DummyPrimitiveP = _LabelSample | _LabelContainer | _Wait;
+
+(* Store the labeled fields with indicies any time we are done with the primitive simulation
+    this is not cumulative (we will store only the result of the labels calculated in the last round of the Experiment* call with
+    UnitOperationPackets->True) and only the result of the last group of unit operation calculations will be stored and used.
+    The primary consumer of this data is Experiment`Private`updateLabelFieldReferences
+ *)
+$PrimitiveFrameworkIndexedLabelCache={};
 
 (* Helper function to KeyDrop if our resolver cache gets too large. *)
 (* NOTE: Keys will return keys in order of first added to last added. *)
@@ -6333,6 +131,7 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           UnitOperationPacketsOption,
           DelayedMessagesOption,
           PreparedResourcesOption,
+          OrderFulfilledOption,
 
           (* NOTE: This function can return additional outputs of Input and Simulation. *)
           {
@@ -6381,6 +180,7 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           UnitOperationPacketsOption,
           DelayedMessagesOption,
           PreparedResourcesOption,
+          OrderFulfilledOption,
 
           {
             OptionName->Output,
@@ -6427,6 +227,7 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           UnitOperationPacketsOption,
           DelayedMessagesOption,
           PreparedResourcesOption,
+          OrderFulfilledOption,
 
           (* NOTE: This function can return additional outputs of Input and Simulation. *)
           {
@@ -6474,6 +275,7 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           UnitOperationPacketsOption,
           DelayedMessagesOption,
           PreparedResourcesOption,
+          OrderFulfilledOption,
 
           (* NOTE: This function can return additional outputs of Input and Simulation. *)
           {
@@ -6504,7 +306,9 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
             Widget->Widget[Type->Enumeration,Pattern:>BooleanP],
             Description->"Indicates if we're being called from ExperimentBLAHInputs. If InputsFunction->True and PreviewFinalizedUnitOperations->True, we will return calculated inputs with method groupings. Otherwise, we will return optimized primitives with method groupings.",
             Category->"Hidden"
-          }
+          },
+          (* Extra Options: *)
+          ManualSamplePreparationOptions
         }
       ],
     (* For Script generating functions *)
@@ -6521,7 +325,8 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
 
           {
             OptionName -> MeasureWeight,
-            Default -> True,
+            Default -> Automatic,
+            ResolutionDescription -> "Automatically set to False if the experiment involves Living cells and/or Sterile samples.",
             Description -> "Indicates if any solid samples that are modified in the course of the experiment should have their weights measured and updated after running the experiment.",
             AllowNull -> False,
             Category -> "Post Experiment",
@@ -6529,7 +334,8 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           },
           {
             OptionName -> MeasureVolume,
-            Default -> True,
+            Default -> Automatic,
+            ResolutionDescription -> "Automatically set to False if the experiment involves Living cells and/or Sterile samples.",
             Description -> "Indicates if any liquid samples that are modified in the course of the experiment should have their volumes measured and updated after running the experiment.",
             AllowNull -> False,
             Category -> "Post Experiment",
@@ -6537,7 +343,8 @@ installPrimitiveFunction[myOuterFunction_, myOuterHeldPrimitiveSet_]:=With[{myFu
           },
           {
             OptionName -> ImageSample,
-            Default -> True,
+            Default -> Automatic,
+            ResolutionDescription -> "Automatically set to False if the experiment involves Living cells and/or Sterile samples.",
             Description -> "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment.",
             AllowNull -> False,
             Category -> "Post Experiment",
@@ -6598,38 +405,39 @@ myFunction[myPrimitive:Except[_List], myOptions:OptionsPattern[]]:=myFunction[{m
 
 (* Install the main function. *)
 myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrinting=False},Module[
-  {outputSpecification, output, gatherTests, safeOps, safeOpsTests, primitiveSetInformation, allPrimitiveInformation, primitiveHeads,
-    invalidPrimitiveHeadsWithIndices, invalidPrimitiveOptionKeysWithIndices, invalidPrimitiveOptionPatternsWithIndices,
-    invalidPrimitiveRequiredOptionsWithIndices, templatedOptions, templateTests, inheritedOptions, expandedSafeOps,
-    invalidMethodWrappers, invalidMethodWrapperPositions, primitiveMethods, flattenedPrimitives, primitivesWithResolvedMethods,resolvedPrimitiveMethodResult,
-    invalidPrimitiveMethodIndices, primitivesWithPreresolvedInputs, invalidLabelPrimitivesWithIndices, invalidAutofillPrimitivesWithIndices,
-    invalidResolvePrimitiveMethodsWithIndices, allResolverTests, allPrimitiveGroupings, allPrimitiveGroupingWorkCellInstruments, currentPrimitiveGrouping,
-    currentPrimitiveGroupingLabeledObjects, currentPrimitiveGroupingFootprints, currentPrimitiveGroupingTips,
-    fakeContainer, fakeWaterSample, currentSimulation, previousSimulation, resolvedPrimitives, currentPrimitiveGroupingDateStarted, currentPrimitiveDateStarted, primitiveMethodIndexToOptionsLookup, invalidMethodOptionsWithIndices,
-    allPrimitiveOptionGroupings, allPrimitiveInputGroupings, noInstrumentsPossibleErrorsWithIndices, currentPrimitiveGroupingPotentialWorkCellInstruments,
-    currentPrimitiveOptionGrouping, currentPrimitiveInputGrouping, allPrimitiveGroupingResources, allTipModels, workCellModelPackets,
-    workCellObjectPackets, tipModelPackets, microbialQ, footprintInformationKeys, allPrimitiveGroupingTips, allPrimitiveGroupingFootprints,
-    allLabelFieldsWithIndicesGroupings, allPrimitiveOptionsWithLabelFieldsGroupings, currentLabelFieldsWithIndices,
-    primitiveIndexToScriptVariableLookup, outputResult, currentPrimitiveGroupingRunTimes, allPrimitiveGroupingRunTimes,
-    flattenedIndexMatchingPrimitives, cacheBall, containerPackets, samplePackets, sampleModelPackets, allContainerContentsPackets, allSamplePackets, allContainerModelPackets, containerModelToPosition,allContainerPackets,
-    transferDestinationSampleLabelCounter, debug, invalidInputIndices, simulatedObjectsToLabelOutput, parentProtocolStack, rootProtocol,
-    resolvedInput, allPrimitiveInputsWithLabelFieldsGroupings, allUnresolvedPrimitiveGroupings, currentUnresolvedPrimitiveGrouping,
-    invalidResolverPrimitives, incompatibleWorkCellAndMethod, resolvedOptions, fakeWaterSimulation, errorCheckingMessageCell, simulationPreparationMessageCell,
-    primitiveMethodMessageCell, simulation, parentProtocol, allObjects, missingObjects,intersectionLabels,overwrittenLabels,
-    allOverwrittenLabelsWithIndices, optimizedPrimitives, nonIndexMatchingPrimitiveOptions, optimizeUnitOperations,
-    doNotOptimizeQ, frqTests, nonObjectResources, currentPrimitiveGroupingIntegratedInstrumentsResources, allPrimitiveGroupingIntegratedInstrumentResources,
-    sanitizedPrimitives, validLengthsQList, throwMessageWithPrimitiveIndex, allPrimitiveGroupingIncubatorContainerResources,
-    currentPrimitiveGroupingIncubatorPlateResources, allPrimitiveGroupingAmbientContainerResources, currentPrimitiveGroupingAmbientPlateResources,
-    fulfillableQ, allPrimitiveGroupingWorkCellIdlingConditionHistory, currentPrimitiveGroupingWorkCellIdlingConditionHistory,
-    startNewPrimitiveGrouping, computeLabeledObjectsAndFutureLabeledObjects, finalOutput, allPrimitiveGroupingUnitOperationPackets,allPrimitiveGroupingBatchedUnitOperationPackets,
-    currentPrimitiveGroupingUnitOperationPackets, currentPrimitiveGroupingBatchedUnitOperationPackets, sanitizedPrimitivesWithUnitOperationObjects, labelFieldGroupings,
-    allUnresolvedPrimitivesWithLabelFieldGroupings, previewFinalizedUnitOperations, modelContainerFields,
-    objectSampleFields, modelSampleFields, objectContainerFields, unitOperationPacketsQ, outputRules, invalidInjectorResourcesWithIndices,
-    outputUnitOperationObjectsFromCache, liquidHandlerCompatibleRacks, accumulatedFulfillableResourceQ,delayedMessagesQ,
-    liquidHandlerCompatibleRackPackets, inputsFunctionQ, coverOptimizedPrimitives, addedCoverAtEndPrimitiveQ, index, coverAtEnd,
-    ignoreWarnings, primitiveIndexToOutputUnitOperationLookup, tipResources, nonTipResources, gatheredTipResources, combinedTipResources,
-    counterWeightResources, counterWeightResourceReplacementRules, uniqueCounterweightResources, combinedCounterWeightResources,
-    accumulatedFRQTests, placeholderFunction,userWorkCellChoice,specifiedWorkCell,containerModelFieldsList,totalWorkCellTime
+  {outputSpecification,output,gatherTests,safeOps,safeOpsTests,primitiveSetInformation,allPrimitiveInformation,primitiveHeads,
+    invalidPrimitiveHeadsWithIndices,invalidPrimitiveOptionKeysWithIndices,invalidPrimitiveOptionPatternsWithIndices,
+    invalidPrimitiveRequiredOptionsWithIndices,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
+    invalidMethodWrappers,invalidMethodWrapperPositions,primitiveMethods,flattenedPrimitives,primitivesWithResolvedMethods,resolvedPrimitiveMethodResult,
+    invalidPrimitiveMethodIndices,primitivesWithPreresolvedInputs,invalidLabelPrimitivesWithIndices,invalidAutofillPrimitivesWithIndices,
+    invalidResolvePrimitiveMethodsWithIndices,allResolverTests,allPrimitiveGroupings,allPrimitiveGroupingWorkCellInstruments,currentPrimitiveGrouping,
+    currentPrimitiveGroupingLabeledObjects,currentPrimitiveGroupingFootprints,currentPrimitiveGroupingTips,
+    fakeContainer,fakeWaterSample,currentSimulation,previousSimulation,resolvedPrimitives,currentPrimitiveGroupingDateStarted,currentPrimitiveDateStarted,primitiveMethodIndexToOptionsLookup,invalidMethodOptionsWithIndices,
+    allPrimitiveOptionGroupings,allPrimitiveInputGroupings,noInstrumentsPossibleErrorsWithIndices,currentPrimitiveGroupingPotentialWorkCellInstruments, cellsPresentQ, sterileQ, cellSamplesForErrorChecking,
+    currentPrimitiveOptionGrouping,currentPrimitiveInputGrouping,allPrimitiveGroupingResources,allTipModels,heavyMagnetizationRacks,workCellModelPackets,workCellObjectPackets,tipModelPackets,microbialQ,footprintInformationKeys,allPrimitiveGroupingTips,allPrimitiveGroupingFootprints,
+    allLabelFieldsWithIndicesGroupings,allPrimitiveOptionsWithLabelFieldsGroupings,currentLabelFieldsWithIndices,
+    primitiveIndexToScriptVariableLookup,outputResult,currentPrimitiveGroupingRunTimes,allPrimitiveGroupingRunTimes,
+    flattenedIndexMatchingPrimitives,cacheBall,containerPackets,samplePackets,sampleModelPackets,allContainerContentsPackets,allSamplePackets,allContainerModelPackets,containerModelToPosition,allContainerPackets,
+    transferDestinationSampleLabelCounter,debug,invalidInputIndices,simulatedObjectsToLabelOutput,parentProtocolStack,rootProtocol,
+    resolvedInput,allPrimitiveInputsWithLabelFieldsGroupings,allUnresolvedPrimitiveGroupings,currentUnresolvedPrimitiveGrouping,
+    invalidResolverPrimitives,incompatibleWorkCellAndMethod,roboticCellPreparationRequired,resolvedOptions,fakeWaterSimulation,errorCheckingMessageCell,simulationPreparationMessageCell,
+    primitiveMethodMessageCell,simulation,parentProtocol,orderToFulfill,intersectionLabels,overwrittenLabels,
+    allOverwrittenLabelsWithIndices,optimizedPrimitives,nonIndexMatchingPrimitiveOptions,optimizeUnitOperations,
+    doNotOptimizeQ,frqTests,nonObjectResources,currentPrimitiveGroupingIntegratedInstrumentsResources,allPrimitiveGroupingIntegratedInstrumentResources,
+    sanitizedPrimitives,validLengthsQList,throwMessageWithPrimitiveIndex,allPrimitiveGroupingIncubatorContainerResources,
+    currentPrimitiveGroupingIncubatorPlateResources,allPrimitiveGroupingAmbientContainerResources,currentPrimitiveGroupingAmbientPlateResources,
+    fulfillableQ,allPrimitiveGroupingWorkCellIdlingConditionHistory,currentPrimitiveGroupingWorkCellIdlingConditionHistory,
+    startNewPrimitiveGrouping,computeLabeledObjectsAndFutureLabeledObjects,finalOutput,allPrimitiveGroupingUnitOperationPackets,allPrimitiveGroupingBatchedUnitOperationPackets,
+    currentPrimitiveGroupingUnitOperationPackets,currentPrimitiveGroupingBatchedUnitOperationPackets,sanitizedPrimitivesWithUnitOperationObjects,labelFieldGroupings,
+    allUnresolvedPrimitivesWithLabelFieldGroupings,previewFinalizedUnitOperations,modelContainerFields,
+    objectSampleFields,modelSampleFields,objectContainerFields,unitOperationPacketsQ,outputRules,invalidInjectorResourcesWithIndices,
+    outputUnitOperationObjectsFromCache,liquidHandlerCompatibleRacks,accumulatedFulfillableResourceQ,delayedMessagesQ,
+    liquidHandlerCompatibleRackPackets,inputsFunctionQ,coverOptimizedPrimitives,addedCoverAtEndPrimitiveQ,index,coverAtEnd,
+    ignoreWarnings,primitiveIndexToOutputUnitOperationLookup,tipResources,nonTipResources,gatheredTipResources,combinedTipResources,
+    counterWeightResources,counterWeightResourceReplacementRules,uniqueCounterweightResources,combinedCounterWeightResources,
+    accumulatedFRQTests,userWorkCellChoice,specifiedWorkCell,containerModelFieldsList,totalWorkCellTime,
+    invalidInputMagnetizationRacksWithIndices,optimizedPrimitivesWithMethods, resolvedImageSample,resolvedMeasureVolume,resolvedMeasureWeight,
+    flattenedIndexMatchingPrimitivesWithCorrectedLabelSample
   },
 
   (* Determine the requested return value from the function *)
@@ -6640,6 +448,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   debug=Lookup[ToList[myOptions], Debug, False];
   simulation=Lookup[ToList[myOptions], Simulation, Null];
   parentProtocol=Lookup[ToList[myOptions], ParentProtocol, Null];
+  orderToFulfill = Lookup[ToList[myOptions], OrderFulfilled, Null];
   optimizeUnitOperations=Lookup[ToList[myOptions], OptimizeUnitOperations, True];
   coverAtEnd=Lookup[ToList[myOptions], CoverAtEnd, Automatic]/.{Automatic->optimizeUnitOperations};
   previewFinalizedUnitOperations=Lookup[ToList[myOptions], PreviewFinalizedUnitOperations, True];
@@ -6681,6 +490,11 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Resize our cache, if necessary. *)
   resizePrimitiveFrameworkCache[];
 
+  (* If we are working on building UO as children of another UO, empty the LabelField cache *)
+  If[unitOperationPacketsQ,
+    $PrimitiveFrameworkIndexedLabelCache={};
+  ];
+
   (* Update our global simulation, if we have one. This is because we lookup directly from $CurrentSimulation to find *)
   (* SimulatedObjects. *)
   If[MatchQ[$CurrentSimulation, SimulationP] && !MatchQ[Lookup[$CurrentSimulation[[1]], Updated], True],
@@ -6707,22 +521,16 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     }]
   ];
 
-  (* Sanitize our inputs. *)
-  sanitizedPrimitivesWithUnitOperationObjects=(sanitizeInputs[myPrimitives]/.{link:LinkP[] :> Download[link, Object]});
-
-  (* Make sure that there aren't invalid objects. *)
-  (* don't actually pull objects out of cache or simulation *)
-  allObjects=DeleteDuplicates[Cases[{sanitizedPrimitivesWithUnitOperationObjects, KeyDrop[Association[myOptions], {Cache, Simulation}]}, ObjectP[], Infinity]];
-  missingObjects=PickList[
-    allObjects,
-    DatabaseMemberQ[allObjects, Simulation->simulation],
-    False
+  (*Initialize our error tracking for filter and magnetized transfer unit operations if this is the very start of a call*)
+  If[MatchQ[Lookup[safeOps,Simulation], Null],
+    $PotentialConflictingDeckPlacementUnitOperations = {}
   ];
 
-  If[Length[missingObjects]>0,
-    Message[Error::MissingObjects, missingObjects];
-    Message[Error::InvalidInput, missingObjects];
+  (* Sanitize our inputs. *)
+  sanitizedPrimitivesWithUnitOperationObjects=(sanitizeInputs[myPrimitives, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]});
 
+  (* return early if we have nonexistent objects; the message will be thrown in sanitizeInputs *)
+  If[MatchQ[sanitizedPrimitivesWithUnitOperationObjects, $Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
       Tests -> safeOpsTests,
@@ -6752,7 +560,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       Lookup[#, Object]->ConstellationViewers`Private`UnitOperationPrimitive[#, IncludeCompletedOptions->False, IncludeEmptyOptions->False]
     &)/@userInputtedUnitOperationPackets;
 
-    (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms/.userInputtedUnitOperationObjectToPrimitive]/.{link:LinkP[] :> Download[link, Object]})
+    (sanitizeInputs[userInputtedUnitOperationObjectsWithoutBoxForms/.userInputtedUnitOperationObjectToPrimitive, Simulation -> simulation]/.{link:LinkP[] :> Download[link, Object]})
   ];
 
   (* -- STAGE 1: Primitive Pattern Checks -- *)
@@ -6856,7 +664,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   ];
 
   (* Helper function to prepend primitive index information to a message association. *)
-  throwMessageWithPrimitiveIndex[messageAssociation_, index_, primitiveHead_, simulation_]:=Module[{permanentlyIgnoredMessages},
+  throwMessageWithPrimitiveIndex[messageAssociation_, index_, primitiveHead_, simulation_, preCallMessageLength_, messageIndex_]:=Module[{permanentlyIgnoredMessages},
     (* Only bother throwing the message if it's not Error::InvalidInput or Error::InvalidOption. *)
     permanentlyIgnoredMessages = {Hold[Error::InvalidInput],Hold[Error::InvalidOption]};
     If[And[
@@ -6900,6 +708,30 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (If[MatchQ[#, _String], StringReplace[#, stringObjectToLabelRules], #/.objectToLabelRules]&)/@Lookup[messageAssociation, MessageArguments]
           ],
           Lookup[messageAssociation, MessageArguments]
+        ];
+
+        (* If we are in CommandCenter, we need to gather the positions of the original message that is quieted by this function, but would still be captured by EvaluationData. Otherwise it is okay in MM. *)
+        If[MatchQ[$ECLApplication, CommandCenter],
+          Module[{currentMessagePosition},
+            (* Find the position of the message during function call pre-modified in the overall $MessageList, so that we can delete it eventually *)
+            (* At this point in the local helper, the position of the original message in the overall $MessageList is the current index plus the length of messages before calling the child function. *)
+            (* It avoids messing up the position numbers if there's multiple calls of this framework function or ModifyFunctionMessages, or the function is throwing multiple message with some permanently quieted ones in between. *)
+            (* It does not affect throwing the modified version of the message, which is thrown below in the With block. *)
+            currentMessagePosition = preCallMessageLength + First[messageIndex];
+
+            (* Keep track of the quieted messages using the global variable, that is used to filtered out from EvaluationData results in resolvedOptionsAssoc*)
+            Which[
+              (* In framework function, it is possible that the primitive function call involves ModifyFunctionMessages, so that the currentMessagePosition would point to the message that was stored in $MessageList but already quieted by ModifyFunctionMessages. *)
+              (* In this case, the message that we modify in the chunk below and thus want to remove from final ResolvedOptionsJSON message list would actually be the next one in the $MessageList *)
+              MatchQ[$MessagePositionsToQuiet, _List] && IntegerQ[currentMessagePosition] && MemberQ[$MessagePositionsToQuiet, ToList[currentMessagePosition]],
+                AppendTo[$MessagePositionsToQuiet, ToList[currentMessagePosition+1]],
+              (* Otherwise this original message is to be removed from the final list in ResolvedOptionsJSON *)
+              MatchQ[$MessagePositionsToQuiet, _List] && IntegerQ[currentMessagePosition],
+                AppendTo[$MessagePositionsToQuiet, ToList[currentMessagePosition]],
+              True,
+                Nothing
+            ]
+          ]
         ];
 
         (* Block our the head of our message name. This prevents us from overwriting in the real codebase since *)
@@ -6953,7 +785,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           (* Next, make sure that for the primitive head that we have, all the options match their pattern. *)
           (* NOTE: We specifically form the primitive pattern for each primitive set to only include the options that relate *)
-          (* to that primtiive set (for each primitive). So, we can first just do a pattern match to see if all the options are okay. *)
+          (* to that primitive set (for each primitive). So, we can first just do a pattern match to see if all the options are okay. *)
           !MatchQ[currentPrimitive, Lookup[primitiveDefinition, Pattern]],
             Module[{invalidOptionKeys, invalidOptionPatterns, requiredOptions, missingRequiredOptions},
               (* Get any options that don't exist in the primitive definition. *)
@@ -6976,7 +808,6 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                       FirstCase[Lookup[primitiveDefinition, OptionDefinition], KeyValuePattern["OptionSymbol"->option], <|"Pattern"->_|>],
                       "Pattern"
                     ];
-
                     If[!MatchQ[value, optionPattern],
                       option,
                       Nothing
@@ -7082,7 +913,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   {flattenedIndexMatchingPrimitives, nonIndexMatchingPrimitiveOptions, validLengthsQList}=Transpose@MapThread[
     Function[{primitive, primitiveIndex},
       Block[{placeholderFunction},
-        Module[{primitiveInformation, optionDefinition, primaryInputOption, optionsWithListedPrimaryInput, expandedPrimitive, nonIndexMatchingOptionsForPrimitiveHead, nonIndexMatchingOptions, validLengthsQ, destinationUpdateWarning, expandedOptions, multipleMultipleExpandedOptions, expandedOptionsWithoutMultipleMultiples},
+        Module[
+          {
+            primitiveInformation, optionDefinition, primaryInputOption, optionsWithListedPrimaryInput, expandedPrimitive,
+            nonIndexMatchingOptionsForPrimitiveHead, nonIndexMatchingOptions, validLengthsQ, destinationUpdateWarning, expandedOptions,
+            multipleMultipleExpandedOptions, expandedOptionsWithoutMultipleMultiples, validLengthsMessageHandler, validLengthsMessages, preValidLengthMessageLength
+          },
+
           (* Lookup our primitive information. *)
           primitiveInformation=Lookup[Lookup[primitiveSetInformation, Primitives], Head[primitive], {}];
 
@@ -7179,7 +1016,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           ];
 
           (* If we don't have any options at all, then don't try to expand the options. *)
-          (* NOTE: There's some stupid shit that I (Thomas) wrote 4 years ago in ValidInputLengthsQ where it hardcode checks *)
+          (* NOTE: There's some stupid things that I (Thomas) wrote 4 years ago in ValidInputLengthsQ where it hardcode checks *)
           (* the input against the length of AliquotContainer. *)
           expandedOptions = ExpandIndexMatchedInputs[
             placeholderFunction,
@@ -7221,35 +1058,41 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           ];
 
           (* See if this primitive has an index matching issue. *)
-          validLengthsQ=Module[{myMessageList, messageHandler},
-            myMessageList = {};
+          (* Prevent any messages from ValidInputLengthsQ from showing up by temporarily directing $Messages to nothing  *)
+          validLengthsQ=Block[{$Messages}, Module[{},
+            $Messages = {};
 
-            messageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg_MessageName, args___]]] := Module[{},
+            validLengthsMessages = {};
+
+            (* Get the current count of total messages before calling ValidInputLengthsQ *)
+            preValidLengthMessageLength = Length[$MessageList];
+
+            validLengthsMessageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg_MessageName, args___]]] := Module[{},
               (* Keep track of the messages thrown during evaluation of the test. *)
-              AppendTo[myMessageList, <|MessageName->Hold[msg],MessageArguments->ToList[args]|>];
+              AppendTo[validLengthsMessages, <|MessageName->Hold[msg],MessageArguments->ToList[args]|>];
             ];
 
-            SafeAddHandler[{"MessageTextFilter", messageHandler},
+            SafeAddHandler[{"MessageTextFilter", validLengthsMessageHandler},
               Module[{validLengthsResult},
                 (* Are our index-matched options valid? *)
-                validLengthsResult=Quiet@ValidInputLengthsQ[
+                validLengthsResult=ValidInputLengthsQ[
                   placeholderFunction,
                   {ConstantArray[Null, Length[ToList[Lookup[primitive[[1]], primaryInputOption]]]]},
                   optionsWithListedPrimaryInput,
                   Messages->True
                 ];
 
-                (* If they are not, throw some messages with prepended primitive index information. *)
-                If[MatchQ[validLengthsResult, False],
-                  Map[
-                    throwMessageWithPrimitiveIndex[#, primitiveIndex, Head[primitive], currentSimulation]&,
-                    myMessageList
-                  ]
-                ];
-
                 (* Return our result. *)
                 validLengthsResult
               ]
+            ]
+          ]];
+
+          (* Now that we're out of our block throw our ValidLengths messages prepended primitive index information. *)
+          If[MatchQ[validLengthsQ, False],
+            MapIndexed[
+              throwMessageWithPrimitiveIndex[#1, primitiveIndex, Head[primitive], currentSimulation, preValidLengthMessageLength, #2]&,
+              validLengthsMessages
             ]
           ];
 
@@ -7343,6 +1186,24 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     NotebookDelete[errorCheckingMessageCell];
   ];
 
+  (*
+    we need to do a bit of a weird operation here to LabelSample primitives because the PrimaryInputOption is Label, but it _really_ want to be Sample
+    so if the user gives us a LabelSample primitive and specified Sample but not Label, we later on will try to auto-fill it from the _previous_ UO
+    instead of respecting the Sample input
+  *)
+  flattenedIndexMatchingPrimitivesWithCorrectedLabelSample = Map[
+    Function[{primitive},
+      If[
+        And[
+          MatchQ[primitive,_LabelSample],
+          MatchQ[Lookup[primitive[[1]],{Sample,Label},Null],{ListableP[_String],Null|{}}]
+        ],
+        LabelSample[Append[primitive[[1]],Label->Lookup[primitive[[1]], Sample]]],
+        primitive
+      ]
+    ], flattenedIndexMatchingPrimitives
+  ];
+
   (* -- STAGE 2: Pre-Resolve the Method to run each Primitive -- *)
   If[debug, Echo["Beginning stage 2: pre-resolving method"]];
 
@@ -7363,7 +1224,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* primitive here. *)
   (* If this is the case, we will resolve the primitive method in-line during the simulation loop. *)
   resolvedPrimitiveMethodResult=Check[
-    resolvePrimitiveMethods[myFunction, flattenedIndexMatchingPrimitives, myHeldPrimitiveSet],
+    resolvePrimitiveMethods[myFunction, flattenedIndexMatchingPrimitivesWithCorrectedLabelSample, myHeldPrimitiveSet],
     $Failed,
     {Error::InvalidSuppliedPrimitiveMethod}
   ];
@@ -7396,7 +1257,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     FoldList[
       Function[{firstPrimitiveAndBoolean, secondPrimitive},
         Module[{firstPrimitive, firstPrimitiveInformation, firstPrimitiveGenerativeQ, secondPrimitiveInformation, firstPrimitivePrimaryInputOption, secondPrimitivePrimaryInputOption, secondPrimitivePrimaryInputOptionDefinition, secondPrimitiveGenerativeLabelOptions},
-          (* The first argument to our function is the outpu of the last function -- {primitive, doNotOptimizeQ}. *)
+          (* The first argument to our function is the output of the last function -- {primitive, doNotOptimizeQ}. *)
           firstPrimitive=First@firstPrimitiveAndBoolean;
 
           (* For our primitive type, lookup the information about it from our primitive lookup. *)
@@ -7474,10 +1335,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   If[debug, Echo["Beginning stage 4: reorganizing and combining primitives"]];
 
   (* NOTE: We optimize primitives by (1) hoisting LabelSample/Container unit operations to the front if they don't refer *)
-  (* to specific samples, (2) converting mix via pipette unit operations to transfer unit operations, and (3) combining *)
-  (* unit operations of the same type that are adjacent to one another. *)
+  (* to specific samples, and (2) combining unit operations of the same type that are adjacent to one another. *)
   optimizedPrimitives=If[MatchQ[optimizeUnitOperations, True] && Length[primitivesWithPreresolvedInputs]>1 && MatchQ[previewFinalizedUnitOperations, True],
-    Module[{labelHoistedPrimitives, reorderedNonIndexMatchingPrimitiveOptions, convertedMixToTransferPrimitives, indexedUserInitalizedLabels, indexedUserUsedLabels},
+    Module[{labelHoistedPrimitives, reorderedNonIndexMatchingPrimitiveOptions, indexedUserInitalizedLabels, indexedUserUsedLabels},
       (* 1) Hoist LabelSample/LabelContainer to the front if they don't refer to specific samples. *)
       labelHoistedPrimitives=Module[{labelSamplePositions, labelContainerPositions},
         (* NOTE: We don't want to hoist unit operations up to the front if the user gives us a PrimitiveMethodIndex that is not 1. *)
@@ -7501,191 +1361,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       (* Reorder our non index matching options based on this hoisting. *)
       reorderedNonIndexMatchingPrimitiveOptions=labelHoistedPrimitives/.Rule@@@Transpose[{primitivesWithPreresolvedInputs, nonIndexMatchingPrimitiveOptions}];
 
-      (* 2) Convert mix via pipette unit operations to transfer unit operations with transfer amount being the mix volume. *)
-      convertedMixToTransferPrimitives=Module[
-        {mixByPipettePrimitives, downloadInformation, fastCacheBall, primitiveReplaceRules},
-
-        mixByPipettePrimitives=Cases[
-          labelHoistedPrimitives,
-          (* NOTE: We need to make sure that the user didn't specify any keys that indicate this primitive should do more than just *)
-          (* pipette mixing (ex. thawing). *)
-          (Mix|Incubate)[
-            KeyValuePattern[{
-              Sample -> ListableP[ObjectP[Object[Sample]] | {_, ObjectP[Object[Container]]|_String}|_String],
-              MixType -> ListableP[Pipette]
-            }]?(
-              Length[Complement[Keys[Select[#,Function[{value},!MatchQ[value,{Null..}]]]], {Sample, MixType, NumberOfMixes, MixVolume, Temperature, MixFlowRate, MixPosition, MixPositionOffset, Tips, TipType, TipMaterial, MultichannelMix, DeviceChannel, PrimitiveMethod, PrimitiveMethodIndex}]]==0
-            &)
-          ]
-        ];
-
-        (* Download the volumes of any samples that we have. *)
-        downloadInformation=Quiet[
-          Flatten@Download[
-            DeleteDuplicates[Download[Cases[mixByPipettePrimitives, ObjectP[{Object[Sample], Object[Container]}], Infinity], Object]],
-            {
-              Packet[Volume, Contents],
-              Packet[Contents[[All,2]][Volume]]
-            },
-            Simulation->simulation
-          ],
-          {Download::FieldDoesntExist, Download::NotLinkField}
-        ];
-
-        fastCacheBall = makeFastAssocFromCache[Cases[downloadInformation, _Association]];
-
-        (* For each mix by pipette primitive, convert them to transfer primitives. *)
-        primitiveReplaceRules=Map[
-          Function[{mixByPipettePrimitive},
-            mixByPipettePrimitive->Transfer[{
-              Source->Lookup[mixByPipettePrimitive[[1]], Sample],
-              Destination->Lookup[mixByPipettePrimitive[[1]], Sample],
-              Amount->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], MixVolume], ListableP[VolumeP]],
-                Lookup[mixByPipettePrimitive[[1]], MixVolume],
-                Map[
-                  Function[{input},
-                    Which[
-                      (* Note if the sample volume is 0, we are not going to use 0 uL as our transfer volume. This is going to break in Transfer. Instead, we can do our default 100 uL since the user likely will transfer some liquid in first *)
-                      MatchQ[input, ObjectP[Object[Sample]]]&&!NullQ[Lookup[fetchPacketFromFastAssoc[input, fastCacheBall], Volume]]&&(TrueQ[Lookup[fetchPacketFromFastAssoc[input, fastCacheBall], Volume]>0Microliter]),
-                      SafeRound[Lookup[fetchPacketFromFastAssoc[input, fastCacheBall], Volume]/2, 1 Microliter],
-                      MatchQ[input, ObjectP[Object[Container]]],
-                      Module[{contents},
-                        contents=Lookup[fetchPacketFromFastAssoc[input, fastCacheBall], Contents];
-                        Which[
-                          Length[contents]==0,
-                          100 Microliter,
-                          !NullQ[Lookup[fetchPacketFromFastAssoc[contents[[1]][[2]], fastCacheBall], Volume]]&&(TrueQ[Lookup[fetchPacketFromFastAssoc[contents[[1]][[2]], fastCacheBall], Volume]>0Microliter]),
-                          SafeRound[Lookup[fetchPacketFromFastAssoc[contents[[1]][[2]], fastCacheBall], Volume]/2, 1 Microliter],
-                          True,
-                          100 Microliter
-                        ]
-                      ],
-                      MatchQ[input, {_, ObjectP[Object[Container]]}],
-                      Module[{contents, sample},
-                        contents=Lookup[fetchPacketFromFastAssoc[input[[2]], fastCacheBall], Contents];
-                        sample=FirstCase[contents, {input[[1]], sample_}:>sample, Null];
-
-                        Which[
-                          !MatchQ[sample, ObjectP[Object[Sample]]],
-                          100 Microliter,
-                          !NullQ[Lookup[fetchPacketFromFastAssoc[sample, fastCacheBall], Volume]]&&(TrueQ[Lookup[fetchPacketFromFastAssoc[sample, fastCacheBall], Volume]>0Microliter]),
-                          SafeRound[Lookup[fetchPacketFromFastAssoc[sample, fastCacheBall], Volume]/2, 1 Microliter],
-                          True,
-                          100 Microliter
-                        ]
-                      ],
-                      True,
-                      100 Microliter
-                    ]
-                  ],
-                  Lookup[mixByPipettePrimitive[[1]], Sample]
-                ]
-              ],
-              (* NOTE: At this point, all unit operations are assume to be expanded so any new options also must be expanded. *)
-              AspirationMix->ConstantArray[True, Length[Lookup[mixByPipettePrimitive[[1]], Sample]]],
-              NumberOfAspirationMixes->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], NumberOfMixes, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], NumberOfMixes, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], NumberOfMixes, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]/.{Automatic->15}
-                )
-              ],
-              AspirationMixRate->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], MixFlowRate, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], MixFlowRate, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], MixFlowRate, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              SourceTemperature->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], Temperature, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], Temperature, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], Temperature, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]/.{Automatic->Ambient}
-                )
-              ],
-              Tips->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], Tips, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], Tips, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], Tips, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              TipType->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], TipType, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], TipType, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], TipType, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              TipMaterial->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], TipMaterial, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], TipMaterial, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], TipMaterial, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              DeviceChannel->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], DeviceChannel, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], DeviceChannel, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], DeviceChannel, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              MixPosition->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], AspirationPosition, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], AspirationPosition, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], AspirationPosition, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              MixPositionOffset->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], AspirationPositionOffset, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], AspirationPositionOffset, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], AspirationPositionOffset, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              MultichannelMix->If[MatchQ[Lookup[mixByPipettePrimitive[[1]], MultichannelTransfer, Automatic], _List],
-                Lookup[mixByPipettePrimitive[[1]], MultichannelTransfer, Automatic],
-                (
-                  ConstantArray[
-                    Lookup[mixByPipettePrimitive[[1]], MultichannelTransfer, Automatic],
-                    Length[Lookup[mixByPipettePrimitive[[1]], Sample]]
-                  ]
-                )
-              ],
-              DispenseMix->ConstantArray[False, Length[Lookup[mixByPipettePrimitive[[1]], Sample]]],
-              PrimitiveMethod->Lookup[mixByPipettePrimitive[[1]], PrimitiveMethod],
-              If[KeyExistsQ[mixByPipettePrimitive[[1]], PrimitiveMethodIndex],
-                PrimitiveMethodIndex->Lookup[mixByPipettePrimitive[[1]], PrimitiveMethodIndex],
-                Nothing
-              ]
-            }]
-          ],
-          mixByPipettePrimitives
-        ];
-
-        labelHoistedPrimitives/.primitiveReplaceRules
-      ];
+      (* note that we do NOT convert Mix unit operations into Transfers anymore at this point because this caused bad unintended behavior if doing Mix on a plate *)
+      (* this is because ExperimentMix does call containerToSamples but ExperimentTransfer does not, and so we get different behaviors between Mix and Transfer *)
+      (* what we actually want is the Mix behavior, so we're just not going to optimize the Mix unit operations for now and let them get worked out on deck. *)
 
       (* Based on the label options in the primitive, figure out what labels are initialized by the user. *)
       indexedUserInitalizedLabels=Map[
@@ -7699,7 +1377,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             DeleteDuplicates@Cases[Flatten[Lookup[primitive[[1]], primitiveLabeledOptions[[All,2]], Null]], _String]
           ]
         ],
-        convertedMixToTransferPrimitives
+        labelHoistedPrimitives
       ];
 
       (* Figure out which labels are being specified by the user in Object widgets. *)
@@ -7727,7 +1405,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   Nothing,
                   True,
                   (* We may potentially have some labels. *)
-                  Module[{matchedWidgetInformation, objectWidgetsWithLabels, labelsInOption, unknownLabels, knownLabels, optionValueWithoutUnknownLabels},
+                  Module[{matchedWidgetInformation, objectWidgetsWithLabels},
                     (* Match the value of our option to the widget that we have. *)
                     (* NOTE: This is the same function that we use in the command builder to match values to widgets. *)
                     matchedWidgetInformation=AppHelpers`Private`matchValueToWidget[value,optionDefinition];
@@ -7746,7 +1424,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             primitive[[1]]
           ]
         ],
-        convertedMixToTransferPrimitives
+        labelHoistedPrimitives
       ];
 
       (* 3) Combine unit operations of the same type that are adjacent to one another.*)
@@ -7763,20 +1441,20 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         (* We only need to care about Robotic ones *)
         allSpecifiedPreparation = Lookup[labelHoistedPrimitives[[All,1]],PrimitiveMethod,Automatic];
         (* Here we check all the preparation to see if Robotic is required (meaning that we can only do Robotic). We cannot PickList only Robotic primitives since our LabelSample/LabelContainer will still be Manual/Automatic here. The transfer primitives are still string labels because we don't have simulated objects yet. To count the correct number, we must get all primitives. Again, this is a rough estimate now. *)
-        roboticQ = MemberQ[allSpecifiedPreparation, {RoboticSamplePreparation}];
+        roboticQ = MemberQ[allSpecifiedPreparation, ListableP[(RoboticSamplePreparation|RoboticCellPreparation)]];
 
         (* We should try to avoid doing a download here so count only the labeled new containers as a rough estimate. Do it all together before MapThread to avoid unnecessary multiple download calls *)
-        allSpecifiedModelContainers=Download[Cases[Flatten[Values[convertedMixToTransferPrimitives[[All,1]]]],ObjectP[Model[Container]]],Object];
+        allSpecifiedModelContainers=Download[Cases[Flatten[Values[labelHoistedPrimitives[[All,1]]]],ObjectP[Model[Container]]],Object];
         (* Get all objects we need too. Need to delete duplicates since each object is placed once anyway *)
         allSpecifiedObjectContainers=DeleteDuplicates[
           Download[
-            Cases[Flatten[Values[convertedMixToTransferPrimitives[[All,1]]]],ObjectP[Object[Container]]],
+            Cases[Flatten[Values[labelHoistedPrimitives[[All,1]]]],ObjectP[Object[Container]]],
             Object
           ]
         ];
         allSpecifiedObjectSamples=DeleteDuplicates[
           Download[
-            Cases[Flatten[Values[convertedMixToTransferPrimitives[[All,1]]]],ObjectP[Object[Sample]]],
+            Cases[Flatten[Values[labelHoistedPrimitives[[All,1]]]],ObjectP[Object[Sample]]],
             Object
           ]
         ];
@@ -7807,12 +1485,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         ];
 
         (* Get the LabelContainer and LabelSample rules to better check footprint *)
-        labelContainerPrimitives=Cases[convertedMixToTransferPrimitives,_LabelContainer];
-        labelSamplePrimitives=Cases[convertedMixToTransferPrimitives,_LabelSample];
+        labelContainerPrimitives=Cases[labelHoistedPrimitives,_LabelContainer];
+        labelSamplePrimitives=Cases[labelHoistedPrimitives,_LabelSample];
 
         labelToContainerLookup=Flatten@Map[
           Function[{labelContainer},
-            If[KeyExistsQ[labelContainer,Label]&&KeyExistsQ[labelContainer,Container],
+            If[KeyExistsQ[labelContainer,Label]&&KeyExistsQ[labelContainer,Container]&&MatchQ[Lookup[labelContainer,Container],ListableP[ObjectP[]]],
               MapThread[(#1->Download[#2,Object])&,{Lookup[labelContainer,Label],Lookup[labelContainer,Container]}],
               {}
             ]
@@ -7822,7 +1500,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
         labelToSampleLookup=Flatten@Map[
           Function[{labelSample},
-            If[KeyExistsQ[labelSample,Label]&&KeyExistsQ[labelSample,Sample],
+            If[KeyExistsQ[labelSample,Label]&&KeyExistsQ[labelSample,Sample]&&MatchQ[Lookup[labelSample,Sample],ListableP[ObjectP[]]],
               MapThread[(#1->Download[#2,Object])&,{Lookup[labelSample,Label],Lookup[labelSample,Sample]}],
               {}
             ]
@@ -7871,7 +1549,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               Object
             ]
           ];
-          currentGroupSpecifiedLabelesObjects=Cases[Flatten[Values[primitiveGroup[[All,1]]]],_String]/.Join[labelToContainerLookup,labelToSampleLookup/.sampleToContainerLookup];
+          currentGroupSpecifiedLabelesObjects=DeleteDuplicates[Cases[Flatten[Values[primitiveGroup[[All,1]]]],_String]]/.Join[labelToContainerLookup,labelToSampleLookup/.sampleToContainerLookup];
           (* Get unique containers from the Object[Sample] and Object[Container] *)
           uniqueCurrentGroupObjectContainers=DeleteDuplicates[Join[currentGroupSpecifiedObjectContainers,currentGroupSpecifiedObjectSamples/.sampleToContainerLookup,Cases[currentGroupSpecifiedLabelesObjects,ObjectP[Object[Container]]]]];
 
@@ -7917,7 +1595,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 (* 4) the primitive has a method in common with the other primitives *)
                 MemberQ[
                   Intersection@@(ToList[Lookup[#[[1]], PrimitiveMethod]]&/@currentGroupedPrimitives),
-                  Alternatives@@Lookup[primitive[[1]], PrimitiveMethod]
+                  Alternatives@@ToList[Lookup[primitive[[1]], PrimitiveMethod]]
                 ],
                 (* 5) the non-index matching options of this primitive match those that are in our current grouping. *)
                 MatchQ[nonIndexMatchingOptions, currentNonIndexMatchingOptions],
@@ -7946,7 +1624,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               ]
             ]
           ],
-          {convertedMixToTransferPrimitives, reorderedNonIndexMatchingPrimitiveOptions, doNotOptimizeQ, Range[Length[convertedMixToTransferPrimitives]]}
+          {labelHoistedPrimitives, reorderedNonIndexMatchingPrimitiveOptions, doNotOptimizeQ, Range[Length[labelHoistedPrimitives]]}
         ];
 
         (* If we have a grouping left over, make sure to add it to our overall grouping. *)
@@ -7966,7 +1644,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               primitiveGroup[[1]],
               Module[
                 {primitiveInformation, optionDefinition, nonIndexMatchingOptions, primitiveHead, primitiveAssociations,
-                  primitiveAssociationsWithoutSingletonOptions, indexMatchingOptions, indexMatchingOptionDefaults,indexMatchingOptionDefaultsPerPrimitive,
+                  primitiveAssociationsWithoutSingletonOptions, indexMatchingOptions, indexMatchingOptionSingletonPatterns, indexMatchingOptionDefaults,indexMatchingOptionDefaultsPerPrimitive,
                   primitiveAssociationsWithAllIndexMatchingOptions, listifiedPrimitiveAssociationsWithAllIndexMatchingOptions},
 
                 (* Get the head of the primitive type and convert the rest into associations. *)
@@ -7994,6 +1672,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   {PrimitiveMethod}
                 ];
 
+                (* Get the singleton patterns for these index matching options. *)
+                indexMatchingOptionSingletonPatterns=Map[
+                  (#->ReleaseHold@Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionSymbol"->#], <|"SingletonPattern"->Hold[_]|>], "SingletonPattern"])&,
+                  indexMatchingOptions
+                ];
+
                 (* Get the defaults for these index matching options. *)
                 indexMatchingOptionDefaults=(
                   #->ReleaseHold@Lookup[FirstCase[optionDefinition, KeyValuePattern["OptionSymbol"->#], <|"Default"->Null|>], "Default"]
@@ -8007,7 +1691,22 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                       {firstIndexMatchingValueInPrimitive,primitiveLength,indexMatchingKeys,indexMatchingValues},
                       indexMatchingKeys=Keys[indexMatchingOptionDefaults];
                       indexMatchingValues=Lookup[primitiveSingle,indexMatchingKeys,Null];
-                      firstIndexMatchingValueInPrimitive=FirstCase[indexMatchingValues,Except[Null]];
+                      (* Check for the first index matching value that does not match singleton pattern (meaning that it is expanded), if any. Otherwise we have all options as singleton, and can just use 1 as the length *)
+                      (* Note: In theory, our primitive should have been expanded properly at this moment (see flattenedIndexMatchingPrimitives). However, for rare case like Aliquot that we allow nested index matching and only the input was expanded to one layer of list, the options may not have been properly expanded (remain singleton). Here, we perform this additional check and expansion to handle that. The following check here is fairly safe to do regardless *)
+                      firstIndexMatchingValueInPrimitive = FirstOrDefault[
+                        MapThread[
+                          Module[
+                            {singletonPattern},
+                            singletonPattern=Lookup[indexMatchingOptionSingletonPatterns,#1];
+                            If[MatchQ[#2,singletonPattern],
+                              Nothing,
+                              #2
+                            ]
+                          ]&,
+                          {indexMatchingKeys,indexMatchingValues}
+                        ],
+                        {Automatic}
+                      ];
                       primitiveLength=Length[firstIndexMatchingValueInPrimitive];
                       KeyValueMap[
                         #1->ConstantArray[#2,primitiveLength]&,
@@ -8025,7 +1724,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 ];
 
                 (* If the value of the index matching option is not already a list, we need to listify it before we merge the values together for optimization. *)
-                (* Map through each of the pirimtive association we have *)
+                (* Map through each of the primitive association we have *)
                 listifiedPrimitiveAssociationsWithAllIndexMatchingOptions=Map[
                   Function[
                     {individualAssociation},
@@ -8179,8 +1878,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Initialize our primitive index to 1. *)
   index=1;
 
-	(* Helper function overload *)
-	startNewPrimitiveGrouping[]:=startNewPrimitiveGrouping[False];
+  (* Helper function overload *)
+  startNewPrimitiveGrouping[]:=startNewPrimitiveGrouping[False];
   (* Helper function that will reset our lists for us. *)
   startNewPrimitiveGrouping[cleanUpBool_]:=Module[{startNewGroupingQ},
     (* Set this variable to continue since Return[] doesn't work as expected. *)
@@ -8373,8 +2072,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   allTipModels = hamiltonTipModelSearch["Memoization"];
   modelContainerFields = Flatten[{SamplePreparationCacheFields[Model[Container], Format -> List], Immobile, MetaXpressPrefix, HighPrecisionPositionRequired, CoverTypes}];
   objectContainerFields = Flatten[{SamplePreparationCacheFields[Object[Container], Format -> List], CoverLog}];
-  objectSampleFields = SamplePreparationCacheFields[Object[Sample], Format -> List];
-  modelSampleFields = SamplePreparationCacheFields[Model[Sample], Format -> List];
+  (* TODO: when this system is migrated to UploadProtocol, remove the extra field *)
+  objectSampleFields = Append[SamplePreparationCacheFields[Object[Sample], Format -> List], DoubleGloveRequired];
+  modelSampleFields = Append[SamplePreparationCacheFields[Model[Sample], Format -> List], DoubleGloveRequired];
 
   {
     workCellModelPackets,
@@ -8384,13 +2084,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     samplePackets,
     sampleModelPackets,
     containerPackets,
+    heavyMagnetizationRacks,
     parentProtocolStack
   }=Quiet[
     With[{insertMe1=Packet@@objectSampleFields,insertMe2=Packet@@objectContainerFields,insertMe3=Packet@@modelSampleFields},
       Download[
         {
           Flatten[Values[$WorkCellsToInstruments]],
-          (* NOTE: We can be told by the user to use a specific Object[Instrument, LiquidHandler] either thourgh the global *)
+          (* NOTE: We can be told by the user to use a specific Object[Instrument, LiquidHandler] either through the global *)
           (* Instrument option or via the primitive grouping wrapper Instrument option. *)
           DeleteDuplicates@Download[Cases[Join[primitiveMethodIndexToOptionsLookup,{Lookup[safeOps,Instrument]}], ObjectP[Object[Instrument]], Infinity], Object],
           liquidHandlerCompatibleRacks,
@@ -8398,6 +2099,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Object[Sample]], Infinity], Object]],
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Model[Sample]], Infinity], Object]],
           DeleteDuplicates[Download[Cases[flattenedPrimitives, ObjectReferenceP[Object[Container]], Infinity], Object]],
+          {Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]},
           {parentProtocol} /. {Null -> Nothing}
         },
         Evaluate[{
@@ -8421,6 +2123,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Packet[Model[modelContainerFields]],
             Packet[Model[LiquidHandlerAdapter][{Footprint}]]
           },
+          {Object,Objects},
           {Object, ParentProtocol..[Object]}
         }],
         Simulation -> currentSimulation
@@ -8442,15 +2145,77 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Get all Object[Sample]s and Model[Sample]s referenced in our primitives and see if we can find any *)
   (* microbial cells in them. This will be used for defaulting the work cell to use for each of the unit operations. *)
   (* If we're dealing with microbes at all and are on the robot, use the microbioSTAR. *)
-  microbialQ=Module[{sampleAndContainerCache},
-    sampleAndContainerCache=FlattenCachePackets[{samplePackets, sampleModelPackets}];
+  {cellsPresentQ, sterileQ, microbialQ, cellSamplesForErrorChecking} = Module[
+    {sampleAndContainerCache, sampleCachePackets, samplesContainingCells, sterileSamplesQ, livingMaterialQ, cellModels, cellTypes, microbialMaterialQ},
 
-    Or[
-      MemberQ[sampleAndContainerCache, KeyValuePattern[{CellType->MicrobialCellTypeP}]],
-      MemberQ[
-        Download[Cases[Lookup[sampleAndContainerCache, Composition],ObjectP[],Infinity], Object],
-        ObjectReferenceP[{Model[Cell, Bacteria], Model[Cell, Yeast]}]
-      ]
+    (* Gather information on the sample models and objects. *)
+    sampleAndContainerCache = FlattenCachePackets[{samplePackets, sampleModelPackets}];
+    sampleCachePackets = Cases[sampleAndContainerCache, PacketP[{Object[Sample], Model[Sample]}]];
+
+    samplesContainingCells = Map[
+      Function[{cachePacket},
+        Which[
+          (* Check for Living -> True. *)
+          TrueQ[Lookup[cachePacket, Living, Null]], Lookup[cachePacket, Object],
+          (* Check for CellType -> CellTypeP. *)
+          MemberQ[Lookup[cachePacket, CellType, Null], CellTypeP], Lookup[cachePacket, Object],
+          (* Check for cell models in the Composition. *)
+          MemberQ[Flatten@Lookup[cachePacket, Composition], ObjectP[Model[Cell]]], Lookup[cachePacket, Object],
+          (* If we made it this far, consider this sample cell-free. *)
+          True, Nothing
+        ]
+      ],
+      sampleCachePackets
+    ];
+
+    (* Check for Sterile/AsepticHandling -> True. *)
+    sterileSamplesQ = MemberQ[Flatten@Lookup[sampleCachePackets, {Sterile, AsepticHandling}, Null], True];
+
+    (* Determine whether we have any cells or living samples. *)
+    livingMaterialQ = GreaterQ[Length[samplesContainingCells], 0];
+
+    (* If we have cells, get any cell models and cell types from the composition of all samples. *)
+    {cellModels, cellTypes} = If[livingMaterialQ,
+      {
+        Cases[Flatten[Lookup[sampleCachePackets, Composition]], ObjectP[Model[Cell]]],
+        Lookup[sampleCachePackets, CellType, Null]
+      },
+      {{}, {}}
+    ];
+
+    (* Determine whether we have microbes. *)
+    microbialMaterialQ = Or[
+      MemberQ[cellModels, ObjectP[{Model[Cell, Bacteria], Model[Cell, Yeast]}]],
+      MemberQ[cellTypes, MicrobialCellTypeP]
+    ];
+
+    (* Return the final values for cellsOrSterileQ and microbialQ, as well as any samples which have cells. *)
+    {livingMaterialQ, sterileSamplesQ, microbialMaterialQ, samplesContainingCells}
+  ];
+
+  (* Resolve the post processing options. *)
+  {resolvedImageSample, resolvedMeasureVolume, resolvedMeasureWeight} = Module[
+    {preResolvedImageSample, preResolvedMeasureVolume, preResolvedMeasureWeight, cellsOrSterileSamplesQ},
+
+    (* Get the post-processing option values from the sample preparation function; default to Automatic if they don't have post-processing options (like ExperimentManualCellPreparation) *)
+    preResolvedImageSample = Lookup[safeOps, ImageSample, Automatic];
+    preResolvedMeasureVolume = Lookup[safeOps, MeasureVolume, Automatic];
+    preResolvedMeasureWeight = Lookup[safeOps, MeasureWeight, Automatic];
+
+    (* We resolve post processing in the same way for cell-containing samples and otherwise sterile samples. *)
+    cellsOrSterileSamplesQ = Or[cellsPresentQ, sterileQ];
+
+    (* Resolve and return. *)
+    Map[
+      Function[
+        {preResolvedValue},
+        Switch[{preResolvedValue, cellsOrSterileSamplesQ},
+          {Except[Automatic], _}, preResolvedValue,
+          {Automatic, True}, False,
+          {_, _}, True
+        ]
+      ],
+      {preResolvedImageSample, preResolvedMeasureVolume, preResolvedMeasureWeight}
     ]
   ];
 
@@ -8532,6 +2297,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* Keep track of which primitives resulted in failed workcell selection *)
   incompatibleWorkCellAndMethod={};
 
+  (* Keep track of which primitives resulted in a non-CellPreparation method despite the presence of cells. *)
+  roboticCellPreparationRequired={};
+
   (* Create a variable to keep track of our FRQ tests, if we have any. *)
   frqTests={};
 
@@ -8558,11 +2326,48 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     StartUniqueLabelsSession[];
   ];
 
+  (* make sure that the Label* primitives have a matching method to the next primitive after them *)
+  optimizedPrimitivesWithMethods = Module[
+    {primitiveHeads,labelPositions,otherPrimitivePositions,labelPrimitiveReplacementRules},
+
+    primitiveHeads = Head/@optimizedPrimitives;
+    labelPositions = Flatten@Position[primitiveHeads,LabelContainer|LabelSample];
+    (* if we don't have Label* primitives - return early *)
+    If[Length[labelPositions]==0, Return[optimizedPrimitives,Module]];
+
+    otherPrimitivePositions = Complement[Range[Length[primitiveHeads]],labelPositions];
+    (* if we don't have any other primitives - return early *)
+    If[Length[otherPrimitivePositions]==0, Return[optimizedPrimitives,Module]];
+
+    labelPrimitiveReplacementRules = Map[Function[{position},Module[{currentPrimitive,currentMethod,nextPrimitiveMethod,nextPrimitivePosition,nextPrimitive},
+      currentPrimitive = optimizedPrimitives[[position]];
+      currentMethod = ToList@Lookup[currentPrimitive[[1]],PrimitiveMethod];
+
+      (* if this Label* primitive can have only 1 method, return as it is *)
+      If[Length[currentMethod]==1,
+        Return[position->currentPrimitive,Module]
+      ];
+
+      (* if we have LabelSample as a last primitive, merge it into the previous UO instead *)
+      nextPrimitivePosition = If[position==Length[optimizedPrimitives],
+        Last[otherPrimitivePositions],
+        FirstCase[otherPrimitivePositions,GreaterP[position]]
+        ];
+      nextPrimitive = optimizedPrimitives[[nextPrimitivePosition]];
+      (* NOTE: from my current understanding, only Label* primitives can have more than 1 PrimitiveMethod, so this should always have a list of 1 here *)
+      nextPrimitiveMethod = Lookup[nextPrimitive[[1]],PrimitiveMethod];
+      (* Reconstruct the primitive *)
+      position -> Head[currentPrimitive][Append[currentPrimitive[[1]],PrimitiveMethod->nextPrimitiveMethod]]
+    ]],labelPositions];
+
+    ReplacePart[optimizedPrimitives,labelPrimitiveReplacementRules]
+  ];
+
   (* Copy over our list of optimized primitives. We will automatically insert Cover primitives into this list if we *)
   (* 1) are robotic and detect that a container that has KeepCovered->True was manipulated *)
   (* 2) are at the end of a robotic grouping, detect that there are uncovered containers at the end of the grouping, and CoverAtEnd->True. *)
   (* In order to do any cover optimization, OptimizeUnitOperations must be True. *)
-  coverOptimizedPrimitives=optimizedPrimitives;
+  coverOptimizedPrimitives=optimizedPrimitivesWithMethods;
 
   (* Initialize our list of resolved primitives. *)
   resolvedPrimitives={};
@@ -8579,13 +2384,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         resolverFunction, resolvedOptions, newSimulation, resolverTests, simulatedObjectsToLabel, unitOperationPacketsMinusOptions,
         resolvedOptionsWithPrimitiveOptionsOnly, resolvedPrimitive, primitiveMethodIndex, unitOperationPacketsRaw, unitOperationPackets,batchedUnitOperationPackets,
         resolvedOptionsWithNoSimulatedObjects, newLabelFieldKeys, runTimeEstimate, resolverErrorQ, messagesThrown,
-        primitiveResolvingMessageCell, resolvedWorkCell, requestedInstrument, newSimulationWithoutOverwrittenLabels,
+        primitiveResolvingMessageCell, resolvedWorkCell, previousWorkCells, previousPrimitiveToWorkCellLookup, requestedInstrument, newSimulationWithoutOverwrittenLabels,
         primaryInputOptionDefinition, safeResolverOptions, newLabelFields, inputsWithNoSimulatedObjects,
-        optionsWithNoSimulatedObjects, usedResolverCacheQ, delayedMessagesFalseMessagesBool, savedDelayedMessagesFalseMessagesBool,
+        optionsWithNoSimulatedObjects, prePrimitiveFunctionCallMessageLength, usedResolverCacheQ, delayedMessagesFalseMessagesBool, savedDelayedMessagesFalseMessagesBool,
         emptyContainerFailureQ, hardResolverFailureQ, inputsFromPrimitiveOptionsWithExpandedTransfers,
         optionsFromPrimitiveOptionsWithExpandedTransfers, emptyWellFailureQ, nonExistedWellFailureQ, preparation,
         inputFromPrimitiveOptionsWithRearrangedTransfers, optionsFromPrimitiveOptionsWithRearrangedTransfers,
-        downloadInformation,fastCacheBall},
+        downloadInformation,fastCacheBall, optionsWithNoSimulatedObjectsIndexMatchingToSample, startNewPrimitiveGroupingQ,
+        preparativeReplicatesQ,numberOfPreparativeReplicates, resolvedCorrectedOptions, expandedInputs},
 
       (* Get our current primitive. *)
       primitive=coverOptimizedPrimitives[[index]];
@@ -8753,6 +2559,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   objectWidgetsWithLabels=Cases[matchedWidgetInformation, KeyValuePattern[{"Type" -> "Object", "Data" -> _?(!StringStartsQ[#, "Object["] && !StringStartsQ[#, "Model["]&)}], Infinity];
 
                   (* This will give us our labels. *)
+                  (* Why are we doing this? If the user specifies a \" in their labels (unlikely, but not impossible, and certainly possible in code by developers), we mess up their UOs *)
                   labelsInOption=(StringReplace[#,"\""->""]&)/@Lookup[objectWidgetsWithLabels, "Data", {}];
 
                   (* Do we have labels that we don't know about? *)
@@ -9179,8 +2986,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               If[MatchQ[suppliedDestinationLabels[[#1[[1]]]],_String],
                 (* If there is already a label provided by the user, expand it (this is the same as other options) *)
                 #1->Sequence@@ConstantArray[suppliedDestinationLabels[[#1[[1]]]],Length[#2]],
-                (* If there is no existing label, create a unique label *)
-                #1->Sequence@@ConstantArray[CreateUniqueLabel["transfer destination sample"],Length[#2]]
+                (* If there is no existing label, create a unique label for "robotic transfer destination sample" *)
+                (* We distinguish this from "transfer destination sample" used in Transfer because we want to make sure our labels are resolved in the same way even if grouping of primitives changes due to special reasons, like in a rare case that the "full deck" definition of liquid handler has to change. *)
+                (* For example: consider two Transfer UOs. Transfer[xxx (no need for splitting)] and Transfer[xxx (split required)]. If we don't optimize the UOs (do not combine them), the first Transfer would have "transfer destination sample 1" as label (created in Transfer) and second has "transfer destination sample 2" as the label (created here). However, if we combine them with optimization, the order would change. *)
+                (* This is very important when we have PreparatoryUnitOperations in a protocol. When the protocol call is first run, we resolve the labels and populate PreparedSamples field with the labels. Then when we really call ExperimentSamplePreparation in procedure, the same labels must be resolved so we run the correct samples *)
+                (* Note that this may cause multiple labels to be created for the sample destination sample since we are not resolving destination well and container here. However, that is not a problem in our labeling system *)
+                #1->Sequence@@ConstantArray[CreateUniqueLabel["robotic transfer destination sample"],Length[#2]]
               ]&,
               {
                 largeVolumePositions,
@@ -9537,9 +3348,17 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       ];
 
       (* Do we have a resolved PrimitiveMethod by which to resolve/simulate this primitive? *)
-      resolvedPrimitiveMethod=If[MatchQ[Lookup[primitive[[1]], PrimitiveMethod], _Symbol],
+      resolvedPrimitiveMethod=Which[
+        (* we got a symbol of 1 *)
+        MatchQ[Lookup[primitive[[1]], PrimitiveMethod], _Symbol],
         Lookup[primitive[[1]], PrimitiveMethod],
+
+        (* we have a list of 1 *)
+        MatchQ[Lookup[primitive[[1]], PrimitiveMethod], {_Symbol}],
+        Lookup[primitive[[1]], PrimitiveMethod][[1]],
+
         (* Otherwise, we have to call the primitive method resolver function. *)
+        True,
         Module[{primitiveResolverMethod,potentialRawMethods,potentialMethods},
           (* Lookup the method resolver function. *)
           primitiveResolverMethod=Lookup[primitiveInformation, MethodResolverFunction];
@@ -9581,20 +3400,22 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           (* on the experiment function that we're in. *)
           potentialMethods=Flatten@{
             Which[
-              MemberQ[potentialRawMethods, Manual] && MatchQ[myFunction, ExperimentManualSamplePreparation|ExperimentSamplePreparation],
-                Cases[Lookup[primitiveInformation, Methods], ManualSamplePreparation],
               MemberQ[potentialRawMethods, Manual] && MatchQ[myFunction, ExperimentManualCellPreparation|ExperimentCellPreparation],
                 Cases[Lookup[primitiveInformation, Methods], ManualCellPreparation],
+              MemberQ[potentialRawMethods, Manual] && cellsPresentQ && MatchQ[myFunction, Experiment],
+                Cases[Lookup[primitiveInformation, Methods], ManualCellPreparation],
+              MemberQ[potentialRawMethods, Manual] && MatchQ[myFunction, ExperimentManualSamplePreparation|ExperimentSamplePreparation],
+                Cases[Lookup[primitiveInformation, Methods], ManualSamplePreparation],
               MemberQ[potentialRawMethods, Manual] && MatchQ[myFunction, Experiment],
                 Cases[Lookup[primitiveInformation, Methods], ManualSamplePreparation|ManualCellPreparation|Experiment],
               True,
                 {}
             ],
             Which[
+              MemberQ[potentialRawMethods, Robotic] && cellsPresentQ || MatchQ[myFunction, ExperimentRoboticCellPreparation|ExperimentCellPreparation],
+                Cases[Lookup[primitiveInformation, Methods], RoboticCellPreparation],
               MemberQ[potentialRawMethods, Robotic] && MatchQ[myFunction, ExperimentRoboticSamplePreparation|ExperimentSamplePreparation],
                 Cases[Lookup[primitiveInformation, Methods], RoboticSamplePreparation],
-              MemberQ[potentialRawMethods, Robotic] && MatchQ[myFunction, ExperimentRoboticCellPreparation|ExperimentCellPreparation],
-                Cases[Lookup[primitiveInformation, Methods], RoboticCellPreparation],
               MemberQ[potentialRawMethods, Robotic] && MatchQ[myFunction, Experiment],
                 Cases[Lookup[primitiveInformation, Methods], RoboticSamplePreparation|RoboticCellPreparation|Experiment],
               True,
@@ -9625,6 +3446,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (* If we only have one method, then it's clear which one to use. *)
             Length[potentialMethods]==1,
               First[potentialMethods],
+            (* If the specified workcell for this primitive is a bioSTAR, microbioSTAR, or QPix, use RCP. *)
+            MatchQ[Lookup[allPrimitiveOptionsWithSimulatedObjects, WorkCell, Automatic], Alternatives[bioSTAR, microbioSTAR, QPix]],
+              RoboticCellPreparation,
             (* Do we already have a primitive in our primitive grouping and we can continue that method type? *)
             (* OTHERWISE, we will need to start a new primitive grouping. *)
             Length[currentPrimitiveGrouping]>0 && MemberQ[potentialMethods, Lookup[First[currentPrimitiveGrouping][[1]], PrimitiveMethod]],
@@ -9633,7 +3457,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             And[
               Length[potentialMethods]>1,
               MemberQ[potentialMethods, Except[ManualPrimitiveMethodsP]],
-              !MatchQ[primitive, _LabelSample|_LabelContainer|_Wait],
+              !MatchQ[primitive, $DummyPrimitiveP],
               Or[
                 Not[MatchQ[primitive, _Transfer]],
                 And[
@@ -9681,7 +3505,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 (* Get the first future index that does not contain _LabelSample|_LabelContainer|_Wait. *)
                 (* This is because these primitives can always be performed via any method so it doesn't give us any additional *)
                 (* information to include these. *)
-                nextRealPrimitiveIndex=FirstPosition[coverOptimizedPrimitives[[index;;-1]], Except[_LabelSample|_LabelContainer|_Wait], {1}][[1]] + index - 1;
+                nextRealPrimitiveIndex=FirstPosition[coverOptimizedPrimitives[[index;;-1]], Except[$DummyPrimitiveP], {1}][[1]] + index - 1;
 
                 (* Get the primitives that surround this primitive. *)
                 surroundingPrimitives=Take[
@@ -9706,6 +3530,23 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               ]
           ]
         ]
+      ];
+
+      (* If there are cell samples, but the resolved Primitive method is RoboticSamplePreparation, throw an error. *)
+      If[And[cellsPresentQ, MatchQ[resolvedPrimitiveMethod, RoboticSamplePreparation]],
+        Message[Error::RoboticCellPreparationRequired, primitive, ObjectToString[cellSamplesForErrorChecking, Cache -> cacheBall]];
+        AppendTo[roboticCellPreparationRequired, index]
+      ];
+
+      (* If there are cell samples, preparation is Manual, and the primitive is compatible with MSP and MCP, tell the user to consider using MCP. *)
+      If[And[
+        !MatchQ[$ECLApplication, Engine],
+        cellsPresentQ,
+        MatchQ[resolvedPrimitiveMethod, ManualSamplePreparation],
+        MemberQ[Lookup[lookupPrimitiveDefinition[Head[primitive]], Methods], ManualCellPreparation]
+      ],
+        Message[Warning::CellPreparationFunctionRecommended, primitive, ObjectToString[cellSamplesForErrorChecking, Cache -> cacheBall]],
+        Nothing
       ];
 
       (* If we are in a Transfer primitive and ended up going with robotic, then set the inputs/options to the expanded ones. *)
@@ -9949,7 +3790,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               Keys[Experiment`Private`$WorkCellsToInstruments],
               (* Convert requested model to work cell *)
               MatchQ[requestedInstrument,ObjectP[Model[Instrument]]],
-              Lookup[$InstrumentsToWorkCells,Lookup[fetchPacketFromCache[requestedInstrument,workCellObjectPackets],Object]],
+              Lookup[$InstrumentsToWorkCells,Lookup[fetchPacketFromCache[requestedInstrument,workCellModelPackets],Object]],
               (* Convert requested instrument to work cell *)
               MatchQ[requestedInstrument,ObjectP[Object[Instrument]]],
               Lookup[$InstrumentsToWorkCells,Lookup[fetchPacketFromCache[requestedInstrument,workCellObjectPackets],Model][Object]]
@@ -9974,8 +3815,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 MatchQ[resolvedPrimitiveMethod, RoboticSamplePreparation] && (Not[MemberQ[potentialWorkCells, STAR]] || MatchQ[specifiedWorkCell, Alternatives[bioSTAR,microbioSTAR]]),
                   Message[Error::WorkCellIsIncompatibleWithMethod,resolvedPrimitiveMethod,primitive,Intersection[potentialWorkCells,{STAR}]];
                   AppendTo[incompatibleWorkCellAndMethod,index];,
-                MatchQ[resolvedPrimitiveMethod, RoboticCellPreparation] && (Not[MemberQ[potentialWorkCells, Alternatives[bioSTAR,microbioSTAR]]] || MatchQ[specifiedWorkCell, STAR]),
-                  Message[Error::WorkCellIsIncompatibleWithMethod,resolvedPrimitiveMethod,primitive,Intersection[potentialWorkCells,{bioSTAR,microbioSTAR}]];
+                MatchQ[resolvedPrimitiveMethod, RoboticCellPreparation] && (Not[MemberQ[potentialWorkCells, Alternatives[bioSTAR,microbioSTAR,qPix]]] || MatchQ[specifiedWorkCell, STAR]),
+                  Message[Error::WorkCellIsIncompatibleWithMethod,resolvedPrimitiveMethod,primitive,Intersection[potentialWorkCells,{bioSTAR,microbioSTAR,qPix}]];
                   AppendTo[incompatibleWorkCellAndMethod,index];,
                 True,
                   Nothing
@@ -9985,17 +3826,27 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (* Figure out which work cells are actually possible given the user request and the instrument constraints *)
             allowedWorkCells = UnsortedIntersection[potentialWorkCells, ToList[requestedWorkCell], DeleteDuplicates -> True];
 
+            (* create a lookup so we can spit the error message with more clarity, ruling out LabelSample, and LabelContainer since really these two primitives can be done on any of the work cells in general *)
+            previousPrimitiveToWorkCellLookup = Map[
+              (* if it does not have/need a workcell, skip *)
+              If[MatchQ[Lookup[#[[1]], WorkCell], WorkCellP] && !MatchQ[#, $DummyPrimitiveP],
+                # -> Lookup[#[[1]], WorkCell],
+                Nothing
+              ]&,
+              currentPrimitiveGrouping
+            ];
+
+            (* find out all previously resolved work cells *)
+            previousWorkCells = DeleteDuplicates[previousPrimitiveToWorkCellLookup[[All, 2]]];
+
             (* preferences for workcells but not requirements *)
             Which[
               (* pass through user choice *)
               Not[MatchQ[userWorkCellChoice,Automatic]],
                 userWorkCellChoice,
               (* if we already have a workcell chosen for our group and we can keep using it then do that *)
-              And[
-                MatchQ[Length[currentPrimitiveGrouping], GreaterP[0]],
-                MemberQ[allowedWorkCells, Lookup[currentPrimitiveGrouping[[-1]][[1]], WorkCell]]
-              ],
-                Lookup[currentPrimitiveGrouping[[-1]][[1]], WorkCell],
+              Length[UnsortedIntersection[allowedWorkCells, previousWorkCells]] > 0,
+                First[UnsortedIntersection[allowedWorkCells, previousWorkCells]],
               (* if we are in RSP, and we can use STAR then do that *)
               MatchQ[resolvedPrimitiveMethod, RoboticSamplePreparation] && MemberQ[allowedWorkCells, STAR],
                 STAR,
@@ -10006,7 +3857,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               MatchQ[resolvedPrimitiveMethod, RoboticCellPreparation] && MemberQ[potentialWorkCells, bioSTAR] && Not[MatchQ[microbialQ, True]],
                 bioSTAR,
               (* failsafe clause: if we are in RCP, prefer either bioSTAR or microbioSTAR, or just pick the first workcell*)
-              MatchQ[resolvedPrimitiveMethod, RoboticCellPreparation] && Length[Cases[potentialWorkCells,bioSTAR|microbioSTAR]]>0,
+              MatchQ[resolvedPrimitiveMethod, RoboticCellPreparation] && Length[Cases[potentialWorkCells,bioSTAR|microbioSTAR|qPix]]>0,
                 FirstCase[potentialWorkCells, bioSTAR|microbioSTAR,First[potentialWorkCells]],
               (* If we get to here, it means STAR is not one of the potentialWorkCells but we must pick it anyway *)
               MatchQ[resolvedPrimitiveMethod,RoboticSamplePreparation],
@@ -10015,7 +3866,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               MatchQ[resolvedPrimitiveMethod,RoboticCellPreparation],
                 bioSTAR,
               MatchQ[allowedWorkCells,{__}],
-              First[allowedWorkCells],
+                First[allowedWorkCells],
               (* ideally never reached, but this makes sure we pick any workcell *)
               True,
                 First[potentialWorkCells]
@@ -10028,6 +3879,65 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       (* resolvedWorkCell can be Null when doing the unit operation manually. *)
       If[!MatchQ[resolvedWorkCell, WorkCellP|Null],
         Message[Error::WorkCellDoesntMatchPattern, primitive];
+      ];
+
+      (* check to make sure that the work cell is the same as the previous work cell in the same primitive group *)
+
+      (* see if we are starting a new primitive grouping or not *)
+      startNewPrimitiveGroupingQ = Or[
+        (* If the user told us that we should use a different method index, we're forced to split. *)
+        !MatchQ[
+          (Lookup[#[[1]], PrimitiveMethodIndex, Automatic]&) /@ currentPrimitiveGrouping,
+          (* NOTE: PrimitiveMethodIndex is going to exist in the non-resolved primitive as well. *)
+          {(primitiveMethodIndex | Automatic)...}
+        ],
+        (* If the user told us that we have to use a new primitive method. *)
+        !MatchQ[
+          (Lookup[#[[1]], PrimitiveMethod]&) /@ currentPrimitiveGrouping,
+          {(resolvedPrimitiveMethod)...}
+        ],
+        (* Or if they left the primitive method index to be Automatic and... *)
+        And[
+          MatchQ[
+            primitiveMethodIndex,
+            Automatic
+          ],
+          Or[
+            (* The user told us to use a different work cell. *)
+            !MatchQ[
+              previousWorkCells,
+              {(resolvedWorkCell)...}
+            ],
+            (* Or we have more than $MaxPlateReaderInjectionSamples injection sample resources, we can't fit them in a single group. *)
+            Module[{injectionResourceGroups},
+              (* NOTE: We don't have to check for the number of injection resource groups here because that is covered *)
+              (* by the plate reader instrument resources. *)
+              injectionResourceGroups = computeInjectionSampleResourceGroups[currentPrimitiveGrouping];
+
+              MemberQ[
+                (MatchQ[Length[#], GreaterP[$MaxPlateReaderInjectionSamples]]&) /@ injectionResourceGroups[[All, 2]],
+                True
+              ]
+            ],
+            (* If our injection samples show up elsewhere, we have to start a new group since we can't put injection samples *)
+            (* inside of the plate reader and on deck. *)
+            MatchQ[
+              Length[computeInvalidInjectionSampleResources[currentPrimitiveGrouping, currentPrimitiveGroupingUnitOperationPackets]],
+              GreaterP[0]
+            ]
+          ]
+        ]
+      ];
+
+      (* throw error only if we are NOT starting a new primitive group, and the resolved work cell is different from the previous one *)
+      If[
+        And[
+          MatchQ[{resolvedWorkCell, previousWorkCells}, {WorkCellP, {WorkCellP..}}],
+          !MemberQ[previousWorkCells, resolvedWorkCell],
+          !startNewPrimitiveGroupingQ
+        ],
+        Message[Error::ConflictingWorkCells, primitive, index, resolvedWorkCell, previousPrimitiveToWorkCellLookup[[All, 2]], previousPrimitiveToWorkCellLookup[[All, 1]], myFunction];
+        AppendTo[incompatibleWorkCellAndMethod, index]
       ];
 
       (* Lookup the function to call that goes with our resolved method. *)
@@ -10052,6 +3962,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       (* NOTE: If we are dealing with a non-manual method, we must also ask for the resources that we will need *)
       (* to execute the primitive. This will be used for workcell grouping and we also will need to place the resources on *)
       (* deck in order to generate the JSON to perform the workcell protocol. *)
+
+      (* Get the current count of total messages before calling the primitive function *)
+      prePrimitiveFunctionCallMessageLength = Length[$MessageList];
 
       (* Keep track of if we used the cache for this primitive. This signals that we need to add unitOperationObjects *)
       (* to outputUnitOperationObjectsFromCache. *)
@@ -10476,15 +4389,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                           ]
                         ]
                       ],
-                      Module[{imageSample,measureVolume,measureWeight,
-                        primitiveImageSample,primitiveMeasureVolume,primitiveMeasureWeight,
-                        resolvedImageSample,resolvedMeasureVolume,resolvedMeasureWeight,fullResolverOptions},
-
-                        (* Get the post-processing option values from the sample preparation function or Automatic if
-                        they don't have post-processing options (like ExperimentManualCellPreparation) *)
-                        imageSample=Lookup[safeOps,ImageSample,Automatic];
-                        measureVolume=Lookup[safeOps,MeasureVolume,Automatic];
-                        measureWeight=Lookup[safeOps,MeasureWeight,Automatic];
+                      Module[{
+                        primitiveImageSample,primitiveMeasureVolume,primitiveMeasureWeight, resolvedPrimitiveImageSampleRule,
+                        resolvedPrimitiveMeasureVolumeRule,resolvedPrimitiveMeasureWeightRule,fullResolverOptions},
 
                         (* Get the post-processing option values from this primitive *)
                         primitiveImageSample=Lookup[safeResolverOptions,ImageSample];
@@ -10493,17 +4400,17 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
                         (* If preparation is Manual and the primitive doesn't have a post-processing option specified,
                         then use the value resolved for the MSP, otherwise don't change the value *)
-                        resolvedImageSample=Switch[{primitiveImageSample,preparation},
-                          {Automatic,Manual},ImageSample->imageSample,
-                          {_,_},Nothing
+                        resolvedPrimitiveImageSampleRule=Switch[{primitiveImageSample,preparation},
+                          {Automatic,Manual}, ImageSample -> resolvedImageSample,
+                          {_,_}, Nothing
                         ];
-                        resolvedMeasureVolume=Switch[{primitiveMeasureVolume,preparation},
-                          {Automatic,Manual},MeasureVolume->measureVolume,
-                          {_,_},Nothing
+                        resolvedPrimitiveMeasureVolumeRule=Switch[{primitiveMeasureVolume,preparation},
+                          {Automatic,Manual}, MeasureVolume -> resolvedMeasureVolume,
+                          {_,_}, Nothing
                         ];
-                        resolvedMeasureWeight=Switch[{primitiveMeasureWeight,preparation},
-                          {Automatic,Manual},MeasureWeight->measureWeight,
-                          {_,_},Nothing
+                        resolvedPrimitiveMeasureWeightRule=Switch[{primitiveMeasureWeight,preparation},
+                          {Automatic,Manual}, MeasureWeight -> resolvedMeasureWeight,
+                          {_,_}, Nothing
                         ];
 
                         fullResolverOptions=ReplaceRule[
@@ -10521,9 +4428,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                               Preparation->preparation,
                               Nothing
                             ],
-                            resolvedImageSample,
-                            resolvedMeasureVolume,
-                            resolvedMeasureWeight,
+                            resolvedPrimitiveImageSampleRule,
+                            resolvedPrimitiveMeasureVolumeRule,
+                            resolvedPrimitiveMeasureWeightRule,
                             resolverPlateReaderRule
                           }
                         ];
@@ -10571,11 +4478,11 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
       (* These three errors are all hard framework errors that make it such that the experiment function doesn't continue. *)
       (* If one of these happen, we have to handle it to fail gracefully. *)
-      emptyContainerFailureQ=MatchQ[unitOperationPacketsRaw, $Failed] && (MemberQ[messagesThrown, <|MessageName -> Hold[Error::EmptyContainers], _|>] || MatchQ[resolvedOptions, $Failed]);
-      emptyWellFailureQ=MatchQ[unitOperationPacketsRaw, $Failed] && (MemberQ[messagesThrown, <|MessageName -> Hold[Error::ContainerEmptyWells], _|>] || MatchQ[resolvedOptions, $Failed]);
-      nonExistedWellFailureQ=MatchQ[unitOperationPacketsRaw, $Failed] && (MemberQ[messagesThrown, <|MessageName -> Hold[Error::WellDoesNotExist], _|>] || MatchQ[resolvedOptions, $Failed]);
+      emptyContainerFailureQ=MemberQ[messagesThrown, <|MessageName -> Hold[Error::EmptyContainers], _|>];
+      emptyWellFailureQ=MemberQ[messagesThrown, <|MessageName -> Hold[Error::ContainerEmptyWells], _|>];
+      nonExistedWellFailureQ=MemberQ[messagesThrown, <|MessageName -> Hold[Error::WellDoesNotExist], _|>];
       (* NOTE: Here, since if delayedMessages -> False, we don't know what errors have been thrown, assume the worst *)
-      hardResolverFailureQ = emptyContainerFailureQ || emptyWellFailureQ || nonExistedWellFailureQ || savedDelayedMessagesFalseMessagesBool;
+      hardResolverFailureQ = emptyContainerFailureQ || emptyWellFailureQ || nonExistedWellFailureQ || savedDelayedMessagesFalseMessagesBool || MatchQ[resolvedOptions, $Failed] || MatchQ[unitOperationPacketsRaw, $Failed];
 
       (* If the simulation that we get back doesn't match SimulationP, set it to an empty simulation. This is due to *)
       (* some weird Command Center bugs that have arisen. *)
@@ -10602,7 +4509,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                     Object[UnitOperation,PickColonies],
                     Object[UnitOperation,InoculateLiquidMedia],
                     Object[UnitOperation,SpreadCells],
-                    Object[UnitOperation,StreakCells]
+                    Object[UnitOperation,StreakCells],
+                    Object[UnitOperation,ImageColonies],
+                    Object[UnitOperation,QuantifyColonies]
                   }
                 ]]
               }
@@ -10615,7 +4524,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   Object[UnitOperation,PickColonies],
                   Object[UnitOperation,InoculateLiquidMedia],
                   Object[UnitOperation,SpreadCells],
-                  Object[UnitOperation,StreakCells]
+                  Object[UnitOperation,StreakCells],
+                  Object[UnitOperation,ImageColonies],
+                  Object[UnitOperation,QuantifyColonies]
                 }
               ]
             }
@@ -10640,6 +4551,22 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         }],
         {}
       ];
+      (*At the deepest level of unit operations, if we have any Transfer UnitOperation with MagnetizationRack -> "Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack", while having Filter. They will have conflicts when placing on deck. Add unit operation to the list for error tracking*)
+
+      If[Length[unitOperationPackets]>0&&MatchQ[First[unitOperationPackets],Alternatives[
+        KeyValuePattern[{Type -> Object[UnitOperation, Transfer], ResolvedUnitOperationOptions -> {___, MagnetizationRack -> ListableP[ObjectP[{Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]}]],___}}],
+        KeyValuePattern[{Type -> Object[UnitOperation, Filter]}]]
+      ],
+        (*If there is potential conflicting unit operation, add it to the error tracking list*)
+        Module[{potentialConflictingDeckPlacementUnitOperation},
+        potentialConflictingDeckPlacementUnitOperation = If[MatchQ[$PotentialConflictingDeckPlacementUnitOperations,{PacketP[]..}|{}],
+          Append[$PotentialConflictingDeckPlacementUnitOperations,First[unitOperationPackets]],
+          (*In case the parent function did send a simulation so the global constant was not properly initiated, *)
+          {First[unitOperationPackets]}];
+        Unset[$PotentialConflictingDeckPlacementUnitOperations];
+        $PotentialConflictingDeckPlacementUnitOperations=potentialConflictingDeckPlacementUnitOperation
+        ]
+      ];
 
       (* If we used the cache, then add our unit operation objects to outputUnitOperationObjectsFromCache. *)
       If[MatchQ[usedResolverCacheQ, True] && Length[unitOperationPackets]>0,
@@ -10649,7 +4576,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       (* Print debug statement if asked. *)
       If[MatchQ[debug, True],
         Echo[
-          {DateObject[],Normal@KeyDrop[resolvedOptions, Cache], newSimulation, resolverTests, unitOperationPackets, runTimeEstimate, messagesThrown},
+          {DateObject[],If[FailureQ[resolvedOptions], resolvedOptions, Normal@KeyDrop[resolvedOptions, Cache]], newSimulation, resolverTests, unitOperationPackets, runTimeEstimate, messagesThrown},
           "{resolvedOptions, newSimulation, resolverTests, unitOperationPackets, runTimeEstimate, messagesThrown}"
         ]
       ];
@@ -10668,7 +4595,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           MapThread[
             ManifoldEcho[#1, #2]&,
             {
-              {resolverFunction, inputsFromPrimitiveOptions, safeResolverOptions, If[MatchQ[resolvedOptions, Except[$Failed]], Normal@KeyDrop[resolvedOptions, Cache], resolvedOptions], newSimulation, resolverTests, unitOperationPackets, runTimeEstimate, messagesThrown},
+              {resolverFunction, inputsFromPrimitiveOptions, safeResolverOptions, If[FailureQ[resolvedOptions], resolvedOptions, Normal@KeyDrop[resolvedOptions, Cache]], newSimulation, resolverTests, unitOperationPackets, runTimeEstimate, messagesThrown},
               {"resolverFunction", "inputsFromPrimitiveOptions", "safeResolverOptions", "resolvedOptions", "newSimulation", "resolverTests", "unitOperationPackets", "runTimeEstimate", "messagesThrown"}
             }
           ];
@@ -10743,9 +4670,20 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       (* the message. *)
       (* NOTE: We have to wait until this point in the code to throw the errors because we need the updated simulation *)
       (* in order to map simulated samples to their labels since the simulated sample IDs should be hidden from the user. *)
-      Map[
-        throwMessageWithPrimitiveIndex[#, index, Head[primitive], newSimulationWithoutOverwrittenLabels]&,
-        messagesThrown
+
+      (* NOTE: Similar to ModifyFunctionMessages*)
+      (* General::stop is quieted here because if we are calling primitive function which could also call ModifyFunctionMessages. *)
+      (* With ModifyFunctionMessages, the errors are still collected properly (and eventually only thrown once), however the counter for General::stop *)
+      (* is still counting in the background. So even though the message is only thrown once, we still see a General::stop error. *)
+      (* We quiet this here to prevent this. *)
+      (* Example: ExperimentCellPreparation calls ExperimentQuantifyCells, which uses ModifyFunctionMessages to call ExperimentAbsorbanceSpectroscopy, which throws a Warning::AliquotRequired in resolvedAliquotOptions.*)
+      (* The General::stop counter for this warning will be triggered 3 times (thus having the General::stop message appear), even though we only eventually throw it once (the final version of message modifyed here) *)
+      Quiet[
+        MapIndexed[
+          throwMessageWithPrimitiveIndex[#1, index, Head[primitive], newSimulationWithoutOverwrittenLabels, prePrimitiveFunctionCallMessageLength, #2]&,
+          messagesThrown
+        ],
+        General::stop
       ];
 
       (* Store our previous simulation temporarily since we may need it in our FRQ call. This is because we want to *)
@@ -10776,69 +4714,172 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       inputsWithNoSimulatedObjects=inputsFromPrimitiveOptions/.simulatedObjectsToLabel;
       optionsWithNoSimulatedObjects=optionsFromPrimitiveOptions/.simulatedObjectsToLabel;
 
+      (* Set a flag for the special case of FreezeCells with replicates. If this boolean is True, we need to expand the *)
+      (* samples and options for the number of replicates because this option splits the input sample into multiple samples. *)
+      (* we have to do the same for Aliquot since it has to generate the numOfSamples*replicates number of labels *)
+      preparativeReplicatesQ = And[
+        (* check straight ahead if resolved options ever failed *)
+        Not[FailureQ[resolvedOptionsWithPrimitiveOptionsOnly]],
+        Or[
+          MatchQ[Head[primitive],FreezeCells],
+          And[
+            MemberQ[ToList@Lookup[resolvedOptionsWithPrimitiveOptionsOnly,Aliquot],True],
+            (* lyse cells primitive does expansion before it feeds here so we shouldn't try to do the expansion here *)
+            !MatchQ[Head[primitive],LyseCells]
+          ]
+        ],
+        GreaterQ[Lookup[resolvedOptionsWithPrimitiveOptionsOnly,NumberOfReplicates],1],
+        (* need a resolver function do to this expansion properly *)
+        Not[NullQ[preparativeReplicatesQ]]
+      ];
+      numberOfPreparativeReplicates = If[preparativeReplicatesQ, Lookup[resolvedOptionsWithPrimitiveOptionsOnly, NumberOfReplicates], Null];
+
+      (* Correct the resolved options for replicates if needed. *)
+      {expandedInputs, resolvedCorrectedOptions} = If[!preparativeReplicatesQ,
+        (* Without preparative replicates, this is straightforward. *)
+        {inputsFromPrimitiveOptions, resolvedOptionsWithNoSimulatedObjects},
+        (* Otherwise we need to handle the special case of preparative replicates. *)
+        (* note that we are ALSO setting ResetNumberOfReplicates -> True because we don't want to expand by NumberOfReplicates here and then again when we are actually running the Experiment *)
+        ExpandIndexMatchedInputs[resolverFunction, inputsFromPrimitiveOptions, resolvedOptionsWithNoSimulatedObjects, ExpandReplicates -> True, ResetNumberOfReplicates -> True]
+      ];
+
       (* Put our resolved options (and inputs, which don't need to be resolved, back into primitive format. *)
-      resolvedPrimitive=If[hardResolverFailureQ,
-        primitive,
-        Head[primitive][Association@Join[
-          (* Make sure to convert all containers to samples since the functions will do this internally and we need the *)
-          (* index matching to work out. *)
-          (* NOTE: ExperimentTransfer/Cover/Uncover leaves containers alone so do not do this for those experiments. *)
-          If[MatchQ[Head[primitive], Transfer|Cover|Uncover],
-            Rule@@@Transpose[{Lookup[primitiveInformation, InputOptions], inputsFromPrimitiveOptions}],
-            Module[{inputOptionsWithContainers,currentContainerPackets,containerToAllSampleLookup,allcontainerToSamples,positionToSampleLookup,allpositionsToSamples},
-              inputOptionsWithContainers=(
-                #->Lookup[allPrimitiveOptionsWithSimulatedObjects, #, Null]
-                    &)/@Lookup[primitiveInformation, InputOptions];
+      {resolvedPrimitive, optionsWithNoSimulatedObjectsIndexMatchingToSample}=If[hardResolverFailureQ,
+        {primitive, optionsWithNoSimulatedObjects},
+        Module[{innerResolvedPrimitive, innerOptionsIndexMatched, inputOptionsWithContainers, inputOptionNames, currentContainerPackets, innerOptionsWithResolvedLabels, generativeQ},
+          inputOptionNames = Lookup[primitiveInformation, InputOptions];
+
+          currentContainerPackets=Download[
+            DeleteDuplicates[Cases[inputsFromPrimitiveOptions, ObjectP[Object[Container]], Infinity]],
+            Packet[Contents],
+            Simulation->previousSimulation
+          ];
+
+          innerResolvedPrimitive = Module[{},
+            Head[primitive][Association@Join[
+            (* Make sure to convert all containers to samples since the functions will do this internally and we need the *)
+            (* index matching to work out. *)
+            (* NOTE: ExperimentTransfer/Cover/Uncover leaves containers alone so do not do this for those experiments. *)
+            If[MatchQ[Head[primitive], Transfer|Cover|Uncover],
+              Rule@@@Transpose[{Lookup[primitiveInformation, InputOptions], inputsWithNoSimulatedObjects}],
+              Module[{containerToAllSampleLookup,allcontainerToSamples,positionToSampleLookup,allpositionsToSamples},
+
+                inputOptionsWithContainers = MapThread[
+                  #1 -> #2 &,
+                  {inputOptionNames, expandedInputs}
+                ];
+
+                (* Build a look up to transfer container to all the sample inside that container *)
+                containerToAllSampleLookup=(Lookup[#, Object] -> Sequence@@Download[Lookup[#, Contents][[All,2]], Object]&)/@currentContainerPackets;
+
+                positionToSampleLookup=Flatten[Module[{object,allSamples,allPositions},
+
+                  object=Lookup[#, Object];
+                  allSamples=Download[Lookup[#, Contents][[All,2]], Object];
+                  allPositions=Lookup[#, Contents][[All,1]];
+
+                  MapThread[({#1,object}->#2)&,{allPositions,allSamples}]
+
+                ]&/@currentContainerPackets,1];
+
+                (* Replace simulated objects with their labels. *)
+                allpositionsToSamples=inputOptionsWithContainers/.positionToSampleLookup;
 
 
-              currentContainerPackets=Download[
-                DeleteDuplicates[Cases[inputsFromPrimitiveOptions, ObjectP[Object[Container]], Infinity]],
-                Packet[Contents],
-                Simulation->previousSimulation
+                allcontainerToSamples=allpositionsToSamples/.containerToAllSampleLookup;
+
+                (* Replace simulated (and real) containers with simulated (and real) samples. *)
+                (* Also, replace any simulated objects with their labels (keep real objects in object form) *)
+                (* note that preparative replicates are already handled by the ExpandIndexMatchedInputs expanidng above *)
+                allcontainerToSamples /. simulatedObjectsToLabel
+              ]
+            ],
+            (* Add our primitive options based on the resolved information we got back. *)
+            (* Remove any simulated objects and replace them with labels. *)
+            resolvedCorrectedOptions,
+
+            (* These aren't really options to the primitive, so make sure to add them back. *)
+            (* NOTE: We don't use the "safe" primitive method here, we use the original one given by the user as to not change *)
+            (* the command builder view. *)
+            {
+              PrimitiveMethod->resolvedPrimitiveMethod,
+              PrimitiveMethodIndex->primitiveMethodIndex,
+              WorkCell->resolvedWorkCell,
+              (* add the resolved options and unresolved options to the first unit operation packet (i.e., the one that goes into the top level OutputUnitOperations field) *)
+              (* need to do this here in addition to what we did before because if dealing with a unit operation that doesn't return unit operation packets then we need a different way to make it into the unit operation object *)
+              UnresolvedUnitOperationOptions -> Normal[KeyDrop[safeResolverOptions, {Simulation, Cache}], Association],
+              ResolvedUnitOperationOptions -> Normal[KeyDrop[resolvedCorrectedOptions, {Simulation, Cache}], Association]
+            }
+          ]]];
+
+          (* Here we are doing some modifications to the unresolved options *)
+          (* 1. we need to fix the index-matching of unresolved primitives. If we have containers in InputOptions some options may index-match to container, *)
+          (*    then after expanding container into sample it's no longer index-matched *)
+          (* 2. some primitives are generative. new samples generated from these primitives can be referred by the resolved labels in later primitives *)
+          (*    however, if the label name doesn't exist in the unresolved options, later function can error out in the script because it can't find that label *)
+
+          (* First fix problem 1 *)
+          innerOptionsIndexMatched = If[MatchQ[Head[primitive], Transfer|Cover|Uncover],
+            optionsWithNoSimulatedObjects,
+            Module[{correctedIndexMatchingOptionValues, containerToAllSampleLengthLookup, indexMatchingOptions},
+
+              containerToAllSampleLengthLookup = (Lookup[#, Object] -> Length[Lookup[#, Contents]]&)/@currentContainerPackets;
+              (* Find all index-matching options *)
+              indexMatchingOptions = Lookup[Cases[Lookup[primitiveInformation, OptionDefinition], (KeyValuePattern["IndexMatchingParent" -> Alternatives@@(ToString /@ inputOptionNames)] | KeyValuePattern["IndexMatchingInput" -> "experiment samples"])], "OptionSymbol"];
+
+              correctedIndexMatchingOptionValues = Map[
+                Function[{optionValueRule},
+                  (* If the option is not index-matching to input, or the option value is not a list, don't change anything *)
+                  If[
+                    And[
+                      MatchQ[Values[optionValueRule], _List],
+                      MemberQ[indexMatchingOptions, Keys[optionValueRule]],
+                      !MemberQ[inputOptionNames, Keys[optionValueRule]],
+                      Length[Values[First[inputOptionsWithContainers]]] == Length[Values[optionValueRule]]
+                    ],
+                    Flatten[
+                      MapThread[
+                        Function[{singleOption, singleInput},
+                          Module[{containerMultiplicity, multipliedOptionValue},
+                            (* Key[singleInput] is...key here.  if singleInput is a container then it will work fine. But if it is something like {"A1", Object[Container, Plate, "id:lkjlkj"]}, then this lookup is goign to give weird results *)
+                            (* For instance: *)
+                            (* Lookup[{container1 -> 4}, container1] obviously gives 4 *)
+                            (* Lookup[{container1 -> 4}, {"A1", container1}] weirdly gives {Missing[KeyAbsent, "A1"], 4} *)
+                            (* Lookup[{container1 -> 4}, Key[{"A1", container1}]] gives Missing[KeyAbsent, {"A1", container1}] as we expect *)
+                            (* since we're doing weird flatten shenanigans and using 1 as the third argument of lookup, we will get unexpected behavior if we have the {position, container} format and DON'T use Key *)
+                            containerMultiplicity = Lookup[containerToAllSampleLengthLookup, Key[singleInput], 1];
+                            multipliedOptionValue = ConstantArray[singleOption, containerMultiplicity]
+                          ]
+                        ],
+                        {Values[optionValueRule], Values[First[inputOptionsWithContainers]]}
+                      ],
+                      1
+                    ],
+                    Values[optionValueRule]
+                  ]
+                ],
+                optionsWithNoSimulatedObjects
               ];
 
-              (* Build a look up to transfer container to all the sample inside that container *)
-              containerToAllSampleLookup=(Lookup[#, Object] -> Sequence@@Download[Lookup[#, Contents][[All,2]], Object]&)/@currentContainerPackets;
-
-              positionToSampleLookup=Flatten[Module[{object,allSamples,allPositions},
-
-                object=Lookup[#, Object];
-                allSamples=Download[Lookup[#, Contents][[All,2]], Object];
-                allPositions=Lookup[#, Contents][[All,1]];
-
-                MapThread[({#1,object}->#2)&,{allPositions,allSamples}]
-
-              ]&/@currentContainerPackets,1];
-
-              (* Replace simulated objects with their labels. *)
-              allpositionsToSamples=inputOptionsWithContainers/.positionToSampleLookup;
-
-
-              allcontainerToSamples=allpositionsToSamples/.containerToAllSampleLookup;
-
-              (
-                (* Replace simulated (and real) containers with simulated (and real) samples. *)
-                allcontainerToSamples
-              )/.Reverse/@Lookup[previousSimulation[[1]], Labels]
+              MapThread[#1 -> #2&, {Keys[optionsWithNoSimulatedObjects], correctedIndexMatchingOptionValues}]
             ]
-          ],
-          (* Add our primitive options based on the resolved information we got back. *)
-          (* Remove any simulated objects and replace them with labels. *)
-          resolvedOptionsWithNoSimulatedObjects,
+          ];
 
-          (* These aren't really options to the primitive, so make sure to add them back. *)
-          (* NOTE: We don't use the "safe" primitive method here, we use the original one given by the user as to not change *)
-          (* the command builder view. *)
-          {
-            PrimitiveMethod->resolvedPrimitiveMethod,
-            PrimitiveMethodIndex->primitiveMethodIndex,
-            WorkCell->resolvedWorkCell,
-            (* add the resolved options and unresolved options to the first unit operation packet (i.e., the one that goes into the top level OutputUnitOperations field) *)
-            (* need to do this here in addition to what we did before because if dealing with a unit operation that doesn't return unit operation packets then we need a different way to make it into the unit operation object *)
-            UnresolvedUnitOperationOptions -> Normal[KeyDrop[safeResolverOptions, {Simulation, Cache}], Association],
-            ResolvedUnitOperationOptions -> Normal[KeyDrop[resolvedOptionsWithNoSimulatedObjects, {Simulation, Cache}], Association]
-          }
-        ]]
+          (* Now fix problem 2 *)
+          generativeQ = Lookup[primitiveInformation, Generative, False];
+
+          (* If primitive is generative, replace the GenerativeLabelOption with the resolved option; otherwise don't change anything *)
+          innerOptionsWithResolvedLabels = If[TrueQ[generativeQ],
+            Module[{generativeLabelOptionName, generativeLabelOptionValue},
+
+              generativeLabelOptionName = Lookup[primitiveInformation, GenerativeLabelOption];
+              generativeLabelOptionValue = Lookup[resolvedCorrectedOptions, generativeLabelOptionName];
+              ReplaceRule[innerOptionsIndexMatched, {generativeLabelOptionName -> generativeLabelOptionValue}]
+            ],
+            innerOptionsIndexMatched
+          ];
+          {innerResolvedPrimitive, innerOptionsWithResolvedLabels}
+        ]
       ];
 
       (* We're about to return. Remove our temporary print cell. *)
@@ -10880,7 +4921,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             AppendTo[currentPrimitiveGrouping, resolvedPrimitive];
             AppendTo[currentUnresolvedPrimitiveGrouping, Head[primitive]@KeyDrop[primitive[[1]], {PrimitiveMethod, PrimitiveMethodIndex, WorkCell}]];
             AppendTo[currentPrimitiveInputGrouping, inputsWithNoSimulatedObjects];
-            AppendTo[currentPrimitiveOptionGrouping, resolvedOptionsWithNoSimulatedObjects];
+            AppendTo[currentPrimitiveOptionGrouping, resolvedCorrectedOptions];
             AppendTo[currentPrimitiveGroupingUnitOperationPackets, unitOperationPackets];
             AppendTo[currentPrimitiveGroupingBatchedUnitOperationPackets, batchedUnitOperationPackets];
             currentLabelFieldsWithIndices=Join[
@@ -10978,50 +5019,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               currentPrimitiveGroupingIntegratedInstruments, tipAdapterUsedQ},
 
             (* Setup a new grouping if our current grouping isn't the same work cell type. *)
-            If[Or[
-                (* If the user told us that we should use a different method index, we're forced to split. *)
-                !MatchQ[
-                  (Lookup[#[[1]], PrimitiveMethodIndex, Automatic]&)/@currentPrimitiveGrouping,
-                  (* NOTE: PrimitiveMethodIndex is going to exist in the non-resolved primitive as well. *)
-                  {(Lookup[primitive[[1]], PrimitiveMethodIndex, Automatic]|Automatic)...}
-                ],
-                (* If the user told us that we have to use a new primitive method. *)
-                !MatchQ[
-                  (Lookup[#[[1]], PrimitiveMethod]&)/@currentPrimitiveGrouping,
-                  {(Lookup[resolvedPrimitive[[1]], PrimitiveMethod])...}
-                ],
-                (* Or if they left the primitive method index to be Automatic and... *)
-                And[
-                  MatchQ[
-                    Lookup[primitive[[1]], PrimitiveMethodIndex, Automatic],
-                    Automatic
-                  ],
-                  Or[
-                    (* The user told us to use a different work cell. *)
-                    !MatchQ[
-                      (Lookup[#[[1]], WorkCell]&)/@currentPrimitiveGrouping,
-                      {(Lookup[resolvedPrimitive[[1]], WorkCell])...}
-                    ],
-                    (* Or we have more than $MaxPlateReaderInjectionSamples injection sample resources, we can't fit them in a single group. *)
-                    Module[{injectionResourceGroups},
-                      (* NOTE: We don't have to check for the number of injection resource groups here because that is covered *)
-                      (* by the plate reader instrument resources. *)
-                      injectionResourceGroups=computeInjectionSampleResourceGroups[currentPrimitiveGrouping];
-
-                      MemberQ[
-                        (MatchQ[Length[#], GreaterP[$MaxPlateReaderInjectionSamples]]&)/@injectionResourceGroups[[All,2]],
-                        True
-                      ]
-                    ],
-                    (* If our injection samples show up elsewhere, we have to start a new group since we can't put injection samples *)
-                    (* inside of the plate reader and on deck. *)
-                    MatchQ[
-                      Length[computeInvalidInjectionSampleResources[currentPrimitiveGrouping, currentPrimitiveGroupingUnitOperationPackets]],
-                      GreaterP[0]
-                    ]
-                  ]
-                ]
-              ],
+            If[startNewPrimitiveGroupingQ,
               startNewPrimitiveGrouping[];
             ];
 
@@ -11109,7 +5107,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (* Lookup the footprints of any samples/containers/etc. For sample resources, we really care about the *)
             (* container to see if we already have an equivalent resource. *)
             (* NOTE: Object[Resource, Sample] is used for samples, containers, items, and parts. We explicitly leave out *)
-            (* Model[Item, Tips] since we check that seperately. Lid spacers go on each plate, so if we can fit the plates *)
+            (* Model[Item, Tips] since we check that separately. Lid spacers go on each plate, so if we can fit the plates *)
             (* we can fit the lid spacers. We assume that we can fit all the lids since we're constrained by plates, not lids. *)
             sampleAndContainerResourceBlobs=Module[
               {allResourcesWithoutInjectionSamples, allResourcesWithoutItems},
@@ -11133,6 +5131,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                     Sample->Except[ObjectReferenceP[{
                       Model[Item, Tips],
                       Object[Item, Tips],
+                      Model[Item, Consumable],
+                      Object[Item, Consumable],
                       Model[Item, Lid],
                       Object[Item, Lid],
                       Model[Item, PlateSeal],
@@ -11141,7 +5141,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                       Object[Item, LidSpacer],
                       Object[Item, MagnetizationRack],
                       Model[Item, MagnetizationRack]
-                    }] | ObjectReferenceP[Model[Item,"id:Y0lXejMp6aRV"]]] (*"Hamilton MultipProbeHead tip rack"*)
+                    }] | ObjectReferenceP[Model[Item,"id:Y0lXejMp6aRV"]]] (*"Hamilton MultiprobeHead tip rack"*)
                   }]
                 ]
               ];
@@ -11197,7 +5197,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (* Gather the tip models that we need for this primitive. *)
             tipResourceBlobs=Cases[
               allResourceBlobs,
-              Resource[KeyValuePattern[Sample -> LinkP[Model[Item, Tips]]|ObjectReferenceP[Model[Item, Tips]]]]
+              Resource[KeyValuePattern[Sample -> LinkP[Model[Item, Tips]]|ObjectReferenceP[Model[Item, Tips]]|LinkP[Model[Item, Consumable]]|ObjectReferenceP[Model[Item, Consumable]]]]
             ]/.{link_Link :> Download[link, Object]};
 
             (* Further split up samplesAndContainerObjects into samples and not samples. *)
@@ -11761,14 +5761,15 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             highPrecisionPositionContainersBools=allFootprintResult[[All,5]];
 
             (* Repeat for this only primitive *)
+            (* This should use currentFootprintResultNoDuplicates instead of newFootprintResultNoDuplicates because we use these only when starting a new group, where the old footprint were no longer part of the same protocol and new footprint should have all that are used in this primitive *)
             singlePrimitiveStartingIncubatorContainers=(
-              Lookup[FirstCase[newFootprintResultNoDuplicates, KeyValuePattern[{LiquidHandlerAdapter->Null,Resource->#}],{}],Container,Nothing]
+              Lookup[FirstCase[currentFootprintResultNoDuplicates, KeyValuePattern[{LiquidHandlerAdapter->Null,Resource->#}],{}],Container,Nothing]
             &)/@Join[currentPrimitiveGroupingIncubatorPlateResources, incubatorPlateResources];
             singlePrimitiveStartingAmbientContainers=(
-              Lookup[FirstCase[newFootprintResultNoDuplicates, KeyValuePattern[{LiquidHandlerAdapter->Null,Resource->#}],{}],Container,Nothing]
+              Lookup[FirstCase[currentFootprintResultNoDuplicates, KeyValuePattern[{LiquidHandlerAdapter->Null,Resource->#}],{}],Container,Nothing]
             &)/@Join[currentPrimitiveGroupingAmbientPlateResources, ambientPlateResources];
             (*which containers require high Precision*)
-            singlePrimitiveHighPrecisionPositionContainersBools=Lookup[newFootprintResultNoDuplicates,HighPrecisionPositionRequired];
+            singlePrimitiveHighPrecisionPositionContainersBools=Lookup[currentFootprintResultNoDuplicates,HighPrecisionPositionRequired,{}];
 
             (* Get the Object[Container]s that must be OnDeck/Incubator because we're going to use them in our primitive. *)
             (* NOTE: This is slightly incorrect because we're assuming that no single primitive can exceed the on deck *)
@@ -11810,7 +5811,10 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               (* If we have instruments that can perform this primitive (along with the rest of the primitives in our *)
               (* current group), just update the instrument list. *)
               Length[filteredInstruments]>0,
-               currentPrimitiveGroupingPotentialWorkCellInstruments=filteredInstruments,
+               currentPrimitiveGroupingPotentialWorkCellInstruments=If[MatchQ[resolvedPrimitive, $DummyPrimitiveP],
+                 currentPrimitiveGroupingPotentialWorkCellInstruments,
+                 filteredInstruments
+               ],
 
               (* OTHERWISE: There are no instruments to fit all of our primitives, plus our current primitive, on deck. *)
 
@@ -11859,7 +5863,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   singlePrimitiveStartingIncubatorContainers,
                   workCellIdlingConditions,
                   Length[singlePrimitiveFlattenedStackedTipTuples],
-                  Length[singlePrimitiveFlattenedStackedTipTuples],
+                  Length[singlePrimitiveFlattenedNonStackedTipTuples],
                   allInstrumentResourceModels,
                   singlePrimitiveHighPrecisionPositionContainersBools,
                   Flatten[{workCellObjectPackets,workCellModelPackets}],
@@ -11873,7 +5877,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                      Error::NoWorkCellsPossibleForUnitOperation,
                      Head[resolvedPrimitive],
                      index,
-                     tallyFootprints[newFootprintResultNoDuplicates],
+                     tallyFootprints[currentFootprintResultNoDuplicates],
                      ObjectToString[instrumentResourceModels, Cache->cacheBall],
                      Length[tipResourceBlobs],
                      newFootprintTally,
@@ -11911,8 +5915,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (* When the script is generated, it becomes 3 separate protocols (RSP-MSP-RSP), if the resolved labels are not feeded into the script, it has no memory of the previous labels when each individual SP protocol is generated. *)
             (* We must make sure the SAME labels are used in the real experiment protocols so we can associate the main experiment's PreparedSamples with the sample prep protocol *)
             If[MatchQ[parentProtocol,ObjectP[]],
-              AppendTo[currentPrimitiveOptionGrouping, resolvedOptionsWithNoSimulatedObjects],
-              AppendTo[currentPrimitiveOptionGrouping, optionsWithNoSimulatedObjects]
+              AppendTo[currentPrimitiveOptionGrouping, resolvedCorrectedOptions],
+              AppendTo[currentPrimitiveOptionGrouping, optionsWithNoSimulatedObjectsIndexMatchingToSample]
             ];
             AppendTo[currentPrimitiveGroupingRunTimes, runTimeEstimate];
             currentPrimitiveGroupingAmbientPlateResources=Join[currentPrimitiveGroupingAmbientPlateResources, ambientPlateResources];
@@ -11982,6 +5986,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   (* reset the label session because then duplicate labels will be created *)
   If[!unitOperationPacketsQ,
     EndUniqueLabelsSession[];
+  ];
+
+  (* if we are resolving all of this for another function, make sure to update the currentSimulation to de-reference the correct index of the OutputUnitOperation *)
+  If[
+    unitOperationPacketsQ,
+    $PrimitiveFrameworkIndexedLabelCache=Flatten@allLabelFieldsWithIndicesGroupings;
   ];
 
   (* get all the tips resources *)
@@ -12091,6 +6101,68 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     }];
   ];
 
+  (*If we have any Transfer UnitOperation with MagnetizationRack -> "Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack", or Filter, we need to check if they coexist *)
+
+  (*Initiate the error tracking variable so that invalid input will not error out.*)
+  invalidInputMagnetizationRacksWithIndices = {};
+
+  If[Length[$PotentialConflictingDeckPlacementUnitOperations]>0,
+    Module[{types,coexistFilterTransferQ,replaceHeavyRacks},
+      (*Look up all the types *)
+      types = Lookup[$PotentialConflictingDeckPlacementUnitOperations,Type];
+      coexistFilterTransferQ =  MemberQ[types,Object[UnitOperation,Transfer]]&&MemberQ[types,Object[UnitOperation,Filter]];
+      (*Look up the user specified Magnetization racks. If we have coexistence of Filter and potentially problematic Transfer primitives, the heavy racks specified are invalid*)
+      invalidInputMagnetizationRacksWithIndices = If[coexistFilterTransferQ,
+        MapIndexed[
+          Function[{primitive, primitiveIndex},
+            Module[{transferUnresolvedMagnetizationRack,userSpecifiedMagnumFLXRacks},
+              transferUnresolvedMagnetizationRack = Lookup[primitive[[1]],UnresolvedMagnetizationRackFromParentProtocol,Null];
+
+              (*Get all the user input cases of the heavy magnet*)
+              userSpecifiedMagnumFLXRacks=If[MatchQ[Head[primitive],Transfer]&&MatchQ[transferUnresolvedMagnetizationRack,ListableP[Null|Automatic]],
+                (*If this primitive is Transfer, and the unresolved Magnetization rack from its higher level experiment is Null or Automatic, we are not logging it as problematic*)
+                {},
+                (*Otherwise this is not transfer or the user actually input the rack, if the heavy magnetization rack is present in primitive values, we log it as invalid*)
+                Cases[Flatten[Values[primitive[[1]]]],ObjectP[Flatten[heavyMagnetizationRacks]]]
+              ];
+              (*If there is any user specified Magnum FLX heavy magnet, return the value and primitive index*)
+              If[Length[userSpecifiedMagnumFLXRacks]>0,
+                {userSpecifiedMagnumFLXRacks,primitiveIndex},
+                (*Otherwise the user did not specify any heavy magnet, return nothing*)
+                Nothing
+              ]
+            ]
+          ],
+          Flatten[coverOptimizedPrimitives]],
+        {}
+      ];
+
+      (*Helper function to replace all occurrences of the heavy racks *)
+      replaceHeavyRacks[myVariableValues_] := Replace[myVariableValues,{ObjectReferenceP[Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"](*Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"*)]->Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"](*Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]*),
+        Resource[Sample->Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]]->Resource[Sample->Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"](*Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]*)]},Infinity];
+
+      Which[
+        (* If Filter and Transfer coexist & transfer and user specified the heavy magnet, throw an error*)
+        coexistFilterTransferQ&&Length[invalidInputMagnetizationRacksWithIndices]>0,
+        If[MatchQ[$ShortenErrorMessages, True],
+          Message[Error::ConflictingSpecifiedMagnetizationRackWithFilterUnitOperation, ObjectToString[invalidInputMagnetizationRacksWithIndices[[All,1]]], shortenPrimitives[invalidInputMagnetizationRacksWithIndices[[All,2]]]],
+          Message[Error::ConflictingSpecifiedMagnetizationRackWithFilterUnitOperation, ObjectToString[invalidInputMagnetizationRacksWithIndices[[All,1]]],invalidInputMagnetizationRacksWithIndices[[All,2]]]
+        ];
+          Nothing,
+        (*Otherwise if Filter and Transfer coexist, we need to swap all the heavy magnet to the lighter one because we resolved to the model*)
+        coexistFilterTransferQ,
+         allPrimitiveGroupingUnitOperationPackets = replaceHeavyRacks[allPrimitiveGroupingUnitOperationPackets];
+          allPrimitiveOptionGroupings=replaceHeavyRacks[allPrimitiveOptionGroupings];
+          allPrimitiveGroupings=replaceHeavyRacks[allPrimitiveGroupings];
+         safeOps = replaceHeavyRacks[safeOps];
+          Nothing,
+        (*Otherwise, we dont have Filter and potential problematic Transfer at the same time, no need to worry about it*)
+        True,
+          Nothing
+      ]
+    ]
+  ];
+
   (* Keep track of our invalid inputs. *)
   invalidInputIndices=DeleteDuplicates[Flatten[{
     invalidResolvePrimitiveMethodsWithIndices[[All,2]],
@@ -12100,12 +6172,15 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     invalidResolverPrimitives,
     allOverwrittenLabelsWithIndices[[All,2]],
     invalidInjectorResourcesWithIndices[[All,2]],
-    incompatibleWorkCellAndMethod
+    incompatibleWorkCellAndMethod,
+    roboticCellPreparationRequired,
+    invalidInputMagnetizationRacksWithIndices[[All,2]]
   }]];
 
   (* if we are supposed to return unit operation packets, then do that here *)
   (* NOTE: Even if we have invalid inputs, we have to return our packets here because experiments that call us are expecting *)
   (* that. *)
+
   If[TrueQ[unitOperationPacketsQ],
     If[Length[invalidInputIndices]>0 && Not[gatherTests],
       If[MatchQ[$ShortenErrorMessages, True],
@@ -12207,7 +6282,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     (* The above two cases should always be the first since they are REAL objects and nothing need to be done in the protocol to get them *)
     (* 2) We get Resources for them (from Replace[LabeledObjects] in the unit operation packet returned) and the resource *)
     (* DOES point to a simulated object. This has to go into FutureLabeledObjects. *)
-    (* The resources are fulfilled in resource picking and can be poulated directly. This should go after the real objects. *)
+    (* The resources are fulfilled in resource picking and can be populated directly. This should go after the real objects. *)
     (* 3) We get a LabelField, telling us how to download the resolved object from the subprotocol field after it's finished. *)
     (* LabelField should go next because these fields are populated directly in the protocols. Once the subprotocol (manual) or the unit operation (robotic) is completed, the fields are directly available *)
     (* 4) We find the simulated object in the Labels field from our simulation. *)
@@ -12283,7 +6358,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           (* Do we have multiple labels that point to the same object and is that object simulated? *)
           If[Length[labeledObjectList]>1 && MemberQ[labeledObjectList, Alternatives@@nonExistentContainersAndSamples, Infinity],
             Module[{realResource},
-              (* Get the first resource that don't contain nonExistantContainersAndSamples. *)
+              (* Get the first resource that don't contain nonExistentContainersAndSamples. *)
               realResource=FirstCase[
                 Lookup[uniqueLabeledObjectResourceLookup, labeledObjectList[[All,1]]],
                 _?(!MemberQ[#, Alternatives@@nonExistentContainersAndSamples, Infinity]&),
@@ -12516,73 +6591,47 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
   {allUnresolvedPrimitivesWithLabelFieldGroupings, allPrimitiveInputsWithLabelFieldsGroupings, allPrimitiveOptionsWithLabelFieldsGroupings}=If[Length[invalidInputIndices]>0,
     {{},{},{}},
     Transpose@MapThread[
-      Function[{labelFieldLookup, unresolvedPrimitiveGrouping, inputGrouping, optionGrouping},
+      Function[{labelFieldLookup, optionGrouping, resolvedGrouping},
         Transpose@MapThread[
-          Function[{unresolvedPrimitive, inputs, options},
-            Module[{primitiveInformation, primitiveOptionDefinitions, primitiveInputsWithLabelFields, primitiveOptionsWithLabelFields},
-              (* Lookup primitive information. *)
-              primitiveInformation=Lookup[allPrimitiveInformation, Head[unresolvedPrimitive]];
-              primitiveOptionDefinitions=Lookup[primitiveInformation, OptionDefinition];
-
-              (* For each option in our primitive, replace any labels with their label fields. *)
-              (* If we find an invalid label (that hasn't been intialized yet), keep track of it. *)
-              {primitiveInputsWithLabelFields, primitiveOptionsWithLabelFields}=(KeyValueMap[
-                Function[{option, value},
-                  Module[{optionDefinition},
-                    (* Lookup information about this option. *)
-                    optionDefinition=FirstCase[primitiveOptionDefinitions,KeyValuePattern["OptionSymbol"->option],Null];
-
-                    (* Do does this option allow for PreparedSample or PreparedContainer? *)
-                    Which[
-                      MatchQ[optionDefinition, Null],
-                      (* We don't know about this option. *)
-                      Nothing,
-                      (* NOTE: We have to convert any associations (widgets automatically evaluate into associations) because *)
-                      (* Cases will only look inside of lists, not associations. *)
-                      Length[Cases[Lookup[optionDefinition, "Widget"]/.{w_Widget :> Normal[w[[1]]]}, (PreparedContainer->True)|(PreparedSample->True), Infinity]]==0,
-                      (* Nothing to replace. *)
-                      option->value,
-                      True,
-                      (* We may potentially have some labels. *)
-                      Module[{matchedWidgetInformation, objectWidgetsWithLabels, labelsInOption},
-                        (* Match the value of our option to the widget that we have. *)
-                        (* NOTE: This is the same function that we use in the command builder to match values to widgets. *)
-                        matchedWidgetInformation=AppHelpers`Private`matchValueToWidget[value,optionDefinition];
-
-                        (* Look for matched object widgets that have labels. *)
-                        (* NOTE: A little wonky here, all of the Data fields from the AppHelpers function gets returned as a string, so we need *)
-                        (* to separate legit strings from objects that were turned into strings. *)
-                        objectWidgetsWithLabels=Cases[matchedWidgetInformation, KeyValuePattern[{"Type" -> "Object", "Data" -> _?(!StringStartsQ[#, "Object["] && !StringStartsQ[#, "Model["]&)}], Infinity];
-
-                        (* This will give us our labels. *)
-                        labelsInOption=(StringReplace[#,"\""->""]&)/@Lookup[objectWidgetsWithLabels, "Data", {}];
-
-                        (* Replace any other labels that we have with their values from our simulation. *)
-                        option-> (
-                          value /. (#1 -> Lookup[labelFieldLookup, #1]&) /@ Intersection[labelsInOption, labelFieldLookup[[All,1]]]
-                        )
-                      ]
-                    ]
-                  ]
-                ],
-                Association@#
-              ]&)/@{Rule@@@Transpose[{Lookup[primitiveInformation, InputOptions], inputs}], options};
-
+          Function[{options, resolvedPrimitive},
+            Module[
               {
-                Head[unresolvedPrimitive]@@Join[primitiveInputsWithLabelFields, primitiveOptionsWithLabelFields],
-                primitiveInputsWithLabelFields[[All,2]],
-                primitiveOptionsWithLabelFields
-              }
+                primitiveHead, primitiveInformation, primitiveOptionDefinitions,  inputNames,
+                inputRules, primitiveInputsWithLabelFields, primitiveOptionsWithLabelFields
+              },
+
+                (* Get our primitive head *)
+                primitiveHead = Head[resolvedPrimitive];
+
+                (* Lookup primitive information. *)
+                primitiveInformation=Lookup[allPrimitiveInformation, primitiveHead];
+                primitiveOptionDefinitions=Lookup[primitiveInformation, OptionDefinition];
+
+                (* Get our resolved inputs since our label options are index-matched to samples *)
+                (* Using allPrimitiveInputGroupings here will throw errors when inputs are plates *)
+                inputNames=Lookup[primitiveInformation, InputOptions];
+                inputRules=(#->resolvedPrimitive[#])&/@inputNames;
+
+
+                (* For each option in our primitive, replace any labels with their label fields. *)
+                (* If we find an invalid label (that hasn't been initialized yet), keep track of it. *)
+                primitiveInputsWithLabelFields=addLabelFields[inputRules,primitiveOptionDefinitions,labelFieldLookup];
+                primitiveOptionsWithLabelFields=addLabelFields[options,primitiveOptionDefinitions,labelFieldLookup];
+
+                {
+                  primitiveHead@@Join[primitiveInputsWithLabelFields, primitiveOptionsWithLabelFields],
+                  primitiveInputsWithLabelFields[[All,2]],
+                  primitiveOptionsWithLabelFields
+                }
             ]
           ],
-          {unresolvedPrimitiveGrouping, inputGrouping, optionGrouping}
+          {optionGrouping, resolvedGrouping}
         ]
       ],
       {
         labelFieldGroupings,
-        allUnresolvedPrimitiveGroupings,
-        allPrimitiveInputGroupings,
-        allPrimitiveOptionGroupings
+        allPrimitiveOptionGroupings,
+        allPrimitiveGroupings
       }
     ]
   ];
@@ -12602,6 +6651,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       MatchQ[myFunction, ScriptGeneratingPrimitiveFunctionP],
       Length[allPrimitiveGroupings]>1
     ],
+      If[debug,Echo[ToString[Length@allPrimitiveGroupings]<>" primitive groups detected, making a script..."]];
       Module[
         {heldScriptCells, heldCompoundExpression, uploadPackets},
 
@@ -12611,10 +6661,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Function[{resolvedPrimitiveGroup, unresolvedPrimitiveGroup, instrument, indexGroup},
               Module[{workCellFunction, newVariableName, heldVariableAssignment, specialHoldHead, specialHoldHead2, allLabelFields, allDownloadSyntax,allLabeledObjects,allLabeledObjectsWithNames,allLabeledObjectsJoined,restrictSamplesCommand},
                 (* Figure out what ExperimentBLAH[...] function to call for our group of primitives. *)
-                workCellFunction=If[MatchQ[instrument, Null],
-                  ExperimentManualSamplePreparation,
-                  ToExpression["Experiment"<>ToString@Lookup[First[resolvedPrimitiveGroup][[1]], PrimitiveMethod]]
-                ];
+                workCellFunction=ToExpression["Experiment"<>ToString@Lookup[First[resolvedPrimitiveGroup][[1]], PrimitiveMethod]];
 
                 (* Figure out what to call this next variable. *)
                 newVariableName=ToExpression[
@@ -12633,7 +6680,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 (* NOTE: We use this lookup when we need to get to the OutputUnitOperation first before we download the resulting field. *)
                 primitiveIndexToOutputUnitOperationLookup=Join[
                   primitiveIndexToOutputUnitOperationLookup,
-                  (With[{insertMe=#},
+                  (* Here we are constructing primitive index to output UO index rule. To calculate output UO index, we need to take the primitive index and subtract by the first index of the same group *)
+                  (With[{insertMe=(# +1 - First[indexGroup])},
                     #->holdCompositionList[Sequence,{newVariableName, Hold[OutputUnitOperations[[insertMe]]]}]
                   ]&)/@indexGroup
                 ];
@@ -12642,12 +6690,20 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 primitiveIndexToScriptVariableLookup=Join[primitiveIndexToScriptVariableLookup, (#->newVariableName&)/@indexGroup];
 
                 (* Put these primitives into the correct format, within a hold. *)
-                heldVariableAssignment=If[MatchQ[workCellFunction, ExperimentManualSamplePreparation],
-                  With[{insertMe1=newVariableName, insertMe2=workCellFunction, insertMe3=unresolvedPrimitiveGroup, insertMe5=parentProtocol},
+                heldVariableAssignment=Switch[workCellFunction,
+                  ExperimentManualSamplePreparation,
+                  With[{insertMe1 = newVariableName, insertMe2 = workCellFunction, insertMe3 = unresolvedPrimitiveGroup, insertMe5 = parentProtocol, imageSampleOption = resolvedImageSample, measureVolumeOption = resolvedMeasureVolume, measureWeightOption = resolvedMeasureWeight},
+                    holdCompositionList[Set, {insertMe1, Hold[insertMe2[insertMe3, ParentProtocol -> insertMe5, ImageSample -> imageSampleOption, MeasureVolume -> measureVolumeOption, MeasureWeight -> measureWeightOption]]}]
+                  ],
+                  (* MCP does not have post processing options *)
+                  ExperimentManualCellPreparation,
+                  With[{insertMe1 = newVariableName, insertMe2 = workCellFunction, insertMe3 = unresolvedPrimitiveGroup, insertMe5 = parentProtocol},
                     holdCompositionList[Set, {insertMe1, Hold[insertMe2[insertMe3, ParentProtocol -> insertMe5]]}]
                   ],
-                  With[{insertMe1=newVariableName, insertMe2=workCellFunction, insertMe3=unresolvedPrimitiveGroup, insertMe4=instrument, insertMe5=parentProtocol},
-                    holdCompositionList[Set, {insertMe1, Hold[insertMe2[insertMe3, Instrument->insertMe4, ParentProtocol -> insertMe5]]}]
+                  (* only RoboticBlah has the Instrument option *)
+                  _,
+                  With[{insertMe1 = newVariableName, insertMe2 = workCellFunction, insertMe3 = unresolvedPrimitiveGroup, insertMe4 = instrument, insertMe5 = parentProtocol, imageSampleOption = resolvedImageSample, measureVolumeOption = resolvedMeasureVolume, measureWeightOption = resolvedMeasureWeight},
+                    holdCompositionList[Set, {insertMe1, Hold[insertMe2[insertMe3, Instrument -> insertMe4, ParentProtocol -> insertMe5, ImageSample -> imageSampleOption, MeasureVolume -> measureVolumeOption, MeasureWeight -> measureWeightOption]]}]
                   ]
                 ];
 
@@ -12687,7 +6743,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 allLabeledObjectsJoined=holdCompositionList[Join,allLabeledObjects];
 
                 (* Restrict our samples *)
-                (* Note that we are repeating this for the samples we already restricted earlier. This is to make sure the newly generated samples are also getting restricted too. For example, we picked a contianer earlier and did a Transfer of ss, we want the Object[Sample] to be restricted too so the sample is not picked up by another protocol. User can still refer to this container in later part of the script *)
+                (* Note that we are repeating this for the samples we already restricted earlier. This is to make sure the newly generated samples are also getting restricted too. For example, we picked a container earlier and did a Transfer of ss, we want the Object[Sample] to be restricted too so the sample is not picked up by another protocol. User can still refer to this container in later part of the script *)
                 (* We only do this if we are not at the very last script cell. If we are at the last, we unrestict everything instead *)
                 restrictSamplesCommand=If[!MatchQ[indexGroup,Last[Unflatten[Range[Length[Flatten[allPrimitiveGroupings]]], allPrimitiveGroupings]]],
                   With[{insertMe1=allLabeledObjectsJoined},
@@ -12760,10 +6816,11 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
       ]
     ],
       Module[
-        {protocolAndPrimitiveType, protocolPacket, labeledObjects, futureLabeledObjects, primitiveMethodIndex,
-          userSpecifiedMethodGroupOptions, inputUnitOperationPackets, optimizedUnitOperationPackets, calculatedUnitOperationPackets,
-          supplementaryPackets, outputUnitOperationsMinusResolvedOptions, outputUnitOperationPackets,
-          primGroupingsWithLabels, outputUnitOperationPacketsWithLabelSampleAndContainer,simulatedObjectsToLabel},
+        {protocolAndPrimitiveType,protocolPacket,labeledObjects,futureLabeledObjects,primitiveMethodIndex,
+          userSpecifiedMethodGroupOptions,inputUnitOperationPackets,optimizedUnitOperationPackets,calculatedUnitOperationPackets,
+          supplementaryPackets,outputUnitOperationsMinusResolvedOptions,outputUnitOperationPackets,
+          primGroupingsWithLabels,outputUnitOperationPacketsWithLabelSampleAndContainer,simulatedObjectsToLabel,doubleGloveRequired,
+          allSupplementalCertifications},
 
         (* Depending on what function we're in, either make a ManualSamplePreparation or ManualCellPreparation protocol. *)
         protocolAndPrimitiveType=Lookup[First[Flatten[allPrimitiveGroupings]][[1]], PrimitiveMethod];
@@ -12775,12 +6832,15 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           Lookup[primitiveMethodIndexToOptionsLookup, primitiveMethodIndex]
         ];
 
+        (* lookup any advanced certification that is calculated from individual unit operations *)
+        allSupplementalCertifications = DeleteDuplicates@Download[Flatten[Lookup[#, SupplementalCertification, Nothing]& /@ First[allPrimitiveOptionGroupings]], Object];
+
         (* Get our labeled objects for the Object[Protocol] level. *)
         {labeledObjects, futureLabeledObjects}=computeLabeledObjectsAndFutureLabeledObjects[Flatten[allPrimitiveGroupingResources]];
 
         (* Convert our unit operation primitives into unit operation objects. *)
         inputUnitOperationPackets=UploadUnitOperation[
-          (Head[#]@KeyDrop[#[[1]], {PrimitiveMethod, PrimitiveMethodIndex, WorkCell}]&)/@flattenedIndexMatchingPrimitives,
+          (Head[#]@KeyDrop[#[[1]], {PrimitiveMethod, PrimitiveMethodIndex, WorkCell}]&)/@flattenedIndexMatchingPrimitivesWithCorrectedLabelSample,
           UnitOperationType->Input,
           Preparation->Manual,
           FastTrack->True,
@@ -12861,6 +6921,24 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           Except[Null]
         ];
 
+        (* calculate if this protocol will need operator to double glove *)
+        doubleGloveRequired=Module[{allFoundSamples,doubleGloveBooleans},
+          (* ObjectReferenceP doesn't support list, so use 2 of them to get all object/model samples used in this protocol *)
+          allFoundSamples = DeleteDuplicates@Cases[outputUnitOperationPacketsWithLabelSampleAndContainer,
+            ObjectReferenceP[{Object[Sample],Model[Sample]}],
+            Infinity];
+
+          doubleGloveBooleans = Download[
+            allFoundSamples,
+            DoubleGloveRequired,
+            Cache->cacheBall,
+            Simulation->currentSimulation
+            ];
+
+          AnyTrue[doubleGloveBooleans,TrueQ]
+        ];
+
+
         (* Create our protocol packet. *)
         protocolPacket=<|
           Object->CreateID[Object[Protocol, protocolAndPrimitiveType]],
@@ -12883,17 +6961,16 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             ];
 
             Sequence@@{
-              Replace[UnresolvedUnitOperationInputs]->unresolvedUnitOperationInputs,
-              Replace[ResolvedUnitOperationInputs]->unresolvedUnitOperationInputs
+              Replace[UnresolvedUnitOperationInputs]->unresolvedUnitOperationInputs /. simulatedObjectsToLabel,
+              Replace[ResolvedUnitOperationInputs]->unresolvedUnitOperationInputs /. simulatedObjectsToLabel
             }
           ],
 
           Module[{unresolvedUnitOperationOptions},
             unresolvedUnitOperationOptions=MapThread[
               Function[{unresolvedPrimitive, unresolvedOptions},
-                (* If we're dealing with LabelSample, LabelContainer, or Wait, fill out special other fields in the object so that we'll *)
-                (* do the picking. *)
-                If[MatchQ[Head[unresolvedPrimitive], LabelSample|LabelContainer|Wait],
+                (* No need to pass down post-processing options to LabelSample, LabelContainer, Wait, or any post processing primitives (MeasureWeight, ImageSample, MeasureVolume) since we don't do post-processing in those *)
+                If[MatchQ[Head[unresolvedPrimitive], LabelSample|LabelContainer|Wait|MeasureWeight|ImageSample|MeasureVolume],
                   unresolvedOptions/.{obj:ObjectP[]:>Download[obj, Object]},
                   Join[
                     unresolvedOptions,
@@ -12928,7 +7005,10 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           Replace[LabeledObjects]->labeledObjects,
           Replace[FutureLabeledObjects]->futureLabeledObjects,
 
-          ResolvedOptions->safeOps,
+          (* always drop the cache and simulation from these fields *)
+          UnresolvedOptions-> DeleteCases[ToList[myOptions], (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
+          ResolvedOptions-> DeleteCases[safeOps, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
+          DoubleGloveRequired->doubleGloveRequired,
 
           Replace[Checkpoints]->{
             {"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.", Null},
@@ -12939,15 +7019,16 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               ],
               0 Minute,
               "The given unit operations are executed, in the order in which they are specified.",
-              Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]
+              Resource[Operator->$BaselineOperator,Time->0 Minute]
             },
-            {"Returning Materials",15 Minute,"Samples are returned to storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]}
+            {"Returning Materials",15 Minute,"Samples are returned to storage.",Resource[Operator->$BaselineOperator,Time->15 Minute]}
           },
 
-          MeasureWeight->Lookup[safeOps,MeasureWeight,True],
-          MeasureVolume->Lookup[safeOps,MeasureVolume,True],
-          ImageSample->Lookup[safeOps,ImageSample,True],
+          MeasureWeight->resolvedMeasureWeight,
+          MeasureVolume->resolvedMeasureVolume,
+          ImageSample->resolvedImageSample,
 
+          Replace[OrdersFulfilled] -> Link[Cases[ToList[orderToFulfill], ObjectP[Object[Transaction, Order]]], Fulfillment],
           Replace[PreparedResources]->Link[Lookup[safeOps,PreparedResources,Null],Preparation]
         |>;
 
@@ -12961,7 +7042,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               supplementaryPackets,
               Upload->Lookup[safeOps,Upload],
               Confirm->Lookup[safeOps,Confirm],
+              CanaryBranch->Lookup[safeOps,CanaryBranch],
               ParentProtocol->Lookup[safeOps,ParentProtocol],
+              SupplementalCertification->allSupplementalCertifications,
               Priority->Lookup[safeOps,Priority],
               StartDate->Lookup[safeOps,StartDate],
               HoldOrder->Lookup[safeOps,HoldOrder],
@@ -12976,14 +7059,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
     True,
       Module[
         {
-          protocolType, allTipResources, tipRackResources, protocolPacket, tareContainers, labeledObjects, futureLabeledObjects, uniqueInstrumentResources, instrumentResourcesWithUpdatedTimeEstimate, cellContainerLinkResources, nonCellContainerLinkResources,
-          livingCellContainerLinkResources, userSpecifiedOptions, primitiveMethodIndex, primitiveMethod, inputUnitOperationPackets, optimizedUnitOperationPackets,
-          calculatedUnitOperationPackets, supplementaryPackets, skipTareFunction, samplesIn, containersIn, tipResourceReplacementRules,
-          outputUnitOperationPackets, subOutputUnitOperationPackets, requiredObjects, plateReaderFields, simulatedObjectsToLabel,
-          allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources, instrumentResourceReplaceRules, overclockQ, supplementaryPacketsMinusRootProtocol,
-          overclockingPacket,
-          allTransferUnitOperations, tipAdapter, tipAdapterResourceReplacementRule, tipAdapterResource, magnetizationRackResourceReplacementRules, modelSampleResourceReplacementRules
-        },
+          protocolType,allTipResources,tipRackResources,protocolPacket,tareContainers,labeledObjects,futureLabeledObjects,uniqueInstrumentResources,instrumentResourcesWithUpdatedTimeEstimate,cellContainerLinkResources,nonCellContainerLinkResources,
+          livingCellContainerLinkResources,userSpecifiedOptions,primitiveMethodIndex,primitiveMethod,inputUnitOperationPackets,optimizedUnitOperationPackets,
+          calculatedUnitOperationPackets,supplementaryPackets,skipTareFunction,samplesIn,containersIn,tipResourceReplacementRules,
+          outputUnitOperationPackets,subOutputUnitOperationPackets,requiredObjects,plateReaderFields,simulatedObjectsToLabel, outputUnitOperationPacketsNotFlat,
+          allOutputUnitOperationPacketsWithConsolidatedInjectionSampleResources,instrumentResourceReplaceRules,overclockQ,supplementaryPacketsMinusRootProtocol,
+          overclockingPacket,finalInstrumentResources,colonyHandlerResource,liquidHandlerResource,estimatedNumberOfPositionsNeeded,
+          allTransferUnitOperations,tipAdapter,tipAdapterResourceReplacementRule,tipAdapterResource,magnetizationRackResourceReplacementRules,modelSampleResourceReplacementRules
+          ,experimentRunTime,instrumentInitializationTime,workCell,supplementalCertifications,allSupplementalCertifications},
 
         (* Depending on what function we're in, either make a ManualSamplePreparation or ManualCellPreparation protocol. *)
         protocolType=Lookup[First[Flatten[allPrimitiveGroupings]][[1]], PrimitiveMethod];
@@ -12993,6 +7076,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         tipAdapter = If[Length[allTransferUnitOperations]==0, Null,
           FirstCase[Lookup[allTransferUnitOperations, TipAdapter], _Resource, Null]
         ];
+
+        (* lookup any advanced certification that is calculated from individual unit operations *)
+        supplementalCertifications = DeleteDuplicates@Download[Flatten[Lookup[#, SupplementalCertification, Nothing]& /@ First[allPrimitiveOptionGroupings]], Object];
 
         (* Get our labeled objects for the Object[Protocol] level. *)
         {labeledObjects, futureLabeledObjects}=computeLabeledObjectsAndFutureLabeledObjects[Flatten[allPrimitiveGroupingResources]];
@@ -13210,7 +7296,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Function[
               {resourceTuples},
               Module[
-                {resourceBlobs,containerModel,containerName,well,containerModelPacket,containerMaxVolume,containerMinVolume,sourceContainerDeadVolume,totalVolume,newResource},
+                {resourceBlobs,containerModel,containerName,well,containerModelPacket,containerMaxVolume,containerMinVolume,sourceContainerDeadVolume,totalVolume,totalVolumeRoundedUp,newResource},
                 resourceBlobs=resourceTuples[[All,1]];
                 (* Use the first container model as the model since we are going to use this to determine dead volume *)
                 (* Have to use the last resource's model list because we may have deleted some models as we go on and we don't go back to update the models of previous handled resource *)
@@ -13233,11 +7319,23 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
                 (* Add total resource volume with dead volume *)
                 totalVolume=Total[Lookup[resourceBlobs[[All,1]],Amount]]+sourceContainerDeadVolume;
+                (*Round total volume to avoid tiny amount accumulates to large amount with too small of a precision. e.g. filling a few plates with 500.7uL and ends up requesting 101.642 mL. *)
+                totalVolumeRoundedUp = Which[
+                  (*If the total volume gets greater than 100 mL, round it up to 1mL precision*)
+                  GreaterQ[totalVolume,100*Milliliter],
+                    SafeRound[totalVolume,1.0*Milliliter,Round->Up],
+                  (*If the total volume gets greater than 10 mL, round it up to 0.1mL precision*)
+                  GreaterQ[totalVolume,10*Milliliter],
+                    SafeRound[totalVolume,0.1*Milliliter,Round->Up],
+                  (*Otherwise, leave as it is *)
+                  True,
+                  totalVolume];
+
                 newResource=Resource[
                   Join[
                     resourceTuples[[1,1,1]],
                     <|
-                      Amount->totalVolume,
+                      Amount->totalVolumeRoundedUp,
                       Name->CreateUUID[],
                       Container->containerModel,
                       ContainerName->containerName,
@@ -13371,7 +7469,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                 Cache->cacheBall,
                 Simulation->currentSimulation
               ],
-              {Download::NotLinkField}
+              {Download::NotLinkField,Download::MissingCacheField}
             ];
             samplePackets=Flatten@samplePackets;
             containerContentPackets=Flatten/@containerContentPackets;
@@ -13407,12 +7505,96 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           (Download[Lookup[#[[1]], Instrument], Object]&)
         ];
 
+        (* Figure out what primitive method we're dealing with for this group. *)
+        primitiveMethod=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethod];
+        primitiveMethodIndex=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethodIndex];
+
+        liquidHandlerResource = Module[{liquidHandler},
+          (* determine a liquid handler model/object to use *)
+          liquidHandler = Which[
+            (* if we have decided on a liquid handler object to use, use that for sure *)
+            MemberQ[Flatten[allPrimitiveGroupingWorkCellInstruments], ObjectP[Object[Instrument, LiquidHandler]]],
+              FirstCase[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]], ObjectP[Object[Instrument, LiquidHandler]]],
+            (* otherwise we allow all supported instrument models *)
+            MemberQ[Flatten[allPrimitiveGroupingWorkCellInstruments], ObjectP[Model[Instrument, LiquidHandler]]],
+              DeleteDuplicates[Download[Flatten[allPrimitiveGroupingWorkCellInstruments], Object]],
+            (* special treatment that allPrimitiveGroupingWorkCellInstruments maybe {} when this primitive group is made up with only LabelSample/LabelContainer/Wait dummy operations, in this case we should still give it a instrument anyway *)
+            MatchQ[Flatten[allPrimitiveGroupingWorkCellInstruments], {}] && MatchQ[Flatten[allPrimitiveGroupings], {$DummyPrimitiveP..}],
+              Module[{dummyPrimitive},
+                (* get the first dummy primitive, _LabelSample | _LabelContainer | _Wait *)
+                dummyPrimitive = First[Flatten[allPrimitiveGroupings], <||>];
+
+                (* now try to assign an instrument *)
+                Which[
+                  (* if user supplies an instrument within a primitive grouping option, use that *)
+                  MatchQ[Lookup[Lookup[primitiveMethodIndexToOptionsLookup, primitiveMethodIndex, <||>], Instrument, Null], ObjectP[{Model[Instrument], Object[Instrument]}]],
+                    Lookup[Lookup[primitiveMethodIndexToOptionsLookup, primitiveMethodIndex], Instrument],
+                  (* otherwise if user supplies an instrument using the global Instrument option, use that *)
+                  MatchQ[Lookup[safeOps, Instrument], ObjectP[{Model[Instrument], Object[Instrument]}]],
+                    Lookup[safeOps, Instrument],
+                  (* otherwise get the instrument determined from the resolved work cell *)
+                  True,
+                    Lookup[$WorkCellsToInstruments, Lookup[dummyPrimitive[[1]], WorkCell]]
+                ]
+              ],
+            True,
+              Null
+          ];
+
+          (* make resource *)
+          If[NullQ[liquidHandler],
+            Null,
+            (* make a resource if we can find a liquid handler instrument to use *)
+            Resource[
+              Instrument -> liquidHandler,
+              (* we will update the time later on in the code *)
+              Time -> 1 Minute
+            ]
+          ]
+        ];
+
+        workCell=workCellFromLiquidHandler[liquidHandlerResource];
         (* Replace each instrument resource with the entire length of time that it'll take to complete the entire run *)
         (* since we can't release the integrations mid-run. *)
+        instrumentInitializationTime=Module[{tipCountingTime},
+          (* this is our safety clause - we don't do this calculation for neither qpix or if we somehow got an unexpected workcell *)
+          If[
+            MatchQ[workCell,qPix|_String],
+            Return[0Minute,Module]
+          ];
+
+          (* now we are on Hamilton *)
+          tipCountingTime=If[MatchQ[workCell,bioSTAR|microbioSTAR],
+            (* only 7 tip boxes on deck *)
+            Min[{Length[allTipResources],7}],
+            (*STARs can have up to 10 tips *)
+            Min[{Length[allTipResources],10}]
+          ]*1 Minute;
+
+          Total[{
+            5 Minute,(* initialization of the instrument *)
+            tipCountingTime,
+            1Minute,(* HHS initialization - we always initialize them on all instruments *)
+            10 Minute,(* instrument container setup *)
+            10Minute (* instrument teardown, this is lower than the one in a couple of experiments I saw, but feels like this should be enough *)
+          }]
+        ];
         totalWorkCellTime=Max[{
           1 Minute,
-          Total[ToList[Replace[First[allPrimitiveGroupingRunTimes],{Except[TimeP]->0 Minute},{1}]]]
+          Total[ToList[Replace[First[allPrimitiveGroupingRunTimes],{Except[TimeP]->0 Minute},{1}]]]+instrumentInitializationTime
         }];
+        (* we use this number for calculating how long we might be holding operator if we don't go into the InstrumentProcessing stage, initialization/teardown doesn't count here *)
+        experimentRunTime=totalWorkCellTime-instrumentInitializationTime;
+
+        (* now that we have calculated the correct time that we expect to use on the instrument, we need to update the resource request *)
+        liquidHandlerResource =If[MatchQ[liquidHandlerResource,_Resource],
+            Resource[
+              Instrument->Lookup[liquidHandlerResource[[1]],Instrument],
+              (* NOTE: We should be given back valid time estimates here, but if we're not default to 1 minute so we make *)
+              (* a valid resource and don't error on upload. *)
+              Time->If[MatchQ[totalWorkCellTime,GreaterP[1 Minute]],totalWorkCellTime,1 Minute]
+            ]
+        ];
 
         instrumentResourcesWithUpdatedTimeEstimate=(
           Resource[
@@ -13420,16 +7602,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             Name->CreateUUID[],
             Time->totalWorkCellTime
           ]
-        &)/@uniqueInstrumentResources;
+              &)/@uniqueInstrumentResources;
 
         (* Create instrument resource replace rules to replace instrument resources inside of the output unit operations. *)
         instrumentResourceReplaceRules=(
           Verbatim[Resource][KeyValuePattern[Instrument->ObjectP[Lookup[#[[1]], Instrument]]]]->#
-        &)/@instrumentResourcesWithUpdatedTimeEstimate;
-
-        (* Figure out what primitive method we're dealing with for this group. *)
-        primitiveMethod=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethod];
-        primitiveMethodIndex=Lookup[Flatten[allPrimitiveGroupings][[1]][[1]], PrimitiveMethodIndex];
+              &)/@instrumentResourcesWithUpdatedTimeEstimate;
 
         (* Get the options that the user gave us. *)
         userSpecifiedOptions=If[!MatchQ[primitiveMethodIndex, _Integer],
@@ -13439,7 +7617,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
         (* Convert our unit operation primitives into unit operation objects. *)
         inputUnitOperationPackets=UploadUnitOperation[
-          (Head[#]@KeyDrop[#[[1]], {PrimitiveMethod, PrimitiveMethodIndex, WorkCell}]&)/@flattenedIndexMatchingPrimitives,
+          (Head[#]@KeyDrop[#[[1]], {PrimitiveMethod, PrimitiveMethodIndex, WorkCell}]&)/@flattenedIndexMatchingPrimitivesWithCorrectedLabelSample,
           UnitOperationType->Input,
           Preparation->Robotic,
           FastTrack->True,
@@ -13487,7 +7665,8 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         (* NOTE: We put resources in our unit operation packets for Preparation->Robotic. *)
         (* NOTE: Our unitOperationPackets is a list since we get back a list of unit operation packets back from the *)
         (* resource packets function since our unit operation can have a unit operation sub (ex. Transfer inside Filter). *)
-        {outputUnitOperationPackets, subOutputUnitOperationPackets}=Module[{unitOperationObjectsReplaceRules},
+        (* since we can spin off two parent UOs from a single experiment (with the LabelSample example/model input), we need to flatten the outputUnitOperations later *)
+        {outputUnitOperationPacketsNotFlat, subOutputUnitOperationPackets}=Module[{unitOperationObjectsReplaceRules},
           (* Create new IDs for any unit operations that we fetched from our cache. *)
           unitOperationObjectsReplaceRules=If[Length[outputUnitOperationObjectsFromCache]>0,
             Rule@@@Transpose[{
@@ -13499,20 +7678,42 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           Transpose@Map[
             Function[{unitOperationPackets},
-              Module[{strippedUnitOperationPackets},
+              Module[{strippedUnitOperationPackets, roboticUnitOperations, pcrAssayPlateUnitOperations, roboParentPosition, pcrParentPosition, parentUOPackets, childUOPackets},
                 (* Strip off the LabeledObjects field from the Object[UnitOperation]s. They should only be kept *)
                 (* in the parent protocol. *)
                 strippedUnitOperationPackets=(KeyDrop[#, Replace[LabeledObjects]]&)/@unitOperationPackets;
 
+                (* determine if these are a parent UO and subsequent sub-UOs, or if it's something like LabelSample + Filter where we want to have multiple unit operations at the top level *)
+                roboticUnitOperations = Lookup[strippedUnitOperationPackets, Replace[RoboticUnitOperations]];
+                roboParentPosition = Position[roboticUnitOperations, {ObjectP[]..}, {1}];
+                (* in PCR primitive the sub UOs live in a different field.*)
+                pcrAssayPlateUnitOperations = Lookup[strippedUnitOperationPackets, Replace[AssayPlateUnitOperations]];
+                pcrParentPosition = Position[pcrAssayPlateUnitOperations, {ObjectP[]..}, {1}];
+
+                {parentUOPackets, childUOPackets} = Which[
+                  MatchQ[roboParentPosition, {}] && MatchQ[pcrParentPosition, {}],
+                   {strippedUnitOperationPackets, {}},
+                  !MatchQ[pcrParentPosition, {}],
+                  (*We have a PCR parent*)
+                    TakeDrop[strippedUnitOperationPackets, pcrParentPosition[[1]]],
+                  True,
+                  (*We have any other type of parent UO*)
+                    TakeDrop[strippedUnitOperationPackets, roboParentPosition[[1]]]
+                ];
+
+
                 {
-                  Join[
-                    First[strippedUnitOperationPackets],
-                    <|
-                      UnitOperationType->Output,
-                      Preparation->Robotic
-                    |>
+                  Map[
+                    Join[
+                      #,
+                      <|
+                        UnitOperationType->Output,
+                        Preparation->Robotic
+                      |>
+                    ]&,
+                    parentUOPackets
                   ],
-                  Rest[strippedUnitOperationPackets]
+                  childUOPackets
                 }
               ]
 
@@ -13520,6 +7721,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             (First[allPrimitiveGroupingUnitOperationPackets]/.Join[tipResourceReplacementRules,magnetizationRackResourceReplacementRules,modelSampleResourceReplacementRules,tipAdapterResourceReplacementRule,counterWeightResourceReplacementRules])/.unitOperationObjectsReplaceRules
           ]
         ];
+        outputUnitOperationPackets = Flatten[outputUnitOperationPacketsNotFlat];
 
         (* -- Compute Injection Sample Resources for Plate Reader Primitives -- *)
         plateReaderFields=Module[{injectionResourceGroups},
@@ -13563,12 +7765,12 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
                 (*
                   Prepping/Flushing Overview:
-                  - ethanol (25mL per line) PrimaryPreppingSolvent
-                  - water (25mL per line) SecondaryPreppingSolvent
+                  - ethanol (25mL per line) PrimaryPurgingSolvent
+                  - water (25mL per line) SecondaryPurgingSolvent
                   - prime samples ($BMGPrimeVolume)
                   - run
-                  - ethanol (25mL per line) PrimaryFlushingSolvent
-                  - water (25mL per line) SecondaryFlushingSolvent
+                  - ethanol (25mL per line) PrimaryPurgingSolvent
+                  - water (25mL per line) SecondaryPurgingSolvent
 
                   - If using 1 line, request 1 x 50mL of 70% Ethanol and 1 x 50mL of Water
                   - If using 2 lines, request 2 x 50mL of 70% Ethanol and 2 x 50mL of Water
@@ -13585,14 +7787,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                     InjectionSample -> primaryInjectionSample,
                     SecondaryInjectionSample -> secondaryInjectionSample,
 
-                    PrimaryPreppingSolvent -> Resource@@{
+                    Line1PrimaryPurgingSolvent -> Resource@@{
                       Sample -> Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
                       (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
                       Amount->washVolume,
                       Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
                       Name->"Primary Solvent Container 1"
                     },
-                    SecondaryPreppingSolvent -> Resource@@{
+                    Line1SecondaryPurgingSolvent -> Resource@@{
                       Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
                       (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
                       Amount->washVolume,
@@ -13600,28 +7802,26 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                       Name->"Secondary Solvent Container 1"
                     },
 
-                    PrimaryFlushingSolvent -> Resource@@{
-                      Sample -> Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
-                      (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
-                      Amount->washVolume,
-                      Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
-                      (* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-                      If[numberOfInjectionContainers==1,
-                        Name->"Primary Solvent Container 1",
+                    Line2PrimaryPurgingSolvent -> If[numberOfInjectionContainers==2,
+                      Resource@@{
+                        Sample -> Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
+                        (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
+                        Amount->washVolume,
+                        Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"],
                         Name->"Primary Solvent Container 2"
-                      ]
-                    },
-                    SecondaryFlushingSolvent -> Resource@@{
-                      Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
-                      (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
-                      Amount->washVolume,
-                      Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-                      (* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-                      If[numberOfInjectionContainers==1,
-                        Name->"Secondary Solvent Container 1",
+                      },
+                      Null
+                    ],
+                    Line2SecondaryPurgingSolvent -> If[numberOfInjectionContainers==2,
+                      Resource@@{
+                        Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
+                        (* Wash each line being used with the wash volume - request a little extra to avoid air in the lines *)
+                        Amount->washVolume,
+                        Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
                         Name->"Secondary Solvent Container 2"
-                      ]
-                    }
+                      },
+                      Null
+                    ]
                   },
                   (* NOTE: Even if we don't have any injections, we have to populate the Primary and SecondaryPlateReader fields *)
                   (* so that we setup the method in the software. *)
@@ -13681,9 +7881,13 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           Map[
             Function[{outputUnitOperationPacket},
-              If[!MatchQ[Lookup[outputUnitOperationPacket, Object], ObjectP[Object[UnitOperation, #]&/@plateReaderPrimitiveTypes]],
-                (* NOTE: Also replace any instrument resources with our global ones. *)
-                Association[Normal[outputUnitOperationPacket]/.instrumentResourceReplaceRules],
+              Which[
+                (* Don't do instrument replacement for qpix unit operations (there are no integrated instruments and it can mess up the batched unit operations) *)
+                MatchQ[Lookup[outputUnitOperationPacket, Object],ObjectP[Object[UnitOperation, #]&/@qpixPrimitiveTypes]],
+                outputUnitOperationPacket,
+
+                (* If we have a plate reader primitive, do the injection sample replacement *)
+                MatchQ[Lookup[outputUnitOperationPacket, Object], ObjectP[Object[UnitOperation, #]&/@plateReaderPrimitiveTypes]],
                 Module[{replaceRulesToUse},
                   replaceRulesToUse=If[MatchQ[Lookup[outputUnitOperationPacket, Instrument], Verbatim[Resource][KeyValuePattern[{Instrument->ObjectP[Lookup[plateReaderFields, PrimaryPlateReader][Instrument]]}]]],
                     primaryPlateReaderInjectionSampleReplaceRules,
@@ -13712,7 +7916,11 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                       ]
                     }
                   ]
-                ]
+                ],
+
+                True,
+                (* Otherwise we have a non plate reader hamilton run: Replace any instrument resources with our global ones. *)
+                Association[Normal[outputUnitOperationPacket]/.instrumentResourceReplaceRules]
               ]
             ],
             Flatten[{outputUnitOperationPackets, subOutputUnitOperationPackets}]
@@ -13752,7 +7960,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
         requiredObjects=Module[
           {
             sampleResourceBlobs, objectsInResourceBlobs,simulatedQ,simulatedObjects,
-            nonSimulatedSampleResourceBlobs, cellResources
+            nonSimulatedSampleResourceBlobs, cellResources, hamiltonTipModels, hamiltonTipResources
           },
 
           (* Get our resources out of our unit operation packets. *)
@@ -13796,7 +8004,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
               (* Separate the simulated objects into simulated samples and simulated containers *)
               sampleObjects = Cases[nonSimulatedObjects, ObjectP[Object[Sample]]];
-              containerObjects = Cases[nonSimulatedObjects, ObjectP[Object[Container]]];
+              containerObjects = DeleteCases[Cases[nonSimulatedObjects, ObjectP[Object[Container]]],ObjectP[Object[Container,ColonyHandlerHeadCassetteHolder]]];(*cassette holders are containers but the contents are cassettes that does not have cell type*)
 
               (* Download information from our objects. *)
               (* NOTE: We are downloading from the very first simulation here so this will reflect the contents of the *)
@@ -13838,8 +8046,59 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             {}
           ];
 
-          (* Exclude the cell Resources *)
-          UnsortedComplement[nonSimulatedSampleResourceBlobs,cellResources]
+          (* we are excluding tip resources from here because we want to pick them up in a separate task from the rest of the objects *)
+          hamiltonTipModels=hamiltonTipModelSearch["Memoization"];
+          hamiltonTipResources = Select[nonSimulatedSampleResourceBlobs,Count[#,Alternatives@@hamiltonTipModels,Infinity]>0&];
+
+          (* Exclude the cell and tips Resources *)
+          UnsortedComplement[nonSimulatedSampleResourceBlobs,cellResources,hamiltonTipResources]
+        ];
+
+        (* estimate the total number of positions we will use on/off deck *)
+        estimatedNumberOfPositionsNeeded=Module[{allDeckResources,allRequestedObjects},
+          allDeckResources=Cases[Flatten@{tipAdapterResource,livingCellContainerLinkResources,magnetizationRackResourceReplacementRules,requiredObjects},_Resource];
+          allRequestedObjects=Map[If[MatchQ[#[[1]],ObjectP[]],#[[1]],#[[2]]]&,Lookup[allDeckResources[[All,1]],{Sample,Models},{Null, Null}]];
+          Count[allRequestedObjects,ObjectP[{Object[Container,Plate],Model[Container,Plate],Object[Item,MagnetizationRack],Model[Item,MagnetizationRack],Model[Item,"id:Y0lXejMp6aRV"],Model[Item,Rack]}]]
+          ];
+
+        (* for RCP, we are reserving all integrated instruments even when we want only one of them *)
+        finalInstrumentResources=If[MatchQ[liquidHandlerResource,Null],
+          {},
+          getAdditionalIntegrations[First@ToList@Lookup[liquidHandlerResource[[1]],Instrument],instrumentResourcesWithUpdatedTimeEstimate,protocolType,estimatedNumberOfPositionsNeeded,Length[tipRackResources],totalWorkCellTime,Cache->cacheBall]
+        ];
+
+        (* Extract the colony handler resource from the output unit operation, if we are working with the qpix *)
+        (* NOTE: All qpix unit operations MUST have the Instrument field or else this will break *)
+        colonyHandlerResource = Module[{allQPixPrimitives,resourceFromOutputUnitOperations},
+          (* If we have a qpix output unit operation, extract the Instrument field (will contain the instrument resource) *)
+          allQPixPrimitives = PickList[outputUnitOperationPackets,Lookup[outputUnitOperationPackets,Type, {}],Alternatives@@(Object[UnitOperation, #]&/@qpixPrimitiveTypes)];
+
+          (* Get the resource *)
+          resourceFromOutputUnitOperations = First@Lookup[allQPixPrimitives,Instrument, {Null}];
+
+          Which[
+            (* Use the resource from the output unit operations if it exits *)
+            MatchQ[resourceFromOutputUnitOperations,_Resource|_Link],
+            resourceFromOutputUnitOperations,
+
+            (* Otherwise, as a fallback, create one from our work cell instrument grouping *)
+            MemberQ[Flatten[allPrimitiveGroupingWorkCellInstruments], ObjectP[{Object[Instrument,ColonyHandler], Model[Instrument,ColonyHandler]}]],
+            Resource[
+              Instrument->If[MemberQ[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,ColonyHandler]]],
+                (* If we have instrument object, go with it *)
+                FirstCase[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,ColonyHandler]]],
+                (* Allow all supported instrument models *)
+                DeleteDuplicates[Download[Flatten[allPrimitiveGroupingWorkCellInstruments],Object]]
+              ],
+              (* NOTE: We should be given back valid time estimates here, but it we're not default to 1 minute so we make *)
+              (* a valid resource and don't error on upload. *)
+              Time->If[MatchQ[totalWorkCellTime, GreaterP[1 Minute]], totalWorkCellTime, 1 Minute]
+            ],
+
+            (* If we don't have a colony handler, set to Null *)
+            True,
+            Null
+          ]
         ];
 
         (* Create a protocol object for these manipulations. *)
@@ -13867,40 +8126,14 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
 
           (* NOTE: We only upload the ColonyHandler field for RCP protocols, not RSP *)
           If[MatchQ[myFunction,ExperimentRoboticCellPreparation],
-            ColonyHandler -> If[MemberQ[Flatten[allPrimitiveGroupingWorkCellInstruments], ObjectP[{Object[Instrument,ColonyHandler], Model[Instrument,ColonyHandler]}]],
-              Resource[
-                Instrument->If[MemberQ[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,ColonyHandler]]],
-                  (* If we have instrument object, go with it *)
-                  FirstCase[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,ColonyHandler]]],
-                  (* Allow all supported instrument models *)
-                  DeleteDuplicates[Download[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],Object]]
-                ],
-                (* NOTE: We should be given back valid time estimates here, but it we're not default to 1 minute so we make *)
-                (* a valid resource and don't error on upload. *)
-                Time->Max[totalWorkCellTime, 1 Minute]
-              ],
-              Null
-            ],
+            ColonyHandler -> colonyHandlerResource,
             Nothing
           ],
 
-          LiquidHandler->If[MemberQ[Flatten[allPrimitiveGroupingWorkCellInstruments], ObjectP[{Object[Instrument,LiquidHandler],Model[Instrument,LiquidHandler]}]],
-            Resource[
-              Instrument->If[MemberQ[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,LiquidHandler]]],
-                (* If we have instrument object, go with it *)
-                FirstCase[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],ObjectP[Object[Instrument,LiquidHandler]]],
-                (* Allow all supported instrument models *)
-                DeleteDuplicates[Download[DeleteDuplicates[Flatten[allPrimitiveGroupingWorkCellInstruments]],Object]]
-              ],
-              (* NOTE: We should be given back valid time estimates here, but it we're not default to 1 minute so we make *)
-              (* a valid resource and don't error on upload. *)
-              Time->Max[totalWorkCellTime, 1 Minute]
-            ],
-            Null
-          ],
-          RunTime->Max[totalWorkCellTime, 1 Minute],
+          LiquidHandler->liquidHandlerResource,
+          RunTime->If[MatchQ[experimentRunTime, GreaterP[1 Minute]], experimentRunTime, 1 Minute],
 
-          Replace[RequiredInstruments]->instrumentResourcesWithUpdatedTimeEstimate,
+          Replace[RequiredInstruments]->finalInstrumentResources,
 
           (* Include Plate Reader Fields. *)
           Sequence@@plateReaderFields,
@@ -13909,7 +8142,6 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
           Replace[FutureLabeledObjects]->futureLabeledObjects,
 
           (* NOTE: We need this field because not all of our objects will be labeled. *)
-          (* TODO: Use Integrations option for robotic instrument selection. *)
           Replace[RequiredObjects]->requiredObjects,
           Replace[RequiredTips]->allTipResources,
           If[NullQ[tipAdapterResource], Nothing, TipAdapter->tipAdapterResource],
@@ -13921,44 +8153,40 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
             ({#, Incubator}&)/@Flatten[allPrimitiveGroupingIncubatorContainerResources]
           ],
 
-          ResolvedOptions->safeOps,
+          (* always drop the cache and simulation from these fields *)
+          UnresolvedOptions-> DeleteCases[ToList[myOptions], (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
+          ResolvedOptions-> DeleteCases[safeOps, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
 
           Replace[TaredContainers]->tareContainers,
           Replace[CellContainers]->cellContainerLinkResources,
           Replace[LivingCellContainers] -> livingCellContainerLinkResources,
           Replace[PostProcessingContainers]->nonCellContainerLinkResources,
 
-          MeasureWeight->If[!KeyExistsQ[userSpecifiedOptions, MeasureWeight] || MatchQ[Lookup[userSpecifiedOptions, MeasureWeight], Automatic],
-            True,
-            Lookup[userSpecifiedOptions, MeasureWeight]
-          ],
-          MeasureVolume->If[!KeyExistsQ[userSpecifiedOptions, MeasureVolume] || MatchQ[Lookup[userSpecifiedOptions, MeasureVolume], Automatic],
-            True,
-            Lookup[userSpecifiedOptions, MeasureVolume]
-          ],
-          ImageSample->If[!KeyExistsQ[userSpecifiedOptions, ImageSample] || MatchQ[Lookup[userSpecifiedOptions, ImageSample], Automatic],
-            True,
-            Lookup[userSpecifiedOptions, ImageSample]
-          ],
+          MeasureWeight->resolvedMeasureWeight,
+          MeasureVolume->resolvedMeasureVolume,
+          ImageSample->resolvedImageSample,
 
           Replace[Checkpoints]->{
-            {"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]},
+            {"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.", Resource[Operator->$BaselineOperator,Time->15 Minute]},
             {
               "Liquid Handling",
               totalWorkCellTime,
               "The given unit operations are executed, in the order in which they are specified.",
-              Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->totalWorkCellTime]
+              Resource[Operator->$BaselineOperator,Time->totalWorkCellTime]
             },
-            {"Sample Post-Processing",1 Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]},
-            {"Returning Materials",15 Minute,"Samples are returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]}
+            {"Sample Post-Processing",1 Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Resource[Operator->$BaselineOperator,Time->1 Minute]},
+            {"Returning Materials",15 Minute,"Samples are returned to storage.", Resource[Operator->$BaselineOperator,Time->15 Minute]}
           },
 
-          MeasureWeight->Lookup[safeOps,MeasureWeight, True],
-          MeasureVolume->Lookup[safeOps,MeasureVolume, True],
-          ImageSample->Lookup[safeOps,ImageSample, True],
-
+          Replace[OrdersFulfilled] -> Link[Cases[ToList[orderToFulfill], ObjectP[Object[Transaction, Order]]], Fulfillment],
           Replace[PreparedResources]->Link[Lookup[safeOps,PreparedResources,Null],Preparation]
         |>)/.modelSampleResourceReplacementRules;
+
+        (* Add the Magnetic Hazard Safety Cert if we are going to be using the QPix *)
+        allSupplementalCertifications = If[!NullQ[colonyHandlerResource],
+          Append[supplementalCertifications, Model[Certification, "id:XnlV5jNAkGmM"]], (* Model[Certification, "Magnetic Hazard Safety"] *)
+          supplementalCertifications
+        ];
 
         (* Upload if asked to. *)
         Which[
@@ -13970,7 +8198,9 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
               supplementaryPackets,
               Upload->Lookup[safeOps,Upload],
               Confirm->Lookup[safeOps,Confirm],
+              CanaryBranch->Lookup[safeOps,CanaryBranch],
               ParentProtocol->Lookup[safeOps,ParentProtocol],
+              SupplementalCertification->allSupplementalCertifications,
               Priority->Lookup[safeOps,Priority],
               StartDate->Lookup[safeOps,StartDate],
               HoldOrder->Lookup[safeOps,HoldOrder],
@@ -14025,7 +8255,7 @@ myFunction[myPrimitives_List, myOptions:OptionsPattern[]]:=Block[{$ProgressPrint
                   (* Only drop the WorkCell option if it's not a real option for our experiment function. *)
                   If[MemberQ[Options[resolverFunction][[All,1]], "WorkCell"],
                     Head[primitive]@KeyDrop[primitive[[1]], {PrimitiveMethod, PrimitiveMethodIndex, UnresolvedUnitOperationOptions, ResolvedUnitOperationOptions}],
-                    Head[primitive]@KeyDrop[primitive[[1]], {PrimitiveMethod, PrimitiveMethodIndex, UnresolvedUnitOperationOptions, ResolvedUnitOperationOptionsWorkCell}]
+                    Head[primitive]@KeyDrop[primitive[[1]], {PrimitiveMethod, PrimitiveMethodIndex, UnresolvedUnitOperationOptions, ResolvedUnitOperationOptions, WorkCell}]
                   ]
                 ]
               ],
@@ -14172,10 +8402,10 @@ Module[{optionsFunction},
       SharedOptions :> {myFunction}
     ];
 
-    Authors[myOptionsFunction] := {"thomas"};
+    Authors[myOptionsFunction] := {"steven"};
 
     myOptionsFunction[myPrimitives_List,myOptions:OptionsPattern[myOptionsFunction]]:=Module[
-      {listedOptions,preparedOptions,resolvedOptions},
+      {listedOptions,preparedOptions,resolvedOptions,functionOptions,commonOptions,cleanedOptions},
 
       listedOptions=ToList[myOptions];
 
@@ -14183,11 +8413,15 @@ Module[{optionsFunction},
       preparedOptions=Normal@KeyDrop[Append[listedOptions,Output->Options],{OutputFormat}];
 
       resolvedOptions=myFunction[myPrimitives,preparedOptions];
+      (* we need to remove things that are not in the options, I am not sure how they got here but seems to be some super weird framework weirdness *)
+      functionOptions=Options[myFunction];
+      commonOptions=ToExpression/@Intersection[ToString/@Keys[resolvedOptions],Keys[functionOptions]];
+      cleanedOptions=Cases[resolvedOptions, Verbatim[Rule][Alternatives @@ commonOptions, _]];
 
       (* Return the option as a list or table *)
-      If[MatchQ[OptionDefault[OptionValue[OutputFormat]],Table]&&MatchQ[resolvedOptions,{(_Rule|_RuleDelayed)..}],
-        LegacySLL`Private`optionsToTable[resolvedOptions,myFunction],
-        resolvedOptions
+      If[MatchQ[OptionDefault[OptionValue[OutputFormat]],Table]&&MatchQ[cleanedOptions,{(_Rule|_RuleDelayed)..}],
+        LegacySLL`Private`optionsToTable[cleanedOptions,myFunction],
+        cleanedOptions
       ]
     ];
 
@@ -14209,7 +8443,7 @@ Module[{validQFunction},
       SharedOptions :> {myFunction}
     ];
 
-    Authors[myValidQFunction] := {"thomas"};
+    Authors[myValidQFunction] := {"steven"};
 
 
     myValidQFunction[myPrimitives_List,myOptions:OptionsPattern[myValidQFunction]]:=Module[
@@ -14278,7 +8512,7 @@ Module[{inputsFunction},
       SharedOptions :> {myFunction}
     ];
 
-    Authors[myInputsFunction] := {"thomas"};
+    Authors[myInputsFunction] := {"steven"};
 
     myInputsFunction[myPrimitives_List,myOptions:OptionsPattern[myInputsFunction]]:=Module[
       {listedOptions,preparedOptions},
@@ -14306,7 +8540,7 @@ Module[{previewFunction},
       SharedOptions :> {myFunction}
     ];
 
-    Authors[myPreviewFunction] := {"thomas"};
+    Authors[myPreviewFunction] := {"steven"};
 
     myPreviewFunction[myPrimitives_List,myOptions:OptionsPattern[myPreviewFunction]]:=Null;
 
@@ -14331,165 +8565,30 @@ shortenPrimitives[myList_List]:=myList/.{primitive:(_Symbol)[_Association]:>(ToS
 
 
 (* ::Subsubsection::Closed:: *)
-(*LookupLabeledObject*)
+(*holdComposition*)
 
 
 (* ::Code::Initialization:: *)
-Authors[LookupLabeledObject]={"dima","thomas"};
-
-Error::LabeledObjectsDoNotExist="The LabeledObjects field does not exist in the following protocol type(s), `1`. Please only give a ManualSamplePreparation, ManualCellPreparation, RoboticSamplePreparation, or RoboticCellPreparation protocol object as input to this function.";
-Error::LabelNotFound="The labels, `1`, were not found in the protocol object, `2`. The existing labels in the protocol object(s) (via the LabeledObjects field) are `3`. This means that either the label given was not specified in the protocol object(s) or that the protocol object is still processing and hasn't created the labeled sample/container yet.";
-Error::NoProtocolsInScript="The script `1` does not contain any Protocols";
-Warning::MultipleLabeledObjects="The labels, `1`, are present in multiple protocols. The output labels are for the last protocol containing this Label.";
-
-(* Public helper function to lookup a labeled object. *)
-DefineOptions[LookupLabeledObject,
-	Options :> {
-		{
-			OptionName -> Script,
-			Description -> "Indicates if the input is a script.",
-			Default -> False,
-			AllowNull -> False,
-			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-			Category -> "Hidden"
-		},
-		{
-			OptionName -> OutputFormat,
-			Description -> "Indicates whether the function returns a single object without a list or a list with the single object inside if there is only one object returned.",
-			Default -> List,
-			AllowNull -> False,
-			Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[Single, List]],
-			Category -> "Hidden"
-		}
-	}
-];
-
-(* script overloads *)
-LookupLabeledObject[myScript:ObjectP[Object[Notebook, Script]], myLabel:_String]:=LookupLabeledObject[myScript, {myLabel}, OutputFormat -> Single];
-LookupLabeledObject[myScript:ObjectP[Object[Notebook, Script]], myLabels:{_String..}, ops:OptionsPattern[]]:=Module[{protocols,outputFormat},
-
-	protocols=Download[myScript, Protocols];
-
-	(* get the OutputFormat option *)
-	outputFormat=Lookup[SafeOptions[LookupLabeledObject, ToList[ops]], OutputFormat];
-
-	(* if there are no protocols, error out *)
-	If[Length[protocols] == 0,
-		Message[Error::NoProtocolsInScript, myScript]; Return[$Failed],
-
-		LookupLabeledObject[Download[myScript, Protocols[Object]], myLabels, Script -> True, OutputFormat -> outputFormat]
-	]
-];
-
-(* protocol overloads *)
-LookupLabeledObject[myProtocol:ObjectP[Object[Protocol]], myLabel_String]:=LookupLabeledObject[{myProtocol}, {myLabel}, OutputFormat -> Single];
-LookupLabeledObject[myProtocol:ObjectP[Object[Protocol]], myLabels:{_String..}, ops:OptionsPattern[]]:=Module[{outputFormat},
-
-	(* get the OutputFormat option *)
-	outputFormat=Lookup[SafeOptions[LookupLabeledObject, ToList[ops]], OutputFormat];
-
-	LookupLabeledObject[{myProtocol}, myLabels, OutputFormat -> outputFormat]
-];
-
-(* Simulation overload *)
-LookupLabeledObject[mySimulation:SimulationP, myLabel_String]:=LookupLabeledObject[mySimulation, {myLabel}];
-LookupLabeledObject[mySimulation:SimulationP, myLabels:{_String..}]:=Lookup[Lookup[mySimulation[[1]], Labels], myLabels, Null];
-
-(* CORE overload *)
-LookupLabeledObject[myProtocols:{ObjectP[Object[Protocol]]...}, myLabels:{_String..}, ops:OptionsPattern[]]:=Module[
-	{scriptQ, outputFormat, labeledObjectsExistQ, labeledObjects, missingLabels, initialResults, multipleHitsLabels, result},
-
-	(* check if we were given a script *)
-	scriptQ=Lookup[SafeOptions[LookupLabeledObject, ToList[ops]], Script];
-
-	(* get the OutputFormat option *)
-	outputFormat=Lookup[SafeOptions[LookupLabeledObject, ToList[ops]], OutputFormat];
-
-	(* Make sure the LabeledObjects field exists in the protocol type. *)
-	labeledObjectsExistQ=MemberQ[Fields[#, Output -> Short], LabeledObjects]& /@ Download[myProtocols, Type];
-
-	(* check if protocols might have labeled objects *)
-	Which[
-		(* all protocols don't have LabeledObjects, error out *)
-		!Or@@labeledObjectsExistQ,
-		Message[Error::LabeledObjectsDoNotExist, PickList[myProtocols, labeledObjectsExistQ, False]];
-		Return[$Failed],
-
-		(* _some_ protocols don't have LabeledObject, just throw a warning *)
-		And[
-			MemberQ[labeledObjectsExistQ, False],
-			!scriptQ
-		],
-		Message[Error::LabeledObjectsDoNotExist, PickList[myProtocols, labeledObjectsExistQ, False]];
-	];
-
-	(* Download the LabeledObjects field. *)
-	labeledObjects=Download[PickList[myProtocols, labeledObjectsExistQ], LabeledObjects];
-
-	missingLabels=UnsortedComplement[myLabels, Flatten[labeledObjects,1][[All, 1]]];
-
-	(* If we don't find the label, throw an error. The label is in the format of {label string, object} *)
-	If[Length[missingLabels] > 0,
-		Message[Error::LabelNotFound, missingLabels, myProtocols, DeleteDuplicates[Flatten[labeledObjects,1][[All, 1]]]];
-	];
-
-	(* Return the corresponding object(s). If not presented, return Null *)
-	(* do a first pass *)
-	initialResults = Download[Lookup[Apply[Rule, labeledObjects, {2}], #, Nothing],Object]&/@myLabels;
-
-	multipleHitsLabels={};
-	result = MapThread[Function[{objects, label},
-		Switch[Length[objects],
-		0, Null,
-		1, First@objects,
-		GreaterP[1],AppendTo[multipleHitsLabels, label];Last[objects]
-	]],{initialResults, myLabels}];
-
-	(* if we got a label that was used in multiple protocols, throw a warning *)
-	If[Length[multipleHitsLabels]>0,Message[Warning::MultipleLabeledObjects,multipleHitsLabels]];
-
-	(* return a non-list if we have only one and if the input label was given non-listed *)
-	If[Length[result] == 1 && MatchQ[outputFormat, Single], First[result], result]
-];
+(* Given f and Hold[g[x]], return Hold[f[g[x]]] without evaluating anything. *)
+holdComposition[f_,Hold[expr__]]:=Hold[f[expr]];
+SetAttributes[holdComposition,HoldAll];
 
 
 
 (* ::Subsubsection::Closed:: *)
-(*RestrictLabeledSamples/UnrestrictLabeledSamples*)
+(*holdCompositionList*)
 
 
 (* ::Code::Initialization:: *)
-Authors[RestrictLabeledSamples]={"dima"};
-Authors[UnrestrictLabeledSamples]={"dima"};
+(* Given f and {Hold[a[x]], Hold[b[x]]..}, returns Hold[f[a[x],b[x]..]]. *)
+holdCompositionList[f_,{helds___Hold}]:=Module[{joinedHelds},
+  (* Join the held heads. *)
+  joinedHelds=Join[helds];
 
-
-(* ::Code::Initialization:: *)
-(* public helpers to restrict/unrestrict all non-public Objects from a given protocol *)
-RestrictLabeledSamples[object:ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]]:=RestrictLabeledSamples[{object}];
-RestrictLabeledSamples[objects:{ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]..}]:=Module[
-  {allLabeledObjectData, nonPublicObjects},
-
-  allLabeledObjectData = Download[objects, {Object, Notebook[Object]}];
-
-  (*Get only non-public Objects*)
-  nonPublicObjects = DeleteCases[allLabeledObjectData, {_,Null}][[All,1]];
-
-  (*RestrictSamples*)
-  RestrictSamples[nonPublicObjects]
+  (* Swap the outer most hold with f. Then hold the result. *)
+  With[{insertMe=joinedHelds},holdComposition[f,insertMe]]
 ];
-
-UnrestrictLabeledSamples[object:ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]]:=UnrestrictLabeledSamples[{object}];
-UnrestrictLabeledSamples[objects:{ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]..}]:=Module[
-  {allLabeledObjectData, nonPublicObjects},
-
-  allLabeledObjectData = Download[objects, {Object, Notebook[Object]}];
-
-  (*Get only non-public Objects*)
-  nonPublicObjects = DeleteCases[allLabeledObjectData, {_,Null}][[All,1]];
-
-  (*UnrestrictSamples*)
-  UnrestrictSamples[nonPublicObjects]
-];
+SetAttributes[holdCompositionTimesList,HoldAll];
 
 (* Helper function. *)
 listToString[myList_List]:=Switch[Length[myList],
@@ -14519,7 +8618,8 @@ computeInjectionSampleResourceGroups[myResolvedPrimitives_List]:=Module[
   ];
 
   (* Partition our plate reader primitives by the resolved instrument (convert to model if we have an object). *)
-  partitionedPlateReaderPrimitives=Values@GroupBy[plateReaderPrimitives, (Download[Lookup[#[[1]], Instrument], Object]/.{object:ObjectP[Object[]]->Download[object, Model[Object]]}&)];
+  (*TODO: we really should pass cache here so we don't do trips to the database, but this should be exceedingly rare to have an Object here instead of Model*)
+  partitionedPlateReaderPrimitives=Values@GroupBy[plateReaderPrimitives, (Download[Lookup[#[[1]], Instrument], Object]/.{object:ObjectP[Object[]]:>Download[object, Model[Object]]}&)];
 
   Map[
     Function[{plateReaderPrimitiveGroup},
@@ -14648,6 +8748,11 @@ computeInvalidInjectionSampleResources[myResolvedPrimitives_List, myUnitOperatio
 ];
 
 (* ValidateUnitOperationsJSON *)
+
+
+(* Authors definition for Experiment`Private`ValidateUnitOperationsJSON *)
+Authors[Experiment`Private`ValidateUnitOperationsJSON]:={"malav.desai"};
+
 ValidateUnitOperationsJSON[myPrimitives_List, myOptions:OptionsPattern[]]:=Module[
   {primitiveSetInformation, allPrimitiveInformation, sanitizedPrimitives, flattenedPrimitives, cacheBall,
     primitivesWithPreresolvedInputs, primitiveMessages},
@@ -15037,7 +9142,7 @@ holdCompositionList[f_,{helds___Hold}]:=Module[{joinedHelds},
   (* Join the held heads. *)
   joinedHelds=Join[helds];
 
-  (* Swap the outter most hold with f. Then hold the result. *)
+  (* Swap the outer most hold with f. Then hold the result. *)
   With[{insertMe=joinedHelds},holdComposition[f,insertMe]]
 ];
 SetAttributes[holdCompositionTimesList,HoldAll];
@@ -15049,8 +9154,8 @@ SetAttributes[holdCompositionTimesList,HoldAll];
 
 
 (* ::Code::Initialization:: *)
-(* "STARlet", "Super STAR", "microbioSTAR" *)
-stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument,LiquidHandler,"id:aXRlGnZmOd9m"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
+(* "STARlet", "Super STAR" *)
+stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
   {"Deck Slot","Tip Carrier Slot 2","A1"},
   {"Deck Slot","Tip Carrier Slot 2","B1"},
   {"Deck Slot","Tip Carrier Slot 2","C1"},
@@ -15058,9 +9163,9 @@ stackableTipPositions[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"]|Model[In
   {"Deck Slot","Tip Carrier Slot 2","E1"}
 };
 
-(* "Super STAR", "microbioSTAR" *)
+(* "Super STAR" *)
 
-nonStackableTipPositions[Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument,LiquidHandler,"id:aXRlGnZmOd9m"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
+nonStackableTipPositions[Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]|Model[Instrument, LiquidHandler, "id:R8e1PjeLn8Bj"]]:={
   {"Deck Slot","Tip Carrier Slot 1","A1"},
   {"Deck Slot","Tip Carrier Slot 1","B1"},
   {"Deck Slot","Tip Carrier Slot 1","C1"},
@@ -15108,12 +9213,18 @@ lookupPrimitiveDefinition[myPrimitiveName_Symbol]:=Lookup[Lookup[Lookup[$Primiti
 
 (* function that gets all active instrument packets and memoizes it so that SimulateResources can go fast and stay fast *)
 allActiveInstrumentPackets[myTypes:{TypeP[]...}]:=Module[
-  {cache, relevantCache},
+  {cache},
   cache = allActiveInstrumentPacketsCache["Memoization"];
-
-  (* do this so that we're not calling DatabaseMemberQ on every instrument in the database; only on the ones that we actually care about *)
-  relevantCache = Select[cache, MemberQ[myTypes, Model @@ Lookup[#, Type]]&];
-  PickList[relevantCache,DatabaseMemberQ[relevantCache]]
+  (* if we're on production, we won't be creating/erasing instrument objects.  So we can save some performance by not having to call DatabaseMemberQ *)
+  (* for stage, though, since we might step on each others' toes when searching for instruments, we need to do this filtering *)
+  (* in either case, we should filter down to fewer objects at this stage though *)
+  (* also doing the _Association match to ensure any $Faileds that come from allActiveInstrumentPacketsCache don't go any further *)
+  With[{relevantCache = Select[cache, MatchQ[#, _Association] && MemberQ[myTypes, Model @@ Lookup[#, Type]]&]},
+    If[ProductionQ[],
+      relevantCache,
+      PickList[relevantCache, DatabaseMemberQ[relevantCache]]
+    ]
+  ]
 ];
 
 allActiveInstrumentPacketsCache[fakeString_String]:=allActiveInstrumentPacketsCache[fakeString] = Module[
@@ -15122,7 +9233,14 @@ allActiveInstrumentPacketsCache[fakeString_String]:=allActiveInstrumentPacketsCa
   AppendTo[$Memoization,Experiment`Private`allActiveInstrumentPacketsCache];
 
   allInstruments = Search[Object[Instrument], Status != Retired && DeveloperObject!=True];
-  Download[allInstruments, Packet[Model, Site]]
+  (* on production just Download; quiet Download::ObjectDoesNotExist on test dbs because the only time where this happens with any frequency is with test instruments that get erased in the time since we did the Search *)
+  If[ProductionQ[],
+    Download[allInstruments, Packet[Model, Site]],
+    Quiet[
+      Download[allInstruments, Packet[Model, Site]],
+      Download::ObjectDoesNotExist
+    ]
+  ]
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -15153,880 +9271,6 @@ hamiltonRackModelSearch[fakeString_String]:=hamiltonRackModelSearch[fakeString] 
   Search[{Model[Container, Rack], Model[Container, Spacer]}, LiquidHandlerPrefix != Null && DeveloperObject != True]
 
 ];
-
-(* ::Subsubsection::Closed:: *)
-(*SimulateResources*)
-
-
-(* ::Code::Initialization:: *)
-(* Helper Functions *)
-DefineOptions[
-  SimulateResources,
-  Options:>{
-    {PooledSamplesIn -> Null, ListableP[ListableP[Null|ObjectP[Object[Sample]]]], "The SamplesIn in their pooling form, if the function that's calling SimulateResources is a pooling function. This option MUST be passed for pooling functions since SamplesIn in the protocol object is flattened and we need information about the pooling groups to do aliquot resolving."},
-    {IgnoreWaterResources -> False, BooleanP, "Indicates if resources picking water models should NOT be simulated.  This is specifically relevant when SimulateProcedure calls SimulateResources, because otherwise simulated resource picking would not properly replicate what happens in the lab."},
-    CacheOption,
-    SimulationOption,
-    ParentProtocolOption}
-];
-
-Warning::AmbiguousNameResources="The following resource names, `1`, were detected in resources with different resource parameters inside of the protocol packet, `2`, when passed down to SimulateResources. Make sure to only pass down resources with unique names for unique sets of resource parameters.";
-Error::SimulateResourcesInvalidBacklink="The following link, `1`, was specified for the following field, `2`, in UploadResources, however, this object type is not specified in that field's Relations. Please run ValidUploadQ to find the invalid field before calling SimulateResources.";
-
-(* NOTE: OptionsPattern[] thinks that {} can be part of options, so we have to define the main overload first. *)
-(* Do NOT reorder the definitions of SimulateResources here. *)
-SimulateResources[
-  myProtocolPacket:PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}, {Object}],
-  myAccessoryPacket:{PacketP[]...}|Null,
-  myOptions:OptionsPattern[SimulateResources]
-]:=Module[
-  {safeOptions, cache, simulation, parentProtocol, finalProtocolPacket, finalProtocolPacketWithoutNameOption, finalAccessoryPacket, uploadResult, currentSimulation, accessoryObjects},
-
-  (* Get our options. *)
-  safeOptions=SafeOptions[SimulateResources, ToList[myOptions]];
-  cache=Lookup[safeOptions, Cache];
-  simulation=Lookup[safeOptions, Simulation];
-  parentProtocol=Lookup[safeOptions, ParentProtocol];
-
-  (* We have to detect and replace any resources that had the same name but different resource parameters. This will cause *)
-  (* UploadProtocol to fail. *)
-  {finalProtocolPacket, finalAccessoryPacket}=Module[{allResources, badResourceNames, badResources, badResourceReplaceRules},
-    (* First, detect any resources that have the same name but different resource parameters. This will cause UploadProtocol to fail. *)
-    allResources = DeleteDuplicates[Cases[{myProtocolPacket, myAccessoryPacket}, _Resource, Infinity]];
-    badResourceNames = (If[!SameQ@@#, #[[1]][Name], Nothing]&)/@GatherBy[allResources, (If[!MatchQ[#[Name], _String], CreateUUID[], #[Name]]&)];
-    badResources = Select[allResources, (MatchQ[#[Name], Alternatives@@badResourceNames]&)];
-
-    (* If we found bad resources, we will throw a warning if we're logged in as a developer. *)
-    If[Length[badResources] && MatchQ[$PersonID, ObjectP[Object[User, Emerald, Developer]]],
-      Message[Warning::AmbiguousNameResources, badResourceNames, Lookup[myProtocolPacket, Object]];
-    ];
-
-    (* Replace these bad resources in our protocol/accessory packets. *)
-    badResourceReplaceRules=(# -> Resource[Append[#[[1]], Name->CreateUUID[]]]&)/@badResources;
-
-    {myProtocolPacket/.badResourceReplaceRules, myAccessoryPacket/.badResourceReplaceRules}
-  ];
-
-  (* UploadProtocol tries to pull out the name option from the ResolvedOptions field, so drop it because otherwise *)
-  (* DuplicateName error is thrown *)
-  finalProtocolPacketWithoutNameOption=If[KeyExistsQ[finalProtocolPacket,ResolvedOptions],
-    Module[{tempFinalProtocolPacket},
-      tempFinalProtocolPacket=finalProtocolPacket;
-      tempFinalProtocolPacket[ResolvedOptions]=KeyDrop[Lookup[finalProtocolPacket,ResolvedOptions,{}],Name];
-      tempFinalProtocolPacket
-    ],
-    finalProtocolPacket
-  ];
-
-  (* Upload our protocol object, get back all of the resources etc. *)
-  uploadResult=If[MatchQ[finalAccessoryPacket, {}],
-    UploadProtocol[
-      finalProtocolPacketWithoutNameOption,
-      Simulation->simulation,
-      ParentProtocol->parentProtocol,
-      (* NOTE: This option will make it such that simulated samples are not attempted to be put into the PreparedSamples field. *)
-      (* This functionality is intended when preparing samples via the PreparatoryUnitOperations option. *)
-      IgnorePreparedSamples->True,
-      SkipUploadProtocolStatus->True,
-      SimulationMode -> True,
-      Upload->False
-    ],
-    UploadProtocol[
-      finalProtocolPacketWithoutNameOption,
-      finalAccessoryPacket,
-      Simulation->simulation,
-      ParentProtocol->parentProtocol,
-      (* NOTE: This option will make it such that simulated samples are not attempted to be put into the PreparedSamples field. *)
-      (* This functionality is intended when preparing samples via the PreparatoryUnitOperations option. *)
-      IgnorePreparedSamples->True,
-      SkipUploadProtocolStatus->True,
-      SimulationMode -> True,
-      Upload->False
-    ]
-  ];
-
-  (* Make our upload result into a simulation. *)
-  currentSimulation=If[MatchQ[simulation, Null],
-    UpdateSimulation[Simulation[],Simulation[Packets->ToList[uploadResult]]],
-    UpdateSimulation[simulation,Simulation[Packets->ToList[uploadResult]]]
-  ];
-
-  (* Get the accessory objects. *)
-  accessoryObjects=If[MatchQ[finalAccessoryPacket,{PacketP[]..}],
-    Lookup[finalAccessoryPacket, Object],
-    Null
-  ];
-
-  (* Call the main overload. *)
-  SimulateResources[
-    Lookup[finalProtocolPacketWithoutNameOption, Object],
-    accessoryObjects,
-    Simulation->currentSimulation,
-    ParentProtocol->parentProtocol,
-    Cache->cache,
-    PooledSamplesIn->Lookup[ToList[myOptions], PooledSamplesIn, Null]
-  ]
-];
-
-SimulateResources[
-  protocol:PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}, {Object}],
-  myOptions:OptionsPattern[SimulateResources]
-]:=Module[{},
-  SimulateResources[protocol, Null, myOptions]
-];
-
-Error::RequiredPooledSamplesIn="The option PooledSamplesIn MUST be specified to SimulateResources if given a non SP Object[Protocol] that relates to a pooling experiment function. The PooledSamplesIn option should be of the same level of listing as the resolved options specified in the ResolvedOptions field.";
-SimulateResources[
-  myProtocol:ObjectReferenceP[{Object[Protocol], Object[Maintenance], Object[Qualification]}],
-  myAccessoryObjects:{(ObjectReferenceP[]|LinkP[])...}|Null,
-  myOptions:OptionsPattern[SimulateResources]
-]:=Module[
-  {
-    currentSimulation,unavailableObjectPackets,availablePackets, fields,targetlabeledObjectsResourceBlobs,okSamplePositions,
-    resourceFilteredDownload,fulfilledSamplePositions,unfulfilledSamplePositions,requiredResources,resourceData,resourceSampleData,
-    resourceSampleContainerModels,duplicateFreeResourceData,duplicateFreeSampleData, newSampleInputs,samplesWithContainerResources,samplesWithContainerResourcesNoDup,
-    samplesWithoutContainerResources,newContainersForSamplesNoDup,newContainersForSamples,newContainersForSamplePackets,allContainers,allWells,allSamples,allAmounts,
-    newSampleWithHistoryPackets,newSamplePackets,newSamples,allResources,sampleResourceUpdatePackets,resourceToSampleRules,linkReplace,
-    typeToBackLinkRules,pickedResourcesPackets,protocolResourceDownload,accessoryPacketObjects,instrumentStatusPackets,
-    fieldDownloadCache,notebook,updatePackets,fulfilledResourcesToSamples,unfulfilledResourceToSampleRules, targetlabeledObjectsResourcePackets,
-    targetInstrumentResources, okInstrumentPositions,instrumentResourceFilteredDownload,fulfilledInstrumentPositions,fulfilledResourcesToInstruments,
-    unfulfilledInstrumentPositions,unfulfilledInstrumentResourceModels,unfulfilledInstrumentResources, potentialInstrumentObjectsForModels,
-    unfulfilledResourceToInstruments, instrumentResourceUpdatePackets,safeOptions,cache,simulation,parentProtocol,simulatedProtocolPacket,
-    experimentFunction, protocolPacket, accessoryPackets, unavailableInstrumentPackets, resourceInstrumentData, allInstrumentPackets,
-    protocolFields, accessoryPacketFields, potentialInstrumentObjectsForModelsPackets, notAvailableInstrumentPackets,
-    containerResourcesToFulfill, allResourcePackets, containerResourceUpdatePackets, targetlabeledObjectsResourcePacketsWithWaters,
-    ignoreWaterResources, protocolSite
-  },
-
-  (* Get our options. *)
-  safeOptions=SafeOptions[SimulateResources, ToList[myOptions]];
-  cache=Lookup[safeOptions, Cache];
-  simulation=Lookup[safeOptions, Simulation];
-  parentProtocol=Lookup[safeOptions, ParentProtocol];
-  ignoreWaterResources = Lookup[safeOptions, IgnoreWaterResources];
-
-  (* Set our current simulation. *)
-  currentSimulation=If[MatchQ[simulation, SimulationP],
-    simulation,
-    Simulation[]
-  ];
-
-  (* Figure out our accessory packet objects. *)
-  accessoryPacketObjects=If[MatchQ[myAccessoryObjects, {(ObjectP[]|LinkP[])..}],
-    Download[myAccessoryObjects, Object],
-    {}
-  ];
-
-  (* get all the protocol object fields because doing Packet[All] doesn't work well *)
-  protocolFields = Packet @@ Fields[Download[myProtocol, Type], Output -> Short];
-
-  (* need to get a little more creative with the accessory packets because if they aren't all one type, then you can't do this trick *)
-  accessoryPacketFields = If[Not[NullQ[myAccessoryObjects]] && Length[DeleteDuplicates[Download[myAccessoryObjects, Type]]] == 1,
-    Packet @@ Fields[Download[myAccessoryObjects[[1]], Type], Output -> Short],
-    Packet[All]
-  ];
-
-  (* download from the protocol's required resources *)
-  (* NOTE: We download ALL fields in the protocol object and accessory object since we have to lookup the value of fields in them to *)
-  (* replace with resources. The alternative way this used to work is to download RequiredResources first, then only download the backlink *)
-  (* fields in the protocol/accessory objects, but since everything is simulated it shouldn't actually hit the database and thus is better *)
-  (* to download everything up front. *)
-  {protocolResourceDownload, protocolPacket, accessoryPackets}=Quiet[
-    Download[
-      {
-        Join[{myProtocol}, accessoryPacketObjects],
-        {myProtocol},
-        accessoryPacketObjects
-      },
-      {
-        {
-          RequiredResources,
-          Packet[RequiredResources[[All,1]][{Sample,Models,ContainerModels,ContainerName,Well,Amount,Instrument,InstrumentModels, ContainerResource}]],
-          Packet[RequiredResources[[All,1]][Sample][{Composition,Model,Status,CurrentProtocol}]],
-          RequiredResources[[All,1]][Sample][Container][Model][Object],
-          Packet[RequiredResources[[All, 1]][Instrument][{Model, Status, CurrentProtocol}]]
-        },
-        {protocolFields},
-        {accessoryPacketFields}
-      },
-      Simulation->currentSimulation
-    ],
-    {Download::NotLinkField,Download::FieldDoesntExist,Download::ObjectDoesNotExist}
-  ];
-
-  protocolPacket=FirstOrDefault@Flatten[protocolPacket];
-  protocolSite = Download[Lookup[protocolPacket, Site], Object];
-  accessoryPackets=Flatten[accessoryPackets];
-  (* NOTE: We can get some $Failed results in our download, so we need to transform those into empty lists before we can call Join. *)
-  protocolResourceDownload=(Join@@(#/.{$Failed->{}})&)/@Transpose[protocolResourceDownload];
-
-  (* NOTE: We have to strip link IDs here because the logic that uses this cache depends on it. *)
-  fieldDownloadCache=Flatten[{protocolPacket, accessoryPackets}]/.link_Link:>RemoveLinkID[link];
-
-  (* find the sample packets that are not available and whose currentprotocol isn't the input protocol *)
-  unavailableObjectPackets=Cases[protocolResourceDownload[[3]],KeyValuePattern[{Status->Except[Available],CurrentProtocol->Except[LinkP[myProtocol]]}]];
-  unavailableInstrumentPackets = Cases[protocolResourceDownload[[5]],KeyValuePattern[{Status->Except[Available],CurrentProtocol->Except[LinkP[myProtocol]]}]];
-
-  (* create packets to set any of the unavailable samples to available *)
-  availablePackets=If[!MatchQ[Flatten[{unavailableObjectPackets, unavailableInstrumentPackets}],{}],
-    (* NOTE: We should technically be using UploadSampleStatus/UploadInstrumentStatus here, but that function will do a lot of un-necessary things like *)
-    (* busing the ReadyCheck cache. We do this for speed. *)
-    (
-      <|
-        Object->#,
-        Status->Available,
-        CurrentProtocol->Null
-      |>
-    &)/@Lookup[Flatten[{unavailableObjectPackets, unavailableInstrumentPackets}],Object],
-    {}
-  ];
-
-  (* the list of fields in the second column of RequiredResources *)
-  fields=Cases[First[protocolResourceDownload][[All,2]], Except[Null]];
-
-  (* no fields to look at, return early *)
-  If[MatchQ[fields,{}],
-    Return[currentSimulation];
-  ];
-
-  (* find any resources pointing to the target fields *)
-  targetlabeledObjectsResourceBlobs=Download[
-    Cases[First[protocolResourceDownload],{ObjectP[Object[Resource,Sample]],Alternatives@@fields,_,_}][[All,1]],
-    Object
-  ];
-  targetInstrumentResources=Download[
-    Cases[First[protocolResourceDownload],{ObjectP[Object[Resource,Instrument]],Alternatives@@fields,_,_}][[All,1]],
-    Object
-  ];
-
-  (* get the packets for the resources we're going to fulfill, and pull out the container resources, if applicable *)
-  targetlabeledObjectsResourcePacketsWithWaters = fetchPacketFromCache[#, protocolResourceDownload[[2]]]& /@ targetlabeledObjectsResourceBlobs;
-
-  (* if IgnoreWaterResources -> True, filter out the water resources here *)
-  (* we do this because SimulateProcedure's use of SimulateResources really does not want us to simulate fulfilling water resources because it doesn't replicate how it ever actually happens in the lab and thus messes with the framework *)
-  targetlabeledObjectsResourcePackets = If[TrueQ[ignoreWaterResources],
-    DeleteCases[targetlabeledObjectsResourcePacketsWithWaters, KeyValuePattern[{ContainerResource -> ObjectP[]}]],
-    targetlabeledObjectsResourcePacketsWithWaters
-  ];
-
-  containerResourcesToFulfill = Download[
-    Cases[Lookup[targetlabeledObjectsResourcePackets, ContainerResource], ObjectP[]],
-    Object
-  ];
-
-  (* Set all of our resources to be picked. *)
-  pickedResourcesPackets=(<|Object->#, Status->InUse|>&)/@Flatten[{Lookup[targetlabeledObjectsResourcePackets, Object, {}], containerResourcesToFulfill}];
-
-  (* update our simulation *)
-  currentSimulation=UpdateSimulation[currentSimulation, Simulation[Packets->Flatten[{pickedResourcesPackets, availablePackets}]]];
-
-  (* find any resource positions that are of type Object[Resource, Instrument] *)
-  okInstrumentPositions=Position[
-    Download[First[protocolResourceDownload][[All,1]],Object],
-    ObjectP[targetInstrumentResources],
-    1,
-    Heads->False
-  ];
-
-  (* extract only the data relating to resources of interest *)
-  instrumentResourceFilteredDownload=Extract[#,okInstrumentPositions]&/@protocolResourceDownload;
-
-  (* find the positions of resources that aren't already pointing to an Object so we can skip it, unless that object needs to be in a different container model *)
-  fulfilledInstrumentPositions=Position[
-    instrumentResourceFilteredDownload[[2]],
-    _?(MatchQ[Lookup[#,Instrument],ObjectP[Object[Instrument]]]&),
-    1,
-    Heads->False
-  ];
-
-  (* Create rules of existing fulfilled resources to their fulfilled instruments. *)
-  fulfilledResourcesToInstruments=(
-    Download[Lookup[instrumentResourceFilteredDownload[[2]][[#]], Object], Object]->Download[Lookup[instrumentResourceFilteredDownload[[2]][[#]], Instrument], Object]
-  &)/@Flatten[fulfilledInstrumentPositions];
-
-  (* get the positions that remain unfulfilled *)
-  unfulfilledInstrumentPositions=DeleteCases[List/@Range[Length[First[instrumentResourceFilteredDownload]]],Alternatives@@fulfilledInstrumentPositions];
-
-  (* Get the instrument resources that still need to be fulfilled and the instrument models that will fulfill them. *)
-  {unfulfilledInstrumentResources, unfulfilledInstrumentResourceModels}=If[Length[Flatten[unfulfilledInstrumentPositions]]==0,
-    {{},{}},
-    Transpose[
-      ({
-        Download[Lookup[instrumentResourceFilteredDownload[[2]][[#]], Object], Object],
-        Download[Lookup[instrumentResourceFilteredDownload[[2]][[#]], InstrumentModels], Object]
-      }&)/@Flatten[unfulfilledInstrumentPositions]
-    ]
-  ];
-
-  (* Search for instrument objects that aren't deprecated that will fulfill these resources. *)
-  (* if we don't have any instrument resources then don't bother doing this *)
-  allInstrumentPackets = If[MatchQ[unfulfilledInstrumentResourceModels, {}],
-    {},
-    allActiveInstrumentPackets[DeleteDuplicates[Download[Flatten[unfulfilledInstrumentResourceModels], Type]]]
-  ];
-
-  (* get the instrument objects specific to our instruments in question; must be the correct site *)
-  potentialInstrumentObjectsForModels = Map[
-    Function[{instrumentModels},
-      (* if we don't actually know the protocol's site, then just pick whatever *)
-      ToList[Lookup[SelectFirst[allInstrumentPackets, MatchQ[Lookup[#, Model], ObjectP[instrumentModels]] && (NullQ[protocolSite] || MatchQ[Lookup[#, Site], ObjectP[protocolSite]])&, {}], Object, {}]]
-    ],
-    unfulfilledInstrumentResourceModels
-  ];
-
-  (* get the instrument packets for the things objects we're going for *)
-  potentialInstrumentObjectsForModelsPackets = Download[potentialInstrumentObjectsForModels, Packet[Status]];
-
-  (* Link up these instrument resources to an acceptable instrument. *)
-  (* NOTE: If there are no non-retired-or-undergoing maintenance objects, we'll replace with Null here. *)
-  {unfulfilledResourceToInstruments, instrumentResourceUpdatePackets}=If[Length[unfulfilledInstrumentResources]==0,
-    {{},{}},
-    Transpose@MapThread[
-      Function[{instrumentResource, instrumentPackets},
-        {
-          instrumentResource->FirstOrDefault[Lookup[instrumentPackets, Object, {}], Null],
-          <|
-            Object->instrumentResource,
-            Instrument->Link[FirstOrDefault[Lookup[instrumentPackets, Object, {}], Null]],
-            Status->InUse
-          |>
-        }
-      ],
-      {unfulfilledInstrumentResources, potentialInstrumentObjectsForModelsPackets}
-    ]
-  ];
-
-  (* NOTE 2: If we only ended up with UndergoingMaintenance ones, we need to set the instrument back to Available manually here; this is only in simulation land so we're not actually messing it up *)
-  (* theoretically that can cause problems if the UndergoingMaintenance (or I suppose Running) instrument is not in its base state, but that's better than nothing *)
-  notAvailableInstrumentPackets = Select[Flatten[potentialInstrumentObjectsForModelsPackets], MatchQ[Lookup[#, Status], UndergoingMaintenance|Running]&];
-  instrumentStatusPackets = UploadInstrumentStatus[
-    Lookup[notAvailableInstrumentPackets, Object, {}],
-    Available,
-    FastTrack -> True,
-    SimulationMode -> True,
-    Upload -> False,
-    (* this is SUPER DUMB but seemingly UploadInstrumentStatus will not allow anything to set UndergoingMaintenance instruments to Available except for quals if they failed the previous qual *)
-    (* this means that if the instrument the above Search found is UndergoingMaintenance from a failed qual, we're not going to actually set it to Available which can mess with procedure simulation later *)
-    (* to get around this, I need to spoof a qual to do this setting back to Available.  Since UploadInstrumentStatus Downloads the CurrentInstruments field of the UpdatedBy, I need to make a fake packet to get {} so it doesn't throw ObjectDoesNotExist errors *)
-    (* again agreed that this is super dumb.  But this allows us to be a little less dependent on the current state of the lab when simulating resources *)
-    UpdatedBy -> <|Object -> SimulateCreateID[Object[Qualification, EngineBenchmark]], CurrentInstruments -> {}|>
-  ];
-
-  (* find any resource positions that are of type Object[Resource, Sample] *)
-  (* NOTE: In certain cases, when there are too many resources, Position can error out with a recursion limit when using ObjectP. *)
-  (* Since we're downloading objects here, Alterantives should be fine. *)
-  okSamplePositions=Position[
-    Download[First[protocolResourceDownload][[All,1]],Object],
-    Alternatives@@Lookup[targetlabeledObjectsResourcePackets, Object, {}],
-    1,
-    Heads->False
-  ];
-
-  (* extract only the data relating to resources of interest *)
-  resourceFilteredDownload=Extract[#,okSamplePositions]&/@protocolResourceDownload;
-
-  (* find the positions of resources that aren't already pointing to an Object so we can skip it, unless that object needs to be in a different container model *)
-  (* note that index 4 here refers to the container model; this used to be Last, but we added an extra value to Download and that caused issues *)
-  fulfilledSamplePositions=Position[
-    Transpose[{resourceFilteredDownload[[2]],resourceFilteredDownload[[4]]}],
-    _?(
-      And[
-        MatchQ[Lookup[First[#],Sample],ObjectP[{Object[Sample],Object[Part],Object[Item],Object[Container],Object[Plumbing],Object[Wiring]}]],
-        (
-          Or[
-            MatchQ[Lookup[First[#],ContainerModels],{}],
-            MemberQ[Download[Lookup[First[#],ContainerModels],Object],Download[Last[#],Object]]
-          ]
-        )
-      ]
-    &),
-    1,
-    Heads->False
-  ];
-
-  (* Create rules of existing fulfilled resources to their fulfilled samples/containers. *)
-  fulfilledResourcesToSamples=(
-    Download[Lookup[resourceFilteredDownload[[2]][[#]], Object], Object]->Download[Lookup[resourceFilteredDownload[[2]][[#]], Sample], Object]
-  &)/@Flatten[fulfilledSamplePositions];
-
-  (* get the positions that remain unfulfilled *)
-  unfulfilledSamplePositions=DeleteCases[List/@Range[Length[First[resourceFilteredDownload]]],Alternatives@@fulfilledSamplePositions];
-
-  (* extract the download data that is okay to fake *)
-  {requiredResources,resourceData,resourceSampleData,resourceSampleContainerModels,resourceInstrumentData}=Extract[#,unfulfilledSamplePositions]&/@resourceFilteredDownload;
-
-  (* remove any repeated resources from the resourceData and resourceSampleData so we don't create extra objects *)
-  {duplicateFreeResourceData,duplicateFreeSampleData}=If[Length[resourceData]>0,
-    Transpose[
-      DeleteDuplicatesBy[
-        Transpose[{resourceData,resourceSampleData}],
-        (Lookup[First[#],Object]&)
-      ]
-    ],
-    {{}, {}}
-  ];
-
-  (* create all the information needed to call UploadSample *)
-  newSampleInputs=MapThread[
-    Function[{resourcePacket,resourceSample},
-      Module[{model,initialAmount,newContainerModel,containerName,well},
-
-        (* model of thing to create *)
-        model=If[!MatchQ[Lookup[resourcePacket,Models],{}],
-          (* the first item in models list if there's something there *)
-          First[Lookup[resourcePacket,Models]],
-          (* the model of the sample, otherwise its composition *)
-          FirstCase[
-            Quiet[Lookup[resourceSample,{Model,Composition}]],
-            Except[Null]
-          ]
-        ];
-
-        (* amount of thing to create *)
-        initialAmount = Switch[Lookup[resourcePacket, Amount],
-          UnitsP[Unit], Unitless[Floor[Lookup[resourcePacket, Amount]]],
-          UnitsP[], Lookup[resourcePacket, Amount],
-          _, Null
-        ];
-
-        (* container of new thing *)
-        newContainerModel=Which[
-
-          (* a specific model is requested, pick the first one *)
-          Length[Lookup[resourcePacket,ContainerModels]]>0,First[Lookup[resourcePacket,ContainerModels]],
-
-          (* none requested but it's a mass or volume, choose the preferred container *)
-          MatchQ[initialAmount,(MassP|VolumeP)],PreferredContainer[initialAmount],
-
-          (* non-self contained sample, stick it in 50 mL tube *)
-          MatchQ[model,NonSelfContainedSampleModelP],Model[Container,Vessel,"50mL Tube"],
-
-          (* otherwise put it in the empty simulation room *)
-          True, Object[Container, Room, "id:AEqRl9KmEAz5"]
-        ];
-
-        (* If there is no container name, the container is always unique. *)
-        containerName=Lookup[resourcePacket,ContainerName]/.{Null->CreateUUID[]};
-        well=Lookup[resourcePacket,Well];
-
-        (* return each resource with its model, amount, and container *)
-        {Lookup[resourcePacket,Object],model,initialAmount,newContainerModel,containerName,well}
-      ]
-    ],
-    {duplicateFreeResourceData,duplicateFreeSampleData}
-  ];
-
-  (* split the new objects into those that also need a container made and those that do not *)
-  (* Only need to create one container for each ContainerName *)
-  samplesWithContainerResources=Cases[newSampleInputs,{_,_,_,ObjectP[Model[Container]],_,_}];
-  samplesWithContainerResourcesNoDup=GatherBy[samplesWithContainerResources,(#[[-2]])&];
-  (* ValidResourceQ guarantees that we have ContainerModels if we have ContainerName so no need to consider it here *)
-  samplesWithoutContainerResources=Cases[newSampleInputs,{_,_,_,Object[Container, Room, "id:AEqRl9KmEAz5"],_,_}]; (* Object[Container, Room, "Empty Room for Simulated Objects"] *)
-
-  (* get the notebook of our protocol packet. *)
-  notebook=Lookup[fetchPacketFromCache[myProtocol, fieldDownloadCache], Notebook];
-
-  (* make containers for those samples that need it *)
-  newContainersForSamplePackets=If[Length[samplesWithContainerResources]>0,
-    UploadSample[
-      samplesWithContainerResourcesNoDup[[All,1,-3]],
-      ConstantArray[{"A1",Object[Container, Room, "id:AEqRl9KmEAz5"]}, Length[samplesWithContainerResourcesNoDup]], (* Object[Container,Room,"Empty Room for Simulated Objects"] *)
-      Notebook->notebook,
-      UpdatedBy->myProtocol,
-      SimulationMode->True,
-      FastTrack->True,
-      Upload->False,
-      Simulation->currentSimulation
-    ],
-    {}
-  ];
-
-  (* update our simulation *)
-  currentSimulation=UpdateSimulation[currentSimulation, Simulation[Packets->newContainersForSamplePackets]];
-
-  (* get the new container packets from all the packets *)
-  newContainersForSamplesNoDup=If[Length[samplesWithContainerResourcesNoDup]>0,
-    Take[newContainersForSamplePackets,Length[samplesWithContainerResourcesNoDup]],
-    {}
-  ];
-  newContainersForSamples=Flatten@MapThread[
-    ConstantArray[#1,Length[#2]]&,
-    {newContainersForSamplesNoDup,samplesWithContainerResourcesNoDup}
-  ];
-
-  (* rejoin the lists of resources, containers, samples, and amounts *)
-  allResources=Join[samplesWithContainerResources[[All,1]],samplesWithoutContainerResources[[All,1]]];
-  allResourcePackets = fetchPacketFromCache[#, protocolResourceDownload[[2]]]& /@ allResources;
-  allContainers=Join[newContainersForSamples,samplesWithoutContainerResources[[All,-3]]];
-  allWells=Join[(samplesWithContainerResources[[All,-1]])/.{Null->"A1"},ConstantArray["A1",Length[samplesWithoutContainerResources]]];
-  allSamples=Join[samplesWithContainerResources[[All,2]],samplesWithoutContainerResources[[All,2]]];
-  allAmounts=Join[samplesWithContainerResources[[All,3]],samplesWithoutContainerResources[[All,3]]];
-
-  (* upload the new samples into A1 of their corresponding containers with the initial amounts *)
-  newSampleWithHistoryPackets=If[Length[allSamples]>0,
-    UploadSample[
-      allSamples,
-      MapThread[
-        {#1,#2}&,
-        {allWells,allContainers}
-      ],
-      InitialAmount->allAmounts,
-      FastTrack->True,
-      Notebook->notebook,
-      Upload->False,
-      UpdatedBy->myProtocol,
-      SimulationMode->True,
-      Simulation->currentSimulation
-    ],
-    {}
-  ];
-
-  (* drop the sample history packets because they break ValidUploadQ *)
-  newSamplePackets=KeyDrop[#,{Append[SampleHistory],Replace[SampleHistory]}]&/@newSampleWithHistoryPackets;
-
-  (* grab the new samples *)
-  newSamples=Download[Take[newSamplePackets,Length[allSamples]],Object];
-
-  (* create packets to update the resources and to relate resources to their samples *)
-  {sampleResourceUpdatePackets,unfulfilledResourceToSampleRules}=If[Length[allResources]>0,
-    Transpose[
-      MapThread[
-        {
-          <|
-            Object->#1,
-            Sample->Link[#2],
-            Status->InUse
-          |>,
-          #1->#2
-        }&,
-        {allResources,newSamples}
-      ]
-    ],
-    {{}, {}}
-  ];
-
-  (* create packets to update the container resources (if applicable) with the containers of the corresponding water samples *)
-  containerResourceUpdatePackets = MapThread[
-    If[MatchQ[Lookup[#1, ContainerResource], ObjectP[Object[Resource, Sample]]],
-      <|
-        Object -> Download[Lookup[#1, ContainerResource], Object],
-        Sample -> Link[#2],
-        Status -> InUse
-      |>,
-      Nothing
-    ]&,
-    {allResourcePackets, allContainers}
-  ];
-
-
-  (* Join all of our resource to sample rules. *)
-  resourceToSampleRules=Join[unfulfilledResourceToSampleRules,fulfilledResourcesToSamples,unfulfilledResourceToInstruments,fulfilledResourcesToInstruments];
-
-  (* function to swap link objects *)
-  linkReplace:=Function[
-    {backLinkRules,oldLink,newTarget},
-    ReplaceAll[
-      oldLink,
-      Link[_,___]:>DeleteCases[Link[newTarget,Sequence@@(newTarget[Type]/.backLinkRules)],Nothing]
-    ]
-  ];
-
-  (* create a list of rules pointing a field position to their expected backlink *)
-  typeToBackLinkRules:=Function[
-    {fieldRelations},
-    Flatten[
-      ReplaceAll[
-        fieldRelations,
-        {
-          (type:Object[__])[backLink___] :> (#->{backLink}&/@Types[type]),
-          (type:Object[__]) :> (#->Nothing &/@Types[type]),
-          (Model[__][__]|Model[__]):>Nothing
-        }
-      ]
-    ]
-  ];
-
-  (* For each of our packets, create updates to replace any models with the objects that we created. *)
-  updatePackets=MapThread[
-    Function[{object, objectRequiredResources},
-      Module[{groupedResources, packet, replacedFields},
-        (* group resources/samples by the field they are going to *)
-        groupedResources=GroupBy[
-          (* NOTE: Only include resources here for which we have replace rules. *)
-          (* Follows the logic above about how we only replace things visible in the main protocol object. *)
-          Cases[objectRequiredResources/.{link:LinkP[]:>Download[link,Object]}, {Alternatives@@resourceToSampleRules[[All,1]], _, _, _}]/.resourceToSampleRules,
-          (#[[2]]&)->(DeleteCases[{Download[#[[1]], Object],#[[3]],#[[4]]},Null]&)
-        ];
-
-        (* fetch the packet for this object. *)
-        (* this is so that we can get the current value of the field that we're slotting in our resource value into. *)
-        packet=fetchPacketFromCache[object, fieldDownloadCache];
-
-        (* go through every field that is being altered and insert the new sample links *)
-        replacedFields=KeyValueMap[
-          Function[{field,samplesAndPositions},
-            Module[{fieldContents,fieldRelations,listedFieldRelations,newLink,keyedPosition,subFieldRelations,listedSubFieldRelations,replacements,backlinkRules,specificContents,typesInRelations},
-              (* see where the links in this field are supposed to go *)
-              fieldRelations=LookupTypeDefinition[object[Type][field],Relation];
-              listedFieldRelations = If[MatchQ[fieldRelations, _Alternatives],
-                List @@ fieldRelations,
-                ToList[fieldRelations]
-              ];
-
-              (* lookup the current contents of the field *)
-              fieldContents=Lookup[packet,field];
-
-              (* act based on whether we're working on a single field or any other type of field *)
-              Switch[Rest[First[samplesAndPositions]],
-                (* single field (not named single) *)
-                {},
-                  (* replace the current link with a link to the new sample *)
-                  Module[{},
-                    backlinkRules=typeToBackLinkRules[listedFieldRelations];
-                    typesInRelations=Cases[
-                      listedFieldRelations,
-                      (type : Object[___] | Model[___])|(type : (Object[___] | Model[___]))[___]  :> type,
-                      Infinity
-                    ];
-
-                    (* Make sure that the contents in the upload packet can actually be uploaded. *)
-                    If[!MatchQ[fieldContents, ObjectP[typesInRelations]],
-                      Message[Error::SimulateResourcesInvalidBacklink, ToString[fieldContents], field];
-
-                      Return[$Failed, Module];
-                    ];
-
-                    field->linkReplace[backlinkRules,fieldContents,First[First[samplesAndPositions]]]
-                  ],
-                _,
-                  (* not a single field *)
-                  replacements=Map[
-                    Function[{sampleAndPosition},
-
-                      (* wrap key around any field names *)
-                      keyedPosition=Replace[Rest[sampleAndPosition],x_Symbol:>Key[x],{1}];
-
-                      subFieldRelations=Switch[keyedPosition,
-                        {Key[_Symbol]},First[First[keyedPosition]]/.fieldRelations (* Named Single *),
-                        {_Integer} && Or[MatchQ[fieldRelations, _Alternatives],TypeQ[fieldRelations]],fieldRelations, (* Multiple *)
-                        {_Integer}, fieldRelations[[Last[keyedPosition]]], (* Indexed Single *)
-                        {_Integer,_Integer},fieldRelations[[Last[keyedPosition]]] (* Indexed Multiple *),
-                        {_Integer,Key[_Symbol]},First[Last[keyedPosition]]/.fieldRelations (* Named Multiple *)
-                      ];
-
-                      listedSubFieldRelations=If[MatchQ[subFieldRelations,_Alternatives],
-                        List@@subFieldRelations,
-                        ToList[subFieldRelations]
-                      ];
-
-                      backlinkRules=typeToBackLinkRules[listedSubFieldRelations];
-                      typesInRelations=Cases[
-                        Flatten[listedFieldRelations],
-                        (type : Object[___] | Model[___])|(type : (Object[___] | Model[___]))[___]  :> type,
-                        Infinity
-                      ];
-                      specificContents=Extract[fieldContents, keyedPosition];
-
-                      (* Make sure that the contents in the upload packet can actually be uploaded. *)
-                      If[!MatchQ[specificContents, ObjectP[typesInRelations]],
-                        Message[Error::SimulateResourcesInvalidBacklink, ToString[specificContents], field];
-
-                        Return[$Failed, Module];
-                      ];
-
-                      (* extract the link currently sitting in the position specified and replace it with the new sample *)
-                      newLink=linkReplace[
-                        typeToBackLinkRules[listedSubFieldRelations],
-                        specificContents,
-                        First[sampleAndPosition]
-                      ];
-
-                      (* point the position to the new link *)
-                      keyedPosition->newLink
-                    ],
-                    samplesAndPositions
-                  ];
-
-                (* use replacepart to insert the new links *)
-                If[ListQ[fieldContents],
-                  Replace[field]->ReplacePart[fieldContents,replacements],
-                  field->ReplacePart[fieldContents,replacements]
-                ]
-              ]
-            ]
-          ],
-          groupedResources
-        ];
-
-        (* create packet to upload to the protocol object *)
-        Join[<|Object->object|>,Association@@replacedFields]
-      ]
-    ],
-    {
-      Join[{Download[myProtocol, Object]}, accessoryPacketObjects],
-      Join[{Lookup[protocolPacket, RequiredResources, {}]}, Lookup[accessoryPackets, RequiredResources, {}]]
-    }
-  ];
-
-  (* update our simulation *)
-  currentSimulation=UpdateSimulation[currentSimulation, Simulation[Packets->Flatten[{sampleResourceUpdatePackets, containerResourceUpdatePackets, instrumentResourceUpdatePackets, newSamplePackets, updatePackets, instrumentStatusPackets}]]];
-
-  (* Download our protocol packet again. *)
-  simulatedProtocolPacket=Quiet[Download[myProtocol, Packet[SamplesIn, ResolvedOptions], Simulation->currentSimulation]];
-
-  (* Get our experiment function we're being called from. *)
-  experimentFunction = If[MemberQ[Flatten[Values[If[MatchQ[$ECLApplication,CommandCenter],Experiment`Private`experimentFunctionTypeLookup,ProcedureFramework`Private`experimentFunctionTypeLookup]]], Lookup[simulatedProtocolPacket, Type]],
-    FirstCase[
-      Normal@If[MatchQ[$ECLApplication,CommandCenter],Experiment`Private`experimentFunctionTypeLookup,ProcedureFramework`Private`experimentFunctionTypeLookup],
-      (Verbatim[Rule][function_, Lookup[simulatedProtocolPacket, Type]|{___, Lookup[simulatedProtocolPacket, Type], ___}]:>function)
-    ],
-    Null
-  ];
-
-  (* Download our SamplesIn again (after resources have been simulated) and update the WorkingSamples if we have sample prep options. *)
-  (* Simulate any sample prep that we may have encountered and fill out the WorkingSamples field of the protocol object. *)
-  (* NOTE: If we're one of the framework functions, don't bother updating WorkingSamples since they don't get updated in these protocol objects. *)
-  (* NOTE: if we're in global simulation $Simulation = True land, then don't do this because that means we're simulating a full procedure and thus will get the _actual_ simulated WorkingSamples later on *)
-  (* NOTE: Also, we rely on ProcedureFramework`Private`experimentFunctionTypeLookup to go from our type to experiment function to use,
-  unless we're in CC in which case we don't have access to the PF. *)
-  (* we check here that the Options for the function include Centrifuge, Filter, Mix and Incubate - presence of all 4 means that we have sample prep options *)
-  currentSimulation=Which[
-      And[
-        !MatchQ[Lookup[simulatedProtocolPacket, Object], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]],
-        Not[$Simulation],
-        !MatchQ[experimentFunction, Null],
-        MatchQ[Lookup[simulatedProtocolPacket, SamplesIn], {ObjectP[]..}],
-        MatchQ[Lookup[simulatedProtocolPacket, ResolvedOptions], _List],
-        Length[
-          Intersection[
-            Keys[Options[experimentFunction]],
-            {"Centrifuge","Filter","Mix","Incubate"}
-          ]
-        ]>0
-    ],
-      Module[{samples, options, expandedResolvedOptions, workingSamples, workingSamplesSimulation, validInputLengthQ, numReplicates, expandedAliquotSampleLabelsWithReplicates},
-
-        (* Get our inputs and options and expand resolved options. *)
-        {samples, options}=Download[myProtocol, {SamplesIn, ResolvedOptions}, Simulation -> currentSimulation];
-
-        (* If we have the PooledSamplesIn option give, overwrite our samples option. *)
-        With[{insertMe=experimentFunction},
-          If[MatchQ[Lookup[safeOptions, PooledSamplesIn], Except[Null]] && MatchQ[Lookup[First[Lookup[Usage[insertMe],"Input"]],"NestedIndexMatching"], True],
-            samples=Lookup[safeOptions, PooledSamplesIn];
-          ]
-        ];
-
-        (* NOTE: If we have a pooling function, we MUST be given this option. If not, throw an error. *)
-        With[{insertMe=experimentFunction},
-          If[MatchQ[Lookup[First[Lookup[Usage[insertMe],"Input"]],"NestedIndexMatching"], True] && MatchQ[Lookup[safeOptions, PooledSamplesIn], Null],
-            Message[Error::RequiredPooledSamplesIn];
-
-            Return[$Failed];
-          ]
-        ];
-
-
-        (* Sanitize the samples used in this function *)
-        (* NOTE: ExperimentAdjustpH has two inputs so we have to hard code this. *)
-        validInputLengthQ=If[MatchQ[experimentFunction, ExperimentAdjustpH],
-          ValidInputLengthsQ[experimentFunction,{samples, ConstantArray[7, Length[samples]]},options,1,Messages->False],
-          ValidInputLengthsQ[experimentFunction,{samples},options,1,Messages->False]
-        ];
-
-        (* get the number of replicates value *)
-        numReplicates=Lookup[options,NumberOfReplicates];
-
-        (* Sanitize samples if the validInputLengthQ is not valid and number of replicates in the resolvedOptions is specified*)
-        If[
-          And[Not[validInputLengthQ],(numReplicates>1)],
-          samples=samples[[;;;;numReplicates]];
-        ];
-
-        (* NOTE: ExperimentAdjustpH has two inputs so we have to hard code this. *)
-        expandedResolvedOptions=Which[
-          MatchQ[experimentFunction, ExperimentAdjustpH],
-            Last[ExpandIndexMatchedInputs[experimentFunction, {samples, ConstantArray[7, Length[samples]]}, options]],
-          True,
-            Last[ExpandIndexMatchedInputs[experimentFunction, {samples}, options]]
-        ];
-
-        (* NOTE: It shouldn't actually matter what experiment function we pass down here...but the track record for going that route has been spotty *)
-        {workingSamples, workingSamplesSimulation}=simulateSamplesResourcePacketsNew[
-          experimentFunction,
-          samples,
-          expandedResolvedOptions,
-          Cache -> cache,
-          Simulation -> currentSimulation
-        ];
-
-        (* Check if we need to re-expand working samples *)
-        If[
-          And[Not[validInputLengthQ],(numReplicates>1)],
-          workingSamples=Flatten[(ConstantArray[#,numReplicates]&/@workingSamples),1];
-        ];
-
-        (* Note that we are now doing a manual expansion of the option AliquotSampleLabel. Our options are not expanded with numReplicates because we collapsed "samples" above. However, workingSamples has been expected with replicates. Apply the same expansion to AliquotSampleLabel for our simulation *)
-        expandedAliquotSampleLabelsWithReplicates=If[
-          And[Not[validInputLengthQ],TrueQ[(numReplicates>1)],!SameLengthQ[Lookup[expandedResolvedOptions, AliquotSampleLabel,{}],workingSamples]],
-          Flatten[(ConstantArray[#,numReplicates]&/@Lookup[expandedResolvedOptions, AliquotSampleLabel,{}]),1],
-          Lookup[expandedResolvedOptions, AliquotSampleLabel,{}]
-        ];
-
-        UpdateSimulation[
-          UpdateSimulation[currentSimulation, workingSamplesSimulation],
-          Simulation[
-            Packets->{
-              <|
-                Object->myProtocol,
-                Replace[WorkingSamples]->(Link/@workingSamples),
-                Replace[WorkingContainers]->(Link/@DeleteDuplicates@Download[Download[workingSamples, Container, Simulation->workingSamplesSimulation], Object])
-              |>
-            },
-            Labels->If[KeyExistsQ[expandedResolvedOptions, AliquotSampleLabel],
-              Rule@@@Cases[
-                Transpose[{expandedAliquotSampleLabelsWithReplicates, workingSamples}],
-                {_String, ObjectP[]}
-              ],
-              {}
-            ],
-            LabelFields->If[KeyExistsQ[expandedResolvedOptions, AliquotSampleLabel],
-              Rule@@@Cases[
-                Transpose[{expandedAliquotSampleLabelsWithReplicates, Field[AliquotSamples[[#]]]&/@Range[Length[expandedAliquotSampleLabelsWithReplicates]]}],
-                {_String, _Field}
-              ],
-              {}
-            ]
-          ]
-        ]
-      ],
-    (* if we are not doing sample prep but are a Protocol (and not Maintenance or Qualification), just fill in WorkingSamples and WorkingContainers from SamplesIn and ContainersIn of the protocol *)
-    MatchQ[myProtocol, ObjectP[Object[Protocol]]],
-      Module[{samples, containers},
-        (* quieting this because for qualifications and maintenances, these fields don't exist*)
-        {samples, containers} = Quiet[Download[myProtocol, {SamplesIn, ContainersIn}, Simulation -> currentSimulation], Download::FieldDoesntExist];
-        UpdateSimulation[
-          currentSimulation,
-          Simulation[<|
-            Object -> myProtocol,
-            (* this removes any $Failed/Null from samples/containers *)
-            Replace[WorkingSamples] -> Cases[(Link /@ ToList[samples]), LinkP[]],
-            Replace[WorkingContainers] -> Cases[(Link /@ ToList[containers]), LinkP[]]
-          |>]
-        ]
-      ],
-    True,
-      currentSimulation
-  ];
-
-  (* Return the updated simulation. *)
-  currentSimulation
-];
-
-SimulateResources[
-  myProtocol:ObjectReferenceP[{Object[Protocol], Object[Maintenance], Object[Qualification]}],
-  myOptions:OptionsPattern[SimulateResources]
-]:=SimulateResources[myProtocol, Null, myOptions];
-
 
 
 (* ::Subsubsection::Closed:: *)
@@ -16490,6 +9734,11 @@ filterInstruments[
 (* tip box due to incorrect tip counts in SLL or interrupted hamilton runs. *)
 $HamiltonTipBoxBuffer=12;
 
+
+
+(* Authors definition for Experiment`Private`partitionTips *)
+Authors[Experiment`Private`partitionTips]:={"taylor.hochuli"};
+
 partitionTips[tipModelPackets_List, allTipResources_List, primitiveGrouping_List]:=Module[
   {tipModelsForMultiProbeHeadTransfers, allTips, talliedTipModels, partitionedTipCountLookup, requiredStackedTipTypes, requiredNonStackedTipTypes},
 
@@ -16661,3 +9910,4 @@ simulatedObjectQs[mySamples:{ObjectP[]...}, mySimulation_Simulation]:=If[MatchQ[
   ],
   (MemberQ[Lookup[mySimulation[[1]], SimulatedObjects], #]&)/@mySamples
 ];
+

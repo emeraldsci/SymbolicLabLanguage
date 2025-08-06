@@ -264,6 +264,7 @@ distributionMeanEpilog[mean_,y_]:=Tooltip[{Darker[Red],Thick,Line[{{mean,0},{mea
 distributionMedianEpilog[Indeterminate,___]:={};
 distributionMedianEpilog[med_,y_]:=Tooltip[{Lighter[Red],Thick,Line[{{med,0},{med,y}}]},Column[{"Median",med},ItemStyle->15]];
 
+distributionDeviationEpilog[_,0|0.,_,_]:={};
 distributionDeviationEpilog[Indeterminate,___]:={};
 distributionDeviationEpilog[_,Indeterminate,___]:={};
 distributionDeviationEpilog[mean_,dx_,{yL_,yR_},n_]:={
@@ -271,6 +272,7 @@ distributionDeviationEpilog[mean_,dx_,{yL_,yR_},n_]:={
 	Tooltip[{Red,Thick,Line[{{mean-dx,0},{mean-dx,yL}}]},Column[{"\[Mu]-"<>ToString[n]<>"\[Sigma]",mean-dx,Null,"-"<>ToString[n]<>"\[Sigma]",-dx,-dx/mean*100*Percent},ItemStyle->15]]
 };
 
+distributionMinMaxEpilog[_,0|0.,_,_]:={};
 distributionMinMaxEpilog[Indeterminate,___]:={};
 distributionMinMaxEpilog[_,Indeterminate,___]:={};
 distributionMinMaxEpilog[mean_,sigma_,{min_,max_},ymax_]:={
@@ -310,7 +312,7 @@ LabeledHistogram[vals0:(_List|QuantityArrayP[]),safeOps_List]:=Module[{
 	vals = Unitless[vals0,un];
 	displays = If[MatchQ[Lookup[safeOps,Display],None],{},ToList@Lookup[safeOps,Display]];
 	{min,max,mean,median} = {Min[#],Max[#],Mean[#],Median[#]}&[vals];
-	sigma=StandardDeviation[vals];
+	sigma=Analysis`Private`safeStandardDeviation[vals];
 	se=sigma/Sqrt[Length[vals]];
 	{rangemin,rangemax}={Min[{min,mean-2*sigma}],Max[{max,mean+2*sigma}]};
 

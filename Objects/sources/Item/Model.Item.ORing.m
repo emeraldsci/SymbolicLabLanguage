@@ -63,13 +63,6 @@ DefineObjectType[Model[Item,ORing], {
 			Pattern :> Circle,
 			Description -> "The identifying geometrical feature of the O-ring.",
 			Category -> "Physical Properties"
-		},
-		Reusable -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates whether this O-ring can be re-used if the item is removed from its installed location.",
-			Category -> "Physical Properties"
 		}
 	}
 }];

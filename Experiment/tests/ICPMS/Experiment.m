@@ -166,6 +166,30 @@ DefineTests[ExperimentICPMS,
 			],
 			True
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentICPMS[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		(* TODO mark the beginning of options *)
 		(* ===Options=== *)
 		Example[
@@ -556,7 +580,7 @@ DefineTests[ExperimentICPMS,
 			{Options, StandardType, "If StandardAdditionCurve is specified, StandardType will automatically set to StandardAddition:"},
 			Lookup[
 				ExperimentICPMS[Object[Sample, "ExperimentICPMS Test Sample 1 with Calcium Nitrate and Sodium Chloride" <> $SessionUUID],
-					StandardAdditionCurve -> {{1}, {2}},
+					StandardAdditionCurve -> {{1}, {1.5}},
 					Output -> Options
 				],
 				StandardType
@@ -1157,25 +1181,6 @@ DefineTests[ExperimentICPMS,
 			],
 			0
 		],
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples to be analyzed by ICPMS:"},
-			options=ExperimentICPMS["test sample",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "test sample",
-						Container -> Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *)
-					],
-					Transfer[
-						Source -> Object[Sample, "ExperimentICPMS Test Sample 1 with Calcium Nitrate and Sodium Chloride" <> $SessionUUID],
-						Amount -> 500 * Microliter,
-						Destination -> {"test sample", "A1"}
-					]
-				},
-				Output -> Options
-			];
-			Lookup[options, StandardType],
-			External,
-			Variables :> {options}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentICPMS:"},
 			Download[ExperimentICPMS["My Pooled Sample",
 				PreparatoryUnitOperations-> {
@@ -1197,8 +1202,83 @@ DefineTests[ExperimentICPMS,
 		],
 		(* TODO uncomment these two after building simulation function *)
 
-		(* TODO: Beginning of Messages*)
 		(* ===Messages=== *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentICPMS[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentICPMS[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentICPMS[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentICPMS[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentICPMS[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentICPMS[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[
 			{Messages, "LowAbundanceIsotopes", "If Elements option is directly specified as a list of isotopes, and that list contains isotopes with 10% or lower natural abundance, a warning will be given:"},
 			Lookup[
@@ -2171,9 +2251,9 @@ DefineTests[ExperimentICPMS,
 						Type -> Object[Sample],
 						State -> Liquid,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{1 Gram/Liter, Link[Model[Molecule, "Calcium Nitrate"]]},
-							{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{1 Gram/Liter, Link[Model[Molecule, "Calcium Nitrate"]], Now},
+							{1 Millimolar, Link[Model[Molecule, "Sodium Chloride"]], Now}
 						},
 						DeveloperObject -> True
 					],
@@ -2182,8 +2262,8 @@ DefineTests[ExperimentICPMS,
 						Type -> Object[Sample],
 						State -> Liquid,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{1 Gram/Liter, Link[Model[Molecule, "Copper(II) Sulfate"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{1 Gram/Liter, Link[Model[Molecule, "Copper(II) Sulfate"]], Now}
 						},
 						DeveloperObject -> True
 					],
@@ -2192,8 +2272,8 @@ DefineTests[ExperimentICPMS,
 						Type -> Object[Sample],
 						State -> Liquid,
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{1 Gram/Liter, Link[Model[Molecule, "Iron"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{1 Gram/Liter, Link[Model[Molecule, "Iron"]], Now}
 						},
 						Aqueous -> True,
 						Acid -> True,
@@ -2204,7 +2284,7 @@ DefineTests[ExperimentICPMS,
 						Type -> Object[Sample],
 						State -> Solid,
 						Replace[Composition] -> {
-							{Null, Link[Model[Molecule, "Sodium Chloride"]]}
+							{Null, Link[Model[Molecule, "Sodium Chloride"]], Now}
 						},
 						DeveloperObject -> True
 					](*,

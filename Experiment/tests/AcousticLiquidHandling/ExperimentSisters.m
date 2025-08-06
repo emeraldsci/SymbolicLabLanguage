@@ -315,39 +315,25 @@ DefineTests[
 	{
 		Example[{Basic,"No preview is currently available for ExperimentAcousticLiquidHandling:"},
 			ExperimentAcousticLiquidHandlingPreview[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID],"A1"}
-				]
+				Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID]},
+				100 Nanoliter
 			],
 			Null
 		],
-		Example[{Basic,"Return Null for multiple primitive inputs:"},
-			ExperimentAcousticLiquidHandlingPreview[{
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID],"A1"}
+		Example[{Basic,"Return Null for multiple inputs:"},
+			ExperimentAcousticLiquidHandlingPreview[
+				Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
+				{{"A1", Object[Container, Plate, "ExperimentAcousticLiquidHandlingPreview Test Destination Plate"<>$SessionUUID]},{"A2",Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID]}},
+				{100 Nanoliter, 100 Nanoliter}
 				],
-				Aliquot[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
-					Amounts->100 Nanoliter,
-					Destinations->{
-						{Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID],"B1"},
-						{Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID],"B2"}
-					}
-				]
-			}],
 			Null
 		],
 		Example[{Additional,"If you wish to understand how the experiment will be performed try using ExperimentAcousticLiquidHandlingOptions:"},
 			ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID],"A1"}
-				]
+				Object[Sample,"ExperimentAcousticLiquidHandlingPreview Test Water Sample" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingPreview Test Destination Plate" <> $SessionUUID]},
+				100 Nanoliter
 			],
 			_Grid
 		]
@@ -457,39 +443,25 @@ DefineTests[
 	{
 		Example[{Basic,"Return a list of options in table form for a single input primitive:"},
 			ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				]
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]},
+				100 Nanoliter
 			],
 			Graphics_
 		],
-		Example[{Basic,"Return a list of options in table form for multiple input primitives:"},
-			ExperimentAcousticLiquidHandlingOptions[{
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amounts->100 Nanoliter,
-					Destinations->{
-						{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"B1"},
-						{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"B2"}
-					}
-				]
-			}],
+		Example[{Basic,"Return a list of options in table form for multiple inputs:"},
+			ExperimentAcousticLiquidHandlingOptions[
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{{"A1", Object[Container, Plate, "ExperimentAcousticLiquidHandlingOptions Test Source Plate 2"<>$SessionUUID]}, {"A2",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]}},
+				{100 Nanoliter, 100 Nanoliter}
+			],
 			Graphics_
 		],
 		Example[{Options,OutputFormat,"If OutputFormat -> List, return a list of rules:"},
 			ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]},
+				100 Nanoliter,
 				OutputFormat->List
 			],
 			{__Rule}
@@ -499,11 +471,9 @@ DefineTests[
 
 		Example[{Options,Instrument,"Specify the instrument to perform acoustic liquid handling:"},
 			options=ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]},
+				100 Nanoliter,
 				Instrument->Model[Instrument,LiquidHandler,AcousticLiquidHandler,"id:o1k9jAGrz9MG"],
 				OutputFormat->List
 			];
@@ -513,23 +483,9 @@ DefineTests[
 		],
 		Example[{Options,OptimizePrimitives,"Specify how the manipulations should be rearranged to improve transfer throughput:"},
 			options=ExperimentAcousticLiquidHandlingOptions[
-				{
-					Transfer[
-						Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-						Amount->100 Nanoliter,
-						Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID],"A1"}
-					],
-					Transfer[
-						Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 2" <> $SessionUUID],
-						Amount->100 Nanoliter,
-						Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID],"A1"}
-					],
-					Transfer[
-						Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-						Amount->100 Nanoliter,
-						Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID],"B1"}
-					]
-				},
+				{Object[Sample, "ExperimentAcousticLiquidHandlingOptions Test Water Sample 1"<>$SessionUUID],Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 2" <> $SessionUUID],Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID]},
+				{{"A1", Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID]},{"A1", Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID]},{"B1", Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 2" <> $SessionUUID]}},
+				100 Nanoliter,
 				OptimizePrimitives->SourcePlateCentric,
 				OutputFormat->List
 			];
@@ -539,11 +495,9 @@ DefineTests[
 		],
 		Example[{Options,FluidAnalysisMeasurement,"Specify the measurement type used to determine the fluid properties of the source samples:"},
 			options=ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]},
+				100 Nanoliter,
 				FluidAnalysisMeasurement->AcousticImpedance,
 				OutputFormat->List
 			];
@@ -553,11 +507,9 @@ DefineTests[
 		],
 		Example[{Options,FluidTypeCalibration,"Specify the calibration used by the acoustic liquid handler to transfer liquid of different types:"},
 			options=ExperimentAcousticLiquidHandlingOptions[
-				Transfer[
-					Source->Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Source Plate 2" <> $SessionUUID]},
+				100 Nanoliter,
 				FluidTypeCalibration->AqueousWithoutSurfactant,
 				OutputFormat->List
 			];
@@ -567,14 +519,12 @@ DefineTests[
 		],
 		Example[{Options,InWellSeparation,"Specify whether the droplets transfer to the same destination well are physically separated:"},
 			options=ExperimentAcousticLiquidHandlingOptions[
-				Consolidation[
-					Sources->{
-						Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
-						Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 2" <> $SessionUUID]
-					},
-					Amounts->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 1" <> $SessionUUID],"A1"}
-				],
+				{
+					Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 1" <> $SessionUUID],
+					Object[Sample,"ExperimentAcousticLiquidHandlingOptions Test Water Sample 2" <> $SessionUUID]
+				},
+				{"A1",Object[Container,Plate,"ExperimentAcousticLiquidHandlingOptions Test Destination Plate 1" <> $SessionUUID]},
+				100 Nanoliter,
 				InWellSeparation->True,
 				OutputFormat->List
 			];
@@ -703,61 +653,46 @@ DefineTests[
 	{
 		Example[{Basic,"Determine the validity of a call on a single input primitive:"},
 			ValidExperimentAcousticLiquidHandlingQ[
-				Transfer[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"A1"}
-				]
+				Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID]},
+				100 Nanoliter
 			],
 			True
 		],
-		Example[{Basic,"Determine the validity of a call on multiple input primitives:"},
-			ValidExperimentAcousticLiquidHandlingQ[{
-				Transfer[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"A1"}
-				],
-				Aliquot[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 2" <> $SessionUUID],
-					Amounts->100 Nanoliter,
-					Destinations->{
-						{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"B1"},
-						{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 2" <> $SessionUUID],"B2"}
-					}
-				]
-			}],
+		Example[{Basic,"Determine the validity of a call on multiple inputs:"},
+			ValidExperimentAcousticLiquidHandlingQ[
+				Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
+				{
+					{"B1",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID]},
+					{"B2",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 2" <> $SessionUUID]}
+				},
+				100 Nanoliter
+			],
 			True
 		],
 		Example[{Basic,"Return False if there are problems with the inputs or options:"},
 			ValidExperimentAcousticLiquidHandlingQ[
-				Transfer[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID]},
+				100 Nanoliter,
 				InWellSeparation->True
 			],
 			False
 		],
 		Example[{Options,OutputFormat,"If OutputFormat -> TestSummary, return a test summary instead of a Boolean:"},
 			ValidExperimentAcousticLiquidHandlingQ[
-				Transfer[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID]},
+				100 Nanoliter,
 				OutputFormat->TestSummary
 			],
 			_EmeraldTestSummary
 		],
 		Example[{Options,Verbose,"If Verbose -> Failures, print the failing tests:"},
 			ValidExperimentAcousticLiquidHandlingQ[
-				Transfer[
-					Source->Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
-					Amount->100 Nanoliter,
-					Destination->{Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID],"A1"}
-				],
+				Object[Sample,"ValidExperimentAcousticLiquidHandlingQ Test Water Sample 1" <> $SessionUUID],
+				{"A1",Object[Container,Plate,"ValidExperimentAcousticLiquidHandlingQ Test Destination Plate 1" <> $SessionUUID]},
+				100 Nanoliter,
 				InWellSeparation->True,
 				Verbose->Failures
 			],

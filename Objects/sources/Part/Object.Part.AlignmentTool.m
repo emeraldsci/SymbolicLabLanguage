@@ -9,5 +9,13 @@ DefineObjectType[Object[Part, AlignmentTool], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
+		Cover -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item],
+			Description -> "The cover that is used to hold the teaching needles (tips) in place so they don't fall out.",
+			Category -> "Cover Information"
+		}
 	}
 }];

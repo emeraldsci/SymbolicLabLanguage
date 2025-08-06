@@ -8,7 +8,7 @@ DefineOptions[ExperimentFluorescenceSpectroscopyPreview,
 	SharedOptions :> {ExperimentFluorescenceSpectroscopy}
 ];
 
-ExperimentFluorescenceSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceSpectroscopyPreview]]:=Module[
+ExperimentFluorescenceSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceSpectroscopyPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -34,7 +34,7 @@ DefineOptions[ExperimentFluorescenceSpectroscopyOptions,
 	SharedOptions :> {ExperimentFluorescenceSpectroscopy}
 ];
 
-ExperimentFluorescenceSpectroscopyOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceSpectroscopyOptions]]:=Module[
+ExperimentFluorescenceSpectroscopyOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceSpectroscopyOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -64,7 +64,7 @@ DefineOptions[ValidExperimentFluorescenceSpectroscopyQ,
 	SharedOptions :> {ExperimentFluorescenceSpectroscopy}
 ];
 
-ValidExperimentFluorescenceSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceSpectroscopyQ]]:=Module[
+ValidExperimentFluorescenceSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceSpectroscopyQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];
@@ -105,10 +105,10 @@ ValidExperimentFluorescenceSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sampl
 	(* Run the tests as requested and return just the summary not the association if OutputFormat->TestSummary*)
 	Lookup[
 		RunUnitTest[
-			<|"FK"->allTests|>,
+			<|"ValidExperimentFluorescenceSpectroscopyQ"->allTests|>,
 			Verbose->verbose,
 			OutputFormat->outputFormat
 		],
-		"FK"
+		"ValidExperimentFluorescenceSpectroscopyQ"
 	]
 ];

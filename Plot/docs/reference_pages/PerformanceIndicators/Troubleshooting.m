@@ -24,7 +24,7 @@ DefineUsage[GreaterDateQ,{
 		"LessDateQ",
 		"LessEqualDateQ"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*GreaterEqualDateQ*)
@@ -44,7 +44,7 @@ DefineUsage[GreaterEqualDateQ,{
 		"LessDateQ",
 		"LessEqualDateQ"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*LessDateQ*)
@@ -64,7 +64,7 @@ DefineUsage[LessDateQ,{
 		"GreaterDateQ",
 		"LessEqualDateQ"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*LessEqualDateQ*)
@@ -84,7 +84,7 @@ DefineUsage[LessEqualDateQ,{
 		"LessDateQ",
 		"GreaterDateQ"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*EqualDateQ*)
@@ -104,7 +104,7 @@ DefineUsage[EqualDateQ,{
 		"LessDateQ",
 		"GreaterDateQ"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*minTime*)
@@ -121,7 +121,7 @@ DefineUsage[minTime,{
 	SeeAlso->{
 		"maxTime"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (*maxTime*)
@@ -138,7 +138,7 @@ DefineUsage[maxTime,{
 	SeeAlso->{
 		"minTime"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -212,7 +212,7 @@ DefineUsage[PlotSupportRate,{
 		"PlotSupportTimeline",
 		"PlotSampleManipulationSupportTimeline"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -313,7 +313,7 @@ DefineUsage[PlotSupportDistributions,{
 		"PlotSupportTimeline",
 		"PlotSampleManipulationSupportTimeline"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -438,7 +438,7 @@ DefineUsage[PlotTotalSupportRate,{
 		"PlotSupportTimeline",
 		"PlotSampleManipulationSupportTimeline"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -765,7 +765,7 @@ DefineUsage[PlotSampleManipulationSupportTimeline,{
 		"PlotSupportTimeline",
 		"PlotSupportRate"
 	},
-	Author->{"Frezza", "lige.tonggu"}
+	Author->{"dirk.schild"}
 }];
 
 DefineUsage[

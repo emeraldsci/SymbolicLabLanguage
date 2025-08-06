@@ -1,18 +1,37 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+
+(* ::Subsection:: *)
+(*PlotMeasureMeltingPoint*)
+
+DefineOptions[
+    PlotMeasureMeltingPoint,
+    Options :> {
+        ModifyOptions[OutputOption, Widget -> Widget[Type->Enumeration, Pattern :> ListableP[Result | Options]]]
+    }
+];
 
 
 Warning::AnalysisObjectNotExist="The Data Object `1` does not have an analysis object associated with it. A provisional analysis object will be generated with default options.";
 
 (*If the input is data object, redirect to its protocol*)
-PlotMeasureMeltingPoint[dataObj:ObjectP[Object[Data, MeltingPoint]]]:=Module[{protocol},
+PlotMeasureMeltingPoint[dataObj:ObjectP[Object[Data, MeltingPoint]], ops: OptionsPattern[PlotMeasureMeltingPoint]]:=Module[{protocol},
     protocol = Download[dataObj, Protocol];
-    PlotMeasureMeltingPoint[protocol]
+    PlotMeasureMeltingPoint[protocol, ops]
 ];
 
 (*If the input is analysis object, redirect to its data' protocol*)
 
 (*This function will plot all data and analysis objects under the same protocol, even the input is a single data/analysis object.*)
-PlotMeasureMeltingPoint[protocol:ObjectP[Object[Protocol, MeasureMeltingPoint]]]/;$CCD:=Module[
-    {protocolObj, dataObjList, analysisObjList, analysisExistsQ, analysisPacket},
+PlotMeasureMeltingPoint[protocol:ObjectP[Object[Protocol, MeasureMeltingPoint]], ops: OptionsPattern[PlotMeasureMeltingPoint]]/;$CCD:=Module[
+    {safeOps, output, protocolObj, dataObjList, analysisObjList, analysisExistsQ, analysisPacket, result},
+
+    (* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+    safeOps=SafeOptions[PlotMeasureMeltingPoint, ToList[ops]];
+    (* Requested output, either a single value or list of Alternatives[Result,Options] *)
+    output=Lookup[safeOps,Output];
 
     protocolObj = protocol[Object];
     {dataObjList, analysisObjList} = Download[protocol, {Data, Data[MeltingAnalyses]}];
@@ -22,7 +41,12 @@ PlotMeasureMeltingPoint[protocol:ObjectP[Object[Protocol, MeasureMeltingPoint]]]
 
     analysisPacket = getAnalysisPackets[dataObjList, analysisObjList, analysisExistsQ];
     (* only use the first packet, which in principle assumes that the analyses all correspond to the same protocol *)
-    plotMeasureMeltingPointHelper[analysisPacket]
+    result =plotMeasureMeltingPointHelper[analysisPacket];
+
+    output /. {
+        Result -> result,
+        Options -> safeOps
+    }
 ];
 
 getAnalysisPackets[dataList_, analysisList_, analysisQList_] := If[First[analysisQList],
@@ -32,12 +56,22 @@ getAnalysisPackets[dataList_, analysisList_, analysisQList_] := If[First[analysi
 
 
 (*For MM version < 12.1, VideoStream does not exist. The interactive plot will not contain video file (for Command Builder only) and the layout is different. *)
-PlotMeasureMeltingPoint[protocol:ObjectP[Object[Protocol, MeasureMeltingPoint]]]/;($CCD==False):=Module[
-    {dataObjList, analysisObjList},
+PlotMeasureMeltingPoint[protocol:ObjectP[Object[Protocol, MeasureMeltingPoint]], ops: OptionsPattern[PlotMeasureMeltingPoint]]/;($CCD==False):=Module[
+    {safeOps, output, dataObjList, analysisObjList, result},
+
+    (* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+    safeOps=SafeOptions[PlotMeasureMeltingPoint, ToList[ops]];
+    (* Requested output, either a single value or list of Alternatives[Result,Options] *)
+    output=Lookup[safeOps,Output];
 
     (*check if all analysis objects exist, otherwise it will run the analysis function with a warning message*)
     {dataObjList, analysisObjList} = Download[protocol, {Data, Data[MeltingAnalyses]}];
-    plotMeasureMeltingPointHelperV12[First[analysisObjList]]
+    result = plotMeasureMeltingPointHelperV12[First[analysisObjList]];
+
+    output /. {
+        Result -> result,
+        Options -> safeOps
+    }
 ];
 
 
@@ -56,10 +90,10 @@ checkAnalysisObject[linkedDataObj_, linkedAnalysisObj_]:=Module[{dataObj, analys
             (*if analysis object is Null, run the analysis function*)
             Message[Warning::AnalysisObjectNotExist, dataObj];
             analysisPacket = ECL`AnalyzeMeltingPoint[dataObj, Upload->False];
-            Lookup[analysisPacket, {USPharmacopeiaMeltingRange, BritishPharmacopeiaMeltingPoint, JapanesePharmacopeiaMeltingPoint}],
+            Lookup[analysisPacket, {USPharmacopeiaMeltingRange, BritishPharmacopeiaMeltingTemperature, JapanesePharmacopeiaMeltingTemperature}],
 
             (*if analysis object exists, return the fields value*)
-            Download[analysisObj, {USPharmacopeiaMeltingRange, BritishPharmacopeiaMeltingPoint, JapanesePharmacopeiaMeltingPoint}]
+            Download[analysisObj, {USPharmacopeiaMeltingRange, BritishPharmacopeiaMeltingTemperature, JapanesePharmacopeiaMeltingTemperature}]
         ]
     ]
 ];
@@ -73,28 +107,33 @@ checkAnalysisObjectExists[linkedDataObj_, linkedAnalysisObj_]:=Module[{dataObj, 
 
 
 (*Make an association for labeled points*)
-coordinatesAssociation[lsts_List, usp_, bp_, jp_] := Module[
+coordinatesAssociation[curvesValues_List, pointsUSP_, pointsBP_, pointsJP_, startTs_] := Module[
     {
+        pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP,
         pointXYUSP, pointXYBP, pointXYJP, assoList, bpList, jpList, totalSampleN
     },
+
+    {pointsUnitlessUSP, pointsUnitlessBP, pointsUnitlessJP} = QuantityMagnitude[{pointsUSP, pointsBP, pointsJP}];
+
     (*The desired return format is
          <|
             1-> <|"USP"->{point1, point2}, "BP"->{point1}, "JP"->{point1}|>,
             2-> <|"USP"->{point1, point2}, "BP"->{point1}, "JP"->{point1}|>,
             3-> <|"USP"->{point1, point2}, "BP"->{point1}, "JP"->{point1}|>
-         |>*)
-    totalSampleN = Length[lsts];
-    bpList = {#} & /@ bp;
-    jpList = {#} & /@ jp;
+         |>
+    *)
+    totalSampleN = Length[curvesValues];
+    bpList = {#} & /@ pointsUnitlessBP;
+    jpList = {#} & /@ pointsUnitlessJP;
 
-    pointXYUSP = MapThread[getXYPoint, {lsts, usp}];
-    pointXYBP = MapThread[getXYPoint, {lsts, bpList}];
-    pointXYJP = MapThread[getXYPoint, {lsts, jpList}];
+    pointXYUSP = MapThread[getXYPoint, {curvesValues, pointsUnitlessUSP}];
+    pointXYBP = MapThread[getXYPoint, {curvesValues, bpList}];
+    pointXYJP = MapThread[getXYPoint, {curvesValues, jpList}];
 
     assoList = MapThread[<|"USP" -> #1, "BP" -> #2, "JP" -> #2|> &, {pointXYUSP, pointXYBP, pointXYJP}];
     AssociationThread[Range[totalSampleN], assoList]
 ];
-getXYPoint[x_List, target_] := First[Cases[x, {#, _}]] & /@ target;
+getXYPoint[x_List, target_] := FirstCase[x, {#, y_} :> Point[{#, y}], Nothing] & /@ target;
 
 (*Icon for EmeraldMenuBar*)
 menuIcon[color_, bgColor_, selectQ_] := Module[{offset=0.1},
@@ -164,7 +203,7 @@ selectedIconPrimitive[x_, y_, size_, bgColor_, ftColor_] := Module[{offsetMargin
 unselectedIconPrimitive[x_, y_, size_, color_] := {color, Rectangle[{x, y}, {x + size, y + size}]};
 
 (*Epilog to display coordinates with dashed lines*)
-singlePointEpilog[{mpx : NumericP, mpy : NumericP}, xMin_, yMin_, color_] := {
+singlePointEpilog[Point[{mpx : NumericP, mpy : NumericP}], xMin_, yMin_, color_] := {
     color, Dashed, Thick, Line[{{mpx, yMin}, {mpx, mpy}}],
     color, Dashed, Thick, Line[{{xMin, mpy}, {mpx, mpy}}],
     Text[

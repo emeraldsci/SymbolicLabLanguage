@@ -1,5 +1,8 @@
 (* ::Package:: *)
 
+(* ::Text:: *)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
+
 (* ::Subsection:: *)
 (*ExperimentLiquidLiquidExtractionOptions*)
 
@@ -16,7 +19,7 @@ DefineOptions[ExperimentLiquidLiquidExtractionOptions,
   SharedOptions :> {ExperimentLiquidLiquidExtraction}
 ];
 
-ExperimentLiquidLiquidExtractionOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentLiquidLiquidExtractionOptions]]:=Module[
+ExperimentLiquidLiquidExtractionOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentLiquidLiquidExtractionOptions]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
@@ -47,7 +50,7 @@ DefineOptions[ValidExperimentLiquidLiquidExtractionQ,
   SharedOptions:>{ExperimentLiquidLiquidExtraction}
 ];
 
-ValidExperimentLiquidLiquidExtractionQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentLiquidLiquidExtractionQ]]:=Module[
+ValidExperimentLiquidLiquidExtractionQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentLiquidLiquidExtractionQ]]:=Module[
   {listedOptions,preparedOptions,experimentLiquidLiquidExtractionTests,initialTestDescription,allTests,verbose,outputFormat},
 
   (* Get the options as a list *)
@@ -66,7 +69,7 @@ ValidExperimentLiquidLiquidExtractionQ[myInputs:ListableP[ObjectP[{Object[Contai
   allTests=If[MatchQ[experimentLiquidLiquidExtractionTests,$Failed],
     {Test[initialTestDescription,False,True]},
     Module[
-      {initialTest,validObjectBooleans,voqWarnings,testResults},
+      {initialTest,validObjectBooleans,voqWarnings},
 
       (* Generate the initial test, which we know will pass if we got this far (hopefully) *)
       initialTest=Test[initialTestDescription,True,True];
@@ -92,4 +95,25 @@ ValidExperimentLiquidLiquidExtractionQ[myInputs:ListableP[ObjectP[{Object[Contai
 
   (* Run all the tests as requested *)
   Lookup[RunUnitTest[<|"ValidExperimentLiquidLiquidExtractionQ"->allTests|>,OutputFormat->outputFormat,Verbose->verbose],"ValidExperimentLiquidLiquidExtractionQ"]
+];
+
+(* ::Subsection::Closed:: *)
+(*ExperimentLiquidLiquidExtractionPreview*)
+
+
+DefineOptions[ExperimentLiquidLiquidExtractionPreview,
+  SharedOptions:>{ExperimentLiquidLiquidExtraction}
+];
+Authors[ExperimentLiquidLiquidExtractionPreview]:={"ben", "thomas", "lige.tonggu"};
+ExperimentLiquidLiquidExtractionPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentLiquidLiquidExtractionPreview]]:=Module[
+  {listedOptions,noOutputOptions},
+
+  (* get the options as a list *)
+  listedOptions=ToList[myOptions];
+
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
+  noOutputOptions=DeleteCases[listedOptions,Output->_];
+
+  (* return only the preview for ExperimentLiquidLiquidExtraction *)
+  ExperimentLiquidLiquidExtraction[myInputs,Append[noOutputOptions,Output->Preview]]
 ];

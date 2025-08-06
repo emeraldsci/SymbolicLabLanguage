@@ -101,7 +101,7 @@ DefineObjectType[Model[Item, Tips], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Liter*Micro],
 			Units -> Liter Micro,
-			Description -> "The maximum volume that each pipette tip can transfer.",
+			Description -> "The maximum volume that each pipette tip can transfer. For serological pipettes with descending graduations, the volume contained when filled to the 0 volume graduation.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
@@ -110,7 +110,7 @@ DefineObjectType[Model[Item, Tips], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Liter],
 			Units -> Liter Milli,
-			Description -> "Resolution of the cylinder's volume-indicating markings, the volume between gradation subdivisions.",
+			Description -> "Resolution of the pipette's volume-indicating markings, the volume between gradation subdivisions.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
@@ -155,6 +155,66 @@ DefineObjectType[Model[Item, Tips], {
 			Description->"The encoding integer used for Hamilton to denote the current type of the tip.",
 			Category -> "General",
 			Developer->True
-		}
+		},
+		AscendingGraduations->{
+			Format->Multiple,
+			Class->Real,
+			Pattern :> GreaterEqualP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "For serological pipette tips, the markings on this model used to indicate the fluid's fill level.",
+			Abstract->True,
+			Category -> "General"
+		},
+		AscendingGraduationTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Labeled, Short, Long],
+			Description -> "For each member of AscendingGraduations, indicates if the graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
+			Category -> "General",
+			IndexMatching -> AscendingGraduations
+		},
+		AscendingGraduationLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of AscendingGraduations, if GraduationTypes is Labeled, exactly matches the labeling text. Otherwise, Null.",
+			Category -> "General",
+			IndexMatching -> AscendingGraduations,
+			Developer -> True
+		},
+		DescendingGraduations->{
+			Format->Multiple,
+			Class->Real,
+			Pattern :> UnitsP[Milliliter],
+			Units -> Milliliter,
+			Description -> "For serological pipette tips, the markings on this tip model used to indicate tips MaxVolume minus the fill level of a fluid.",
+			Abstract->True,
+			Category -> "General"
+		},
+		DescendingGraduationTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Labeled, Short, Long],
+			Description -> "For each member of DescendingGraduations, indicates if the descending graduation is labeled with a number, a long unlabeled line, or a short unlabeled line.",
+			Category -> "General",
+			IndexMatching -> DescendingGraduations
+		},
+		DescendingGraduationLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of DescendingGraduations, if GraduationTypes is Labeled, exactly matches the labeling text. Otherwise, Null.",
+			Category -> "General",
+			IndexMatching -> DescendingGraduations,
+			Developer -> True
+		}(*,
+		GraduationCalibration -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Deliver, Contain, Both],
+			Description -> "Indicates if the manufacture calibrated the graduations for dispensing an accurate volume to a destination (i.e. 'To Deliver') or for taking an accurate volume from a source (i.e. 'To Contain').",
+			Category -> "Container Specifications",
+			Abstract -> True
+		}*)
 	}
 }];

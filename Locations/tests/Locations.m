@@ -2095,7 +2095,7 @@ DefineTests[
 							MaxHeight->Quantity[0.009,"Meters"]
 						|>},
 						Replace[RecommendedFillVolumes] -> {Quantity[15., "Microliters"]},
-						Reusability -> False, SelfStanding -> True,
+						Reusable -> False, SelfStanding -> True,
 						Sterile -> False, StorageOrientation -> Any, TransportStable -> True,
 						Type -> Model[Container, Plate, Irregular],
 						Unimageable -> True,
@@ -2461,197 +2461,193 @@ DefineTests[
 
 			(*Erase any objects and models that we failed to erase in the last unit test*)
 			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+			Block[{$DeveloperUpload = True, $AllowPublicObjects = True},
+				(*Make a room/building/floor models*)
+				Upload[{
+					<|
+						Type->Model[Container,Room],
+						Name->"plotContainer test room model"<>$SessionUUID,
+						Replace[PositionPlotting]->{
+							<|Name->"Bench Slot 1",XOffset->Quantity[7.62,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 2",XOffset->Quantity[9.4488,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 3",XOffset->Quantity[11.2776,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 4",XOffset->Quantity[13.1064,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 5",XOffset->Quantity[7.62,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 6",XOffset->Quantity[9.4488,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 7",XOffset->Quantity[11.2776,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Bench Slot 8",XOffset->Quantity[13.1064,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"NMR Slot 1",XOffset->Quantity[11.8872,"Meters"],YOffset->Quantity[1.524,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Circle,Rotation->0.|>,
+							<|Name->"NMR Slot 2",XOffset->Quantity[9.144,"Meters"],YOffset->Quantity[1.524,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Circle,Rotation->0.|>
+						},
+						Replace[Positions]->{
+							<|Name->"Bench Slot 1",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 2",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 3",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 4",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 5",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 6",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 7",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"Bench Slot 8",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
+							<|Name->"NMR Slot 1",Footprint->Open,MaxWidth->Quantity[2.4384,"Meters"],MaxDepth->Quantity[2.4384,"Meters"],MaxHeight->Null|>,
+							<|Name->"NMR Slot 2",Footprint->Open,MaxWidth->Quantity[2.4384,"Meters"],MaxDepth->Quantity[2.4384,"Meters"],MaxHeight->Null|>
+						}
+					|>,
+					<|
+						Type->Model[Container,Floor],
+						Name->"plotContainer test floor model"<>$SessionUUID,
+						Replace[PositionPlotting]->{
+							<|Name->"Room Slot 1",XOffset->Quantity[3.3528,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Room Slot 2",XOffset->Quantity[8.5344,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Room Slot 3",XOffset->Quantity[11.5824,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Room Slot 4",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[3.2004,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>
+						},
+						Replace[Positions]->{
+							<|Name->"Room Slot 1",Footprint->Open,MaxWidth->Quantity[6.7056,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
+							<|Name->"Room Slot 2",Footprint->Open,MaxWidth->Quantity[3.048,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
+							<|Name->"Room Slot 3",Footprint->Open,MaxWidth->Quantity[3.048,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
+							<|Name->"Room Slot 4",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[6.4008,"Meters"],MaxHeight->Null|>
+						}
+					|>,
+					<|
+						Type->Model[Container,Building],
+						Name->"plotContainer test building model"<>$SessionUUID,
+						Replace[PositionPlotting]->{
+							<|Name->"First Floor Slot",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[5.1816,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
+							<|Name->"Second Floor Slot",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[5.1816,"Meters"],ZOffset->Quantity[3.6576,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>
+						},
+						Replace[Positions]->{
+							<|Name->"First Floor Slot",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[10.3632,"Meters"],MaxHeight->Quantity[3.048,"Meters"]|>,
+							<|Name->"Second Floor Slot",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[10.3632,"Meters"],MaxHeight->Quantity[3.048,"Meters"]|>
+						}
+					|>
+				}];
 
-			(*Make a room/building/floor models*)
-			Upload[{
-				<|
-					Type->Model[Container,Room],
-					Name->"plotContainer test room model"<>$SessionUUID,
-					DeveloperObject->True,
-					Replace[PositionPlotting]->{
-						<|Name->"Bench Slot 1",XOffset->Quantity[7.62,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 2",XOffset->Quantity[9.4488,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 3",XOffset->Quantity[11.2776,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 4",XOffset->Quantity[13.1064,"Meters"],YOffset->Quantity[5.7912,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 5",XOffset->Quantity[7.62,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 6",XOffset->Quantity[9.4488,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 7",XOffset->Quantity[11.2776,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Bench Slot 8",XOffset->Quantity[13.1064,"Meters"],YOffset->Quantity[3.6576,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"NMR Slot 1",XOffset->Quantity[11.8872,"Meters"],YOffset->Quantity[1.524,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Circle,Rotation->0.|>,
-						<|Name->"NMR Slot 2",XOffset->Quantity[9.144,"Meters"],YOffset->Quantity[1.524,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Circle,Rotation->0.|>
+				Upload[{
+					<|Type->Object[Container,Building],
+						Model->Link[Model[Container,Building,"ECL-2"],Objects],
+						Name->"plotContainer test building"<>$SessionUUID
+					|>,
+					<|Type->Object[Container,Building],
+						Model->Link[Model[Container,Building,"ECL-2"],Objects],
+						Name->"plotContainer test building 2"<>$SessionUUID
+					|>,
+					<|Type->Object[Container,Building],
+						Model->Link[Model[Container,Building,"ECL-2"],Objects],
+						Name->"plotContainer test building 3"<>$SessionUUID
+					|>,
+					<|Type->Object[Instrument,HPLC],
+						Model->Link[Model[Instrument,HPLC,"Waters Acquity UPLC H-Class FLR"],Objects],
+						Name->"plotContainer test HPLC"<>$SessionUUID
+					|>,
+					<|Type->Object[Instrument,LiquidHandler],
+						Model->Link[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"],Objects],
+						Name->"plotContainer test liquid handler"<>$SessionUUID
+					|>,
+					<|Type->Object[Container,OperatorCart],
+						Model->Link[Model[Container,OperatorCart,"Chemistry Lab Cart"],Objects],
+						Name->"plotContainer test cart"<>$SessionUUID
+					|>,
+					<|Type->Object[Container,Vessel],
+						Name->"plotContainer test vessel no model"<>$SessionUUID
+					|>
+				}];
+
+				(*Make some things to set up or fake room*)
+				ECL`InternalUpload`UploadSample[
+					{
+						Model[Container,Floor,"ECL-2 First Floor"],
+						Model[Container,Floor,"plotContainer test floor model"<>$SessionUUID],
+						Model[Container,Floor,"ECL-2 First Floor"]
 					},
-					Replace[Positions]->{
-						<|Name->"Bench Slot 1",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 2",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 3",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 4",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 5",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 6",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 7",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"Bench Slot 8",Footprint->Open,MaxWidth->Quantity[1.8288,"Meters"],MaxDepth->Quantity[0.9144,"Meters"],MaxHeight->Null|>,
-						<|Name->"NMR Slot 1",Footprint->Open,MaxWidth->Quantity[2.4384,"Meters"],MaxDepth->Quantity[2.4384,"Meters"],MaxHeight->Null|>,
-						<|Name->"NMR Slot 2",Footprint->Open,MaxWidth->Quantity[2.4384,"Meters"],MaxDepth->Quantity[2.4384,"Meters"],MaxHeight->Null|>
-					}
-				|>,
-				<|
-					Type->Model[Container,Floor],
-					Name->"plotContainer test floor model"<>$SessionUUID,
-					DeveloperObject->True,
-					Replace[PositionPlotting]->{
-						<|Name->"Room Slot 1",XOffset->Quantity[3.3528,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Room Slot 2",XOffset->Quantity[8.5344,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Room Slot 3",XOffset->Quantity[11.5824,"Meters"],YOffset->Quantity[8.8392,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Room Slot 4",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[3.2004,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>
+					{
+						{"First Floor Slot",Object[Container,Building,"plotContainer test building"<>$SessionUUID]},
+						{"First Floor Slot",Object[Container,Building,"plotContainer test building 2"<>$SessionUUID]},
+						{"First Floor Slot",Object[Container,Building,"plotContainer test building 3"<>$SessionUUID]}
 					},
-					Replace[Positions]->{
-						<|Name->"Room Slot 1",Footprint->Open,MaxWidth->Quantity[6.7056,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
-						<|Name->"Room Slot 2",Footprint->Open,MaxWidth->Quantity[3.048,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
-						<|Name->"Room Slot 3",Footprint->Open,MaxWidth->Quantity[3.048,"Meters"],MaxDepth->Quantity[3.048,"Meters"],MaxHeight->Null|>,
-						<|Name->"Room Slot 4",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[6.4008,"Meters"],MaxHeight->Null|>
-					}
-				|>,
-				<|
-					Type->Model[Container,Building],
-					Name->"plotContainer test building model"<>$SessionUUID,
-					DeveloperObject->True,
-					Replace[PositionPlotting]->{
-						<|Name->"First Floor Slot",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[5.1816,"Meters"],ZOffset->Quantity[0.,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>,
-						<|Name->"Second Floor Slot",XOffset->Quantity[7.9248,"Meters"],YOffset->Quantity[5.1816,"Meters"],ZOffset->Quantity[3.6576,"Meters"],CrossSectionalShape->Rectangle,Rotation->0.|>
+					Name->{
+						"plotContainer test floor"<>$SessionUUID,
+						"plotContainer test floor 2"<>$SessionUUID,
+						"plotContainer test floor 3"<>$SessionUUID
 					},
-					Replace[Positions]->{
-						<|Name->"First Floor Slot",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[10.3632,"Meters"],MaxHeight->Quantity[3.048,"Meters"]|>,
-						<|Name->"Second Floor Slot",Footprint->Open,MaxWidth->Quantity[15.8496,"Meters"],MaxDepth->Quantity[10.3632,"Meters"],MaxHeight->Quantity[3.048,"Meters"]|>
-					}
-				|>
-			}];
+					StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+					FastTrack->True
+				];
 
-			Upload[{
-				<|Type->Object[Container,Building],
-					Model->Link[Model[Container,Building,"ECL-2"],Objects],
-					Name->"plotContainer test building"<>$SessionUUID
-				|>,
-				<|Type->Object[Container,Building],
-					Model->Link[Model[Container,Building,"ECL-2"],Objects],
-					Name->"plotContainer test building 2"<>$SessionUUID
-				|>,
-				<|Type->Object[Container,Building],
-					Model->Link[Model[Container,Building,"ECL-2"],Objects],
-					Name->"plotContainer test building 3"<>$SessionUUID
-				|>,
-				<|Type->Object[Instrument,HPLC],
-					Model->Link[Model[Instrument,HPLC,"Waters Acquity UPLC H-Class FLR"],Objects],
-					Name->"plotContainer test HPLC"<>$SessionUUID,
-					DeveloperObject->True
-				|>,
-				<|Type->Object[Instrument,LiquidHandler],
-					Model->Link[Model[Instrument,LiquidHandler,"id:kEJ9mqaW7xZP"],Objects],
-					Name->"plotContainer test liquid handler"<>$SessionUUID,
-					DeveloperObject->True
-				|>,
-				<|Type->Object[Container,OperatorCart],
-					Model->Link[Model[Container,OperatorCart,"Chemistry Lab Cart"],Objects],
-					Name->"plotContainer test cart"<>$SessionUUID
-				|>,
-				<|Type->Object[Container,Vessel],
-					Name->"plotContainer test vessel no model"<>$SessionUUID
-				|>
-			}];
+				ECL`InternalUpload`UploadSample[
+					{
+						Model[Container,Room,"Chemistry Lab"],
+						Model[Container,Room,"plotContainer test room model"<>$SessionUUID]
+					},
+					{
+						{"ECL-2 Lab Slot",Object[Container,Floor,"plotContainer test floor"<>$SessionUUID]},
+						{"Room Slot 1",Object[Container,Floor,"plotContainer test floor 2"<>$SessionUUID]}
+					},
+					Name->{
+						"plotContainer test room"<>$SessionUUID,
+						"plotContainer test room 2"<>$SessionUUID
+					},
+					StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+					FastTrack->True
+				];
 
-			(*Make some things to set up or fake room*)
-			ECL`InternalUpload`UploadSample[
-				{
-					Model[Container,Floor,"ECL-2 First Floor"],
-					Model[Container,Floor,"plotContainer test floor model"<>$SessionUUID],
-					Model[Container,Floor,"ECL-2 First Floor"]
-				},
-				{
-					{"First Floor Slot",Object[Container,Building,"plotContainer test building"<>$SessionUUID]},
-					{"First Floor Slot",Object[Container,Building,"plotContainer test building 2"<>$SessionUUID]},
-					{"First Floor Slot",Object[Container,Building,"plotContainer test building 3"<>$SessionUUID]}
-				},
-				Name->{
-					"plotContainer test floor"<>$SessionUUID,
-					"plotContainer test floor 2"<>$SessionUUID,
-					"plotContainer test floor 3"<>$SessionUUID
-				},
-				StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-				FastTrack->True
-			];
+				ECL`InternalUpload`UploadSample[
+					Table[
+						Model[Container,Bench,"The Bench of Testing"],
+						3
+					],
+					{
+						{"Bench Slot 4",Object[Container,Room,"plotContainer test room"<>$SessionUUID]},
+						{"Bench Slot 5",Object[Container,Room,"plotContainer test room"<>$SessionUUID]},
+						{"Bench Slot 6",Object[Container,Room,"plotContainer test room"<>$SessionUUID]}
+					},
+					Name->{
+						"plotContainer test bench 1"<>$SessionUUID,
+						"plotContainer test bench 2"<>$SessionUUID,
+						"plotContainer test bench 3"<>$SessionUUID
+					},
+					StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+					FastTrack->True
+				];
 
-			ECL`InternalUpload`UploadSample[
-				{
-					Model[Container,Room,"Chemistry Lab"],
-					Model[Container,Room,"plotContainer test room model"<>$SessionUUID]
-				},
-				{
-					{"ECL-2 Lab Slot",Object[Container,Floor,"plotContainer test floor"<>$SessionUUID]},
-					{"Room Slot 1",Object[Container,Floor,"plotContainer test floor 2"<>$SessionUUID]}
-				},
-				Name->{
-					"plotContainer test room"<>$SessionUUID,
-					"plotContainer test room 2"<>$SessionUUID
-				},
-				StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-				FastTrack->True
-			];
+				ECL`InternalUpload`UploadSample[
+					{
+						Model[Container,Shelf,"id:kEJ9mqaVPPVp"],
+						Model[Plumbing,Tubing,"PharmaPure #17"],
+						Model[Plumbing,Cap,"id:4pO6dM5qEmXz"],
+						Model[Container,Plate,"id:kEJ9mqRXALxE"]
+					},
+					{
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]}
+					},
+					Name->{
+						"plotContainer test shelf 1"<>$SessionUUID,
+						"plotContainer test tubing"<>$SessionUUID,
+						"plotContainer test cap"<>$SessionUUID,
+						"plotContainer test plate"<>$SessionUUID
+					},
+					StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+					FastTrack->True
+				];
 
-			ECL`InternalUpload`UploadSample[
-				Table[
-					Model[Container,Bench,"The Bench of Testing"],
-					3
-				],
-				{
-					{"Bench Slot 4",Object[Container,Room,"plotContainer test room"<>$SessionUUID]},
-					{"Bench Slot 5",Object[Container,Room,"plotContainer test room"<>$SessionUUID]},
-					{"Bench Slot 6",Object[Container,Room,"plotContainer test room"<>$SessionUUID]}
-				},
-				Name->{
-					"plotContainer test bench 1"<>$SessionUUID,
-					"plotContainer test bench 2"<>$SessionUUID,
-					"plotContainer test bench 3"<>$SessionUUID
-				},
-				StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-				FastTrack->True
-			];
-
-			ECL`InternalUpload`UploadSample[
-				{
-					Model[Container,Shelf,"id:kEJ9mqaVPPVp"],
-					Model[Plumbing,Tubing,"PharmaPure #17"],
-					Model[Plumbing,Cap,"id:4pO6dM5qEmXz"],
-					Model[Container,Plate,"id:kEJ9mqRXALxE"]
-				},
-				{
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]},
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]}
-				},
-				Name->{
-					"plotContainer test shelf 1"<>$SessionUUID,
-					"plotContainer test tubing"<>$SessionUUID,
-					"plotContainer test cap"<>$SessionUUID,
-					"plotContainer test plate"<>$SessionUUID
-				},
-				StorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-				FastTrack->True
-			];
-
-			uploads=ECL`InternalUpload`UploadLocation[
-				{
-					Object[Instrument,HPLC,"plotContainer test HPLC"<>$SessionUUID],
-					Object[Instrument,LiquidHandler,"plotContainer test liquid handler"<>$SessionUUID],
-					Object[Container,Vessel,"plotContainer test vessel no model"<>$SessionUUID]
-				},
-				{
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]},
-					{"Lower Shelf Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]},
-					{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]}
-				},
-				FastTrack->True,
-				Upload->False
-			];
-			Upload[uploads]
+				uploads=ECL`InternalUpload`UploadLocation[
+					{
+						Object[Instrument,HPLC,"plotContainer test HPLC"<>$SessionUUID],
+						Object[Instrument,LiquidHandler,"plotContainer test liquid handler"<>$SessionUUID],
+						Object[Container,Vessel,"plotContainer test vessel no model"<>$SessionUUID]
+					},
+					{
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]},
+						{"Lower Shelf Slot",Object[Container,Bench,"plotContainer test bench 2"<>$SessionUUID]},
+						{"Bench Top Slot",Object[Container,Bench,"plotContainer test bench 1"<>$SessionUUID]}
+					},
+					FastTrack->True,
+					Upload->False
+				];
+				Upload[uploads]
+			]
 		]
 	},
 	SymbolTearDown:>{

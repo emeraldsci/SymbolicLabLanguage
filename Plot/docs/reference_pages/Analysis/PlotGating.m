@@ -34,12 +34,6 @@ DefineUsage[PlotGating,
 		"PlotFlowCytometry",
 		"AnalyzeGating"
 	},
-	Author -> {
-		"kevin.hou",
-		"alice",
-		"brad",
-		"Catherine",
-		"Ruben"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "alice", "brad", "Catherine", "Ruben"},
 	Preview->True
 }];

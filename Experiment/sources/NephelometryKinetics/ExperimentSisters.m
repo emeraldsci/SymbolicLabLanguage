@@ -17,9 +17,9 @@ DefineOptions[ExperimentNephelometryKineticsPreview,
 ];
 
 
-ExperimentNephelometryKineticsPreview[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentNephelometryKineticsPreview[{sampleIn},myOptions];
+ExperimentNephelometryKineticsPreview[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentNephelometryKineticsPreview[{sampleIn},myOptions];
 
-ExperimentNephelometryKineticsPreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentNephelometryKineticsPreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptionsNamed,noOutputOptions},
 
 	(* get the options as a list *)
@@ -49,15 +49,15 @@ DefineOptions[ExperimentNephelometryKineticsOptions,
 	}
 ];
 
-ExperimentNephelometryKineticsOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentNephelometryKineticsOptions[{sampleIn},myOptions];
+ExperimentNephelometryKineticsOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentNephelometryKineticsOptions[{sampleIn},myOptions];
 
-ExperimentNephelometryKineticsOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentNephelometryKineticsOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptionsNamed,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptionsNamed=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptionsNamed,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentNephelometryKinetics *)
@@ -84,7 +84,7 @@ DefineOptions[ValidExperimentNephelometryKineticsQ,
 ];
 
 
-ValidExperimentNephelometryKineticsQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentNephelometryKineticsQ]]:=Module[
+ValidExperimentNephelometryKineticsQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentNephelometryKineticsQ]]:=Module[
 	{listedInput,listedOptionsNamed,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

@@ -38,10 +38,6 @@ DefineUsage[PlotProbeConcentration,
 		"Simulation",
 		"NucleicAcids"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad",
-		"qian"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad", "qian"},
 	Preview->True
 }];

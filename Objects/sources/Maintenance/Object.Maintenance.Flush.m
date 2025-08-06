@@ -9,6 +9,22 @@ DefineObjectType[Object[Maintenance, Flush], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
+		IdleFlush -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the flush continues after the instrument is released from the maintenance.",
+			Category -> "General"
+		},
+		Instrument -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument],
+			Description -> "A field used to enable calling of subprocedures from a protocol that dereferences through the Instrument field.",
+			Category -> "General",
+			Developer -> True
+		},
 		BufferA -> {
 			Format -> Single,
 			Class -> Link,
@@ -198,6 +214,17 @@ DefineObjectType[Object[Maintenance, Flush], {
 				Model[Sample]
 			],
 			Description -> "The solution used to rinse buffers lines before and after and the maintenance.",
+			Category -> "Cleaning"
+		},
+		PurgeWasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, Vessel],
+				Model[Container, Vessel]
+			],
+			Description -> "The container used to hold waste from rinsing plumbing connections.",
 			Category -> "Cleaning"
 		},
 		BufferContainerPlacements -> {

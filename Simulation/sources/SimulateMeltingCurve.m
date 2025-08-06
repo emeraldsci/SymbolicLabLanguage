@@ -507,7 +507,7 @@ Authors[SimulateMeltingCurveOptions] := {"brad"};
 SimulateMeltingCurveOptions[in: Alternatives[ListableP[InputPatternSimulateMeltingCurveP] | inputPatternSimulateMeltingCurveListP], ops : OptionsPattern[SimulateMeltingCurve]] := Module[{listedOptions, noOutputOptions},
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	SimulateMeltingCurve[in, PassOptions[SimulateMeltingCurve, Append[noOutputOptions, Output->Options]]]
@@ -523,7 +523,7 @@ Authors[SimulateMeltingCurvePreview] := {"brad"};
 SimulateMeltingCurvePreview[in: Alternatives[ListableP[InputPatternSimulateMeltingCurveP] | inputPatternSimulateMeltingCurveListP], ops : OptionsPattern[SimulateMeltingCurve]] := Module[{listedOptions, noOutputOptions},
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	SimulateMeltingCurve[in, PassOptions[SimulateMeltingCurve, Append[noOutputOptions, Output->Preview]]]

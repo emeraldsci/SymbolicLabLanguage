@@ -8,7 +8,7 @@ DefineOptions[ExperimentFluorescenceKineticsPreview,
 	SharedOptions :> {ExperimentFluorescenceKinetics}
 ];
 
-ExperimentFluorescenceKineticsPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceKineticsPreview]]:=Module[
+ExperimentFluorescenceKineticsPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceKineticsPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -34,7 +34,7 @@ DefineOptions[ExperimentFluorescenceKineticsOptions,
 	SharedOptions :> {ExperimentFluorescenceKinetics}
 ];
 
-ExperimentFluorescenceKineticsOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceKineticsOptions]]:=Module[
+ExperimentFluorescenceKineticsOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceKineticsOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -64,7 +64,7 @@ DefineOptions[ValidExperimentFluorescenceKineticsQ,
 	SharedOptions :> {ExperimentFluorescenceKinetics}
 ];
 
-ValidExperimentFluorescenceKineticsQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceKineticsQ]]:=Module[
+ValidExperimentFluorescenceKineticsQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceKineticsQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];
@@ -105,10 +105,10 @@ ValidExperimentFluorescenceKineticsQ[myInput:ListableP[ObjectP[{Object[Sample],O
 	(* Run the tests as requested and return just the summary not the association if OutputFormat->TestSummary*)
 	Lookup[
 		RunUnitTest[
-			<|"FK"->allTests|>,
+			<|"ValidExperimentFluorescenceKineticsQ"->allTests|>,
 			Verbose->verbose,
 			OutputFormat->outputFormat
 		],
-		"FK"
+		"ValidExperimentFluorescenceKineticsQ"
 	]
 ];

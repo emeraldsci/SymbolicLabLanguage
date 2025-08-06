@@ -105,6 +105,13 @@ DefineObjectType[Model[Item, PlateSeal], {
 			Description -> "Indicates the maximum temperature rating for the plate seal.",
 			Category -> "Operating Limits"
 		},
+		RestingOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> FaceUp | FaceDown,
+			Description -> "Indicates how lid should be placed when it's off the container.",
+			Category -> "Storage & Handling"
+		},
 		Parameterizations -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -112,6 +119,14 @@ DefineObjectType[Model[Item, PlateSeal], {
 			Relation -> Object[Maintenance, ParameterizeCover][ParameterizationModels],
 			Description -> "The maintenance in which the dimensions, shape, and properties of this plate seal model was parameterized.",
 			Category -> "Qualifications & Maintenance"
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
 		}
 	}
 }];

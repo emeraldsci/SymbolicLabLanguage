@@ -17,10 +17,10 @@ DefineUsage[PlotGradient,
 			Inputs:>{
 				{
 					InputName->"gradientObject",
-					Description->"A Object[Method,Gradient] object.",
+					Description->"A Object[Method,Gradient], Object[Method, IonChromatographyGradient], or Object[Method, SupercriticalFluidGradient] object.",
 					Widget->Widget[
 						Type->Object,
-						Pattern:>ObjectP[Object[Method,Gradient]]
+						Pattern:>ObjectP[{Object[Method,Gradient], Object[Method, IonChromatographyGradient],Object[Method, SupercriticalFluidGradient]}]
 					]
 				}
 			},
@@ -38,6 +38,6 @@ DefineUsage[PlotGradient,
 		"PlotChromatography",
 		"EmeraldListLinePlot"
 	},
-	Author -> {"hayley", "mohamad.zandian", "brad", "robert", "qijue.wang"},
+	Author -> {"dirk.schild", "hayley", "mohamad.zandian", "brad", "robert", "qijue.wang"},
 	Preview -> True
 }];

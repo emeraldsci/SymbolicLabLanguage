@@ -126,7 +126,7 @@ DefineTests[
 			Null
 		],
 		Test["Return Null if no targets informed:",
-			maintenanceFrequenciesComputable[{}, Model[Maintenance, CellBleach, "id:1ZA60vwjbDMq"]],
+			maintenanceFrequenciesComputable[{}, Model[Maintenance, CalibrateVolume, "id:BYDOjv1VA4PX"]],
 			Null
 		],
 		Test["Return maintenances for a target that match the given modelMaintenance:",
@@ -841,6 +841,14 @@ DefineTests[
 				{ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]..},
 				{"A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3", "B4", "B5", "A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3", "B4", "B5"}
 			}
+		],
+		Test["Updates fields in a SemiPreparative Agilent protocol for procedure usage:",
+			fractionContainerReplacement[Object[Protocol, HPLC, "Test HPLC protocol 3 for fractionContainerReplacement"<>$SessionUUID]],
+			ObjectP[Object[Protocol, HPLC]]
+		],
+		Test["When Upload is False, return the change packets:",
+			fractionContainerReplacement[Object[Protocol, HPLC, "Test HPLC protocol for fractionContainerReplacement"<>$SessionUUID],Upload->False],
+			PacketP[Object[Protocol, HPLC]]
 		]
 	},
 	SymbolSetUp:>{
@@ -850,9 +858,12 @@ DefineTests[
 			allObjects = Cases[Flatten[{
 				Object[Protocol, HPLC, "Test HPLC protocol for fractionContainerReplacement"<>$SessionUUID],
 				Object[Protocol, HPLC, "Test HPLC protocol 2 for fractionContainerReplacement"<>$SessionUUID],
+				Object[Protocol, HPLC, "Test HPLC protocol 3 for fractionContainerReplacement"<>$SessionUUID],
 				Object[Instrument, HPLC, "Test HPLC instrument for fractionContainerReplacement"<>$SessionUUID],
 				Object[Container, Deck, "Test Deck for fractionContainerReplacement"<>$SessionUUID],
 				Object[Instrument, HPLC, "Test HPLC instrument for fractionContainerReplacement"<>$SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC instrument 2 for fractionContainerReplacement"<>$SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC instrument 3 for fractionContainerReplacement"<>$SessionUUID],
 				Table[Object[Container, Plate, "Test container"<>ToString[x]<>" for fractionContainerReplacement"<>$SessionUUID],{x, 1, 4}],
 				Table[Object[Container, Vessel, "Test container vessel"<>ToString[x]<>" for fractionContainerReplacement"<>$SessionUUID],{x, 1, 20}],
 				Table[Object[Container, Rack, "Test small rack"<>ToString[x]<>" for fractionContainerReplacement"<>$SessionUUID],{x, 1, 3}],
@@ -865,7 +876,7 @@ DefineTests[
 			];
 		];
 		Module[
-			{protocolObject, containers, instrument, deck, racks, agilentProtocolObject,deckPlacements},
+			{protocolObject, containers, instrument, instrument2, instrument3, deck, racks, agilentProtocolObject, semiPrepAgilentProtocolObject, deckPlacements},
 
 			(* Set created objects as empty list *)
 			$CreatedObjects = {};
@@ -877,13 +888,29 @@ DefineTests[
 				Name -> "Test Deck for fractionContainerReplacement"<>$SessionUUID
 			|>];
 
-			(* Set up instrument *)
+			(* Set up instruments *)
 			instrument = Upload[<|
 				Type -> Object[Instrument, HPLC],
 				Name -> "Test HPLC instrument for fractionContainerReplacement"<>$SessionUUID,
 				Replace[FractionCollectorDeck] -> Link[deck,Instruments],
 				DeveloperObject -> True,
 				Timebase -> "HPLC20A"
+			|>];
+			instrument2 = Upload[<|
+				Type -> Object[Instrument, HPLC],
+				Name -> "Test HPLC instrument 2 for fractionContainerReplacement"<>$SessionUUID,
+				Replace[FractionCollectorDeck] -> Link[deck,Instruments],
+				DeveloperObject -> True,
+				Timebase -> Null,
+				Scale -> Preparative
+			|>];
+			instrument3 = Upload[<|
+				Type -> Object[Instrument, HPLC],
+				Name -> "Test HPLC instrument 3 for fractionContainerReplacement"<>$SessionUUID,
+				Replace[FractionCollectorDeck] -> Link[deck,Instruments],
+				DeveloperObject -> True,
+				Timebase -> Null,
+				Scale -> SemiPreparative
 			|>];
 
 			containers = Upload[
@@ -962,8 +989,18 @@ DefineTests[
 				Name -> "Test HPLC protocol 2 for fractionContainerReplacement"<>$SessionUUID,
 				Replace[AwaitingFractionContainers] -> True,
 				Replace[ReplacementFractionContainers] -> Link[containers[[5;;]]],
+				Replace[Instrument] -> Link[instrument2],
 				NumberOfFractionContainers -> 20,
 				Replace[AutosamplerDeckPlacements] -> deckPlacements
+			|>];
+
+			semiPrepAgilentProtocolObject = Upload[<|
+				Type -> Object[Protocol, HPLC],
+				Name -> "Test HPLC protocol 3 for fractionContainerReplacement"<>$SessionUUID,
+				Replace[AwaitingFractionContainers] -> True,
+				Replace[ReplacementFractionContainers] -> Link[containers[[1;;4]]],
+				Replace[Instrument] -> Link[instrument3],
+				NumberOfFractionContainers -> 4
 			|>];
 		]
 	},

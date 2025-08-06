@@ -23,7 +23,17 @@ DefineOptions[ExperimentMicrowaveDigestion,
 			OptionName -> Instrument,
 			Default -> Model[Instrument, Reactor, Microwave, "Discover SP-D 80"],
 			AllowNull -> False,
-			Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Instrument, Reactor, Microwave], Model[Instrument, Reactor, Microwave]}]],
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Object[Instrument, Reactor, Microwave], Model[Instrument, Reactor, Microwave]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Microwaves"
+					}
+				}
+			],
 			Description -> "The reactor used to perform the microwave digestion.",
 			Category -> "General"
 		},
@@ -328,9 +338,20 @@ DefineOptions[ExperimentMicrowaveDigestion,
 				OptionName -> Diluent,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample], Object[Sample]}]],
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
+				],
 				Description -> "The solution used to dilute the OutputAliquot of the digested sample.",
-				ResolutionDescription -> "When DiluteOutputAliquot -> True, the default diluent is Model[Sample, \"Trace metal grade water\"].",
+				ResolutionDescription -> "When DiluteOutputAliquot -> True, the default diluent is Model[Sample, \"Milli-Q water\"].",
 				Category -> "Workup"
 			},
 			{
@@ -371,7 +392,16 @@ DefineOptions[ExperimentMicrowaveDigestion,
 				OptionName -> ContainerOut,
 				Default -> Automatic,
 				AllowNull -> False,
-				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Container]]],
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Container]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
+				],
 				Description -> "The container into which the OutputAliquotVolume or dilutions thereof is placed as the output of this experiment. The remainder of the reaction mixture is discarded.",
 				ResolutionDescription -> "A container that satisfies the output volume requirement and is acid-compatible will be selected.",
 				Category -> "Workup"
@@ -417,7 +447,21 @@ DefineOptions[ExperimentMicrowaveDigestion,
 			}
 		],
 		(* Shared options *)
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 20 Milliliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
 		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions,
@@ -507,23 +551,19 @@ Warning::InsufficientPreparedMicrowaveDigestionSample="Total of SampleAmount and
 (* ::Subsubsection::Closed:: *)
 (*ExperimentMicrowaveDigestion: Experiment Function*)
 
-
-ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPattern[ExperimentMicrowaveDigestion]]:=Module[
-	{listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, safeOps, safeOpsTests, validLengths, validLengthTests, simulation, simulatedProtocol,
+ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[{Object[Sample], Model[Sample]}]], myOptions:OptionsPattern[ExperimentMicrowaveDigestion]]:=Module[
+	{
+		listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, safeOps, safeOpsTests, validLengths, validLengthTests, simulation, simulatedProtocol,
 		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
-		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets, resourcePacketTests, allDownloadValues,
-		mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,listedSamples,updatedSimulation, performSimulationQ, result,
-		(* fake object tracking *)
-		optionsWithObjects, userSpecifiedObjects, simulatedSampleQ, objectsExistQs, objectsExistTests,
+		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, resourcePackets, resourcePacketTests, allDownloadValues,
+		mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, listedSamples, updatedSimulation,
+		performSimulationQ, result,
 		(* variables from safeOps and download *)
-		upload, confirm, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
+		upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
 		allModelSamplesFromOptions, allObjectSamplesFromOptions, allInstrumentObjectsFromOptions, allObjectsFromOptions, allInstrumentModelsFromOptions,
-		containerPreparationPackets, modelPreparationPackets, liquidHandlerContainers, modelContainerPacketFields, graduatedCylinders
+		containerPreparationPackets, modelPreparationPackets, modelContainerPacketFields, graduatedCylinders
 	},
-
-	(* Remove temporal links and named objects. *)
-	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -533,40 +573,38 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 	gatherTests=MemberQ[output, Tests];
 	messages=!gatherTests;
 
+	(* Remove temporal links and named objects. *)
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
+
 	(* Simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMicrowaveDigestion,
 			listedSamples,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 20 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOpsNamed, safeOpsTests}=If[gatherTests,
+	{safeOpsNamed, safeOpsTests} = If[gatherTests,
 		SafeOptions[ExperimentMicrowaveDigestion, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False, Output -> {Result, Tests}],
 		{SafeOptions[ExperimentMicrowaveDigestion, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], {}}
 	];
 
 	(*sanitize the inputs to remove names and links*)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMicrowaveDigestion, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentMicrowaveDigestion, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -576,6 +614,12 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMicrowaveDigestion, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentMicrowaveDigestion, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -589,7 +633,7 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache}=Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache}=Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions, templateTests}=If[gatherTests,
@@ -612,49 +656,6 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentMicrowaveDigestion, {ToList[mySamplesWithPreparedSamples]}, inheritedOptions]];
-
-
-	(* ---------------------------------------------------- *)
-	(* -- Check for Objects that are not in the database -- *)
-	(* ---------------------------------------------------- *)
-
-	(* Any options whose values _could_ be an object *)
-	optionsWithObjects=Cases[Values[ToList[myOptions]], ObjectP[]];
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects=DeleteDuplicates@Cases[
-		Flatten[{ToList[mySamples], optionsWithObjects}],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=MemberQ[updatedSimulation[[1]][SimulatedObjects], #]& /@ userSpecifiedObjects;
-	objectsExistQs=DatabaseMemberQ[PickList[userSpecifiedObjects, simulatedSampleQ, False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1], #2, True]&,
-			{PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And @@ objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]];
-			Message[Error::InvalidInput, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]]
-		];
-
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 
 	(* ----------------------------------------------------------------------------------- *)
 	(* -- DOWNLOAD THE INFORMATION FOR THE OPTION RESOLVER AND RESOURCE PACKET FUNCTION -- *)
@@ -719,7 +720,6 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 						Packet[MaxVolume]
 					}
 				},
-				Cache -> inheritedCache,
 				Simulation -> updatedSimulation
 			]
 		],
@@ -743,10 +743,10 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 			{resolvedOptions, resolvedOptionsTests},
 			$Failed
 		],
-
+		
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions, resolvedOptionsTests}={resolveExperimentMicrowaveDigestionOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
+			{resolvedOptions, resolvedOptionsTests}={resolveExperimentMicrowaveDigestionOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], Null},
 			$Failed,
 			{Error::InvalidInput, Error::InvalidOption}
 		]
@@ -765,7 +765,7 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 	];
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
-	performSimulationQ = MemberQ[output, Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}];
+	performSimulationQ = MemberQ[output, Simulation];
 
 	(* If option resolution failed, return early. *)
 	If[MatchQ[resolvedOptionsResult, $Failed] && !performSimulationQ,
@@ -825,6 +825,7 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 			resourcePackets[[1]],
 			Upload -> Lookup[safeOps, Upload],
 			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps,CanaryBranch],
 			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 			Priority -> Lookup[safeOps, Priority],
 			StartDate -> Lookup[safeOps, StartDate],
@@ -847,6 +848,7 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 				resourcePackets[[1]],
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch -> Lookup[safeOps, CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
@@ -870,18 +872,16 @@ ExperimentMicrowaveDigestion[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 	}
 ];
 
-
-
 (* -------------------------- *)
 (* --- CONTAINER OVERLOAD --- *)
 (* -------------------------- *)
 
-ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions:OptionsPattern[]]:=Module[
-	{listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, containerToSampleSimulation,
-		samplePreparationCache, containerToSampleResult, containerToSampleOutput, updatedCache, samples, sampleOptions, containerToSampleTests,sampleCache, updatedSimulation},
-
-	(* Make sure we're working with a list of options *)
-	listedOptions=ToList[myOptions];
+ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions:OptionsPattern[]] := Module[
+	{
+		outputSpecification, output, gatherTests, listedContainers, listedOptions, validSamplePreparationResult,
+		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, containerToSampleSimulation, containerToSampleResult,
+		containerToSampleOutput, samples, sampleOptions, containerToSampleTests, updatedSimulation
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -890,29 +890,32 @@ ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], 
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output, Tests];
 
+	(* make the inputs and options a list *)
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
+
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMicrowaveDigestion,
-			ToList[myContainers],
-			ToList[myOptions]
+			listedContainers,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentMicrowaveDigestion,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
@@ -928,7 +931,7 @@ ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], 
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentMicrowaveDigestion,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
@@ -936,7 +939,7 @@ ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], 
 				Simulation -> updatedSimulation
 			],
 			$Failed,
-			{Error::EmptyContainer}
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
@@ -959,9 +962,6 @@ ExperimentMicrowaveDigestion[myContainers:ListableP[ObjectP[{Object[Container], 
 	]
 ];
 
-
-
-
 (* ::Subsubsection::Closed:: *)
 (* resolveExperimentMicrowaveDigestionOptions *)
 
@@ -978,7 +978,7 @@ DefineOptions[
 
 resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveExperimentMicrowaveDigestionOptions]]:=Module[
 	{
-		minSampleVolume, outputSpecification, output, gatherTests, cache, samplePrepOptions, microwaveDigestionOptions, simulatedSamples, resolvedSamplePrepOptions, simulatedCache,
+		minSampleVolume, outputSpecification, output, gatherTests, cache, samplePrepOptions, microwaveDigestionOptions, simulatedSamples, resolvedSamplePrepOptions, updatedSimulation,
 		samplePrepTests, microwaveDigestionOptionsAssociation, microwaveDigestionTests,
 		invalidInputs, invalidOptions, targetContainers, resolvedAliquotOptions, aliquotTests, fullMicrowaveDigestionOptionsAssociation,
 		resolvedOptions, mapThreadFriendlyOptions, resolvedPostProcessingOptions,fastAssoc, simulation,
@@ -1063,23 +1063,23 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* Determine the requested output format of this function. *)
 	outputSpecification=OptionValue[Output];
 	output=ToList[outputSpecification];
-
-	simulation = Lookup[myOptions, Simulation];
+	
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests=MemberQ[output, Tests];
 	messages=!gatherTests;
 
 	(* Fetch our cache from the parent function. *)
-	inheritedCache=Lookup[ToList[myResolutionOptions], Cache, {}];
+	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
 
 	(* Separate out our MicrowaveDigestion options from our Sample Prep options. *)
 	{samplePrepOptions, microwaveDigestionOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMicrowaveDigestion, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentMicrowaveDigestion, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMicrowaveDigestion, mySamples, samplePrepOptions, Cache -> inheritedCache,Simulation->simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMicrowaveDigestion, mySamples, samplePrepOptions, Cache -> inheritedCache,Simulation->simulation, Output -> Result], {}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1089,7 +1089,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* -- Download -- *)
 	(* -------------- *)
 
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
 	sampleObjectPrepFields=Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], IncompatibleMaterials, State, Volume, Tablet, Acid];
 	sampleModelPrepFields=Packet[Model[Flatten[{SamplePreparationCacheFields[Object[Sample], Format -> Sequence], State, Products, IncompatibleMaterials, UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, Deprecated, Tablet, Acid}]]];
 	sampleContainerFields=Packet[Container[Flatten[{SamplePreparationCacheFields[Object[Container]], Model}]]];
@@ -1140,8 +1140,8 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 				Packet[ReactorConditions]
 			}
 		},
-		Cache -> Cases[FlattenCachePackets[{simulatedCache,inheritedCache}], PacketP[]],
-		Simulation -> simulation
+		Cache -> Cases[FlattenCachePackets[{inheritedCache}], PacketP[]],
+		Simulation -> updatedSimulation
 	], {Download::FieldDoesntExist, Download::ObjectDoesNotExist}];
 
 	(* split out the sample and model packets *)
@@ -1150,7 +1150,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	sampleContainerPackets=allDownloadValues[[All, 3]];
 
 	(* update cache to include the downloaded sample information and the inherited stuff *)
-	newCache=Cases[FlattenCachePackets[{allDownloadValues, allObjectPackets, allModelPackets,(* liquidHandlerContainerPackets, *)simulatedCache, allInstrumentPackets, allInstrumentModelPackets}], PacketP[]];
+	newCache=Cases[FlattenCachePackets[{allDownloadValues, allObjectPackets, allModelPackets,(* liquidHandlerContainerPackets, *) allInstrumentPackets, allInstrumentModelPackets}], PacketP[]];
 	fastAssoc = makeFastAssocFromCache[newCache];
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -1189,7 +1189,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	{roundedSampleAmounts, sampleAmountPrecisionTest}=Module[
 		{originalValues, roundedValues, valueWasRounded, roundingTest},
 
-		(* look up the unrounded value - convert the units so that when we round the units dont change *)
+		(* look up the unrounded value - convert the units so that when we round the units don't change *)
 		originalValues=Lookup[microwaveDigestionOptionsAssociation, SampleAmount] /. {x:VolumeP :> UnitConvert[x, Microliter], y:MassP :> UnitConvert[y, Milligram]};
 
 		(* round everything by substitution *)
@@ -1235,7 +1235,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* round the digestion tempearture profile, which has the from or {time, temperature} *)
 	{roundedDigestionTemperatureProfiles, digestionTemperatureProfilesPrecisionTest}=Module[{originalValues, roundedValues, valueWasRounded, roundingTest},
 
-		(* look up the unrounded value - convert the units so that when we round the units dont change *)
+		(* look up the unrounded value - convert the units so that when we round the units don't change *)
 		originalValues=Lookup[microwaveDigestionOptionsAssociation, DigestionTemperatureProfile] /. {x:TimeP :> UnitConvert[x, Second], y:TemperatureP :> UnitConvert[y, Celsius]};
 
 		(* round everything by substitution *)
@@ -1280,7 +1280,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* round the DigestionMixRateProfile, which has the form of {time, MixRate (Low, Medium, High, Off) *)
 	{roundedDigestionMixRateProfile, digestionMixRateProfilePrecisionTest}=Module[{originalValues, roundedValues, valueWasRounded, roundingTest},
 
-		(* look up the unrounded value - convert the units so that when we round the units dont change *)
+		(* look up the unrounded value - convert the units so that when we round the units don't change *)
 		originalValues=Lookup[microwaveDigestionOptionsAssociation, DigestionMixRateProfile] /. {x:TimeP :> UnitConvert[x, Second]};
 
 		(* round everything by substitution *)
@@ -1323,7 +1323,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* round the DigestionAgents amounts, which has the form {digestion agent, volume} *)
 	{roundedDigestionAgents, digestionAgentsPrecisionTest}=Module[{originalValues, roundedValues, valueWasRounded, roundingTest},
 
-		(* look up the unrounded value - convert the units so that when we round the units dont change *)
+		(* look up the unrounded value - convert the units so that when we round the units don't change *)
 		originalValues=Lookup[microwaveDigestionOptionsAssociation, DigestionAgents] /. {x:VolumeP :> UnitConvert[x, Microliter]};
 
 		(* round everything by substitution *)
@@ -1364,7 +1364,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* round the PressureVentingTriggers, which have the form of {pressure, number of ventings} *)
 	{roundedPressureVentingTriggers, pressureVentingTriggersPrecisionTest}=Module[{originalValues, roundedValues, valueWasRounded, roundingTest},
 
-		(* look up the unrounded value - convert the units so that when we round the units dont change *)
+		(* look up the unrounded value - convert the units so that when we round the units don't change *)
 		originalValues=Lookup[microwaveDigestionOptionsAssociation, PressureVentingTriggers];
 
 		(* round everything by substitution *)
@@ -1449,19 +1449,19 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[invalidInstrumentOptions] > 0 && !gatherTests,
-		Message[Error::MicrowaveDigestionInvalidInstrument, ObjectToString[instrument, Cache -> newCache]];
+		Message[Error::MicrowaveDigestionInvalidInstrument, ObjectToString[instrument, Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	invalidInstrumentTest=If[gatherTests,
 		Module[{failingTest, passingTest},
 			failingTest=If[MatchQ[Length[invalidInstrumentOptions], GreaterP[0]],
-				Test["The instrument "<>ObjectToString[instrument, Cache -> newCache]<>" can be used for this experiment:", True, False],
+				Test["The instrument "<>ObjectToString[instrument, Simulation -> updatedSimulation]<>" can be used for this experiment:", True, False],
 				Nothing
 			];
 
 			passingTest=If[MatchQ[Length[invalidInstrumentOptions], 0],
-				Test["The instrument "<>ObjectToString[instrument, Cache -> newCache]<>" can be used for this experiment:", True, True],
+				Test["The instrument "<>ObjectToString[instrument, Simulation -> updatedSimulation]<>" can be used for this experiment:", True, True],
 				Nothing
 			];
 
@@ -1479,8 +1479,8 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* get the boolean for any incompatible materials *)
 	{compatibleMaterialsBool, compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Output -> {Result, Tests}],
-		{CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Messages -> messages], {}}
+		CompatibleMaterialsQ[instrument, simulatedSamples, Simulation -> updatedSimulation,Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[instrument, simulatedSamples, Simulation -> updatedSimulation,Messages -> messages], {}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
@@ -1503,7 +1503,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && !gatherTests,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> newCache]];
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1511,12 +1511,12 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 		Module[{failingTest, passingTest},
 			failingTest=If[MatchQ[Length[discardedInvalidInputs], 0],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Cache -> newCache]<>" are not discarded:", True, False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]<>" are not discarded:", True, False]
 			];
 
 			passingTest=If[MatchQ[Length[discardedInvalidInputs], Length[mySamples]],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples, discardedInvalidInputs], Cache -> newCache]<>" are not discarded:", True, True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples, discardedInvalidInputs], Simulation -> updatedSimulation]<>" are not discarded:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1547,12 +1547,12 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 		Module[{failingTest, passingTest},
 			failingTest=If[Length[deprecatedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples have models "<>ObjectToString[deprecatedInvalidInputs, Cache -> newCache]<>" that are not deprecated:", True, False]
+				Test["Provided samples have models "<>ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation]<>" that are not deprecated:", True, False]
 			];
 
 			passingTest=If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
 				Nothing,
-				Test["Provided samples have models "<>ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Cache -> newCache]<>" that are not deprecated:", True, True]
+				Test["Provided samples have models "<>ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Simulation -> updatedSimulation]<>" that are not deprecated:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1570,8 +1570,8 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* this will throw warnings if needed *)
 	{validSamplesInStorageConditionBools, validSamplesInStorageConditionTests}=Quiet[
 		If[gatherTests,
-			ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache -> newCache],
-			{ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache -> newCache], {}}
+			ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache -> newCache,Simulation -> updatedSimulation],
+			{ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache -> newCache,Simulation -> updatedSimulation], {}}
 		],
 		Download::MissingCacheField
 	];
@@ -1602,7 +1602,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[overflowInvalidInputs] > 0 && !gatherTests,
-		Message[Error::MicrowaveDigestionTooManySamples, ObjectToString[overflowInvalidInputs, Cache -> newCache]];
+		Message[Error::MicrowaveDigestionTooManySamples, ObjectToString[overflowInvalidInputs, Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1610,12 +1610,12 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 		Module[{failingTest, passingTest},
 			failingTest=If[MatchQ[Length[overflowInvalidInputs], 0],
 				Nothing,
-				Test["The input samples "<>ObjectToString[overflowInvalidInputs, Cache -> newCache]<>" can be measured along with the other input samples:", True, False]
+				Test["The input samples "<>ObjectToString[overflowInvalidInputs, Simulation -> updatedSimulation]<>" can be measured along with the other input samples:", True, False]
 			];
 
 			passingTest=If[MatchQ[Length[overflowInvalidInputs], Length[mySamples]],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[mySamples, overflowInvalidInputs], Cache -> newCache]<>" can be measured along with teh other input samples:", True, True]
+				Test["The input samples "<>ObjectToString[Complement[mySamples, overflowInvalidInputs], Simulation -> updatedSimulation]<>" can be measured along with the other input samples:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1642,7 +1642,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(*MapThreadFriendlyOptions have the Key value pairs expanded to index match, such that if you call Lookup[options, OptionName], it gives the Option value at the index we are interested in*)
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentMicrowaveDigestion, roundedOptions];
 
-	(* the output will be an association of the form <| OptionName -> resolvedOptionValue |> so that it is easy to look up aht teh end *)
+	(* the output will be an association of the form <| OptionName -> resolvedOptionValue |> so that it is easy to look up at the end *)
 	(* the error trackers will come out the same way as <| |> *)
 
 	{resolvedMapThreadOptionsAssociations, mapThreadErrorCheckingAssociations}=Transpose[
@@ -2142,7 +2142,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 								outputAliquot /. Automatic -> UnitConvert[targetDilutionVolume, Milliliter]
 							],
 
-							(* if the DiluentAmount is Null, something else is wrong so set the volume to somethign safe.  *)
+							(* if the DiluentAmount is Null, something else is wrong so set the volume to something safe.  *)
 							{Null, Null, Null},
 							outputAliquot /. Automatic -> All
 						],
@@ -2198,7 +2198,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 					(* -- Sample Prep -- *)
 
-					(* if the computed and specified SampleType dont match, throw an error only when it is designated as a Tablet or not a Tablet incorrectly *)
+					(* if the computed and specified SampleType don't match, throw an error only when it is designated as a Tablet or not a Tablet incorrectly *)
 					computedSampleTypeMisMatchBool=Which[
 						MatchQ[sampleType, Tablet] && MatchQ[computedSampleType, (Organic | Inorganic)],
 						True,
@@ -2281,7 +2281,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 					(* if the sample is desingated as prepared but is solid or tablet or only has no solvent, return True *)
 					noSolventBool=Which[
 
-						(* if it is not a prepared sample, it has solvent form teh digestion agent or we have already thrown an error above *)
+						(* if it is not a prepared sample, it has solvent form the digestion agent or we have already thrown an error above *)
 						MatchQ[resolvedPreparedSample, False],
 						False,
 
@@ -2326,7 +2326,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 						False
 					];
 
-					(* if the sample is prepared, we dont use the digestion agents even if they are specified *)
+					(* if the sample is prepared, we don't use the digestion agents even if they are specified *)
 					unusedDigestionAgentBool=If[MatchQ[resolvedDigestionAgents, Except[Null]] && MatchQ[resolvedPreparedSample, True],
 						True,
 						False
@@ -2373,7 +2373,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 							(* if they are combined in a 3:1 ratio (say between a 2.5 and 3.5) *)
 							digestionAgentIsAquaRegia=Which[
 
-								(* return false if the digestion agents dont include HNO3 and HCl *)
+								(* return false if the digestion agents don't include HNO3 and HCl *)
 								MemberQ[{nitricDigestionAgent, hclDigestionAgent}, {}],
 								False,
 
@@ -2751,7 +2751,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 					(* check if the container is ok - for now the check is based on Nitric Acid, but this could change *)
 					(*TODO: this should really look at the simulated composition of the sample out...DigestionAgents plus the sample in composiiton*)
-					(* dont check if the container is Automatic since we already checked this above. Also the info is not in the cache so it will double download *)
+					(* don't check if the container is Automatic since we already checked this above. Also the info is not in the cache so it will double download *)
 
 					(* Depending on the dilution factor, assign a Model[Sample] for the output sample, for error checking purpose *)
 					sampleOutFakeModel = Which[
@@ -2765,10 +2765,10 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 					incompatibleContainerOutBool=If[MatchQ[containerOut, Except[Automatic]],
 						Module[{containerVolume, containerMaterials, incompatibleVolumeBool, incompatibleMaterialsBool},
-							{containerVolume, containerMaterials}=Download[containerOut, {MaxVolume, ContainerMaterials}];
+							{containerVolume, containerMaterials}=Download[containerOut, {MaxVolume, ContainerMaterials}, Simulation -> updatedSimulation];
 
 							(* check if the container is compatible with conc nitric acid - this could be more sophisticated in the future *)
-							incompatibleMaterialsBool=If[MatchQ[Intersection[ToList[Download[sampleOutFakeModel, IncompatibleMaterials]], ToList[containerMaterials]], Except[{}]],
+							incompatibleMaterialsBool=If[MatchQ[Intersection[ToList[Download[sampleOutFakeModel, IncompatibleMaterials, Simulation -> updatedSimulation]], ToList[containerMaterials]], Except[{}]],
 								True,
 								False
 							];
@@ -2896,8 +2896,8 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* ------------------------------ *)
 
 	(* -- Extract bad packets -- *)
-	(* look up the bad packets using the error trackers in teh map thread association (like in RamanSpectroscopy) *)
-	(* the look ups are split up for clarity and ease of maintanence *)
+	(* look up the bad packets using the error trackers in the map thread association (like in RamanSpectroscopy) *)
+	(* the look ups are split up for clarity and ease of maintenance *)
 
 	(* sample prep *)
 	{
@@ -3076,7 +3076,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[lowSampleAmountInputs] > 0 && !gatherTests,
-		Message[Error::MicrowaveDigestionNotEnoughSample, ObjectToString[lowSampleAmountInputs, Cache -> newCache]]
+		Message[Error::MicrowaveDigestionNotEnoughSample, ObjectToString[lowSampleAmountInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3086,13 +3086,13 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 				(* when not a single sample is low volume, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all low volume quantity *)
-				Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs, Cache -> newCache]<>" have enough quantity for measurement:", True, False]
+				Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs, Simulation -> updatedSimulation]<>" have enough quantity for measurement:", True, False]
 			];
 			passingTest=If[Length[lowSampleAmountInputs] == Length[simulatedSamples],
 				(* when ALL samples are low volume, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-low volume samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples, lowSampleAmountInputs], Cache -> newCache]<>" have enough quantity for measurement:", True, True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples, lowSampleAmountInputs], Simulation -> updatedSimulation]<>" have enough quantity for measurement:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -3110,28 +3110,28 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* -- Throw the errors -- *)
 
 	If[!MatchQ[samplePacketsWithComputedSampleTypeMisMatch, {}] && messages,
-		Message[Error::MicrowaveDigestionComputedSampleTypeMisMatch, ObjectToString[samplePacketsWithComputedSampleTypeMisMatch, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionComputedSampleTypeMisMatch, ObjectToString[samplePacketsWithComputedSampleTypeMisMatch, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithSampleCannotBeCrushed, {}] && messages,
-		Message[Error::MicrowaveDigestionSampleCannotBeCrushed, ObjectToString[samplePacketsWithSampleCannotBeCrushed, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionSampleCannotBeCrushed, ObjectToString[samplePacketsWithSampleCannotBeCrushed, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUncrushedTablet, {}] && messages && !MatchQ[$ECLApplication, Engine],
-		Message[Warning::MicrowaveDigestionUncrushedTablet, ObjectToString[samplePacketsWithUncrushedTablet, Cache -> newCache]]];
+		Message[Warning::MicrowaveDigestionUncrushedTablet, ObjectToString[samplePacketsWithUncrushedTablet, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithNoPreDigestionMix, {}] && messages,
-		Message[Error::MicrowaveDigestionNoPreDigestionMix, ObjectToString[samplePacketsWithNoPreDigestionMix, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionNoPreDigestionMix, ObjectToString[samplePacketsWithNoPreDigestionMix, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingPreDigestionMixTime, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingPreDigestionMixTime, ObjectToString[samplePacketsWithMissingPreDigestionMixTime, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingPreDigestionMixTime, ObjectToString[samplePacketsWithMissingPreDigestionMixTime, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedPreDigestionMixTime, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedPreDigestionMixTime, ObjectToString[samplePacketsWithUnusedPreDigestionMixTime, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedPreDigestionMixTime, ObjectToString[samplePacketsWithUnusedPreDigestionMixTime, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedPreDigestionMixRate, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedPreDigestionMixRate, ObjectToString[samplePacketsWithUnusedPreDigestionMixRate, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedPreDigestionMixRate, ObjectToString[samplePacketsWithUnusedPreDigestionMixRate, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingPreDigestionMixRate, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingPreDigestionMixRate, ObjectToString[samplePacketsWithMissingPreDigestionMixRate, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingPreDigestionMixRate, ObjectToString[samplePacketsWithMissingPreDigestionMixRate, Simulation -> updatedSimulation]]];
 
 
 	(* -- generate the tests -- *)
@@ -3166,7 +3166,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 		}
 	];
 
-	(* generate teh warning test for uncrushed tablets *)
+	(* generate the warning test for uncrushed tablets *)
 	uncrushedTabletWarningTest=microwaveDigestionSampleTests[
 		gatherTests,
 		Warning,
@@ -3212,25 +3212,25 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* -- throw the errors -- *)
 
 	If[!MatchQ[samplePacketsWithNoDigestionAgent, {}] && messages,
-		Message[Error::MicrowaveDigestionNoDigestionAgent, ObjectToString[samplePacketsWithNoDigestionAgent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionNoDigestionAgent, ObjectToString[samplePacketsWithNoDigestionAgent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithNoSolvent, {}] && messages,
-		Message[Error::MicrowaveDigestionNoSolvent, ObjectToString[samplePacketsWithNoSolvent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionNoSolvent, ObjectToString[samplePacketsWithNoSolvent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithPossiblePreparedSample, {}] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::MicrowaveDigestionPossiblePreparedSample, ObjectToString[samplePacketsWithPossiblePreparedSample, Cache -> newCache]]];
+		Message[Warning::MicrowaveDigestionPossiblePreparedSample, ObjectToString[samplePacketsWithPossiblePreparedSample, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDigestionAgent, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDigestionAgent, ObjectToString[samplePacketsWithMissingDigestionAgent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDigestionAgent, ObjectToString[samplePacketsWithMissingDigestionAgent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedDigestionAgent, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedDigestionAgent, ObjectToString[samplePacketsWithUnusedDigestionAgent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedDigestionAgent, ObjectToString[samplePacketsWithUnusedDigestionAgent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithAquaRegiaGeneration, {}] && messages,
-		Message[Error::MicrowaveDigestionAquaRegiaGeneration, ObjectToString[samplePacketsWithAquaRegiaGeneration, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionAquaRegiaGeneration, ObjectToString[samplePacketsWithAquaRegiaGeneration, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithBannedAcids, {}] && messages,
-		Message[Error::MicrowaveDigestionBannedAcids, ObjectToString[samplePacketsWithBannedAcids, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionBannedAcids, ObjectToString[samplePacketsWithBannedAcids, Simulation -> updatedSimulation]]];
 
 	(* -- generate the tests -- *)
 
@@ -3300,43 +3300,43 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* -- throw the errors -- *)
 
 	If[!MatchQ[samplePacketsWithMissingDigestionTemperature, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDigestionTemperature, ObjectToString[samplePacketsWithMissingDigestionTemperature, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDigestionTemperature, ObjectToString[samplePacketsWithMissingDigestionTemperature, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithConflictingDigestionTemperature, {}] && messages,
-		Message[Error::MicrowaveDigestionConflictingDigestionTemperature, ObjectToString[samplePacketsWithConflictingDigestionTemperature, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionConflictingDigestionTemperature, ObjectToString[samplePacketsWithConflictingDigestionTemperature, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDigestionDuration, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDigestionDuration, ObjectToString[samplePacketsWithMissingDigestionDuration, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDigestionDuration, ObjectToString[samplePacketsWithMissingDigestionDuration, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithConflictingDigestionDuration, {}] && messages,
-		Message[Error::MicrowaveDigestionConflictingDigestionDuration, ObjectToString[samplePacketsWithConflictingDigestionDuration, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionConflictingDigestionDuration, ObjectToString[samplePacketsWithConflictingDigestionDuration, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDigestionRampDuration, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDigestionRampDuration, ObjectToString[samplePacketsWithMissingDigestionRampDuration, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDigestionRampDuration, ObjectToString[samplePacketsWithMissingDigestionRampDuration, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithConflictingDigestionRampDuration, {}] && messages,
-		Message[Error::MicrowaveDigestionConflictingDigestionRampDuration, ObjectToString[samplePacketsWithConflictingDigestionRampDuration, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionConflictingDigestionRampDuration, ObjectToString[samplePacketsWithConflictingDigestionRampDuration, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithRapidRampRate, {}] && messages,
-		Message[Error::MicrowaveDigestionRapidRampRate, ObjectToString[samplePacketsWithRapidRampRate, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionRapidRampRate, ObjectToString[samplePacketsWithRapidRampRate, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithTemperatureProfileWithCooling, {}] && messages,
-		Message[Error::MicrowaveDigestionTemperatureProfileWithCooling, ObjectToString[samplePacketsWithTemperatureProfileWithCooling, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionTemperatureProfileWithCooling, ObjectToString[samplePacketsWithTemperatureProfileWithCooling, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithTimePointSwapped, {}] && messages,
-		Message[Error::MicrowaveDigestionTimePointSwapped, ObjectToString[samplePacketsWithTimePointSwapped, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionTimePointSwapped, ObjectToString[samplePacketsWithTimePointSwapped, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDigestionProfile, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDigestionProfile, ObjectToString[samplePacketsWithMissingDigestionProfile, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDigestionProfile, ObjectToString[samplePacketsWithMissingDigestionProfile, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMisMatchReactionLength, {}] && messages,
-		Message[Error::MicrowaveDigestionMisMatchReactionLength, ObjectToString[samplePacketsWithMisMatchReactionLength, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMisMatchReactionLength, ObjectToString[samplePacketsWithMisMatchReactionLength, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingMixingProfile, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingMixingProfile, ObjectToString[samplePacketsWithMissingMixingProfile, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingMixingProfile, ObjectToString[samplePacketsWithMissingMixingProfile, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithAboveAmbientStartTemperature, {}] && messages,
-		Message[Error::MicrowaveDigestionAboveAmbientInitialTemperature, ObjectToString[samplePacketsWithAboveAmbientStartTemperature, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionAboveAmbientInitialTemperature, ObjectToString[samplePacketsWithAboveAmbientStartTemperature, Simulation -> updatedSimulation]]];
 
 
 	(* -- generate the tests -- *)
@@ -3431,31 +3431,31 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 
 	If[!MatchQ[samplePacketsWithMissingTargetPressureReduction, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingTargetPressureReduction, ObjectToString[samplePacketsWithMissingTargetPressureReduction, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingTargetPressureReduction, ObjectToString[samplePacketsWithMissingTargetPressureReduction, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingPressureVentingTriggers, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingPressureVentingTriggers, ObjectToString[samplePacketsWithMissingPressureVentingTriggers, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingPressureVentingTriggers, ObjectToString[samplePacketsWithMissingPressureVentingTriggers, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedTargetPressureReduction, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedTargetPressureReduction, ObjectToString[samplePacketsWithUnusedTargetPressureReduction, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedTargetPressureReduction, ObjectToString[samplePacketsWithUnusedTargetPressureReduction, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedPressureVentingProfile, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedPressureVentingProfile, ObjectToString[samplePacketsWithUnusedPressureVentingProfile, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedPressureVentingProfile, ObjectToString[samplePacketsWithUnusedPressureVentingProfile, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingRequiredVenting, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingRequiredVenting, ObjectToString[samplePacketsWithMissingRequiredVenting, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingRequiredVenting, ObjectToString[samplePacketsWithMissingRequiredVenting, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingRecommendedVenting, {}] && messages && !MatchQ[$ECLApplication, Engine],
-		Message[Warning::MicrowaveDigestionMissingRecommendedVenting, ObjectToString[samplePacketsWithMissingRecommendedVenting, Cache -> newCache]]];
+		Message[Warning::MicrowaveDigestionMissingRecommendedVenting, ObjectToString[samplePacketsWithMissingRecommendedVenting, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithExcessiveVentingCycles, {}] && messages,
-		Message[Error::MicrowaveDigestionExcessiveVentingCycles, ObjectToString[samplePacketsWithExcessiveVentingCycles, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionExcessiveVentingCycles, ObjectToString[samplePacketsWithExcessiveVentingCycles, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnsafeOrganicVenting, {}] && messages,
-		Message[Error::MicrowaveDigestionUnsafeOrganicVenting, ObjectToString[samplePacketsWithUnsafeOrganicVenting, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnsafeOrganicVenting, ObjectToString[samplePacketsWithUnsafeOrganicVenting, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithLargePressureReduction, {}] && messages,
-		Message[Error::MicrowaveDigestionLargePressureReduction, ObjectToString[samplePacketsWithLargePressureReduction, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionLargePressureReduction, ObjectToString[samplePacketsWithLargePressureReduction, Simulation -> updatedSimulation]]];
 
 
 	(* -- generate the tests -- *)
@@ -3542,34 +3542,34 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 	(* -- throw the errors -- *)
 
 	If[!MatchQ[samplePacketsWithUnusedDiluent, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedDiluent, ObjectToString[samplePacketsWithUnusedDiluent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedDiluent, ObjectToString[samplePacketsWithUnusedDiluent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDiluent, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDiluent, ObjectToString[samplePacketsWithMissingDiluent, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDiluent, ObjectToString[samplePacketsWithMissingDiluent, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithMissingDiluentVolume, {}] && messages,
-		Message[Error::MicrowaveDigestionMissingDiluentVolume, ObjectToString[samplePacketsWithMissingDiluentVolume, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionMissingDiluentVolume, ObjectToString[samplePacketsWithMissingDiluentVolume, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithUnusedDiluentVolume, {}] && messages,
-		Message[Error::MicrowaveDigestionUnusedDiluentVolume, ObjectToString[samplePacketsWithUnusedDiluentVolume, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionUnusedDiluentVolume, ObjectToString[samplePacketsWithUnusedDiluentVolume, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithLargeVolumeDilution, {}] && messages,
-		Message[Error::MicrowaveDigestionLargeVolumeDilution, ObjectToString[samplePacketsWithLargeVolumeDilution, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionLargeVolumeDilution, ObjectToString[samplePacketsWithLargeVolumeDilution, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithLargeVolumeConcAcid, {}] && messages,
-		Message[Error::MicrowaveDigestionLargeVolumeConcAcid, ObjectToString[samplePacketsWithLargeVolumeConcAcid, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionLargeVolumeConcAcid, ObjectToString[samplePacketsWithLargeVolumeConcAcid, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithIncompatibleContainerOut, {}] && messages,
-		Message[Error::MicrowaveDigestionIncompatibleContainerOut, ObjectToString[samplePacketsWithIncompatibleContainerOut, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionIncompatibleContainerOut, ObjectToString[samplePacketsWithIncompatibleContainerOut, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithAliquotExceedsReactionVolume, {}] && messages,
-		Message[Error::MicrowaveDigestionAliquotExceedsReactionVolume, ObjectToString[samplePacketsWithAliquotExceedsReactionVolume, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionAliquotExceedsReactionVolume, ObjectToString[samplePacketsWithAliquotExceedsReactionVolume, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithDilutionLessThanAliquot, {}] && messages,
-		Message[Error::MicrowaveDigestionDilutionLessThanAliquot, ObjectToString[samplePacketsWithDilutionLessThanAliquot, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionDilutionLessThanAliquot, ObjectToString[samplePacketsWithDilutionLessThanAliquot, Simulation -> updatedSimulation]]];
 
 	If[!MatchQ[samplePacketsWithConflictDilution, {}] && messages,
-		Message[Error::MicrowaveDigestionConflictDilution, ObjectToString[samplePacketsWithConflictDilution, Cache -> newCache]]];
+		Message[Error::MicrowaveDigestionConflictDilution, ObjectToString[samplePacketsWithConflictDilution, Simulation -> updatedSimulation]]];
 
 
 	(* -- generate the tests -- *)
@@ -3694,6 +3694,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 			simulatedSamples,
 			ReplaceRule[myOptions, resolvedSamplePrepOptions],
 			Cache -> newCache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers -> Null,
 			RequiredAliquotAmounts -> bestAliquotAmount,
 			AllowSolids -> True,
@@ -3707,6 +3708,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 				simulatedSamples,
 				ReplaceRule[myOptions, resolvedSamplePrepOptions],
 				Cache -> newCache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers -> Null,
 				RequiredAliquotAmounts -> bestAliquotAmount,
 				AliquotWarningMessage -> Null,
@@ -3817,7 +3819,7 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs] > 0 && !gatherTests,
-		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> newCache]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3891,13 +3893,6 @@ resolveExperimentMicrowaveDigestionOptions[mySamples:{ObjectP[Object[Sample]]...
 ];
 
 
-
-
-
-
-
-
-
 (* ::Subsubsection::Closed:: *)
 (* microwaveDigestionResourcePackets *)
 
@@ -3936,7 +3931,7 @@ microwaveDigestionResourcePackets[
 		sampleLabel, sampleContainerLabel, sampleOutLabel, dilutionFactor,
 
 		(*download*)
-		objectSamplePacketFields, listedSamplePackets, graduatedCylinderPackets, myGraduatedCylinders,nitric, sulfuric, hcl, phosphoric, peroxide, water,fastAssoc,
+		listedSamplePackets, graduatedCylinderPackets, myGraduatedCylinders,nitric, sulfuric, hcl, phosphoric, peroxide, water,fastAssoc,
 
 		(* variables for condensed option fields in protocol *)
 		composedPreDigestionMixParameters, composedDigestionProfiles, composedOutputAliquot, composedDigestionRunTimes, composedPressureVentingParameters,
@@ -3959,7 +3954,7 @@ microwaveDigestionResourcePackets[
 		totalReactionTime, samplePrepTime, computedQuenchVolume, resourcePickingEstimate, neutralizationTime,
 		samplesWithoutLinks, numberOfReplicates, samplesWithReplicates, optionsWithReplicates,
 		protocolPacket, allResourceBlobs, fulfillable, frqTests, resultRule, testsRule,
-		rawSampleAmount, tabletWeights, protocolPacketMinusRequiredObjects
+		rawSampleAmount, solidUnitWeights, protocolPacketMinusRequiredObjects
 	},
 
 	(* --------------------------- *)
@@ -3977,6 +3972,9 @@ microwaveDigestionResourcePackets[
 		Messages -> False
 	];
 
+	(* Get the safe options for this function *)
+	safeOps = SafeOptions[microwaveDigestionResourcePackets, ToList[myOptions]];
+
 	(* Determine the requested output format of this function. *)
 	outputSpecification=OptionValue[Output];
 	output=ToList[outputSpecification];
@@ -3986,12 +3984,11 @@ microwaveDigestionResourcePackets[
 	messages=Not[gatherTests];
 
 	(* Fetch our cache from the parent function. *)
-	cache=Cases[Lookup[ToList[myOptions], Cache], PacketP[]];
-
-	simulation = Lookup[ToList[myOptions], Simulation];
+	cache = Cases[Lookup[safeOps, Cache], PacketP[]];
+	simulation = Lookup[safeOps, Simulation];
 
 	(* Get rid of the links in mySamples. *)
-	samplesWithoutLinks=mySamples /. x:ObjectP[] :> Download[x, Object];
+	samplesWithoutLinks = mySamples /. x:ObjectP[] :> Download[x, Object];
 
 	(* Get our number of replicates. *)
 	numberOfReplicates=Lookup[myResolvedOptions, NumberOfReplicates] /. {Null -> 1};
@@ -4138,13 +4135,13 @@ microwaveDigestionResourcePackets[
 	myGraduatedCylinders=Search[Model[Container, GraduatedCylinder], Deprecated != True];
 
 
-	(* lookup information we need from teh cache *)
+	(* lookup information we need from the cache *)
 	fastAssoc = makeFastAssocFromCache[cache];
 	listedSamplePackets = fetchPacketFromFastAssoc[#,fastAssoc]&/@mySamples;
 	graduatedCylinderPackets = fetchPacketFromFastAssoc[#,fastAssoc]&/@myGraduatedCylinders;
 
 	(* pull out some values we will need to decide on resoruces *)
-	tabletWeights=Lookup[listedSamplePackets, TabletWeight];
+	solidUnitWeights=Lookup[listedSamplePackets, SolidUnitWeight];
 
 
 	(* -------------------- *)
@@ -4155,13 +4152,13 @@ microwaveDigestionResourcePackets[
 
 	(* -- SampleAmounts -- *)
 	(* Trasnfer will automatically crush any tablets that are transferred by mass rather than quantity *)
-	(* so we just need to make sure these tablets are in mass. The TabletWeights field will be populated *)
+	(* so we just need to make sure these tablets are in mass. The SolidUnitWeights field will be populated *)
 	sampleAmount=MapThread[
 		If[And[MatchQ[#3, True], MatchQ[#1, _Integer]],
 			#1 * (#2 /. Null -> 100 Milligram),
 			#1
 		]&,
-		{rawSampleAmount, tabletWeights, crushSample}
+		{rawSampleAmount, solidUnitWeights, crushSample}
 	];
 
 	(* -- PreDigestionMixParameters -- *)
@@ -4401,7 +4398,7 @@ microwaveDigestionResourcePackets[
 	(* ---------------------- *)
 
 	(* Pair the DigestionAgents with their amounts and their Amounts *)
-	(* end up with rules of the form Model[Sample, "digestion agent 1] -> volume *)
+	(* end up with rules of the form Model[Sample, "digestion agent 1"] -> volume *)
 	digestionAgentResourceAmount=Flatten[
 		MapThread[
 			Function[{preparedBool, agentsAndVolumes},
@@ -4654,7 +4651,7 @@ microwaveDigestionResourcePackets[
 			safeGraduatedCylinders=Lookup[graduatedCylinderPackets, Object];
 			safeResourcedDigestionAgents=DeleteCases[resourcedDigestionAgents, Null];
 
-			(* get the list of digestion agents and their amounts - dont get the resource, get the object *)
+			(* get the list of digestion agents and their amounts - don't get the resource, get the object *)
 			(* this is in the form of Model[Sample] -> Amount *)
 			allDigestionAgentVolumeRules=Map[
 				<|#[[3]] -> #[[4]]|>&,
@@ -4867,7 +4864,7 @@ microwaveDigestionResourcePackets[
 
 		(* checkpoints *)
 		Replace[Checkpoints] -> {
-			{"Preparing Samples", 0 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> 0 Minute]},
+			{"Preparing Samples", 0 Minute, "Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> 0 Minute]},
 			{"Picking Resources", resourcePickingEstimate, "Samples required to execute this protocol are gathered from storage.", Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> resourcePickingEstimate]},
 			{"Preparing Reaction Mixtures", samplePrepTime, "Samples and digestion agents are added to the reaction vessels.", Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> samplePrepTime]},
 			{"Digest Samples", (10 Minute) + totalReactionTime, "The reaction mixtures are subjected to microwave digestion conditions.", Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> (10 Minute) + totalReactionTime]},
@@ -4879,7 +4876,7 @@ microwaveDigestionResourcePackets[
 		UnresolvedOptions -> myUnresolvedOptions,
 		Replace[SamplesInStorage] -> samplesInStorage
 	|>,
-		populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> cache]
+		populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation]
 	];
 
 	(* ---------------------- *)
@@ -4903,11 +4900,11 @@ microwaveDigestionResourcePackets[
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable, frqTests}=Which[
 		MatchQ[$ECLApplication, Engine],
-		{True, {}},
+			{True, {}},
 		gatherTests,
-		Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> cache, Simulation -> simulation],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> cache, Simulation -> simulation],
 		True,
-		{Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> Result, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> Not[gatherTests], Cache -> cache, Simulation -> simulation], Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> Result, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> Not[gatherTests], Cache -> cache, Simulation -> simulation], Null}
 	];
 
 	(* generate the tests rule *)
@@ -4978,8 +4975,8 @@ simulateExperimentMicrowaveDigestion[
 ] := Module[
 	{
 		mapThreadFriendlyOptions,resolvedPreparation,cache, simulation, samplePackets, protocolObject, fulfillmentSimulation, simulationWithLabels,
-		updatedSimulation, simulatedSamplesOutPacket, fakeSampleOutObjects,
-		fakeSampleOutPackets, sampleOutLink, simulationWithSamplesOut
+		updatedSimulation, simulatedSamplesOutPacket, simulatedSampleOutObjects,
+		simulatedSampleOutPackets, sampleOutLink, simulationWithSamplesOut
 	},
 	(* Lookup our cache and simulation *)
 	cache=Lookup[ToList[myResolutionOptions], Cache, {}];
@@ -5039,55 +5036,58 @@ simulateExperimentMicrowaveDigestion[
 	(* Update simulation with fulfillment simulation *)
 	updatedSimulation = UpdateSimulation[simulation, fulfillmentSimulation];
 
-	(* createID for fakeSamplesOut *)
-	fakeSampleOutObjects = Table[CreateID[Object[Sample]], Length[mySamples]];
+	(* createID for simulatedSamplesOut *)
+	simulatedSampleOutObjects = Table[CreateID[Object[Sample]], Length[mySamples]];
 
 	(* Use MapThread to simulate the SampleOut Packets *)
-	fakeSampleOutPackets = MapThread[
-		Function[{sampleInPacket, fakeSampleOutObject, option},
+	simulatedSampleOutPackets = MapThread[
+		Function[{sampleInPacket, simulatedSampleOutObject, option},
 			Module[{
 				sampleOutNothingAddedPacket, sampleOutDigestionAgentsAddedPacket, sampleOutDiluentAddedPacket, sampleInObject,
 				sampleOutNothingAddedSimulation, sampleOutDigestionAgentsAddedSimulation, sampleOutDiluentAddedSimulation,
-				validDigestionAgentQ, fakeDigestionAgentObject, fakeDigestionAgentVolume, fakeDiluentVolume, validDiluentQ,
-				fakeSampleOutUpdatedVolume, fakeSampleOutUpdatedMass, fakeDiluentObject, fakeDigestionAgent, fakeDiluent,
-				fakeSampleAmount, fakeTargetDilutionVolume, fakeDiluentVolumeOption, sampleModelsInOption, sampleNumberNeeded,
-				fakeContainersInOption, fakeBench, simulationWithFakeBench, simulationWithFakeContainers, fakeContainersObjectInOption,
-				fakeSampleObjectPacketsInOption, fakeSampleObjectsInOption, simulationWithFakeObjectsInOption, fakeSampleModelToObjectsInOption,
-				fakeDigestionAgentCleanedUp, fakeDiluentCleanedUp, fakeBenchObject, simulationWithFakeSampleOut
+				validDigestionAgentQ, simulatedDigestionAgentObject, simulatedDigestionAgentVolume, simulatedDiluentVolume, validDiluentQ,
+				simulatedSampleOutUpdatedVolume, simulatedSampleOutUpdatedMass, simulatedDiluentObject, simulatedDigestionAgent, simulatedDiluent,
+				simulatedSampleAmount, simulatedTargetDilutionVolume, simulatedDiluentVolumeOption, sampleModelsInOption, sampleNumberNeeded,
+				simulatedContainersInOption, simulatedBench, simulationWithFakeBench, simulationWithFakeContainers, simulatedContainersObjectInOption,
+				simulatedSampleObjectPacketsInOption, simulatedSampleObjectsInOption, simulationWithFakeObjectsInOption, simulatedSampleModelToObjectsInOption,
+				simulatedDigestionAgentCleanedUp, simulatedDiluentCleanedUp, simulatedBenchObject, simulationWithFakeSampleOut, simulatedContainerOut,
+				simulatedContainerOutObjectType, simulatedContainerID
 			},
 
 				sampleInObject = Lookup[sampleInPacket, Object];
 
 				(* Read the options *)
 				{
-					fakeDigestionAgent,
-					fakeDiluent,
-					fakeDiluentVolumeOption,
-					fakeSampleAmount,
-					fakeTargetDilutionVolume
+					simulatedDigestionAgent,
+					simulatedDiluent,
+					simulatedDiluentVolumeOption,
+					simulatedSampleAmount,
+					simulatedTargetDilutionVolume,
+					simulatedContainerOut
 				} = Lookup[option,
 					{
 						DigestionAgents,
 						Diluent,
 						DiluentVolume,
 						SampleAmount,
-						TargetDilutionVolume
+						TargetDilutionVolume,
+						ContainerOut
 					}
 				];
 
 				(* Simulating composition and volume changes relies on UploadSampleTransfer function, which only work on Object[Sample] *)
-				(* Therefore, it's necessary to create fake Objects and convert all the Model[Sample] from options into Object[Sample] *)
+				(* Therefore, it's necessary to create simulated Objects and convert all the Model[Sample] from options into Object[Sample] *)
 
 				(* Find all Model[Sample] objects in the above options *)
 				sampleModelsInOption = Cases[Flatten[
-					{fakeDigestionAgent, fakeDiluent}],
+					{simulatedDigestionAgent, simulatedDiluent}],
 					ObjectP[Model[Sample]]
 				];
 
 				sampleNumberNeeded = Length[sampleModelsInOption];
 
-				(* set up a fake bench space for fake containers *)
-				fakeBench = <|
+				(* set up a simulated bench space for simulated containers *)
+				simulatedBench = <|
 					Type -> Object[Container, Bench],
 					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
 					Name -> "Fake bench for MicrowaveDigestion simulation",
@@ -5096,64 +5096,74 @@ simulateExperimentMicrowaveDigestion[
 					Object -> CreateID[Object[Container, Bench]]
 				|>;
 
-				fakeBenchObject = Lookup[fakeBench, Object];
+				simulatedBenchObject = Lookup[simulatedBench, Object];
 
-				(* Update simulation with fake bench *)
-				simulationWithFakeBench = UpdateSimulation[updatedSimulation, Simulation[fakeBench]];
+				(* Update simulation with simulated bench *)
+				simulationWithFakeBench = UpdateSimulation[updatedSimulation, Simulation[simulatedBench]];
 
-				(* Set up fake containers for fake objects *)
-				fakeContainersInOption = UploadSample[
+				(* Set up simulated containers for simulated objects *)
+				simulatedContainersInOption = UploadSample[
 					(* container Model. Use a 1 liter flask just to ensure we have enough amount *)
 					Table[Model[Container, Vessel, "1000mL Erlenmeyer Flask"], sampleNumberNeeded],
 					(* Location *)
-					Table[{"Work Surface", fakeBenchObject}, sampleNumberNeeded],
+					Table[{"Work Surface", simulatedBenchObject}, sampleNumberNeeded],
 					Upload -> False,
 					Simulation -> simulationWithFakeBench,
 					Cache -> cache
 				];
-				fakeContainersObjectInOption = Cases[DeleteDuplicates[Lookup[fakeContainersInOption, Object]], ObjectP[Object[Container, Vessel]]];
+				simulatedContainersObjectInOption = Cases[DeleteDuplicates[Lookup[simulatedContainersInOption, Object]], ObjectP[Object[Container, Vessel]]];
 
-				(* Update simulation with the fake containers *)
-				simulationWithFakeContainers = UpdateSimulation[simulationWithFakeBench, Simulation[fakeContainersInOption]];
+				(* Update simulation with the simulated containers *)
+				simulationWithFakeContainers = UpdateSimulation[simulationWithFakeBench, Simulation[simulatedContainersInOption]];
 
-				(* Set up fake Object[Sample]s for Model[Sample] from options *)
-				fakeSampleObjectPacketsInOption = UploadSample[
+				(* Set up simulated Object[Sample]s for Model[Sample] from options *)
+				simulatedSampleObjectPacketsInOption = UploadSample[
 					(* Models *)
 					sampleModelsInOption,
 					(* Containers *)
-					{"A1", #}& /@ fakeContainersObjectInOption,
+					{"A1", #}& /@ simulatedContainersObjectInOption,
 					InitialAmount -> Table[1 Liter, sampleNumberNeeded],
 					Upload -> False,
 					Simulation -> simulationWithFakeContainers,
 					Cache -> cache
 				];
 
-				(* Update simulation with fake objects *)
-				simulationWithFakeObjectsInOption = UpdateSimulation[simulationWithFakeContainers, Simulation[fakeSampleObjectPacketsInOption]];
+				(* Update simulation with simulated objects *)
+				simulationWithFakeObjectsInOption = UpdateSimulation[simulationWithFakeContainers, Simulation[simulatedSampleObjectPacketsInOption]];
 
-				fakeSampleObjectsInOption = Cases[DeleteDuplicates[Lookup[fakeSampleObjectPacketsInOption, Object]], ObjectP[Object[Sample]]];
+				simulatedSampleObjectsInOption = Cases[DeleteDuplicates[Lookup[simulatedSampleObjectPacketsInOption, Object]], ObjectP[Object[Sample]]];
 
-				fakeSampleModelToObjectsInOption = MapThread[#1 -> #2&, {sampleModelsInOption, fakeSampleObjectsInOption}];
+				simulatedSampleModelToObjectsInOption = MapThread[#1 -> #2&, {sampleModelsInOption, simulatedSampleObjectsInOption}];
 
 				(* Replace all Model[Sample] with Object[Sample] for these following two options *)
 				{
-					fakeDigestionAgentCleanedUp,
-					fakeDiluentCleanedUp
+					simulatedDigestionAgentCleanedUp,
+					simulatedDiluentCleanedUp
 				} = {
-					fakeDigestionAgent,
-					fakeDiluent
-				} /. fakeSampleModelToObjectsInOption;
+					simulatedDigestionAgent,
+					simulatedDiluent
+				} /. simulatedSampleModelToObjectsInOption;
 
-				(* UploadSampleTransfer will fail if Sample Packet does not exist, thus here we define a pseudo sample packet *)
+				(* UploadSampleTransfer will fail if Sample Packet does not exist, and will fail if sample has no container, thus here we define a pseudo sample packet *)
+				simulatedContainerOutObjectType = If[MatchQ[simulatedContainerOut, ObjectP[]],
+					Object @@ Download[simulatedContainerOut, Type],
+					Object[Container, Vessel]
+				];
+
+				simulatedContainerID = CreateID[simulatedContainerOutObjectType];
+
 				simulationWithFakeSampleOut = UpdateSimulation[simulationWithFakeObjectsInOption,
-					Simulation[<|Object -> fakeSampleOutObject, Model -> Null, Volume -> Null, Mass -> Null|>]
+					Simulation[{
+						<|Object -> simulatedSampleOutObject, Model -> Null, Volume -> Null, Mass -> Null, Container -> Link[simulatedContainerID, Contents, 2]|>,
+						<| Object -> simulatedContainerID, Model -> Null |>
+					}]
 				];
 
 				(* Transfer input sample to empty output sample *)
 				sampleOutNothingAddedPacket = UploadSampleTransfer[
 					sampleInObject,
-					fakeSampleOutObject,
-					fakeSampleAmount,
+					simulatedSampleOutObject,
+					simulatedSampleAmount,
 					Cache -> cache,
 					Simulation -> simulationWithFakeSampleOut,
 					Upload -> False
@@ -5163,12 +5173,12 @@ simulateExperimentMicrowaveDigestion[
 				sampleOutNothingAddedSimulation = UpdateSimulation[simulationWithFakeObjectsInOption, Simulation[sampleOutNothingAddedPacket]];
 
 				(* Find out whether digestion agent has been successfully resolved as a list of list of sample and volume for each member of SamplesIn*)
-				validDigestionAgentQ = MatchQ[fakeDigestionAgent, ListableP[{ObjectP[Model[Sample]], VolumeP}]];
+				validDigestionAgentQ = MatchQ[simulatedDigestionAgent, ListableP[{ObjectP[Model[Sample]], VolumeP}]];
 
-				(* extract sample model and volume from fakeDigestionAgent *)
-				{fakeDigestionAgentObject, fakeDigestionAgentVolume} = If[validDigestionAgentQ,
+				(* extract sample model and volume from simulatedDigestionAgent *)
+				{simulatedDigestionAgentObject, simulatedDigestionAgentVolume} = If[validDigestionAgentQ,
 					(* If DigestionAgent is valid, extract the sample and volume *)
-					Transpose[fakeDigestionAgentCleanedUp],
+					Transpose[simulatedDigestionAgentCleanedUp],
 					(* Otherwise set to Null *)
 					{Null, Null}
 				];
@@ -5176,9 +5186,9 @@ simulateExperimentMicrowaveDigestion[
 				(* generates packet for transferring digestion agent *)
 				sampleOutDigestionAgentsAddedPacket = If[validDigestionAgentQ,
 					Quiet[UploadSampleTransfer[
-						fakeDigestionAgentObject,
-						Table[fakeSampleOutObject, Length[fakeDigestionAgentObject]],
-						fakeDigestionAgentVolume,
+						simulatedDigestionAgentObject,
+						Table[simulatedSampleOutObject, Length[simulatedDigestionAgentObject]],
+						simulatedDigestionAgentVolume,
 						Cache -> cache,
 						Simulation -> sampleOutNothingAddedSimulation,
 						Upload -> False
@@ -5195,24 +5205,24 @@ simulateExperimentMicrowaveDigestion[
 				(* find out whether diluent and diluent volume option has been correctly resolved *)
 				validDiluentQ = And[
 					(* Diluent option must be resolved to Sample Model or Object *)
-					MatchQ[fakeDiluent, ObjectP[{Model[Sample], Object[Sample]}]],
+					MatchQ[simulatedDiluent, ObjectP[{Model[Sample], Object[Sample]}]],
 					Or[
 						(* Either DiluentVolume option must be resolved to volume or a factor *)
-						MatchQ[fakeDiluentVolumeOption, VolumeP|_?NumberQ],
+						MatchQ[simulatedDiluentVolumeOption, VolumeP|_?NumberQ],
 						(* Or TargetDilutionVolume resolved as volume *)
-						MatchQ[fakeTargetDilutionVolume, VolumeP]
+						MatchQ[simulatedTargetDilutionVolume, VolumeP]
 					]
 				];
 
-				fakeDiluentObject = If[validDiluentQ,
-					fakeDiluentCleanedUp
+				simulatedDiluentObject = If[validDiluentQ,
+					simulatedDiluentCleanedUp
 				];
 
 				(* find updated volume for SampleOut *)
 				(* Reason to find this volume is to estimate how much diluent will be added, if DiluentVolume option is set as dilution factor *)
-				{fakeSampleOutUpdatedVolume, fakeSampleOutUpdatedMass} = Quiet[
+				{simulatedSampleOutUpdatedVolume, simulatedSampleOutUpdatedMass} = Quiet[
 					Download[
-						fakeSampleOutObject,
+						simulatedSampleOutObject,
 						{Volume, Mass},
 						Simulation -> sampleOutDigestionAgentsAddedSimulation,
 						Cache -> cache
@@ -5220,37 +5230,37 @@ simulateExperimentMicrowaveDigestion[
 				];
 
 				(* Considering volume may not be available, do the following *)
-				fakeSampleOutUpdatedVolume = Which[
+				simulatedSampleOutUpdatedVolume = Which[
 					(* If Mass is available, pretend the density if 1 g/ml and calculate a volume *)
-					MatchQ[fakeSampleOutUpdatedMass, MassP], fakeSampleOutUpdatedMass / (1 Gram / Milliliter),
+					MatchQ[simulatedSampleOutUpdatedMass, MassP], simulatedSampleOutUpdatedMass / (1 Gram / Milliliter),
 					(* If volume is available, don't change it *)
-					MatchQ[fakeSampleOutUpdatedVolume, VolumeP], fakeSampleOutUpdatedVolume,
+					MatchQ[simulatedSampleOutUpdatedVolume, VolumeP], simulatedSampleOutUpdatedVolume,
 					(* Any other case set to Null *)
 					True, Null
 				];
 
-				(* convert fakeDiluentVolumeOption into volume if it was resolved in terms of factor *)
-				fakeDiluentVolume = Which[
+				(* convert simulatedDiluentVolumeOption into volume if it was resolved in terms of factor *)
+				simulatedDiluentVolume = Which[
 					(* If !validDiluentQ, set to Null *)
 					!validDiluentQ, Null,
 					(* If DiluentVolume is set as dilution factor but we cannot estimate volume, set to Null *)
-					MatchQ[fakeDiluentVolumeOption, _?NumberQ] && NullQ[fakeSampleOutUpdatedVolume], Null,
-					(* convert fakeDiluentVolumeOption into volume if it was resolved in terms of factor *)
-					MatchQ[fakeDiluentVolumeOption, _?NumberQ], fakeDiluentVolumeOption * fakeSampleOutUpdatedVolume,
+					MatchQ[simulatedDiluentVolumeOption, _?NumberQ] && NullQ[simulatedSampleOutUpdatedVolume], Null,
+					(* convert simulatedDiluentVolumeOption into volume if it was resolved in terms of factor *)
+					MatchQ[simulatedDiluentVolumeOption, _?NumberQ], simulatedDiluentVolumeOption * simulatedSampleOutUpdatedVolume,
 					(* Otherwise, if TargetDilutionVolume is set but but we cannot estimate volume, set to Null *)
-					MatchQ[fakeTargetDilutionVolume, VolumeP] && NullQ[fakeSampleOutUpdatedVolume], Null,
+					MatchQ[simulatedTargetDilutionVolume, VolumeP] && NullQ[simulatedSampleOutUpdatedVolume], Null,
 					(* Otherwise, if TargetDilutionVolume is set and but we estimate volume, set to the difference of volume, but make sure it's not negative *)
-					MatchQ[fakeTargetDilutionVolume, VolumeP], Max[fakeTargetDilutionVolume - fakeSampleOutUpdatedVolume, 0 Milliliter],
+					MatchQ[simulatedTargetDilutionVolume, VolumeP], Max[simulatedTargetDilutionVolume - simulatedSampleOutUpdatedVolume, 0 Milliliter],
 					(* Otherwise no change *)
-					True, fakeDiluentVolumeOption
+					True, simulatedDiluentVolumeOption
 				];
 
 				(* generates packet for transferring diluent *)
-				sampleOutDiluentAddedPacket = If[validDiluentQ &&!NullQ[fakeDiluentVolume],
+				sampleOutDiluentAddedPacket = If[validDiluentQ &&!NullQ[simulatedDiluentVolume],
 					Quiet[UploadSampleTransfer[
-						fakeDiluentObject,
-						fakeSampleOutObject,
-						fakeDiluentVolume,
+						simulatedDiluentObject,
+						simulatedSampleOutObject,
+						simulatedDiluentVolume,
 						Cache -> cache,
 						Simulation -> sampleOutDigestionAgentsAddedSimulation,
 						Upload -> False
@@ -5264,172 +5274,13 @@ simulateExperimentMicrowaveDigestion[
 				updatedSimulation = sampleOutDiluentAddedSimulation;
 			];
 		],
-		{samplePackets, fakeSampleOutObjects, mapThreadFriendlyOptions}
+		{samplePackets, simulatedSampleOutObjects, mapThreadFriendlyOptions}
 	];
 
-	sampleOutLink = Link[#, Protocols]&/@fakeSampleOutObjects;
+	sampleOutLink = Link[#, Protocols]&/@simulatedSampleOutObjects;
 
 	simulationWithSamplesOut = UpdateSimulation[updatedSimulation, Simulation[<|Replace[SamplesOut] -> sampleOutLink, Object -> protocolObject |>]];
 
-	(* If our resource packet is $Failed, we still need to return something *)
-	(* Since our experiment is generative, we should try out best at simulate output sample from resolved options even if our resource packet fails *)
-	(*If[MatchQ[myProtocolPacket, $Failed],
-		Module[{fakeDigestionAgents, fakeDiluents, fakeDiluentVolumes, fakeSampleOutObjects, fakeSampleOutPackets, fakeSampleAmounts, fakeTargetDilutionVolumes, sampleOutLink},
-			(* Get the DigestionAgent, Diluent, DiluentVolume from resolved option *)
-			{
-				fakeDigestionAgents,
-				fakeDiluents,
-				fakeDiluentVolumes,
-				fakeSampleAmounts,
-				fakeTargetDilutionVolumes
-			} = Lookup[mapThreadFriendlyOptions,
-				{
-					DigestionAgents,
-					Diluent,
-					DiluentVolume,
-					SampleAmount,
-					TargetDilutionVolume
-				}
-			];
-
-			(* createID for fakeSamplesOut *)
-			fakeSampleOutObjects = Table[CreateID[Object[Sample]], Length[mySamples]];
-
-			(* Use MapThread to simulate the SampleOut Packets *)
-			fakeSampleOutPackets = MapThread[
-				Function[{sampleInPacket, fakeDigestionAgent, fakeDiluent, fakeDiluentVolumeOption, fakeSampleOutObject, fakeSampleAmount, fakeTargetDilutionVolume},
-					Module[{
-						sampleOutNothingAddedPacket, sampleOutDigestionAgentsAddedPacket, sampleOutDiluentAddedPacket, sampleInObject,
-						sampleOutNothingAddedSimulation, sampleOutDigestionAgentsAddedSimulation, sampleOutDiluentAddedSimulation,
-						validDigestionAgentQ, fakeDigestionAgentObject, fakeDigestionAgentVolume, fakeDiluentVolume, validDiluentQ,
-						fakeSampleOutUpdatedVolume, fakeSampleOutUpdatedMass, fakeDiluentObject
-					},
-
-						sampleInObject = Lookup[sampleInPacket, Object];
-
-						(* Transfer input sample to empty output sample *)
-						sampleOutNothingAddedPacket = UploadSampleTransfer[
-							sampleInObject,
-							fakeSampleOutObject,
-							fakeSampleAmount,
-							Cache -> cache,
-							Simulation -> updatedSimulation,
-							Upload -> False
-						];
-
-						(* Update simulation for this transfer *)
-						sampleOutNothingAddedSimulation = UpdateSimulation[updatedSimulation, sampleOutNothingAddedPacket];
-
-						(* Find out whether digestion agent has been successfully resolved as a list of list of sample and volume for each member of SamplesIn*)
-						validDigestionAgentQ = MatchQ[fakeDigestionAgent, ListableP[{ObjectP[Model[Sample]], VolumeP}]];
-
-						(* extract sample model and volume from fakeDigestionAgent *)
-						{fakeDigestionAgentObject, fakeDigestionAgentVolume} = If[validDigestionAgentQ,
-							(* If DigestionAgent is valid, extract the sample and volume *)
-							Transpose[fakeDigestionAgent],
-							(* Otherwise set to Null *)
-							{Null, Null}
-						];
-
-						(* generates packet for transferring digestion agent *)
-						sampleOutDigestionAgentsAddedPacket = If[validDigestionAgentQ,
-							UploadSampleTransfer[
-								fakeDigestionAgentObject,
-								Table[fakeSampleOutObject, Length[fakeDigestionAgentObject]],
-								fakeDigestionAgentVolume,
-								Cache -> cache,
-								Simulation -> sampleOutNothingAddedSimulation,
-								Upload -> False
-							]
-						];
-
-						(* Update simulation *)
-						sampleOutDigestionAgentsAddedSimulation = If[!NullQ[sampleOutDigestionAgentsAddedPacket],
-							UpdateSimulation[sampleOutNothingAddedSimulation, sampleOutDigestionAgentsAddedPacket],
-							(* make new simulation the same as old one, if there's no DigestionAgent, or it cannot be properly resolved *)
-							sampleOutNothingAddedSimulation
-						];
-
-						(* find out whether diluent and diluent volume option has been correctly resolved *)
-						validDiluentQ = And[
-							(* Diluent option must be resolved to Sample Model or Object *)
-							MatchQ[fakeDiluent, ObjectP[{Model[Sample], Object[Sample]}]],
-							Or[
-								(* Either DiluentVolume option must be resolved to volume or a factor *)
-								MatchQ[fakeDiluentVolumeOption, VolumeP|_?NumberQ],
-								(* Or TargetDilutionVolume resolved as volume *)
-								MatchQ[fakeTargetDilutionVolume, VolumeP]
-							]
-						];
-
-						fakeDiluentObject = If[validDiluentQ,
-							fakeDiluent
-						];
-
-						(* find updated volume for SampleOut *)
-						(* Reason to find this volume is to estimate how much diluent will be added, if DiluentVolume option is set as dilution factor *)
-						{fakeSampleOutUpdatedVolume, fakeSampleOutUpdatedMass} = Quiet[
-							Download[
-								fakeSampleOutObject,
-								{Volume, Mass},
-								Simulation -> sampleOutDigestionAgentsAddedSimulation,
-								Cache -> cache
-							], {Download::ObjectDoesNotExist, Download::FieldDoesntExist, Download::NotLinkField}
-						];
-
-						(* Considering volume may not be available, do the following *)
-						fakeSampleOutUpdatedVolume = Which[
-							(* If Mass is available, pretend the density if 1 g/ml and calculate a volume *)
-							MatchQ[fakeSampleOutUpdatedMass, MassP], fakeSampleOutUpdatedMass / (1 Gram / Milliliter),
-							(* If volume is available, don't change it *)
-							MatchQ[fakeSampleOutUpdatedVolume, VolumeP], fakeSampleOutUpdatedVolume,
-							(* Any other case set to Null *)
-							True, Null
-						];
-
-						(* convert fakeDiluentVolumeOption into volume if it was resolved in terms of factor *)
-						fakeDiluentVolume = Which[
-							(* If !validDiluentQ, set to Null *)
-							!validDiluentQ, Null,
-							(* If DiluentVolume is set as dilution factor but we cannot estimate volume, set to Null *)
-							MatchQ[fakeDiluentVolumeOption, _?NumberQ] && NullQ[fakeSampleOutUpdatedVolume], Null,
-							(* convert fakeDiluentVolumeOption into volume if it was resolved in terms of factor *)
-							MatchQ[fakeDiluentVolumeOption, _?NumberQ], fakeDiluentVolumeOption * fakeSampleOutUpdatedVolume,
-							(* Otherwise, if TargetDilutionVolume is set but but we cannot estimate volume, set to Null *)
-							MatchQ[fakeTargetDilutionVolume, VolumeP] && NullQ[fakeSampleOutUpdatedVolume], Null,
-							(* Otherwise, if TargetDilutionVolume is set and but we estimate volume, set to the difference of volume, but make sure it's not negative *)
-							MatchQ[fakeTargetDilutionVolume, VolumeP], Max[fakeTargetDilutionVolume - fakeSampleOutUpdatedVolume, 0 Milliliter],
-							(* Otherwise no change *)
-							True, fakeDiluentVolumeOption
-						];
-
-						(* generates packet for transferring diluent *)
-						sampleOutDiluentAddedPacket = If[validDiluentQ &&!NullQ[fakeDiluentVolume],
-							UploadSampleTransfer[
-								fakeDiluentObject,
-								fakeSampleOutObject,
-								fakeDiluentVolume,
-								Cache -> cache,
-								Simulation -> sampleOutDigestionAgentsAddedSimulation,
-								Upload -> False
-							]
-						];
-
-						(* Update simulation *)
-						sampleOutDiluentAddedSimulation = UpdateSimulation[sampleOutDigestionAgentsAddedSimulation, sampleOutDiluentAddedPacket];
-
-						(* Finally, to make it loop *)
-						updatedSimulation = sampleOutDiluentAddedSimulation;
-					];
-				],
-				{samplePackets, fakeDigestionAgents, fakeDiluents, fakeDiluentVolumes, fakeSampleOutObjects, fakeSampleAmounts, fakeTargetDilutionVolumes}
-			];
-
-			sampleOutLink = Link[#, Protocols]&/@fakeSampleOutObjects;
-
-			Return[{protocolObject, UpdateSimulation[updatedSimulation, <|Replace[SamplesOut] -> sampleOutLink |>]}]
-		]
-	];*)
 
 	(* Download information from our simulated resources *)
 
@@ -5487,7 +5338,7 @@ DefineOptions[ExperimentMicrowaveDigestionOptions,
 	SharedOptions :> {ExperimentMicrowaveDigestion}
 ];
 
-ExperimentMicrowaveDigestionOptions[myInput:ListableP[ObjectP[{Object[Sample], Object[Container]}] | _String], myOptions:OptionsPattern[ExperimentMicrowaveDigestionOptions]]:=Module[
+ExperimentMicrowaveDigestionOptions[myInput:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}] | _String], myOptions:OptionsPattern[ExperimentMicrowaveDigestionOptions]]:=Module[
 	{listedOptions, preparedOptions, resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -5515,7 +5366,7 @@ DefineOptions[ExperimentMicrowaveDigestionPreview,
 	SharedOptions :> {ExperimentMicrowaveDigestion}
 ];
 
-ExperimentMicrowaveDigestionPreview[myInput:ListableP[ObjectP[{Object[Sample], Object[Container]}] | _String], myOptions:OptionsPattern[ExperimentMicrowaveDigestionPreview]]:=Module[
+ExperimentMicrowaveDigestionPreview[myInput:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}] | _String], myOptions:OptionsPattern[ExperimentMicrowaveDigestionPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -5536,7 +5387,7 @@ DefineOptions[ValidExperimentMicrowaveDigestionQ,
 	SharedOptions :> {ExperimentMicrowaveDigestion}
 ];
 
-ValidExperimentMicrowaveDigestionQ[myInput:ListableP[ObjectP[{Object[Sample], Object[Container]}] | _String], myOptions:OptionsPattern[ValidExperimentMicrowaveDigestionQ]]:=Module[
+ValidExperimentMicrowaveDigestionQ[myInput:ListableP[ObjectP[{Object[Sample], Object[Container], Object[Sample]}] | _String], myOptions:OptionsPattern[ValidExperimentMicrowaveDigestionQ]]:=Module[
 	{listedInput, listedOptions, preparedOptions, functionTests, initialTestDescription, allTests, safeOps, verbose, outputFormat},
 
 	listedInput=ToList[myInput];

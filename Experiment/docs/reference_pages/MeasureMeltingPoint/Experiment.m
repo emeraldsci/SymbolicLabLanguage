@@ -24,11 +24,37 @@ DefineUsage[ExperimentMeasureMeltingPoint,
 							Description -> "The input samples whose melting temperatures are measured. The input samples can be solid substances, such as powders or substances that can be easily ground into powders, that will be packed into melting point capillary tubes before measuring their melting points or melting point capillary tubes that were previously packed with powders.",
 							Widget ->
 								Alternatives[
-									"Solid sample" -> Widget[
+									"Solid Sample"->Widget[
 										Type -> Object,
-										Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+										Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 										ObjectTypes -> {Object[Sample], Object[Container]},
-										Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+										Dereference -> {
+											Object[Container] -> Field[Contents[[All, 2]]]
+										}
+									],
+									"Container with Well Position"->{
+										"Well Position" -> Alternatives[
+											"A1 to P24" -> Widget[
+												Type -> Enumeration,
+												Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+												PatternTooltip -> "Enumeration must be any well from A1 to H12."
+											],
+											"Container Position" -> Widget[
+												Type -> String,
+												Pattern :> LocationPositionP,
+												PatternTooltip -> "Any valid container position.",
+												Size->Line
+											]
+										],
+										"Container" -> Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Object[Container]}]
+										]
+									},
+									"Model Solid Sample"->Widget[
+										Type -> Object,
+										Pattern :> ObjectP[Model[Sample]],
+										ObjectTypes -> {Model[Sample]}
 									],
 									"Prepacked melting point capillary tube" -> Widget[
 										Type -> Object,
@@ -84,11 +110,37 @@ DefineUsage[ValidExperimentMeasureMeltingPointQ,
 							Description -> "The input samples whose melting temperatures should be measured. The input samples can be solid substances that will be packed into melting point capillary tubes before measuring their melting points or melting point capillary tubes that were previously packed by solid substances.",
 							Widget ->
 									Alternatives[
-										"Solid sample" -> Widget[
+										"Solid Sample"->Widget[
 											Type -> Object,
-											Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+											Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 											ObjectTypes -> {Object[Sample], Object[Container]},
-											Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+											Dereference -> {
+												Object[Container] -> Field[Contents[[All, 2]]]
+											}
+										],
+										"Container with Well Position"->{
+											"Well Position" -> Alternatives[
+												"A1 to P24" -> Widget[
+													Type -> Enumeration,
+													Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+													PatternTooltip -> "Enumeration must be any well from A1 to H12."
+												],
+												"Container Position" -> Widget[
+													Type -> String,
+													Pattern :> LocationPositionP,
+													PatternTooltip -> "Any valid container position.",
+													Size->Line
+												]
+											],
+											"Container" -> Widget[
+												Type -> Object,
+												Pattern :> ObjectP[{Object[Container]}]
+											]
+										},
+										"Model Solid Sample"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Model[Sample]],
+											ObjectTypes -> {Model[Sample]}
 										],
 										"Prepacked melting point capillary tube" -> Widget[
 											Type -> Object,
@@ -147,11 +199,37 @@ DefineUsage[ExperimentMeasureMeltingPointOptions,
 							Description -> "The input samples whose melting temperatures should be measured. The input samples can be solid substances that will be packed into melting point capillary tubes before measuring their melting points or melting point capillary tubes that were previously packed by solid substances.",
 							Widget ->
 									Alternatives[
-										"Solid sample" -> Widget[
+										"Solid Sample"->Widget[
 											Type -> Object,
-											Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+											Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 											ObjectTypes -> {Object[Sample], Object[Container]},
-											Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+											Dereference -> {
+												Object[Container] -> Field[Contents[[All, 2]]]
+											}
+										],
+										"Container with Well Position"->{
+											"Well Position" -> Alternatives[
+												"A1 to P24" -> Widget[
+													Type -> Enumeration,
+													Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+													PatternTooltip -> "Enumeration must be any well from A1 to H12."
+												],
+												"Container Position" -> Widget[
+													Type -> String,
+													Pattern :> LocationPositionP,
+													PatternTooltip -> "Any valid container position.",
+													Size->Line
+												]
+											],
+											"Container" -> Widget[
+												Type -> Object,
+												Pattern :> ObjectP[{Object[Container]}]
+											]
+										},
+										"Model Solid Sample"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Model[Sample]],
+											ObjectTypes -> {Model[Sample]}
 										],
 										"Prepacked melting point capillary tube" -> Widget[
 											Type -> Object,
@@ -208,11 +286,37 @@ DefineUsage[ExperimentMeasureMeltingPointPreview,
 							Description -> "The input samples whose melting temperatures should be measured. The input samples can be solid substances that will be packed into melting point capillary tubes before measuring their melting points or melting point capillary tubes that were previously packed by solid substances.",
 							Widget ->
 									Alternatives[
-										"Solid sample" -> Widget[
+										"Solid Sample"->Widget[
 											Type -> Object,
-											Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+											Pattern :> ObjectP[{Object[Sample], Object[Container]}],
 											ObjectTypes -> {Object[Sample], Object[Container]},
-											Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+											Dereference -> {
+												Object[Container] -> Field[Contents[[All, 2]]]
+											}
+										],
+										"Container with Well Position"->{
+											"Well Position" -> Alternatives[
+												"A1 to P24" -> Widget[
+													Type -> Enumeration,
+													Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+													PatternTooltip -> "Enumeration must be any well from A1 to H12."
+												],
+												"Container Position" -> Widget[
+													Type -> String,
+													Pattern :> LocationPositionP,
+													PatternTooltip -> "Any valid container position.",
+													Size->Line
+												]
+											],
+											"Container" -> Widget[
+												Type -> Object,
+												Pattern :> ObjectP[{Object[Container]}]
+											]
+										},
+										"Model Solid Sample"->Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Model[Sample]],
+											ObjectTypes -> {Model[Sample]}
 										],
 										"Prepacked melting point capillary tube" -> Widget[
 											Type -> Object,

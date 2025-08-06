@@ -167,15 +167,15 @@ DefineTests[
 
 DefineTests[NotNullFieldTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due the field being not-Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due the field being not-Null:"},
 			NotNullFieldTest[Download[Object[Protocol, PNASynthesis, "id:01G6nvkJW43A"]],ContainersOut],
 			{_EmeraldTest?(RunTest[#][Passed]&)}
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due the field being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due the field being Null:"},
 			NotNullFieldTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]],ArgonPressureSensor],
 			{_EmeraldTest?(!(RunTest[#][Passed])&)}
 		],
-		Example[{Basic,"Generate a set of EmeraldTest Objects on an Packet for each of the fields being tested:"},
+		Example[{Basic,"Generate a set of EmeraldTest Objects on a Packet for each of the fields being tested:"},
 			NotNullFieldTest[Download[Model[Sample, "id:Z1lqpMGJb3BV"]],{Composition,BoilingPoint}],
 			{
 				_EmeraldTest?(RunTest[#][Passed]&),
@@ -190,15 +190,15 @@ DefineTests[NotNullFieldTest,
 (*NullFieldTest*)
 DefineTests[NullFieldTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due the specified field being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due the specified field being Null:"},
 			NullFieldTest[Download[Object[Protocol, PNASynthesis, "id:01G6nvkJW43A"]],ContainersIn],
 			{_EmeraldTest?(RunTest[#][Passed]&)}
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due the specified field being not Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due the specified field being not Null:"},
 			NullFieldTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]],CrossSectionalShape],
 			{_EmeraldTest?(!(RunTest[#][Passed])&)}
 		],
-		Example[{Basic,"Generate a set of EmeraldTest Objects on an Packet for each of the fields being tested:"},
+		Example[{Basic,"Generate a set of EmeraldTest Objects on a Packet for each of the fields being tested:"},
 			NullFieldTest[Download[Model[Sample, "id:Z1lqpMGJb3BV"]],{Composition,BoilingPoint}],
 			{
 				_EmeraldTest?(!(RunTest[#][Passed])&),
@@ -215,21 +215,21 @@ DefineTests[NullFieldTest,
 
 DefineTests[RequiredTogetherTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due the all of the specified fields being informed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due the all of the specified fields being informed:"},
 			RunTest[
 				RequiredTogetherTest[Download[Model[Instrument, PlateReader, "id:O81aEB4rE61j"]],{MinTemperature,MaxTemperature,Name}]
 			][Passed],
 			True
 		],
 
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due the all of the specified fields being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due the all of the specified fields being Null:"},
 			RunTest[
 				RequiredTogetherTest[Download[Model[Instrument, PlateReader, "id:bq9LA0dDAz1m"]],{MinTemperature,MaxTemperature,Name}]
 			][Passed],
 			True
 		],
 
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to some but not all of the specified fields being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to some but not all of the specified fields being Null:"},
 			RunTest[
 				RequiredTogetherTest[Download[Model[Instrument, PlateReader, "id:KBL5DvYkDGPx"]],{MinTemperature,MaxTemperature,Name}]
 			][Passed],
@@ -308,15 +308,15 @@ DefineTests[ObjectTypeTest,
 
 DefineTests[FieldComparisonTest,
 	{
-		Example[{Basic, "Generate an EmeraldTest Object on an Packet that should pass due the first supplied Field being less than the second:"},
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should pass due the first supplied Field being less than the second:"},
 			FieldComparisonTest[Download[Model[Instrument, Incubator, "id:aXRlGnZPGGRO"]], {MinTemperature, MaxTemperature}, Less],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic, "Generate an EmeraldTest Object on an Packet that should fail due to the first supplied Field NOT being greater than the second:"},
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should fail due to the first supplied Field NOT being greater than the second:"},
 			FieldComparisonTest[Download[Model[Instrument, Incubator, "id:aXRlGnZPGGRO"]], {MinTemperature, MaxTemperature}, Greater],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],
-		Example[{Basic, "Generate an EmeraldTest Object on an Packet that should pass by default due to one of the supplied fields being Null:"},
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should pass by default due to one of the supplied fields being Null:"},
 			FieldComparisonTest[Download[Model[Instrument, Incubator, "id:dORYzZn8zzdA"]], {MinTemperature, MaxTemperature}, Less],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
@@ -372,15 +372,15 @@ DefineTests[UniqueFieldTest,
 
 DefineTests[AnyInformedTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to all fields being non-Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to all fields being non-Null:"},
 			AnyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]], {CrossSectionalShape,PowerType}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due at least one field being non-Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due at least one field being non-Null:"},
 			AnyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]], {CrossSectionalShape, Enclosures}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to all of the fields being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to all of the fields being Null:"},
 			AnyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]],{ArgonPressureSensor, CO2PressureSensor}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		]
@@ -394,16 +394,24 @@ DefineTests[AnyInformedTest,
 
 DefineTests[UniquelyInformedTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to only one field being non-Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to only one field being non-Null:"},
 			UniquelyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]], {CrossSectionalShape, Enclosures}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to all of the fields being Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to all of the fields being Null:"},
 			UniquelyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]],{ArgonPressureSensor, CO2PressureSensor}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to more then one fields being non-Null:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to more then one fields being non-Null:"},
 			UniquelyInformedTest[Download[Object[Instrument, PeptideSynthesizer, "id:01G6nvkJWBzE"]],{CrossSectionalShape,PowerType}],
+			_EmeraldTest?(!(RunTest[#][Passed])&)
+		],
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should pass due to there being only one field that is non-Null where another parent field matches a pattern"},
+			UniquelyInformedTest[<|Type -> Object[Protocol, LCMS], AcquisitionModes -> {MS1FullScan, MultipleReactionMonitoring}, FragmentMinMass -> {Null, 100 Gram/Mole}, FragmentMassSelections -> {Null, Null}|>, {FragmentMinMass, FragmentMassSelections}, AcquisitionModes, Alternatives[MultipleReactionMonitoring]],
+			_EmeraldTest?((RunTest[#][Passed])&)
+		],
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should fail due to there being two fields that are non-Null where another parent field matches a pattern"},
+			UniquelyInformedTest[<|Type -> Object[Protocol, LCMS], AcquisitionModes -> {MS1FullScan, MultipleReactionMonitoring}, FragmentMinMass -> {Null, 100 Gram/Mole}, FragmentMassSelections -> {Null, 200 Gram/Mole}|>, {FragmentMinMass, FragmentMassSelections}, AcquisitionModes, Alternatives[MultipleReactionMonitoring]],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		]
 	}
@@ -416,15 +424,15 @@ DefineTests[UniquelyInformedTest,
 
 DefineTests[RequiredWhenCompleted,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to Status being Completed and the field of interest being informed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to Status being Completed and the field of interest being informed:"},
 			RequiredWhenCompleted[Download[Object[Protocol, ImageSample, "id:o1k9jAK434d7"]], {FieldsOfView}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to Status not being Completed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to Status not being Completed:"},
 			RequiredWhenCompleted[Download[Object[Protocol, ImageSample, "id:54n6evKY1Yw9"]], {FieldsOfView}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to Status being Completed, but the field of interest not being informed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to Status being Completed, but the field of interest not being informed:"},
 			RequiredWhenCompleted[Download[Object[Protocol, ImageSample, "id:n0k9mGzeLeZn"]], {FieldsOfView}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],
@@ -443,21 +451,42 @@ DefineTests[RequiredWhenCompleted,
 
 DefineTests[ResolvedWhenCompleted,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to Status being Completed and the field of interest being resolved:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to Status being Completed and the field of interest being resolved:"},
 			ResolvedWhenCompleted[Download[Object[Protocol, ImageSample, "id:o1k9jAK434d7"]], {Imager}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to Status not being Completed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to Status not being Completed:"},
 			ResolvedWhenCompleted[Download[Object[Protocol, ImageSample, "id:54n6evKY1Yw9"]], {Imager}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to Status being Completed, but the field of interest not being resolved:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to Status being Completed, but the field of interest not being resolved:"},
 			ResolvedWhenCompleted[Download[Object[Protocol, ImageSample, "id:n0k9mGzeLeZn"]], {Imager}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],
 		Example[{Additional,"Also works when given a single field:"},
 			RequiredWhenCompleted[Download[Object[Protocol, ImageSample, "id:o1k9jAK434d7"]], Imager],
 			_EmeraldTest?(RunTest[#][Passed]&)
+		]
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*UniquelyInformedIndexTest*)
+
+
+DefineTests[UniquelyInformedIndexTest,
+	{
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should pass due to having two or more uniquely-informed index-matched multiple fields:"},
+			UniquelyInformedIndexTest[<|Type -> Object[Protocol, LCMS], MinMasses -> {100 Gram/Mole, Null}, MassSelections -> {Null, 200 Gram/Mole}|>, {MinMasses, MassSelections}],
+			_EmeraldTest?(RunTest[#][Passed]&)
+		],
+		Example[{Basic, "Generate an EmeraldTest Object on a Packet that should fail due to having a two or more index-matched multiple field informed at the same index:"},
+			UniquelyInformedIndexTest[<|Type -> Object[Protocol, LCMS], MinMasses -> {100 Gram/Mole, 100 Gram/Mole}, MassSelections -> {Null, 200 Gram/Mole}|>, {MinMasses, MassSelections}],
+			_EmeraldTest?(!RunTest[#][Passed]&)
+		],
+		Test["Generate an EmeraldTest Object on a Packet that should fail (without throwing a Transpose::nmtx message) due to lack of index-matching:",
+			UniquelyInformedIndexTest[<|Type -> Object[Protocol, LCMS], MinMasses -> {100 Gram/Mole}, MassSelections -> {Null, 200 Gram/Mole}|>,  {MinMasses, MassSelections}],
+			_EmeraldTest?(!RunTest[#][Passed]&)
 		]
 	}
 ];
@@ -469,20 +498,20 @@ DefineTests[ResolvedWhenCompleted,
 
 DefineTests[URLFieldAccessibleTest,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to having an accessible URL within a field:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to having an accessible URL within a field:"},
 			URLFieldAccessibleTest[<|Type -> Object[Product], ProductURL -> "https://google.com" |>, ProductURL],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass as no URL was specified:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass when no URL was specified:"},
 			URLFieldAccessibleTest[<|Type -> Object[Product], ProductURL -> Null |>, ProductURL],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to having an accessible URLs within a few fields:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to having accessible URLs within a few fields:"},
 			URLFieldAccessibleTest[<|Type -> Object[Example, Data], URL -> "https://google.com", ProductURL -> Null |>, {URL, ProductURL}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to having an inaccessible URLs within at least one fields:"},
-			URLFieldAccessibleTest[<|Type -> Object[Example, Data], URL -> "https://google.com", ProductURL -> "https://emeraldcloudlab.com/nopage" |>, {URL, ProductURL}],
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to having inaccessible URLs within at least one field:"},
+			URLFieldAccessibleTest[<|Type -> Object[Example, Data], URL -> "https://google.com", ProductURL -> "https://www.emeraldcloudlab.com/nopage" |>, {URL, ProductURL}],
 		_EmeraldTest?(!RunTest[#][Passed]&)
 		]
 	}
@@ -495,19 +524,19 @@ DefineTests[URLFieldAccessibleTest,
 
 DefineTests[RequiredAfterCheckpoint,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint being completed and FieldOfView being informed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint being completed and FieldOfView being informed:"},
 			RequiredAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:kEJ9mqaWlWlP"]], "Imaging Samples", {FieldsOfView}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint having not started:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint having not started:"},
 			RequiredAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:01G6nvkq9qa4"]], "Imaging Samples", {FieldsOfView}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint having started but not completed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint having started but not completed:"},
 			RequiredAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:o1k9jAK404dx"]], "Imaging Samples", {FieldsOfView}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to a CheckPoint label being completed but FieldOfView not being informed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to a CheckPoint label being completed but FieldOfView not being informed:"},
 			RequiredAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:vXl9j5qkVkNB"]], "Imaging Samples", {FieldsOfView}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],
@@ -525,19 +554,19 @@ DefineTests[RequiredAfterCheckpoint,
 
 DefineTests[ResolvedAfterCheckpoint,
 	{
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint being completed and Imager being resolved:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint being completed and Imager being resolved:"},
 			ResolvedAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:Y0lXejGpapBV"]], "Imaging Samples", {Imager}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint having not started:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint having not started:"},
 			ResolvedAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:qdkmxz0RZRbm"]], "Imaging Samples", {Imager}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should pass due to a CheckPoint having started but not completed:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should pass due to a CheckPoint having started but not completed:"},
 			ResolvedAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:Y0lXejGpapdv"]], "Imaging Samples", {Imager}],
 			_EmeraldTest?(RunTest[#][Passed]&)
 		],
-		Example[{Basic,"Generate an EmeraldTest Object on an Packet that should fail due to a CheckPoint being completed but Imager not being resolved:"},
+		Example[{Basic,"Generate an EmeraldTest Object on a Packet that should fail due to a CheckPoint being completed but Imager not being resolved:"},
 			ResolvedAfterCheckpoint[Download[Object[Protocol, ImageSample, "id:P5ZnEj4K3K84"]], "Imaging Samples", {Imager}],
 			_EmeraldTest?(!(RunTest[#][Passed])&)
 		],

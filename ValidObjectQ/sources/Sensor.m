@@ -299,6 +299,11 @@ validSensorBubbleCounterQTests[packet:PacketP[Object[Sensor,BubbleCounter]]]:={}
 
 validSensorVibrationQTests[packet:PacketP[Object[Sensor,Vibration]]]:={};
 
+(* ::Subsection::Closed:: *)
+(*validAccelerationSensorVibrationQTests*)
+
+
+validSensorAccelerationVibrationQTests[packet:PacketP[Object[Sensor,AccelerationVibration]]]:={};
 
 (* ::Subsection:: *)
 (*validSensorLightQTests*)
@@ -327,5 +332,6 @@ registerValidQTestFunction[Object[Sensor, Volume],validSensorVolumeQTests];
 registerValidQTestFunction[Object[Sensor, Distance],validSensorDistanceSensorQTests];
 registerValidQTestFunction[Object[Sensor, Weight],validSensorWeightQTests];
 registerValidQTestFunction[Object[Sensor, BubbleCounter],validSensorBubbleCounterQTests];
+registerValidQTestFunction[Object[Sensor, AccelerationVibration],validSensorAccelerationVibrationQTests];
 registerValidQTestFunction[Object[Sensor, Vibration],validSensorVibrationQTests];
 registerValidQTestFunction[Object[Sensor, Light],validSensorLightQTests];

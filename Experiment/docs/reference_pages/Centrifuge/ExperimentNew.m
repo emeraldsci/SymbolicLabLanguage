@@ -48,7 +48,18 @@ DefineUsage[ExperimentCentrifuge,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -67,7 +78,7 @@ DefineUsage[ExperimentCentrifuge,
 		SeeAlso -> {
 			"ValidExperimentCentrifugeQ",
 			"ExperimentCentrifugeOptions",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials->{
 			"Sample Preparation"
@@ -118,7 +129,12 @@ DefineUsage[ExperimentCentrifugeOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -138,7 +154,7 @@ DefineUsage[ExperimentCentrifugeOptions,
 		SeeAlso -> {
 			"ExperimentCentrifuge",
 			"ValidExperimentCentrifugeQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials->{
 			"Sample Preparation"
@@ -189,7 +205,12 @@ DefineUsage[ExperimentCentrifugePreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -210,7 +231,7 @@ DefineUsage[ExperimentCentrifugePreview,
 			"ExperimentCentrifuge",
 			"ValidExperimentCentrifugeQ",
 			"ExperimentCentrifugeOptions",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials->{
 			"Sample Preparation"
@@ -261,7 +282,12 @@ DefineUsage[ValidExperimentCentrifugeQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -280,7 +306,7 @@ DefineUsage[ValidExperimentCentrifugeQ,
 		SeeAlso->{
 			"ExperimentCentrifuge",
 			"ExperimentCentrifugeOptions",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials->{
 			"Sample Preparation"

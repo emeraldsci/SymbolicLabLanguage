@@ -13,7 +13,7 @@ DefineObjectType[Object[Maintenance, RefillReservoir, Chiller], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> ObjectP[Object[Part, Chiller]],
+			Relation -> Object[Part, Chiller],
 			Description -> "The chiller which reservoir should be refilled.",
 			Category -> "General"
 		}

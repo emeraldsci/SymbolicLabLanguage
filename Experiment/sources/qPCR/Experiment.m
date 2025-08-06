@@ -783,12 +783,13 @@ DefineOptions[ExperimentqPCR,
 
 		],
 
-
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		BiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
 		MoatOptions,
-		AnalyticalNumberOfReplicatesOption
+		AnalyticalNumberOfReplicatesOption,
+		SimulationOption
 	}
 ];
 
@@ -865,33 +866,34 @@ ExperimentqPCR[
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
-		listedOptions,listedSamples,listedPrimerPairSamples,flatPrimerPairSamples,primerPairLengths,outputSpecification,output,gatherTests,validSamplePreparationResult,
-		myExperimentSampleInputsWithPreparedSamplesNamed,myFlatPrimerPairSamplesWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed,safeOpsNamed,
-		myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache,myPrimerPairSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
+		listedOptions,listedSamples,listedSamplesNoLink,listedOptionsNoLink,listedPrimerPairSamples,listedPrimerPairSamplesNoLink,flatPrimerPairSamples,primerPairLengths,outputSpecification,output,gatherTests,validSamplePreparationResult,
+		myExperimentSampleInputsWithPreparedSamplesNamed,myFlatPrimerPairSamplesWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
+		mySanitizedInputs,myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation,myPrimerPairSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation,
 		safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,
-		inheritedOptions,upload,confirm,fastTrack,parentProtocol,cache,myPrimerPairSamplesWithPreparedSamplesForExpansion,expandedSamples,expandedPrimerPairSamples,expandedSafeOps,
+		inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,expandedSamples,expandedPrimerPairSamples,expandedSafeOps,
 		assayPlateModel,downloadedPackets,
-		cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions, sampleFields, objectContainerFields, modelContainerFields, combinedCacheWithSamplePreparation,
+		cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions, sampleFields, objectContainerFields, modelContainerFields,
 		qPCRCompatibleFluorophores, potentialFluorophoreContainingObjects, possiblyNamedOptions, instrumentOption, liquidHandlerContainers,
 		resourcePackets, resourcePacketTests, protocolObject
 	},
 
 	(* Make sure we're working with a list of options, and get rid of all links *)
-	listedOptions=ReplaceRule[
-		ReplaceAll[ToList[myOptions],Link[x_, y___] :> x],
-		{Cache->Lookup[ToList[myOptions],Cache,{}]}
-	];
+	listedOptions=ToList[myOptions];
 
 	listedSamples=ToList[myExperimentSampleInputs];
+
 	listedPrimerPairSamples=Switch[
 		myExperimentPrimerInputs,
 		{{ObjectP[],ObjectP[]}..},{myExperimentPrimerInputs},
 		{{{ObjectP[],ObjectP[]}..}..},myExperimentPrimerInputs
 	];
+
+	(* Remove temporal links and named objects. *)
+	{{listedSamplesNoLink,listedPrimerPairSamplesNoLink},listedOptionsNoLink}=removeLinks[{listedSamples,listedPrimerPairSamples}, listedOptions];
  
-	(*Flatten listedPrimerPairSamples to a list of primer pairs*)
-	flatPrimerPairSamples=Flatten[listedPrimerPairSamples,1];
-	primerPairLengths=Length/@listedPrimerPairSamples;
+	(*Flatten listedPrimerPairSamplesNoLink to a list of primer pairs*)
+	flatPrimerPairSamples=Flatten[listedPrimerPairSamplesNoLink,1];
+	primerPairLengths=Length/@listedPrimerPairSamplesNoLink;
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=OptionValue[Output];
@@ -902,30 +904,32 @@ ExperimentqPCR[
 	
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
-		{myExperimentSampleInputsWithPreparedSamplesNamed,initialOptionsWithPreparedSamples,initialSamplePreparationCache}=simulateSamplePreparationPackets[
+		{myExperimentSampleInputsWithPreparedSamplesNamed,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentqPCR,
-			listedSamples,
-			listedOptions
+			listedSamplesNoLink,
+			listedOptionsNoLink
 		];
-		{myFlatPrimerPairSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
-			ExperimentqPCR,
-			flatPrimerPairSamples,
-			ReplaceRule[initialOptionsWithPreparedSamples,
-				Cache->FlattenCachePackets[{
-					Lookup[initialOptionsWithPreparedSamples,Cache,{}],
-					initialSamplePreparationCache
-				}]
-			]
+		{myFlatPrimerPairSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=If[
+			!MemberQ[{myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation},$Failed],
+			simulateSamplePreparationPacketsNew[
+				ExperimentqPCR,
+				flatPrimerPairSamples,
+				ReplaceRule[initialOptionsWithPreparedSamples,
+					{
+						Simulation -> initialSamplePreparationSimulation
+					}
+				]
+			],
+			{$Failed,$Failed,$Failed}
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Bring back the nested form of primer pairs. *)
@@ -937,15 +941,9 @@ ExperimentqPCR[
 		{SafeOptions[ExperimentqPCR,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},{safeOps,myOptionsWithPreparedSamples,samplePreparationCache}}=sanitizeInputs[{myExperimentSampleInputsWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed},{safeOpsNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}];
+	{mySanitizedInputs,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[{myExperimentSampleInputsWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed},safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation->samplePreparationSimulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
 			Result->$Failed,
@@ -953,6 +951,15 @@ ExperimentqPCR[
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(* If we didn't get a failure, we can split the two inputs *)
+	{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples}=mySanitizedInputs;
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -986,24 +993,18 @@ ExperimentqPCR[
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
-
-	(* Prepare myPrimerPairSamplesWithPreparedSamples for expansion: if it consists of primer pairs for only one sample, then remove the outer list so it can be expanded *)
-	myPrimerPairSamplesWithPreparedSamplesForExpansion=Switch[
-		myPrimerPairSamplesWithPreparedSamples,
-		{{{ObjectP[],ObjectP[]}..}},Flatten[myPrimerPairSamplesWithPreparedSamples,1],
-		{{{ObjectP[],ObjectP[]}..}..},myPrimerPairSamplesWithPreparedSamples
-	];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Expand index-matching inputs and options *)
-	{{expandedSamples,expandedPrimerPairSamples},expandedSafeOps}=ExpandIndexMatchedInputs[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamplesForExpansion},inheritedOptions];
+	{{expandedSamples,expandedPrimerPairSamples},expandedSafeOps}=ExpandIndexMatchedInputs[
+		ExperimentqPCR,
+		{myExperimentSampleInputsWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},
+		inheritedOptions
+	];
 
 	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
 	objectContainerFields = SamplePreparationCacheFields[Object[Container]];
 	modelContainerFields = SamplePreparationCacheFields[Model[Container]];
-
-	(* Combine incoming cache with sample preparation cache *)
-	combinedCacheWithSamplePreparation = FlattenCachePackets[{cache, samplePreparationCache}];
 
 	(* Download all fluorophores known to be compatible with ECL qPCR instrumentation *)
 	qPCRCompatibleFluorophores = {
@@ -1063,7 +1064,8 @@ ExperimentqPCR[
 					{Evaluate[Packet@@modelContainerFields]},
 					{Packet[Name, MinVolume, MaxVolume, NumberOfWells, AspectRatio]}
 				},
-				Cache -> combinedCacheWithSamplePreparation
+				Cache -> cache,
+				Simulation -> samplePreparationSimulation
 			],
 			{Download::FieldDoesntExist, Download::NotLinkField}
 		],
@@ -1077,13 +1079,13 @@ ExperimentqPCR[
 	];
 
 	(* Add downloaded information to cache ball *)
-	cacheBall = FlattenCachePackets[{combinedCacheWithSamplePreparation, downloadedPackets}];
+	cacheBall = FlattenCachePackets[{cache, downloadedPackets}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(
 			(* We are gathering tests. This silences any messages being thrown. *)
-			{resolvedOptions,resolvedOptionsTests}=resolveExperimentqPCROptions[expandedSamples,expandedPrimerPairSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+			{resolvedOptions,resolvedOptionsTests}=resolveExperimentqPCROptions[expandedSamples,expandedPrimerPairSamples,expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->{Result,Tests}];
 
 			(* Therefore, we have to run the tests to see if we encountered a failure. *)
 			If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1094,7 +1096,7 @@ ExperimentqPCR[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentqPCROptions[expandedSamples,expandedPrimerPairSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentqPCROptions[expandedSamples,expandedPrimerPairSamples,expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1105,7 +1107,7 @@ ExperimentqPCR[
 	collapsedResolvedOptions=CollapseIndexMatchedOptions[
 		ExperimentqPCR,
 		resolvedOptions,
-		Ignore->ReplaceRule[listedOptions, ContainerOut -> Lookup[resolvedOptions, ContainerOut]],
+		Ignore->ReplaceRule[listedOptionsNoLink, ContainerOut -> Lookup[resolvedOptions, ContainerOut]],
 		Messages->False
 	];
 
@@ -1127,6 +1129,7 @@ ExperimentqPCR[
 			resolvedOptions,
 			collapsedResolvedOptions,
 			Cache->cacheBall,
+			Simulation->samplePreparationSimulation,
 			Output->{Result,Tests}
 		],
 		{
@@ -1137,6 +1140,7 @@ ExperimentqPCR[
 				resolvedOptions,
 				collapsedResolvedOptions,
 				Cache->cacheBall,
+				Simulation->samplePreparationSimulation,
 				Output->Result
 			],
 			{}
@@ -1159,13 +1163,15 @@ ExperimentqPCR[
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->{Object[Protocol,qPCR]},
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation->samplePreparationSimulation
 		],
 		$Failed
 	];
@@ -1183,22 +1189,19 @@ ExperimentqPCR[
 
 (*---384-well plate overload accepting (defined) sample/container objects as template inputs and (defined) sample/container objects as primer pair inputs---*)
 ExperimentqPCR[
-	myExperimentSampleInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myExperimentSampleInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],
 	myExperimentPrimerInputs:ListableP[{{ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String,ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String}..}],
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{listedOptions,listedSamples,listedPrimerPairSamples,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleTests,containerToSampleOutput,
-		samples,sampleOptions,validSamplePreparationResult,myOptionsWithPreparedSamples,samplePreparationCache,
-		updatedCache, myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache, myFlatPrimerPairSamplesWithPreparedSamples,
+		samples,sampleOptions,validSamplePreparationResult,myOptionsWithPreparedSamples,samplePreparationSimulation,
+		myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation, myFlatPrimerPairSamplesWithPreparedSamples,
 		flatPrimerPairSamples, primerPairLengths, myPrimerPairSamplesWithPreparedSamples, primerContainerToSampleResult, primerContainerToSampleOutput, primerContainerToSampleTests,
-		combinedContainerToSampleTests, samplefiedPrimers, samplefiedPrimerOptions,primerPairs,primerPairOptions,primerPairCache,sampleCache},
+		combinedContainerToSampleTests,cache,initialContainerToSampleSimulation,containerToSampleSimulation},
 
 	(* Make sure we're working with a list of options *)
 	(* replace any links that are not in the cache *)
-	listedOptions=ReplaceRule[
-		ReplaceAll[ToList[myOptions],Link[x_, y___] :> x],
-		{Cache->Lookup[ToList[myOptions],Cache,{}]}
-	];
+	listedOptions=ToList[myOptions];
 	listedSamples=ToList[myExperimentSampleInputs];
 	listedPrimerPairSamples=Switch[
 		myExperimentPrimerInputs,
@@ -1217,44 +1220,50 @@ ExperimentqPCR[
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
+	(* get cache *)
+	cache = Lookup[listedOptions,Cache,{}];
+
 	(* First, simulate our sample preparation. *)
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
-		{myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache}=simulateSamplePreparationPackets[
+		{myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentqPCR,
 			listedSamples,
 			listedOptions
 		];
-		{myFlatPrimerPairSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
-			ExperimentqPCR,
-			flatPrimerPairSamples,
-			ReplaceRule[initialOptionsWithPreparedSamples,
-				Cache->FlattenCachePackets[{
-					Lookup[initialOptionsWithPreparedSamples,Cache,{}],
-					initialSamplePreparationCache
-				}]
-			]
+		{myFlatPrimerPairSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=If[
+			!MemberQ[{myExperimentSampleInputsWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationSimulation},$Failed],
+			simulateSamplePreparationPacketsNew[
+				ExperimentqPCR,
+				flatPrimerPairSamples,
+				ReplaceRule[initialOptionsWithPreparedSamples,
+					{
+						Simulation->initialSamplePreparationSimulation
+					}
+				]
+			],
+			{$Failed,$Failed,$Failed}
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,initialContainerToSampleSimulation}=containerToSampleOptions[
 			ExperimentqPCR,
 			myExperimentSampleInputsWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Cache->cache,
+			Simulation->samplePreparationSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -1265,12 +1274,13 @@ ExperimentqPCR[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,initialContainerToSampleSimulation}=containerToSampleOptions[
 				ExperimentqPCR,
 				myExperimentSampleInputsWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Cache->cache,
+				Simulation->samplePreparationSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -1281,12 +1291,13 @@ ExperimentqPCR[
 		Must further flatten myFlatPrimerPairSamplesWithPreparedSamples so we're dealing with a flat list of bare samples *)
 	primerContainerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{primerContainerToSampleOutput,primerContainerToSampleTests} = containerToSampleOptions[
+		{primerContainerToSampleOutput,primerContainerToSampleTests,containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentqPCR,
 			Flatten[myFlatPrimerPairSamplesWithPreparedSamples,1],
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Cache->cache,
+			Simulation->initialContainerToSampleSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -1297,12 +1308,13 @@ ExperimentqPCR[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			primerContainerToSampleOutput = containerToSampleOptions[
+			{primerContainerToSampleOutput,containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentqPCR,
 				Flatten[myFlatPrimerPairSamplesWithPreparedSamples,1],
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Cache->cache,
+				Simulation->initialContainerToSampleSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -1319,12 +1331,6 @@ ExperimentqPCR[
 	(* Combine sample and primer input contianer to sample tests *)
 	combinedContainerToSampleTests = Join[containerToSampleTests, primerContainerToSampleTests];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache=FlattenCachePackets[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container,return early. *)
 	If[Or[MatchQ[containerToSampleResult,$Failed], MatchQ[primerContainerToSampleResult, $Failed]],
 		(* containerToSampleOptions failed - return $Failed *)
@@ -1336,13 +1342,13 @@ ExperimentqPCR[
 		},
 
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples, sampleOptions,sampleCache}=containerToSampleOutput;
+		{samples, sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
 		ExperimentqPCR[
 			samples,
 			myPrimerPairSamplesWithPreparedSamples,
-			ReplaceRule[sampleOptions,Cache->updatedCache]
+			ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]
 		]
 	]
 ];
@@ -1354,11 +1360,11 @@ ExperimentqPCR[
 	myExperimentArrayCardInput:ObjectP[Object[Container,Plate,Irregular,ArrayCard]],
 	myOptions:OptionsPattern[ExperimentqPCR]
 ]:=Module[
-	{outputSpecification,output,gatherTests,listedSamples,listedOptions,
-		validSamplePreparationResult,myExperimentSampleInputsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed,
-		safeOpsNamed,safeOpsTests,myExperimentSampleInputsWithPreparedSamples,safeOps,myOptionsWithPreparedSamples,samplePreparationCache,
-		validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,fastTrack,parentProtocol,cache,
-		expandedSafeOps,combinedCacheWithSamplePreparation,qPCRCompatibleFluorophores,potentialFluorophoreContainingObjects,instrumentOption,liquidHandlerContainers,
+	{outputSpecification,output,gatherTests,listedSamples,listedOptions,arrayCardInputNoLink,
+		validSamplePreparationResult,myExperimentSampleInputsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
+		safeOpsNamed,safeOpsTests,myExperimentSampleInputsWithPreparedSamples,safeOps,myOptionsWithPreparedSamples,samplePreparationSimulation,
+		validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,
+		expandedSafeOps,qPCRCompatibleFluorophores,potentialFluorophoreContainingObjects,instrumentOption,liquidHandlerContainers,
 		sampleFields,objectContainerFields,modelContainerFields,downloadedPackets,
 		cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
 		resourcePackets,resourcePacketTests,protocolObject},
@@ -1371,24 +1377,23 @@ ExperimentqPCR[
 	gatherTests=MemberQ[output,Tests];
 
 	(*--Remove temporal links--*)
-	{listedSamples,listedOptions}=removeLinks[ToList[myExperimentSampleInputs],ToList[myOptions]];
+	{{listedSamples,arrayCardInputNoLink},listedOptions}=removeLinks[{ToList[myExperimentSampleInputs],myExperimentArrayCardInput},ToList[myOptions]];
 
 	(*--Simulate sample preparation--*)
 	validSamplePreparationResult=Check[
-		{myExperimentSampleInputsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		{myExperimentSampleInputsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentqPCR,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(*If we are given an invalid define name, return early*)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(*Return early*)
-		(*Note: We've already thrown a message above in simulateSamplePreparationPackets*)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(*--Call SafeOptions and ValidInputLengthsQ--*)
@@ -1398,13 +1403,7 @@ ExperimentqPCR[
 		{SafeOptions[ExperimentqPCR,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{myExperimentSampleInputsWithPreparedSamples,{safeOps,myOptionsWithPreparedSamples,samplePreparationCache}}=sanitizeInputs[myExperimentSampleInputsWithPreparedSamplesNamed,{safeOpsNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}];
-
-	(*Call ValidInputLengthsQ to make sure all inputs and options have matching lengths*)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput},myOptionsWithPreparedSamples,2,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput},myOptionsWithPreparedSamples,2],Null}
-	];
+	{myExperimentSampleInputsWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[myExperimentSampleInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation->samplePreparationSimulation];
 
 	(*If the specified options don't match their patterns, return $Failed*)
 	If[MatchQ[safeOps,$Failed],
@@ -1414,6 +1413,12 @@ ExperimentqPCR[
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(*Call ValidInputLengthsQ to make sure all inputs and options have matching lengths*)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink},myOptionsWithPreparedSamples,2,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink},myOptionsWithPreparedSamples,2],Null}
 	];
 
 	(*If input and option lengths are invalid, return $Failed (or the tests up to this point)*)
@@ -1428,8 +1433,8 @@ ExperimentqPCR[
 
 	(*--Use any template options to get values for options not specified in myOptions--*)
 	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput},myOptionsWithPreparedSamples,2,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput},myOptionsWithPreparedSamples,2],Null}
+		ApplyTemplateOptions[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink},myOptionsWithPreparedSamples,2,Output->{Result,Tests}],
+		{ApplyTemplateOptions[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink},myOptionsWithPreparedSamples,2],Null}
 	];
 
 	(*Return early if the template cannot be used - will only occur if the template object does not exist*)
@@ -1446,15 +1451,12 @@ ExperimentqPCR[
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(*get assorted hidden options*)
-	{upload,confirm,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(*--Expand index-matching inputs and options--*)
-	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput},inheritedOptions,2]];
+	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentqPCR,{myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink},inheritedOptions,2]];
 
 	(*--Download the information we need for the option resolver and resource packet function--*)
-
-	(*Combine incoming cache with sample preparation cache*)
-	combinedCacheWithSamplePreparation=FlattenCachePackets[{cache,samplePreparationCache}];
 
 	(*Download all fluorophores known to be compatible with ECL qPCR instrumentation*)
 	qPCRCompatibleFluorophores={
@@ -1491,10 +1493,10 @@ ExperimentqPCR[
 					myExperimentSampleInputsWithPreparedSamples,
 					myExperimentSampleInputsWithPreparedSamples,
 					myExperimentSampleInputsWithPreparedSamples,
-					{myExperimentArrayCardInput},
-					{myExperimentArrayCardInput},
-					{myExperimentArrayCardInput},
-					{myExperimentArrayCardInput},
+					{arrayCardInputNoLink},
+					{arrayCardInputNoLink},
+					{arrayCardInputNoLink},
+					{arrayCardInputNoLink},
 					qPCRCompatibleFluorophores,
 					potentialFluorophoreContainingObjects,
 					potentialFluorophoreContainingObjects,
@@ -1515,7 +1517,8 @@ ExperimentqPCR[
 					{Packet[Name, WettedMaterials, Positions, EnvironmentalControls, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions, Model, MaxTemperatureRamp,MinTemperatureRamp]},
 					{Evaluate[Packet@@modelContainerFields]}
 				},
-				Cache->combinedCacheWithSamplePreparation
+				Cache->cache,
+				Simulation->samplePreparationSimulation
 			],
 			{Download::FieldDoesntExist,Download::NotLinkField}
 		],
@@ -1529,12 +1532,12 @@ ExperimentqPCR[
 	];
 
 	(*Add downloaded information to cache ball*)
-	cacheBall=FlattenCachePackets[{combinedCacheWithSamplePreparation,downloadedPackets}];
+	cacheBall=FlattenCachePackets[{cache,downloadedPackets}];
 
 	(*--Build the resolved options--*)
 	resolvedOptionsResult=If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentqPCROptions[myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentqPCROptions[myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink,expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->{Result,Tests}];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1544,7 +1547,7 @@ ExperimentqPCR[
 
 		(*We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption*)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentqPCROptions[myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentqPCROptions[myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink,expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1570,8 +1573,8 @@ ExperimentqPCR[
 
 	(*--Build packets with resources--*)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		qPCRResourcePackets[myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput,expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{qPCRResourcePackets[myExperimentSampleInputsWithPreparedSamples,myExperimentArrayCardInput,expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+		qPCRResourcePackets[myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink,expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->{Result,Tests}],
+		{qPCRResourcePackets[myExperimentSampleInputsWithPreparedSamples,arrayCardInputNoLink,expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->Result],{}}
 	];
 
 	(*If we don't have to return the Result, don't bother calling UploadProtocol*)
@@ -1590,13 +1593,15 @@ ExperimentqPCR[
 			resourcePackets,
 			Upload->upload,
 			Confirm->confirm,
+			CanaryBranch->canaryBranch,
 			ParentProtocol->parentProtocol,
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->{Object[Protocol,qPCR]},
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation->samplePreparationSimulation
 		],
 		$Failed
 	];
@@ -1613,14 +1618,14 @@ ExperimentqPCR[
 
 (*---Array card overload accepting (defined) sample/container objects and an array card object---*)
 ExperimentqPCR[
-	myExperimentSampleInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	myExperimentSampleInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myExperimentArrayCardInput:ObjectP[Object[Container,Plate,Irregular,ArrayCard]],
 	myOptions:OptionsPattern[ExperimentqPCR]
 ]:=Module[
-	{outputSpecification,output,gatherTests,listedSamples,listedOptions,sampleCache,
-		validSamplePreparationResult,myExperimentSampleInputsWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
+	{outputSpecification,output,gatherTests,listedSamples,listedOptions,
+		validSamplePreparationResult,myExperimentSampleInputsWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation,
 		containerToSampleResult,containerToSampleOutput,containerToSampleTests,
-		updatedCache,samples,sampleOptions},
+		samples,sampleOptions,cache,containerToSampleSimulation},
 
 	(*Determine the requested return value from the function*)
 	outputSpecification=OptionValue[Output];
@@ -1630,35 +1635,38 @@ ExperimentqPCR[
 	gatherTests=MemberQ[output,Tests];
 
 	(*--Remove temporal links--*)
-	{listedSamples,listedOptions}=removeLinks[ToList[myExperimentSampleInputs],ToList[myOptions]];
+	{listedSamples,listedOptions}={ToList[myExperimentSampleInputs],ToList[myOptions]};
+
+	(* get cache *)
+	cache = Lookup[listedOptions, Cache, {}];
 
 	(*--Simulate sample preparation--*)
 	validSamplePreparationResult=Check[
-		{myExperimentSampleInputsWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{myExperimentSampleInputsWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentqPCR,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(*If we are given an invalid define name, return early*)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(*Return early*)
-		(*Note: We've already thrown a message above in simulateSamplePreparationPackets*)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(*--Convert the given containers into samples and sample index-matched options--*)
 	containerToSampleResult=If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentqPCR,
 			myExperimentSampleInputsWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Cache->cache,
+			Simulation->samplePreparationSimulation
 		];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
@@ -1669,24 +1677,18 @@ ExperimentqPCR[
 
 		(*We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption*)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentqPCR,
 				myExperimentSampleInputsWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Cache->cache,
+				Simulation->samplePreparationSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(*Update our cache with the new simulated values*)
-	(*It is important that the sample preparation cache appears first in the cache ball*)
-	updatedCache=FlattenCachePackets[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(*If we were given an empty container, return early*)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -1699,13 +1701,13 @@ ExperimentqPCR[
 		},
 
 		(*Split up our containerToSample result into the samples and sampleOptions*)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(*Call our main function with our samples and converted options.*)
 		ExperimentqPCR[
 			samples,
 			myExperimentArrayCardInput,
-			ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]
+			ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]
 		]
 	]
 ];
@@ -1716,7 +1718,7 @@ ExperimentqPCR[
 
 
 DefineOptions[resolveExperimentqPCROptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 
@@ -1729,7 +1731,7 @@ resolveExperimentqPCROptions[
 ]:=Module[
 	{
 		outputSpecification,output,gatherTests,messagesQ,cache,samplePrepOptions,qPCROptions,simulatedSamples,resolvedSamplePrepOptions,
-		simulatedCache,samplePrepTests,
+		updatedSimulation,samplePrepTests,
 		qPCROptionsAssociation,invalidInputs,invalidOptions,targetContainers,aliquotTests,
 		samplePackets,sampleContainers,sampleModels,sampleContainerModels,
 		discardedSamplePackets,discardedInvalidInputs,discardedTest,
@@ -1819,8 +1821,6 @@ resolveExperimentqPCROptions[
 		dependentOptionCheck, masterSwitchCheck, generateSampleTests,
 		standardRelatedOptionInvalidOptions, standardRelatedOptionTests, standardProbeRelatedOptionInvalidOptions, standardProbeRelatedOptionTests,
 
-		possiblyNamedOptions, possiblyNamedObjectPackets, updatedCache,
-
 		invalidForwardPrimerStorageConditionResult, forwardPrimerStorageConditionTest,expandedForwardPrimerStorageConditions,expandedReversePrimerStorageConditions, invalidReversePrimerStorageConditionResult, reversePrimerStorageConditionTest, invalidProbeStorageConditionResult, probeStorageConditionTest, expandedProbeStorageConditions,
 		invalidStandardStorageConditionResult, standardStorageConditionTest, invalidStandardForwardPrimerStorageConditionResult, standardForwardPrimerStorageConditionTest, invalidStandardReversePrimerStorageConditionResult, standardReversePrimerStorageConditionTest, invalidStandardProbeStorageConditionResult,standardProbeStorageConditionTest,
 		invalidEndogenousForwardPrimerStorageConditionResult,EndogenousForwardPrimerStorageConditionTest, invalidEndogenousReversePrimerStorageConditionResult,EndogenousReversePrimerStorageConditionTest,
@@ -1829,7 +1829,7 @@ resolveExperimentqPCROptions[
 		samplesForContainerStorageCheck, storageConditionsForContainerStorageCheck, validSamplesInStorageConditionBools, validSamplesInStorageConditionTests, storageContainerInvalidSamples, invalidContainerSampleStorageOptions,
 		numberOfAssayWells, suppliedMoatSize, suppliedMoatBuffer, suppliedMoatVolume, impliedMoat, defaultMoatBuffer, defaultMoatVolume,
 		defaultMoatSize, resolvedMoatBuffer, resolvedMoatVolume, resolvedMoatSize, invalidMoatOptions, moatTests,
-		assayPlateModel, assayPlateModelPacket
+		assayPlateModel, assayPlateModelPacket, simulation, cacheBall
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -1844,14 +1844,15 @@ resolveExperimentqPCROptions[
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* separate out our qPCR options from our Sample Prep options. *)
 	{samplePrepOptions,qPCROptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1869,13 +1870,13 @@ resolveExperimentqPCROptions[
 				{Packet[Container[Model[{MaxVolume}]]]},
 				{Packet[MinVolume, MaxVolume, NumberOfWells, AspectRatio]}
 			},
-			Cache->simulatedCache
+			Cache->cache,
+			Simulation->updatedSimulation
 		],
 		{3}
 	];
 
-	(* Assemble an updated cache from which packets can be fetched when needed *)
-	(* updatedCache = FlattenCachePackets[{simulatedCache, samplePackets, sampleContainers, sampleContainerModels, possiblyNamedObjectPackets}]; *)
+	cacheBall = FlattenCachePackets[{cache, samplePackets, sampleContainers, sampleContainerModels, assayPlateModelPacket}];
 
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -1889,18 +1890,18 @@ resolveExperimentqPCROptions[
 	discardedInvalidInputs=If[MatchQ[discardedSamplePackets,{}],{},Lookup[discardedSamplePackets,Object]];
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
-	If[Length[discardedInvalidInputs]>0&&messagesQ,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]];
+	If[Length[discardedInvalidInputs]>0&&messagesQ,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	discardedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[myResolverSampleInputs],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[myResolverSampleInputs,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],Nothing
@@ -1971,7 +1972,7 @@ resolveExperimentqPCROptions[
 	(*
 		General
 			Total volume for each well doesn't exceed ReactionVolume (or, probably, half of reaction volume to allow for master mix...)
-			If user specified StainingDye and MasterMix, they have to be copacetic (we don't yet have the ability to check this since staining dye is not a thing that's stored with master mix model/sample)
+			If user specified StainingDye and MasterMix, they have to be compatible (we don't yet have the ability to check this since staining dye is not a thing that's stored with master mix model/sample)
 			Probe has to be a reporter+quencher (Can't test this right now either, same reasoning as master mix above)
 			If any probes are being used for anything, they must be used for everything
 			If probes are being used, no duplex-staining dye should be specified
@@ -2425,7 +2426,7 @@ resolveExperimentqPCROptions[
 	If[MemberQ[standardPrimerPairAmongInputsQList, False] && messagesQ && !MatchQ[$ECLApplication,Engine],
 		Message[
 			Warning::StandardPrimerPairNotAmongInputs,
-			ObjectToString[PickList[expandedStandardPrimerPair,standardPrimerPairAmongInputsQList, False],	Cache->simulatedCache]
+			ObjectToString[PickList[expandedStandardPrimerPair,standardPrimerPairAmongInputsQList, False],Cache->cacheBall,Simulation->updatedSimulation]
 		]
 	];
 
@@ -2513,7 +2514,7 @@ resolveExperimentqPCROptions[
 
 		(* If instrument option is an Object, look up model from its packet *)
 		instModel = If[MatchQ[inst, ObjectP[Object[Instrument]]],
-			Download[Lookup[fetchPacketFromCache[inst, simulatedCache], Model], Object],
+			Download[Lookup[fetchPacketFromCache[inst, cacheBall], Model], Object],
 			inst
 		];
 
@@ -2689,7 +2690,7 @@ resolveExperimentqPCROptions[
 		{fluorPacket, rawExWav, rawEmWav, nonNullExEmPairs},
 
 		(* Look up fluorophore packet from cache *)
-		fluorPacket = Experiment`Private`fetchPacketFromCache[fluorophore, simulatedCache];
+		fluorPacket = Experiment`Private`fetchPacketFromCache[fluorophore, cacheBall];
 
 		(* Pull Ex and Em wavelengths out, defaulting to Null *)
 		rawExWav = Lookup[fluorPacket, FluorescenceExcitationMaximums, {}];
@@ -2839,7 +2840,7 @@ resolveExperimentqPCROptions[
 		this will prevent us from resolving any useful information about the master mix. *)
 	resolvedMasterMixModel = If[MatchQ[resolvedMasterMix, ObjectP[Object[Sample]]],
 		(* If resolved MasterMix option is an object, fetch its packet and pull its Model field *)
-		Download[Lookup[fetchPacketFromCache[resolvedMasterMix, simulatedCache], Model, Null], Object],
+		Download[Lookup[fetchPacketFromCache[resolvedMasterMix, cacheBall], Model, Null], Object],
 		(* If resolved MasterMix option is a model, download Object in case it's referenced by name *)
 		Download[resolvedMasterMix, Object]
 	];
@@ -2854,14 +2855,14 @@ resolveExperimentqPCROptions[
 	If[unknownMasterMixQ && messagesQ && !MatchQ[$ECLApplication,Engine],
 		Message[
 			Warning::UnknownMasterMix,
-			ObjectToString[resolvedMasterMixModel,	Cache->simulatedCache],
+			ObjectToString[resolvedMasterMixModel,Cache->cacheBall,Simulation->updatedSimulation],
 			"SYBR Green duplex staining dye, ROX passive reference dye, and no reverse transcriptase"
 		]
 	];
 
 	(* If we are gathering tests, create a test *)
 	unknownMasterMixTest = If[unknownMasterMixQ && gatherTests,
-		Test["The specified MasterMix model, " <> ObjectToString[resolvedMasterMixModel,Cache->simulatedCache] <> ", has been pre-evaluated for use in ExperimentqPCR and has known working concentration (e.g., 2x) dye content (e.g. duplex and/or reference dyes), and reverse transcriptase content:",
+		Test["The specified MasterMix model, " <> ObjectToString[resolvedMasterMixModel,Cache->cacheBall,Simulation->updatedSimulation] <> ", has been pre-evaluated for use in ExperimentqPCR and has known working concentration (e.g., 2x) dye content (e.g. duplex and/or reference dyes), and reverse transcriptase content:",
 			False,
 			True
 		],
@@ -3798,7 +3799,7 @@ resolveExperimentqPCROptions[
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				testHead["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", " <> testMessage <> ":",
+				testHead["For the provided samples " <> ObjectToString[failingSamples, Cache -> cacheBall, Simulation -> updatedSimulation] <> ", " <> testMessage <> ":",
 					False,
 					True
 				],
@@ -3807,7 +3808,7 @@ resolveExperimentqPCROptions[
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				testHead["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", " <> testMessage <> ":",
+				testHead["For the provided samples " <> ObjectToString[passingSamples, Cache -> cacheBall, Simulation -> updatedSimulation] <> ", " <> testMessage <> ":",
 					True,
 					True
 				],
@@ -3824,9 +3825,9 @@ resolveExperimentqPCROptions[
 	invalidProbeOption = If[MemberQ[probeLengthErrors, True] && messagesQ,
 		(
 			Message[Error::ProbeLengthError,
-				ObjectToString[PickList[resolvedProbes, probeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[myResolverPrimerInputs, probeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, probeLengthErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[resolvedProbes, probeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[myResolverPrimerInputs, probeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, probeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{Probe}
 		),
@@ -3842,9 +3843,9 @@ resolveExperimentqPCROptions[
 		(
 			Message[
 				Error::ProbeVolumeLengthError,
-				ObjectToString[PickList[resolvedProbeVolumes, probeVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[resolvedProbes, probeVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, probeVolumeLengthErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[resolvedProbeVolumes, probeVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[resolvedProbes, probeVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, probeVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{ProbeVolume, Probe}
 		),
@@ -3862,8 +3863,8 @@ resolveExperimentqPCROptions[
 		(
 			Message[
 				Error::MultiplexingWithoutProbe,
-				ObjectToString[PickList[myResolverPrimerInputs, multiplexingDuplexDyeErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, multiplexingDuplexDyeErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[myResolverPrimerInputs, multiplexingDuplexDyeErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, multiplexingDuplexDyeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{Probe}
 		),
@@ -3902,7 +3903,7 @@ resolveExperimentqPCROptions[
 		(
 			Message[Error::ExcessiveVolume,
 				resolvedReactionVolume,
-				ObjectToString[PickList[simulatedSamples, excessiveVolumeErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[simulatedSamples, excessiveVolumeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{ReactionVolume}
 		),
@@ -3918,7 +3919,7 @@ resolveExperimentqPCROptions[
 		(
 			Message[Error::qPCRBufferVolumeMismatch,
 				ToString[PickList[Lookup[roundedqPCROptions, BufferVolume], bufferVolumeMismatchErrors]],
-				ObjectToString[PickList[simulatedSamples, bufferVolumeMismatchErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[simulatedSamples, bufferVolumeMismatchErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{BufferVolume}
 		),
@@ -3932,7 +3933,7 @@ resolveExperimentqPCROptions[
 	(* --- Probe volume isn't specified if probe isn't specified --- *)
 	probeVolumeNoProbeOptions = If[MemberQ[probeVolumeNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, ProbeVolume, Probe, ObjectToString[PickList[simulatedSamples, probeVolumeNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, ProbeVolume, Probe, ObjectToString[PickList[simulatedSamples, probeVolumeNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeVolume}
 		),
 		{}
@@ -3945,7 +3946,7 @@ resolveExperimentqPCROptions[
 	(* --- Probe excitation isn't specified if probe isn't specified --- *)
 	probeExcitationNoProbeOptions = If[MemberQ[probeExcitationNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, ProbeExcitationWavelength, Probe, ObjectToString[PickList[simulatedSamples, probeExcitationNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, ProbeExcitationWavelength, Probe, ObjectToString[PickList[simulatedSamples, probeExcitationNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeVolume}
 		),
 		{}
@@ -3958,7 +3959,7 @@ resolveExperimentqPCROptions[
 	(* --- Probe emission isn't specified if probe isn't specified --- *)
 	probeEmissionNoProbeOptions = If[MemberQ[probeEmissionNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, ProbeEmissionWavelength, Probe, ObjectToString[PickList[simulatedSamples, probeEmissionNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, ProbeEmissionWavelength, Probe, ObjectToString[PickList[simulatedSamples, probeEmissionNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeVolume}
 		),
 		{}
@@ -3973,9 +3974,9 @@ resolveExperimentqPCROptions[
 		(
 			Message[
 				Error::PrimerVolumeLengthError,
-				ObjectToString[PickList[resolvedForwardPrimerVolumes, forwardPrimerVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[myResolverPrimerInputs, forwardPrimerVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, forwardPrimerVolumeLengthErrors], Cache -> simulatedCache],
+				ObjectToString[PickList[resolvedForwardPrimerVolumes, forwardPrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[myResolverPrimerInputs, forwardPrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, forwardPrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
 				ForwardPrimerVolume
 			];
 			{ForwardPrimerVolume}
@@ -3992,9 +3993,9 @@ resolveExperimentqPCROptions[
 		(
 			Message[
 				Error::PrimerVolumeLengthError,
-				ObjectToString[PickList[resolvedReversePrimerVolumes, reversePrimerVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[myResolverPrimerInputs, reversePrimerVolumeLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, reversePrimerVolumeLengthErrors], Cache -> simulatedCache],
+				ObjectToString[PickList[resolvedReversePrimerVolumes, reversePrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[myResolverPrimerInputs, reversePrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, reversePrimerVolumeLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
 				ReversePrimerVolume
 			];
 			{ReversePrimerVolume}
@@ -4009,7 +4010,7 @@ resolveExperimentqPCROptions[
 	(* --- Probe fluorophore isn't specified if probe isn't specified --- *)
 	probeFluorophoreNoProbeOptions = If[MemberQ[probeFluorophoreNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, ProbeFluorophore, Probe, ObjectToString[PickList[simulatedSamples, probeFluorophoreNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, ProbeFluorophore, Probe, ObjectToString[PickList[simulatedSamples, probeFluorophoreNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeFluorophore}
 		),
 		{}
@@ -4022,7 +4023,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousProbeFluorophore isn't specified if EndogenousProbe isn't specified --- *)
 	endogenousProbeFluorophoreNoProbeOptions = If[MemberQ[endogenousProbeFluorophoreNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, EndogenousProbeFluorophore, EndogenousProbe, ObjectToString[PickList[simulatedSamples, endogenousProbeFluorophoreNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, EndogenousProbeFluorophore, EndogenousProbe, ObjectToString[PickList[simulatedSamples, endogenousProbeFluorophoreNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousProbeFluorophore}
 		),
 		{}
@@ -4035,7 +4036,7 @@ resolveExperimentqPCROptions[
 	(* --- Probe isn't specified if ProbeFluorophore isn't specified --- *)
 	probeNoFluorophoreOptions = If[MemberQ[probeNoFluorophoreErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, Probe, ProbeFluorophore, ObjectToString[PickList[simulatedSamples, probeNoFluorophoreErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, Probe, ProbeFluorophore, ObjectToString[PickList[simulatedSamples, probeNoFluorophoreErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{Probe}
 		),
 		{}
@@ -4048,7 +4049,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousProbe isn't specified if EndogenousProbeFluorophore isn't specified --- *)
 	endogenousProbeNoFluorophoreOptions = If[MemberQ[endogenousProbeNoFluorophoreErrors, True] && messagesQ,
 		(
-			Message[Error::DependentSampleOptionMissing, EndogenousProbe, EndogenousProbeFluorophore, ObjectToString[PickList[simulatedSamples, endogenousProbeNoFluorophoreErrors], Cache -> simulatedCache]];
+			Message[Error::DependentSampleOptionMissing, EndogenousProbe, EndogenousProbeFluorophore, ObjectToString[PickList[simulatedSamples, endogenousProbeNoFluorophoreErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousProbeFluorophore}
 		),
 		{}
@@ -4063,9 +4064,9 @@ resolveExperimentqPCROptions[
 		(
 			Message[
 				Error::ProbeFluorophoreLengthError,
-				ObjectToString[PickList[resolvedProbeFluorophores, probeFluorophoreLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[resolvedProbes, probeFluorophoreLengthErrors], Cache -> simulatedCache],
-				ObjectToString[PickList[simulatedSamples, probeFluorophoreLengthErrors], Cache -> simulatedCache]
+				ObjectToString[PickList[resolvedProbeFluorophores, probeFluorophoreLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[resolvedProbes, probeFluorophoreLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[simulatedSamples, probeFluorophoreLengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation]
 			];
 			{ProbeFluorophore, Probe}
 		),
@@ -4079,7 +4080,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousPrimerPair isn't specified without EndogenousProbe --- *)
 	endogenousPrimersNoProbeOptions = If[MemberQ[endogenousPrimersNoProbeErrors, True] && messagesQ,
 		(
-			Message[Error::EndogenousPrimersWithoutProbe, ObjectToString[PickList[simulatedSamples, endogenousPrimersNoProbeErrors], Cache -> simulatedCache]];
+			Message[Error::EndogenousPrimersWithoutProbe, ObjectToString[PickList[simulatedSamples, endogenousPrimersNoProbeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousPrimerPair, EndogenousProbe}
 		),
 		{}
@@ -4092,7 +4093,7 @@ resolveExperimentqPCROptions[
 	(* --- ProbeVolume is not Null if Probe is specified --- *)
 	invalidNullProbeVolumeOptions = If[MemberQ[invalidNullProbeVolumeErrors, True] && messagesQ,
 		(
-			Message[Error::NullSampleVolume, Probe, ProbeVolume, ObjectToString[PickList[simulatedSamples, invalidNullProbeVolumeErrors], Cache -> simulatedCache]];
+			Message[Error::NullSampleVolume, Probe, ProbeVolume, ObjectToString[PickList[simulatedSamples, invalidNullProbeVolumeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeVolume}
 		),
 		{}
@@ -4105,7 +4106,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousForwardPrimerVolume is not Null if EndogenousPrimerPair is specified --- *)
 	invalidNullEndogenousForwardPrimerVolumeOptions = If[MemberQ[invalidNullEndogenousForwardPrimerVolumeErrors, True] && messagesQ,
 		(
-			Message[Error::NullSampleVolume, EndogenousPrimerPair, EndogenousForwardPrimerVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousForwardPrimerVolumeErrors], Cache -> simulatedCache]];
+			Message[Error::NullSampleVolume, EndogenousPrimerPair, EndogenousForwardPrimerVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousForwardPrimerVolumeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousForwardPrimerVolume}
 		),
 		{}
@@ -4118,7 +4119,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousReversePrimerVolume is not Null if EndogenousPrimerPair is specified --- *)
 	invalidNullEndogenousReversePrimerVolumeOptions = If[MemberQ[invalidNullEndogenousReversePrimerVolumeErrors, True] && messagesQ,
 		(
-			Message[Error::NullSampleVolume, EndogenousPrimerPair, EndogenousReversePrimerVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousReversePrimerVolumeErrors], Cache -> simulatedCache]];
+			Message[Error::NullSampleVolume, EndogenousPrimerPair, EndogenousReversePrimerVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousReversePrimerVolumeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousReversePrimerVolume}
 		),
 		{}
@@ -4131,7 +4132,7 @@ resolveExperimentqPCROptions[
 	(* --- EndogenousProbeVolume is not Null if EndogenousProbe is specified --- *)
 	invalidNullEndogenousProbeVolumeOptions = If[MemberQ[invalidNullEndogenousProbeVolumeErrors, True] && messagesQ,
 		(
-			Message[Error::NullSampleVolume, EndogenousProbe, EndogenousProbeVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousProbeVolumeErrors], Cache -> simulatedCache]];
+			Message[Error::NullSampleVolume, EndogenousProbe, EndogenousProbeVolume, ObjectToString[PickList[simulatedSamples, invalidNullEndogenousProbeVolumeErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{EndogenousProbeVolume}
 		),
 		{}
@@ -4144,7 +4145,7 @@ resolveExperimentqPCROptions[
 	(* --- No Ex/Em pairs are duplicated within a given well --- *)
 	duplicateProbeWavelengthOptions = If[MemberQ[duplicateProbeWavelengthErrors, True] && messagesQ,
 		(
-			Message[Error::DuplicateProbeWavelength, ObjectToString[PickList[simulatedSamples, duplicateProbeWavelengthErrors], Cache -> simulatedCache]];
+			Message[Error::DuplicateProbeWavelength, ObjectToString[PickList[simulatedSamples, duplicateProbeWavelengthErrors], Cache -> cacheBall, Simulation -> updatedSimulation]];
 			{ProbeExcitationWavelength, ProbeEmissionWavelength, EndogenousProbeExcitationWavelength, EndogenousProbeEmissionWavelength}
 		),
 		{}
@@ -4610,7 +4611,7 @@ resolveExperimentqPCROptions[
 	];
 
 	If[Length[conflictSamplesWithStorageConditions]>0,
-		Message[Error::QPCRConflictingStorageConditions,ObjectToString[conflictSamplesWithStorageConditions,Cache->simulatedCache],ToString[conflictSampleStorageOptions]]
+		Message[Error::QPCRConflictingStorageConditions,ObjectToString[conflictSamplesWithStorageConditions,Cache->cacheBall,Simulation->updatedSimulation],ToString[conflictSampleStorageOptions]]
 	];
 
 	conflictSampleStorageConditionTest=Test["The same sample object should not be given different storage conditions in SamplesInStorageCondition, StandardStorageCondition and SpikeSampleStorageCondition if it is used more than once.",MatchQ[conflictSampleStorageOptions,{}],True];
@@ -4624,8 +4625,8 @@ resolveExperimentqPCROptions[
 	storageConditionsForContainerStorageCheck=DeleteCases[Cases[allPrimerProbesWithStorageConditions,{ObjectP[Object],_}],{ObjectP[discardedInvalidInputs],_}][[All,2]];
 	{validSamplesInStorageConditionBools, validSamplesInStorageConditionTests} = Quiet[
 		If[gatherTests,
-			ValidContainerStorageConditionQ[samplesForContainerStorageCheck, storageConditionsForContainerStorageCheck, Output -> {Result, Tests}, Cache ->simulatedCache],
-			{ValidContainerStorageConditionQ[samplesForContainerStorageCheck, storageConditionsForContainerStorageCheck, Output -> Result, Cache ->simulatedCache], {}}
+			ValidContainerStorageConditionQ[samplesForContainerStorageCheck, storageConditionsForContainerStorageCheck, Output -> {Result, Tests}, Cache -> cacheBall, Simulation -> updatedSimulation],
+			{ValidContainerStorageConditionQ[samplesForContainerStorageCheck, storageConditionsForContainerStorageCheck, Output -> Result, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 		],
 		Download::MissingCacheField
 	];
@@ -4786,7 +4787,7 @@ resolveExperimentqPCROptions[
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -4809,7 +4810,8 @@ resolveExperimentqPCROptions[
 			myResolverSampleInputs,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache -> simulatedCache,
+			Cache -> cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotAmounts->Null,
 			RequiredAliquotContainers->targetContainers,
 			Output->{Result,Tests}
@@ -4820,7 +4822,8 @@ resolveExperimentqPCROptions[
 				myResolverSampleInputs,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache -> simulatedCache,
+				Cache -> cacheBall,
+				Simulation->updatedSimulation,
 				RequiredAliquotAmounts->Null,
 				RequiredAliquotContainers->targetContainers,
 				Output->Result],
@@ -4829,7 +4832,7 @@ resolveExperimentqPCROptions[
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions,Sterile->True];
 
 	(* Rebuild options, replacing with resolved values *)
 	resolvedOptions = ReplaceRule[
@@ -5029,7 +5032,7 @@ resolveExperimentqPCROptions[
 	myResolutionOptions:OptionsPattern[resolveExperimentqPCROptions]
 ]:=Module[
 	{outputSpecification,output,gatherTests,messagesQ,cache,samplePrepOptions,qPCROptions,
-		simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+		simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
 		qPCROptionsAssociation,samplePackets,arrayCardPacket,arrayCardModelForwardPrimersPackets,arrayCardModelReversePrimersPackets,arrayCardModelProbesPackets,
 		discardedSamplePackets,discardedInvalidInputs,discardedTest,discardedArrayCardInvalidInputs,discardedArrayCardTest,
 		tooManySamplesQ,tooManySamplesInvalidInputs,tooManySamplesTest,
@@ -5061,7 +5064,7 @@ resolveExperimentqPCROptions[
 		generateSampleTests,excessiveVolumeOptions,excessiveVolumeTest,
 		targetContainers,resolvedAliquotOptions,aliquotTests,
 		resolvedPostProcessingOptions,invalidInputs,invalidOptions,
-		resolvedEmail,resolvedOptions,allTests},
+		resolvedEmail,resolvedOptions,allTests,simulation,cacheBall},
 
 
 	(*---Set up the user-specified options and cache---*)
@@ -5076,14 +5079,15 @@ resolveExperimentqPCROptions[
 
 	(*Fetch our options cache from the parent function*)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation=Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
 
 	(*Split up myOptions into samplePrepOptions and qPCROptions*)
 	{samplePrepOptions,qPCROptions}=splitPrepOptions[myOptions];
 
 	(*Resolve sample prep options*)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentqPCR,myResolverSampleInputs,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
 	];
 
 	(*Convert list of rules to Association so we can Lookup, Append, Join as usual*)
@@ -5112,10 +5116,13 @@ resolveExperimentqPCROptions[
 				{Packet[Model[ReversePrimers[{Name}]]]},
 				{Packet[Model[Probes[{Name,DetectionLabels,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums}]]]}
 			},
-			Cache->simulatedCache
+			Cache->cache,
+			Simulation->updatedSimulation
 		],
 		{3}
 	];
+
+	cacheBall = Experiment`Private`FlattenCachePackets[{cache,samplePackets, arrayCardPacket, arrayCardModelForwardPrimersPackets, arrayCardModelReversePrimersPackets, arrayCardModelProbesPackets}];
 
 
 	(*---Input validation checks---*)
@@ -5129,18 +5136,18 @@ resolveExperimentqPCROptions[
 	discardedInvalidInputs=If[MatchQ[discardedSamplePackets,{}],{},Lookup[discardedSamplePackets,Object]];
 
 	(*If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs*)
-	If[Length[discardedInvalidInputs]>0&&messagesQ,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]];
+	If[Length[discardedInvalidInputs]>0&&messagesQ,Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result*)
 	discardedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[myResolverSampleInputs],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[myResolverSampleInputs,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[myResolverSampleInputs,discardedInvalidInputs],Cache->cacheBall,Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],Nothing
@@ -5156,12 +5163,12 @@ resolveExperimentqPCROptions[
 
 	(*If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs*)
 	If[MatchQ[discardedArrayCardInvalidInputs,ObjectP[]]&&messagesQ,
-		Message[Error::DiscardedArrayCard,ObjectToString[discardedArrayCardInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedArrayCard,ObjectToString[discardedArrayCardInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]
 	];
 
 	(*If we are gathering tests, create a test for discarded array card*)
 	discardedArrayCardTest=If[gatherTests,
-		Test["Our input array card "<>ObjectToString[discardedArrayCardInvalidInputs,Cache->simulatedCache]<>" is not discarded:",
+		Test["Our input array card "<>ObjectToString[discardedArrayCardInvalidInputs,Cache->cacheBall,Simulation->updatedSimulation]<>" is not discarded:",
 			MatchQ[discardedArrayCardInvalidInputs,{}],
 			True
 		],
@@ -5614,7 +5621,7 @@ resolveExperimentqPCROptions[
 
 		(*If instrument option is an Object, look up model from its packet*)
 		instModel=If[MatchQ[inst,ObjectP[Object[Instrument]]],
-			Download[Lookup[fetchPacketFromCache[inst,simulatedCache],Model],Object],
+			Download[Lookup[fetchPacketFromCache[inst,cacheBall],Model],Object],
 			inst
 		];
 
@@ -5682,7 +5689,7 @@ resolveExperimentqPCROptions[
 		{fluorPacket,rawExWav,rawEmWav,nonNullExEmPairs},
 
 		(*Look up fluorophore packet from cache*)
-		fluorPacket=fetchPacketFromCache[fluorophore,simulatedCache];
+		fluorPacket=fetchPacketFromCache[fluorophore,cacheBall];
 
 		(*Pull Ex and Em wavelengths out, defaulting to Null*)
 		rawExWav=Lookup[fluorPacket,FluorescenceExcitationMaximums,{}];
@@ -5818,7 +5825,7 @@ resolveExperimentqPCROptions[
 	(*Get the MasterMix model*)
 	resolvedMasterMixModel=If[MatchQ[resolvedMasterMix,ObjectP[Object[Sample]]],
 		(*If resolved MasterMix option is an object, fetch its packet and pull its Model field*)
-		Download[Lookup[fetchPacketFromCache[resolvedMasterMix, simulatedCache],Model,Null],Object],
+		Download[Lookup[fetchPacketFromCache[resolvedMasterMix, cacheBall],Model,Null],Object],
 		resolvedMasterMix
 	];
 
@@ -5830,14 +5837,14 @@ resolveExperimentqPCROptions[
 	(*If the master mix has not been specifically onboarded into ExperimentqPCR and we are throwing messages, throw a warning*)
 	If[unknownMasterMixQ&&messagesQ&&!MatchQ[$ECLApplication,Engine],
 		Message[Warning::UnknownMasterMix,
-			ObjectToString[resolvedMasterMixModel,Cache->simulatedCache],
+			ObjectToString[resolvedMasterMixModel,Cache->cacheBall,Simulation->updatedSimulation],
 			"ROX passive reference dye and no reverse transcriptase"
 		]
 	];
 
 	(*If we are gathering tests, create a test for unknown MasterMix*)
 	unknownMasterMixTest=If[unknownMasterMixQ&&gatherTests,
-		Test["The specified MasterMix model, "<>ObjectToString[resolvedMasterMixModel,Cache->simulatedCache]<>", has been pre-evaluated for use in ExperimentqPCR and has known working concentration (e.g., 2x) dye content (e.g. duplex and/or reference dyes), and reverse transcriptase content:",
+		Test["The specified MasterMix model, "<>ObjectToString[resolvedMasterMixModel,Cache->cacheBall,Simulation->updatedSimulation]<>", has been pre-evaluated for use in ExperimentqPCR and has known working concentration (e.g., 2x) dye content (e.g. duplex and/or reference dyes), and reverse transcriptase content:",
 			False,
 			True
 		],
@@ -5997,7 +6004,7 @@ resolveExperimentqPCROptions[
 
 			(*create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				testHead["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", "<>testMessage<>":",
+				testHead["For the provided samples "<>ObjectToString[failingSamples,Cache->cacheBall,Simulation->updatedSimulation]<>", "<>testMessage<>":",
 					False,
 					True
 				],
@@ -6006,7 +6013,7 @@ resolveExperimentqPCROptions[
 
 			(*create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				testHead["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", "<>testMessage<> ":",
+				testHead["For the provided samples "<>ObjectToString[passingSamples,Cache->cacheBall,Simulation->updatedSimulation]<>", "<>testMessage<> ":",
 					True,
 					True
 				],
@@ -6023,7 +6030,7 @@ resolveExperimentqPCROptions[
 	(*If there are totalVolumeTooLargeErrors and we are throwing messages, then throw an error message*)
 	excessiveVolumeOptions=If[MemberQ[totalVolumeTooLargeErrors,True]&&messagesQ,
 		(
-			Message[Error::ArrayCardExcessiveVolume,resolvedReactionVolume,ObjectToString[PickList[simulatedSamples,totalVolumeTooLargeErrors],Cache->simulatedCache]];
+			Message[Error::ArrayCardExcessiveVolume,resolvedReactionVolume,ObjectToString[PickList[simulatedSamples,totalVolumeTooLargeErrors],Cache->cacheBall,Simulation->updatedSimulation]];
 			{ReactionVolume,SampleVolume,MasterMixVolume,BufferVolume}
 		),
 		{}
@@ -6045,7 +6052,8 @@ resolveExperimentqPCROptions[
 			myResolverSampleInputs,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache->cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotAmounts->Null,
 			RequiredAliquotContainers->targetContainers,
 			Output->{Result,Tests}
@@ -6056,7 +6064,8 @@ resolveExperimentqPCROptions[
 				myResolverSampleInputs,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache->cacheBall,
+				Simulation->updatedSimulation,
 				RequiredAliquotAmounts->Null,
 				RequiredAliquotContainers->targetContainers,
 				Output->Result],
@@ -6066,7 +6075,7 @@ resolveExperimentqPCROptions[
 
 
 	(*---Resolve Post Processing Options---*)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions,Sterile->True];
 
 
 	(*---Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary---*)
@@ -6098,7 +6107,7 @@ resolveExperimentqPCROptions[
 
 	(*Throw Error::InvalidInput if there are invalid inputs*)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->cacheBall,Simulation->updatedSimulation]]
 	];
 
 	(*Throw Error::InvalidOption if there are invalid options.*)
@@ -6350,7 +6359,7 @@ primaryFluorophoreObject[myMixedModels:{ObjectP[{Object[Sample], Model[Sample], 
 
 
 DefineOptions[qPCRResourcePackets,
-	Options:>{CacheOption,HelperOutputOption}
+	Options:>{CacheOption,HelperOutputOption,SimulationOption}
 ];
 
 
@@ -6363,7 +6372,7 @@ qPCRResourcePackets[
 	myCollapsedResolvedOptions:{___Rule},
 	myOptions:OptionsPattern[]
 ]:=Module[{
-	outputSpecification,output,gatherTests,messages,packet,allResources,cache,allSamples,basicSamplePackets,updatedCache,
+	outputSpecification,output,gatherTests,messages,packet,allResources,cache,allSamples,basicSamplePackets,cacheBall,
 	samplesInResources,containersIn,containersInResources,assayPlateResource,plateSealResource, estimatedRunTime,instrumentResource,previewRule,optionsRule,testsRule,resultRule,
 	fulfillable,frqTests,
 	reverseTranscriptionQ, reverseTranscriptionTemp, reverseTranscriptionTime, reverseTranscriptionRampRate, activationQ, activationTemp, activationTime, activationRampRate,
@@ -6383,7 +6392,7 @@ qPCRResourcePackets[
 	primersWithReplicates, samplesWithReplicates, optionsWithReplicates, expandedSampleOrAliquotVolumes, uniqueSampleResources, uniqueSampleResourceLookup,
 	uniquePrimerProbeVolumeAssoc, probes, standardProbes, endogenousProbes, rawSamplesWithReplicates, standardSamples, masterMixContainer,masterMixSourceVesselDeadVolume,
 	expandedForwardPrimerStorageConditions, expandedReversePrimerStorageConditions, expandedProbeStorageConditions, resolvedBuffer,
-	resolvedBufferVolume, resolvedMoatBuffer, resolvedMoatSize, moatBufferResource
+	resolvedBufferVolume, resolvedMoatBuffer, resolvedMoatSize, moatBufferResource, simulation
 },
 
 	(* Local helpers for taking [[All,All,1]] or [[All,1]] of primer options, allowing for top-level Nulls *)
@@ -6400,8 +6409,8 @@ qPCRResourcePackets[
 	messages=Not[gatherTests];
 
 	(* Get the cache *)
-	cache=Lookup[ToList[myOptions],Cache];
-
+	cache=Lookup[ToList[myOptions],Cache,{}];
+	simulation=Lookup[ToList[myOptions],Simulation,Simulation[]];
 
 	(* === Get information to help decide which container should be used for each resource === *)
 
@@ -6436,13 +6445,14 @@ qPCRResourcePackets[
 				{MaxVolume},
 				{Packet[Object, Name]}
 			},
-			Cache->cache
+			Cache->cache,
+			Simulation->simulation
 		],
 		{Download::FieldDoesntExist}
 	];
 
 	(* Update the cache with the barebones sample packets we downloaded above *)
-	updatedCache = FlattenCachePackets[{cache, basicSamplePackets}];
+	cacheBall = FlattenCachePackets[{cache, basicSamplePackets}];
 
 	(* Find the list of input sample containers *)
 	sampleContainersIn=DeleteDuplicates[Flatten[listedSampleContainers]];
@@ -6965,16 +6975,16 @@ qPCRResourcePackets[
 			ResolvedOptions->RemoveHiddenOptions[ExperimentqPCR,myResolvedOptions],
 
 			Replace[Checkpoints] -> {
-				{"Preparing Samples", 0 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 0 Minute]]},
+				{"Preparing Samples", 0 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 0 Minute]]},
 				(* Including 15 minutes for tasks immediately before and after SM; SM and Centrifuge subs will add their own time estimates to this *)
-				{"Preparing Assay Plate", 15 Minute,"Samples, primers, and master mix are combined in a plate suitable for qPCR analysis.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-				{"Acquiring Data", dataAcquisitionEstimate, "Thermal cycling is performed and fluorescence readings are taken.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> dataAcquisitionEstimate]]},
-				{"Returning Materials", 0 Minute, "Samples are post-processed and returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 0 Minute]]}
+				{"Preparing Assay Plate", 15 Minute,"Samples, primers, and master mix are combined in a plate suitable for qPCR analysis.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+				{"Acquiring Data", dataAcquisitionEstimate, "Thermal cycling is performed and fluorescence readings are taken.", Link[Resource[Operator -> $BaselineOperator, Time -> dataAcquisitionEstimate]]},
+				{"Returning Materials", 0 Minute, "Samples are post-processed and returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 0 Minute]]}
 			}
 		],
 
 		(* Populate prep fields; pass un-replicate-expanded samples and options because this handles NumberOfReplicates internally *)
-		populateSamplePrepFields[myPackagerSampleInputs, myResolvedOptions, Cache->cache]
+		populateSamplePrepFields[myPackagerSampleInputs, myResolvedOptions, Cache -> cacheBall, Simulation -> simulation]
 	];
 
 	(* get all of the resource out of the packet so they can be tested*)
@@ -6983,9 +6993,9 @@ qPCRResourcePackets[
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
 		gatherTests,
-		Resources`Private`fulfillableResourceQ[allResources,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
+		Resources`Private`fulfillableResourceQ[allResources,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cacheBall,Simulation->simulation],
 		True, {
-			Resources`Private`fulfillableResourceQ[allResources,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],
+			Resources`Private`fulfillableResourceQ[allResources,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cacheBall,Simulation->simulation],
 			Null
 		}
 	];
@@ -7021,7 +7031,7 @@ qPCRResourcePackets[
 	myResolvedOptions:{___Rule},
 	myOptions:OptionsPattern[qPCRResourcePackets]
 ]:=Module[
-	{unresolvedOptionsNoHidden,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,
+	{unresolvedOptionsNoHidden,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,cache,simulation,
 		liquidHandlerContainers,nestedContainersIn,nestedLiquidHandlerContainerMaxVolumes,uniqueContainersIn,liquidHandlerContainerMaxVolumes,
 		uniqueSampleResourceLookup,samplesInVolumeRules,uniqueSamplesInAndVolumesAssoc,
 		masterMix,totalMasterMixVolume,masterMixAndVolumeAssoc,buffer,totalBufferVolume,bufferAndVolumeAssoc,
@@ -7051,7 +7061,8 @@ qPCRResourcePackets[
 	messages=!gatherTests;
 
 	(*Get the inherited cache*)
-	inheritedCache=Lookup[ToList[myOptions],Cache,{}];
+	cache=Lookup[ToList[myOptions],Cache,{}];
+	simulation=Lookup[ToList[myOptions],Simulation,Simulation[]];
 
 
 	(*---Generate all the resources for the experiment---*)
@@ -7068,10 +7079,12 @@ qPCRResourcePackets[
 				{Container[Object]},
 				{MaxVolume}
 			},
-			Cache->inheritedCache
+			Cache->cache,
+			Simulation->simulation
 		],
 		{Download::FieldDoesntExist}
 	];
+
 	uniqueContainersIn=DeleteDuplicates[Flatten[nestedContainersIn]];
 	liquidHandlerContainerMaxVolumes=Flatten[nestedLiquidHandlerContainerMaxVolumes];
 
@@ -7182,10 +7195,10 @@ qPCRResourcePackets[
 
 		(*===Resources===*)
 		Replace[Checkpoints]->{
-			{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]]},
-			{"Preparing Array Card",15 Minute,"Samples, master mix, and buffer are combined and loaded onto the array card.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]]},
-			{"Acquiring Data",runTime,"Thermal cycling is performed and fluorescence readings are taken.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->runTime]]},
-			{"Returning Materials",0 Minute,"Samples are post-processed and returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]]}
+			{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->0 Minute]]},
+			{"Preparing Array Card",15 Minute,"Samples, master mix, and buffer are combined and loaded onto the array card.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]},
+			{"Acquiring Data",runTime,"Thermal cycling is performed and fluorescence readings are taken.",Link[Resource[Operator->$BaselineOperator,Time->runTime]]},
+			{"Returning Materials",0 Minute,"Samples are post-processed and returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->0 Minute]]}
 		},
 
 
@@ -7287,7 +7300,7 @@ qPCRResourcePackets[
 	|>;
 
 	(*--Make a packet with the shared fields--*)
-	sharedFieldPacket=populateSamplePrepFields[myPackagerSampleInputs,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[myPackagerSampleInputs,myResolvedOptions,Cache->cache,Simulation->simulation];
 
 	(*--Merge the specific fields with the shared fields--*)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -7301,8 +7314,8 @@ qPCRResourcePackets[
 	(*---Call fulfillableResourceQ on all the resources we created---*)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache,Simulation->simulation],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache,Simulation->simulation],Null}
 	];
 
 
@@ -7479,7 +7492,7 @@ DefineOptions[ExperimentqPCROptions,
 
 (*---384-well plate overload---*)
 ExperimentqPCROptions[
-	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],
 	myPrimerPairs:ListableP[{{ObjectP[{Object[Sample],Model[Sample]}],ObjectP[{Object[Sample],Model[Sample]}]}..}|_String],
 	myOptions:OptionsPattern[ExperimentqPCROptions]
 ]:=Module[
@@ -7504,7 +7517,7 @@ ExperimentqPCROptions[
 
 (*---Array card overload---*)
 ExperimentqPCROptions[
-	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myArrayCardInput:ObjectP[Object[Container,Plate,Irregular,ArrayCard]],
 	myOptions:OptionsPattern[ExperimentqPCROptions]
 ]:=Module[
@@ -7537,7 +7550,7 @@ DefineOptions[ExperimentqPCRPreview,
 
 (*---384-well plate overload---*)
 ExperimentqPCRPreview[
-	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],
 	myPrimerPairs:ListableP[{{ObjectP[{Object[Sample],Model[Sample]}],ObjectP[{Object[Sample],Model[Sample]}]}..}|_String],
 	myOptions:OptionsPattern[ExperimentqPCRPreview]
 ]:=Module[{listedOptions},
@@ -7550,7 +7563,7 @@ ExperimentqPCRPreview[
 
 (*---Array card overload---*)
 ExperimentqPCRPreview[
-	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myArrayCardInput:ObjectP[Object[Container,Plate,Irregular,ArrayCard]],
 	myOptions:OptionsPattern[ExperimentqPCRPreview]
 ]:=Module[{listedOptions},
@@ -7578,7 +7591,7 @@ DefineOptions[ValidExperimentqPCRQ,
 
 (*---384-well plate overload---*)
 ValidExperimentqPCRQ[
-	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],
 	myPrimerPairs:ListableP[{{ObjectP[{Object[Sample],Model[Sample]}],ObjectP[{Object[Sample],Model[Sample]}]}..}|_String],
 	myOptions:OptionsPattern[ValidExperimentqPCRQ]
 ]:=Module[
@@ -7631,7 +7644,7 @@ ValidExperimentqPCRQ[
 
 (*---Array card overload---*)
 ValidExperimentqPCRQ[
-	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySampleInputs:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myArrayCardInput:ObjectP[Object[Container,Plate,Irregular,ArrayCard]],
 	myOptions:OptionsPattern[ValidExperimentqPCRQ]
 ]:=Module[

@@ -27,7 +27,7 @@ DefineUsage[Strand,
 			"Structure",
 			"ReactionMechanism"
 		},
-		Author -> {"amir.saadat", "qian", "brad"}
+		Author -> {"dirk.schild", "amir.saadat", "qian", "brad"}
 	}];
 
 
@@ -58,10 +58,7 @@ DefineUsage[ComplementSequence,
 		"ReverseComplementSequence",
 		"ComplementSequenceQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -92,10 +89,7 @@ DefineUsage[ComplementSequenceQ,
 		"ReverseComplementSequence",
 		"ReverseSequenceQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -477,10 +471,7 @@ DefineUsage[ReverseComplementSequence,
 		"ReverseSequence",
 		"ReverseComplementSequenceQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -514,10 +505,7 @@ DefineUsage[ReverseComplementSequenceQ,
 		"ReverseComplementSequence",
 		"ComplementSequenceQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -548,10 +536,7 @@ DefineUsage[ReverseSequenceQ,
 		"ReverseComplementSequence",
 		"ComplementSequenceQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -1243,10 +1228,7 @@ DefineUsage[ToDNA,
 		"RNAQ",
 		"DNAQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -1303,10 +1285,7 @@ DefineUsage[ToRNA,
 		"DNAQ",
 		"RNAQ"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 

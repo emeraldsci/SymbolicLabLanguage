@@ -81,7 +81,7 @@ DefineUsage[PlotObject,
 		"PlotChromatography",
 		"PlotPeaks"
 	},
-	Author -> {"eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson", "sebastian.bernasek", "kevin.hou", "hayley", "brad"},
+	Author -> {"dirk.schild", "eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson", "sebastian.bernasek", "kevin.hou", "hayley", "brad"},
 	Preview->True
 }];
 

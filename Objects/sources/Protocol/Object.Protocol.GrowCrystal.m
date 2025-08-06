@@ -327,7 +327,7 @@ DefineObjectType[Object[Protocol, GrowCrystal], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Protocol, RoboticSamplePreparation],
-			Description -> "The sample preparation protocol generated as a result of the execution of CoCrystallizationAirDryRoboticUnitOperations.",
+			Description -> "The sample preparation protocol generated as a result of the execution of CrystallizationPlateLoadingRoboticUnitOperations.",
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
@@ -355,6 +355,28 @@ DefineObjectType[Object[Protocol, GrowCrystal], {
 			Description -> "The set of instructions specifying the loading the CrystallizationPlate with CoCrystallizationReagents for air drying.",
 			Category -> "Sample Preparation", 
 			Developer -> True
+		},
+		CoCrystallizationAirDryAcousticTransferSources -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]},
+			Description -> "The transfer sources for loading the CrystallizationPlate with CoCrystallizationReagents for air drying.",
+			Category -> "Sample Preparation"
+		},
+		CoCrystallizationAirDryAcousticTransferDestinations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Container]}] | _String | {_Integer, ObjectP[Model[Container]]} | {LocationPositionP, _String | ObjectP[{Object[Container, Plate], Model[Container, Plate]}] | {_Integer, ObjectP[Model[Container]]}},
+			Description -> "The transfer destinations for loading the CrystallizationPlate with CoCrystallizationReagents for air drying.",
+			Category -> "Sample Preparation"
+		},
+		CoCrystallizationAirDryAcousticTransferAmounts -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Nanoliter],
+			Description -> "The transfer amounts for loading the CrystallizationPlate with CoCrystallizationReagents for air drying.",
+			Category -> "Sample Preparation",
+			Units -> Nanoliter
 		},
 		CoCrystallizationAirDryAcousticTransferPreparation -> {
 			Format -> Single, 
@@ -389,6 +411,28 @@ DefineObjectType[Object[Protocol, GrowCrystal], {
 			Description -> "The set of instructions specifying the loading the CrystallizationPlate with input samples, dilutionbuffers, reservoirbuffers, additives, unevaporated cocrystallizationreagents, seeding solutions.",
 			Category -> "Sample Preparation",
 			Developer -> True
+		},
+		DropSetAcousticTransferSources -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]},
+			Description -> "The transfer sources for loading the CrystallizationPlate with input samples, dilutionbuffers, reservoirbuffers, additives, unevaporated cocrystallizationreagents, seeding solutions.",
+			Category -> "Qualifications & Maintenance"
+		},
+		DropSetAcousticTransferDestinations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ObjectP[{Object[Sample], Object[Container], Model[Container]}] | _String | {_Integer, ObjectP[Model[Container]]} | {LocationPositionP, _String | ObjectP[{Object[Container, Plate], Model[Container, Plate]}] | {_Integer, ObjectP[Model[Container]]}},
+			Description -> "The transfer destinations for loading the CrystallizationPlate with input samples, dilutionbuffers, reservoirbuffers, additives, unevaporated cocrystallizationreagents, seeding solutions.",
+			Category -> "Qualifications & Maintenance"
+		},
+		DropSetAcousticTransferAmounts -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Nanoliter],
+			Description -> "The transfer amounts for loading the CrystallizationPlate with input samples, dilutionbuffers, reservoirbuffers, additives, unevaporated cocrystallizationreagents, seeding solutions.",
+			Category -> "Qualifications & Maintenance",
+			Units -> Nanoliter
 		},
 		DropSetAcousticAcousticTransferPreparation -> {
 			Format -> Single,

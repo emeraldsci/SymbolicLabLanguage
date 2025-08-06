@@ -45,7 +45,8 @@ LookupIntensiveProperty[sample: ObjectP[Object[Sample]], intensiveProperty: Inte
   ];
 
   (* otherwise we continue and send the composition information into the main overload *)
-  composition = Lookup[inputSamplePacket, Composition];
+  (* Note: remove time index from composition here *)
+  composition = Lookup[inputSamplePacket, Composition][[All, {1, 2}]];
   (* Check that composition exists, issue error and exit with $Failed if not. *)
   If[!MatchQ[composition, {{CompositionP, IdentityModelP}..}],
     Message[LookupIntensiveProperty::UnknownComposition, intensiveProperty, sample];
@@ -66,8 +67,8 @@ LookupIntensiveProperty[samples: {ObjectP[Object[Sample]]..}, intensiveProperty:
     inputSamplePackets, measurements, compositions,
     nullPropertyPositions, nullCompositionPositions,
     validSamplePositions, invalidSamplePositions,
-    compositionsToParse, searchedMeasurements,
-    noMatchPositions
+    compositionsToParse, compositionsToParseNoTime,
+    searchedMeasurements, noMatchPositions
   },
 
   inputSamplePackets = resolveSampleInputs[samples, intensiveProperty];
@@ -88,7 +89,7 @@ LookupIntensiveProperty[samples: {ObjectP[Object[Sample]]..}, intensiveProperty:
   so keep track of the null indices for reconstructing the final output.
   *)
   nullPropertyPositions = Position[measurements, Null, {1}];
-  nullCompositionPositions = Position[compositions, Except[{{CompositionP, IdentityModelP}..}], {1}, Heads->False];
+  nullCompositionPositions = Position[compositions, Except[{{CompositionP, IdentityModelP, _}..}], {1}, Heads->False];
   validSamplePositions = Complement[nullPropertyPositions, nullCompositionPositions];
   invalidSamplePositions = Intersection[nullPropertyPositions, nullCompositionPositions];
 
@@ -100,8 +101,9 @@ LookupIntensiveProperty[samples: {ObjectP[Object[Sample]]..}, intensiveProperty:
   (* Pass to main overload.
   If no valid compositions, skip the search and assign null to avoid throwing NoMatchingSample warning. *)
   compositionsToParse = Extract[compositions, validSamplePositions];
+  compositionsToParseNoTime = Map[#[[All, {1, 2}]]&, compositionsToParse];
   searchedMeasurements = If[!MatchQ[compositionsToParse, {}],
-    LookupIntensiveProperty[compositionsToParse, intensiveProperty, ops],
+    LookupIntensiveProperty[compositionsToParseNoTime, intensiveProperty, ops],
     Null
   ];
 
@@ -231,7 +233,10 @@ resolveSampleInputs[samples_, SpecificVolume] := Module[
   ]
 ];
 
-getModelObjects[composition_]:=Download[Last /@ composition, Object];
+getModelObjects[composition_]:=If[MatchQ[composition, {{{CompositionP, IdentityModelP}..}..}],
+  Download[Last /@ composition, Object],
+  Download[#[[2]]& /@ composition, Object]
+];
 
 searchForMatchingIntensiveProperties[intensiveProperty_, identityModelLists_] := Module[
   {typesToSearch, heldTypesToSearch, listOfHeldCriteria, heldCriteria, heldCriteriaList, heldSearchArgs},

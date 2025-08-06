@@ -116,24 +116,16 @@ DefineObjectType[Object[Protocol, PAGE], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer the loading buffer, ladders and samples into the loading plate.",
 			Category -> "Sample Preparation"
 		},
 		LoadingPlatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of the loading buffer, ladders, and samples into the loading plate.",
 			Category -> "Staining & Imaging"
-		},
-		LoadingPlateMixing -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,Incubate],Object[Protocol,ManualSamplePreparation]],
-			Description -> "The protocol(s) used to mix the contents of the loading plate(s) after preparation.",
-			Category -> "Sample Preparation"
 		},
 		SampleDenaturing->{
 			Format->Single,
@@ -157,22 +149,6 @@ DefineObjectType[Object[Protocol, PAGE], {
 			Units->Minute,
 			Description->"The duration for which the mixture of input samples and loading buffer is heated to DenaturingTemperature prior to electrophoresis.",
 			Category->"Denaturation"
-		},
-		LoadingPlateDenaturation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol,Incubate],Object[Protocol,ManualSamplePreparation]],
-			Description->"An incubation protocol used to denature the mixture of input samples and loading buffer present in the LoadingPlate after the LoadingPlateManipulation.",
-			Category->"Denaturation"
-		},
-		LoadingPlateCentrifugations -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,Centrifuge],Object[Protocol,ManualSamplePreparation]],
-			Description -> "The protocol(s) used to centrifuge the contents of the loading plate(s) after preparation.",
-			Category -> "Sample Preparation"
 		},
 		PipetteTips -> {
 			Format -> Multiple,
@@ -637,14 +613,14 @@ DefineObjectType[Object[Protocol, PAGE], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer the stain and rinse solutions into the stain reservoir.",
 			Category -> "Staining & Imaging"
 		},
 		ReservoirPlatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of individual components required to prepare the stain and rinse solutions.",
 			Category -> "Staining & Imaging"
 		},

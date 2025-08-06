@@ -21,6 +21,11 @@ DefineTests[PlotLuminescenceSpectroscopy,
 			_?ValidGraphicsQ
 		],
 		Example[
+			{Basic, "Plot the luminescence spectrum for data objects linked to a LuminescenceSpectroscopy protocol object:"},
+			PlotLuminescenceSpectroscopy[Object[Protocol, LuminescenceSpectroscopy, "LuminescenceSpectroscopy Test Protocol 1"]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
+		Example[
 			{Options,PrimaryData,"Indicate that the spectrum should be plotted on the y-axis:"},
 			PlotLuminescenceSpectroscopy[Object[Data,LuminescenceSpectroscopy,"LuminescenceSpectroscopy Test Data 1"],PrimaryData->EmissionSpectrum],
 			_?ValidGraphicsQ,
@@ -168,10 +173,10 @@ DefineTests[PlotLuminescenceSpectroscopy,
 			TimeConstraint->120
 		]
 	},
-	SymbolSetUp:>Module[{data1,data2},
+	SymbolSetUp:>Module[{data1, data2, protocol1},
 		$CreatedObjects={};
 
-		{data1,data2}=CreateID[{Object[Data,LuminescenceSpectroscopy],Object[Data,LuminescenceSpectroscopy]}];
+		{data1, data2, protocol1} = CreateID[{Object[Data, LuminescenceSpectroscopy], Object[Data, LuminescenceSpectroscopy], Object[Protocol, LuminescenceSpectroscopy]}];
 		Upload[{
 			<|
 				Object->data1,
@@ -187,7 +192,12 @@ DefineTests[PlotLuminescenceSpectroscopy,
 				Replace[Replicates]->{Link[data1,Replicates]}
 			|>
 		}];
-		AnalyzePeaks[data2,Name->"LuminescenceSpectroscopy Test Peaks"]
+		AnalyzePeaks[data2,Name->"LuminescenceSpectroscopy Test Peaks"];
+		Upload[<|
+			Object -> protocol1,
+			Name -> "LuminescenceSpectroscopy Test Protocol 1",
+			Replace[Data] -> {Link[data1, Protocol], Link[data2, Protocol]}
+		|>];
 	],
 	SymbolTearDown:>(
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];

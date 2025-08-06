@@ -39,7 +39,7 @@ DefineOptions[ExperimentDNASequencing,
 			AllowNull->False,
 			Widget->Adder[
 				Adder[
-					Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]]
+					Widget[Type->Object,Pattern:>ObjectP[{Object[Sample], Model[Sample]}]]
 				]
 			],
 			Category->"Hidden"
@@ -496,8 +496,10 @@ DefineOptions[ExperimentDNASequencing,
 			Category->"Storage"
 		},
 
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		ModelInputOptions,
+		SimulationOption
 	}
 ];
 
@@ -547,20 +549,21 @@ ExperimentDNASequencing[
 	{
 		listedOptions,listedSamples, listedPrimerSamples, outputSpecification,output,gatherTests,messages,
 
-		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		mySamplesWithPreparedSamplesNamed,myPrimerSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed,safeOpsNamed,
-		samplePreparationCache,myPrimerSamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache,
+		validSamplePreparationResult,mySamplesAndPrimersWithPreparedSamples,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		mySamplesWithPreparedSamplesNamed,myPrimerSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
+		myPrimerSamplesWithPreparedSamples, initialOptionsWithPreparedSamples,
 
 		safeOps,safeOpsTests,validLengths,validLengthTests,
 
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,expandedSamples,nonNullExpandedPrimerSamples,expandedPrimerSamples,
-		upload,confirm,fastTrack,parentProtocol,cache,dnaSequencingOptionsAssociation,
+		upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,dnaSequencingOptionsAssociation,
 		instrument,sampleContainer,sequencingCartridge,bufferCartridge,masterMix,
 		samplePreparationPackets,sampleModelPreparationPackets,containerPreparationPackets,
 		allSamplePackets, allPrimerSamplePackets, sequencingCartridgePacket, bufferCartridgePacket, masterMixPackets,
 		samplePackets,sampleModelPackets,sampleContainerPackets,primerSamplePackets,primerSampleModelPackets,primerSampleContainerPackets,
 		cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
-		protocolObject,DNASequencingResourcePackets,resourcePackets,resourcePacketTests
+		protocolObject,DNASequencingResourcePackets,resourcePackets,resourcePacketTests,
+		initialUpdatedSimulation, updatedSimulation
 	},
 	
 	(* Determine the requested return value from the function *)
@@ -575,45 +578,54 @@ ExperimentDNASequencing[
 
 	(* if we are not gathering tests, they will be messages *)
 	messages=!gatherTests;
-
+	
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation *)
-		{mySamplesWithPreparedSamplesNamed,initialOptionsWithPreparedSamples,initialSamplePreparationCache}=simulateSamplePreparationPackets[
+	
+		{mySamplesWithPreparedSamplesNamed,initialOptionsWithPreparedSamples,initialUpdatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDNASequencing,
 			listedSamples,
 			listedOptions
 		];
+	
 		If[!NullQ[listedPrimerSamples],
-			{myPrimerSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
-				ExperimentDNASequencing,
-				listedPrimerSamples,
-				ReplaceRule[initialOptionsWithPreparedSamples,
-					Cache->FlattenCachePackets[{
-						Lookup[initialOptionsWithPreparedSamples,Cache,{}],
-						initialSamplePreparationCache
-					}]
-				]
+		
+			{myPrimerSamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=If[
+				!MemberQ[{mySamplesWithPreparedSamplesNamed,initialOptionsWithPreparedSamples,initialUpdatedSimulation},$Failed],
+				simulateSamplePreparationPacketsNew[
+					ExperimentDNASequencing,
+					listedPrimerSamples,
+					ReplaceRule[initialOptionsWithPreparedSamples,
+						Simulation -> UpdateSimulation[
+							Lookup[initialOptionsWithPreparedSamples, Simulation, Simulation[]],
+							initialUpdatedSimulation
+						]
+					]
+				],
+				{$Failed,$Failed,$Failed}
 			],
+	
 			{
 				myPrimerSamplesWithPreparedSamplesNamed,
 				myOptionsWithPreparedSamplesNamed,
-				samplePreparationCacheNamed
+				updatedSimulation
 			} = {
 				listedPrimerSamples,
 				initialOptionsWithPreparedSamples,
-				initialSamplePreparationCache
+				initialUpdatedSimulation
 			}
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
+	
 
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult,$Failed|{$Failed,$Failed,$Failed}],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 	
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -622,8 +634,23 @@ ExperimentDNASequencing[
 		{SafeOptions[ExperimentDNASequencing,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{{mySamplesWithPreparedSamples,myPrimerSamplesWithPreparedSamples},{safeOps,myOptionsWithPreparedSamples,samplePreparationCache}}=sanitizeInputs[{mySamplesWithPreparedSamplesNamed,myPrimerSamplesWithPreparedSamplesNamed},{safeOpsNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}];
+	{mySamplesAndPrimersWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[{mySamplesWithPreparedSamplesNamed,myPrimerSamplesWithPreparedSamplesNamed},safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation -> updatedSimulation];
+	
+	{mySamplesWithPreparedSamples,myPrimerSamplesWithPreparedSamples}=If[MatchQ[mySamplesAndPrimersWithPreparedSamples, $Failed],
+		{$Failed, $Failed},
+		mySamplesAndPrimersWithPreparedSamples
+	];
 
+	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	If[MatchQ[safeOps,$Failed],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> safeOpsTests,
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
+	
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
 		If[NullQ[myPrimerSamplesWithPreparedSamples],
@@ -634,16 +661,6 @@ ExperimentDNASequencing[
 			{ValidInputLengthsQ[ExperimentDNASequencing,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,1],Null},
 			{ValidInputLengthsQ[ExperimentDNASequencing,{mySamplesWithPreparedSamples,myPrimerSamplesWithPreparedSamples},myOptionsWithPreparedSamples,2],Null}
 		]
-	];
-	 
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOps,$Failed],
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> safeOpsTests,
-			Options -> $Failed,
-			Preview -> Null
-		}]
 	];
 	
 	(*If option lengths are invalid, return $Failed (or the tests up to this point)*)
@@ -685,7 +702,7 @@ ExperimentDNASequencing[
 	];
 
 	(*get assorted hidden options*)
-	{upload,confirm,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
@@ -736,7 +753,8 @@ ExperimentDNASequencing[
 				{Packet[CathodeSequencingBuffer]},
 				{Packet[Composition, Name, Container]}
 			},
-			Cache->FlattenCachePackets[{samplePreparationCache, cache}],
+			Cache -> cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		Download::FieldDoesntExist
@@ -757,26 +775,24 @@ ExperimentDNASequencing[
 	];
 
 	(* Combine our downloaded and simulated cache. *)
-	cacheBall=FlattenCachePackets[{samplePreparationCache,cache,allSamplePackets,allPrimerSamplePackets,sequencingCartridgePacket,bufferCartridgePacket,masterMixPackets}];
-
-
+	cacheBall=FlattenCachePackets[{cache,allSamplePackets,allPrimerSamplePackets,sequencingCartridgePacket,bufferCartridgePacket,masterMixPackets}];
 	
 	(*--Build the resolved options--*)
-	resolvedOptionsResult=If[gatherTests,
+	resolvedOptionsResult = If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentDNASequencingOptions[expandedSamples,expandedPrimerSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
-		
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentDNASequencingOptions[expandedSamples, expandedPrimerSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
+
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-			{resolvedOptions,resolvedOptionsTests},
+		If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			{resolvedOptions, resolvedOptionsTests},
 			$Failed
 		],
-		
+
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentDNASequencingOptions[expandedSamples,expandedPrimerSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentDNASequencingOptions[expandedSamples, expandedPrimerSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
-			{Error::InvalidInput,Error::InvalidOption}
+			{Error::InvalidInput, Error::InvalidOption}
 		]
 	];
 
@@ -797,11 +813,11 @@ ExperimentDNASequencing[
 			Preview->Null
 		}]
 	];
-	
+
 	(* Build packets with resources *)
-	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		experimentDNASequencingResourcePackets[expandedSamples,expandedPrimerSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{experimentDNASequencingResourcePackets[expandedSamples,expandedPrimerSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+	{resourcePackets, resourcePacketTests} = If[gatherTests,
+		experimentDNASequencingResourcePackets[expandedSamples, expandedPrimerSamples, expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{experimentDNASequencingResourcePackets[expandedSamples, expandedPrimerSamples, expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -820,13 +836,15 @@ ExperimentDNASequencing[
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,DNASequencing],
-			Cache->samplePreparationCache
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -846,16 +864,16 @@ ExperimentDNASequencing[
 
 (*---Function overload accepting sample/container objects as sample inputs and sample/container objects or Nulls as primer inputs---*)
 ExperimentDNASequencing[
-	mySampleContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
-	myPrimerContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|Null|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	mySampleContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	myPrimerContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|Null|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myOptions:OptionsPattern[ExperimentDNASequencing]
 ]:=Module[
 	{listedOptions,listedSampleContainers,listedPrimerSamples,initialListedPrimerSamples,
-		outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache,
-		myOptionsWithPreparedSamples,samplePreparationCache,sampleCache,
+		outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,
+		myOptionsWithPreparedSamples, initialUpdatedSimulation, updatedSimulation, containerToSampleSimulation, primerContainerToSampleSimulation,
 		containerToSampleResult,containerToSampleOutput,containerToSampleTests,
 		primerContainerToSampleResult,primerContainerToSampleOutput,primerContainerToSampleTests,myPrimerSamplesWithPreparedSamples,
-		combinedContainerToSampleTests,updatedCache,samples,sampleOptions},
+		combinedContainerToSampleTests,samples,sampleOptions},
 
 	(*Determine the requested return value from the function*)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -864,39 +882,44 @@ ExperimentDNASequencing[
 	(*Determine if we should keep a running list of tests*)
 	gatherTests=MemberQ[output,Tests];
 	
-	(* call helper function to remove temporal links *)
-	{{listedSampleContainers,listedPrimerSamples}, listedOptions}=removeLinks[{ToList[mySampleContainers], ToList[myPrimerContainers]}, ToList[myOptions]];
+	(* Ensure our inputs and options are lists. *)
+	{{listedSampleContainers,listedPrimerSamples}, listedOptions}={{ToList[mySampleContainers], ToList[myPrimerContainers]}, ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation *)
-		{mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialUpdatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDNASequencing,
 			listedSampleContainers,
 			listedOptions
 		];
 		If[!NullQ[listedPrimerSamples],
-			{myPrimerSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
-				ExperimentDNASequencing,
-				listedPrimerSamples,
-				ReplaceRule[initialOptionsWithPreparedSamples,
-					Cache->FlattenCachePackets[{
-						Lookup[initialOptionsWithPreparedSamples,Cache,{}],
-						initialSamplePreparationCache
-					}]
-				]
+			{myPrimerSamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=If[
+				!MemberQ[{mySamplesWithPreparedSamples,initialOptionsWithPreparedSamples,initialUpdatedSimulation},$Failed],
+				simulateSamplePreparationPacketsNew[
+					ExperimentDNASequencing,
+					listedPrimerSamples,
+					ReplaceRule[initialOptionsWithPreparedSamples,
+						Simulation -> UpdateSimulation[
+							Lookup[initialOptionsWithPreparedSamples, Simulation, Simulation[]],
+							initialUpdatedSimulation
+						]
+					]
+				],
+				{$Failed,$Failed,$Failed}
 			],
-			{myPrimerSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}={listedPrimerSamples,initialOptionsWithPreparedSamples,initialSamplePreparationCache}
+			
+			{myPrimerSamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation} = {listedPrimerSamples,initialOptionsWithPreparedSamples,initialUpdatedSimulation}
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(*If we are given an invalid define name, return early*)
-	If[MatchQ[validSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult,$Failed|{$Failed,$Failed,$Failed}],
 		(*Return early*)
 		(*Note: We've already thrown a message above in simulateSamplePreparationPackets*)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(*--Convert the given containers into samples and sample index-matched options--*)
@@ -904,12 +927,12 @@ ExperimentDNASequencing[
 	(*-Samples-*)
 	containerToSampleResult=If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentDNASequencing,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
@@ -920,12 +943,12 @@ ExperimentDNASequencing[
 
 		(*We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption*)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentDNASequencing,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -937,12 +960,12 @@ ExperimentDNASequencing[
 	primerContainerToSampleResult=If[!NullQ[listedPrimerSamples],
 		If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{primerContainerToSampleOutput,primerContainerToSampleTests}=containerToSampleOptions[
+		{primerContainerToSampleOutput,primerContainerToSampleTests, primerContainerToSampleSimulation}=containerToSampleOptions[
 			ExperimentDNASequencing,
 			myPrimerSamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> containerToSampleSimulation
 		];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
@@ -954,12 +977,12 @@ ExperimentDNASequencing[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			primerContainerToSampleOutput=containerToSampleOptions[
+			{primerContainerToSampleOutput, primerContainerToSampleSimulation}=containerToSampleOptions[
 				ExperimentDNASequencing,
 				myPrimerSamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> containerToSampleSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -972,12 +995,6 @@ ExperimentDNASequencing[
 		containerToSampleTests
 	];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
 	If[Or[MatchQ[containerToSampleResult,$Failed],MatchQ[primerContainerToSampleResult,$Failed]],
 		(* containerToSampleOptions failed - return $Failed *)
@@ -988,13 +1005,18 @@ ExperimentDNASequencing[
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
 		ExperimentDNASequencing[
 			samples,
-			If[!NullQ[myPrimerContainers],First[primerContainerToSampleResult],ConstantArray[Null, Length[samples]]],
-			ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]
+			If[!NullQ[myPrimerContainers],First[primerContainerToSampleOutput],ConstantArray[Null, Length[samples]]],
+			ReplaceRule[sampleOptions,
+				Simulation -> If[MatchQ[primerContainerToSampleSimulation, SimulationP],
+					primerContainerToSampleSimulation,
+					containerToSampleSimulation
+				]
+			]
 		]
 	]
 ];
@@ -1021,7 +1043,7 @@ ExperimentDNASequencing[
 
 DefineOptions[
 	resolveExperimentDNASequencingOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentDNASequencingOptions[
@@ -1030,7 +1052,7 @@ resolveExperimentDNASequencingOptions[
 	myOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[resolveExperimentDNASequencingOptions]
 ]:=Module[
-	{outputSpecification,output,gatherTests,messages,confirm,template,inheritedCache,operator,upload,outputOption,samplesInStorage,samplePreparation,email,samplePrepOptions,DNASequencingOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+	{outputSpecification,output,gatherTests,messages,confirm,canaryBranch,template,inheritedCache,operator,upload,outputOption,samplesInStorage,samplePreparation,email,samplePrepOptions,DNASequencingOptions,simulatedSamples,resolvedSamplePrepOptions, samplePrepTests,
 		DNASequencingOptionsAssociation,cacheBall,instrument,sequencingCartridge,bufferCartridge,sequencingCartridgeStorageCondition,numberOfReplicates, numberOfInjections,
 		masterMix,diluent, quenchingReagent, sequencingBuffer,fastTrack,name,parentProtocol,
 
@@ -1115,7 +1137,8 @@ resolveExperimentDNASequencingOptions[
 		invalidInputs,invalidOptions,
 		targetContainers,resolvedAliquotOptions,aliquotTests,
 		resolvedPostProcessingOptions,allTests,
-		resolvedOptions,testsRule,resultRule
+		resolvedOptions,testsRule,resultRule,
+		simulation, updatedSimulation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1130,14 +1153,15 @@ resolveExperimentDNASequencingOptions[
 
 	(* Fetch our cache from the parent function. *)
 	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our DNASequencing options from our Sample Prep options. *)
 	{samplePrepOptions,DNASequencingOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentDNASequencing,mySamples,samplePrepOptions,Cache->inheritedCache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentDNASequencing,mySamples,samplePrepOptions,Cache->inheritedCache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentDNASequencing,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentDNASequencing,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation -> simulation, Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1191,7 +1215,7 @@ resolveExperimentDNASequencingOptions[
 
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
 	{
 		allSamplePackets,
 		allPrimerSamplePackets,
@@ -1226,7 +1250,8 @@ resolveExperimentDNASequencingOptions[
 				{Packet[CathodeSequencingBuffer]},
 				{Packet[Composition, Name, Container]}
 			},
-			Cache -> simulatedCache,
+			Cache -> inheritedCache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		Download::FieldDoesntExist
@@ -1244,8 +1269,8 @@ resolveExperimentDNASequencingOptions[
 		primerSamplePackets=allPrimerSamplePackets[[All,1]];
 		primerSampleModelPackets=allPrimerSamplePackets[[All,2]];
 		primerSampleContainerPackets=allPrimerSamplePackets[[All,3]];
-		primerSampleCompositionPackets=allPrimerSamplePackets[[All,4]],
-		primerSampleModelCompositionPackets=allSamplePackets[[All,5]];
+		primerSampleCompositionPackets=allPrimerSamplePackets[[All,4]];
+		primerSampleModelCompositionPackets=allSamplePackets[[All,5]],
 		{
 			primerSamplePackets,
 			primerSampleModelPackets,
@@ -1255,15 +1280,14 @@ resolveExperimentDNASequencingOptions[
 		}=ConstantArray[ConstantArray[Null,Length[ToList[mySamples]]],5]
 	];
 
-	cacheBall = Flatten[
-		{
-			allSamplePackets,
-			allPrimerSamplePackets,
-			sequencingCartridgePacket,
-			bufferCartridgePacket,
-			masterMixPackets
-		}
-	];
+	cacheBall = FlattenCachePackets[{
+		inheritedCache,
+		allSamplePackets,
+		allPrimerSamplePackets,
+		sequencingCartridgePacket,
+		bufferCartridgePacket,
+		masterMixPackets
+	}];
 
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 	(*Determine if we are in Engine or not, in Engine we silence warnings*)
@@ -1293,7 +1317,7 @@ resolveExperimentDNASequencingOptions[
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 		(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1301,11 +1325,11 @@ resolveExperimentDNASequencingOptions[
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> simulatedCache] <> " are not discarded:", True, False]
+				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
-			passingTest = If[Length[discardedInvalidInputs] == Length[flatSampleList],
+			passingTest = If[Length[discardedInvalidInputs] == Length[mySamples],
 				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[flatSampleList, discardedInvalidInputs], Cache -> simulatedCache] <> " are not discarded:", True, True]
+				Test["Our input samples " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -1350,7 +1374,7 @@ resolveExperimentDNASequencingOptions[
 
 	(*If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs*)
 	If[Length[deprecatedInvalidInputs]>0&&messages,
-		Message[Error::DeprecatedModels,ObjectToString[deprecatedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DeprecatedModels,ObjectToString[deprecatedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1358,12 +1382,12 @@ resolveExperimentDNASequencingOptions[
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[deprecatedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> simulatedCache] <> " that are not deprecated:", True, False]
+				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
 			];
 
 			passingTest = If[Length[deprecatedInvalidInputs] == Length[Join[sampleModelPacketsToCheck,primerSampleModelPacketsToCheck]],
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[Download[Complement[Join[sampleModelPacketsToCheck,primerSampleModelPacketsToCheck],deprecatedInvalidInputs], Object], Cache -> simulatedCache] <> " that are not deprecated:", True, True]
+				Test["Provided samples have models " <> ObjectToString[Download[Complement[Join[sampleModelPacketsToCheck,primerSampleModelPacketsToCheck],deprecatedInvalidInputs], Object], Simulation -> updatedSimulation] <> " that are not deprecated:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1658,7 +1682,7 @@ resolveExperimentDNASequencingOptions[
 	(*If CartridgeType is specified and we are throwing messages, throw an error message and keep track of the invalid inputs*)
 	invalidCartridgeTypeOptions=If[!validCartridgeTypeQ&&messages,
 		(
-			Message[Error::DNASequencingCartridgeTypeInvalid,ObjectToString[sequencingCartridge,Cache->simulatedCache]];{SequencingCartridge}
+			Message[Error::DNASequencingCartridgeTypeInvalid,ObjectToString[sequencingCartridge,Simulation -> updatedSimulation]];{SequencingCartridge}
 		),
 		{}
 	];
@@ -1926,7 +1950,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are MultipleSampleOligomersSpecified errors and we are throwing messages, then throw an error message*)
 	If[MemberQ[sampleCompositionBools,True]&&messages,
 		(
-			Message[Warning::MultipleSampleOligomersSpecified,ObjectToString[PickList[simulatedSamples,sampleCompositionBools],Cache->simulatedCache]]
+			Message[Warning::MultipleSampleOligomersSpecified,ObjectToString[PickList[simulatedSamples,sampleCompositionBools],Simulation -> updatedSimulation]]
 		),
 		{}
 	];
@@ -1944,13 +1968,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the sample composition contains only one oligomer that the ReadLength can be resolved from:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the sample composition contains only one oligomer that the ReadLength can be resolved from:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the sample composition contains only one oligomer that the ReadLength can be resolved from:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the sample composition contains only one oligomer that the ReadLength can be resolved from:",True,True],
 				Nothing
 			];
 
@@ -2009,7 +2033,6 @@ resolveExperimentDNASequencingOptions[
 	
 	(* look up the read lengths for resolved options *)
 	resolvedReadLengths = Flatten[Lookup[updatedMapThreadFriendlyOptions, ReadLength]];
-
 
 
 	(* MapThread *)
@@ -2124,7 +2147,7 @@ resolveExperimentDNASequencingOptions[
 					If[
 						NullQ[Flatten[primerComposition]],
 						Null,
-						If[MatchQ[#,ObjectP[]],Download[#,Type,Cache->simulatedCache],Model[Molecule]]&/@Map[Last,primerComposition]
+						If[MatchQ[#,ObjectP[]],Download[#,Type,Cache->cacheBall],Model[Molecule]]&/@Map[#[[2]]&,primerComposition]
 					]
 				];
 
@@ -2157,7 +2180,7 @@ resolveExperimentDNASequencingOptions[
 					(*If the volume is left as Automatic and resolvedPreparedPlate is True, resolve to Null*)
 					MatchQ[specifiedPrimerVolume,Automatic]&&TrueQ[resolvedPreparedPlate],Null,
 					(*If the volume is left as Automatic, resolvedPreparedPlate is False, and Composition field of the primer samples is Null, flip the error switch*)
-					MatchQ[specifiedPrimerVolume,Automatic]&&!TrueQ[resolvedPreparedPlate]&&(NullQ[primerComposition]||NullQ[initialPrimerConcentration]),primerCompositionNullError=True;specifiedPrimerVolume,
+					MatchQ[specifiedPrimerVolume,Automatic]&&!TrueQ[resolvedPreparedPlate]&&(NullQ[primerComposition]||NullQ[initialPrimerConcentration]),primerCompositionNullError=True; specifiedPrimerVolume,
 					(*If the volume is left as Automatic, resolvedPreparedPlate is False, and Composition field of the primer samples is not Null, resolve to PrimerConcentration*ReactionVolume/initialPrimerConcentration *)
 					MatchQ[specifiedPrimerVolume,Automatic]&&!TrueQ[resolvedPreparedPlate]&&!NullQ[primerComposition],SafeRound[Convert[(resolvedPrimerConcentration*mapThreadReactionVolume/initialPrimerConcentration),Microliter],0.1 Microliter],
 					True,Null
@@ -2773,14 +2796,14 @@ resolveExperimentDNASequencingOptions[
 							DenaturationTime->denaturationTime,DenaturationTemperature->denaturationTemperature,DenaturationRampRate->denaturationRampRate,
 							PrimerAnnealing->primerAnnealing,PrimerAnnealingTime->primerAnnealingTime,PrimerAnnealingTemperature->primerAnnealingTemperature,PrimerAnnealingRampRate->primerAnnealingRampRate,
 							ExtensionTime->extensionTime,ExtensionTemperature->extensionTemperature,ExtensionRampRate->extensionRampRate,NumberOfCycles->numberOfCycles,HoldTemperature->holdTemperature,
-							SampleVolume->0Microliter,MasterMix->Null,Buffer->Null,Cache->simulatedCache,Output->{Options,Tests}],
+							SampleVolume->0Microliter,MasterMix->Null,Buffer->Null, Cache -> cacheBall, Simulation -> updatedSimulation, Output->{Options,Tests}],
 						{Download::MissingCacheField,Download::MissingField,Error::InvalidPreparedPlate,Error::InvalidInput}],   (* quiet PCR InvalidPreparedPlate and InvalidInput errors because we already check for that *)
 					{Quiet[
 							ExperimentPCR[mySamples,Activation->activation,ActivationTime->activationTime,ActivationTemperature->activationTemperature,ActivationRampRate->activationRampRate,
 							DenaturationTime->denaturationTime,DenaturationTemperature->denaturationTemperature,DenaturationRampRate->denaturationRampRate,
 							PrimerAnnealing->primerAnnealing,PrimerAnnealingTime->primerAnnealingTime,PrimerAnnealingTemperature->primerAnnealingTemperature,PrimerAnnealingRampRate->primerAnnealingRampRate,
 							ExtensionTime->extensionTime,ExtensionTemperature->extensionTemperature,ExtensionRampRate->extensionRampRate,NumberOfCycles->numberOfCycles,HoldTemperature->holdTemperature,
-							SampleVolume->0Microliter,MasterMix->Null,Buffer->Null,Cache->simulatedCache,Output->Options],
+							SampleVolume->0Microliter,MasterMix->Null,Buffer->Null,Cache -> cacheBall, Simulation -> updatedSimulation, Output->Options],
 						{Download::MissingCacheField,Download::MissingField,Error::InvalidPreparedPlate,Error::InvalidInput}],{}}
 				],
 			{{},{}}],
@@ -2796,7 +2819,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are MultiplePrimerSampleOligomersSpecified errors and we are throwing messages, then throw an error message*)
 	multiplePrimerSampleOligomersOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,MultiplePrimerSampleOligomersErrors],True]&&messages,
 		(
-			Message[Error::MultiplePrimerSampleOligomersSpecified,ObjectToString[PickList[primerSamplePackets,Lookup[allErrorTrackersAssociation,MultiplePrimerSampleOligomersErrors]],Cache->simulatedCache]];{PrimerVolume}
+			Message[Error::MultiplePrimerSampleOligomersSpecified,ObjectToString[PickList[primerSamplePackets,Lookup[allErrorTrackersAssociation,MultiplePrimerSampleOligomersErrors]],Simulation -> updatedSimulation]];{PrimerVolume}
 		),
 		{}
 	];
@@ -2814,13 +2837,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the primer sample composition contains only one oligomer that the PrimerVolume can be resolved from:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the primer sample composition contains only one oligomer that the PrimerVolume can be resolved from:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the primer sample composition contains only one oligomer that the PrimerVolume can be resolved from:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the primer sample composition contains only one oligomer that the PrimerVolume can be resolved from:",True,True],
 				Nothing
 			];
 
@@ -2867,7 +2890,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are primerCompositionNullErrors and we are throwing messages, then throw an error message*)
 	primerCompositionNullOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,PrimerCompositionNullErrors],True]&&messages,
 		(
-			Message[Error::DNASequencingPrimerCompositionNull,ObjectToString[PickList[primerSamplePackets,Lookup[allErrorTrackersAssociation,PrimerCompositionNullErrors]],Cache->simulatedCache]];
+			Message[Error::DNASequencingPrimerCompositionNull,ObjectToString[PickList[primerSamplePackets,Lookup[allErrorTrackersAssociation,PrimerCompositionNullErrors]],Simulation -> updatedSimulation]];
 			{PrimerVolume}
 		),
 		{}
@@ -2886,13 +2909,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the PrimerVolume does not have conflicts with the input primers:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the PrimerVolume does not have conflicts with the input primers:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the PrimerVolume does not have conflicts with the input primers:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the PrimerVolume does not have conflicts with the input primers:",True,True],
 				Nothing
 			];
 
@@ -2926,13 +2949,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the PrimerStorageCondition does not have conflicts with the input primers:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the PrimerStorageCondition does not have conflicts with the input primers:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the PrimerStorageCondition does not have conflicts with the input primers:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the PrimerStorageCondition does not have conflicts with the input primers:",True,True],
 				Nothing
 			];
 
@@ -2947,7 +2970,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are masterMixNotSpecifiedErrors and we are throwing messages, then throw an error message*)
 	masterMixInvalidOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,MasterMixNotSpecifiedErrors],True]&&messages,
 		(
-			Message[Error::DNASequencingMasterMixNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,MasterMixNotSpecifiedErrors]],Cache->simulatedCache]];
+			Message[Error::DNASequencingMasterMixNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,MasterMixNotSpecifiedErrors]],Simulation -> updatedSimulation]];
 			{MasterMix,MasterMixVolume}
 		),
 		{}
@@ -2966,13 +2989,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the MasterMixVolume does not have conflicts with the input samples:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the MasterMixVolume does not have conflicts with the input samples:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the MasterMixVolume does not have conflicts with the input samples:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the MasterMixVolume does not have conflicts with the input samples:",True,True],
 				Nothing
 			];
 
@@ -3006,13 +3029,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the MasterMixStorageCondition does not have conflicts with the MasterMix option:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the MasterMixStorageCondition does not have conflicts with the MasterMix option:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the MasterMixStorageCondition does not have conflicts with the MasterMix option:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the MasterMixStorageCondition does not have conflicts with the MasterMix option:",True,True],
 				Nothing
 			];
 
@@ -3026,7 +3049,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are DiluentNotSpecifiedErrors and we are throwing messages, then throw an Error message*)
 	diluentInvalidOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,DiluentNotSpecifiedErrors],True]&&messages,
 		(
-			Message[Error::DNASequencingDiluentNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,DiluentNotSpecifiedErrors]],Cache->simulatedCache]];
+			Message[Error::DNASequencingDiluentNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,DiluentNotSpecifiedErrors]],Simulation -> updatedSimulation]];
 			{Diluent,DiluentVolume}
 		),
 		{}
@@ -3045,13 +3068,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the Diluent is specified if a DiluentVolume is specified:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the Diluent is specified if a DiluentVolume is specified:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the Diluent is specified if a DiluentVolume is specified:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the Diluent is specified if a DiluentVolume is specified:",True,True],
 				Nothing
 			];
 
@@ -3066,7 +3089,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are totalVolumeTooLargeErrors and we are throwing messages, then throw an error message*)
 	totalVolumeOverReactionVolumeOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,TotalVolumeTooLargeErrors],True]&&messages,
 		(
-			Message[Error::DNASequencingTotalVolumeOverReactionVolume,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,TotalVolumeTooLargeErrors]],Cache->simulatedCache]];
+			Message[Error::DNASequencingTotalVolumeOverReactionVolume,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,TotalVolumeTooLargeErrors]],Simulation -> updatedSimulation]];
 			{SampleVolume,MasterMixVolume,PrimerVolume,DiluentVolume,ReactionVolume}
 		),
 		{}
@@ -3085,13 +3108,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the total volume consisting of SampleVolume, MasterMixVolume, PrimerVolume, and DiluentVolume does not exceed ReactionVolume:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the total volume consisting of SampleVolume, MasterMixVolume, PrimerVolume, and DiluentVolume does not exceed ReactionVolume:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the total volume consisting of SampleVolume, MasterMixVolume, PrimerVolume, and DiluentVolume does not exceed ReactionVolume:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the total volume consisting of SampleVolume, MasterMixVolume, PrimerVolume, and DiluentVolume does not exceed ReactionVolume:",True,True],
 				Nothing
 			];
 
@@ -3106,7 +3129,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are ReadLengthNotSpecifiedWarnings and we are throwing messages, then throw an warning message*)
 	readLengthNotSpecifiedOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,ReadLengthNotSpecifiedWarnings],True]&&messages,
 		(
-			Message[Warning::DNASequencingReadLengthNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,ReadLengthNotSpecifiedWarnings]],Cache->simulatedCache]];
+			Message[Warning::DNASequencingReadLengthNotSpecified,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,ReadLengthNotSpecifiedWarnings]],Simulation -> updatedSimulation]];
 			{ReadLength}
 		),
 		{}
@@ -3125,13 +3148,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ReadLength is specified or can be determined from the primer composition field:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the ReadLength is specified or can be determined from the primer composition field:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ReadLength is specified or can be determined from the primer composition field:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the ReadLength is specified or can be determined from the primer composition field:",True,True],
 				Nothing
 			];
 
@@ -3145,7 +3168,7 @@ resolveExperimentDNASequencingOptions[
 	(*If there are DyeSetUnknownErrors and we are throwing messages, then throw an Error message*)
 	dyeSetInvalidOptions=If[MemberQ[Lookup[allErrorTrackersAssociation,DyeSetUnknownErrors],True]&&messages,
 		(
-			Message[Error::DyeSetUnknown,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,DyeSetUnknownErrors]],Cache->simulatedCache]];
+			Message[Error::DyeSetUnknown,ObjectToString[PickList[simulatedSamples,Lookup[allErrorTrackersAssociation,DyeSetUnknownErrors]],Simulation -> updatedSimulation]];
 			{DyeSet}
 		),
 		{}
@@ -3164,13 +3187,13 @@ resolveExperimentDNASequencingOptions[
 
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the DyeSet is specified:",False,True],
+				Test["For the provided samples "<>ObjectToString[failingSamples,Simulation -> updatedSimulation]<>", the DyeSet is specified:",False,True],
 				Nothing
 			];
 
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For the provided samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the DyeSet is specified:",True,True],
+				Test["For the provided samples "<>ObjectToString[passingSamples,Simulation -> updatedSimulation]<>", the DyeSet is specified:",True,True],
 				Nothing
 			];
 
@@ -3226,8 +3249,8 @@ resolveExperimentDNASequencingOptions[
 			MatchQ[nonDiscardedSamples,{}],{{},{}},
 
 			(* If not, check their SamplesInStorageConditions *)
-			gatherTests, ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorageConditions, Output -> {Result, Tests},Cache->simulatedCache],
-			True,{ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorageConditions, Output -> Result,Cache->simulatedCache], {}}
+			gatherTests, ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorageConditions, Output -> {Result, Tests}, Simulation -> updatedSimulation],
+			True,{ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorageConditions, Output -> Result, Simulation -> updatedSimulation], {}}
 		];
 
 	(*Collect Invalid options SamplesInStorageCondition*)
@@ -3250,8 +3273,8 @@ resolveExperimentDNASequencingOptions[
 			NullQ[myPrimerSamples],{{},{}},
 
 			(* If not, check their PrimerStorageConditions *)
-			gatherTests, ValidContainerStorageConditionQ[nonDiscardedPrimerSamples,nonDiscardedPrimerSampleStorageConditions, Output -> {Result, Tests},Cache->simulatedCache],
-			True,{ValidContainerStorageConditionQ[nonDiscardedPrimerSamples,nonDiscardedPrimerSampleStorageConditions, Output -> Result,Cache->simulatedCache], {}}
+			gatherTests, ValidContainerStorageConditionQ[nonDiscardedPrimerSamples,nonDiscardedPrimerSampleStorageConditions, Output -> {Result, Tests}, Simulation -> updatedSimulation],
+			True,{ValidContainerStorageConditionQ[nonDiscardedPrimerSamples,nonDiscardedPrimerSampleStorageConditions, Output -> Result, Simulation -> updatedSimulation], {}}
 		];
 
 	(*Collect Invalid options PrimerStorageCondition*)
@@ -3266,8 +3289,8 @@ resolveExperimentDNASequencingOptions[
 	{validMasterMixStorageConditionBool, validMasterMixStorageConditionTests} =
 		Which[
 			MatchQ[masterMixNoModels,{}],{{},{}},
-			gatherTests, ValidContainerStorageConditionQ[masterMixNoModels,masterMixStorageNoModels, Output -> {Result, Tests},Cache->simulatedCache],
-			True, {ValidContainerStorageConditionQ[masterMixNoModels,masterMixStorageNoModels, Output -> Result,Cache->simulatedCache], {}}
+			gatherTests, ValidContainerStorageConditionQ[masterMixNoModels,masterMixStorageNoModels, Output -> {Result, Tests}, Simulation -> updatedSimulation],
+			True, {ValidContainerStorageConditionQ[masterMixNoModels,masterMixStorageNoModels, Output -> Result, Simulation -> updatedSimulation], {}}
 		];
 	
 	(*Collect Invalid options MasterMixStorageCondition*)
@@ -3280,8 +3303,8 @@ resolveExperimentDNASequencingOptions[
 
 	(*---Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument---*)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[instrument,If[!NullQ[myPrimerSamples],Join[simulatedSamples,myPrimerSamples],simulatedSamples],Output->{Result,Tests},Cache->simulatedCache],
-		{CompatibleMaterialsQ[instrument,If[!NullQ[myPrimerSamples],Join[simulatedSamples,myPrimerSamples],simulatedSamples],Messages->messages,Cache->simulatedCache],{}}
+		CompatibleMaterialsQ[instrument,If[!NullQ[myPrimerSamples],Join[simulatedSamples,myPrimerSamples],simulatedSamples],Output->{Result,Tests}, Simulation -> updatedSimulation],
+		{CompatibleMaterialsQ[instrument,If[!NullQ[myPrimerSamples],Join[simulatedSamples,myPrimerSamples],simulatedSamples],Messages->messages, Simulation -> updatedSimulation],{}}
 	];
 
 	(*if the materials are incompatible, then the Instrument is invalid*)
@@ -3337,7 +3360,7 @@ resolveExperimentDNASequencingOptions[
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3358,7 +3381,8 @@ resolveExperimentDNASequencingOptions[
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache -> cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotAmounts->Null,
 			RequiredAliquotContainers->targetContainers,
 			Output->{Result,Tests}
@@ -3369,10 +3393,12 @@ resolveExperimentDNASequencingOptions[
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache -> cacheBall,
+				Simulation->updatedSimulation,
 				RequiredAliquotAmounts->Null,
 				RequiredAliquotContainers->targetContainers,
-				Output->Result],
+				Output->Result
+			],
 			{}
 		}
 	];
@@ -3435,60 +3461,62 @@ resolveExperimentDNASequencingOptions[
 	(* --- pull out all the shared options from the input options --- *)
 
 	(* get the rest directly *)
-	{confirm, template, operator, upload, outputOption, samplesInStorage, samplePreparation} = Lookup[myOptions, {Confirm, Template, Operator, Upload, Output, SamplesInStorageCondition, PreparatoryUnitOperations}];
+	{confirm, canaryBranch, template, operator, upload, outputOption, samplesInStorage, samplePreparation} = Lookup[myOptions, {Confirm, CanaryBranch, Template, Operator, Upload, Output, SamplesInStorageCondition, PreparatoryUnitOperations}];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
 		MatchQ[Lookup[myOptions, Email], Automatic] && NullQ[parentProtocol], True,
-		MatchQ[Lookup[myOptions, Email], Automatic] && MatchQ[parentProtocol, ObjectP[ProtocolTypes[]]], False,
+		MatchQ[Lookup[myOptions, Email], Automatic] && MatchQ[parentProtocol, ObjectP[ProtocolTypes[Output -> Short]]], False,
 		True, Lookup[myOptions, Email]
 	];
 
 	(* get the final resolved options (pre-collapsed; that is happening outside the function) *)
 	resolvedOptions = ReplaceRule[Normal[updatedRoundedDNASequencingOptions],
 		Flatten[{
-		Instrument -> instrument,
-		SequencingCartridge ->sequencingCartridge,
-		InjectionGroups -> resolvedInjectionGroups,
-		BufferCartridge -> bufferCartridge,
-		Temperature -> temperature,
-		PreparedPlate -> resolvedPreparedPlate,
-		(*NumberOfReplicates -> numberOfReplicates,*)
-		NumberOfInjections->numberOfInjections,
-		ReadLength -> resolvedReadLengths,
-		SampleVolume -> sampleVolume,
-		ReactionVolume -> reactionVolume,
-		MasterMix -> masterMix,
-		PurificationType -> resolvedPurificationType,
-		QuenchingReagents -> resolvedQuenchingReagents,
-		QuenchingReagentVolumes -> resolvedQuenchingReagentVolumes,
-		SequencingBuffer -> resolvedSequencingBuffer,
-		SequencingBufferVolume -> resolvedSequencingBufferVolume,
-		PrimeTime -> primeTime,
-		PrimeVoltage -> primeVoltage,
-		InjectionTime -> injectionTime,
-		RampTime -> rampTime,
-		Normal[Merge[resolvedOptionsPackets,Identity]],
-		SequencingCartridgeStorageCondition->sequencingCartridgeStorageCondition,
-		resolvedAliquotOptions,
-		resolvedPostProcessingOptions,
-		If[MatchQ[resolvedPCROptions,{_Rule..}],Normal[KeyTake[resolvedPCROptions,{
-				Activation,ActivationTime,ActivationTemperature,ActivationRampRate,
-				DenaturationTime,DenaturationTemperature,DenaturationRampRate,
-				PrimerAnnealing,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,
-				ExtensionTime,ExtensionTemperature,ExtensionRampRate,NumberOfCycles,HoldTemperature
-			}]],{}],
-		Confirm -> confirm,
-		Name -> name,
-		Template -> template,
-		Cache -> cacheBall,
-		Email -> email,
-		FastTrack -> fastTrack,
-		Operator -> operator,
-		Output -> outputOption,
-		ParentProtocol -> parentProtocol,
-		Upload -> upload(*,
-		SamplesInStorageCondition -> samplesInStorage*)
+			Instrument -> instrument,
+			SequencingCartridge ->sequencingCartridge,
+			InjectionGroups -> resolvedInjectionGroups,
+			BufferCartridge -> bufferCartridge,
+			Temperature -> temperature,
+			PreparedPlate -> resolvedPreparedPlate,
+			(*NumberOfReplicates -> numberOfReplicates,*)
+			NumberOfInjections->numberOfInjections,
+			ReadLength -> resolvedReadLengths,
+			SampleVolume -> sampleVolume,
+			ReactionVolume -> reactionVolume,
+			MasterMix -> masterMix,
+			PurificationType -> resolvedPurificationType,
+			QuenchingReagents -> resolvedQuenchingReagents,
+			QuenchingReagentVolumes -> resolvedQuenchingReagentVolumes,
+			SequencingBuffer -> resolvedSequencingBuffer,
+			SequencingBufferVolume -> resolvedSequencingBufferVolume,
+			PrimeTime -> primeTime,
+			PrimeVoltage -> primeVoltage,
+			InjectionTime -> injectionTime,
+			RampTime -> rampTime,
+			Normal[Merge[resolvedOptionsPackets,Identity]],
+			SequencingCartridgeStorageCondition->sequencingCartridgeStorageCondition,
+			resolvedSamplePrepOptions,
+			resolvedAliquotOptions,
+			resolvedPostProcessingOptions,
+			If[MatchQ[resolvedPCROptions,{_Rule..}],Normal[KeyTake[resolvedPCROptions,{
+					Activation,ActivationTime,ActivationTemperature,ActivationRampRate,
+					DenaturationTime,DenaturationTemperature,DenaturationRampRate,
+					PrimerAnnealing,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,
+					ExtensionTime,ExtensionTemperature,ExtensionRampRate,NumberOfCycles,HoldTemperature
+				}]],{}],
+			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
+			Name -> name,
+			Template -> template,
+			Cache -> cacheBall,
+			Email -> email,
+			FastTrack -> fastTrack,
+			Operator -> operator,
+			Output -> outputOption,
+			ParentProtocol -> parentProtocol,
+			Upload -> upload(*,
+			SamplesInStorageCondition -> samplesInStorage*)
 		}]
 	];
 	 
@@ -3519,6 +3547,7 @@ resolveExperimentDNASequencingOptions[
 DefineOptions[experimentDNASequencingResourcePackets,
 	Options:>{
 		CacheOption,
+		SimulationOption,
 		HelperOutputOption
 	}
 ];
@@ -3544,7 +3573,8 @@ experimentDNASequencingResourcePackets[
 		quenchingReagentResourceContainers,listedQuenchingReagents,pairedQuenchingReagentsAndVolumes,quenchingReagentVolumeRules,vortexAdapterRackResource,
 		uniqueQuenchingReagentResources,uniqueQuenchingReagentObjects,uniqueQuenchingReagentResourceReplaceRules,quenchingReagentResource,flattenedQuenchingReagentVolumes,
 		purificationType,plateSeptaResource,capillaryProtectorResource, samplePreparationTime,resourcePickingTime,assayPlatePreparationTime,postPCRSampleProcessingTime,bigDyeXTerminator,
-		protocolPacket,sharedFieldPacket,finalizedPacket, allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,previewRule,optionsRule
+		protocolPacket,sharedFieldPacket,finalizedPacket, allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,previewRule,optionsRule,
+		simulatedSamples, simulation, updatedSimulation
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -3567,7 +3597,11 @@ experimentDNASequencingResourcePackets[
 	messages = Not[gatherTests];
 
 	(* Get the inherited cache *)
-	inheritedCache = Lookup[ToList[ops],Cache];
+	inheritedCache = Lookup[ToList[ops],Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
+
+	(* simulate the samples after they go through all the sample prep *)
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentDNASequencing, mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
 	(* --- Make our one big Download call --- *)
 
@@ -3589,7 +3623,8 @@ experimentDNASequencingResourcePackets[
 				{Packet[MaxVolume]},
 				{Packet[NumberOfWells, WellDimensions, MaxVolume, PlateColor, WellBottom, Skirted]}
 			},
-			Cache->inheritedCache
+			Cache->inheritedCache,
+			Simulation->updatedSimulation
 		],
 		Download::FieldDoesntExist
 	];
@@ -3617,9 +3652,9 @@ experimentDNASequencingResourcePackets[
 	];
 
 	(*--Extract the container objects and models from the downloaded cache. Resources should not be created for the containers in--*)
-	containersInObjects=DeleteDuplicates[Download[mySamples,Container[Object],Cache->inheritedCache]];
+	containersInObjects=DeleteDuplicates[Download[mySamples,Container[Object],Cache->inheritedCache,Simulation->updatedSimulation]];
 
-	containersInModels=Download[containersInObjects,Model[Object],Cache->inheritedCache];
+	containersInModels=Download[containersInObjects,Model[Object],Cache->inheritedCache,Simulation->updatedSimulation];
 
 	(*--Generate the primers resources--*)
 	(*Consolidate all resources if we can, that will make liquid handling more accurate*)
@@ -3677,7 +3712,7 @@ experimentDNASequencingResourcePackets[
 	];
 
 	(*--Extract the container objects from the downloaded cache. Resources should not be created for the containers in--*)
-	primerContainersInObjects=DeleteDuplicates[Download[myPrimerSamples,Container[Object],Cache->inheritedCache]];
+	primerContainersInObjects=DeleteDuplicates[Download[myPrimerSamples,Container[Object],Cache->inheritedCache,Simulation->updatedSimulation]];
 
 	(* -- Generate instrument resources -- *)
 
@@ -4029,12 +4064,12 @@ experimentDNASequencingResourcePackets[
 		NumberOfInjections->Lookup[myResolvedOptions,NumberOfInjections],
 
 		Replace[Checkpoints] -> {
-			{"Preparing Samples",samplePreparationTime,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->samplePreparationTime]]},
-			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->resourcePickingTime]]},
-			{"Preparing Assay Plate",assayPlatePreparationTime,"The ReadPlate is loaded with samples and reagents.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->assayPlatePreparationTime]]},
-			{"Sample Processing",postPCRSampleProcessingTime,"Sample processing directly before the sequencing run, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->postPCRSampleProcessingTime]]},
-			{"Capillary Electrophoresis",geneticAnalyzerRunTime,"The capillary electrophoresis procedure is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->geneticAnalyzerRunTime]]},
-			{"Returning Materials",1 Hour,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Hour]]}
+			{"Preparing Samples",samplePreparationTime,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->samplePreparationTime]]},
+			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->resourcePickingTime]]},
+			{"Preparing Assay Plate",assayPlatePreparationTime,"The ReadPlate is loaded with samples and reagents.",Link[Resource[Operator->$BaselineOperator,Time->assayPlatePreparationTime]]},
+			{"Sample Processing",postPCRSampleProcessingTime,"Sample processing directly before the sequencing run, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->postPCRSampleProcessingTime]]},
+			{"Capillary Electrophoresis",geneticAnalyzerRunTime,"The capillary electrophoresis procedure is performed.",Link[Resource[Operator->$BaselineOperator,Time->geneticAnalyzerRunTime]]},
+			{"Returning Materials",1 Hour,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->1 Hour]]}
 		},
 
 		(*===Sample Preparation===*)
@@ -4131,8 +4166,8 @@ experimentDNASequencingResourcePackets[
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache,Simulation->updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache,Simulation->updatedSimulation], Null}
 	];
 
 	(*Generate the preview output rule; Preview is always Null*)

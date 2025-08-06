@@ -517,23 +517,39 @@ DefineTests[AnalyzeCriticalMicelleConcentration,
 				Unset[$CreatedObjects];
 			)
 		],
-
-		Example[{Messages,"MissingExcludedSamples","Give an error stating that the samples to be excluded from the fit are not present in the data:"},
-		AnalyzeCriticalMicelleConcentration[
-			Object[Data,SurfaceTension, "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests" <> $SessionUUID],
-			Exclude->{Object[Sample, "id:aXRlnnnnLXBX"]}],
+		Example[{Messages, "ObjectDoesNotExist", "If a nonexistent object is specified, return $Failed:"},
+			AnalyzeCriticalMicelleConcentration[
+				Object[Data, SurfaceTension, "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests" <> $SessionUUID],
+				Exclude -> {Object[Sample,"id:123456"]}
+			],
 			$Failed,
-		Messages:>{
-			Error::MissingExcludedSamples,
-			Error::InvalidOption
-		},
-		SetUp :> (
-			$CreatedObjects = {}
-		),
-		TearDown :> (
-			EraseObject[$CreatedObjects, Force -> True];
-			Unset[$CreatedObjects]
-		)
+			Messages :> {
+				Download::ObjectDoesNotExist
+			},
+			SetUp :> (
+				$CreatedObjects = {}
+			),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True];
+				Unset[$CreatedObjects]
+			)
+		],
+		Example[{Messages, "MissingExcludedSamples", "Give an error stating that the samples to be excluded from the fit are not present in the data:"},
+			AnalyzeCriticalMicelleConcentration[
+				Object[Data, SurfaceTension, "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests" <> $SessionUUID],
+				Exclude -> {Object[Sample,"Test aliquotSampleNullMW 10 for analyzeCriticalMicelleConcentration" <> $SessionUUID]}],
+			$Failed,
+			Messages :> {
+				Error::MissingExcludedSamples,
+				Error::InvalidOption
+			},
+			SetUp :> (
+				$CreatedObjects = {}
+			),
+			TearDown :> (
+				EraseObject[$CreatedObjects, Force -> True];
+				Unset[$CreatedObjects]
+			)
 		],
 		Example[{Additional,"Excepts a PreMicellarRange with a span that is not smallest to largest:"},
 			AnalyzeCriticalMicelleConcentration[
@@ -784,8 +800,7 @@ SymbolSetUp :> {
 		},
 
 		(* Make test CTAB molecules, one with no Molecular Weight *)
-		testMolecule = Quiet[UploadMolecule[
-			BiosafetyLevel -> "BSL-1",
+		testMolecule = UploadMolecule[
 			CAS -> "57-09-0",
 			DOTHazardClass -> "Class 0",
 			ExactMass -> Quantity[363.2500624387201`, ("Grams")/("Moles")],
@@ -805,13 +820,11 @@ SymbolSetUp :> {
 			Radioactive -> False,
 			State -> Solid,
 			UNII -> "L64N7M9BWR",
-			WaterReactive -> False
-		],
-			Warning::SimilarMolecules
+			WaterReactive -> False,
+			Force -> True
 		];
 
-		testMoleculeNullMW = Quiet[UploadMolecule[
-			BiosafetyLevel -> "BSL-1",
+		testMoleculeNullMW = UploadMolecule[
 			CAS -> "57-09-0",
 			DOTHazardClass -> "Class 0",
 			ExactMass -> Quantity[363.2500624387201`, ("Grams")/("Moles")],
@@ -831,9 +844,8 @@ SymbolSetUp :> {
 			Radioactive -> False,
 			State -> Solid,
 			UNII -> "L64N7M9BWR",
-			WaterReactive -> False
-		],
-			Warning::SimilarMolecules
+			WaterReactive -> False,
+			Force -> True
 		];
 
 		(* Create test containers *)
@@ -970,7 +982,7 @@ SymbolSetUp :> {
 		(* Manually update needed changes to samples *)
 		Upload[
 			{
-				<|Object->nullCompositionSample,Replace[Composition]->{{Null,Null}}|>,
+				<|Object->nullCompositionSample,Replace[Composition]->{{Null,Null,Null}}|>,
 				<|Object->diluentNullST,SurfaceTension->Null|>,
 				<|Object->aliquotSampleWithAnalyte,Replace[Analytes]->Link[Model[Molecule, "id:vXl9j57PmP5D"]]|>
 			}
@@ -1363,23 +1375,6 @@ DefineTests[AnalyzeCriticalMicelleConcentrationOptions,
 		Example[{Basic,"Display the option values which will be used in the analysis:"},
 			AnalyzeCriticalMicelleConcentrationOptions[Object[Protocol, MeasureSurfaceTension, "Test protocol object for AnalyzeCriticalMicelleConcentrationOptions tests" <> $SessionUUID]],
 			_Grid,
-			SetUp:>(
-				$CreatedObjects = {}
-			),
-			TearDown :> (
-				EraseObject[$CreatedObjects, Force -> True];
-				Unset[$CreatedObjects]
-			)
-		],
-		Example[{Basic,"View any potential issues with provided inputs/options displayed:"},
-			AnalyzeCriticalMicelleConcentrationOptions[
-				Object[Protocol, MeasureSurfaceTension, "Test protocol object for AnalyzeCriticalMicelleConcentrationOptions tests" <> $SessionUUID],
-				Exclude->{Object[Sample, "id:aXRlnnnnLXBX"]}],
-			_Grid,
-			Messages:>{
-				Error::MissingExcludedSamples,
-				Error::InvalidOption
-			},
 			SetUp:>(
 				$CreatedObjects = {}
 			),

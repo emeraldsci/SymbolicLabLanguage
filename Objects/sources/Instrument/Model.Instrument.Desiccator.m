@@ -66,19 +66,21 @@ DefineObjectType[Model[Instrument,Desiccator], {
 			Description -> "Vaccuum pump used to create low pressure atmosphere inside the desiccator.",
 			Category -> "Instrument Specifications"
 		},
-		SampleLocation->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>{LocationPositionP, ObjectP[Model[Instrument, Desiccator]]},
-			Description->"The location in the instrument where desiccant is placed.",
-			Category->"Instrument Specifications"
+		SampleDeck -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Deck],
+			Description -> "The location in the instrument where samples are placed.",
+			Category -> "Instrument Specifications"
 		},
-		DrierLocation->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>{LocationPositionP, ObjectP[Model[Instrument, Desiccator]]},
-			Description->"The location in the instrument where samples are placed.",
-			Category->"Instrument Specifications"
+		DrierDeck -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Deck],
+			Description -> "The location in the instrument where desiccant is placed.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

@@ -25,6 +25,11 @@ DefineTests[PlotWestern,
 			PlotWestern[Link[Object[Data, Western, "id:qdkmxz0A8xx1"],Protocol]],
 			_?ValidGraphicsQ
 		],
+		Example[
+			{Basic, "Given a protocol object, plot the linked data objects:"},
+			PlotWestern[Object[Data, Western, "id:jLq9jXvjqw8E"][Protocol]],
+			SlideView[{ValidGraphicsP[]..}]
+		],
 		Test[
 			"Plot the spectrum from one Object[Data,Western] Object:",
 			PlotWestern[Download[Object[Data, Western, "id:qdkmxz0A8xx1"],MassSpectrum]],

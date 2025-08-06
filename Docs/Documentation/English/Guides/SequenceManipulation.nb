@@ -1,3 +1,351 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:13379e391b0a8c342cd1b3d3dbd965b2425bf15a46299766988e4d810322d8ba
-size 14113
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     13562,        341]
+NotebookOptionsPosition[     10194,        276]
+NotebookOutlinePosition[     11648,        312]
+CellTagsIndexPosition[     11605,        309]
+WindowTitle->Sequence Manipulation
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "b11b64cc-3cfb-467f-9e32-683d6edc4d06"]
+        }],ExpressionUUID->"e5f8acd6-e14b-4b14-b19e-56899bd393a7"],
+        StripOnInput->False], {"\<\"ExplicitlyType\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ExplicitlyType"], "\<\"ExplicitlyTypedQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ExplicitlyTypedQ"], "\<\"SequenceDrop\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceDrop"], "\<\"SequenceFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceFirst"], "\<\"SequenceJoin\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceJoin"], "\<\"SequenceLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceLast"], "\<\"SequenceMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceMost"], "\<\"SequenceRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRest"], "\<\"SequenceRotateLeft\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRotateLeft"], \
+"\<\"SequenceRotateRight\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRotateRight"], "\<\"SequenceTake\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceTake"], "\<\"UnTypeSequence\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/UnTypeSequence"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "96feebdb-3d38-48d9-a4ab-5615b0bcc335"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "10ebcca3-bbfc-4fbd-a1b2-4dea63d2b32f"]
+        }],ExpressionUUID->"5ac3fd1b-09a9-4085-8753-d745fc8c10f8"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "2164914e-f58e-40b2-a20c-168a53de3e88"]
+    }], "AnchorBar",ExpressionUUID->"7189ded5-1fe1-47fb-83e5-324c3a36b23c"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"6801f269-c651-43a8-9401-db93d39434af"],
+
+Cell["Sequence Manipulation", "GuideTitle",
+ CellID->143744354,ExpressionUUID->"4247eb7b-aa8d-4e8b-a71a-2adbc2208b7d"],
+
+Cell["", "GuideAbstract",
+ CellID->35882576,ExpressionUUID->"10f48dea-41b9-444d-8b3d-9821c5ff560e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->229568052,ExpressionUUID->"b5efd532-4c56-4d9a-aeb1-a30fd5fc5f31"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceFirst"]],"paclet:NucleicAcids/ref/SequenceFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1830f715-a29e-4050-9795-8678e5be6230"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceLast"]],"paclet:NucleicAcids/ref/SequenceLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6f429cb3-8865-4617-9cad-f5387da6fd9f"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceMost"]],"paclet:NucleicAcids/ref/SequenceMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "053284dc-466e-4c1f-a8af-7a5bc262a50a"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceRest"]],"paclet:NucleicAcids/ref/SequenceRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5bbfabd2-ba75-43c6-b721-daa3834b65f5"]
+}], "InlineGuideFunctionListing",
+ CellID->1016437481,ExpressionUUID->"2a8e796c-e634-4ff5-b732-02662f102d9f"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SequenceTake"]],"paclet:NucleicAcids/ref/SequenceTake"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"64057c83-652a-4fc5-8106-9e86268064f6"]],\
+ "InlineGuideFunctionListing",
+ CellID->137113675,ExpressionUUID->"6597555f-2660-4dd6-b351-81897927be0d"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SequenceDrop"]],"paclet:NucleicAcids/ref/SequenceDrop"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"0bcc1bf8-d0d5-4c13-8d2a-2e9c43936e30"]],\
+ "InlineGuideFunctionListing",
+ CellID->77103735,ExpressionUUID->"072f5673-d637-4668-8a02-e77a1a828774"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SequenceJoin"]],"paclet:NucleicAcids/ref/SequenceJoin"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"7ddfda02-37c2-40fd-867a-1cf6d438e3ea"]],\
+ "InlineGuideFunctionListing",
+ CellID->4963943,ExpressionUUID->"79c0a905-0f9f-4053-87f0-e7879635ea8c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceRotateLeft"]],
+    "paclet:NucleicAcids/ref/SequenceRotateLeft"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "64dbcea0-fd27-4742-99aa-bbcbcf21781d"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequenceRotateRight"]],
+    "paclet:NucleicAcids/ref/SequenceRotateRight"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "567970ea-1596-48cb-92ef-516af7be4053"]
+}], "InlineGuideFunctionListing",
+ CellID->671823048,ExpressionUUID->"0be03347-7368-49e0-8f2e-aba3bf94e870"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExplicitlyTypedQ"]],"paclet:NucleicAcids/ref/ExplicitlyTypedQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"10edd422-72a0-47cb-a2fe-c1fdc2c7e651"]],\
+ "InlineGuideFunctionListing",
+ CellID->133646813,ExpressionUUID->"de55fb96-d883-426d-9055-7415c9e1104a"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExplicitlyType"]],"paclet:NucleicAcids/ref/ExplicitlyType"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"c8b5cc99-d48e-4604-8320-666dd4076de8"]],\
+ "InlineGuideFunctionListing",
+ CellID->15838111,ExpressionUUID->"cdcf54ce-3e18-49f6-96c7-c2d892f06a3b"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnTypeSequence"]],"paclet:NucleicAcids/ref/UnTypeSequence"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"31841993-8a10-4e89-93dc-03c43938e6c4"]],\
+ "InlineGuideFunctionListing",
+ CellID->25203163,ExpressionUUID->"8a6b266b-5ac9-430c-b530-0e12743b7b4d"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->248735488,ExpressionUUID->"3829e4e5-b4cf-4648-a8fe-fc994920369c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"6b7c1532-d712-44f1-9c15-15d94217f23a"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->125638391,ExpressionUUID->"776e0fe5-8a0d-4094-8b9d-5c1f818531df"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->216571176,ExpressionUUID->"9f5f2b4c-ec76-4da8-aab5-dcf1618a7e52"],
+
+Cell["", "FooterCell",
+ CellID->385926678,ExpressionUUID->"54a546bc-a250-4ddf-b18d-b4d236aad470"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"Sequence Manipulation",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:31:12", "context" -> "Docs`", 
+    "keywords" -> {
+     "SequenceFirst", "SequenceLast", "SequenceMost", "SequenceRest", 
+      "SequenceTake", "SequenceDrop", "SequenceJoin", "SequenceRotateLeft", 
+      "SequenceRotateRight", "ExplicitlyTypedQ", "ExplicitlyType", 
+      "UnTypeSequence"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "Sequence Manipulation", "title" -> "Sequence Manipulation", "type" -> 
+    "Guide", "uri" -> "Docs/guide/SequenceManipulation", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[593, 21, 4143, 99, 58, "AnchorBarGrid",ExpressionUUID->"6801f269-c651-43a8-9401-db93d39434af",
+ CellID->1],
+Cell[4739, 122, 118, 1, 50, "GuideTitle",ExpressionUUID->"4247eb7b-aa8d-4e8b-a71a-2adbc2208b7d",
+ CellID->143744354],
+Cell[4860, 125, 99, 1, 31, "GuideAbstract",ExpressionUUID->"10f48dea-41b9-444d-8b3d-9821c5ff560e",
+ CellID->35882576],
+Cell[4962, 128, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"b5efd532-4c56-4d9a-aeb1-a30fd5fc5f31",
+ CellID->229568052],
+Cell[5078, 131, 1447, 38, 25, "InlineGuideFunctionListing",ExpressionUUID->"2a8e796c-e634-4ff5-b732-02662f102d9f",
+ CellID->1016437481],
+Cell[6528, 171, 360, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"6597555f-2660-4dd6-b351-81897927be0d",
+ CellID->137113675],
+Cell[6891, 181, 359, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"072f5673-d637-4668-8a02-e77a1a828774",
+ CellID->77103735],
+Cell[7253, 191, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"79c0a905-0f9f-4053-87f0-e7879635ea8c",
+ CellID->4963943],
+Cell[7614, 201, 760, 20, 25, "InlineGuideFunctionListing",ExpressionUUID->"0be03347-7368-49e0-8f2e-aba3bf94e870",
+ CellID->671823048],
+Cell[8377, 223, 368, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"de55fb96-d883-426d-9055-7415c9e1104a",
+ CellID->133646813],
+Cell[8748, 233, 363, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"cdcf54ce-3e18-49f6-96c7-c2d892f06a3b",
+ CellID->15838111],
+Cell[9114, 243, 363, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"8a6b266b-5ac9-430c-b530-0e12743b7b4d",
+ CellID->25203163],
+Cell[9480, 253, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"3829e4e5-b4cf-4648-a8fe-fc994920369c",
+ CellID->248735488],
+Cell[9589, 256, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"776e0fe5-8a0d-4094-8b9d-5c1f818531df",
+ CellID->125638391],
+Cell[9984, 270, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"9f5f2b4c-ec76-4da8-aab5-dcf1618a7e52",
+ CellID->216571176],
+Cell[10093, 273, 97, 1, 41, "FooterCell",ExpressionUUID->"54a546bc-a250-4ddf-b18d-b4d236aad470",
+ CellID->385926678]
+}
+]
+*)
+
+(* End of internal cache information *)
+

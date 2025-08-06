@@ -96,12 +96,15 @@ peaksLookup={
 	},
 	Object[Data,Western] -> {MassSpectrum -> MassSpectrumPeaksAnalyses},
 	Object[Data,TLC] -> {Intensity -> LanePeaksAnalyses, LaneImage -> LanePeaksAnalyses},
-	Object[Data,XRayDiffraction] -> {DiffractionSpectrum -> DiffractionPeaksAnalyses},
+	Object[Data,XRayDiffraction] -> {BlankedDiffractionPattern -> DiffractionPeaksAnalyses},
 	Object[Data,IRSpectroscopy] -> {AbsorbanceSpectrum -> AbsorbanceSpectrumPeaksSource},
 	Object[Data,DifferentialScanningCalorimetry] -> {HeatingCurves -> HeatingCurvePeaksAnalyses},
 	Object[Data,CircularDichroism]->{CircularDichroismAbsorbanceSpectrum->CircularDichroismPeaksAnalysis},
 	Object[Data,DynamicLightScattering] -> {MassDistribution -> MassDistributionAnalyses,IntensityDistribution->IntensityDistributionAnalyses},
-	Object[Data,CapillaryGelElectrophoresisSDS] -> {ProcessedUVAbsorbanceData -> PeaksAnalyses, RelativeMigrationData -> RelativeMigrationPeaksAnalyses}
+	Object[Data,CapillaryGelElectrophoresisSDS] -> {ProcessedUVAbsorbanceData -> PeaksAnalyses, RelativeMigrationData -> RelativeMigrationPeaksAnalyses},
+	Object[Data, CoulterCount] -> {DiameterDistribution -> DiameterPeaksAnalyses, UnblankedDiameterDistribution -> DiameterPeaksAnalyses},
+	Object[Data,CapillaryIsoelectricFocusing] -> {ProcessedUVAbsorbanceData -> PeaksAnalyses},
+	Object[Data, FragmentAnalysis] -> {Electropherogram -> PeaksAnalyses, DNAFragmentSizeAnalyses -> PeaksAnalyses,RNAFragmentSizeAnalyses -> PeaksAnalyses}
 };
 
 

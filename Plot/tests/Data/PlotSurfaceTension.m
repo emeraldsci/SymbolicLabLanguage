@@ -14,6 +14,10 @@ DefineTests[PlotSurfaceTension,
 			PlotSurfaceTension[Object[Data, SurfaceTension,  "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"<> plotObjectUUID]],
 			ValidGraphicsP[]
 		],
+		Example[{Basic, "Given a MeasureSurfaceTension protocol object, PlotSurfaceTension returns an plot:"},
+			PlotSurfaceTension[Object[Protocol, MeasureSurfaceTension, "Test protocol object for PlotSurfaceTension tests"<> plotObjectUUID]],
+			ValidGraphicsP[]
+		],
 		Example[{Options,Legend, "Add a legend:"},
 			PlotSurfaceTension[Object[Data, SurfaceTension,  "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"<> plotObjectUUID],
 				Legend->{"Surface Tension"}
@@ -61,7 +65,8 @@ DefineTests[PlotSurfaceTension,
 		Module[{objs, existingObjs},
 			objs = Quiet[Cases[
 				Flatten[{
-					Object[Data, SurfaceTension, "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"]
+					Object[Data, SurfaceTension, "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"],
+					Object[Protocol, MeasureSurfaceTension, "Test protocol object for PlotSurfaceTension tests"]
 				}],
 				ObjectP[]
 			]];
@@ -69,7 +74,7 @@ DefineTests[PlotSurfaceTension,
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
 
-		Module[{dataPackets, protocolObjectPacket},
+		Module[{dataPackets, dataObj},
 			plotObjectUUID = CreateUUID[];
 			(*Make test data packets.*)
 			dataPackets = {
@@ -128,7 +133,13 @@ DefineTests[PlotSurfaceTension,
 				]
 			};
 
-			Upload[dataPackets];
+			dataObj = Upload[dataPackets];
+
+			Upload[<|
+				Type -> Object[Protocol, MeasureSurfaceTension],
+				Name -> "Test protocol object for PlotSurfaceTension tests" <> plotObjectUUID,
+				Replace[Data] -> {Link[dataObj[[1]], Protocol]}
+			|>];
 
 		];
 

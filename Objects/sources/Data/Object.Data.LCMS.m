@@ -131,7 +131,7 @@ DefineObjectType[Object[Data, LCMS], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Meter],
 			Units -> Meter Nano,
-			Description -> "Minimum wavelenght setting for the diode array absorbance detector on the HPLC's flow cell.",
+			Description -> "Minimum wavelength setting for the diode array absorbance detector on the HPLC's flow cell.",
 			Category -> "General"
 		},
 		MaxWavelength -> {
@@ -139,7 +139,7 @@ DefineObjectType[Object[Data, LCMS], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Meter],
 			Units -> Meter Nano,
-			Description -> "Maximum wavelenght setting for the diode array absorbance detector on the HPLC's flow cell.",
+			Description -> "Maximum wavelength setting for the diode array absorbance detector on the HPLC's flow cell.",
 			Category -> "General"
 		},
 		GradientStart -> {

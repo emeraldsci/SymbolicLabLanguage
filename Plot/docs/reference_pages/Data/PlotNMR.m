@@ -40,6 +40,26 @@ DefineUsage[PlotNMR,
 				}
 			},
 			{
+				Definition -> {"PlotNMR[protocol]", "plot"},
+				Description -> "creates a 'plot' of NMR spectra found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing NMR data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, NMR]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the NMR protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotNMR[spectra]","plot"},
 				Description->"generates a graphical representation of the provided 'spectra'.",
 				Inputs:>{
@@ -68,11 +88,7 @@ DefineUsage[PlotNMR,
 			"PlotChromatography",
 			"PlotAbsorbanceSpectroscopy"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"hayley",
-			"brad"			
-		},
+		Author -> {"yanzhe.zhu", "sebastian.bernasek", "hayley", "brad"},
 		Preview->True
 	}
 ];

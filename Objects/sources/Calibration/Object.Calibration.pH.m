@@ -14,7 +14,9 @@ DefineObjectType[Object[Calibration, pH], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Protocol,MeasurepH][CalibrationData]
+				Object[Protocol,MeasurepH][CalibrationData],
+				Object[Protocol,AdjustpH][CalibrationData],
+				Object[Qualification,pHMeter][CalibrationData]
 			],
 			Description -> "The protocol that generated this data.",
 			Category -> "General",
@@ -127,12 +129,20 @@ DefineObjectType[Object[Calibration, pH], {
 			Description -> "The y-intercept of the fitted slope.",
 			Category -> "Qualifications & Maintenance"
 		},
-		pHFitRelativeError -> {
+		AbsolutepHSlope -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Percent],
 			Units -> Percent,
-			Description -> "The deviation of the measurements from the slope.",
+			Description -> "The electrode response to the target ion displayed as a percentage of the theoretical value. When the temperature is 25 °C, the theoretical value is 59.16 mV per pH unit, as calculated using the Nernst equation.",
+			Category -> "Qualifications & Maintenance"
+		},
+		RelativepHSlope -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Percent],
+			Units -> Percent,
+			Description -> "The percentage difference between the AbsolutepHSlope and the theoretical value. When the temperature is 25 °C, the theoretical value is 59.16 mV per pH unit, as calculated using the Nernst equation.",
 			Category -> "Qualifications & Maintenance"
 		},
 		DataFile -> {
@@ -143,6 +153,14 @@ DefineObjectType[Object[Calibration, pH], {
 			Description -> "The file containing data collected during the conductivity calibration.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		SensorCalibration -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Calibration, Sensor, pH][CalibrationData],
+			Description -> "The sensor calibration data (containing raw data and fit analysis) when calibrating sensornet pH Meter.",
+			Category -> "General"
 		}
 	}
 }];

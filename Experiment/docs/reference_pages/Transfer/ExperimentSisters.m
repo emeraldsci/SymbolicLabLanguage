@@ -148,7 +148,7 @@ DefineUsage[ValidExperimentTransferQ,
 			"ExperimentSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu", "thomas"}
 	}
 ];
 
@@ -293,6 +293,6 @@ DefineUsage[ExperimentTransferOptions,
 			"ExperimentTransfer",
 			"ExperimentSamplePreparation"
 		},
-		Author -> {"thomas", "lige.tonggu"}
+		Author -> {"lige.tonggu", "thomas"}
 	}
 ];

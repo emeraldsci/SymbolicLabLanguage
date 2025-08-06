@@ -79,6 +79,21 @@ DefineObjectType[Object[Maintenance, Dishwash], {
 			Description -> "Filter used to filter the air during labware drying.",
 			Category -> "Dishwasher Setup"
 		},
+		FillingFault -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the dishwasher experienced a filling fault during its first run, prompting a waiting period to refill the purified water tank and a rerun of the cycle.",
+			Category -> "Dishwasher Setup"
+		},
+		ErrorImages -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "Photographs of the dishwasher's error log after interruptions to the run.",
+			Category -> "Dishwasher Setup"
+		},
 		RackPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
@@ -155,6 +170,14 @@ DefineObjectType[Object[Maintenance, Dishwash], {
 			Pattern :> _Link,
 			Relation -> (Object[Container][DishwashLog, 2]|Object[Part][DishwashLog, 2]|Object[Item][DishwashLog, 2]),
 			Description -> "The newly clean labware produced by this maintenance.",
+			Category -> "Unloading"
+		},
+		CoveredContainers  -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container], Object[Part], Object[Item]],
+			Description -> "Containers whose covers are washed in this maintenance and are covered again after cleaning.",
 			Category -> "Unloading"
 		},
 		CleanCovers -> {

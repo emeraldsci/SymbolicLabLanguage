@@ -1,3 +1,561 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c6820571058d453dca7d5dfdd18f56d2ca73bfecfe022cc35bcc587eb5af69bd
-size 22016
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     21816,        551]
+NotebookOptionsPosition[     16174,        448]
+NotebookOutlinePosition[     17868,        488]
+CellTagsIndexPosition[     17825,        485]
+WindowTitle->InventoryTracking
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "e9f05df4-7181-4e34-98e0-e55759fc89a0"]
+        }],ExpressionUUID->"a54094e3-7cb3-421b-95e9-b4b0730c9845"],
+        StripOnInput->False], {"\<\"CancelDiscardSamplesPreview\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/CancelDiscardSamplesPreview"], \
+"\<\"ClearSampleStorageSchedule\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ClearSampleStorageSchedule"], \
+"\<\"DiscardSamplesOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/DiscardSamplesOptions"], "\<\"PlotInventory\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/PlotInventory"], \
+"\<\"StoreSamplesOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/StoreSamplesOptions"], \
+"\<\"UnrestrictSamplesOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/UnrestrictSamplesOptions"], \
+"\<\"UploadInventoryOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadInventoryOptions"], \
+"\<\"UploadProductOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadProductOptions"], \
+"\<\"UploadStockSolutionOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadStockSolutionOptions"], \
+"\<\"ValidContainerStorageConditionQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/ValidContainerStorageConditionQ"], "\<\
+\"ValidDiscardSamplesQ\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ValidDiscardSamplesQ"], \
+"\<\"ValidUploadInventoryQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadInventoryQ"], \
+"\<\"ValidUploadProductQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadProductQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "81cea1d8-2a18-4ca0-a125-53d1b1aeefb4"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "f45d189d-9b5c-48e4-84e0-c3cb21efb20c"]
+        }],ExpressionUUID->"c1d1d493-d7df-4934-9b10-ca6183662599"],
+        StripOnInput->False], {"\<\"LocationTracking\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/LocationTracking"], "\<\"SampleShipments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/SampleShipments"], "\<\"SampleStorage\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/SampleStorage"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "3e0b7f11-a796-42ae-ad81-937c2395ea12"]
+    }], "AnchorBar",ExpressionUUID->"e7e81527-692d-48b5-b1d2-685c712b9fa4"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"106d941e-456a-49aa-9849-2c2f1afcd232"],
+
+Cell["Inventory Tracking", "GuideTitle",
+ CellID->1592345147,ExpressionUUID->"66467cfa-d1a0-421e-9d95-f13e9b657668"],
+
+Cell["\<\
+Collection of functions for tracking and managing inventory within an ECL \
+facility.\
+\>", "GuideAbstract",
+ CellID->603676715,ExpressionUUID->"aacb432a-e63c-4c8e-a035-1bdaa2b6fc04"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1281800577,ExpressionUUID->"e6212bd7-07a5-4054-a7cc-f9c6d5e4d485"],
+
+Cell["Inventory Tracking", "GuideFunctionsSubsection",
+ CellID->1813834582,ExpressionUUID->"2b920b06-c150-4292-8a6b-935a5916d183"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ClearSampleStorageSchedule"]], 
+    "paclet:Inventory/ref/ClearSampleStorageSchedule"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "33ca0354-6103-4465-b0ef-2ecdd429ceba"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Erases any pending storage changes of the indicated sample and sets the \
+storage condition such that the sample stays where it is currently."
+}], "GuideText",
+ CellID->1587450509,ExpressionUUID->"39e49d68-315e-49f0-ba9a-af1270731960"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotInventory"]], 
+    "paclet:ConstellationViewers/ref/PlotInventory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "284eb372-c8e2-4ae2-99a5-e1a2212d9a6c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Displays the inventory dashboard, filtered by name or notebook."
+}], "GuideText",
+ CellID->2091358082,ExpressionUUID->"d5f69050-bdef-4509-b425-a5e16a9b1246"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1590433725,ExpressionUUID->"0a4af906-178b-4397-a0ba-822bc241d731"],
+
+Cell["Validating", "GuideFunctionsSubsection",
+ CellID->690661866,ExpressionUUID->"c232cbc6-19fe-425b-847b-2364580463ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidContainerStorageConditionQ"]], 
+    "paclet:ExperimentUtilities/ref/ValidContainerStorageConditionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ed86f967-5479-4272-b853-47f2df0114bc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given samples' storage conditions are compatible with other \
+samples in the same container."
+}], "GuideText",
+ CellID->804869827,ExpressionUUID->"6afa2ef6-9463-4ecd-aade-71945bb7c771"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidUploadInventoryQ"]], 
+    "paclet:ExternalUpload/ref/ValidUploadInventoryQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3fcf88d5-62dc-463e-adad-f391f29fa666"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if it is valid to call UploadInventory function on given input \
+product object."
+}], "GuideText",
+ CellID->447689936,ExpressionUUID->"bb25bf01-3f14-481a-972a-a6fd34571d4e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidUploadProductQ"]], 
+    "paclet:ExternalUpload/ref/ValidUploadProductQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "020665fa-e05b-4af1-b245-30d9e5d40987"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a valid product object can be generated from the input URL."
+}], "GuideText",
+ CellID->1689538911,ExpressionUUID->"a559787d-c6fd-437c-9ca4-907b5e862fb7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidDiscardSamplesQ"]], 
+    "paclet:Inventory/ref/ValidDiscardSamplesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "92150774-efbd-4638-ac6a-2abd8242b85a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input object is not in use by any protocol and can thus be \
+marked for disposal."
+}], "GuideText",
+ CellID->2051696543,ExpressionUUID->"145fe7c4-5dde-4f2c-9d83-d13c6df6bb17"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidContainerStorageConditionQ"]], 
+    "paclet:ExperimentUtilities/ref/ValidContainerStorageConditionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ce14635-7b96-47a2-a1be-5ef79ec5ace7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given samples' storage conditions are compatible with other \
+samples in the same container."
+}], "GuideText",
+ CellID->718878322,ExpressionUUID->"1d332aba-dab6-46ab-817e-ec661c592150"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->444959832,ExpressionUUID->"63293c27-a18d-426d-b6e9-d7e320659d54"],
+
+Cell["Calculate Options", "GuideFunctionsSubsection",
+ CellID->901837570,ExpressionUUID->"4e02f78e-eecd-42c7-a6e8-ff0fdfb4ffa6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DiscardSamplesOptions"]], 
+    "paclet:Inventory/ref/DiscardSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7d49db16-2efa-43da-aa72-7abf322d38e4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options that would be used if the given samples were \
+discarded."
+}], "GuideText",
+ CellID->244458464,ExpressionUUID->"22055f81-da2b-4993-a0f6-7fef3589481e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StoreSamplesOptions"]], 
+    "paclet:Inventory/ref/StoreSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "372a27ac-c886-4345-aed7-26dc7a211dc8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options that would be used if the given samples were \
+to be stored under the provided storage condition."
+}], "GuideText",
+ CellID->477187737,ExpressionUUID->"b899275e-f1fb-40c8-add5-4494f9df93fe"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnrestrictSamplesOptions"]], 
+    "paclet:Inventory/ref/UnrestrictSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1a31180d-a4ca-42af-a4df-4a10be94f98f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options for calling UnrestrictSamples on input \
+samples."
+}], "GuideText",
+ CellID->1390357861,ExpressionUUID->"523c35c1-5443-478c-8ac9-d169f1af07c8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadInventoryOptions"]], 
+    "paclet:ExternalUpload/ref/UploadInventoryOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27013d77-69df-41bf-a1ec-4870d1ab3941"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading an Inventory object to \
+keep the specified Product in stock."
+}], "GuideText",
+ CellID->975006820,ExpressionUUID->"34f42f71-dabf-4e2d-8a8c-e6ed80dd1f5a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadStockSolutionOptions"]], 
+    "paclet:Experiment/ref/UploadStockSolutionOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cd389644-edc7-470b-8e91-6d0e1e6afa13"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when generating a new stock solution \
+model with the given components, solvent and total volume."
+}], "GuideText",
+ CellID->1639397130,ExpressionUUID->"b3413b93-692d-4abd-9b67-65691d19a87f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StoreSamplesOptions"]], 
+    "paclet:Inventory/ref/StoreSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ba7d9a7d-0e41-4ecf-bf9c-3d3caee62d22"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options that would be used if the given samples were \
+to be stored under the provided storage condition."
+}], "GuideText",
+ CellID->1132372900,ExpressionUUID->"087a1803-3322-450a-bb53-d5239dab7961"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadProductOptions"]], 
+    "paclet:ExternalUpload/ref/UploadProductOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4b9def12-19d4-4a14-88bd-848a10c8c89d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options that would be used by upload product when \
+called on a product URL."
+}], "GuideText",
+ CellID->791250586,ExpressionUUID->"fd53ac5d-384d-4f51-af44-6af51feb2cb0"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1329856678,ExpressionUUID->"3d5b44fe-7a4f-4de2-a3d2-40968cba29ad"],
+
+Cell["Preview", "GuideFunctionsSubsection",
+ CellID->2038872817,ExpressionUUID->"0a25f929-6295-46c4-a85a-cc6dec4e74ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CancelDiscardSamplesPreview"]], 
+    "paclet:Inventory/ref/CancelDiscardSamplesPreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "46def286-b14e-44ee-8dc3-d9b7b8dad876"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a preciw to cancel the pending discard request for the objects to \
+ensure they will not be discarded."
+}], "GuideText",
+ CellID->2086363787,ExpressionUUID->"c315b40c-8c92-4a94-88af-ef5ff520d7a9"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1403179893,ExpressionUUID->"f677a365-5b89-49f9-8661-9ae9b3e57b39"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"3768a8d9-f6e9-4f95-acc9-55a9818ef032"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1726533944,ExpressionUUID->"bbbeb3bb-fc59-4d2a-93d8-4a834f8beab1"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1056958544,ExpressionUUID->"ca47fd21-0678-4f93-acfc-f78a0a5fa987"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["SampleStorage"]], "paclet:Docs/guide/SampleStorage"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->317521024,ExpressionUUID->"fca77b1c-1f71-487a-8a84-983003ff254d"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["SampleShipments"]], "paclet:Docs/guide/SampleShipments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->78987573,ExpressionUUID->"e2aa5f35-6976-4700-9205-a91768c7e6b3"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["LocationTracking"]], "paclet:Docs/guide/LocationTracking"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->399245565,ExpressionUUID->"cf3778a2-7eb9-4fbe-942d-b98a860eafb7"],
+
+Cell["", "FooterCell",
+ CellID->1381297727,ExpressionUUID->"d3f34463-c8c4-427b-8f15-e514affa7f7a"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"InventoryTracking",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:05:15", "context" -> "Docs`", 
+    "keywords" -> {
+     "ClearSampleStorageSchedule", "PlotInventory", 
+      "ValidContainerStorageConditionQ", "ValidUploadInventoryQ", 
+      "ValidUploadProductQ", "ValidDiscardSamplesQ", "DiscardSamplesOptions", 
+      "StoreSamplesOptions", "UnrestrictSamplesOptions", 
+      "UploadInventoryOptions", "UploadStockSolutionOptions", 
+      "UploadProductOptions", "CancelDiscardSamplesPreview"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for tracking and managing inventory within an \
+ECL facility.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "InventoryTracking", "title" -> "InventoryTracking", "type" -> "Guide", 
+    "uri" -> "Docs/guide/InventoryTracking", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"79f886d3-6c41-4b2f-9638-3537f8608d1f"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[589, 21, 4728, 107, 58, "AnchorBarGrid",ExpressionUUID->"106d941e-456a-49aa-9849-2c2f1afcd232",
+ CellID->1],
+Cell[5320, 130, 116, 1, 45, "GuideTitle",ExpressionUUID->"66467cfa-d1a0-421e-9d95-f13e9b657668",
+ CellID->1592345147],
+Cell[5439, 133, 193, 4, 30, "GuideAbstract",ExpressionUUID->"aacb432a-e63c-4c8e-a035-1bdaa2b6fc04",
+ CellID->603676715],
+Cell[5635, 139, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"e6212bd7-07a5-4054-a7cc-f9c6d5e4d485",
+ CellID->1281800577],
+Cell[5752, 142, 130, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"2b920b06-c150-4292-8a6b-935a5916d183",
+ CellID->1813834582],
+Cell[5885, 145, 578, 14, 51, "GuideText",ExpressionUUID->"39e49d68-315e-49f0-ba9a-af1270731960",
+ CellID->1587450509],
+Cell[6466, 161, 485, 13, 37, "GuideText",ExpressionUUID->"d5f69050-bdef-4509-b425-a5e16a9b1246",
+ CellID->2091358082],
+Cell[6954, 176, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"0a4af906-178b-4397-a0ba-822bc241d731",
+ CellID->1590433725],
+Cell[7071, 179, 121, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"c232cbc6-19fe-425b-847b-2364580463ca",
+ CellID->690661866],
+Cell[7195, 182, 562, 14, 51, "GuideText",ExpressionUUID->"6afa2ef6-9463-4ecd-aade-71945bb7c771",
+ CellID->804869827],
+Cell[7760, 198, 518, 14, 57, "GuideText",ExpressionUUID->"bb25bf01-3f14-481a-972a-a6fd34571d4e",
+ CellID->447689936],
+Cell[8281, 214, 497, 13, 37, "GuideText",ExpressionUUID->"a559787d-c6fd-437c-9ca4-907b5e862fb7",
+ CellID->1689538911],
+Cell[8781, 229, 520, 14, 57, "GuideText",ExpressionUUID->"145fe7c4-5dde-4f2c-9d83-d13c6df6bb17",
+ CellID->2051696543],
+Cell[9304, 245, 562, 14, 57, "GuideText",ExpressionUUID->"1d332aba-dab6-46ab-817e-ec661c592150",
+ CellID->718878322],
+Cell[9869, 261, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"63293c27-a18d-426d-b6e9-d7e320659d54",
+ CellID->444959832],
+Cell[9985, 264, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"4e02f78e-eecd-42c7-a6e8-ff0fdfb4ffa6",
+ CellID->901837570],
+Cell[10116, 267, 512, 14, 51, "GuideText",ExpressionUUID->"22055f81-da2b-4993-a0f6-7fef3589481e",
+ CellID->244458464],
+Cell[10631, 283, 548, 14, 57, "GuideText",ExpressionUUID->"b899275e-f1fb-40c8-add5-4494f9df93fe",
+ CellID->477187737],
+Cell[11182, 299, 511, 14, 37, "GuideText",ExpressionUUID->"523c35c1-5443-478c-8ac9-d169f1af07c8",
+ CellID->1390357861],
+Cell[11696, 315, 544, 14, 57, "GuideText",ExpressionUUID->"34f42f71-dabf-4e2d-8a8c-e6ed80dd1f5a",
+ CellID->975006820],
+Cell[12243, 331, 570, 14, 57, "GuideText",ExpressionUUID->"b3413b93-692d-4abd-9b67-65691d19a87f",
+ CellID->1639397130],
+Cell[12816, 347, 549, 14, 57, "GuideText",ExpressionUUID->"087a1803-3322-450a-bb53-d5239dab7961",
+ CellID->1132372900],
+Cell[13368, 363, 526, 14, 57, "GuideText",ExpressionUUID->"fd53ac5d-384d-4f51-af44-6af51feb2cb0",
+ CellID->791250586],
+Cell[13897, 379, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"3d5b44fe-7a4f-4de2-a3d2-40968cba29ad",
+ CellID->1329856678],
+Cell[14014, 382, 119, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0a25f929-6295-46c4-a85a-cc6dec4e74ca",
+ CellID->2038872817],
+Cell[14136, 385, 549, 14, 51, "GuideText",ExpressionUUID->"c315b40c-8c92-4a94-88af-ef5ff520d7a9",
+ CellID->2086363787],
+Cell[14688, 401, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f677a365-5b89-49f9-8661-9ae9b3e57b39",
+ CellID->1403179893],
+Cell[14798, 404, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"bbbeb3bb-fc59-4d2a-93d8-4a834f8beab1",
+ CellID->1726533944],
+Cell[15194, 418, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"ca47fd21-0678-4f93-acfc-f78a0a5fa987",
+ CellID->1056958544],
+Cell[15304, 421, 250, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"fca77b1c-1f71-487a-8a84-983003ff254d",
+ CellID->317521024],
+Cell[15557, 429, 253, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"e2aa5f35-6976-4700-9205-a91768c7e6b3",
+ CellID->78987573],
+Cell[15813, 437, 256, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"cf3778a2-7eb9-4fbe-942d-b98a860eafb7",
+ CellID->399245565],
+Cell[16072, 445, 98, 1, 40, "FooterCell",ExpressionUUID->"d3f34463-c8c4-427b-8f15-e514affa7f7a",
+ CellID->1381297727]
+}
+]
+*)
+
+(* End of internal cache information *)
+

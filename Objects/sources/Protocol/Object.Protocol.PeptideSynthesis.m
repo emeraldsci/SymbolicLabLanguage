@@ -241,7 +241,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 		ResinTransferPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description->"A set of instructions specifying the transfer of resins into the reaction vessels prior to synthesis.",
 			Category->"Resin Swelling",
 			Developer->True
@@ -250,7 +250,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,ManualSamplePreparation],
 			Description->"The sample manipulation protocol used to transfer resin to the reaction vessels prior to synthesis.",
 			Category->"Resin Swelling",
 			Developer->True
@@ -834,7 +834,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 		TriturationPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description->"A set of instructions specifying the transfers required to add trituration solution to the cleavage vessels.",
 			Category->"Trituration"
 		},
@@ -842,7 +842,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol, ManualSamplePreparation]|Object[Protocol, RoboticSamplePreparation]|Object[Notebook, Script],
 			Description->"Sample manipulations protocols used to add trituration solution to the cleavage vessels.",
 			Category->"Trituration"
 		},
@@ -973,7 +973,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 		ResuspensionPrimitives->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SamplePreparationP,
 			Description->"A set of instructions specifying the transfers required to resuspended the strands into the final ContainersOut.",
 			Category->"Resuspension",
 			Developer->True
@@ -982,8 +982,8 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to manipulate the resuspended strands into the final ContainersOut.",
+			Relation->Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation],
+			Description->"A sample preparation protocol used to transfer the resuspended strands into the final ContainersOut.",
 			Category->"Resuspension",
 			Developer->True
 		},
@@ -1027,7 +1027,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 		StoragePrimitives->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description->"A set of instructions specifying the transfers required to store the uncleaved resin samples into the storage containers.",
 			Category->"Resuspension",
 			Developer->True
@@ -1036,7 +1036,7 @@ DefineObjectType[Object[Protocol, PeptideSynthesis], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"A sample manipulation protocol used to manipulate the uncleaved resin samples into the storage containers.",
 			Category->"Resin Storage",
 			Developer->True

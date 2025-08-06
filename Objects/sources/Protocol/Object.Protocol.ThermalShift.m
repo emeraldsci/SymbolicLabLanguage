@@ -85,10 +85,10 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Description -> "The conditions under which any leftover samples from the DilutionCurve should be stored after the samples are transferred to the measurement plate.",
 			Category->"Sample Preparation"
 		},
-		SampleDilutionPrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
+		SampleDilutionPrimitives -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the loading and mixing of each sample and the Diluent in the DilutionContainers.",
 			Category -> "Sample Preparation"
 		},
@@ -96,7 +96,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The sample manipulation protocol used to generate sample dilution curves.",
 			Category -> "Sample Preparation"
 		},
@@ -123,10 +123,11 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Description -> "For each member of SamplesIn, the speed at which the DilutionMixVolume is pipetted out and in of the dilution to mix the sample with the Diluent to make the DilutionCurve.",
 			Category->"Sample Preparation",
 			IndexMatching -> SamplesIn
-		},		PoolingPrimitives -> {
+		},
+		PoolingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of the experimental samples into the pooling plate prior to instrument analysis.",
 			Category -> "Sample Preparation"
 		},
@@ -204,7 +205,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The sample manipulation protocol used to pool samples prior to instrument measurement.",
 			Category -> "Sample Preparation"
 		},
@@ -281,7 +282,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 		AssayPlatePrimitives->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the assembly of the final assay reaction prior to instrument measurement.",
 			Category -> "Sample Preparation",
 			Developer -> True
@@ -290,7 +291,12 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]],
+			Relation -> Alternatives[
+				Object[Protocol,SampleManipulation],
+				Object[Protocol, ManualSamplePreparation],
+				Object[Protocol, RoboticSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description -> "The sample manipulation protocol used to assemble the final assay reaction prior to instrument measurement.",
 			Category -> "Sample Preparation",
 			Developer -> True
@@ -314,7 +320,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 		CapillaryStripLoadingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the experimental samples into Uncle Uni capillary strips prior to instrument analysis.",
 			Category -> "Sample Preparation"
 		},
@@ -322,7 +328,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
 			Description -> "The sample manipulation protocol used to load experimental samples into Uncle Uni capillary strips prior to instrument analysis.",
 			Category -> "Sample Preparation"
 		},
@@ -389,7 +395,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 		ContainersOutLoadingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the sample transfer of the experimental samples into the ContainersOut prior to storage.",
 			Category -> "Sample Preparation"
 		},
@@ -397,7 +403,7 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
 			Description -> "The sample manipulation protocol used to load experimental samples into the ContainersOut prior to storage.",
 			Category -> "Sample Preparation"
 		},
@@ -690,9 +696,9 @@ DefineObjectType[Object[Protocol,ThermalShift], {
 		},
 		DynamicLightScatteringManualLoadingTuples->{
 			Format->Multiple,
-			Class->{Sources->Link, SourceRow->Expression ,Targets->Link, TargetRow->Expression, FirstWell->Expression, NumberOfWells->Expression},
-			Pattern:>{Sources->_Link, SourceRow->_String, Targets->_Link, TargetRow->_String, FirstWell->_String, NumberOfWells->_String},
-			Relation->{Sources->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel],SourceRow->Null, Targets->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel], TargetRow->Null, FirstWell->Null, NumberOfWells->Null},
+			Class->{Sources->Link, SourceRow->Expression ,Targets->Link, TargetRow->Expression, FirstWell->Expression, NumberOfWells->Expression, TargetPositions -> Expression},
+			Pattern:>{Sources->_Link, SourceRow->_String, Targets->_Link, TargetRow->_String, FirstWell->_String, NumberOfWells->_String, TargetPositions->_String},
+			Relation->{Sources->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel],SourceRow->Null, Targets->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel], TargetRow->Null, FirstWell->Null, NumberOfWells->Null, TargetPositions -> Null},
 			Description->"The pipetting instructions used to manually load samples onto assay capillaries manually. This plate is set for loading using an 8-channel multichannel pipette.",
 			Category -> "Sample Loading"
 		},

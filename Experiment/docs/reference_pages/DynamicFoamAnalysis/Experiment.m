@@ -49,7 +49,12 @@ DefineUsage[ExperimentDynamicFoamAnalysis,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -98,7 +103,7 @@ DefineUsage[ValidExperimentDynamicFoamAnalysisQ,
 							Description->"The samples or containers that will be run in a dynamic foam analysis experiment.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,
@@ -147,7 +152,7 @@ DefineUsage[ExperimentDynamicFoamAnalysisPreview,
 							Description->"The samples or containers containing samples that will be run in a dynamic foam analysis experiment.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,
@@ -195,7 +200,7 @@ DefineUsage[ExperimentDynamicFoamAnalysisOptions,
 							Description->"The samples or containers containing the samples that will be run in a dynamic foam analysis experiment.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,

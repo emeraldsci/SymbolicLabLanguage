@@ -13,7 +13,7 @@ DefineUsage[PlotMassSpectrometry,
 		BasicDefinitions -> {
 			{
 				Definition->{"PlotMassSpectrometry[massSpectrometryData]", "plot"},
-				Description->"provides a graphical plot the provided mass spectra.",
+				Description->"provides a graphical 'plot' of the provided mass spectra.",
 				Inputs:>{
 					{
 						InputName->"massSpectrometryData",
@@ -26,6 +26,26 @@ DefineUsage[PlotMassSpectrometry,
 						OutputName->"plot",
 						Description->"A graphical representation of the spectra.",
 						Pattern:>ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition -> {"PlotMassSpectrometry[protocol]", "plot"},
+				Description -> "creates a 'plot' of the mass spectra found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing mass spectrometry data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, MassSpectrometry]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the mass spectrometry protocol.",
+						Pattern :> ValidGraphicsP[]
 					}
 				}
 			},

@@ -164,7 +164,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				OptionName->MagnetizationRack,
 				Default->Automatic,
 				Description->"The magnetic rack used during magnetization that provides the magnetic force to attract the magnetic beads.",
-				ResolutionDescription->"Automatically set to Model[Item, MagnetizationRack, \"Alpaqua 96S Super Magnet 96-well Plate Rack\"] for robotic preparation. For manual preparation, set to the rack that fits tube with capacity of holding the maximum possible volume of sample during the experiment. See Table 3.1 for what this is automatically set to for manual preparation.",
+				ResolutionDescription->"Automatically set to Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] for robotic preparation. For manual preparation, set to the rack that fits tube with capacity of holding the maximum possible volume of sample during the experiment. See Table 3.1 for what this is automatically set to for manual preparation.",
 				AllowNull->False,
 				Widget->Widget[
 					Type->Object,
@@ -280,7 +280,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfPreWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined PreWashBuffer and magnetic beads are mixed if PreWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if PreWashMixType is Pipette, and to 20 if if PreWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if PreWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "PreWash",
 					IndexMatchingOptions -> {}
@@ -292,7 +292,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> PreWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined PreWashBuffer and magnetic beads that is pipetted up and down in order to mix, if PreWashMixType->Pipette, .",
-					ResolutionDescription -> "For robotic preparation, PreWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined PreWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, PreWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, PreWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined PreWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, PreWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "PreWash",
 					IndexMatchingOptions -> {}
@@ -357,6 +357,35 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"PreWash",
 				NestedIndexMatching->True
 			},
+     
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> PreWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after PreWashMagnetizationTime. Top will aspirate PreWashAspirationPositionOffset below the Top of the container, Bottom will aspirate PreWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate PreWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation is Robotic and PreWash is True.",
+          NestedIndexMatching -> True,
+          Category -> "PreWash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> PreWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after PreWashMagnetizationTime. The Z Offset is based on the PreWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and PreWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category -> "PreWash"
+        }
+      ],
 			{
 				OptionName->PreWashCollectionContainer,
 				Default->Automatic,
@@ -414,9 +443,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null] (* For this option and all the additionally nested-index matching options (xxCollectionContainer, xxLabel, xxDestinationWell, XXIndex), we need to explicitly allow Automatic to be the same level of nestiness as Null and other real inputs to make ExpandIndexMatchedInputs happy. *)
 							]
 						]
 					],
@@ -621,7 +650,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfEquilibrationMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined EquilibrationBuffer and magnetic beads are mixed if EquilibrationMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if EquilibrationMixType is Pipette, and to 20 if if EquilibrationMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if EquilibrationMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Equilibration",
 					IndexMatchingOptions -> {}
@@ -633,7 +662,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> EquilibrationMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined EquilibrationBuffer and magnetic beads that is pipetted up and down in order to mix, if EquilibrationMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, EquilibrationMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined EquilibrationBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, EquilibrationMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, EquilibrationMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined EquilibrationBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, EquilibrationMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Equilibration",
 					IndexMatchingOptions -> {}
@@ -702,6 +731,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Equilibration",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> EquilibrationAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after EquilibrationMagnetizationTime. Top will aspirate EquilibrationAspirationPositionOffset below the Top of the container, Bottom will aspirate EquilibrationAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate EquilibrationAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation is Robotic and Equilibration is True.",
+          NestedIndexMatching -> True,
+          Category -> "Equilibration"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> EquilibrationAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after EquilibrationMagnetizationTime. The Z Offset is based on the EquilibrationAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and EquilibrationAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category -> "Equilibration"
+        }
+      ],
 			{
 				OptionName->EquilibrationCollectionContainer,
 				Default->Automatic,
@@ -759,9 +816,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -919,7 +976,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfLoadingMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined SamplesIn and magnetic beads are mixed if LoadingMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if LoadingMixType is Pipette, and to 20 if if LoadingMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if LoadingMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Loading",
 					IndexMatchingOptions -> {}
@@ -931,7 +988,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> LoadingMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined SamplesIn and magnetic beads that is pipetted up and down in order to mix, if LoadingMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, LoadingMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the combined sample volume and magnetic beads volume) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, LoadingMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, LoadingMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the combined sample volume and magnetic beads volume) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, LoadingMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Loading",
 					IndexMatchingOptions -> {}
@@ -996,6 +1053,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Loading",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> LoadingAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after LoadingMagnetizationTime. Top will aspirate LoadingAspirationPositionOffset below the Top of the container, Bottom will aspirate LoadingAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate LoadingAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic.",
+          NestedIndexMatching -> True,
+          Category -> "Loading"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> LoadingAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after LoadingMagnetizationTime. The Z Offset is based on the LoadingAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and LoadingAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category -> "Loading"
+        }
+      ],
 			{
 				OptionName->LoadingCollectionContainer,
 				Default->Automatic,
@@ -1053,9 +1138,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -1255,7 +1340,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined WashBuffer and magnetic beads are mixed if WashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if WashMixType is Pipette, and to 20 if if WashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if WashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -1267,7 +1352,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> WashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined WashBuffer and magnetic beads that is pipetted up and down in order to mix, if WashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, WashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined WashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, WashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, WashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined WashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, WashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -1332,6 +1417,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> WashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after WashMagnetizationTime. Top will aspirate WashAspirationPositionOffset below the Top of the container, Bottom will aspirate WashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate WashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and Wash is True.",
+          NestedIndexMatching -> True,
+          Category -> "Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> WashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after WashMagnetizationTime. The Z Offset is based on the WashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and WashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category -> "Wash"
+        }
+      ],
 			{
 				OptionName->WashCollectionContainer,
 				Default->Automatic,
@@ -1389,9 +1502,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -1592,7 +1705,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfSecondaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined SecondaryWashBuffer and magnetic beads are mixed if SecondaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if SecondaryWashMixType is Pipette, and to 20 if if SecondaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if SecondaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -1604,7 +1717,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> SecondaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined SecondaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if SecondaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, SecondaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined SecondaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, SecondaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, SecondaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined SecondaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, SecondaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -1669,6 +1782,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> SecondaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after SecondaryWashMagnetizationTime. Top will aspirate SecondaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SecondaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate SecondaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and SecondaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> SecondaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after SecondaryWashMagnetizationTime. The Z Offset is based on the SecondaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and SecondaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->SecondaryWashCollectionContainer,
 				Default->Automatic,
@@ -1726,9 +1867,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -1930,7 +2071,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfTertiaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined TertiaryWashBuffer and magnetic beads are mixed if TertiaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if TertiaryWashMixType is Pipette, and to 20 if if TertiaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if TertiaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -1942,7 +2083,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> TertiaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined TertiaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if TertiaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, TertiaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined TertiaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, TertiaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, TertiaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined TertiaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, TertiaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2007,6 +2148,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> TertiaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after TertiaryWashMagnetizationTime. Top will aspirate TertiaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate TertiaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate TertiaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and TertiaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> TertiaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after TertiaryWashMagnetizationTime. The Z Offset is based on the TertiaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and TertiaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->TertiaryWashCollectionContainer,
 				Default->Automatic,
@@ -2064,9 +2233,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -2268,7 +2437,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfQuaternaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined QuaternaryWashBuffer and magnetic beads are mixed if QuaternaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if QuaternaryWashMixType is Pipette, and to 20 if if QuaternaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if QuaternaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2280,7 +2449,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> QuaternaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined QuaternaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if QuaternaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, QuaternaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined QuaternaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, QuaternaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, QuaternaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined QuaternaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, QuaternaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2345,6 +2514,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> QuaternaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after QuaternaryWashMagnetizationTime. Top will aspirate QuaternaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate QuaternaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate QuaternaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and QuaternaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> QuaternaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after QuaternaryWashMagnetizationTime. The Z Offset is based on the QuaternaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and QuaternaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->QuaternaryWashCollectionContainer,
 				Default->Automatic,
@@ -2402,9 +2599,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -2606,7 +2803,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfQuinaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined QuinaryWashBuffer and magnetic beads are mixed if QuinaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if QuinaryWashMixType is Pipette, and to 20 if if QuinaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if QuinaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2618,7 +2815,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> QuinaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined QuinaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if QuinaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, QuinaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined QuinaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, QuinaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, QuinaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined QuinaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, QuinaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2683,6 +2880,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> QuinaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after QuinaryWashMagnetizationTime. Top will aspirate QuinaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate QuinaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate QuinaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and QuinaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> QuinaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after QuinaryWashMagnetizationTime. The Z Offset is based on the QuinaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and QuinaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->QuinaryWashCollectionContainer,
 				Default->Automatic,
@@ -2740,9 +2965,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -2944,7 +3169,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfSenaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined SenaryWashBuffer and magnetic beads are mixed if SenaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if SenaryWashMixType is Pipette, and to 20 if if SenaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if SenaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -2956,7 +3181,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> SenaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined SenaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if SenaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, SenaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined SenaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, SenaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, SenaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined SenaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, SenaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -3021,6 +3246,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> SenaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after SenaryWashMagnetizationTime. Top will aspirate SenaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SenaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate SenaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and SenaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> SenaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after SenaryWashMagnetizationTime. The Z Offset is based on the SenaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and SenaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->SenaryWashCollectionContainer,
 				Default->Automatic,
@@ -3078,9 +3331,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -3282,7 +3535,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfSeptenaryWashMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined SeptenaryWashBuffer and magnetic beads are mixed if SeptenaryWashMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if SeptenaryWashMixType is Pipette, and to 20 if if SeptenaryWashMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if SeptenaryWashMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -3294,7 +3547,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> SeptenaryWashMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined SeptenaryWashBuffer and magnetic beads that is pipetted up and down in order to mix, if SeptenaryWashMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, SeptenaryWashMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined SeptenaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, SeptenaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, SeptenaryWashMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined SeptenaryWashBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, SeptenaryWashMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Wash",
 					IndexMatchingOptions -> {}
@@ -3359,6 +3612,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Wash",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> SeptenaryWashAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after SeptenaryWashMagnetizationTime. Top will aspirate SeptenaryWashAspirationPositionOffset below the Top of the container, Bottom will aspirate SeptenaryWashAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate SeptenaryWashAspirationPositionOffset below the liquid level of the sample in the container.",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and SeptenaryWash is True.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> SeptenaryWashAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after SeptenaryWashMagnetizationTime. The Z Offset is based on the SeptenaryWashAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and SeptenaryWashAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category->"Wash"
+        }
+      ],
 			{
 				OptionName->SeptenaryWashCollectionContainer,
 				Default->Automatic,
@@ -3416,9 +3697,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -3619,7 +3900,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> NumberOfElutionMixes,
 					Default->Automatic,
 					Description -> "The number of times that the combined ElutionBuffer and magnetic beads are mixed if ElutionMixType is Pipette or Invert.",
-					ResolutionDescription -> "Automatically set to 10 if ElutionMixType is Pipette, and to 20 if if ElutionMixType is Swirl or Invert.",
+					ResolutionDescription -> "Automatically set to 20 if ElutionMixType is Pipette, Swirl or Invert.",
 					NestedIndexMatching -> True,
 					Category -> "Elution",
 					IndexMatchingOptions -> {}
@@ -3631,7 +3912,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					ModifiedOptionName -> ElutionMixVolume,
 					Default->Automatic,
 					Description ->"The volume of the combined ElutionBuffer and magnetic beads that is pipetted up and down in order to mix, if ElutionMixType->Pipette.",
-					ResolutionDescription -> "For robotic preparation, ElutionMixVolume is automatically set to 970 Microliter if 1/2*volume-to-mix (i.e.volume-to-mix is the volume of the combined ElutionBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 1/2*volume-to-mix. For manual preparation, ElutionMixVolume is automatically set to the lesser of 50 Milliliter and 1/2*volume-to-mix.",
+					ResolutionDescription -> "For robotic preparation, ElutionMixVolume is automatically set to 970 Microliter if 0.8*volume-to-mix (i.e.volume-to-mix is the volume of the combined ElutionBuffer and magnetic beads) is greater than 970 Microliter, and otherwise is set to the greater of 10 Microliter and 0.8*volume-to-mix. For manual preparation, ElutionMixVolume is automatically set to the lesser of 50 Milliliter and 0.8*volume-to-mix.",
 					NestedIndexMatching -> True,
 					Category -> "Elution",
 					IndexMatchingOptions -> {}
@@ -3696,6 +3977,34 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 				Category->"Elution",
 				NestedIndexMatching->True
 			},
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPosition,
+          ModifiedOptionName -> ElutionAspirationPosition,
+          Default->Automatic,
+          AllowNull ->True,
+          Widget -> Widget[
+            Type -> Enumeration,
+            Pattern :> MagneticBeadSeparationPipettingPositionP
+          ],
+          Description -> "The location from which the solution is aspirated after ElutionMagnetizationTime. Top will aspirate ElutionAspirationPositionOffset below the Top of the container, Bottom will aspirate ElutionAspirationPositionOffset above the Bottom of the container, and LiquidLevel will aspirate ElutionAspirationPositionOffset below the liquid level of the sample in the container",
+          ResolutionDescription -> "Automatically set to Bottom if Preparation->Robotic and Elution is True.",
+          NestedIndexMatching -> True,
+          Category -> "Elution"
+        }
+      ],
+      ModifyOptions[TransferRoboticTipOptions,
+        {
+          OptionName -> AspirationPositionOffset,
+          ModifiedOptionName -> ElutionAspirationPositionOffset,
+          Default->Automatic,
+          AllowNull ->True,
+          Description -> "The distance from the center of the well that the solution is aspirated after ElutionMagnetizationTime. The Z Offset is based on the ElutionAspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel). Please refer to the AspirationPosition diagram in the help file of ExperimentTransfer for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively.",
+          ResolutionDescription -> "Automatically set to 0 Millimeter if MagnetizationRack is Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] and ElutionAspirationPosition is bottom, otherwise set to 2 Millimeter.",
+          NestedIndexMatching -> True,
+          Category -> "Elution"
+        }
+      ],
 			{
 				OptionName->ElutionCollectionContainer,
 				Default->Automatic,
@@ -3753,9 +4062,9 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 									]
 								}
 							},
-							"Null" -> Widget[
+							"Automatic or Null" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Automatic,Null]
 							]
 						]
 					],
@@ -3891,7 +4200,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -3910,7 +4219,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -3929,7 +4238,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -3948,7 +4257,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -3968,7 +4277,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -3986,7 +4295,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4005,7 +4314,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4024,7 +4333,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4043,7 +4352,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4062,7 +4371,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4081,7 +4390,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4100,7 +4409,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4119,7 +4428,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type->String,Pattern:>_String,Size->Line],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type->String,Pattern:>_String,Size->Line]
@@ -4145,7 +4454,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4166,7 +4475,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4187,7 +4496,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4208,7 +4517,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4229,7 +4538,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4250,7 +4559,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4271,7 +4580,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4292,7 +4601,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4313,7 +4622,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4334,7 +4643,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4355,7 +4664,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4376,7 +4685,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4397,7 +4706,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4418,7 +4727,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4439,7 +4748,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4460,7 +4769,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4481,7 +4790,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4502,7 +4811,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4523,7 +4832,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4544,7 +4853,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
@@ -4565,7 +4874,7 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 								Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
 								PatternTooltip -> "Enumeration must be any well from A1 to H12."
 							],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[
@@ -4586,10 +4895,30 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 					Adder[
 						Alternatives[
 							Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[Null]]
+							Widget[Type->Enumeration,Pattern:>Alternatives[Automatic,Null]]
 						]
 					],
 					Widget[Type -> Number, Pattern :> GreaterEqualP[1, 1]]
+				],
+				Category->"Hidden",
+				NestedIndexMatching->True
+			},
+			{
+				OptionName->UnresolvedMagnetizationRack,
+				Default->Automatic,
+				Description->"The user input of the magnetic rack used during magnetization that is passed to Transfer unit operation and eventually to the primitive framework in order to in order to decide if an error should be thrown if Preparation->Robotic, and MagnetizationRack -> Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"] while also having a Filter unit operation.",
+				ResolutionDescription->"Automatically set to the unresolved MagnetizationRack if it is any Model[Item,MagnetizationRack] or Object[Item,MagnetizationRack]. Otherwise set to Null.",
+				AllowNull->True,
+				Widget-> Alternatives[
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[{
+							Model[Item,MagnetizationRack],
+							Object[Item,MagnetizationRack]
+						}]
+					],
+					Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]
+					]
 				],
 				Category->"Hidden",
 				NestedIndexMatching->True
@@ -4600,7 +4929,19 @@ DefineOptions[ExperimentMagneticBeadSeparation,
 		ModifyOptions[WorkCellOption,
 			{Category->"Hidden"}
 		],
-		FuntopiaSharedOptionsNestedIndexMatching,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount(* Note: MBS expand nested options differently than other functions use ExpandIndexMatchedInputs, easier not to expand as nested index *)
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+				}
+			}
+		],
+		NonBiologyFuntopiaSharedOptionsNestedIndexMatching,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
 		PreparationOption,
@@ -4632,6 +4973,7 @@ Error::PreWashAirDryMismatch="For the following samples `1`, PreWashAirDryTime i
 Error::NumberOfPreWashesMismatch="For the following samples `1`, NumberOfPreWashes is not compatible with the length of PreWashCollectionContainer or PreWashCollectionContainerLabel. Please change the values of these options, or leave them unspecified to be set automatically.";
 Warning::PreWashMixStowaways="The following samples `1` have a PreWashMixType which will affect their entire container, `2`, including the samples in that container with different PreWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the PreWashMixType for these samples.";
 Warning::PreWashAirDryStowaways="For the following samples `1` in batch `2`, PreWashAirDry is turned off; however, there are other samples in the batch `3` that have PreWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
+Error::PreWashAspirationPipettingOptionsMismatch = "For the following samples `1`, PreWashAspirationPosition is in conflict with PreWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::EquilibrationMismatch="For the following samples `1`, the Equilibration options are in conflict with Equilibration. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::EquilibrationMixMismatch="For the following samples `1`, the EquilibrationMix options are in conflict with EquilibrationMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4642,6 +4984,7 @@ Error::EquilibrationAirDryMismatch="For the following samples `1`, Equilibration
 Error::NumberOfEquilibrationsMismatch="Each sample can only be equilibrated once. For the following samples `1`, either the EquilibrationCollectionContainer or EquilibrationCollectionContainerLabel option resolve the number of equilibraitons to more than 1. Please change the values of these options, or leave them unspecified to be set automatically.";
 Warning::EquilibrationMixStowaways="The following samples `1` have a EquilibrationMixType which will affect their entire container, `2`, including the samples in that container with different EquilibrationMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the EquilibrationMixType for these samples.";
 Warning::EquilibrationAirDryStowaways="For the following samples `1` in batch `2`, EquilibrationAirDry is turned off; however, there are other samples in the batch `3` that have EquilibrationAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
+Error::EquilibrationAspirationPipettingOptionsMismatch = "For the following samples `1`, EquilibrationAspirationPosition is in conflict with EquilibrationAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::LoadingMixMismatch="For the following samples `1`, the LoadingMix options are in conflict with LoadingMix. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::InvalidLoadingMixTipType="For the following samples `1`, the LoadingMixTipType is specified as a non-WideBore TipTypeP, while the LoadingMixVolume of `2` is less or equal to 970 Microliter. Using a non-WideBore tip for small-volume pipette mixing risks clogging the tip due to the magnetic beads. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4651,6 +4994,7 @@ Error::LoadingAirDryMismatch="For the following samples `1`, LoadingAirDryTime i
 Error::NumberOfLoadingsMismatch="Each sample can only be loaded once. For the following samples `1`, either the LoadingCollectionContainer or LoadingCollectionContainerLabel option resolve the number of loadings to more than 1. Please change the values of these options, or leave them unspecified to be set automatically.";
 Warning::LoadingMixStowaways="The following samples `1` have a LoadingMixType which will affect their entire container, `2`, including the samples in that container with different LoadingMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the LoadingMixType for these samples.";
 Warning::LoadingAirDryStowaways="For the following samples `1` in batch `2`, LoadingAirDry is turned off; however, there are other samples in the batch `3` that have LoadingAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
+Error::LoadingAspirationPipettingOptionsMismatch = "For the following samples `1`, LoadingAspirationPosition is in conflict with LoadingAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::WashMismatch="For the following samples `1`, the Wash options are in conflict with Wash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::WashMixMismatch="For the following samples `1`, the WashMix options are in conflict with WashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4661,6 +5005,7 @@ Error::WashAirDryMismatch="For the following samples `1`, WashAirDryTime is in c
 Error::NumberOfWashesMismatch="For the following samples `1`, NumberOfWashes is not compatible with the length of WashCollectionContainer or WashCollectionContainerLabel. Please change the values of these options, or leave them unspecified to be set automatically.";
 Warning::WashMixStowaways="The following samples `1` have a WashMixType which will affect their entire container, `2`, including the samples in that container with different WashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the WashMixType for these samples.";
 Warning::WashAirDryStowaways="For the following samples `1` in batch `2`, WashAirDry is turned off; however, there are other samples in the batch `3` that have WashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
+Error::WashAspirationPipettingOptionsMismatch = "For the following samples `1`, WashAspirationPosition is in conflict with WashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::SecondaryWashMismatch="For the following samples `1`, the SecondaryWash options are in conflict with SecondaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::SecondaryWashMixMismatch="For the following samples `1`, the SecondaryWashMix options are in conflict with SecondaryWashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4672,6 +5017,7 @@ Error::NumberOfSecondaryWashesMismatch="For the following samples `1`, NumberOfS
 Warning::SecondaryWashMixStowaways="The following samples `1` have a SecondaryWashMixType which will affect their entire container, `2`, including the samples in that container with different SecondaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the SecondaryWashMixType for these samples.";
 Warning::SecondaryWashAirDryStowaways="For the following samples `1` in batch `2`, SecondaryWashAirDry is turned off; however, there are other samples in the batch `3` that have SecondaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidSecondaryWash="SecondaryWash is carried out after Wash. For the following samples `1`, SecondaryWash is True either as specified by SecondaryWash or resolved to True because there is other option in SecondaryWash specified, while Wash is False either as specified by Wash or because of the absence of other specified Wash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::SecondaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, SecondaryWashAspirationPosition is in conflict with SecondaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::TertiaryWashMismatch="For the following samples `1`, the TertiaryWash options are in conflict with TertiaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::TertiaryWashMixMismatch="For the following samples `1`, the TertiaryWashMix options are in conflict with TertiaryWashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4683,6 +5029,7 @@ Error::NumberOfTertiaryWashesMismatch="For the following samples `1`, NumberOfTe
 Warning::TertiaryWashMixStowaways="The following samples `1` have a TertiaryWashMixType which will affect their entire container, `2`, including the samples in that container with different TertiaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the TertiaryWashMixType for these samples.";
 Warning::TertiaryWashAirDryStowaways="For the following samples `1` in batch `2`, TertiaryWashAirDry is turned off; however, there are other samples in the batch `3` that have TertiaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidTertiaryWash="TertiaryWash is carried out after SecondaryWash. For the following samples `1`, TertiaryWash is True either as specified by TertiaryWash or resolved to True because there is other option in TertiaryWash specified, while SecondaryWash is False either as specified by SecondaryWash or because of the absence of other specified SecondaryWash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::TertiaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, TertiaryWashAspirationPosition is in conflict with TertiaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::QuaternaryWashMismatch="For the following samples `1`, the QuaternaryWash options are in conflict with QuaternaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::QuaternaryWashMixMismatch="For the following samples `1`, the QuaternaryWashMix options are in conflict with QuaternaryWashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4694,6 +5041,7 @@ Error::NumberOfQuaternaryWashesMismatch="For the following samples `1`, NumberOf
 Warning::QuaternaryWashMixStowaways="The following samples `1` have a QuaternaryWashMixType which will affect their entire container, `2`, including the samples in that container with different QuaternaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the QuaternaryWashMixType for these samples.";
 Warning::QuaternaryWashAirDryStowaways="For the following samples `1` in batch `2`, QuaternaryWashAirDry is turned off; however, there are other samples in the batch `3` that have QuaternaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidQuaternaryWash="QuaternaryWash is carried out after TertiaryWash. For the following samples `1`, QuaternaryWash is True either as specified by QuaternaryWash or resolved to True because there is other option in QuaternaryWash specified, while TertiaryWash is False either as specified by TertiaryWash or because of the absence of other specified TertiaryWash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::QuaternaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, QuaternaryWashAspirationPosition is in conflict with QuaternaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::QuinaryWashMismatch="For the following samples `1`, the QuinaryWash options are in conflict with QuinaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::QuinaryWashMixMismatch="For the following samples `1`, the QuinaryWashMix options are in conflict with QuinaryWashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4705,6 +5053,7 @@ Error::NumberOfQuinaryWashesMismatch="For the following samples `1`, NumberOfQui
 Warning::QuinaryWashMixStowaways="The following samples `1` have a QuinaryWashMixType which will affect their entire container, `2`, including the samples in that container with different QuinaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the QuinaryWashMixType for these samples.";
 Warning::QuinaryWashAirDryStowaways="For the following samples `1` in batch `2`, QuinaryWashAirDry is turned off; however, there are other samples in the batch `3` that have QuinaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidQuinaryWash="QuinaryWash is carried out after QuaternaryWash. For the following samples `1`, QuinaryWash is True either as specified by QuinaryWash or resolved to True because there is other option in QuinaryWash specified, while QuaternaryWash is False either as specified by QuaternaryWash or because of the absence of other specified QuaternaryWash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::QuinaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, QuinaryWashAspirationPosition is in conflict with QuinaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 
 Error::SenaryWashMismatch="For the following samples `1`, the SenaryWash options are in conflict with SenaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4717,6 +5066,7 @@ Error::NumberOfSenaryWashesMismatch="For the following samples `1`, NumberOfSena
 Warning::SenaryWashMixStowaways="The following samples `1` have a SenaryWashMixType which will affect their entire container, `2`, including the samples in that container with different SenaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the SenaryWashMixType for these samples.";
 Warning::SenaryWashAirDryStowaways="For the following samples `1` in batch `2`, SenaryWashAirDry is turned off; however, there are other samples in the batch `3` that have SenaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidSenaryWash="SenaryWash is carried out after QuinaryWash. For the following samples `1`, SenaryWash is True either as specified by SenaryWash or resolved to True because there is other option in SenaryWash specified, while QuinaryWash is False either as specified by QuinaryWash or because of the absence of other specified QuinaryWash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::SenaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, SenaryWashAspirationPosition is in conflict with SenaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::SeptenaryWashMismatch="For the following samples `1`, the SeptenaryWash options are in conflict with SeptenaryWash. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::SeptenaryWashMixMismatch="For the following samples `1`, the SeptenaryWashMix options are in conflict with SeptenaryWashMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4728,6 +5078,7 @@ Error::NumberOfSeptenaryWashesMismatch="For the following samples `1`, NumberOfS
 Warning::SeptenaryWashMixStowaways="The following samples `1` have a SeptenaryWashMixType which will affect their entire container, `2`, including the samples in that container with different SeptenaryWashMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the SeptenaryWashMixType for these samples.";
 Warning::SeptenaryWashAirDryStowaways="For the following samples `1` in batch `2`, SeptenaryWashAirDry is turned off; however, there are other samples in the batch `3` that have SeptenaryWashAirDry turned on so all samples will be air dried. If this is not the intended behavior, please separate the samples into separate batches so they can have separate air dry settings.";
 Error::InvalidSeptenaryWash="SeptenaryWash is carried out after SenaryWash. For the following samples `1`, SeptenaryWash is True either as specified by SeptenaryWash or resolved to True because there is other option in SeptenaryWash specified, while SenaryWash is False either as specified by SenaryWash or because of the absence of other specified SenaryWash options. Please change the values of these options, or leave them unspecified to be set automatically.";
+Error::SeptenaryWashAspirationPipettingOptionsMismatch = "For the following samples `1`, SeptenaryWashAspirationPosition is in conflict with SeptenaryWashAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 Error::ElutionMismatch="For the following samples `1`, the Elution options are in conflict with Elution. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::ElutionMixMismatch="For the following samples `1`, the ElutionMix options are in conflict with ElutionMix. Please change the values of these options, or leave them unspecified to be set automatically.";
@@ -4736,6 +5087,7 @@ Error::ElutionMixNoTip="For the following samples `1`, there is no tips found by
 Error::ElutionMixNoInstrument="For the following samples `1`, there is no instrument found by the function MixDevices given the specified options in ElutionMixType, ElutionMixTemperature, and ElutionMixRate. Please change the values of these options, or leave them unspecified to be set automatically.";
 Error::NumberOfElutionsMismatch="For the following samples `1`, NumberOfElutions is not matching with the length of ElutionCollectionContainer or ElutionCollectionContainerLabel. Please change the values of these options, or leave them unspecified to be set automatically.";
 Warning::ElutionMixStowaways="The following samples `1` have a ElutionMixType which will affect their entire container, `2`, including the samples in that container with different ElutionMixTypes, potentially causing more mixing than intended. If this additional mixing is not intended, consider changing the ElutionMixType for these samples.";
+Error::ElutionAspirationPipettingOptionsMismatch = "For the following samples `1`, ElutionAspirationPosition is in conflict with ElutionAspirationPositionOffset. Please change the values of these options, or leave them unspecified to be set automatically.";
 
 (* ::Subsubsection::Closed:: *)
 (*ExperimentMagneticBeadSeparation*)
@@ -4743,53 +5095,39 @@ Warning::ElutionMixStowaways="The following samples `1` have a ElutionMixType wh
 
 (*---Function overload accepting semi-pooled sample/container objects as inputs. Note: {s1,{s2,s3}}->{{s1},{s2,s3}}---*)
 ExperimentMagneticBeadSeparation[
-	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
+	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
 	myOptions:OptionsPattern[ExperimentMagneticBeadSeparation]
 ]:=Module[
-	{outputSpecification, output, gatherTests, safeOps, cacheOption, simulationOption, listedContainers, emptyContainers, resolvedProcessingOrder,
-		semiNestedSamplesAndContainers, semiNestedOptions, optionDefinition, listedSamples, listedOptions, processingOrder,
-		validSamplePreparationResult, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, unnestedSamplesWithPreparedSamplesNamed,
-		samplePreparationSimulation, containerToSampleResult, containerToSampleOutput, unnestedContainerToSampleOutput, unnestedContainerToSampleTests, myFullyNestedSamples,
-		myFullyNestedOptions, containerToSampleTests, simulation, currentSimulation
+	{
+		outputSpecification, output, gatherTests, processingOrder,  resolvedProcessingOrder, semiNestedSamplesAndContainers,
+		optionDefinition, semiNestedOptions, listedSamples, listedOptions, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,
+		samplePreparationSimulation, validSamplePreparationResult, containerToSampleSimulation, currentSimulation, listedContainers,
+		emptyContainers, unnestedSamplesWithPreparedSamples, containerToSampleResult, containerToSampleOutput, containerToSampleTests,
+		unnestedContainerToSampleOutput, unnestedContainerToSampleTests, myFullyNestedSamples, myFullyNestedOptions
 	},
 
-	(*Determine the requested return value from the function*)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	(* Determine the requested return value from the function *)
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
-	(*Determine if we should keep a running list of tests*)
-	gatherTests=MemberQ[output,Tests];
-
-	(* Get the safe ops *)
-	safeOps = SafeOptions[ExperimentMagneticBeadSeparation,ToList[myOptions]];
-
-	{cacheOption,simulationOption}=Lookup[safeOps,{Cache,Simulation},{}];
-
-	(*--Check for empty containers--*)
-	listedContainers=Cases[Flatten@ToList[mySemiNestedInputs],ObjectP[Object[Container]]];
-
-	emptyContainers=If[MatchQ[listedContainers,{}],
-		{},
-		PickList[listedContainers,Download[listedContainers,Contents,Cache->cacheOption,Simulation->simulationOption],{}]
-	];
-
-	(*Return early if empty containers*)
-	If[Length[emptyContainers]>0,
-		Message[Error::EmptyContainers,emptyContainers];
-		Return[$Failed]
-	];
+	(* Determine if we should keep a running list of tests *)
+	gatherTests = MemberQ[output,Tests];
 
 	(* Lookup the unresolved ProcessingOrder *)
-	processingOrder = Lookup[safeOps,ProcessingOrder];
+  (* Note:we are checking safe options and its test later after convert inputs. Not throwing error here. *)
+	processingOrder = Lookup[
+		SafeOptions[ExperimentMagneticBeadSeparation, Cases[ToList[myOptions], HoldPattern[ProcessingOrder -> _]]],
+		ProcessingOrder
+	];
 
 	(* Get a resolved ProcessingOrder based on the structure of the input samples *)
-	resolvedProcessingOrder = If[!MatchQ[processingOrder,Automatic],
+	resolvedProcessingOrder = If[!MatchQ[processingOrder, Automatic],
 		(* If it is not Automatic leave it as is *)
 		processingOrder,
 		(* If it is Automatic, look at structure of input samples *)
 		Switch[mySemiNestedInputs,
 			(* Singleton *)
-			ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]},
+			ObjectP[{Object[Sample], Object[Container], Model[Sample]}]|_String|{LocationPositionP, _String|ObjectP[Object[Container]]},
 				Parallel,
 			(* flat list *)
 			{Except[_List]..},
@@ -4801,33 +5139,38 @@ ExperimentMagneticBeadSeparation[
 	];
 
 	(* If ProcessingOrder is Parallel or Automatic and we are given a flat list of inputs, wrap the input in another list *)
-	semiNestedSamplesAndContainers=If[MatchQ[mySemiNestedInputs,{Except[_List]..}]&&MatchQ[resolvedProcessingOrder,Parallel],
+	semiNestedSamplesAndContainers = If[MatchQ[mySemiNestedInputs, {Except[_List]..}] && MatchQ[resolvedProcessingOrder, Parallel],
 		{mySemiNestedInputs},
 		mySemiNestedInputs
 	];
 
 	(* Get the option definition for the function *)
-	optionDefinition=OptionDefinition[ExperimentMagneticBeadSeparation];
+	optionDefinition = OptionDefinition[ExperimentMagneticBeadSeparation];
 
 	(* Look at all the given options, expand the options to match the nesting of the inputs if processing order is Parallel or Batch  *)
-	semiNestedOptions=Map[
+	semiNestedOptions = Map[
 		Function[{option},
-			Module[{optionSymbol,optionValue,specificOptionDef,nestedIndexMatchingQ,singletonPatternMatchingQ,optionSymbolsToSkip,singletonP},
+			Module[
+				{
+					optionSymbol, optionValue, specificOptionDef, nestedIndexMatchingQ, singletonPatternMatchingQ, optionSymbolsToSkip,
+					singletonP
+				},
 				(* Get our option value. *)
-				optionSymbol=option[[1]];
-				optionValue=option[[2]];
+				optionSymbol = option[[1]];
+				optionValue = option[[2]];
 
 				(* Get the definition of our option. *)
-				specificOptionDef=FirstCase[optionDefinition,KeyValuePattern["OptionSymbol"->optionSymbol],<||>];
+				specificOptionDef = FirstCase[optionDefinition, KeyValuePattern["OptionSymbol" -> optionSymbol], <||>];
 
 				(* Determine if our option is NestedIndexMatching *)
-				nestedIndexMatchingQ=MatchQ[Lookup[specificOptionDef,"NestedIndexMatching",$Failed],True];
+				nestedIndexMatchingQ = MatchQ[Lookup[specificOptionDef, "NestedIndexMatching", $Failed], True];
 
 				(* Determine if our option matches the singleton pattern *)
-				singletonPatternMatchingQ=MatchQ[optionValue,ReleaseHold[Lookup[specificOptionDef,"SingletonPattern",_]]];
+				singletonPatternMatchingQ = MatchQ[optionValue,ReleaseHold[Lookup[specificOptionDef, "SingletonPattern", _]]];
 
 				(* Define which options to skip singletonPatternMatching *)
-				optionSymbolsToSkip = Alternatives[PreWashCollectionContainer,PreWashCollectionContainerLabel,
+				optionSymbolsToSkip = Alternatives[
+					PreWashCollectionContainer,PreWashCollectionContainerLabel,
 					EquilibrationCollectionContainer,EquilibrationCollectionContainerLabel,
 					LoadingCollectionContainer,LoadingCollectionContainerLabel,
 					WashCollectionContainer,WashCollectionContainerLabel,
@@ -4843,15 +5186,15 @@ ExperimentMagneticBeadSeparation[
 
 				(* Ignore CollectionContainer,CollectionContainerLabel,and DestinationWell options as they are unique and not handled *)
 				(* well by ExpandIndexMatchedInputs *)
-				If[MatchQ[optionSymbol,optionSymbolsToSkip],
+				If[MatchQ[optionSymbol, optionSymbolsToSkip],
 					singletonPatternMatchingQ = False
 				];
 
 				singletonP = Alternatives[
 					Except[_List],
 					{_Integer, ObjectP[]},
-					{_String,ObjectP[]},
-					{_String,{_Integer,ObjectP[]}}
+					{_String, ObjectP[]},
+					{_String, {_Integer, ObjectP[]}}
 				];
 				(* Expand the option *)
 				Which[
@@ -4859,75 +5202,81 @@ ExperimentMagneticBeadSeparation[
 					singletonPatternMatchingQ,
 						option,
 					(* If the option is a flat list and the resolvedProcessingOrder is Parallel, wrap another list around the option *)
-					MatchQ[optionValue,{singletonP..}]&&MatchQ[resolvedProcessingOrder,Parallel]&&nestedIndexMatchingQ,
-						optionSymbol->{optionValue},
+					MatchQ[optionValue, {singletonP..}] && MatchQ[resolvedProcessingOrder, Parallel] && nestedIndexMatchingQ,
+						optionSymbol -> {optionValue},
 					(* If the option is a flat list and the resolvedProcessingOrder is Batch *)
-					MatchQ[optionValue,{singletonP..}]&&MatchQ[resolvedProcessingOrder,Batch]&&nestedIndexMatchingQ,
+					MatchQ[optionValue, {singletonP..}] && MatchQ[resolvedProcessingOrder, Batch] && nestedIndexMatchingQ,
 						(* If the option and sample are not the same length, skip. The error will be caught in the next function *)
-						If[!MatchQ[Length[optionValue/.singletonP->Null],Length[semiNestedSamplesAndContainers]],
+						If[!MatchQ[Length[optionValue/.singletonP->Null], Length[semiNestedSamplesAndContainers]],
 							option,
 							(* If the lengths are the same, mapthread over and expand the option value to be the same dimensions as the sample  *)
-							optionSymbol->MapThread[
-								Function[{optionValue,sample},
-									If[MatchQ[sample,_List]&&MatchQ[optionValue,singletonP],
-										ConstantArray[optionValue,Length[sample]],
+							optionSymbol -> MapThread[
+								Function[{optionValue ,sample},
+									If[MatchQ[sample, _List] && MatchQ[optionValue, singletonP],
+										ConstantArray[optionValue, Length[sample]],
 										optionValue
 									]
 								],
-								{optionValue,semiNestedSamplesAndContainers}
+								{optionValue, semiNestedSamplesAndContainers}
 							]
 						],
 					True,
-							option
+						option
 				]
 			]
 		],
 		ToList[myOptions]
 	];
 
-	(*--Remove temporal links--*)
-	{listedSamples,listedOptions}=removeLinks[ToList[semiNestedSamplesAndContainers],ToList[semiNestedOptions]];
+	(* make the inputs and options a list *)
+	{listedSamples,listedOptions}={ToList[semiNestedSamplesAndContainers],ToList[semiNestedOptions]};
 
 	(*--Simulate sample preparation--*)
 	validSamplePreparationResult=Check[
 		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMagneticBeadSeparation,
 			listedSamples,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(*If we are given an invalid define name, return early*)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(*Return early*)
 		(*Note: We've already thrown a message above in simulateSamplePreparationPackets*)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
+		Return[$Failed]
+	];
+
+	(*--Check for empty containers--*)
+	listedContainers=Cases[Flatten@listedSamples,ObjectP[Object[Container]]];
+
+	emptyContainers=If[MatchQ[listedContainers,{}],
+		{},
+		PickList[listedContainers,Download[listedContainers,Contents,Cache->Lookup[myOptionsWithPreparedSamplesNamed,Cache,{}],Simulation->samplePreparationSimulation],{}]
+	];
+
+	(*Return early if empty containers*)
+	If[Length[emptyContainers]>0,
+		Message[Error::EmptyContainers,emptyContainers];
 		Return[$Failed]
 	];
 
 	(* Unflatten the prepared samples and containers based on the pattern of the original input *)
-  unnestedSamplesWithPreparedSamplesNamed=Unflatten[Flatten[mySamplesWithPreparedSamplesNamed],ToList[mySemiNestedInputs]];
-
-	(* Lookup the simulation - if one exists *)
-	simulation = Lookup[listedOptions,Simulation];
-
-	currentSimulation = If[MatchQ[simulation,SimulationP],
-		UpdateSimulation[samplePreparationSimulation,simulation],
-		samplePreparationSimulation
-	];
+	unnestedSamplesWithPreparedSamples=Unflatten[Flatten[mySamplesWithPreparedSamplesNamed],ToList[mySemiNestedInputs]];
 
 	(*--Convert the given containers into samples and sample index-matched options--*)
 	containerToSampleResult=If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{containerToSampleOutput,containerToSampleTests}=pooledContainerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=pooledContainerToSampleOptions[
 			ExperimentMagneticBeadSeparation,
 			mySamplesWithPreparedSamplesNamed,
 			myOptionsWithPreparedSamplesNamed,
-			Output->{Result,Tests},
-			Simulation->currentSimulation,
-			GroupContainerSamples->!MatchQ[Lookup[safeOps,ProcessingOrder],Serial]
+			Output->{Result,Tests,Simulation},
+			Simulation->samplePreparationSimulation,
+			GroupContainerSamples->!MatchQ[resolvedProcessingOrder,Serial]
 		];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
@@ -4938,31 +5287,36 @@ ExperimentMagneticBeadSeparation[
 
 		(*We are not gathering tests. Simply check for Error::EmptyContainers*)
 		Check[
-			containerToSampleOutput=pooledContainerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=pooledContainerToSampleOptions[
 				ExperimentMagneticBeadSeparation,
 				mySamplesWithPreparedSamplesNamed,
 				myOptionsWithPreparedSamplesNamed,
-				Output->Result,
-				Simulation->currentSimulation,
-				GroupContainerSamples->!MatchQ[Lookup[safeOps,ProcessingOrder],Serial]
+				Output->{Result,Simulation},
+				Simulation->samplePreparationSimulation,
+				GroupContainerSamples->!MatchQ[resolvedProcessingOrder,Serial]
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
+	currentSimulation = If[MatchQ[Lookup[myOptionsWithPreparedSamplesNamed,Cache,{}], SimulationP],
+		UpdateSimulation[Lookup[myOptionsWithPreparedSamplesNamed,Cache,{}],containerToSampleSimulation],
+		containerToSampleSimulation
+	];
+
 	(* Similarly, convert the unnested container list to sample. Note that we are using containerToSampleOptions here since we don't want the pooling behavior for our unnested sample list *)
-	{unnestedContainerToSampleOutput,unnestedContainerToSampleTests}=If[MatchQ[unnestedSamplesWithPreparedSamplesNamed,ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
+	{unnestedContainerToSampleOutput,unnestedContainerToSampleTests}=If[MatchQ[unnestedSamplesWithPreparedSamples,ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
 		Quiet[containerToSampleOptions[
 			ExperimentMagneticBeadSeparation,
-			unnestedSamplesWithPreparedSamplesNamed,
+			unnestedSamplesWithPreparedSamples,
 			myOptionsWithPreparedSamplesNamed,
 			Output->Result,
 			Simulation->currentSimulation
 		]],
 		Quiet[pooledContainerToSampleOptions[
 			ExperimentMagneticBeadSeparation,
-			unnestedSamplesWithPreparedSamplesNamed,
+			unnestedSamplesWithPreparedSamples,
 			myOptionsWithPreparedSamplesNamed,
 			Output->Result,
 			Simulation->currentSimulation
@@ -5032,6 +5386,7 @@ ExperimentMagneticBeadSeparation[
 		]
 	]
 ];
+
 (*Helper function to correctly unflatten a list of possibly complex container format for a repeated stage,e.g .NumberOfPreWashes *)
 (* Allow resolvedOptions to be non-list since it may just be the non-list version of inputOptions. Our real resolved container is guaranteed to be a list *)
 unnestOptionsOfRepeatedStage[resolvedOptions_,numberOfStage:ListableP[Alternatives[_Integer,Null],2],inputOptions:ListableP[Alternatives[Automatic,Null,_String,_Integer,ObjectP[],{_Integer,ObjectP[]},{_String,ObjectP[]},{_String,{_Integer,ObjectP[]}}],3],unnestedSampleInputs_]:=If[MemberQ[ToList[inputOptions],Automatic],
@@ -5282,11 +5637,14 @@ expandStageCollectionOption[
 ];
 
 (* Helper function that gets all magnetic bead identity models and memoizes it so that the resolver can go fast *)
-allActiveMagneticBeadIdentityModels[fakeString_String]:=allActiveMagneticBeadIdentityModels[fakeString] = Module[
-	{},
-	(*Add allActiveMagneticBeadIdentityModels to list of Memoized functions*)
-	AppendTo[$Memoization,Experiment`Private`allActiveMagneticBeadIdentityModels];
-	Search[Model[Resin],Magnetic==True]
+allActiveMagneticBeadIdentityModels[fakeString_String]:=allActiveMagneticBeadIdentityModels[fakeString] = Module[{},
+  (*Add allActiveMagneticBeadIdentityModels to list of Memoized functions*)
+  AppendTo[$Memoization,Experiment`Private`allActiveMagneticBeadIdentityModels];
+  (*If we are on manifold, we need to require $SessionUUID in search in order to avoid getting test objects created for other unit tests*)
+  If[MatchQ[$ManifoldComputation,ObjectP[]],
+    Block[{$RequiredSearchName = $SessionUUID}, Search[Model[Resin],Magnetic==True]],
+    Search[Model[Resin],Magnetic==True]
+  ]
 ];
 
 (* Helper function that gets all magnetization rack models and memoizes it so that the resolver can go fast *)
@@ -5368,14 +5726,14 @@ resolveMixOptionsForStage[
 		If[
 			MatchQ[resolvedMixMasterswitch, True] && MatchQ[resolvedMixType, Pipette],
 			Which[
-				(*When Preparation is Robotic and SafeRound[volumeToMix/2, 0.1 Microliter] is larger than 970 Microliter, resolve to 970 Microliter*)
-				MatchQ[resolvedPreparation, Robotic] &&	GreaterQ[SafeRound[volumeToMix/2, 0.1 Microliter], 970 Microliter], 970 Microliter,
-				(*Otherwise when Preparation is Robotic, resolve to the greater of 10 Microliter and SafeRound[volumeToMix/2, 0.1 Microliter]*)
-				MatchQ[resolvedPreparation, Robotic], Max[SafeRound[volumeToMix/2, 0.1 Microliter], 10 Microliter],
-				(*When Preparation is Manual, and SafeRound[volumeToMix/2, 0.1 Microliter] is larger than 50 Milliliter, resolve to 50 Milliliter*)
-				GreaterQ[SafeRound[volumeToMix/2, 0.1 Microliter], 50 Milliliter], 50 Milliliter,
-				(*Otherwise when preparation is Manual, resolve to SafeRound[volumeToMix/2, 0.1 Microliter]*)
-				True, SafeRound[volumeToMix/2, 0.1 Microliter]
+				(*When Preparation is Robotic and SafeRound[volumeToMix*0.8, 0.1 Microliter] is larger than 970 Microliter, resolve to 970 Microliter*)
+				MatchQ[resolvedPreparation, Robotic] &&	GreaterQ[SafeRound[volumeToMix*0.8, 0.1 Microliter], 970 Microliter], 970 Microliter,
+				(*Otherwise when Preparation is Robotic, resolve to the greater of 10 Microliter and SafeRound[volumeToMix*0.8, 0.1 Microliter]*)
+				MatchQ[resolvedPreparation, Robotic], Max[SafeRound[volumeToMix*0.8, 0.1 Microliter], 10 Microliter],
+				(*When Preparation is Manual, and SafeRound[volumeToMix*0.8, 0.1 Microliter] is larger than 50 Milliliter, resolve to 50 Milliliter*)
+				GreaterQ[SafeRound[volumeToMix*0.8, 0.1 Microliter], 50 Milliliter], 50 Milliliter,
+				(*Otherwise when preparation is Manual, resolve to SafeRound[volumeToMix*0.8, 0.1 Microliter]*)
+				True, SafeRound[volumeToMix*0.8, 0.1 Microliter]
 			],
 			(*If resolvedStageMasterswitch is not True or resolvedMixType is not Pipette, resolve to Null*)
 			Null
@@ -5443,8 +5801,8 @@ resolveMixOptionsForStage[
 		(*If the option is Automatic,resolve it*)
 		MatchQ[unresolvedNumberOfMixes, Automatic],
 		Which[
-			(*If resolvedMixMasterswitch is True and resolvedMixType is Pipette, resolve to 10 *)
-			MatchQ[resolvedMixMasterswitch, True] && MatchQ[resolvedMixType, Pipette], 10,
+			(*If resolvedMixMasterswitch is True and resolvedMixType is Pipette, resolve to 20 *)
+			MatchQ[resolvedMixMasterswitch, True] && MatchQ[resolvedMixType, Pipette], 20,
 			(*If resolvedMixMasterswitch is True and resolvedMixType is Swirl or Invert, resolve to 20 *)
 			MatchQ[resolvedMixMasterswitch, True] && MatchQ[resolvedMixType, Swirl | Invert], 20,
 			(*Otherwise, resolve to Null*)
@@ -5957,6 +6315,45 @@ preResolveMixOptionsOfStage[
 	{preResolvedMixTypes,preResolvedMixTimes,preResolvedMixTemperatures,preResolvedMixRates,preResolvedNumbersOfMixes}
 ];
 
+(* Helper function to resolve AspirationPosition and AspirationPositionOffset options for a stage*)
+resolveAspirationPipettingOptionsOfStage[
+  resolvedStageMasterswitch:Alternatives[BooleanP,Null],
+  preparation:PreparationMethodP,
+  magnetizationRackModel:ObjectP[{Model[Container,Rack],Model[Item,MagnetizationRack]}],
+  inputAspirationPosition:Alternatives[Null,Automatic,MagneticBeadSeparationPipettingPositionP],
+  inputAspirationPositionOffset:Alternatives[Null,Automatic,GreaterEqualP[0 Millimeter],Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}]]
+]:=Module[{resolvedAspirationPosition, resolvedAspirationPositionOffset},
+  (*Resolve AspirationPosition*)
+  resolvedAspirationPosition=If[MatchQ[inputAspirationPosition,Automatic],
+    If[resolvedStageMasterswitch&&MatchQ[preparation,Robotic]&&!NullQ[inputAspirationPositionOffset],
+      (* The option is Automatic, If we are in Robotic prep and the stage is on, and the other option is not set to Null, resolve to Bottom *)
+      Bottom,
+      (* Otherwise this option is not applicable, set to Null *)
+      Null
+    ],
+    (*If the option is specified, accept it*)
+    inputAspirationPosition
+  ];
+  resolvedAspirationPositionOffset=If[MatchQ[inputAspirationPositionOffset,Automatic],
+    Which[
+      (*If the magnetization rack is Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"] and the aspiration position is Bottom, set it to 0 mm to push down a bit for better aspiration*)
+      MatchQ[magnetizationRackModel,ObjectP[Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"]]]&&MatchQ[resolvedAspirationPosition,Bottom],
+        0 Millimeter,
+      (*Otherwise if we have a non-Null resolvedAspirationPosition, set to 2 Millimeter *)
+      MatchQ[resolvedAspirationPosition,Except[Null]],
+      (* The option is Automatic, If the resolved AspirationPosition is not Null, resolve to 2 Millimeter *)
+        2 Millimeter,
+      (* Otherwise this option is not applicable, set to Null *)
+      True,
+        Null
+    ],
+    (*If the option is specified, accept it*)
+    inputAspirationPositionOffset
+  ];
+  (*Return resolved values*)
+  {resolvedAspirationPosition, resolvedAspirationPositionOffset}
+];
+
 (* Helper function to resolve independent options of a wash stage within the map thread*)
 resolveWashStageOptions[
 	resolvedStageMasterswitch:Alternatives[BooleanP,Null],
@@ -6042,7 +6439,7 @@ resolveWashStageOptions[
 		(*If the option is specified, accept it*)
 		inputNumberOfStages
 	];
-	(*Resolve the collection container of teh stage*)
+	(*Resolve the collection container of the stage*)
 	resolvedStageCollectionContainer=If[MatchQ[inputStageCollectionContainer,ListableP[Automatic]],
 		(*If the option is Automatic, resolve it*)
 		If[resolvedStageMasterswitch,
@@ -6201,6 +6598,33 @@ checkConflictingAirDryOfStage[
 		unflattenListHelper[resolvedAirDries,samples],
 		Range[Length[samples]]
 	}
+];
+
+(*Helper function to check if there is mismatch for aspiration pipetting options*)
+checkAspirationPipettingMismatchErrorOfStage[
+  flatSamples:ListableP[ObjectP[]],
+  unresolvedAspirationOptions_List
+]:=MapThread[
+  Function[{sample, unresolvedAspirationOption},
+    Module[{aspirationPosition,aspirationPositionOffset},
+      {aspirationPosition,aspirationPositionOffset} = unresolvedAspirationOption;
+      (*If both aspirationPosition,aspirationPositionOffset are specified by user, check for mix mismatch*)
+      If[MatchQ[aspirationPosition, Except[Automatic]] && MatchQ[aspirationPositionOffset, Except[Automatic]],
+        Which[
+          (*If aspirationPosition is specified as a pipetting position but aspirationPositionOffset is specified as Null, output error for the sample *)
+          MatchQ[aspirationPosition, MagneticBeadSeparationPipettingPositionP] && MatchQ[aspirationPositionOffset, Null], True,
+          (*If aspirationPosition is specified as other than pipetting but aspirationPositionOffset is specified, output error for the sample *)
+          (!MatchQ[aspirationPosition, MagneticBeadSeparationPipettingPositionP|Automatic]) &&
+              MatchQ[aspirationPositionOffset, Except[Null|Automatic]], True,
+          (*Otherwise, output no error for the sample *)
+          True,
+          False
+        ],
+        False
+      ]
+    ]
+  ],
+  {flatSamples,Transpose[unresolvedAspirationOptions]}
 ];
 
 (*Helper function to check if there is mismatch for mix options*)
@@ -6516,6 +6940,8 @@ generateWashStagePrimitivesInResourcePacket[
 	stageBufferVolumes:ListableP[Alternatives[VolumeP,Null],3],
 	stageMagnetizationTimes:ListableP[Alternatives[TimeP,Null],3],
 	stageAspirationVolumes:ListableP[Alternatives[VolumeP,Null, All],3],
+  stageAspirationPositions:ListableP[Alternatives[MagneticBeadSeparationPipettingPositionP,Null],3],
+  stageAspirationPositionOffsets:ListableP[Alternatives[GreaterEqualP[0 Millimeter]|Coordinate[{DistanceP, DistanceP, GreaterEqualP[0 Millimeter]}],Null],3],
 	numberOfStages:ListableP[Alternatives[_Integer,Null],3],
 	stageAirDries:ListableP[Alternatives[BooleanP,Null],3],
 	stageAirDryTimes:ListableP[Alternatives[TimeP,Null],3],
@@ -6533,12 +6959,13 @@ generateWashStagePrimitivesInResourcePacket[
 	expAssayContainerLabels:ListableP[Alternatives[_String,Null],3],
 	expAssayWells:ListableP[Alternatives[_String,Null],3],
 	expMagnetizationRacks:ListableP[ObjectP[],3],
+  expUnresolvedMagnetizationRacks:ListableP[Alternatives[ObjectP[],Automatic,Null],3],
 	stageBufferLabels:ListableP[Alternatives[_String,Null],3]
 ]:=MapThread[
 	Function[
 		{
-			stageBoolsBatch,stageBufferVolumesBatch,stageMagnetizationTimesBatch,stageAspirationVolumesBatch,numberOfStagesBatch,
-			stageAirDriesBatch,stageAirDryTimesBatch,stageMixesBatch,stageMixTypesBatch,stageMixTimesBatch,stageMixRatesBatch,numberOfStageMixesBatch,stageMixVolumesBatch,stageMixTemperaturesBatch, stageMixTipTypesBatch, stageMixTipMaterialsBatch,stageDestinationWellsBatch,stageCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,stageBufferLabelsBatch
+			stageBoolsBatch,stageBufferVolumesBatch,stageMagnetizationTimesBatch,stageAspirationVolumesBatch,stageAspirationPositionsBatch,stageAspirationPositionOffsetsBatch,numberOfStagesBatch,
+			stageAirDriesBatch,stageAirDryTimesBatch,stageMixesBatch,stageMixTypesBatch,stageMixTimesBatch,stageMixRatesBatch,numberOfStageMixesBatch,stageMixVolumesBatch,stageMixTemperaturesBatch, stageMixTipTypesBatch, stageMixTipMaterialsBatch,stageDestinationWellsBatch,stageCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,stageBufferLabelsBatch
 		},
 		Module[{maxNumStages,numberOfStagesBatchBools,mixingBools,transferAndMixPrimitives,waitPrimitive},
 			(* Get the max number of times we are PreWashing in this batch *)
@@ -6569,6 +6996,9 @@ generateWashStagePrimitivesInResourcePacket[
 								MixRate->PickList[stageMixRatesBatch,mixingBools],
 								NumberOfMixes->PickList[numberOfStageMixesBatch,mixingBools],
 								MixVolume->PickList[stageMixVolumesBatch,mixingBools],
+                MixFlowRate->Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
+                MixPosition -> Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
+                MixPositionOffset-> Replace[PickList[stageMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
 								Temperature->PickList[stageMixTemperaturesBatch,mixingBools],
 								TipType->PickList[stageMixTipTypesBatch,mixingBools],
 								TipMaterial->PickList[stageMixTipMaterialsBatch,mixingBools]
@@ -6583,8 +7013,10 @@ generateWashStagePrimitivesInResourcePacket[
 							Magnetization->True,
 							MagnetizationTime->PickList[stageMagnetizationTimesBatch,numberOfStagesBatchBools],
 							MagnetizationRack->PickList[magnetizationRacksBatch,numberOfStagesBatchBools],
-							AspirationPosition->Bottom,
-							AspirationPositionOffset->1 Centimeter,
+              UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,numberOfStagesBatchBools],
+							AspirationPosition->PickList[stageAspirationPositionsBatch,numberOfStagesBatchBools],
+              AspirationPositionOffset->PickList[stageAspirationPositionOffsetsBatch,numberOfStagesBatchBools],
+              AspirationMix -> False,
 							MultichannelTransfer->False
 						]
 					},
@@ -6604,7 +7036,7 @@ generateWashStagePrimitivesInResourcePacket[
 		]
 	],
 	{
-		stageBools, stageBufferVolumes, stageMagnetizationTimes, stageAspirationVolumes, numberOfStages, stageAirDries, stageAirDryTimes, stageMixes, stageMixTypes, stageMixTimes, stageMixRates, numberOfStageMixes, stageMixVolumes, stageMixTemperatures, stageMixTipTypes, stageMixTipMaterials, stageDestinationWells, stageCollectionContainerLabels, expAssayContainerLabels, expAssayWells, expMagnetizationRacks, stageBufferLabels
+		stageBools, stageBufferVolumes, stageMagnetizationTimes, stageAspirationVolumes,stageAspirationPositions,stageAspirationPositionOffsets, numberOfStages, stageAirDries, stageAirDryTimes, stageMixes, stageMixTypes, stageMixTimes, stageMixRates, numberOfStageMixes, stageMixVolumes, stageMixTemperatures, stageMixTipTypes, stageMixTipMaterials, stageDestinationWells, stageCollectionContainerLabels, expAssayContainerLabels, expAssayWells, expMagnetizationRacks, expUnresolvedMagnetizationRacks,stageBufferLabels
 	}
 ];
 
@@ -6640,18 +7072,26 @@ normalizeResolvedContainersForUnitOperation[myResolvedOption:
 updateMBSSampleComposition[
 	separationMode:MagneticBeadSeparationModeP,
 	selectionStrategy:MagneticBeadSeparationSelectionStrategyP,
-	workingSampleComposition:ListableP[{Alternatives[{Null | CompositionP, IdentityModelP|Null},Null] ...}|Null, 3],
+	workingSampleComposition:ListableP[{Alternatives[{Null|CompositionP, IdentityModelP|Null}, {Null|CompositionP, IdentityModelP|Null, _?DateObjectQ|Null}, Null] ...}|Null, 3],
 	volume:Alternatives[VolumeP,Null],
 	analyteAffinityLabel:Alternatives[IdentityModelP,Null],
 	target:Alternatives[IdentityModelP,Null],
 	magneticBeadResin:Alternatives[ObjectP[Model[Resin]],Null],
 	stageContainerSampleVolume:Alternatives[VolumeP,Null],
-	stageContainerSampleComposition:ListableP[{Alternatives[{Null | CompositionP, IdentityModelP|Null},Null] ...}|Null, 3],
+	stageContainerSampleComposition:ListableP[{Alternatives[{Null|CompositionP, IdentityModelP|Null},{Null|CompositionP, IdentityModelP|Null, _?DateObjectQ|Null},Null] ...}|Null, 3],
 	stage:Alternatives[PreWash,Equilibration,Loading,Wash,Elution,AdditionalElution]
-]:=Module[{sampleCompositionNoResin,targetTypeMolecules,updatedSampleComposition, updatedSampleCompositionNoZero},
+]:=Module[{sampleCompositionNoTime, sampleCompositionNoResin, targetTypeMolecules, updatedSampleCompositionNoTime, updatedSampleCompositionNoZero},
+
+  (* Remove the time element in field Composition *)
+  sampleCompositionNoTime = If[NullQ[stageContainerSampleComposition],
+    (*If it is Null, no need to touch it*)
+    stageContainerSampleComposition,
+    (*Otherwise we need to remove the time dimension*)
+    stageContainerSampleComposition[[All,{1,2}]]
+  ];
 
 	(* Remove the magnetic bead resins from the composition *)
-	sampleCompositionNoResin=DeleteCases[stageContainerSampleComposition,{_,ObjectP[magneticBeadResin]}];
+	sampleCompositionNoResin=DeleteCases[sampleCompositionNoTime,{_,ObjectP[magneticBeadResin]}];
 
 	(*Get a list of all molecules of the same type as Target in the WorkingSamples*)
 	targetTypeMolecules=Which[
@@ -6682,8 +7122,9 @@ updateMBSSampleComposition[
 		target
 	];
 
-	(*Calculate the updated sample composition based on the stage it was collected from, the separation mode, and the selection strategy *)
-	updatedSampleComposition=Switch[{stage,separationMode,selectionStrategy},
+	(* Calculate the updated sample composition based on the stage it was collected from, the separation mode, and the selection strategy *)
+  (* NOTE: we do not append time to the composition yet *)
+  updatedSampleCompositionNoTime=Switch[{stage,separationMode,selectionStrategy},
 
 		{Alternatives[PreWash,Equilibration],_,_},
 		(*If the sample to update is from PreWash, just remove the magnetic bead resins regardless of the separation mode *)
@@ -6734,7 +7175,7 @@ updateMBSSampleComposition[
 			newAnalyteAffinityLabelConcentration=If[
 				MemberQ[Flatten[workingSampleComposition],ObjectP[analyteAffinityLabel]],
 				(*If the AnalyteAffinityLabel is a member of the prepared input sample to MBS, get its original concentration*)
-				workingSampleAnalyteAffinityLabelConcentration=FirstCase[workingSampleComposition,{concentration_,ObjectP[analyteAffinityLabel]}:>concentration];
+				workingSampleAnalyteAffinityLabelConcentration=FirstCase[workingSampleComposition,{concentration_,ObjectP[analyteAffinityLabel],__}:>concentration];
 				(*If the concentration and volumes used to calculate the new concentration are in their valid forms, do the calculation, otherwise the concentration is unknown so output Null*)
 				If[MatchQ[{workingSampleAnalyteAffinityLabelConcentration,volume,stageContainerSampleVolume},{ConcentrationP,VolumeP,VolumeP}],
 					workingSampleAnalyteAffinityLabelConcentration*volume/stageContainerSampleVolume,
@@ -6752,7 +7193,7 @@ updateMBSSampleComposition[
 			{updateTargetTypeMoleculeConcentrationRules},
 			updateTargetTypeMoleculeConcentrationRules=Map[Function[{targetTypeMolecule},
 				Module[{targetTypeMoleculeConcentration,workingSampleTargetTypeMoleculeConcentration},
-					workingSampleTargetTypeMoleculeConcentration=FirstCase[workingSampleComposition,{concentration_,ObjectP[targetTypeMolecule]}:>concentration];
+					workingSampleTargetTypeMoleculeConcentration=FirstCase[workingSampleComposition,{concentration_,ObjectP[targetTypeMolecule],__}:>concentration];
 					targetTypeMoleculeConcentration= If[
 						(*If the concentration and volumes used to calculate the new concentration are in their valid forms, do the calculation, otherwise the concentration is unknown so output Null*)
 						MatchQ[{workingSampleTargetTypeMoleculeConcentration,volume,stageContainerSampleVolume},{ConcentrationP,VolumeP,VolumeP}],
@@ -6807,9 +7248,14 @@ updateMBSSampleComposition[
 	(* We need to handle a special case here. Since some transfers may result in 0 remaining volume, if we then add more stuff into the remaining sample *)
 	(* We get 0 concentration for certain components. This is fine in general but will crash the LabelSample primitive later to update composition *)
 	(* Thus we should update all 0 concentrations to Null *)
-	updatedSampleCompositionNoZero = If[NullQ[updatedSampleComposition],
+	updatedSampleCompositionNoZero = If[NullQ[updatedSampleCompositionNoTime],
 		Null,
-		updatedSampleComposition /. {ZeroCompositionP -> Null}
+    (* NOTE: Here we append Null as 3rd element for Composition. The reason we do not update real time is because this function can be called before experiment time *)
+    (* We will update SamplesOut with real transfer time in parser *)
+    Map[
+      {#[[1]]/. {ZeroCompositionP -> Null}, #[[2]], Null}&,
+      updatedSampleCompositionNoTime
+    ]
 	];
 
 	(*Return the sampleToAdjust and updatedSampleComposition if there is a sample to adjust and the update is not Null*)
@@ -6824,7 +7270,7 @@ updateSamplesCompositionOfStage[
 	stageName:Alternatives[PreWash,Wash,Equilibration,Loading],
 	resolvedDestinationWells:ListableP[Alternatives[_String,Null],3],
 	resolvedCollectionContainerLabels:ListableP[Alternatives[_String,Null],3],
-	downloadedWorkingSampleCompositions:ListableP[{Alternatives[{Null | CompositionP, IdentityModelP|Null},Null] ...}|Null, 3],
+	downloadedWorkingSampleCompositions:ListableP[{Alternatives[{Null|CompositionP,IdentityModelP|Null},{Null|CompositionP,IdentityModelP|Null,_?DateObjectQ|Null},Null] ...}|Null, 3],
 	resolvedVolumes:ListableP[Alternatives[VolumeP,Null],3],
 	resolvedAnalyteAffinityLabels:ListableP[Alternatives[ObjectP[],Null],3],
 	resolvedTargets:ListableP[Alternatives[ObjectP[],Null],3],
@@ -6866,7 +7312,7 @@ updateSamplesCompositionOfStage[
 							{destinationWell,collectionContainerLabel},
 							Module[{sampleContainer,sampleToAdjust,sampleLabelToAdjust,updatedComposition},
 								(*look up the fake object id of the collection container*)
-								sampleContainer=LookupLabeledObject[simulation,collectionContainerLabel][[1]];
+								sampleContainer=LookupLabeledObject[simulation,collectionContainerLabel];
 								(*look up the fake sample id of the collected sample to adjust its composition*)
 								sampleToAdjust=FirstCase[
 									Lookup[fetchPacketFromCache[sampleContainer, Flatten@downloadedContainerContentsPackets], Contents,Null],
@@ -7210,18 +7656,21 @@ simulateWashStageTuples[
 (*---Main function accepting nested sample objects as inputs (e.g. {{s1},{s2,s3}})---*)
 ExperimentMagneticBeadSeparationCore[
 	myNestedSamples:ListableP[{ObjectP[Object[Sample]]..}],
-	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
+	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
 	myUnnestedSampleInputs:ListableP[ListableP[ObjectP[Object[Sample]]]],
 	myOriginalOptions:{_Rule...},
 	myOptions:OptionsPattern[ExperimentMagneticBeadSeparation]
 ]:=Module[
-	{outputSpecification,output,gatherTests,messages,notInEngine,options,listedSamples,listedOptions,simulation,currentSimulation,
+	{
+    outputSpecification,output,gatherTests,messages,notInEngine,options,listedSamples,listedOptions,simulation,currentSimulation,
 		safeOptionsNamed,
 		mySamplesWithPreparedSamples,safeOps,safeOpsTests,validLengths,
-		validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,fastTrack,parentProtocol,cache,
+		validLengthTests,templatedOptions,templateTests,inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,
 
 		processingOrder,selectionStrategy,
-		inputPreWashCollectionContainers,inputEquilibrationCollectionContainers,inputLoadingCollectionContainers,inputWashCollectionContainers,inputSecondaryWashCollectionContainers,inputTertiaryWashCollectionContainers,inputQuaternaryWashCollectionContainers,inputQuinaryWashCollectionContainers,inputSenaryWashCollectionContainers,inputSeptenaryWashCollectionContainers,
+		inputPreWashCollectionContainers,inputEquilibrationCollectionContainers,inputLoadingCollectionContainers,inputWashCollectionContainers,
+    inputSecondaryWashCollectionContainers,inputTertiaryWashCollectionContainers,inputQuaternaryWashCollectionContainers,
+    inputQuinaryWashCollectionContainers,inputSenaryWashCollectionContainers,inputSeptenaryWashCollectionContainers,
 		inputElutionCollectionContainers,
 
 		preWashCollectionContainers,preWashDestinationWells,preWashCollectionContainerLabels,numberOfPreWashes,
@@ -7280,20 +7729,20 @@ ExperimentMagneticBeadSeparationCore[
 
 		expandedSafeOps,expandedSafeOpsUnappended,mbsOptionsAssociation,flatMySamplesWithPreparedSamples,analyteAffinityLabels,magneticBeadAffinityLabels,targetMolecules,preWashCollectionStorageConditions,equilibrationCollectionStorageConditions,loadingCollectionStorageConditions,washCollectionStorageConditions,
 		secondaryWashCollectionStorageConditions,tertiaryWashCollectionStorageConditions,quaternaryWashCollectionStorageConditions,quinaryWashCollectionStorageConditions,senaryWashCollectionStorageConditions,septenaryWashCollectionStorageConditions,elutionCollectionStorageConditions,
-		allTargetMolecules,allAnalyteAffinityLabels,allMagneticBeadIdentityModels,allMagnetizationRackModels,uniqueContainerModels,uniqueContainerObjects,assayContainerModels,uniqueStorageConditions,
+		allTargetMolecules,allAnalyteAffinityLabels,allMagneticBeadIdentityModels,allMagnetizationRackModels,allMagnetizationRackObjects,magnetizationRacks,uniqueContainerModels,uniqueContainerObjects,assayContainerModels,uniqueStorageConditions,
 		sampleDownloadPacket,identityModelDownloadPacket,
 		containerModelDownloadPacket,containerObjectDownloadPacket,containerContentsObjectDownloadPacket,
 		allPackets,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,
 		nestedIndexMatchingOptions,unnestedIndexMatchingOptions,unnestedResolvedOptions,collapsedResolvedOptions,userReturnFriendlyOptions,myNormalizedCollapsedResolvedOptions,collapsedUnnestedResolvedOptions,resolvedPreparation,returnEarlyQ,performSimulationQ,resultQ,resourceResult,protocolObject,
 		roboticSimulation,runTime,resourcePacketTests,optionsWithObjects,userSpecifiedObjects,simulatedProtocol,simulatedProtocolSimulation,
-		objectsExistQs
+		objectsExistQs, uniqueSampleObjects, uniqueSampleModels, modelDownloadPacket
 	},
 
-	(*Determine the requested return value from the function*)
+	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
 	output=ToList[outputSpecification];
 
-	(*Determine if we should keep a running list of tests*)
+	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 	messages=!gatherTests;
 
@@ -7304,6 +7753,7 @@ ExperimentMagneticBeadSeparationCore[
 	options = ToList[myOptions];
 
 	(* Lookup the simulation *)
+  (* Note:simulation from simulateSamplePreparationPacketsNew is passed on from other overload here *)
 	simulation = Lookup[options,Simulation];
 
 	(* Remove temporal links -- we have to remove all links from the samples because we need to store them in nested format in the protocol object; i.e. we need to put them into Expression fields whose pattern is {{ObjectReferenceP..}..} so they can't be links *)
@@ -7312,18 +7762,12 @@ ExperimentMagneticBeadSeparationCore[
 	(*--Call SafeOptions and ValidInputLengthsQ--*)
 	(*Call SafeOptions to make sure all options match patterns*)
 	{safeOptionsNamed,safeOpsTests}=If[gatherTests,
-		SafeOptions[ExperimentMagneticBeadSeparation,options,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentMagneticBeadSeparation,options,AutoCorrect->False],{}}
+		SafeOptions[ExperimentMagneticBeadSeparation,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
+		{SafeOptions[ExperimentMagneticBeadSeparation,listedOptions,AutoCorrect->False],{}}
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples,safeOps}=sanitizeInputs[myNestedSamples,safeOptionsNamed];
-
-	(*Call ValidInputLengthsQ to make sure all options have matching lengths*)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMagneticBeadSeparation,{mySamplesWithPreparedSamples},safeOps,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMagneticBeadSeparation,{mySamplesWithPreparedSamples},safeOps],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps}=sanitizeInputs[listedSamples,safeOptionsNamed,Simulation->simulation];
 
 	(*If the specified options don't match their patterns or if option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOps,$Failed],
@@ -7333,6 +7777,12 @@ ExperimentMagneticBeadSeparationCore[
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(*Call ValidInputLengthsQ to make sure all options have matching lengths*)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMagneticBeadSeparation,{mySamplesWithPreparedSamples},safeOps,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMagneticBeadSeparation,{mySamplesWithPreparedSamples},safeOps],Null}
 	];
 
 	(*If option lengths are invalid, return $Failed (or the tests up to this point)*)
@@ -7365,7 +7815,7 @@ ExperimentMagneticBeadSeparationCore[
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(*get assorted hidden options*)
-	{upload,confirm,fastTrack,parentProtocol,cache,simulation}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache,Simulation}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Get options that possibly need to have their listyness modified so ExpandIndexMatchedInputs works as wanted *)
 	{
@@ -7797,26 +8247,6 @@ ExperimentMagneticBeadSeparationCore[
 		ObjectP[]
 	];
 
-	(* Check that the specified objects exist or are visible to the current user *)
-	objectsExistQs=MapThread[
-		Or[#1, #2]&,
-		{
-			(MatchQ[Lookup[fetchPacketFromCache[#, cache], Simulated], True]&)/@userSpecifiedObjects,
-			DatabaseMemberQ[
-				userSpecifiedObjects,
-				Simulation->simulation
-			]
-		}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Return[$Failed],
-		Nothing
-	];
-
 	(*--Download the information we need for the option resolver and resource packet function--*)
 
 	(*Flatten mySamplesWithPreparedSamples*)
@@ -7827,6 +8257,7 @@ ExperimentMagneticBeadSeparationCore[
 		analyteAffinityLabels,
 		magneticBeadAffinityLabels,
 		targetMolecules,
+		magnetizationRacks,
 		preWashCollectionContainers,
 		equilibrationCollectionContainers,
 		loadingCollectionContainers,
@@ -7855,6 +8286,7 @@ ExperimentMagneticBeadSeparationCore[
 			AnalyteAffinityLabel,
 			MagneticBeadAffinityLabel,
 			Target,
+			MagnetizationRack,
 			PreWashCollectionContainer,
 			EquilibrationCollectionContainer,
 			LoadingCollectionContainer,
@@ -7892,16 +8324,47 @@ ExperimentMagneticBeadSeparationCore[
 	(* Get all the magnetization racks *)
 	allMagnetizationRackModels = allActiveMagnetizationRacks["Memoization"];
 
+	(* Get all user specified magnetization rack objects *)
+	allMagnetizationRackObjects = Cases[magnetizationRacks,ObjectP[Object[Container,Rack],Object[Item,MagnetizationRack]]];
+
 	(*Get the preferred, liquid handler-compatible, and collection container models*)
-
-	(* containerModelDownloadPacket=Packet[LiquidHandlerPrefix,MagnetFootprint,Positions,
-		Model,Magnetized,SamplePreparationCacheFields[Model[Container],Format->Sequence]];
-	containerObjectDownloadPacket=Packet[Contents,Model]; *)
-
 	uniqueContainerModels=DeleteDuplicates[
 		Cases[
-			Flatten[{PreferredContainer[All,Type->All],hamiltonAliquotContainers["Memoization"],preWashCollectionContainers,equilibrationCollectionContainers,loadingCollectionContainers,washCollectionContainers,secondaryWashCollectionContainers,tertiaryWashCollectionContainers,quaternaryWashCollectionContainers,quinaryWashCollectionContainers,senaryWashCollectionContainers,septenaryWashCollectionContainers,elutionCollectionContainers}],
+			Flatten[{
+				PreferredContainer[All,Type->All],
+				hamiltonAliquotContainers["Memoization"],
+				preWashCollectionContainers,
+				equilibrationCollectionContainers,
+				loadingCollectionContainers,
+				washCollectionContainers,
+				secondaryWashCollectionContainers,
+				tertiaryWashCollectionContainers,
+				quaternaryWashCollectionContainers,
+				quinaryWashCollectionContainers,
+				senaryWashCollectionContainers,
+				septenaryWashCollectionContainers,
+				elutionCollectionContainers
+			}],
 			ObjectP[Model[Container]]
+		]
+	];
+
+	uniqueContainerObjects=DeleteDuplicates[
+		Cases[
+			Flatten[{
+				preWashCollectionContainers,
+				equilibrationCollectionContainers,
+				loadingCollectionContainers,
+				washCollectionContainers,
+				secondaryWashCollectionContainers,
+				tertiaryWashCollectionContainers,
+				quaternaryWashCollectionContainers,
+				quinaryWashCollectionContainers,
+				senaryWashCollectionContainers,
+				septenaryWashCollectionContainers,
+				elutionCollectionContainers
+			}],
+			ObjectP[Object[Container]]
 		]
 	];
 
@@ -7910,11 +8373,9 @@ ExperimentMagneticBeadSeparationCore[
 	Cases[Flatten[{preWashCollectionStorageConditions,equilibrationCollectionStorageConditions,loadingCollectionStorageConditions, washCollectionStorageConditions,secondaryWashCollectionStorageConditions,tertiaryWashCollectionStorageConditions,quaternaryWashCollectionStorageConditions,quinaryWashCollectionStorageConditions,senaryWashCollectionStorageConditions,septenaryWashCollectionStorageConditions,elutionCollectionStorageConditions}],ObjectP[]]
 	];
 
-	(*Download*)
-
-	uniqueContainerObjects=DeleteDuplicates[
-		Cases[Flatten@{preWashCollectionContainers,equilibrationCollectionContainers,loadingCollectionContainers,washCollectionContainers,secondaryWashCollectionContainers,tertiaryWashCollectionContainers,quaternaryWashCollectionContainers,quinaryWashCollectionContainers,senaryWashCollectionContainers,septenaryWashCollectionContainers,elutionCollectionContainers},ObjectP[Object[Container]]]
-	];
+	(* Get sample objects/models from options *)
+	uniqueSampleObjects=Cases[userSpecifiedObjects, ObjectP[Object[Sample]]];
+	uniqueSampleModels=Cases[userSpecifiedObjects, ObjectP[Model[Sample]]];
 
 	(* These are the possible chosen assay containers, whose Position field we need later. Download them all now to reduce *)
 	(* connections with the server *)
@@ -7928,12 +8389,13 @@ ExperimentMagneticBeadSeparationCore[
 
 	(*Get all the packets and fields we need to download*)
 	sampleDownloadPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence],CellType];
+	modelDownloadPacket=Packet[SamplePreparationCacheFields[Model[Sample],Format->Sequence]];
 	identityModelDownloadPacket=Packet[Targets,AffinityLabels,MolecularWeight,DefaultSampleModel,Composition];
-	containerModelDownloadPacket=Packet[LiquidHandlerPrefix,MagnetFootprint,Positions,MaxVolume,
-		Model,Magnetized,SamplePreparationCacheFields[Model[Container],Format->Sequence]];
+	containerModelDownloadPacket=Packet[LiquidHandlerPrefix,MagnetFootprint,Footprint,Positions,MaxVolume, Model,Magnetized,SamplePreparationCacheFields[Model[Container],Format->Sequence]];
 	containerObjectDownloadPacket=SamplePreparationCacheFields[Object[Container],Format->Packet];
 	containerContentsObjectDownloadPacket=Packet[Field[Contents[[All, 2]][{Composition, Solvent}]]];
 
+  (*Download*)
 	(*Make the upfront Download call*)
 	allPackets=Quiet[
 		Download[
@@ -7943,10 +8405,13 @@ ExperimentMagneticBeadSeparationCore[
 				allAnalyteAffinityLabels,
 				allMagneticBeadIdentityModels,
 				allMagnetizationRackModels,
+				allMagnetizationRackObjects,
 				uniqueContainerModels,
 				uniqueContainerObjects,
 				assayContainerModels,
-				uniqueStorageConditions
+				uniqueStorageConditions,
+				uniqueSampleObjects,
+				uniqueSampleModels
 			},
 			{
 				(*flatMySamplesWithPreparedSamples*)
@@ -7969,6 +8434,10 @@ ExperimentMagneticBeadSeparationCore[
 				{
 					containerModelDownloadPacket
 				},
+				(*allMagnetizationRackObjects*)
+				{
+					Packet[Model]
+				},
 				(*uniqueContainerModels*)
 				{
 					containerModelDownloadPacket
@@ -7985,6 +8454,14 @@ ExperimentMagneticBeadSeparationCore[
 				(*uniqueStorageConditions*)
 				{
 					Packet[StorageCondition]
+				},
+				(* uniqueSampleObjects *)
+				{
+					sampleDownloadPacket
+				},
+				(* uniqueSampleModels *)
+				{
+					modelDownloadPacket
 				}
 			},
 			Cache->FlattenCachePackets[{cache}],
@@ -8188,7 +8665,7 @@ ExperimentMagneticBeadSeparationCore[
 		(* Get the nested index matching options *)
 		nestedIndexMatchingOptionDefs=Cases[optionDefinition,KeyValuePattern["NestedIndexMatching"->True]];
 
-    Join[Lookup[nestedIndexMatchingOptionDefs,"OptionSymbol",{}],{AliquotContainer}]
+		Join[Lookup[nestedIndexMatchingOptionDefs,"OptionSymbol",{}],{AliquotContainer}]
 	];
 
 
@@ -8219,9 +8696,9 @@ ExperimentMagneticBeadSeparationCore[
 					#->unnestOptionsOfRepeatedStage[outputSeptenaryWashCollectionContainers,Lookup[resolvedOptions,NumberOfSeptenaryWashes],inputSeptenaryWashCollectionContainers,myUnnestedSampleInputs],
 				MatchQ[#,ElutionCollectionContainer],
 					#->unnestOptionsOfRepeatedStage[outputElutionCollectionContainers,Lookup[resolvedOptions,NumberOfElutions],inputElutionCollectionContainers,myUnnestedSampleInputs],
-        (*If the key is any other collection conatiner option of a non-repeated stage i.e. Sample Preparation ones! They would need a special flatten becuase the container format could be complex*)
-        MatchQ[#,Alternatives[IncubateAliquotContainer,CentrifugeAliquotContainer,FilterContainerOut,FilterAliquotContainer,AliquotContainer]],
-          (#->Unflatten[flattenCollectionContainersToSingletons[Lookup[resolvedOptions,#]],myUnnestedSampleInputs]),
+				(*If the key is any other collection conatiner option of a non-repeated stage i.e. Sample Preparation ones! They would need a special flatten becuase the container format could be complex*)
+				MatchQ[#,Alternatives[IncubateAliquotContainer,CentrifugeAliquotContainer,FilterContainerOut,FilterAliquotContainer,AliquotContainer]],
+					(#->Unflatten[flattenCollectionContainersToSingletons[Lookup[resolvedOptions,#]],myUnnestedSampleInputs]),
 				(*If the key is other collection option affected by repeated stage, including wells, indices,and container labels*)
 				MatchQ[#,Alternatives[PreWashDestinationWell,PreWashCollectionContainerIndex,PreWashCollectionContainerLabel]],
 					(#->unnestOptionsOfRepeatedStage[Flatten[Lookup[resolvedOptions,#]],Lookup[resolvedOptions,NumberOfPreWashes],Lookup[inheritedOptions,#],myUnnestedSampleInputs]),
@@ -8377,17 +8854,30 @@ ExperimentMagneticBeadSeparationCore[
 
 		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticSamplePreparation with our primitive. *)
 		MatchQ[resolvedPreparation, Robotic],
-			Module[{primitive, nonHiddenOptions, experimentFunction},
+			Module[{primitive, nonHiddenOptions, experimentFunction, samplesMaybeWithModels},
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important. The simulation used here is "updated simulation" that includes simulated sample preparation packet.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[simulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					mySamplesWithPreparedSamples,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						simulation,
+						mySamplesWithPreparedSamples
+					]
+				];
+
 				(* Create our mbs primitive to feed into RoboticSamplePreparation. *)
 				primitive=MagneticBeadSeparation@@Join[
 					{
-						Sample->Download[ToList[mySamplesWithPreparedSamples], Object]
+						Sample->Download[ToList[samplesMaybeWithModels], Object]
 					},
 					RemoveHiddenPrimitiveOptions[MagneticBeadSeparation,ToList[myOptions]]
 				];
 
 				(* Remove any hidden options before returning. *)
-        nonHiddenOptions=RemoveHiddenOptions[ExperimentMagneticBeadSeparation,userReturnFriendlyOptions];
+				nonHiddenOptions=RemoveHiddenOptions[ExperimentMagneticBeadSeparation,userReturnFriendlyOptions];
 
 				(* Memoize the value of ExperimentMagneticBeadSeparation so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentMagneticBeadSeparation, $PrimitiveFrameworkResolverOutputCache},
@@ -8414,6 +8904,7 @@ ExperimentMagneticBeadSeparationCore[
 						Name->Lookup[safeOps,Name],
 						Upload->Lookup[safeOps,Upload],
 						Confirm->Lookup[safeOps,Confirm],
+            CanaryBranch->Lookup[safeOps,CanaryBranch],
 						ParentProtocol->Lookup[safeOps,ParentProtocol],
 						Priority->Lookup[safeOps,Priority],
 						StartDate->Lookup[safeOps,StartDate],
@@ -8432,6 +8923,7 @@ ExperimentMagneticBeadSeparationCore[
 				resourceResult[[1]],
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+        CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
@@ -8545,8 +9037,8 @@ resolveExperimentMagneticBeadSeparationMethod[
 			},
 			{Packet[Model[{Name,Footprint}]]},
 			{Packet[Name,Footprint]},
-			{Packet[Model[{Name,Magnetized}]]},
-			{Packet[Name,Magnetized]}
+			{Packet[Model[{Name,Magnetized,Footprint}]]},
+			{Packet[Name,Magnetized,Footprint]}
 		},
 		Cache->Lookup[listedOptions,Cache,{}],
 		Simulation->Lookup[listedOptions,Simulation,Null]
@@ -8562,7 +9054,7 @@ resolveExperimentMagneticBeadSeparationMethod[
 	}];
 
 	(* get unique magnetization rack models *)
-	uniqueMagnetizationRackModels=Cases[magnetizationRackModelPackets,KeyValuePattern[{Object->obj_,Type->Model[Container,Rack],Magnetized->True}]:>obj];
+	uniqueMagnetizationRackModels=Cases[Flatten[magnetizationRackModelPackets],KeyValuePattern[{Object->obj_,Type->Model[Container,Rack],Magnetized->True}]:>obj];
 
 	(* Get all of our Model[Container]s and look at their footprints. *)
 	allModelContainerPackets=Cases[allPackets,PacketP[Model[Container]]];
@@ -8578,10 +9070,10 @@ resolveExperimentMagneticBeadSeparationMethod[
 				"the sample container/collection container footprints "<>ToString[Cases[Transpose[{(ObjectToString[#,Cache->allModelContainerPackets]&)/@Lookup[allModelContainerPackets,Object,{}],Lookup[allModelContainerPackets,Footprint,{}]}],{_,Except[LiquidHandlerCompatibleFootprintP]}][[All,1]]]<>" are not liquid handler compatible",
 				Nothing
 			],
-			(* check magnetization rack. all models except Model[Container,Rack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"] *)
+			(* check magnetization rack. all models except Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"] and Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"] *)
 			(* can only be used manually *)
-			If[!MatchQ[uniqueMagnetizationRackModels,{}]&&!MatchQ[uniqueMagnetizationRackModels,{ObjectReferenceP[Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"]]..}],
-				"the following MagnetizationRack can only be used to perform separation manually: "<>ObjectToString[Cases[uniqueMagnetizationRackModels,Except[ObjectReferenceP[Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"]]]],Cache->allPackets],
+			If[!MatchQ[uniqueMagnetizationRackModels,{}]&&!MatchQ[uniqueMagnetizationRackModels,{ObjectReferenceP[Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"],Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]]..}],
+				"the following MagnetizationRack can only be used to perform separation manually: "<>ObjectToString[Cases[uniqueMagnetizationRackModels,Except[ObjectReferenceP[Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"],Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]]]],Cache->allPackets],
 				Nothing
 			],
 			(* check volume. If it is larger than 2 Milliliters, must be manual *)
@@ -8626,10 +9118,6 @@ resolveExperimentMagneticBeadSeparationMethod[
 				"the Aliquot Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 				Nothing
 			],
-			If[MatchQ[Lookup[safeOps,PreparatoryPrimitives],Except[Null]],
-				"the PreparatoryPrimitives option is set (Sample Preparation is only supported Manually)",
-				Nothing
-			],
 			If[MatchQ[Lookup[safeOps,Preparation],Manual],
 				"the Preparation option is set to Manual by the user",
 				Nothing
@@ -8637,16 +9125,43 @@ resolveExperimentMagneticBeadSeparationMethod[
 	};
 
 	roboticRequirementStrings={
-		(*The MagnetizationRack is set to Alpaqua 96S Super Magnet 96-well Plate Rack, which is used in Robotic only*)
-		If[MatchQ[Lookup[safeOps,MagnetizationRack],ListableP[ObjectP[Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]],3]],
-			"the MagnetizationRack is set to Alpaqua 96S Super Magnet 96-well Plate Rack which is for Robotic preparation",
+		(*The MagnetizationRack is set to Alpaqua 96S Super Magnet 96-well Plate Rack or Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack, which is used in Robotic only*)
+		If[MatchQ[Lookup[safeOps,MagnetizationRack],ListableP[ObjectP[{Model[Item, MagnetizationRack, "id:aXRlGn6O3vqO"],Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]}],3]],
+			"the MagnetizationRack is set to Alpaqua 96S Super Magnet 96-well Plate Rack or Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack which is for Robotic preparation",
 			Nothing
 		],
 		(*The preparation option is set to Robotic by the user*)
 		If[MatchQ[Lookup[safeOps,Preparation],Robotic],
 			"the Preparation option is set to Robotic by the user",
 			Nothing
-		]
+		],
+    (* check aspiration pipetting options. these can only be used with Robotic *)
+    Sequence@@Module[{aspirationPipettingOptionNames},
+      (* get the option names with mix type *)
+      aspirationPipettingOptionNames={PreWashAspirationPosition, PreWashAspirationPositionOffset,
+        EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset,
+        LoadingAspirationPosition, LoadingAspirationPositionOffset,
+        WashAspirationPosition,WashAspirationPositionOffset,
+        SecondaryWashAspirationPosition,SecondaryWashAspirationPositionOffset,
+        TertiaryWashAspirationPosition,TertiaryWashAspirationPositionOffset,
+        QuaternaryWashAspirationPosition,QuaternaryWashAspirationPositionOffset,
+        QuinaryWashAspirationPosition,QuinaryWashAspirationPositionOffset,
+        SenaryWashAspirationPosition,SenaryWashAspirationPositionOffset,
+        SeptenaryWashAspirationPosition,SeptenaryWashAspirationPositionOffset,
+        ElutionAspirationPosition,ElutionAspirationPositionOffset};
+
+      (* check each option for mix types that can only performed manually *)
+      If[MatchQ[Lookup[safeOps,#],Except[ListableP@ListableP[Automatic|Null]]],
+        StringJoin[
+          "the ",
+          ToString[#],
+          " of ",
+          ToString[Cases[ToList[Lookup[safeOps,#]],Lookup[safeOps,#]]],
+          " can only be performed robotically"
+        ],
+        Nothing
+      ]&/@aspirationPipettingOptionNames
+    ]
 	};
 
 	(* Throw an error if the user has already specified Robotic Preparation option or robotic magnetization rack and it's in conflict with our requirements. *)
@@ -8717,7 +9232,7 @@ DefineOptions[resolveExperimentMagneticBeadSeparationOptions,
 
 resolveExperimentMagneticBeadSeparationOptions[
 	myNestedSamples:ListableP[{ObjectP[Object[Sample]]..}],
-	myOriginalSamples:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
+	myOriginalSamples:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
 	myOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[resolveExperimentMagneticBeadSeparationOptions]
 ]:=Module[
@@ -8812,7 +9327,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 		separationModeMatchQ,separationModeMismatchOptions,separationModeMatchTest,
 
 		(* Resolve MapThread Options *)
-		mapThreadFriendlyOptions,preResolvedMapThreadFriendlyOptions,resolvedAssayContainers,
+		mapThreadFriendlyOptions,preResolvedMapThreadFriendlyOptions,resolvedAssayContainers,resolvedMagnetizationRackModels,
 
 		(* MapThread error tracking variables *)
 		collectionContainerLookup,invalidDestinationWells,noAvailablePositionsInContainer,
@@ -8865,7 +9380,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 	invalidContainerOutLabelLengthErrors,mismatchedContainerOutLabelErrors,
 
 		(* MapThread resolved options *)
-		resolvedVolumes,resolvedMagnetizationRacks,resolvedTargets,resolvedAnalyteAffinityLabels,resolvedMagneticBeadAffinityLabels,resolvedMagneticBeads,objectAndOptionToMixOptionLookup,
+		resolvedVolumes,resolvedMagnetizationRacks,unresolvedMagnetizationRacks,resolvedTargets,resolvedAnalyteAffinityLabels,resolvedMagneticBeadAffinityLabels,resolvedMagneticBeads,objectAndOptionToMixOptionLookup,
 
 		resolvedPreWashes,resolvedPreWashBuffers,resolvedPreWashBufferVolumes,resolvedPreWashMixTimes,resolvedPreWashMixTemperatures,resolvedPreWashMixes,resolvedPreWashMixTypes,resolvedPreWashMixRates,
 		resolvedPreWashMixVolumes,resolvedNumberOfPreWashMixes,resolvedPreWashMagnetizationTimes,resolvedPreWashAspirationVolumes,resolvedPreWashCollectionContainers,
@@ -8935,6 +9450,19 @@ resolveExperimentMagneticBeadSeparationOptions[
 		resolvedElutionCollectionContainerLabels,
 
 		resolvedSampleLabels,resolvedSampleContainerLabels,resolvedSampleOutLabels,resolvedContainerOutLabels,
+
+    (*resolved aspiration pipetting options*)
+    resolvedPreWashAspirationPositions, resolvedPreWashAspirationPositionOffsets,
+    resolvedEquilibrationAspirationPositions, resolvedEquilibrationAspirationPositionOffsets,
+    resolvedLoadingAspirationPositions, resolvedLoadingAspirationPositionOffsets,
+    resolvedWashAspirationPositions,resolvedWashAspirationPositionOffsets,
+    resolvedSecondaryWashAspirationPositions,resolvedSecondaryWashAspirationPositionOffsets,
+    resolvedTertiaryWashAspirationPositions,resolvedTertiaryWashAspirationPositionOffsets,
+    resolvedQuaternaryWashAspirationPositions,resolvedQuaternaryWashAspirationPositionOffsets,
+    resolvedQuinaryWashAspirationPositions,resolvedQuinaryWashAspirationPositionOffsets,
+    resolvedSenaryWashAspirationPositions,resolvedSenaryWashAspirationPositionOffsets,
+    resolvedSeptenaryWashAspirationPositions,resolvedSeptenaryWashAspirationPositionOffsets,
+    resolvedElutionAspirationPositions,resolvedElutionAspirationPositionOffsets,
 
 		(* Label option errors *)
 		invalidPreWashMixTypeContainerToSampleLookup,preWashMixTypeWarnings,invalidPreWashMixTypeTests,
@@ -9006,31 +9534,31 @@ resolveExperimentMagneticBeadSeparationOptions[
 		(*Added error checking variables and tests*)
 
 		unresolvedPreWashMixOptions,invalidPreWashMixTipTypeErrors,invalidPreWashMixTipTypeOptions,validPreWashMixTipTypeTest,preWashMixNoTipErrors,
-		validPreWashMixTipTest,	preWashMixNoInstrumentErrors,validPreWashMixInstrumentTest,invalidPreWashMixTipOptions,invalidPreWashMixInstrumentOptions,
+		validPreWashMixTipTest,	preWashMixNoInstrumentErrors,validPreWashMixInstrumentTest,invalidPreWashMixTipOptions,invalidPreWashMixInstrumentOptions,preWashAspirationPipettingMismatchErrors,preWashAspirationPipettingMismatchOptions,preWashAspirationPipettingMismatchTests,
 
-		unresolvedEquilibrationMixOptions,invalidEquilibrationMixTipTypeErrors,invalidEquilibrationMixTipTypeOptions,validEquilibrationMixTipTypeTest,equilibrationMixNoTipErrors,validEquilibrationMixTipTest,equilibrationMixNoInstrumentErrors,invalidEquilibrationMixTipOptions,invalidEquilibrationMixInstrumentOptions, validEquilibrationMixInstrumentTest,
+		unresolvedEquilibrationMixOptions,invalidEquilibrationMixTipTypeErrors,invalidEquilibrationMixTipTypeOptions,validEquilibrationMixTipTypeTest,equilibrationMixNoTipErrors,validEquilibrationMixTipTest,equilibrationMixNoInstrumentErrors,invalidEquilibrationMixTipOptions,invalidEquilibrationMixInstrumentOptions, validEquilibrationMixInstrumentTest,equilibrationAspirationPipettingMismatchErrors,equilibrationAspirationPipettingMismatchOptions,equilibrationAspirationPipettingMismatchTests,
 
 		unresolvedLoadingMixOptions,invalidLoadingMixTipTypeErrors,invalidLoadingMixTipTypeOptions,validLoadingMixTipTypeTest,loadingMixNoTipErrors,
 		validLoadingMixTipTest,loadingMixNoInstrumentErrors,validLoadingMixInstrumentTest,invalidLoadingMixTipOptions,
-		invalidLoadingMixInstrumentOptions,
+		invalidLoadingMixInstrumentOptions,loadingAspirationPipettingMismatchErrors,loadingAspirationPipettingMismatchOptions,loadingAspirationPipettingMismatchTests,
 
-		unresolvedWashMixOptions,invalidWashMixTipTypeErrors,invalidWashMixTipTypeOptions,validWashMixTipTypeTest,washMixNoTipErrors,validWashMixTipTest,washMixNoInstrumentErrors,validWashMixInstrumentTest,invalidWashMixTipOptions,invalidWashMixInstrumentOptions,
+		unresolvedWashMixOptions,invalidWashMixTipTypeErrors,invalidWashMixTipTypeOptions,validWashMixTipTypeTest,washMixNoTipErrors,validWashMixTipTest,washMixNoInstrumentErrors,validWashMixInstrumentTest,invalidWashMixTipOptions,invalidWashMixInstrumentOptions,washAspirationPipettingMismatchErrors,washAspirationPipettingMismatchOptions,washAspirationPipettingMismatchTests,
 
-		unresolvedSecondaryWashMixOptions,invalidSecondaryWashMixTipTypeErrors,invalidSecondaryWashMixTipTypeOptions,validSecondaryWashMixTipTypeTest,secondaryWashMixNoTipErrors,validSecondaryWashMixTipTest,secondaryWashMixNoInstrumentErrors,validSecondaryWashMixInstrumentTest,invalidSecondaryWashMixTipOptions,invalidSecondaryWashMixInstrumentOptions,invalidSecondaryWashErrors,invalidSecondaryWashOptions,validSecondaryWashTest,
+		unresolvedSecondaryWashMixOptions,invalidSecondaryWashMixTipTypeErrors,invalidSecondaryWashMixTipTypeOptions,validSecondaryWashMixTipTypeTest,secondaryWashMixNoTipErrors,validSecondaryWashMixTipTest,secondaryWashMixNoInstrumentErrors,validSecondaryWashMixInstrumentTest,invalidSecondaryWashMixTipOptions,invalidSecondaryWashMixInstrumentOptions,invalidSecondaryWashErrors,invalidSecondaryWashOptions,validSecondaryWashTest,secondaryWashAspirationPipettingMismatchErrors,secondaryWashAspirationPipettingMismatchOptions,secondaryWashAspirationPipettingMismatchTests,
 
-		unresolvedTertiaryWashMixOptions,invalidTertiaryWashMixTipTypeErrors,invalidTertiaryWashMixTipTypeOptions,validTertiaryWashMixTipTypeTest,tertiaryWashMixNoTipErrors,validTertiaryWashMixTipTest,tertiaryWashMixNoInstrumentErrors,validTertiaryWashMixInstrumentTest,invalidTertiaryWashMixTipOptions,	invalidTertiaryWashMixInstrumentOptions,invalidTertiaryWashErrors,invalidTertiaryWashOptions,validTertiaryWashTest,
+		unresolvedTertiaryWashMixOptions,invalidTertiaryWashMixTipTypeErrors,invalidTertiaryWashMixTipTypeOptions,validTertiaryWashMixTipTypeTest,tertiaryWashMixNoTipErrors,validTertiaryWashMixTipTest,tertiaryWashMixNoInstrumentErrors,validTertiaryWashMixInstrumentTest,invalidTertiaryWashMixTipOptions,	invalidTertiaryWashMixInstrumentOptions,invalidTertiaryWashErrors,invalidTertiaryWashOptions,validTertiaryWashTest,tertiaryWashAspirationPipettingMismatchErrors,tertiaryWashAspirationPipettingMismatchOptions,tertiaryWashAspirationPipettingMismatchTests,
 
 		unresolvedQuaternaryWashMixOptions,invalidQuaternaryWashMixTipTypeErrors,invalidQuaternaryWashMixTipTypeOptions,validQuaternaryWashMixTipTypeTest,
-		quaternaryWashMixNoTipErrors,validQuaternaryWashMixTipTest,quaternaryWashMixNoInstrumentErrors,validQuaternaryWashMixInstrumentTest,invalidQuaternaryWashMixTipOptions,invalidQuaternaryWashMixInstrumentOptions,invalidQuaternaryWashErrors,invalidQuaternaryWashOptions,validQuaternaryWashTest,
+		quaternaryWashMixNoTipErrors,validQuaternaryWashMixTipTest,quaternaryWashMixNoInstrumentErrors,validQuaternaryWashMixInstrumentTest,invalidQuaternaryWashMixTipOptions,invalidQuaternaryWashMixInstrumentOptions,invalidQuaternaryWashErrors,invalidQuaternaryWashOptions,validQuaternaryWashTest,quaternaryWashAspirationPipettingMismatchErrors,quaternaryWashAspirationPipettingMismatchOptions,quaternaryWashAspirationPipettingMismatchTests,
 
-		unresolvedQuinaryWashMixOptions,invalidQuinaryWashMixTipTypeErrors,invalidQuinaryWashMixTipTypeOptions,validQuinaryWashMixTipTypeTest,quinaryWashMixNoTipErrors,validQuinaryWashMixTipTest,quinaryWashMixNoInstrumentErrors,validQuinaryWashMixInstrumentTest,invalidQuinaryWashMixTipOptions,invalidQuinaryWashMixInstrumentOptions,invalidQuinaryWashErrors,invalidQuinaryWashOptions,validQuinaryWashTest,
+		unresolvedQuinaryWashMixOptions,invalidQuinaryWashMixTipTypeErrors,invalidQuinaryWashMixTipTypeOptions,validQuinaryWashMixTipTypeTest,quinaryWashMixNoTipErrors,validQuinaryWashMixTipTest,quinaryWashMixNoInstrumentErrors,validQuinaryWashMixInstrumentTest,invalidQuinaryWashMixTipOptions,invalidQuinaryWashMixInstrumentOptions,invalidQuinaryWashErrors,invalidQuinaryWashOptions,validQuinaryWashTest,quinaryWashAspirationPipettingMismatchErrors,quinaryWashAspirationPipettingMismatchOptions,quinaryWashAspirationPipettingMismatchTests,
 
-		unresolvedSenaryWashMixOptions,invalidSenaryWashMixTipTypeErrors,invalidSenaryWashMixTipTypeOptions,validSenaryWashMixTipTypeTest,senaryWashMixNoTipErrors,validSenaryWashMixTipTest,senaryWashMixNoInstrumentErrors,validSenaryWashMixInstrumentTest,invalidSenaryWashMixTipOptions,invalidSenaryWashMixInstrumentOptions,invalidSenaryWashErrors,invalidSenaryWashOptions,validSenaryWashTest,
+		unresolvedSenaryWashMixOptions,invalidSenaryWashMixTipTypeErrors,invalidSenaryWashMixTipTypeOptions,validSenaryWashMixTipTypeTest,senaryWashMixNoTipErrors,validSenaryWashMixTipTest,senaryWashMixNoInstrumentErrors,validSenaryWashMixInstrumentTest,invalidSenaryWashMixTipOptions,invalidSenaryWashMixInstrumentOptions,invalidSenaryWashErrors,invalidSenaryWashOptions,validSenaryWashTest,senaryWashAspirationPipettingMismatchErrors,senaryWashAspirationPipettingMismatchOptions,senaryWashAspirationPipettingMismatchTests,
 
-		unresolvedSeptenaryWashMixOptions,invalidSeptenaryWashMixTipTypeErrors,invalidSeptenaryWashMixTipTypeOptions,validSeptenaryWashMixTipTypeTest,septenaryWashMixNoTipErrors,validSeptenaryWashMixTipTest,septenaryWashMixNoInstrumentErrors,validSeptenaryWashMixInstrumentTest,invalidSeptenaryWashMixTipOptions,invalidSeptenaryWashMixInstrumentOptions,invalidSeptenaryWashErrors,invalidSeptenaryWashOptions,validSeptenaryWashTest,
+		unresolvedSeptenaryWashMixOptions,invalidSeptenaryWashMixTipTypeErrors,invalidSeptenaryWashMixTipTypeOptions,validSeptenaryWashMixTipTypeTest,septenaryWashMixNoTipErrors,validSeptenaryWashMixTipTest,septenaryWashMixNoInstrumentErrors,validSeptenaryWashMixInstrumentTest,invalidSeptenaryWashMixTipOptions,invalidSeptenaryWashMixInstrumentOptions,invalidSeptenaryWashErrors,invalidSeptenaryWashOptions,validSeptenaryWashTest,septenaryWashAspirationPipettingMismatchErrors,septenaryWashAspirationPipettingMismatchOptions,septenaryWashAspirationPipettingMismatchTests,
 
 		unresolvedElutionMixOptions,invalidElutionMixTipTypeErrors,invalidElutionMixTipTypeOptions,validElutionMixTipTypeTest,elutionMixNoTipErrors,
-		validElutionMixTipTest,elutionMixNoInstrumentErrors,validElutionMixInstrumentTest,invalidElutionMixTipOptions,invalidElutionMixInstrumentOptions,
+		validElutionMixTipTest,elutionMixNoInstrumentErrors,validElutionMixInstrumentTest,invalidElutionMixTipOptions,invalidElutionMixInstrumentOptions,elutionAspirationPipettingMismatchErrors,elutionAspirationPipettingMismatchOptions,elutionAspirationPipettingMismatchTests,
 
 		(* Resolve final options *)
 		optionsAllSameQ,maxOptionRequestedQ,parallelMaxOptionTest,
@@ -9148,12 +9676,12 @@ resolveExperimentMagneticBeadSeparationOptions[
 		$Failed
 	];
 
-	(* If we have more than one allowable preparation method, just choose the first one. Our function returns multiple *)
-	(* options so that OptimizeUnitOperations can perform primitive grouping. *)
-	resolvedPreparation=If[MatchQ[allowedPreparation,_List],
-		First[allowedPreparation],
-		allowedPreparation
-	];
+  (* If we have more than one allowable preparation method, just choose the first one. Our function returns multiple *)
+  (* options so that OptimizeUnitOperations can perform primitive grouping. *)
+  resolvedPreparation=If[MatchQ[allowedPreparation,_List],
+    First[allowedPreparation],
+    allowedPreparation
+  ];
 
 	(*Resolve sample prep options*)
 	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
@@ -9380,8 +9908,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 			collectionContainerPackets,
 			collectionContainerModelPackets,
 			Cases[Flatten@rawMagnetizationRackPackets,PacketP[Object]],
-			Cases[Flatten[{rawMagnetizationRackPackets,rawMagnetizationRackModelPackets}],PacketP[Model]]},
+			Cases[Flatten[{rawMagnetizationRackPackets,rawMagnetizationRackModelPackets}],PacketP[Model]],
 			storageConditionPackets
+    }
 	];
 
 	(* Create combined fast assoc *)
@@ -9843,7 +10372,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 	resolvedProcessingOrder=If[MatchQ[processingOrder,Automatic],
 		(* If ProcessingOrder is Automatic, look at the structure of the input list to determine whether to resolve to  *)
 		(* Parallel or Batch *)
-		If[MatchQ[myOriginalSamples,{Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]]]..}],
+		If[MatchQ[myOriginalSamples,{Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],ObjectP[Model[Sample]]]..}],
 			Parallel,
 			Batch
 		],
@@ -9853,7 +10382,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 	(* Immediately throw an error if the processing order does not match the dimensions of the input samples *)
 	validProcessingOrderQ=If[MatchQ[processingOrder,Except[Automatic]],
-		If[MatchQ[myOriginalSamples,ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],
+		If[MatchQ[myOriginalSamples,ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],
 			MatchQ[processingOrder,Parallel|Serial],
 			MatchQ[processingOrder,Batch]
 		],
@@ -9908,7 +10437,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentMagneticBeadSeparation,updatedRoundedMBSOptions];
 
 	(* ---- Resolve MagnetizationRack and AssayContainer ahead of resolving the mix options ---- *)
-	{resolvedMagnetizationRacks,resolvedAssayContainers}=Transpose[MapThread[
+	{unresolvedMagnetizationRacks,resolvedMagnetizationRacks,resolvedMagnetizationRackModels,resolvedAssayContainers}=Transpose[MapThread[
 		Function[{samplePacket,myMapThreadOptions},
 			Module[{volume,magneticBeadVolume,preWashBufferVolume,equilibrationBufferVolume,washBufferVolume,secondaryWashBufferVolume,tertiaryWashBufferVolume,quaternaryWashBufferVolume,quinaryWashBufferVolume,senaryWashBufferVolume,septenaryWashBufferVolume,elutionBufferVolume,
 				magnetizationRack,preparation,maxPossibleVolume,resolvedMagnetizationRack,magnetRackModel,magnetRackFootprint,resolvedAssayContainer},
@@ -9934,29 +10463,29 @@ resolveExperimentMagneticBeadSeparationOptions[
 						VolumeP
 					]
 				}];
-
+        (*TODO::change all name references to ID references once the model makes to proddb*)
 				(*Resolve MagnetizationRack*)
 				resolvedMagnetizationRack=If[MatchQ[magnetizationRack,Automatic],
 					(*If the option is Automatic, resolve it from volumes*)
 					Switch[maxPossibleVolume,
 						LessEqualP[200 Microliter],
 							If[MatchQ[preparation,Robotic],
-								Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],(*Alpaqua 96S Super Magnet 96-well Plate Rack*)
+								Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"],(*Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack*)
 								Model[Container,Rack,"id:xRO9n3BDjjZw"](*DynaMag Magnet 96-well Skirted Plate Rack*)
 							],
 						LessEqualP[2 Milliliter],
 							If[MatchQ[preparation,Robotic],
-								Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],(*Alpaqua 96S Super Magnet 96-well Plate Rack*)
+								Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"],(*Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack*)
 								Model[Container,Rack,"id:n0k9mG8D1x36"](*DynaMag Magnet 2mL Tube Rack*)
 							],
 						LessEqualP[15 Milliliter],
 							If[MatchQ[preparation,Robotic],
-								Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],(*Alpaqua 96S Super Magnet 96-well Plate Rack*)
+								Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"],(*Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack*)
 								Model[Container,Rack,"id:qdkmxzqDev54"](*DynaMag Magnet 15mL Tube Rack*)
 							],
 						_,
 							If[MatchQ[preparation,Robotic],
-								Model[Item,MagnetizationRack,"Alpaqua 96S Super Magnet 96-well Plate Rack"],(*Alpaqua 96S Super Magnet 96-well Plate Rack*)
+								Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"],(*Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack*)
 								Model[Container,Rack,"id:D8KAEvGJllmk"](*DynaMag Magnet 50mL Tube Rack*)
 							]
 					],
@@ -9965,13 +10494,13 @@ resolveExperimentMagneticBeadSeparationOptions[
 				];
 
 				(* Make sure the magnetization rack is a model *)
-				magnetRackModel=If[MatchQ[resolvedMagnetizationRack,ObjectP[Model[Container,Rack]|Model[Item,MagnetizationRack]]],
+				magnetRackModel=If[MatchQ[resolvedMagnetizationRack,ObjectP[{Model[Container, Rack], Model[Item, MagnetizationRack]}]],
 					resolvedMagnetizationRack,
 					fastAssocLookup[combinedFastAssoc,resolvedMagnetizationRack,Model]
 				];
 
 				(* Get the footprint of the magnetization rack so we can resolve the assay container *)
-				magnetRackFootprint=fastAssocLookup[combinedFastAssoc,resolvedMagnetizationRack,Footprint];
+				magnetRackFootprint=fastAssocLookup[combinedFastAssoc,magnetRackModel,Footprint];
 
 				(* Resolve the assay container *)
 				resolvedAssayContainer=If[MatchQ[magnetRackFootprint,Plate],
@@ -9993,7 +10522,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 					]
 				];
 				{
+          magnetizationRack,
 					resolvedMagnetizationRack,
+          magnetRackModel,
 					resolvedAssayContainer
 				}
 			]
@@ -10430,9 +10961,31 @@ resolveExperimentMagneticBeadSeparationOptions[
 		(*226*)resolvedElutionCollectionStorageConditions,
 		(*227*)resolvedNumberOfElutions,
 		(*228*)resolvedElutionMixTipTypes,
-		(*229*)resolvedElutionMixTipMaterials
+		(*229*)resolvedElutionMixTipMaterials,
+    (*230*)resolvedPreWashAspirationPositions,
+    (*231*)resolvedPreWashAspirationPositionOffsets,
+    (*232*)resolvedEquilibrationAspirationPositions,
+    (*233*)resolvedEquilibrationAspirationPositionOffsets,
+    (*234*)resolvedLoadingAspirationPositions,
+    (*235*)resolvedLoadingAspirationPositionOffsets,
+    (*236*)resolvedWashAspirationPositions,
+    (*237*)resolvedWashAspirationPositionOffsets,
+    (*238*)resolvedSecondaryWashAspirationPositions,
+    (*239*)resolvedSecondaryWashAspirationPositionOffsets,
+    (*240*)resolvedTertiaryWashAspirationPositions,
+    (*241*)resolvedTertiaryWashAspirationPositionOffsets,
+    (*242*)resolvedQuaternaryWashAspirationPositions,
+    (*243*)resolvedQuaternaryWashAspirationPositionOffsets,
+    (*244*)resolvedQuinaryWashAspirationPositions,
+    (*245*)resolvedQuinaryWashAspirationPositionOffsets,
+    (*246*)resolvedSenaryWashAspirationPositions,
+    (*247*)resolvedSenaryWashAspirationPositionOffsets,
+    (*248*)resolvedSeptenaryWashAspirationPositions,
+    (*249*)resolvedSeptenaryWashAspirationPositionOffsets,
+    (*250*)resolvedElutionAspirationPositions,
+    (*251*)resolvedElutionAspirationPositionOffsets
 	}=Transpose[MapThread[
-		Function[{samplePacket,myMapThreadOptions,assayContainer},
+		Function[{samplePacket,myMapThreadOptions,assayContainer,resolvedMagnetizationRackModel},
 			Module[
 				{
 					sampleObjectRef,sameLoadingCollectionContainerModelQ,
@@ -10476,57 +11029,57 @@ resolveExperimentMagneticBeadSeparationOptions[
 					elutionVolumeToMix,
 
 					unresolvedPreWashOptions,preWash,preWashBuffer,preWashBufferVolume,preWashMixTime,preWashMixTemperature,preWashMix,preWashMixType,preWashMixRate,
-					preWashMixVolume,numberOfPreWashMixes,preWashMagnetizationTime,preWashAspirationVolume,preWashCollectionContainer,
+					preWashMixVolume,numberOfPreWashMixes,preWashMagnetizationTime,preWashAspirationVolume,preWashAspirationPosition, preWashAspirationPositionOffset,preWashCollectionContainer,
 					preWashCollectionStorageCondition,numberOfPreWashes,preWashAirDry,preWashAirDryTime,
 					preWashMixTipType,
 					preWashMixTipMaterial,
 
 					unresolvedEquilibrationOptions,equilibration,equilibrationBuffer,equilibrationBufferVolume,equilibrationMixTime,equilibrationMixTemperature,equilibrationMix,equilibrationMixType,equilibrationMixRate,
-					equilibrationMixVolume,numberOfEquilibrationMixes,equilibrationMagnetizationTime,equilibrationAspirationVolume,equilibrationCollectionContainer,
+					equilibrationMixVolume,numberOfEquilibrationMixes,equilibrationMagnetizationTime,equilibrationAspirationVolume,equilibrationAspirationPosition, equilibrationAspirationPositionOffset,equilibrationCollectionContainer,
 					equilibrationCollectionStorageCondition,equilibrationAirDry,equilibrationAirDryTime,equilibrationMixTipType,equilibrationMixTipMaterial,
 
 					loadingMixTime,loadingMixTemperature,loadingMix,loadingMixType,loadingMixRate,
-					loadingMixVolume,numberOfLoadingMixes,loadingMagnetizationTime,loadingAspirationVolume,loadingCollectionContainer,
+					loadingMixVolume,numberOfLoadingMixes,loadingMagnetizationTime,loadingAspirationVolume,loadingAspirationPosition, loadingAspirationPositionOffset,loadingCollectionContainer,
 					loadingCollectionStorageCondition,loadingAirDry,loadingAirDryTime,
 					loadingMixTipType,loadingMixTipMaterial,
 
 					unresolvedWashOptions,wash,washBuffer,washBufferVolume,washMixTime,washMixTemperature,washMix,washMixType,washMixRate,
-					washMixVolume,numberOfWashMixes,washMagnetizationTime,washAspirationVolume,washCollectionContainer,
+					washMixVolume,numberOfWashMixes,washMagnetizationTime,washAspirationVolume,washAspirationPosition,washAspirationPositionOffset,washCollectionContainer,
 					washCollectionStorageCondition,numberOfWashes,washAirDry,washAirDryTime,
 					washMixTipType,washMixTipMaterial,
 
 					unresolvedSecondaryWashOptions,secondaryWash,secondaryWashBuffer,secondaryWashBufferVolume,secondaryWashMixTime,secondaryWashMixTemperature,secondaryWashMix,secondaryWashMixType,secondaryWashMixRate,
-					secondaryWashMixVolume,numberOfSecondaryWashMixes,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,secondaryWashCollectionContainer,
+					secondaryWashMixVolume,numberOfSecondaryWashMixes,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,secondaryWashAspirationPosition,secondaryWashAspirationPositionOffset,secondaryWashCollectionContainer,
 					secondaryWashCollectionStorageCondition,numberOfSecondaryWashes,secondaryWashAirDry,secondaryWashAirDryTime,
 					secondaryWashMixTipType,secondaryWashMixTipMaterial,
 
 					unresolvedTertiaryWashOptions,tertiaryWash,tertiaryWashBuffer,tertiaryWashBufferVolume,tertiaryWashMixTime,tertiaryWashMixTemperature,tertiaryWashMix,tertiaryWashMixType,tertiaryWashMixRate,
-					tertiaryWashMixVolume,numberOfTertiaryWashMixes,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,tertiaryWashCollectionContainer,
+					tertiaryWashMixVolume,numberOfTertiaryWashMixes,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,tertiaryWashAspirationPosition,tertiaryWashAspirationPositionOffset,tertiaryWashCollectionContainer,
 					tertiaryWashCollectionStorageCondition,numberOfTertiaryWashes,tertiaryWashAirDry,tertiaryWashAirDryTime,
 					tertiaryWashMixTipType,tertiaryWashMixTipMaterial,
 
 					unresolvedQuaternaryWashOptions,quaternaryWash,quaternaryWashBuffer,quaternaryWashBufferVolume,quaternaryWashMixTime,quaternaryWashMixTemperature,quaternaryWashMix,quaternaryWashMixType,quaternaryWashMixRate,
-					quaternaryWashMixVolume,numberOfQuaternaryWashMixes,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,quaternaryWashCollectionContainer,
+					quaternaryWashMixVolume,numberOfQuaternaryWashMixes,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,quaternaryWashAspirationPosition,quaternaryWashAspirationPositionOffset,quaternaryWashCollectionContainer,
 					quaternaryWashCollectionStorageCondition,numberOfQuaternaryWashes,quaternaryWashAirDry,quaternaryWashAirDryTime,
 					quaternaryWashMixTipType,quaternaryWashMixTipMaterial,
 
 					unresolvedQuinaryWashOptions,quinaryWash,quinaryWashBuffer,quinaryWashBufferVolume,quinaryWashMixTime,quinaryWashMixTemperature,quinaryWashMix,quinaryWashMixType,quinaryWashMixRate,
-					quinaryWashMixVolume,numberOfQuinaryWashMixes,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,quinaryWashCollectionContainer,
+					quinaryWashMixVolume,numberOfQuinaryWashMixes,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,quinaryWashAspirationPosition,quinaryWashAspirationPositionOffset,quinaryWashCollectionContainer,
 					quinaryWashCollectionStorageCondition,numberOfQuinaryWashes,quinaryWashAirDry,quinaryWashAirDryTime,
 					quinaryWashMixTipType,quinaryWashMixTipMaterial,
 
 					unresolvedSenaryWashOptions,senaryWash,senaryWashBuffer,senaryWashBufferVolume,senaryWashMixTime,senaryWashMixTemperature,senaryWashMix,senaryWashMixType,senaryWashMixRate,
-					senaryWashMixVolume,numberOfSenaryWashMixes,senaryWashMagnetizationTime,senaryWashAspirationVolume,senaryWashCollectionContainer,
+					senaryWashMixVolume,numberOfSenaryWashMixes,senaryWashMagnetizationTime,senaryWashAspirationVolume,senaryWashAspirationPosition,senaryWashAspirationPositionOffset,senaryWashCollectionContainer,
 					senaryWashCollectionStorageCondition,numberOfSenaryWashes,senaryWashAirDry,senaryWashAirDryTime,
 					senaryWashMixTipType,senaryWashMixTipMaterial,
 
 					unresolvedSeptenaryWashOptions,septenaryWash,septenaryWashBuffer,septenaryWashBufferVolume,septenaryWashMixTime,septenaryWashMixTemperature,septenaryWashMix,septenaryWashMixType,septenaryWashMixRate,
-					septenaryWashMixVolume,numberOfSeptenaryWashMixes,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,septenaryWashCollectionContainer,
+					septenaryWashMixVolume,numberOfSeptenaryWashMixes,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,septenaryWashAspirationPosition,septenaryWashAspirationPositionOffset,septenaryWashCollectionContainer,
 					septenaryWashCollectionStorageCondition,numberOfSeptenaryWashes,septenaryWashAirDry,septenaryWashAirDryTime,
 					septenaryWashMixTipType,septenaryWashMixTipMaterial,
 
 					unresolvedElutionOptions,elution,elutionBuffer,elutionBufferVolume,elutionMixTime,elutionMixTemperature,elutionMix,elutionMixType,elutionMixRate,
-					elutionMixVolume,numberOfElutionMixes,elutionMagnetizationTime,elutionAspirationVolume,elutionCollectionContainer,
+					elutionMixVolume,numberOfElutionMixes,elutionMagnetizationTime,elutionAspirationVolume,elutionAspirationPosition,elutionAspirationPositionOffset,elutionCollectionContainer,
 					elutionCollectionStorageCondition,numberOfElutions,
 					elutionMixTipType,elutionMixTipMaterial,
 
@@ -10536,66 +11089,66 @@ resolveExperimentMagneticBeadSeparationOptions[
 					resolvedTarget,resolvedAnalyteAffinityLabel,resolvedMagneticBeadAffinityLabel,resolvedMagneticBead,
 
 					resolvedPreWash,resolvedPreWashBuffer,resolvedPreWashBufferVolume,resolvedPreWashMixTime,resolvedPreWashMixTemperature,resolvedPreWashMix,resolvedPreWashMixType,resolvedPreWashMixRate,
-					resolvedPreWashMixVolume,resolvedNumberOfPreWashMixes,resolvedPreWashMagnetizationTime,resolvedPreWashAspirationVolume,resolvedPreWashCollectionContainer,
+					resolvedPreWashMixVolume,resolvedNumberOfPreWashMixes,resolvedPreWashMagnetizationTime,resolvedPreWashAspirationVolume,resolvedPreWashAspirationPosition, resolvedPreWashAspirationPositionOffset,resolvedPreWashCollectionContainer,
 					resolvedPreWashCollectionStorageCondition,resolvedNumberOfPreWashes,resolvedPreWashAirDry,resolvedPreWashAirDryTime,
 					resolvedPreWashMixTipType,resolvedPreWashMixTipMaterial,
 
 					resolvedEquilibration,resolvedEquilibrationBuffer,resolvedEquilibrationBufferVolume,resolvedEquilibrationMixTime,resolvedEquilibrationMixTemperature,resolvedEquilibrationMix,resolvedEquilibrationMixType,resolvedEquilibrationMixRate,
-					resolvedEquilibrationMixVolume,resolvedNumberOfEquilibrationMixes,resolvedEquilibrationMagnetizationTime,resolvedEquilibrationAspirationVolume,resolvedEquilibrationCollectionContainer,
+					resolvedEquilibrationMixVolume,resolvedNumberOfEquilibrationMixes,resolvedEquilibrationMagnetizationTime,resolvedEquilibrationAspirationVolume,resolvedEquilibrationAspirationPosition, resolvedEquilibrationAspirationPositionOffset,resolvedEquilibrationCollectionContainer,
 					resolvedEquilibrationCollectionStorageCondition,resolvedEquilibrationAirDry,resolvedEquilibrationAirDryTime,
 					resolvedEquilibrationMixTipType,
 					resolvedEquilibrationMixTipMaterial,
 
 					resolvedLoadingMixTime,resolvedLoadingMixTemperature,resolvedLoadingMix,resolvedLoadingMixType,resolvedLoadingMixRate,
-					resolvedLoadingMixVolume,resolvedNumberOfLoadingMixes,resolvedLoadingMagnetizationTime,resolvedLoadingAspirationVolume,resolvedLoadingCollectionContainer,
+					resolvedLoadingMixVolume,resolvedNumberOfLoadingMixes,resolvedLoadingMagnetizationTime,resolvedLoadingAspirationVolume,resolvedLoadingAspirationPosition, resolvedLoadingAspirationPositionOffset,resolvedLoadingCollectionContainer,
 					resolvedLoadingCollectionStorageCondition,resolvedLoadingAirDry,resolvedLoadingAirDryTime,
 					resolvedLoadingMixTipType,
 					resolvedLoadingMixTipMaterial,
 
 					resolvedWash,resolvedWashBuffer,resolvedWashBufferVolume,resolvedWashMixTime,resolvedWashMixTemperature,resolvedWashMix,resolvedWashMixType,resolvedWashMixRate,
-					resolvedWashMixVolume,resolvedNumberOfWashMixes,resolvedWashMagnetizationTime,resolvedWashAspirationVolume,resolvedWashCollectionContainer,
+					resolvedWashMixVolume,resolvedNumberOfWashMixes,resolvedWashMagnetizationTime,resolvedWashAspirationVolume,resolvedWashAspirationPosition,resolvedWashAspirationPositionOffset,resolvedWashCollectionContainer,
 					resolvedWashCollectionStorageCondition,resolvedNumberOfWashes,resolvedWashAirDry,resolvedWashAirDryTime,
 					resolvedWashMixTipType,
 					resolvedWashMixTipMaterial,
 
 					resolvedSecondaryWash,resolvedSecondaryWashBuffer,resolvedSecondaryWashBufferVolume,resolvedSecondaryWashMixTime,resolvedSecondaryWashMixTemperature,resolvedSecondaryWashMix,resolvedSecondaryWashMixType,resolvedSecondaryWashMixRate,
-					resolvedSecondaryWashMixVolume,resolvedNumberOfSecondaryWashMixes,resolvedSecondaryWashMagnetizationTime,resolvedSecondaryWashAspirationVolume,resolvedSecondaryWashCollectionContainer,
+					resolvedSecondaryWashMixVolume,resolvedNumberOfSecondaryWashMixes,resolvedSecondaryWashMagnetizationTime,resolvedSecondaryWashAspirationVolume,resolvedSecondaryWashAspirationPosition,resolvedSecondaryWashAspirationPositionOffset,resolvedSecondaryWashCollectionContainer,
 					resolvedSecondaryWashCollectionStorageCondition,resolvedNumberOfSecondaryWashes,resolvedSecondaryWashAirDry,resolvedSecondaryWashAirDryTime,
 					resolvedSecondaryWashMixTipType,
 					resolvedSecondaryWashMixTipMaterial,
 
 					resolvedTertiaryWash,resolvedTertiaryWashBuffer,resolvedTertiaryWashBufferVolume,resolvedTertiaryWashMixTime,resolvedTertiaryWashMixTemperature,resolvedTertiaryWashMix,resolvedTertiaryWashMixType,resolvedTertiaryWashMixRate,
-					resolvedTertiaryWashMixVolume,resolvedNumberOfTertiaryWashMixes,resolvedTertiaryWashMagnetizationTime,resolvedTertiaryWashAspirationVolume,resolvedTertiaryWashCollectionContainer,
+					resolvedTertiaryWashMixVolume,resolvedNumberOfTertiaryWashMixes,resolvedTertiaryWashMagnetizationTime,resolvedTertiaryWashAspirationVolume,resolvedTertiaryWashAspirationPosition,resolvedTertiaryWashAspirationPositionOffset,resolvedTertiaryWashCollectionContainer,
 					resolvedTertiaryWashCollectionStorageCondition,resolvedNumberOfTertiaryWashes,resolvedTertiaryWashAirDry,resolvedTertiaryWashAirDryTime,
 					resolvedTertiaryWashMixTipType,
 					resolvedTertiaryWashMixTipMaterial,
 
 					resolvedQuaternaryWash,resolvedQuaternaryWashBuffer,resolvedQuaternaryWashBufferVolume,resolvedQuaternaryWashMixTime,resolvedQuaternaryWashMixTemperature,resolvedQuaternaryWashMix,resolvedQuaternaryWashMixType,resolvedQuaternaryWashMixRate,
-					resolvedQuaternaryWashMixVolume,resolvedNumberOfQuaternaryWashMixes,resolvedQuaternaryWashMagnetizationTime,resolvedQuaternaryWashAspirationVolume,resolvedQuaternaryWashCollectionContainer,
+					resolvedQuaternaryWashMixVolume,resolvedNumberOfQuaternaryWashMixes,resolvedQuaternaryWashMagnetizationTime,resolvedQuaternaryWashAspirationVolume,resolvedQuaternaryWashAspirationPosition,resolvedQuaternaryWashAspirationPositionOffset,resolvedQuaternaryWashCollectionContainer,
 					resolvedQuaternaryWashCollectionStorageCondition,resolvedNumberOfQuaternaryWashes,resolvedQuaternaryWashAirDry,resolvedQuaternaryWashAirDryTime,
 					resolvedQuaternaryWashMixTipType,
 					resolvedQuaternaryWashMixTipMaterial,
 
 					resolvedQuinaryWash,resolvedQuinaryWashBuffer,resolvedQuinaryWashBufferVolume,resolvedQuinaryWashMixTime,resolvedQuinaryWashMixTemperature,resolvedQuinaryWashMix,resolvedQuinaryWashMixType,resolvedQuinaryWashMixRate,
-					resolvedQuinaryWashMixVolume,resolvedNumberOfQuinaryWashMixes,resolvedQuinaryWashMagnetizationTime,resolvedQuinaryWashAspirationVolume,resolvedQuinaryWashCollectionContainer,
+					resolvedQuinaryWashMixVolume,resolvedNumberOfQuinaryWashMixes,resolvedQuinaryWashMagnetizationTime,resolvedQuinaryWashAspirationVolume,resolvedQuinaryWashAspirationPosition,resolvedQuinaryWashAspirationPositionOffset,resolvedQuinaryWashCollectionContainer,
 					resolvedQuinaryWashCollectionStorageCondition,resolvedNumberOfQuinaryWashes,resolvedQuinaryWashAirDry,resolvedQuinaryWashAirDryTime,
 					resolvedQuinaryWashMixTipType,
 					resolvedQuinaryWashMixTipMaterial,
 
 					resolvedSenaryWash,resolvedSenaryWashBuffer,resolvedSenaryWashBufferVolume,resolvedSenaryWashMixTime,resolvedSenaryWashMixTemperature,resolvedSenaryWashMix,resolvedSenaryWashMixType,resolvedSenaryWashMixRate,
-					resolvedSenaryWashMixVolume,resolvedNumberOfSenaryWashMixes,resolvedSenaryWashMagnetizationTime,resolvedSenaryWashAspirationVolume,resolvedSenaryWashCollectionContainer,
+					resolvedSenaryWashMixVolume,resolvedNumberOfSenaryWashMixes,resolvedSenaryWashMagnetizationTime,resolvedSenaryWashAspirationVolume,resolvedSenaryWashAspirationPosition,resolvedSenaryWashAspirationPositionOffset,resolvedSenaryWashCollectionContainer,
 					resolvedSenaryWashCollectionStorageCondition,resolvedNumberOfSenaryWashes,resolvedSenaryWashAirDry,resolvedSenaryWashAirDryTime,
 					resolvedSenaryWashMixTipType,
 					resolvedSenaryWashMixTipMaterial,
 
 					resolvedSeptenaryWash,resolvedSeptenaryWashBuffer,resolvedSeptenaryWashBufferVolume,resolvedSeptenaryWashMixTime,resolvedSeptenaryWashMixTemperature,resolvedSeptenaryWashMix,resolvedSeptenaryWashMixType,resolvedSeptenaryWashMixRate,
-					resolvedSeptenaryWashMixVolume,resolvedNumberOfSeptenaryWashMixes,resolvedSeptenaryWashMagnetizationTime,resolvedSeptenaryWashAspirationVolume,resolvedSeptenaryWashCollectionContainer,
+					resolvedSeptenaryWashMixVolume,resolvedNumberOfSeptenaryWashMixes,resolvedSeptenaryWashMagnetizationTime,resolvedSeptenaryWashAspirationVolume,resolvedSeptenaryWashAspirationPosition,resolvedSeptenaryWashAspirationPositionOffset,resolvedSeptenaryWashCollectionContainer,
 					resolvedSeptenaryWashCollectionStorageCondition,resolvedNumberOfSeptenaryWashes,resolvedSeptenaryWashAirDry,resolvedSeptenaryWashAirDryTime,
 					resolvedSeptenaryWashMixTipType,
 					resolvedSeptenaryWashMixTipMaterial,
 
 					resolvedElution,resolvedElutionBuffer,resolvedElutionBufferVolume,resolvedElutionMixTime,resolvedElutionMixTemperature,resolvedElutionMix,resolvedElutionMixType,resolvedElutionMixRate,
-					resolvedElutionMixVolume,resolvedNumberOfElutionMixes,resolvedElutionMagnetizationTime,resolvedElutionAspirationVolume,resolvedElutionCollectionContainer,
+					resolvedElutionMixVolume,resolvedNumberOfElutionMixes,resolvedElutionMagnetizationTime,resolvedElutionAspirationVolume,resolvedElutionAspirationPosition,resolvedElutionAspirationPositionOffset,resolvedElutionCollectionContainer,
 					resolvedElutionCollectionStorageCondition,resolvedNumberOfElutions,
 					resolvedElutionMixTipType,
 					resolvedElutionMixTipMaterial,
@@ -10637,77 +11190,77 @@ resolveExperimentMagneticBeadSeparationOptions[
 					magneticBeadCollectionStorageCondition,magnetizationRack,
 
 					preWash,preWashBuffer,preWashBufferVolume,preWashMixTime,preWashMixTemperature,preWashMix,preWashMixType,preWashMixRate,
-					preWashMixVolume,numberOfPreWashMixes,preWashMagnetizationTime,preWashAspirationVolume,numberOfPreWashes,
+					preWashMixVolume,numberOfPreWashMixes,preWashMagnetizationTime,preWashAspirationVolume,preWashAspirationPosition, preWashAspirationPositionOffset,numberOfPreWashes,
 					preWashAirDry,preWashAirDryTime,
 					preWashMixTipType,
 					preWashMixTipMaterial,
 					preWashCollectionStorageCondition,
 
 					equilibration,equilibrationBuffer,equilibrationBufferVolume,equilibrationMixTime,equilibrationMixTemperature,equilibrationMix,equilibrationMixType,equilibrationMixRate,
-					equilibrationMixVolume,numberOfEquilibrationMixes,equilibrationMagnetizationTime,equilibrationAspirationVolume,
+					equilibrationMixVolume,numberOfEquilibrationMixes,equilibrationMagnetizationTime,equilibrationAspirationVolume,equilibrationAspirationPosition, equilibrationAspirationPositionOffset,
 					equilibrationAirDry,equilibrationAirDryTime,
 					equilibrationMixTipType,
 					equilibrationMixTipMaterial,
 					equilibrationCollectionStorageCondition,
 
 					loadingMixTime,loadingMixTemperature,loadingMix,loadingMixType,loadingMixRate,
-					loadingMixVolume,numberOfLoadingMixes,loadingMagnetizationTime,loadingAspirationVolume,
+					loadingMixVolume,numberOfLoadingMixes,loadingMagnetizationTime,loadingAspirationVolume,loadingAspirationPosition, loadingAspirationPositionOffset,
 					loadingAirDry,loadingAirDryTime,
 					loadingMixTipType,
 					loadingMixTipMaterial,
 					loadingCollectionStorageCondition,
 
 					wash,washBuffer,washBufferVolume,washMixTime,washMixTemperature,washMix,washMixType,washMixRate,
-					washMixVolume,numberOfWashMixes,washMagnetizationTime,washAspirationVolume,numberOfWashes,
+					washMixVolume,numberOfWashMixes,washMagnetizationTime,washAspirationVolume,washAspirationPosition,washAspirationPositionOffset,numberOfWashes,
 					washAirDry,washAirDryTime,
 					washMixTipType,
 					washMixTipMaterial,
 					washCollectionStorageCondition,
 
 					secondaryWash,secondaryWashBuffer,secondaryWashBufferVolume,secondaryWashMixTime,secondaryWashMixTemperature,secondaryWashMix,secondaryWashMixType,secondaryWashMixRate,
-					secondaryWashMixVolume,numberOfSecondaryWashMixes,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,numberOfSecondaryWashes,
+					secondaryWashMixVolume,numberOfSecondaryWashMixes,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,secondaryWashAspirationPosition,secondaryWashAspirationPositionOffset,numberOfSecondaryWashes,
 					secondaryWashAirDry,secondaryWashAirDryTime,
 					secondaryWashMixTipType,
 					secondaryWashMixTipMaterial,
 					secondaryWashCollectionStorageCondition,
 
 					tertiaryWash,tertiaryWashBuffer,tertiaryWashBufferVolume,tertiaryWashMixTime,tertiaryWashMixTemperature,tertiaryWashMix,tertiaryWashMixType,tertiaryWashMixRate,
-					tertiaryWashMixVolume,numberOfTertiaryWashMixes,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,numberOfTertiaryWashes,
+					tertiaryWashMixVolume,numberOfTertiaryWashMixes,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,tertiaryWashAspirationPosition,tertiaryWashAspirationPositionOffset,numberOfTertiaryWashes,
 					tertiaryWashAirDry,tertiaryWashAirDryTime,
 					tertiaryWashMixTipType,
 					tertiaryWashMixTipMaterial,
 					tertiaryWashCollectionStorageCondition,
 
 					quaternaryWash,quaternaryWashBuffer,quaternaryWashBufferVolume,quaternaryWashMixTime,quaternaryWashMixTemperature,quaternaryWashMix,quaternaryWashMixType,quaternaryWashMixRate,
-					quaternaryWashMixVolume,numberOfQuaternaryWashMixes,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,numberOfQuaternaryWashes,
+					quaternaryWashMixVolume,numberOfQuaternaryWashMixes,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,quaternaryWashAspirationPosition,quaternaryWashAspirationPositionOffset,numberOfQuaternaryWashes,
 					quaternaryWashAirDry,quaternaryWashAirDryTime,
 					quaternaryWashMixTipType,
 					quaternaryWashMixTipMaterial,
 					quaternaryWashCollectionStorageCondition,
 
 					quinaryWash,quinaryWashBuffer,quinaryWashBufferVolume,quinaryWashMixTime,quinaryWashMixTemperature,quinaryWashMix,quinaryWashMixType,quinaryWashMixRate,
-					quinaryWashMixVolume,numberOfQuinaryWashMixes,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,numberOfQuinaryWashes,
+					quinaryWashMixVolume,numberOfQuinaryWashMixes,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,quinaryWashAspirationPosition,quinaryWashAspirationPositionOffset,numberOfQuinaryWashes,
 					quinaryWashAirDry,quinaryWashAirDryTime,
 					quinaryWashMixTipType,
 					quinaryWashMixTipMaterial,
 					quinaryWashCollectionStorageCondition,
 
 					senaryWash,senaryWashBuffer,senaryWashBufferVolume,senaryWashMixTime,senaryWashMixTemperature,senaryWashMix,senaryWashMixType,senaryWashMixRate,
-					senaryWashMixVolume,numberOfSenaryWashMixes,senaryWashMagnetizationTime,senaryWashAspirationVolume,numberOfSenaryWashes,
+					senaryWashMixVolume,numberOfSenaryWashMixes,senaryWashMagnetizationTime,senaryWashAspirationVolume,senaryWashAspirationPosition,senaryWashAspirationPositionOffset,numberOfSenaryWashes,
 					senaryWashAirDry,senaryWashAirDryTime,
 					senaryWashMixTipType,
 					senaryWashMixTipMaterial,
 					senaryWashCollectionStorageCondition,
 
 					septenaryWash,septenaryWashBuffer,septenaryWashBufferVolume,septenaryWashMixTime,septenaryWashMixTemperature,septenaryWashMix,septenaryWashMixType,septenaryWashMixRate,
-					septenaryWashMixVolume,numberOfSeptenaryWashMixes,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,numberOfSeptenaryWashes,
+					septenaryWashMixVolume,numberOfSeptenaryWashMixes,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,septenaryWashAspirationPosition,septenaryWashAspirationPositionOffset,numberOfSeptenaryWashes,
 					septenaryWashAirDry,septenaryWashAirDryTime,
 					septenaryWashMixTipType,
 					septenaryWashMixTipMaterial,
 					septenaryWashCollectionStorageCondition,
 
 					elution,elutionBuffer,elutionBufferVolume,elutionMixTime,elutionMixTemperature,elutionMix,elutionMixType,elutionMixRate,
-					elutionMixVolume,numberOfElutionMixes,elutionMagnetizationTime,elutionAspirationVolume,numberOfElutions,
+					elutionMixVolume,numberOfElutionMixes,elutionMagnetizationTime,elutionAspirationVolume,elutionAspirationPosition,elutionAspirationPositionOffset,numberOfElutions,
 					elutionMixTipType,
 					elutionMixTipMaterial,
 					elutionCollectionStorageCondition,
@@ -10727,7 +11280,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 						PreWash,PreWashBuffer,PreWashBufferVolume,
 						PreWashMixTime,PreWashMixTemperature,PreWashMix,PreWashMixType,PreWashMixRate,
-						PreWashMixVolume,NumberOfPreWashMixes,PreWashMagnetizationTime,PreWashAspirationVolume,NumberOfPreWashes,
+						PreWashMixVolume,NumberOfPreWashMixes,PreWashMagnetizationTime,PreWashAspirationVolume,PreWashAspirationPosition, PreWashAspirationPositionOffset,NumberOfPreWashes,
 						PreWashAirDry,PreWashAirDryTime,
 						PreWashMixTipType,
 						PreWashMixTipMaterial,
@@ -10735,14 +11288,14 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 						Equilibration,EquilibrationBuffer,EquilibrationBufferVolume,
 						EquilibrationMixTime,EquilibrationMixTemperature,EquilibrationMix,EquilibrationMixType,EquilibrationMixRate,
-						EquilibrationMixVolume,NumberOfEquilibrationMixes,EquilibrationMagnetizationTime,EquilibrationAspirationVolume,
+						EquilibrationMixVolume,NumberOfEquilibrationMixes,EquilibrationMagnetizationTime,EquilibrationAspirationVolume,EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset,
 						EquilibrationAirDry,EquilibrationAirDryTime,
 						EquilibrationMixTipType,
 						EquilibrationMixTipMaterial,
 						EquilibrationCollectionStorageCondition,
 
 						LoadingMixTime,LoadingMixTemperature,LoadingMix,LoadingMixType,LoadingMixRate,
-						LoadingMixVolume,NumberOfLoadingMixes,LoadingMagnetizationTime,LoadingAspirationVolume,
+						LoadingMixVolume,NumberOfLoadingMixes,LoadingMagnetizationTime,LoadingAspirationVolume,LoadingAspirationPosition, LoadingAspirationPositionOffset,
 						LoadingAirDry,LoadingAirDryTime,
 						LoadingMixTipType,
 						LoadingMixTipMaterial,
@@ -10750,56 +11303,56 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 						Wash,WashBuffer,WashBufferVolume,
 						WashMixTime,WashMixTemperature,WashMix,WashMixType,WashMixRate,
-						WashMixVolume,NumberOfWashMixes,WashMagnetizationTime,WashAspirationVolume,NumberOfWashes,
+						WashMixVolume,NumberOfWashMixes,WashMagnetizationTime,WashAspirationVolume,WashAspirationPosition,WashAspirationPositionOffset,NumberOfWashes,
 						WashAirDry,WashAirDryTime,
 						WashMixTipType,WashMixTipMaterial,
 						WashCollectionStorageCondition,
 
 						SecondaryWash,SecondaryWashBuffer,SecondaryWashBufferVolume,
 						SecondaryWashMixTime,SecondaryWashMixTemperature,SecondaryWashMix,SecondaryWashMixType,SecondaryWashMixRate,
-						SecondaryWashMixVolume,NumberOfSecondaryWashMixes,SecondaryWashMagnetizationTime,SecondaryWashAspirationVolume,NumberOfSecondaryWashes,
+						SecondaryWashMixVolume,NumberOfSecondaryWashMixes,SecondaryWashMagnetizationTime,SecondaryWashAspirationVolume,SecondaryWashAspirationPosition,SecondaryWashAspirationPositionOffset,NumberOfSecondaryWashes,
 						SecondaryWashAirDry,SecondaryWashAirDryTime,
 						SecondaryWashMixTipType,SecondaryWashMixTipMaterial,
 						SecondaryWashCollectionStorageCondition,
 
 						TertiaryWash,TertiaryWashBuffer,TertiaryWashBufferVolume,
 						TertiaryWashMixTime,TertiaryWashMixTemperature,TertiaryWashMix,TertiaryWashMixType,TertiaryWashMixRate,
-						TertiaryWashMixVolume,NumberOfTertiaryWashMixes,TertiaryWashMagnetizationTime,TertiaryWashAspirationVolume,NumberOfTertiaryWashes,
+						TertiaryWashMixVolume,NumberOfTertiaryWashMixes,TertiaryWashMagnetizationTime,TertiaryWashAspirationVolume,TertiaryWashAspirationPosition,TertiaryWashAspirationPositionOffset,NumberOfTertiaryWashes,
 						TertiaryWashAirDry,TertiaryWashAirDryTime,
 						TertiaryWashMixTipType,TertiaryWashMixTipMaterial,
 						TertiaryWashCollectionStorageCondition,
 
 						QuaternaryWash,QuaternaryWashBuffer,QuaternaryWashBufferVolume,
 						QuaternaryWashMixTime,QuaternaryWashMixTemperature,QuaternaryWashMix,QuaternaryWashMixType,QuaternaryWashMixRate,
-						QuaternaryWashMixVolume,NumberOfQuaternaryWashMixes,QuaternaryWashMagnetizationTime,QuaternaryWashAspirationVolume,NumberOfQuaternaryWashes,
+						QuaternaryWashMixVolume,NumberOfQuaternaryWashMixes,QuaternaryWashMagnetizationTime,QuaternaryWashAspirationVolume,QuaternaryWashAspirationPosition,QuaternaryWashAspirationPositionOffset,NumberOfQuaternaryWashes,
 						QuaternaryWashAirDry,QuaternaryWashAirDryTime,
 						QuaternaryWashMixTipType,QuaternaryWashMixTipMaterial,
 						QuaternaryWashCollectionStorageCondition,
 
 						QuinaryWash,QuinaryWashBuffer,QuinaryWashBufferVolume,
 						QuinaryWashMixTime,QuinaryWashMixTemperature,QuinaryWashMix,QuinaryWashMixType,QuinaryWashMixRate,
-						QuinaryWashMixVolume,NumberOfQuinaryWashMixes,QuinaryWashMagnetizationTime,QuinaryWashAspirationVolume,NumberOfQuinaryWashes,
+						QuinaryWashMixVolume,NumberOfQuinaryWashMixes,QuinaryWashMagnetizationTime,QuinaryWashAspirationVolume,QuinaryWashAspirationPosition,QuinaryWashAspirationPositionOffset,NumberOfQuinaryWashes,
 						QuinaryWashAirDry,QuinaryWashAirDryTime,
 						QuinaryWashMixTipType,QuinaryWashMixTipMaterial,
 						QuinaryWashCollectionStorageCondition,
 
 						SenaryWash,SenaryWashBuffer,SenaryWashBufferVolume,
 						SenaryWashMixTime,SenaryWashMixTemperature,SenaryWashMix,SenaryWashMixType,SenaryWashMixRate,
-						SenaryWashMixVolume,NumberOfSenaryWashMixes,SenaryWashMagnetizationTime,SenaryWashAspirationVolume,NumberOfSenaryWashes,
+						SenaryWashMixVolume,NumberOfSenaryWashMixes,SenaryWashMagnetizationTime,SenaryWashAspirationVolume,SenaryWashAspirationPosition,SenaryWashAspirationPositionOffset,NumberOfSenaryWashes,
 						SenaryWashAirDry,SenaryWashAirDryTime,
 						SenaryWashMixTipType,SenaryWashMixTipMaterial,
 						SenaryWashCollectionStorageCondition,
 
 						SeptenaryWash,SeptenaryWashBuffer,SeptenaryWashBufferVolume,
 						SeptenaryWashMixTime,SeptenaryWashMixTemperature,SeptenaryWashMix,SeptenaryWashMixType,SeptenaryWashMixRate,
-						SeptenaryWashMixVolume,NumberOfSeptenaryWashMixes,SeptenaryWashMagnetizationTime,SeptenaryWashAspirationVolume,NumberOfSeptenaryWashes,
+						SeptenaryWashMixVolume,NumberOfSeptenaryWashMixes,SeptenaryWashMagnetizationTime,SeptenaryWashAspirationVolume,SeptenaryWashAspirationPosition,SeptenaryWashAspirationPositionOffset,NumberOfSeptenaryWashes,
 						SeptenaryWashAirDry,SeptenaryWashAirDryTime,
 						SeptenaryWashMixTipType,SeptenaryWashMixTipMaterial,
 						SeptenaryWashCollectionStorageCondition,
 
 						Elution,ElutionBuffer,ElutionBufferVolume,
 						ElutionMixTime,ElutionMixTemperature,ElutionMix,ElutionMixType,ElutionMixRate,
-						ElutionMixVolume,NumberOfElutionMixes,ElutionMagnetizationTime,ElutionAspirationVolume,NumberOfElutions,
+						ElutionMixVolume,NumberOfElutionMixes,ElutionMagnetizationTime,ElutionAspirationVolume,ElutionAspirationPosition,ElutionAspirationPositionOffset,NumberOfElutions,
 						ElutionMixTipType,ElutionMixTipMaterial,
 						ElutionCollectionStorageCondition,
 
@@ -10961,7 +11514,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*Check that PreWash options aren't in conflict*)
 				unresolvedPreWashOptions = {
-					preWashBuffer,preWashBufferVolume,preWashMagnetizationTime,preWashAspirationVolume,numberOfPreWashes,
+					preWashBuffer,preWashBufferVolume,preWashMagnetizationTime,preWashAspirationVolume,preWashAspirationPosition, preWashAspirationPositionOffset,numberOfPreWashes,
 					preWashAirDry,preWashAirDryTime,preWashMix,preWashMixType,preWashMixTime,preWashMixRate,numberOfPreWashMixes,
 					preWashMixVolume,preWashMixTemperature,preWashCollectionContainer,preWashCollectionStorageCondition,
 				preWashMixTipType,preWashMixTipMaterial
@@ -11066,6 +11619,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					(*If the option is specified, accept it*)
 					preWashAspirationVolume
 				];
+        (*Resolve PreWash aspiration pipetting options*)
+        {resolvedPreWashAspirationPosition, resolvedPreWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedPreWash,resolvedPreparation,resolvedMagnetizationRackModel,preWashAspirationPosition, preWashAspirationPositionOffset];
 
 				(*Resolve NumberOfPreWashes*)
 				resolvedNumberOfPreWashes=If[MatchQ[numberOfPreWashes,Automatic],
@@ -11162,7 +11717,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--Equilibration--*)
 				unresolvedEquilibrationOptions = {
-					equilibrationBuffer,equilibrationBufferVolume,equilibrationMagnetizationTime,equilibrationAspirationVolume,
+					equilibrationBuffer,equilibrationBufferVolume,equilibrationMagnetizationTime,equilibrationAspirationVolume,equilibrationAspirationPosition, equilibrationAspirationPositionOffset,
 					equilibrationAirDry,equilibrationAirDryTime,equilibrationMix,equilibrationMixType,equilibrationMixTime,equilibrationMixRate,numberOfEquilibrationMixes,
 					equilibrationMixVolume,equilibrationMixTemperature,equilibrationCollectionContainer,equilibrationCollectionStorageCondition,
 					equilibrationMixTipType,
@@ -11264,6 +11819,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 					(*If the option is specified, accept it*)
 					equilibrationAspirationVolume
 				];
+        
+        (*Resolve Equilibration aspiration pipetting options*)
+        {resolvedEquilibrationAspirationPosition, resolvedEquilibrationAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedEquilibration,resolvedPreparation,resolvedMagnetizationRackModel,equilibrationAspirationPosition, equilibrationAspirationPositionOffset];
 
 				(*Check that EquilibrationAirDryTime isn't in conflict with EquilibrationAirDry*)
 				If[
@@ -11439,6 +11997,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 					loadingAspirationVolume
 				];
 
+        (*Resolve Loading aspiration pipetting options*)
+        {resolvedLoadingAspirationPosition, resolvedLoadingAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[True,resolvedPreparation,resolvedMagnetizationRackModel,loadingAspirationPosition, loadingAspirationPositionOffset];
+
 				(*Resolve LoadingMagnetizationTime*)
 				resolvedLoadingMagnetizationTime=If[MatchQ[loadingMagnetizationTime,Automatic],
 					(*If the option is Automatic, resolve it*)
@@ -11449,7 +12010,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--Wash--*)
 				unresolvedWashOptions = {
-					washBuffer,washBufferVolume,washMagnetizationTime,washAspirationVolume,numberOfWashes,
+					washBuffer,washBufferVolume,washMagnetizationTime,washAspirationVolume,washAspirationPosition,washAspirationPositionOffset,numberOfWashes,
 					washAirDry,washAirDryTime,washMix,washMixType,washMixTime,washMixRate,numberOfWashMixes,
 					washMixVolume,washMixTemperature,washCollectionContainer,washCollectionStorageCondition,
 					washMixTipType,washMixTipMaterial
@@ -11493,6 +12054,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 						resolvedPreparation, washMix, washMixType, washMixVolume,
 						washMixTime, washMixTemperature, washMixRate,
 						numberOfWashMixes, washMixTipType, washMixTipMaterial];
+        
+        (*Resolve Wash aspiration pipetting options*)
+        {resolvedWashAspirationPosition, resolvedWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedWash,resolvedPreparation,resolvedMagnetizationRackModel,washAspirationPosition, washAspirationPositionOffset];
 
 				(*Check that WashAirDryTime isn't in conflict with WashAirDry*)
 				If[
@@ -11505,7 +12069,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--SecondaryWash--*)
 				unresolvedSecondaryWashOptions = {
-					secondaryWashBuffer,secondaryWashBufferVolume,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,numberOfSecondaryWashes,
+					secondaryWashBuffer,secondaryWashBufferVolume,secondaryWashMagnetizationTime,secondaryWashAspirationVolume,secondaryWashAspirationPosition,secondaryWashAspirationPositionOffset,numberOfSecondaryWashes,
 					secondaryWashAirDry,secondaryWashAirDryTime,secondaryWashMix,secondaryWashMixType,secondaryWashMixTime,secondaryWashMixRate,numberOfSecondaryWashMixes,
 					secondaryWashMixVolume,secondaryWashMixTemperature,secondaryWashCollectionContainer,secondaryWashCollectionStorageCondition,
 					secondaryWashMixTipType,secondaryWashMixTipMaterial
@@ -11537,6 +12101,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedSecondaryWashBuffer,resolvedSecondaryWashBufferVolume,resolvedSecondaryWashMagnetizationTime,resolvedSecondaryWashAspirationVolume,resolvedNumberOfSecondaryWashes,resolvedSecondaryWashCollectionContainer,resolvedSecondaryWashCollectionStorageCondition,resolvedSecondaryWashAirDry,resolvedSecondaryWashAirDryTime}=resolveWashStageOptions[resolvedSecondaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,secondaryWashBuffer,secondaryWashBufferVolume,secondaryWashMagnetizationTime,secondaryWashAspirationVolume, numberOfSecondaryWashes, secondaryWashCollectionContainer,secondaryWashCollectionStorageCondition,secondaryWashAirDry,secondaryWashAirDryTime];
 
+        (*Resolve SecondaryWash aspiration pipetting options*)
+        {resolvedSecondaryWashAspirationPosition, resolvedSecondaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedSecondaryWash,resolvedPreparation,resolvedMagnetizationRackModel,secondaryWashAspirationPosition, secondaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the secondaryWash buffer volume to the bead volume *)
 				secondaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedSecondaryWashBufferVolume}, VolumeP]];
 
@@ -11561,7 +12128,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--TertiaryWash--*)
 				unresolvedTertiaryWashOptions = {
-					tertiaryWashBuffer,tertiaryWashBufferVolume,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,numberOfTertiaryWashes,
+					tertiaryWashBuffer,tertiaryWashBufferVolume,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume,tertiaryWashAspirationPosition,tertiaryWashAspirationPositionOffset,numberOfTertiaryWashes,
 					tertiaryWashAirDry,tertiaryWashAirDryTime,tertiaryWashMix,tertiaryWashMixType,tertiaryWashMixTime,tertiaryWashMixRate,numberOfTertiaryWashMixes,
 					tertiaryWashMixVolume,tertiaryWashMixTemperature,tertiaryWashCollectionContainer,tertiaryWashCollectionStorageCondition,
 					tertiaryWashMixTipType,tertiaryWashMixTipMaterial
@@ -11593,6 +12160,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedTertiaryWashBuffer,resolvedTertiaryWashBufferVolume,resolvedTertiaryWashMagnetizationTime,resolvedTertiaryWashAspirationVolume,resolvedNumberOfTertiaryWashes,resolvedTertiaryWashCollectionContainer,resolvedTertiaryWashCollectionStorageCondition,resolvedTertiaryWashAirDry,resolvedTertiaryWashAirDryTime}=resolveWashStageOptions[resolvedTertiaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,tertiaryWashBuffer,tertiaryWashBufferVolume,tertiaryWashMagnetizationTime,tertiaryWashAspirationVolume, numberOfTertiaryWashes, tertiaryWashCollectionContainer,tertiaryWashCollectionStorageCondition,tertiaryWashAirDry,tertiaryWashAirDryTime];
 
+        (*Resolve TertiaryWash aspiration pipetting options*)
+        {resolvedTertiaryWashAspirationPosition, resolvedTertiaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedTertiaryWash,resolvedPreparation,resolvedMagnetizationRackModel,tertiaryWashAspirationPosition, tertiaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the tertiaryWash buffer volume to the bead volume *)
 				tertiaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedTertiaryWashBufferVolume}, VolumeP]];
 
@@ -11617,7 +12187,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--QuaternaryWash--*)
 				unresolvedQuaternaryWashOptions = {
-					quaternaryWashBuffer,quaternaryWashBufferVolume,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,numberOfQuaternaryWashes,
+					quaternaryWashBuffer,quaternaryWashBufferVolume,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume,quaternaryWashAspirationPosition,quaternaryWashAspirationPositionOffset,numberOfQuaternaryWashes,
 					quaternaryWashAirDry,quaternaryWashAirDryTime,quaternaryWashMix,quaternaryWashMixType,quaternaryWashMixTime,quaternaryWashMixRate,numberOfQuaternaryWashMixes,
 					quaternaryWashMixVolume,quaternaryWashMixTemperature,quaternaryWashCollectionContainer,quaternaryWashCollectionStorageCondition,
 					quaternaryWashMixTipType,quaternaryWashMixTipMaterial
@@ -11649,6 +12219,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedQuaternaryWashBuffer,resolvedQuaternaryWashBufferVolume,resolvedQuaternaryWashMagnetizationTime,resolvedQuaternaryWashAspirationVolume,resolvedNumberOfQuaternaryWashes,resolvedQuaternaryWashCollectionContainer,resolvedQuaternaryWashCollectionStorageCondition,resolvedQuaternaryWashAirDry,resolvedQuaternaryWashAirDryTime}=resolveWashStageOptions[resolvedQuaternaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,quaternaryWashBuffer,quaternaryWashBufferVolume,quaternaryWashMagnetizationTime,quaternaryWashAspirationVolume, numberOfQuaternaryWashes, quaternaryWashCollectionContainer,quaternaryWashCollectionStorageCondition,quaternaryWashAirDry,quaternaryWashAirDryTime];
 
+        (*Resolve QuaternaryWash aspiration pipetting options*)
+        {resolvedQuaternaryWashAspirationPosition, resolvedQuaternaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedQuaternaryWash,resolvedPreparation,resolvedMagnetizationRackModel,quaternaryWashAspirationPosition, quaternaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the quaternaryWash buffer volume to the bead volume *)
 				quaternaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedQuaternaryWashBufferVolume}, VolumeP]];
 
@@ -11673,7 +12246,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--QuinaryWash--*)
 				unresolvedQuinaryWashOptions = {
-					quinaryWashBuffer,quinaryWashBufferVolume,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,numberOfQuinaryWashes,
+					quinaryWashBuffer,quinaryWashBufferVolume,quinaryWashMagnetizationTime,quinaryWashAspirationVolume,quinaryWashAspirationPosition,quinaryWashAspirationPositionOffset,numberOfQuinaryWashes,
 					quinaryWashAirDry,quinaryWashAirDryTime,quinaryWashMix,quinaryWashMixType,quinaryWashMixTime,quinaryWashMixRate,numberOfQuinaryWashMixes,
 					quinaryWashMixVolume,quinaryWashMixTemperature,quinaryWashCollectionContainer,quinaryWashCollectionStorageCondition,
 					quinaryWashMixTipType,quinaryWashMixTipMaterial
@@ -11705,6 +12278,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedQuinaryWashBuffer,resolvedQuinaryWashBufferVolume,resolvedQuinaryWashMagnetizationTime,resolvedQuinaryWashAspirationVolume,resolvedNumberOfQuinaryWashes,resolvedQuinaryWashCollectionContainer,resolvedQuinaryWashCollectionStorageCondition,resolvedQuinaryWashAirDry,resolvedQuinaryWashAirDryTime}=resolveWashStageOptions[resolvedQuinaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,quinaryWashBuffer,quinaryWashBufferVolume,quinaryWashMagnetizationTime,quinaryWashAspirationVolume, numberOfQuinaryWashes, quinaryWashCollectionContainer,quinaryWashCollectionStorageCondition,quinaryWashAirDry,quinaryWashAirDryTime];
 
+        (*Resolve QuinaryWash aspiration pipetting options*)
+        {resolvedQuinaryWashAspirationPosition, resolvedQuinaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedQuinaryWash,resolvedPreparation,resolvedMagnetizationRackModel,quinaryWashAspirationPosition, quinaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the quinaryWash buffer volume to the bead volume *)
 					quinaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedQuinaryWashBufferVolume}, VolumeP]];
 
@@ -11729,7 +12305,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--SenaryWash--*)
 				unresolvedSenaryWashOptions = {
-					senaryWashBuffer,senaryWashBufferVolume,senaryWashMagnetizationTime,senaryWashAspirationVolume,numberOfSenaryWashes,
+					senaryWashBuffer,senaryWashBufferVolume,senaryWashMagnetizationTime,senaryWashAspirationVolume,senaryWashAspirationPosition,senaryWashAspirationPositionOffset,numberOfSenaryWashes,
 					senaryWashAirDry,senaryWashAirDryTime,senaryWashMix,senaryWashMixType,senaryWashMixTime,senaryWashMixRate,numberOfSenaryWashMixes,
 					senaryWashMixVolume,senaryWashMixTemperature,senaryWashCollectionContainer,senaryWashCollectionStorageCondition,
 					senaryWashMixTipType,senaryWashMixTipMaterial
@@ -11761,6 +12337,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedSenaryWashBuffer,resolvedSenaryWashBufferVolume,resolvedSenaryWashMagnetizationTime,resolvedSenaryWashAspirationVolume,resolvedNumberOfSenaryWashes,resolvedSenaryWashCollectionContainer,resolvedSenaryWashCollectionStorageCondition,resolvedSenaryWashAirDry,resolvedSenaryWashAirDryTime}=resolveWashStageOptions[resolvedSenaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,senaryWashBuffer,senaryWashBufferVolume,senaryWashMagnetizationTime,senaryWashAspirationVolume, numberOfSenaryWashes, senaryWashCollectionContainer,senaryWashCollectionStorageCondition,senaryWashAirDry,senaryWashAirDryTime];
 
+        (*Resolve SenaryWash aspiration pipetting options*)
+        {resolvedSenaryWashAspirationPosition, resolvedSenaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedSenaryWash,resolvedPreparation,resolvedMagnetizationRackModel,senaryWashAspirationPosition, senaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the senaryWash buffer volume to the bead volume *)
 				senaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedSenaryWashBufferVolume}, VolumeP]];
 
@@ -11785,7 +12364,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--SeptenaryWash--*)
 				unresolvedSeptenaryWashOptions = {
-					septenaryWashBuffer,septenaryWashBufferVolume,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,numberOfSeptenaryWashes,
+					septenaryWashBuffer,septenaryWashBufferVolume,septenaryWashMagnetizationTime,septenaryWashAspirationVolume,septenaryWashAspirationPosition,septenaryWashAspirationPositionOffset,numberOfSeptenaryWashes,
 					septenaryWashAirDry,septenaryWashAirDryTime,septenaryWashMix,septenaryWashMixType,septenaryWashMixTime,septenaryWashMixRate,numberOfSeptenaryWashMixes,
 					septenaryWashMixVolume,septenaryWashMixTemperature,septenaryWashCollectionContainer,septenaryWashCollectionStorageCondition,
 					septenaryWashMixTipType,septenaryWashMixTipMaterial
@@ -11817,6 +12396,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 				(*Call the helper function to resolve options of the wash stage, excluding mix options*)
 				{resolvedSeptenaryWashBuffer,resolvedSeptenaryWashBufferVolume,resolvedSeptenaryWashMagnetizationTime,resolvedSeptenaryWashAspirationVolume,resolvedNumberOfSeptenaryWashes,resolvedSeptenaryWashCollectionContainer,resolvedSeptenaryWashCollectionStorageCondition,resolvedSeptenaryWashAirDry,resolvedSeptenaryWashAirDryTime}=resolveWashStageOptions[resolvedSeptenaryWash,resolvedPreparation,resolvedPreWashBufferVolume,volume,septenaryWashBuffer,septenaryWashBufferVolume,septenaryWashMagnetizationTime,septenaryWashAspirationVolume, numberOfSeptenaryWashes, septenaryWashCollectionContainer,septenaryWashCollectionStorageCondition,septenaryWashAirDry,septenaryWashAirDryTime];
 
+        (*Resolve SeptenaryWash aspiration pipetting options*)
+        {resolvedSeptenaryWashAspirationPosition, resolvedSeptenaryWashAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedSeptenaryWash,resolvedPreparation,resolvedMagnetizationRackModel,septenaryWashAspirationPosition, septenaryWashAspirationPositionOffset];
+
 				(*Calculate the volume to mix by adding the septenaryWash buffer volume to the bead volume *)
 				septenaryWashVolumeToMix = Total[Cases[{magneticBeadVolume, resolvedSeptenaryWashBufferVolume}, VolumeP]];
 
@@ -11841,7 +12423,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 
 				(*--Elution--*)
 				unresolvedElutionOptions = {
-					elutionBuffer,elutionBufferVolume,elutionMagnetizationTime,elutionAspirationVolume,numberOfElutions,
+					elutionBuffer,elutionBufferVolume,elutionMagnetizationTime,elutionAspirationVolume,elutionAspirationPosition,elutionAspirationPositionOffset,numberOfElutions,
 					elutionMix,elutionMixType,elutionMixTime,elutionMixRate,numberOfElutionMixes,
 					elutionMixVolume,elutionMixTemperature,elutionCollectionContainer,elutionCollectionStorageCondition,
 					elutionMixTipType,elutionMixTipMaterial
@@ -11944,6 +12526,9 @@ resolveExperimentMagneticBeadSeparationOptions[
 					(*If the option is specified, accept it*)
 					elutionAspirationVolume
 				];
+
+        (*Resolve Elution aspiration pipetting options*)
+        {resolvedElutionAspirationPosition, resolvedElutionAspirationPositionOffset} = resolveAspirationPipettingOptionsOfStage[resolvedElution,resolvedPreparation,resolvedMagnetizationRackModel,elutionAspirationPosition, elutionAspirationPositionOffset];
 
 				(*Resolve NumberOfElutions*)
 				resolvedNumberOfElutions=If[MatchQ[numberOfElutions,Automatic],
@@ -12243,11 +12828,34 @@ resolveExperimentMagneticBeadSeparationOptions[
 					(*226*)resolvedElutionCollectionStorageCondition,
 					(*227*)resolvedNumberOfElutions,
 					(*228*)resolvedElutionMixTipType,
-					(*229*)resolvedElutionMixTipMaterial
+					(*229*)resolvedElutionMixTipMaterial,
+
+          (*230*)resolvedPreWashAspirationPosition,
+          (*231*)resolvedPreWashAspirationPositionOffset,
+          (*232*)resolvedEquilibrationAspirationPosition,
+          (*233*)resolvedEquilibrationAspirationPositionOffset,
+          (*234*)resolvedLoadingAspirationPosition,
+          (*235*)resolvedLoadingAspirationPositionOffset,
+          (*236*)resolvedWashAspirationPosition,
+          (*237*)resolvedWashAspirationPositionOffset,
+          (*238*)resolvedSecondaryWashAspirationPosition,
+          (*239*)resolvedSecondaryWashAspirationPositionOffset,
+          (*240*)resolvedTertiaryWashAspirationPosition,
+          (*241*)resolvedTertiaryWashAspirationPositionOffset,
+          (*242*)resolvedQuaternaryWashAspirationPosition,
+          (*243*)resolvedQuaternaryWashAspirationPositionOffset,
+          (*244*)resolvedQuinaryWashAspirationPosition,
+          (*245*)resolvedQuinaryWashAspirationPositionOffset,
+          (*246*)resolvedSenaryWashAspirationPosition,
+          (*247*)resolvedSenaryWashAspirationPositionOffset,
+          (*248*)resolvedSeptenaryWashAspirationPosition,
+          (*249*)resolvedSeptenaryWashAspirationPositionOffset,
+          (*250*)resolvedElutionAspirationPosition,
+          (*251*)resolvedElutionAspirationPositionOffset
 				}
 			]
 		],
-		{flatSimulatedSamplePackets,preResolvedMapThreadFriendlyOptions,resolvedAssayContainers}
+		{flatSimulatedSamplePackets,preResolvedMapThreadFriendlyOptions,resolvedAssayContainers,resolvedMagnetizationRackModels}
 	]];
 
 	(* Detect Volume Errors *)
@@ -14556,6 +15164,49 @@ resolveExperimentMagneticBeadSeparationOptions[
 		Nothing
 	];
 
+  (*--Error::PreWashAspirationPipettingMismatch--*)
+
+  preWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{PreWashAspirationPosition, PreWashAspirationPositionOffset}]];
+
+  (*If there are preWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  preWashAspirationPipettingMismatchOptions=If[MemberQ[preWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::PreWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,preWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        PreWashAspirationPosition, PreWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  preWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,preWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,preWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the PreWashAspirationPosition options are not in conflict with PreWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the PreWashAspirationPosition options are not in conflict with PreWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+
 	(*--Error::PreWashAirDryMismatch--*)
 
 	(*If there are preWashAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -14830,6 +15481,48 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+  (*--Error::EquilibrationAspirationPipettingMismatch--*)
+
+  equilibrationAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset}]];
+
+  (*If there are equilibrationMixMismatchErrors and we are throwing messages, throw an error message*)
+  equilibrationAspirationPipettingMismatchOptions=If[MemberQ[equilibrationAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::EquilibrationAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,equilibrationAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  equilibrationAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,equilibrationAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,equilibrationAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the EquilibrationAspirationPosition options are not in conflict with EquilibrationAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the EquilibrationAspirationPosition options are not in conflict with EquilibrationAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
 
 	(*--Error::EquilibrationAirDryMismatch--*)
 
@@ -15066,6 +15759,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+
+  (*--Error::LoadingAspirationPipettingMismatch--*)
+
+  loadingAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{LoadingAspirationPosition, LoadingAspirationPositionOffset}]];
+
+  (*If there are loadingMixMismatchErrors and we are throwing messages, throw an error message*)
+  loadingAspirationPipettingMismatchOptions=If[MemberQ[loadingAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::LoadingAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,loadingAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        LoadingAspirationPosition, LoadingAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  loadingAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,loadingAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,loadingAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the LoadingAspirationPosition options are not in conflict with LoadingAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the LoadingAspirationPosition options are not in conflict with LoadingAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
 	(*--Error::LoadingAirDryMismatch--*)
 
 	(*If there are loadingAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -15343,6 +16080,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		Nothing
 	];
 
+  (*--Error::WashAspirationPipettingMismatch--*)
+
+  washAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{WashAspirationPosition, WashAspirationPositionOffset}]];
+
+  (*If there are washMixMismatchErrors and we are throwing messages, throw an error message*)
+  washAspirationPipettingMismatchOptions=If[MemberQ[washAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::WashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,washAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        WashAspirationPosition, WashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  washAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,washAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,washAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the WashAspirationPosition options are not in conflict with WashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the WashAspirationPosition options are not in conflict with WashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
+
 	(*--Error::WashAirDryMismatch--*)
 
 	(*If there are washAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -15619,6 +16400,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+
+  (*--Error::SecondaryWashAspirationPipettingMismatch--*)
+
+  secondaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{SecondaryWashAspirationPosition, SecondaryWashAspirationPositionOffset}]];
+
+  (*If there are secondaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  secondaryWashAspirationPipettingMismatchOptions=If[MemberQ[secondaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::SecondaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,secondaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        SecondaryWashAspirationPosition, SecondaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  secondaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,secondaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,secondaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the SecondaryWashAspirationPosition options are not in conflict with SecondaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the SecondaryWashAspirationPosition options are not in conflict with SecondaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
 
 	(*--Error::SecondaryWashAirDryMismatch--*)
 
@@ -15898,6 +16723,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		Nothing
 	];
 
+  (*--Error::TertiaryWashAspirationPipettingMismatch--*)
+
+  tertiaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{TertiaryWashAspirationPosition, TertiaryWashAspirationPositionOffset}]];
+
+  (*If there are tertiaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  tertiaryWashAspirationPipettingMismatchOptions=If[MemberQ[tertiaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::TertiaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,tertiaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        TertiaryWashAspirationPosition, TertiaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  tertiaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,tertiaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,tertiaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the TertiaryWashAspirationPosition options are not in conflict with TertiaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the TertiaryWashAspirationPosition options are not in conflict with TertiaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
+
 	(*--Error::TertiaryWashAirDryMismatch--*)
 
 	(*If there are tertiaryWashAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -16174,6 +17043,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+
+  (*--Error::QuaternaryWashAspirationPipettingMismatch--*)
+
+  quaternaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{QuaternaryWashAspirationPosition, QuaternaryWashAspirationPositionOffset}]];
+
+  (*If there are quaternaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  quaternaryWashAspirationPipettingMismatchOptions=If[MemberQ[quaternaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::QuaternaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,quaternaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        QuaternaryWashAspirationPosition, QuaternaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  quaternaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,quaternaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,quaternaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the QuaternaryWashAspirationPosition options are not in conflict with QuaternaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the QuaternaryWashAspirationPosition options are not in conflict with QuaternaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
 
 	(*--Error::QuaternaryWashAirDryMismatch--*)
 
@@ -16452,6 +17365,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		Nothing
 	];
 
+  (*--Error::QuinaryWashAspirationPipettingMismatch--*)
+
+  quinaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{QuinaryWashAspirationPosition, QuinaryWashAspirationPositionOffset}]];
+
+  (*If there are quinaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  quinaryWashAspirationPipettingMismatchOptions=If[MemberQ[quinaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::QuinaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,quinaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        QuinaryWashAspirationPosition, QuinaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  quinaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,quinaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,quinaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the QuinaryWashAspirationPosition options are not in conflict with QuinaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the QuinaryWashAspirationPosition options are not in conflict with QuinaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
+
 	(*--Error::QuinaryWashAirDryMismatch--*)
 
 	(*If there are quinaryWashAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -16727,6 +17684,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+
+  (*--Error::SenaryWashAspirationPipettingMismatch--*)
+
+  senaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{SenaryWashAspirationPosition, SenaryWashAspirationPositionOffset}]];
+
+  (*If there are senaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  senaryWashAspirationPipettingMismatchOptions=If[MemberQ[senaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::SenaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,senaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        SenaryWashAspirationPosition, SenaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  senaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,senaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,senaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the SenaryWashAspirationPosition options are not in conflict with SenaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the SenaryWashAspirationPosition options are not in conflict with SenaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
 
 	(*--Error::SenaryWashAirDryMismatch--*)
 
@@ -17004,6 +18005,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		Nothing
 	];
 
+  (*--Error::SeptenaryWashAspirationPipettingMismatch--*)
+
+  septenaryWashAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{SeptenaryWashAspirationPosition, SeptenaryWashAspirationPositionOffset}]];
+
+  (*If there are septenaryWashMixMismatchErrors and we are throwing messages, throw an error message*)
+  septenaryWashAspirationPipettingMismatchOptions=If[MemberQ[septenaryWashAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::SeptenaryWashAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,septenaryWashAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        SeptenaryWashAspirationPosition, SeptenaryWashAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  septenaryWashAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,septenaryWashAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,septenaryWashAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the SeptenaryWashAspirationPosition options are not in conflict with SeptenaryWashAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the SeptenaryWashAspirationPosition options are not in conflict with SeptenaryWashAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
+
 	(*--Error::SeptenaryWashAirDryMismatch--*)
 
 	(*If there are septenaryWashAirDryMismatchErrors and we are throwing messages, throw an error message*)
@@ -17280,6 +18325,50 @@ resolveExperimentMagneticBeadSeparationOptions[
 		],
 		Nothing
 	];
+
+  (*--Error::ElutionAspirationPipettingMismatch--*)
+
+  elutionAspirationPipettingMismatchErrors=checkAspirationPipettingMismatchErrorOfStage[flatSimulatedSamples,Lookup[mbsOptionsAssociationFlat,{ElutionAspirationPosition, ElutionAspirationPositionOffset}]];
+
+  (*If there are elutionMixMismatchErrors and we are throwing messages, throw an error message*)
+  elutionAspirationPipettingMismatchOptions=If[MemberQ[elutionAspirationPipettingMismatchErrors,True]&&messages,
+    (
+      Message[Error::ElutionAspirationPipettingOptionsMismatch,ObjectToString[PickList[flatSimulatedSamples,elutionAspirationPipettingMismatchErrors],Cache->simulatedCache]];
+      {
+        ElutionAspirationPosition, ElutionAspirationPositionOffset
+      }
+    ),
+    {}
+  ];
+
+  (*If we are gathering tests, create a test*)
+  elutionAspirationPipettingMismatchTests=If[gatherTests,
+    Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests},
+
+      (*Get the inputs that fail this test*)
+      failingSamples=PickList[flatSimulatedSamples,elutionAspirationPipettingMismatchErrors];
+
+      (*Get the inputs that pass this test*)
+      passingSamples=PickList[flatSimulatedSamples,elutionAspirationPipettingMismatchErrors,False];
+
+      (*Create a test for the non-passing inputs*)
+      failingSampleTests=If[Length[failingSamples]>0,
+        Test["For the following samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ElutionAspirationPosition options are not in conflict with ElutionAspirationPositionOffset:",False,True],
+        Nothing
+      ];
+
+      (*Create a test for the passing inputs*)
+      passingSampleTests=If[Length[passingSamples]>0,
+        Test["For the following samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ElutionAspirationPosition options are not in conflict with ElutionAspirationPositionOffset:",True,True],
+        Nothing
+      ];
+
+      (*Return the created tests*)
+      {failingSampleTests,passingSampleTests}
+    ],
+    Nothing
+  ];
+  
 
 		(*==InvalidXXWashErrors (checks if a wash stage occurs after a True for the previous wash stage)==*)
 
@@ -17620,6 +18709,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidPreWashMixTipOptions,
 			invalidPreWashMixInstrumentOptions,
 			preWashAirDryMismatchOptions,
+      preWashAspirationPipettingMismatchOptions,
 			numberOfEquilibrationMismatchOptions,
 			equilibrationMismatchOptions,
 			equilibrationMixMismatchOptions,
@@ -17627,12 +18717,14 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidEquilibrationMixTipOptions,
 			invalidEquilibrationMixInstrumentOptions,
 			equilibrationAirDryMismatchOptions,
+      equilibrationAspirationPipettingMismatchOptions,
 			numberOfLoadingMismatchOptions,
 			loadingMixMismatchOptions,
 			invalidLoadingMixTipTypeOptions,
 			invalidLoadingMixTipOptions,
 			invalidLoadingMixInstrumentOptions,
 			loadingAirDryMismatchOptions,
+      loadingAspirationPipettingMismatchOptions,
 			washMismatchOptions,
 			numberOfWashMismatchOptions,
 			washMixMismatchOptions,
@@ -17640,6 +18732,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidWashMixTipOptions,
 			invalidWashMixInstrumentOptions,
 			washAirDryMismatchOptions,
+      washAspirationPipettingMismatchOptions,
 			secondaryWashMismatchOptions,
 			numberOfSecondaryWashMismatchOptions,
 			secondaryWashMixMismatchOptions,
@@ -17647,6 +18740,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidSecondaryWashMixTipOptions,
 			invalidSecondaryWashMixInstrumentOptions,
 			secondaryWashAirDryMismatchOptions,
+      secondaryWashAspirationPipettingMismatchOptions,
 			invalidSecondaryWashOptions,
 			tertiaryWashMismatchOptions,
 			numberOfTertiaryWashMismatchOptions,
@@ -17655,6 +18749,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidTertiaryWashMixTipOptions,
 			invalidTertiaryWashMixInstrumentOptions,
 			tertiaryWashAirDryMismatchOptions,
+      tertiaryWashAspirationPipettingMismatchOptions,
 			invalidTertiaryWashOptions,
 			quaternaryWashMismatchOptions,
 			numberOfQuaternaryWashMismatchOptions,
@@ -17663,6 +18758,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidQuaternaryWashMixTipOptions,
 			invalidQuaternaryWashMixInstrumentOptions,
 			quaternaryWashAirDryMismatchOptions,
+      quaternaryWashAspirationPipettingMismatchOptions,
 			invalidQuaternaryWashOptions,
 			quinaryWashMismatchOptions,
 			numberOfQuinaryWashMismatchOptions,
@@ -17671,6 +18767,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidQuinaryWashMixTipOptions,
 			invalidQuinaryWashMixInstrumentOptions,
 			quinaryWashAirDryMismatchOptions,
+      quinaryWashAspirationPipettingMismatchOptions,
 			invalidQuinaryWashOptions,
 			senaryWashMismatchOptions,
 			numberOfSenaryWashMismatchOptions,
@@ -17679,6 +18776,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidSenaryWashMixTipOptions,
 			invalidSenaryWashMixInstrumentOptions,
 			senaryWashAirDryMismatchOptions,
+      senaryWashAspirationPipettingMismatchOptions,
 			invalidSenaryWashOptions,
 			septenaryWashMismatchOptions,
 			numberOfSeptenaryWashMismatchOptions,
@@ -17687,6 +18785,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidSeptenaryWashMixTipOptions,
 			invalidSeptenaryWashMixInstrumentOptions,
 			septenaryWashAirDryMismatchOptions,
+      septenaryWashAspirationPipettingMismatchOptions,
 			invalidSeptenaryWashOptions,
 			elutionMismatchOptions,
       numberOfElutionMismatchOptions,
@@ -17694,6 +18793,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			invalidElutionMixTipTypeOptions,
 			invalidElutionMixTipOptions,
 			invalidElutionMixInstrumentOptions,
+      elutionAspirationPipettingMismatchOptions,
 			If[MatchQ[preparationResult,$Failed],{Preparation},{}]
 		}]];
 
@@ -17739,6 +18839,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					PreWashMixTipMaterial->unflattenListHelper[resolvedPreWashMixTipMaterials,myNestedSamples],
 					PreWashMagnetizationTime->unflattenListHelper[resolvedPreWashMagnetizationTimes,myNestedSamples],
 					PreWashAspirationVolume->unflattenListHelper[resolvedPreWashAspirationVolumes,myNestedSamples],
+          PreWashAspirationPosition->unflattenListHelper[resolvedPreWashAspirationPositions,myNestedSamples],
+          PreWashAspirationPositionOffset->unflattenListHelper[resolvedPreWashAspirationPositionOffsets,myNestedSamples],
 					PreWashCollectionContainer->correctedPreWashCollectionContainers,
 					PreWashCollectionStorageCondition->unflattenListHelper[correctedPreWashCollectionStorageConditions,myNestedSamples],
 					NumberOfPreWashes->unflattenListHelper[resolvedNumberOfPreWashes,myNestedSamples],
@@ -17759,6 +18861,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					EquilibrationMixTipMaterial->unflattenListHelper[resolvedEquilibrationMixTipMaterials,myNestedSamples],
 					EquilibrationMagnetizationTime->unflattenListHelper[resolvedEquilibrationMagnetizationTimes,myNestedSamples],
 					EquilibrationAspirationVolume->unflattenListHelper[resolvedEquilibrationAspirationVolumes,myNestedSamples],
+          EquilibrationAspirationPosition->unflattenListHelper[resolvedEquilibrationAspirationPositions,myNestedSamples],
+          EquilibrationAspirationPositionOffset->unflattenListHelper[resolvedEquilibrationAspirationPositionOffsets,myNestedSamples],
 					EquilibrationCollectionContainer->correctedEquilibrationCollectionContainers,
 					EquilibrationCollectionStorageCondition->unflattenListHelper[correctedEquilibrationCollectionStorageConditions,myNestedSamples],
 					EquilibrationAirDry->unflattenListHelper[resolvedEquilibrationAirDries,myNestedSamples],
@@ -17775,6 +18879,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					LoadingMixTipMaterial->unflattenListHelper[resolvedLoadingMixTipMaterials,myNestedSamples],
 					LoadingMagnetizationTime->unflattenListHelper[resolvedLoadingMagnetizationTimes,myNestedSamples],
 					LoadingAspirationVolume->unflattenListHelper[resolvedLoadingAspirationVolumes,myNestedSamples],
+          LoadingAspirationPosition->unflattenListHelper[resolvedLoadingAspirationPositions,myNestedSamples],
+          LoadingAspirationPositionOffset->unflattenListHelper[resolvedLoadingAspirationPositionOffsets,myNestedSamples],
 					LoadingCollectionContainer->correctedLoadingCollectionContainers,
 					LoadingCollectionStorageCondition->unflattenListHelper[correctedLoadingCollectionStorageConditions,myNestedSamples],
 					LoadingAirDry->unflattenListHelper[resolvedLoadingAirDries,myNestedSamples],
@@ -17794,6 +18900,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					WashMixTipMaterial->unflattenListHelper[resolvedWashMixTipMaterials,myNestedSamples],
 					WashMagnetizationTime->unflattenListHelper[resolvedWashMagnetizationTimes,myNestedSamples],
 					WashAspirationVolume->unflattenListHelper[resolvedWashAspirationVolumes,myNestedSamples],
+          WashAspirationPosition->unflattenListHelper[resolvedWashAspirationPositions,myNestedSamples],
+          WashAspirationPositionOffset->unflattenListHelper[resolvedWashAspirationPositionOffsets,myNestedSamples],
 					WashCollectionContainer->correctedWashCollectionContainers,
 					WashCollectionStorageCondition->unflattenListHelper[correctedWashCollectionStorageConditions,myNestedSamples],
 					NumberOfWashes->unflattenListHelper[resolvedNumberOfWashes,myNestedSamples],
@@ -17814,6 +18922,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					SecondaryWashMixTipMaterial->unflattenListHelper[resolvedSecondaryWashMixTipMaterials,myNestedSamples],
 					SecondaryWashMagnetizationTime->unflattenListHelper[resolvedSecondaryWashMagnetizationTimes,myNestedSamples],
 					SecondaryWashAspirationVolume->unflattenListHelper[resolvedSecondaryWashAspirationVolumes,myNestedSamples],
+          SecondaryWashAspirationPosition->unflattenListHelper[resolvedSecondaryWashAspirationPositions,myNestedSamples],
+          SecondaryWashAspirationPositionOffset->unflattenListHelper[resolvedSecondaryWashAspirationPositionOffsets,myNestedSamples],
 					SecondaryWashCollectionContainer->correctedSecondaryWashCollectionContainers,
 					SecondaryWashCollectionStorageCondition->unflattenListHelper[correctedSecondaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfSecondaryWashes->unflattenListHelper[resolvedNumberOfSecondaryWashes,myNestedSamples],
@@ -17834,6 +18944,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					TertiaryWashMixTipMaterial->unflattenListHelper[resolvedTertiaryWashMixTipMaterials,myNestedSamples],
 					TertiaryWashMagnetizationTime->unflattenListHelper[resolvedTertiaryWashMagnetizationTimes,myNestedSamples],
 					TertiaryWashAspirationVolume->unflattenListHelper[resolvedTertiaryWashAspirationVolumes,myNestedSamples],
+          TertiaryWashAspirationPosition->unflattenListHelper[resolvedTertiaryWashAspirationPositions,myNestedSamples],
+          TertiaryWashAspirationPositionOffset->unflattenListHelper[resolvedTertiaryWashAspirationPositionOffsets,myNestedSamples],
 					TertiaryWashCollectionContainer->correctedTertiaryWashCollectionContainers,
 					TertiaryWashCollectionStorageCondition->unflattenListHelper[correctedTertiaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfTertiaryWashes->unflattenListHelper[resolvedNumberOfTertiaryWashes,myNestedSamples],
@@ -17854,6 +18966,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					QuaternaryWashMixTipMaterial->unflattenListHelper[resolvedQuaternaryWashMixTipMaterials,myNestedSamples],
 					QuaternaryWashMagnetizationTime->unflattenListHelper[resolvedQuaternaryWashMagnetizationTimes,myNestedSamples],
 					QuaternaryWashAspirationVolume->unflattenListHelper[resolvedQuaternaryWashAspirationVolumes,myNestedSamples],
+          QuaternaryWashAspirationPosition->unflattenListHelper[resolvedQuaternaryWashAspirationPositions,myNestedSamples],
+          QuaternaryWashAspirationPositionOffset->unflattenListHelper[resolvedQuaternaryWashAspirationPositionOffsets,myNestedSamples],
 					QuaternaryWashCollectionContainer->correctedQuaternaryWashCollectionContainers,
 					QuaternaryWashCollectionStorageCondition->unflattenListHelper[correctedQuaternaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfQuaternaryWashes->unflattenListHelper[resolvedNumberOfQuaternaryWashes,myNestedSamples],
@@ -17874,6 +18988,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					QuinaryWashMixTipMaterial->unflattenListHelper[resolvedQuinaryWashMixTipMaterials,myNestedSamples],
 					QuinaryWashMagnetizationTime->unflattenListHelper[resolvedQuinaryWashMagnetizationTimes,myNestedSamples],
 					QuinaryWashAspirationVolume->unflattenListHelper[resolvedQuinaryWashAspirationVolumes,myNestedSamples],
+          QuinaryWashAspirationPosition->unflattenListHelper[resolvedQuinaryWashAspirationPositions,myNestedSamples],
+          QuinaryWashAspirationPositionOffset->unflattenListHelper[resolvedQuinaryWashAspirationPositionOffsets,myNestedSamples],
 					QuinaryWashCollectionContainer->correctedQuinaryWashCollectionContainers,
 					QuinaryWashCollectionStorageCondition->unflattenListHelper[correctedQuinaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfQuinaryWashes->unflattenListHelper[resolvedNumberOfQuinaryWashes,myNestedSamples],
@@ -17894,6 +19010,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					SenaryWashMixTipMaterial->unflattenListHelper[resolvedSenaryWashMixTipMaterials,myNestedSamples],
 					SenaryWashMagnetizationTime->unflattenListHelper[resolvedSenaryWashMagnetizationTimes,myNestedSamples],
 					SenaryWashAspirationVolume->unflattenListHelper[resolvedSenaryWashAspirationVolumes,myNestedSamples],
+          SenaryWashAspirationPosition->unflattenListHelper[resolvedSenaryWashAspirationPositions,myNestedSamples],
+          SenaryWashAspirationPositionOffset->unflattenListHelper[resolvedSenaryWashAspirationPositionOffsets,myNestedSamples],
 					SenaryWashCollectionContainer->correctedSenaryWashCollectionContainers,
 					SenaryWashCollectionStorageCondition->unflattenListHelper[correctedSenaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfSenaryWashes->unflattenListHelper[resolvedNumberOfSenaryWashes,myNestedSamples],
@@ -17914,6 +19032,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					SeptenaryWashMixTipMaterial->unflattenListHelper[resolvedSeptenaryWashMixTipMaterials,myNestedSamples],
 					SeptenaryWashMagnetizationTime->unflattenListHelper[resolvedSeptenaryWashMagnetizationTimes,myNestedSamples],
 					SeptenaryWashAspirationVolume->unflattenListHelper[resolvedSeptenaryWashAspirationVolumes,myNestedSamples],
+          SeptenaryWashAspirationPosition->unflattenListHelper[resolvedSeptenaryWashAspirationPositions,myNestedSamples],
+          SeptenaryWashAspirationPositionOffset->unflattenListHelper[resolvedSeptenaryWashAspirationPositionOffsets,myNestedSamples],
 					SeptenaryWashCollectionContainer->correctedSeptenaryWashCollectionContainers,
 					SeptenaryWashCollectionStorageCondition->unflattenListHelper[correctedSeptenaryWashCollectionStorageConditions,myNestedSamples],
 					NumberOfSeptenaryWashes->unflattenListHelper[resolvedNumberOfSeptenaryWashes,myNestedSamples],
@@ -17934,6 +19054,8 @@ resolveExperimentMagneticBeadSeparationOptions[
 					ElutionMixTipMaterial->unflattenListHelper[resolvedElutionMixTipMaterials,myNestedSamples],
 					ElutionMagnetizationTime->unflattenListHelper[resolvedElutionMagnetizationTimes,myNestedSamples],
 					ElutionAspirationVolume->unflattenListHelper[resolvedElutionAspirationVolumes,myNestedSamples],
+          ElutionAspirationPosition->unflattenListHelper[resolvedElutionAspirationPositions,myNestedSamples],
+          ElutionAspirationPositionOffset->unflattenListHelper[resolvedElutionAspirationPositionOffsets,myNestedSamples],
 					ElutionCollectionContainer->correctedElutionCollectionContainers,
 					ElutionCollectionStorageCondition->unflattenListHelper[correctedElutionCollectionStorageConditions,myNestedSamples],
 					NumberOfElutions->unflattenListHelper[resolvedNumberOfElutions,myNestedSamples],
@@ -17977,6 +19099,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 					SeptenaryWashCollectionContainerIndex->unflattenListHelper[septenaryWashCollectionContainerIndices,myNestedSamples],
 					ElutionDestinationWell->resolvedElutionDestinationWells,
 					ElutionCollectionContainerIndex->unflattenListHelper[elutionCollectionContainerIndices,myNestedSamples],
+          UnresolvedMagnetizationRack -> unflattenListHelper[(unresolvedMagnetizationRacks/.ObjectP[{Model[Container, Rack],Object[Container, Rack]}]->Null),myNestedSamples],(*This hidden option is only used to pass information for RSP and RCP, the container rack is not allowed pattern for the accepting field*)
 
 					(*Shared options*)
 					resolvedSamplePrepOptions,
@@ -18012,6 +19135,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validPreWashMixTipTest,
 			validPreWashMixInstrumentTest,
 			preWashAirDryMismatchTest,
+      preWashAspirationPipettingMismatchTests,
 
 			numberOfEquilibrationMismatchTests,
 			invalidEquilibrationMixTypeTests,
@@ -18022,6 +19146,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validEquilibrationMixTipTest,
 			validEquilibrationMixInstrumentTest,
 			equilibrationAirDryMismatchTest,
+      equilibrationAspirationPipettingMismatchTests,
 
 			numberOfLoadingMismatchTests,
 			invalidLoadingMixTypeTests,
@@ -18031,6 +19156,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validLoadingMixTipTest,
 			validLoadingMixInstrumentTest,
 			loadingAirDryMismatchTest,
+      loadingAspirationPipettingMismatchTests,
 
 			numberOfWashMismatchTests,
 			invalidWashMixTypeTests,
@@ -18041,6 +19167,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validWashMixTipTest,
 			validWashMixInstrumentTest,
 			washAirDryMismatchTest,
+      washAspirationPipettingMismatchTests,
 
 			numberOfSecondaryWashMismatchTests,
 			invalidSecondaryWashMixTypeTests,
@@ -18052,6 +19179,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validSecondaryWashMixInstrumentTest,
 			secondaryWashAirDryMismatchTest,
 			validSecondaryWashTest,
+      secondaryWashAspirationPipettingMismatchTests,
 
 			numberOfTertiaryWashMismatchTests,
 			invalidTertiaryWashMixTypeTests,
@@ -18063,6 +19191,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validTertiaryWashMixInstrumentTest,
 			tertiaryWashAirDryMismatchTest,
 			validTertiaryWashTest,
+      tertiaryWashAspirationPipettingMismatchTests,
 
 			numberOfQuaternaryWashMismatchTests,
 			invalidQuaternaryWashMixTypeTests,
@@ -18074,6 +19203,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validQuaternaryWashMixInstrumentTest,
 			quaternaryWashAirDryMismatchTest,
 			validQuaternaryWashTest,
+      quaternaryWashAspirationPipettingMismatchTests,
 
 			numberOfQuinaryWashMismatchTests,
 			invalidQuinaryWashMixTypeTests,
@@ -18085,6 +19215,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validQuinaryWashMixInstrumentTest,
 			quinaryWashAirDryMismatchTest,
 			validQuinaryWashTest,
+      quinaryWashAspirationPipettingMismatchTests,
 
 			numberOfSenaryWashMismatchTests,
 			invalidSenaryWashMixTypeTests,
@@ -18096,6 +19227,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validSenaryWashMixInstrumentTest,
 			senaryWashAirDryMismatchTest,
 			validSenaryWashTest,
+      senaryWashAspirationPipettingMismatchTests,
 
 			numberOfSeptenaryWashMismatchTests,
 			invalidSeptenaryWashMixTypeTests,
@@ -18107,6 +19239,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validSeptenaryWashMixInstrumentTest,
 			septenaryWashAirDryMismatchTest,
 			validSeptenaryWashTest,
+      septenaryWashAspirationPipettingMismatchTests,
 
 			numberOfElutionMismatchTests,
 			invalidElutionMixTypeTests,
@@ -18115,6 +19248,7 @@ resolveExperimentMagneticBeadSeparationOptions[
 			validElutionMixTipTypeTest,
 			validElutionMixTipTest,
 			validElutionMixInstrumentTest,
+      elutionAspirationPipettingMismatchTests,
 
 			aliquotTests,
 			preparationTest,
@@ -18168,10 +19302,10 @@ experimentMagneticBeadSeparationResourcePackets[
 ]:=Module[
 	{
 		unresolvedOptionsNoHidden,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,inheritedFastAssoc,
-		nestedSamplesWithReplicates,resolvedOptionsWithReplicates,flatSamplesWithReplicates,
+		nestedSamplesWithReplicates,resolvedOptionsWithReplicates,flatSamplesWithReplicates,prependReplicateNumber,
 
-		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,sampleLabels,separationMode,selectionStrategy,analyteAffinityLabels,targets,
-		sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,
+		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,unresolvedMagnetizationRacks,sampleLabels,separationMode,selectionStrategy,analyteAffinityLabels,targets,
+		sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates,
 
 		(* Get needed options *)
 		preWashes,preWashBuffers,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,numberOfPreWashes,
@@ -18230,6 +19364,9 @@ experimentMagneticBeadSeparationResourcePackets[
 		elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionContainerIndices,elutionCollectionStorageConditions,elutionMixTipTypes,elutionMixTipMaterials,elutionDestinationWells,
 		elutionCollectionContainerLabels,
 
+    (*Aspiration pipetting options*)
+    preWashAspirationPositions, preWashAspirationPositionOffsets, equilibrationAspirationPositions, equilibrationAspirationPositionOffsets, loadingAspirationPositions, loadingAspirationPositionOffsets, washAspirationPositions, washAspirationPositionOffsets, secondaryWashAspirationPositions, secondaryWashAspirationPositionOffsets, tertiaryWashAspirationPositions, tertiaryWashAspirationPositionOffsets, quaternaryWashAspirationPositions, quaternaryWashAspirationPositionOffsets, quinaryWashAspirationPositions, quinaryWashAspirationPositionOffsets, senaryWashAspirationPositions, senaryWashAspirationPositionOffsets, septenaryWashAspirationPositions, septenaryWashAspirationPositionOffsets, elutionAspirationPositions, elutionAspirationPositionOffsets,
+
 
 		(* For resource generation *)
 		assayContainerLookup,assayContainerMapOutput,assayContainerLabels,assayWells,
@@ -18281,8 +19418,8 @@ experimentMagneticBeadSeparationResourcePackets[
 
 	(*Look up the resolved option values we need*)
 	{
-		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,separationMode,selectionStrategy,analyteAffinityLabels,targets,
-		sampleLabels,sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,
+		preparation,volumes,magneticBeads,magneticBeadVolumes,magnetizationRacks,unresolvedMagnetizationRacks,separationMode,selectionStrategy,analyteAffinityLabels,targets,
+		sampleLabels,sampleContainerLabels,assayContainers,parentProtocol,sampleOutLabels,containerOutLabels, magneticBeadAffinityLabels,numberOfReplicates,
 
 		preWashes,preWashBuffers,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,numberOfPreWashes,
 		preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes,
@@ -18330,12 +19467,14 @@ experimentMagneticBeadSeparationResourcePackets[
 
 		elutions,elutionBuffers,elutionBufferVolumes,elutionMagnetizationTimes,elutionAspirationVolumes,numberOfElutions,
 		elutionMixes,elutionMixTypes,elutionMixTimes,elutionMixRates,numberOfElutionMixes,
-		elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionContainerIndices,elutionCollectionStorageConditions, elutionMixTipTypes,elutionMixTipMaterials,elutionDestinationWells,	elutionCollectionContainerLabels
+		elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionContainerIndices,elutionCollectionStorageConditions, elutionMixTipTypes,elutionMixTipMaterials,elutionDestinationWells,	elutionCollectionContainerLabels,
+
+    preWashAspirationPositions, preWashAspirationPositionOffsets, equilibrationAspirationPositions, equilibrationAspirationPositionOffsets, loadingAspirationPositions, loadingAspirationPositionOffsets, washAspirationPositions, washAspirationPositionOffsets, secondaryWashAspirationPositions, secondaryWashAspirationPositionOffsets, tertiaryWashAspirationPositions, tertiaryWashAspirationPositionOffsets, quaternaryWashAspirationPositions, quaternaryWashAspirationPositionOffsets, quinaryWashAspirationPositions, quinaryWashAspirationPositionOffsets, senaryWashAspirationPositions, senaryWashAspirationPositionOffsets, septenaryWashAspirationPositions, septenaryWashAspirationPositionOffsets, elutionAspirationPositions, elutionAspirationPositionOffsets
 
 		}=Lookup[resolvedOptionsWithReplicates,
 		{
-			Preparation, Volume, MagneticBeads, MagneticBeadVolume, MagnetizationRack, SeparationMode, SelectionStrategy, AnalyteAffinityLabel, Target,
-			SampleLabel, SampleContainerLabel, AssayContainer, ParentProtocol, SampleOutLabel, ContainerOutLabel, MagneticBeadAffinityLabel,
+			Preparation, Volume, MagneticBeads, MagneticBeadVolume, MagnetizationRack, UnresolvedMagnetizationRack, SeparationMode, SelectionStrategy, AnalyteAffinityLabel, Target,
+			SampleLabel, SampleContainerLabel, AssayContainer, ParentProtocol, SampleOutLabel, ContainerOutLabel, MagneticBeadAffinityLabel,NumberOfReplicates,
 
 			PreWash, PreWashBuffer, PreWashBufferVolume, PreWashMagnetizationTime, PreWashAspirationVolume, NumberOfPreWashes,
 			PreWashAirDry, PreWashAirDryTime, PreWashMix, PreWashMixType, PreWashMixTime, PreWashMixRate, NumberOfPreWashMixes,
@@ -18391,7 +19530,19 @@ experimentMagneticBeadSeparationResourcePackets[
 			Elution, ElutionBuffer, ElutionBufferVolume, ElutionMagnetizationTime, ElutionAspirationVolume, NumberOfElutions,
 			ElutionMix, ElutionMixType, ElutionMixTime, ElutionMixRate, NumberOfElutionMixes,
 			ElutionMixVolume, ElutionMixTemperature, ElutionCollectionContainer, ElutionCollectionContainerIndex, ElutionCollectionStorageCondition, ElutionMixTipType, ElutionMixTipMaterial, ElutionDestinationWell,
-			ElutionCollectionContainerLabel
+			ElutionCollectionContainerLabel,
+
+      PreWashAspirationPosition, PreWashAspirationPositionOffset,
+      EquilibrationAspirationPosition, EquilibrationAspirationPositionOffset,
+      LoadingAspirationPosition, LoadingAspirationPositionOffset,
+      WashAspirationPosition, WashAspirationPositionOffset,
+      SecondaryWashAspirationPosition, SecondaryWashAspirationPositionOffset,
+      TertiaryWashAspirationPosition, TertiaryWashAspirationPositionOffset,
+      QuaternaryWashAspirationPosition, QuaternaryWashAspirationPositionOffset,
+      QuinaryWashAspirationPosition, QuinaryWashAspirationPositionOffset,
+      SenaryWashAspirationPosition, SenaryWashAspirationPositionOffset,
+      SeptenaryWashAspirationPosition, SeptenaryWashAspirationPositionOffset,
+      ElutionAspirationPosition, ElutionAspirationPositionOffset
 		}
 	];
 
@@ -18530,7 +19681,97 @@ experimentMagneticBeadSeparationResourcePackets[
 		assayContainers
 	];
 
-	flattenedContainerLabels=Flatten@Join[
+  (* === Correct labels if needed. === *)
+  (* If NumberOfReplicates > 1, correct labels so each replicate uses its own plates *)
+  numberOfReplicates=Lookup[resolvedOptionsWithReplicates,NumberOfReplicates];
+
+  {
+    preWashCollectionContainerLabels,
+    equilibrationCollectionContainerLabels,
+    loadingCollectionContainerLabels,
+    washCollectionContainerLabels,
+    secondaryWashCollectionContainerLabels,
+    tertiaryWashCollectionContainerLabels,
+    quaternaryWashCollectionContainerLabels,
+    quinaryWashCollectionContainerLabels,
+    senaryWashCollectionContainerLabels,
+    septenaryWashCollectionContainerLabels,
+    elutionCollectionContainerLabels,
+    sampleOutLabels,
+    assayContainerLabels
+  }=If[MatchQ[numberOfReplicates,GreaterP[1]],
+    Module[{replicateIndices,prependedAssayContainerLabels},
+      (* Determine the "replicate indices" based on the number of replicates and number of batches *)
+      replicateIndices=Flatten@ConstantArray[Range[numberOfReplicates],Length[myNestedSamples]];
+
+      (* Define helper function to go through the collection container label options and prepend replicate number *)
+      (* Note: leave the original samples alone then have Replicate Number 1, Replicate Number 2, etc. *)
+      prependReplicateNumber[collectionContainerLabels_]:=MapThread[
+        Function[{labelsBatch,index},
+          Map[
+            Function[{labelRepeats},
+              (If[!NullQ[#],If[MatchQ[index,1],#,"Replicate Number " <> ToString[index-1] <> " " <> #], Null])&/@labelRepeats
+            ],
+            labelsBatch
+          ]
+        ],
+        {collectionContainerLabels,replicateIndices}
+      ];
+
+      (* Prepend to assay container labels separately because they have 1 less layer of nesting *)
+      prependedAssayContainerLabels=MapThread[
+        Function[{assayContainerLabelsBatch,assayWellsBatch,index},
+          MapThread[
+            Function[{assayContainerLabel, assayWell},
+              (If[!NullQ[assayContainerLabel],
+                (*We don't want to prepend the label to indicate a different assay container if we are at original sample or we are just aliquoting replicate into another well on the same plate*)
+                If[MatchQ[index,1]||!MatchQ[assayWell,"A1"],
+                  assayContainerLabel,
+                  "Replicate Number " <> ToString[index-1] <> " " <> assayContainerLabel],
+                Null
+              ])
+            ],
+            {assayContainerLabelsBatch,assayWellsBatch}
+          ]
+        ],
+        {assayContainerLabels,assayWells,replicateIndices}
+      ];
+
+      (* Do Prepend *)
+      {
+        prependReplicateNumber[preWashCollectionContainerLabels],
+        prependReplicateNumber[equilibrationCollectionContainerLabels],
+        prependReplicateNumber[loadingCollectionContainerLabels],
+        prependReplicateNumber[washCollectionContainerLabels],
+        prependReplicateNumber[secondaryWashCollectionContainerLabels],
+        prependReplicateNumber[tertiaryWashCollectionContainerLabels],
+        prependReplicateNumber[quaternaryWashCollectionContainerLabels],
+        prependReplicateNumber[quinaryWashCollectionContainerLabels],
+        prependReplicateNumber[senaryWashCollectionContainerLabels],
+        prependReplicateNumber[septenaryWashCollectionContainerLabels],
+        prependReplicateNumber[elutionCollectionContainerLabels],
+        prependReplicateNumber[sampleOutLabels],
+        prependedAssayContainerLabels
+      }
+    ],
+    {
+      preWashCollectionContainerLabels,
+      equilibrationCollectionContainerLabels,
+      loadingCollectionContainerLabels,
+      washCollectionContainerLabels,
+      secondaryWashCollectionContainerLabels,
+      tertiaryWashCollectionContainerLabels,
+      quaternaryWashCollectionContainerLabels,
+      quinaryWashCollectionContainerLabels,
+      senaryWashCollectionContainerLabels,
+      septenaryWashCollectionContainerLabels,
+      elutionCollectionContainerLabels,
+      sampleOutLabels,
+      assayContainerLabels
+    }
+  ];
+
+  flattenedContainerLabels=Flatten@Join[
 		preWashCollectionContainerLabels,
 		equilibrationCollectionContainerLabels,
 		loadingCollectionContainerLabels,
@@ -19194,14 +20435,14 @@ experimentMagneticBeadSeparationResourcePackets[
 			|>;
 
 			(* Get our sample prep fields. *)
-			prepPacket=populateSamplePrepFields[myNestedSamples,myResolvedOptions,Cache->inheritedCache];
+			prepPacket=populateSamplePrepFields[myNestedSamples,myResolvedOptions,Cache->inheritedCache,Simulation->currentSimulation];
 
 			(* Return *)
 			{Join[packet, prepPacket], {}, currentSimulation, Null}
 		],
 		Module[
 			{
-				numberOfReplicates,bufferLabelLookup,preWashBufferLabels,equilibrationBufferLabels,washBufferLabels,elutionBufferLabels,
+				newLabelSampleUO, oldResourceToNewResourceRules, magneticBeadSourceVolumeLookup,bufferLabelLookup,preWashBufferLabels,equilibrationBufferLabels,washBufferLabels,elutionBufferLabels,
 				magneticBeadLabelLookup,magneticBeadLabels,labelPrimitives,magneticBeadPrimitives,
 				preWashPrimitives,equilibrationPrimitives,loadingPrimitives,washPrimitives,elutionPrimitives,
 				secondaryWashBufferLabels,secondaryWashPrimitives,
@@ -19216,85 +20457,18 @@ experimentMagneticBeadSeparationResourcePackets[
 				roboticUnitOperationPacketsCorrectedResources
 			},
 
-			(* === Correct labels if needed. === *)
-			(* If NumberOfReplicates > 1, correct labels so each replicate uses its own plates *)
-			numberOfReplicates=Lookup[resolvedOptionsWithReplicates,NumberOfReplicates];
-			{
-				preWashCollectionContainerLabels,
-				equilibrationCollectionContainerLabels,
-				loadingCollectionContainerLabels,
-				washCollectionContainerLabels,
-				secondaryWashCollectionContainerLabels,
-				tertiaryWashCollectionContainerLabels,
-				quaternaryWashCollectionContainerLabels,
-				quinaryWashCollectionContainerLabels,
-				senaryWashCollectionContainerLabels,
-				septenaryWashCollectionContainerLabels,
-				elutionCollectionContainerLabels,
-				sampleOutLabels,
-				assayContainerLabels
-			}=If[MatchQ[numberOfReplicates,GreaterP[1]],
-				Module[{replicateIndices,prependedAssayContainerLabels},
-					(* Determine the "replicate indices" based on the number of replicates and number of batches *)
-					replicateIndices=Flatten@ConstantArray[Range[numberOfReplicates],Length[myNestedSamples]];
-
-					(* Define helper function to go through the collection container label options and prepend replicate number *)
-					(* Note: leave the original samples alone then have Replicate Number 1, Replicate Number 2, etc. *)
-					prependReplicateNumber[collectionContainerLabels_]:=MapThread[
-						Function[{labelsBatch,index},
-							Map[
-								Function[{labelRepeats},
-									(If[!NullQ[#],If[MatchQ[index,1],#,"Replicate Number " <> ToString[index-1] <> " " <> #], Null])&/@labelRepeats
-								],
-								labelsBatch
-							]
-						],
-						{collectionContainerLabels,replicateIndices}
-					];
-
-					(* Prepend to assay container labels separately because they have 1 less layer of nesting *)
-					prependedAssayContainerLabels=MapThread[
-						Function[{assayContainerLabelsBatch,index},
-							(If[!NullQ[#],If[MatchQ[index,1],#,"Replicate Number " <> ToString[index-1] <> " " <> #], Null])&/@assayContainerLabelsBatch
-						],
-						{assayContainerLabels,replicateIndices}
-					];
-
-					(* Do Prepend *)
-					{
-						prependReplicateNumber[preWashCollectionContainerLabels],
-						prependReplicateNumber[equilibrationCollectionContainerLabels],
-						prependReplicateNumber[loadingCollectionContainerLabels],
-						prependReplicateNumber[washCollectionContainerLabels],
-						prependReplicateNumber[secondaryWashCollectionContainerLabels],
-						prependReplicateNumber[tertiaryWashCollectionContainerLabels],
-						prependReplicateNumber[quaternaryWashCollectionContainerLabels],
-						prependReplicateNumber[quinaryWashCollectionContainerLabels],
-						prependReplicateNumber[senaryWashCollectionContainerLabels],
-						prependReplicateNumber[septenaryWashCollectionContainerLabels],
-						prependReplicateNumber[elutionCollectionContainerLabels],
-						prependReplicateNumber[sampleOutLabels],
-						prependedAssayContainerLabels
-					}
-				],
-				{
-					preWashCollectionContainerLabels,
-					equilibrationCollectionContainerLabels,
-					loadingCollectionContainerLabels,
-					washCollectionContainerLabels,
-					secondaryWashCollectionContainerLabels,
-					tertiaryWashCollectionContainerLabels,
-					quaternaryWashCollectionContainerLabels,
-					quinaryWashCollectionContainerLabels,
-					senaryWashCollectionContainerLabels,
-					septenaryWashCollectionContainerLabels,
-					elutionCollectionContainerLabels,
-					sampleOutLabels,
-					assayContainerLabels
-				}
-			];
 
 			(* === Generate all of the primitives we need. === *)
+
+			(* get the new label sample unit operation if it exists; need to replace the models in it with the sample resources we've already created/simulated *)
+			{newLabelSampleUO, oldResourceToNewResourceRules} = If[MatchQ[Lookup[myResolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}],
+				generateLabelSampleUO[
+					Lookup[myResolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					currentSimulation,
+					samplesInResources
+				],
+				{Null, {}}
+			];
 
 			(* Create labels for all unique buffer/buffer containers *)
 			bufferLabelLookup = <||>; (* buffer-><|label->{label, amount, containerLabel} |>*)
@@ -19432,6 +20606,29 @@ experimentMagneticBeadSeparationResourcePackets[
 				{magneticBeads,magneticBeadVolumes}
 			];
 
+			(* Check the source volume of the magnetic beads, in order to resolve a default aspirationMixVolume for the magneticBeadPrimitives *)
+			magneticBeadSourceVolumeLookup = Map[
+				Function[{magneticBead},
+					Module[{beadAssoc,beadLabel,sourceVolume},
+						(*Look up the association for the bead object*)
+						beadAssoc = Lookup[magneticBeadLabelLookup,magneticBead];
+
+						(*Lookup the label of the magnetic bead object*)
+						beadLabel = Keys[beadAssoc][[1]];
+            (* Determine our source volume based on if the sample is object or model.*)
+						sourceVolume = If[MatchQ[magneticBead,ObjectP[Object[Sample]]],
+							(*If the bead is a sample, use its Volume*)
+							fastAssocLookup[inheritedFastAssoc,magneticBead,Volume],
+							(* Otherwise the bead is a model, we use the combined volumes requested in resource and that will be our source volume when aspirating the beads. But should no less than 20 microliter, otherwise we wouldn't be able to aspirate with any widebore tips. *)
+							Max[Lookup[beadAssoc,beadLabel][[2]], 20 Microliter]
+						];
+						(*Output the rule of magnetic bead label -> source volume*)
+						beadLabel -> sourceVolume
+					]
+				],
+				DeleteDuplicates[Flatten@magneticBeads]
+			];
+
 			(* --- Generate Label Primitives --- *)
 			labelPrimitives=Module[
 				{
@@ -19554,7 +20751,7 @@ experimentMagneticBeadSeparationResourcePackets[
 						AspirationMix->True,
 						AspirationMixType->Pipette,
 						NumberOfAspirationMixes->20,
-						AspirationMixVolume->Min[Total[magneticBeadVolumesBatch]/2.,300*Microliter]
+						AspirationMixVolume->(Min[SafeRound[0.6*#,1*Microliter],300*Microliter]&/@Lookup[magneticBeadSourceVolumeLookup,magneticBeadLabelsBatch])
 					]
 				],
 				{
@@ -19563,18 +20760,18 @@ experimentMagneticBeadSeparationResourcePackets[
 			];
 
 			(* --- PreWash --- *)
-			preWashPrimitives=generateWashStagePrimitivesInResourcePacket[preWashes,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,numberOfPreWashes, preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes, preWashMixVolumes,preWashMixTemperatures, preWashMixTipTypes,preWashMixTipMaterials,preWashDestinationWells,preWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,preWashBufferLabels];
+			preWashPrimitives=generateWashStagePrimitivesInResourcePacket[preWashes,preWashBufferVolumes,preWashMagnetizationTimes,preWashAspirationVolumes,preWashAspirationPositions, preWashAspirationPositionOffsets,numberOfPreWashes, preWashAirDries,preWashAirDryTimes,preWashMixes,preWashMixTypes,preWashMixTimes,preWashMixRates,numberOfPreWashMixes, preWashMixVolumes,preWashMixTemperatures, preWashMixTipTypes,preWashMixTipMaterials,preWashDestinationWells,preWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,preWashBufferLabels];
 
 			(* --- Equilibration --- *)
 			equilibrationPrimitives=MapThread[
 			Function[
 			{
-				equilibrationsBatch,equilibrationBuffersBatch,equilibrationBufferVolumesBatch,equilibrationMagnetizationTimesBatch,equilibrationAspirationVolumesBatch,
+				equilibrationsBatch,equilibrationBuffersBatch,equilibrationBufferVolumesBatch,equilibrationMagnetizationTimesBatch,equilibrationAspirationVolumesBatch,equilibrationAspirationPositionsBatch,equilibrationAspirationPositionOffsetsBatch,
 				equilibrationAirDriesBatch,equilibrationAirDryTimesBatch,equilibrationMixesBatch,equilibrationMixTypesBatch,equilibrationMixTimesBatch,equilibrationMixRatesBatch,numberOfEquilibrationMixesBatch,
 				equilibrationMixVolumesBatch,equilibrationMixTemperaturesBatch,equilibrationCollectionContainersBatch,equilibrationCollectionStorageConditionsBatch,
 				equilibrationMixTipTypesBatch,
 				equilibrationMixTipMaterialsBatch,equilibrationDestinationWellsBatch,
-				equilibrationCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,equilibrationBufferLabelsBatch
+				equilibrationCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,equilibrationBufferLabelsBatch
 			},
 				Module[{mixingBools,airDryingBools},
 
@@ -19602,6 +20799,9 @@ experimentMagneticBeadSeparationResourcePackets[
 									MixRate->PickList[equilibrationMixRatesBatch,mixingBools],
 									NumberOfMixes->PickList[numberOfEquilibrationMixesBatch,mixingBools],
 									MixVolume->PickList[equilibrationMixVolumesBatch,mixingBools],
+                  MixFlowRate->Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
+                  MixPosition -> Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
+                  MixPositionOffset-> Replace[PickList[equilibrationMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
 									Temperature->PickList[equilibrationMixTemperaturesBatch,mixingBools],
 									TipType->PickList[equilibrationMixTipTypesBatch,mixingBools],
 									TipMaterial->PickList[equilibrationMixTipMaterialsBatch,mixingBools]
@@ -19615,9 +20815,11 @@ experimentMagneticBeadSeparationResourcePackets[
 								Amount->PickList[equilibrationAspirationVolumesBatch,equilibrationsBatch],
 								Magnetization->True,
 								MagnetizationTime->PickList[equilibrationMagnetizationTimesBatch,equilibrationsBatch],
-								MagnetizationRack->PickList[magnetizationRacksBatch,equilibrationsBatch],
-								AspirationPosition->Bottom,
-								AspirationPositionOffset->1 Centimeter,
+								MagnetizationRack->PickList[magnetizationRacksBatch, equilibrationsBatch],
+								UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,equilibrationsBatch],
+								AspirationPosition->PickList[equilibrationAspirationPositionsBatch,equilibrationsBatch],
+								AspirationPositionOffset->PickList[equilibrationAspirationPositionOffsetsBatch,equilibrationsBatch],
+								AspirationMix -> False,
 								MultichannelTransfer->False
 							],
 							(* Generate a Wait primitive if we are asked to air dry *)
@@ -19631,12 +20833,12 @@ experimentMagneticBeadSeparationResourcePackets[
 				]
 			],
 				{
-					equilibrations,equilibrationBuffers,equilibrationBufferVolumes,equilibrationMagnetizationTimes,equilibrationAspirationVolumes,
+					equilibrations,equilibrationBuffers,equilibrationBufferVolumes,equilibrationMagnetizationTimes,equilibrationAspirationVolumes,equilibrationAspirationPositions,equilibrationAspirationPositionOffsets,
 					equilibrationAirDries,equilibrationAirDryTimes,equilibrationMixes,equilibrationMixTypes,equilibrationMixTimes,equilibrationMixRates,numberOfEquilibrationMixes,
 					equilibrationMixVolumes,equilibrationMixTemperatures,equilibrationCollectionContainers,equilibrationCollectionStorageConditions,
 					equilibrationMixTipTypes,
 					equilibrationMixTipMaterials,equilibrationDestinationWells,
-					equilibrationCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,equilibrationBufferLabels
+					equilibrationCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,equilibrationBufferLabels
 				}
 			];
 
@@ -19644,12 +20846,12 @@ experimentMagneticBeadSeparationResourcePackets[
 			loadingPrimitives=MapThread[
 				Function[
 					{
-						volumesBatch,loadingMagnetizationTimesBatch,loadingAspirationVolumesBatch,
+						volumesBatch,loadingMagnetizationTimesBatch,loadingAspirationVolumesBatch,loadingAspirationPositionsBatch,loadingAspirationPositionOffsetsBatch,
 						loadingAirDriesBatch,loadingAirDryTimesBatch,loadingMixesBatch,loadingMixTypesBatch,loadingMixTimesBatch,loadingMixRatesBatch,numberOfLoadingMixesBatch,
 						loadingMixVolumesBatch,loadingMixTemperaturesBatch,loadingCollectionContainersBatch,loadingCollectionStorageConditionsBatch,
 						loadingMixTipTypesBatch,
 						loadingMixTipMaterialsBatch,loadingDestinationWellsBatch,
-						loadingCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,sampleLabelsBatch,sampleOutLabelsBatch
+						loadingCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,unresolvedMagnetizationRacksBatch,sampleLabelsBatch,sampleOutLabelsBatch
 					},
 					{
 						(* Transfer loadingBuffer into assay container *)
@@ -19668,6 +20870,9 @@ experimentMagneticBeadSeparationResourcePackets[
 								MixRate->PickList[loadingMixRatesBatch,loadingMixesBatch],
 								NumberOfMixes->PickList[numberOfLoadingMixesBatch,loadingMixesBatch],
 								MixVolume->PickList[loadingMixVolumesBatch,loadingMixesBatch],
+								MixFlowRate->Replace[PickList[loadingMixTypesBatch,loadingMixesBatch],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
+								MixPosition -> Replace[PickList[loadingMixTypesBatch,loadingMixesBatch],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
+								MixPositionOffset-> Replace[PickList[loadingMixTypesBatch,loadingMixesBatch],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
 								Temperature->PickList[loadingMixTemperaturesBatch,loadingMixesBatch],
 								TipType->PickList[loadingMixTipTypesBatch,loadingMixesBatch],
 								TipMaterial->PickList[loadingMixTipMaterialsBatch,loadingMixesBatch]
@@ -19686,8 +20891,10 @@ experimentMagneticBeadSeparationResourcePackets[
 							Magnetization->True,
 							MagnetizationTime->loadingMagnetizationTimesBatch,
 							MagnetizationRack->magnetizationRacksBatch,
-							AspirationPosition->Bottom,
-							AspirationPositionOffset->1 Centimeter,
+							UnresolvedMagnetizationRackFromParentProtocol -> unresolvedMagnetizationRacksBatch,
+							AspirationPosition->loadingAspirationPositionsBatch,
+							AspirationPositionOffset->loadingAspirationPositionOffsetsBatch,
+							AspirationMix -> False,
 							MultichannelTransfer->False
 						],
 						(* Generate a Wait primitive if we are asked to air dry *)
@@ -19698,40 +20905,41 @@ experimentMagneticBeadSeparationResourcePackets[
 					}
 				],
 				{
-					volumes,loadingMagnetizationTimes,loadingAspirationVolumes,
+					volumes,loadingMagnetizationTimes,loadingAspirationVolumes,loadingAspirationPositions,loadingAspirationPositionOffsets,
 					loadingAirDries,loadingAirDryTimes,loadingMixes,loadingMixTypes,loadingMixTimes,loadingMixRates,numberOfLoadingMixes,
 					loadingMixVolumes,loadingMixTemperatures,loadingCollectionContainers,loadingCollectionStorageConditions,
 					loadingMixTipTypes,
 					loadingMixTipMaterials,loadingDestinationWells,
-					loadingCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,sampleLabels,sampleOutLabels
+					loadingCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,sampleLabels,sampleOutLabels
 				}
 			];
 
 			(* --- Wash --- *)
-			washPrimitives=generateWashStagePrimitivesInResourcePacket[washes,washBufferVolumes,washMagnetizationTimes,washAspirationVolumes,numberOfWashes, washAirDries,washAirDryTimes,washMixes,washMixTypes,washMixTimes,washMixRates,numberOfWashMixes, washMixVolumes,washMixTemperatures, washMixTipTypes,washMixTipMaterials,washDestinationWells,washCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,washBufferLabels];
+			washPrimitives=generateWashStagePrimitivesInResourcePacket[washes,washBufferVolumes,washMagnetizationTimes,washAspirationVolumes,washAspirationPositions, washAspirationPositionOffsets,numberOfWashes, washAirDries,washAirDryTimes,washMixes,washMixTypes,washMixTimes,washMixRates,numberOfWashMixes, washMixVolumes,washMixTemperatures, washMixTipTypes,washMixTipMaterials,washDestinationWells,washCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,washBufferLabels];
 			(* --- SecondaryWash --- *)
-			secondaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[secondaryWashes,secondaryWashBufferVolumes,secondaryWashMagnetizationTimes,secondaryWashAspirationVolumes,numberOfSecondaryWashes, secondaryWashAirDries,secondaryWashAirDryTimes,secondaryWashMixes,secondaryWashMixTypes,secondaryWashMixTimes,secondaryWashMixRates,numberOfSecondaryWashMixes, secondaryWashMixVolumes,secondaryWashMixTemperatures, secondaryWashMixTipTypes,secondaryWashMixTipMaterials,secondaryWashDestinationWells,secondaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,secondaryWashBufferLabels];
+			secondaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[secondaryWashes,secondaryWashBufferVolumes,secondaryWashMagnetizationTimes,secondaryWashAspirationVolumes,secondaryWashAspirationPositions, secondaryWashAspirationPositionOffsets,numberOfSecondaryWashes, secondaryWashAirDries,secondaryWashAirDryTimes,secondaryWashMixes,secondaryWashMixTypes,secondaryWashMixTimes,secondaryWashMixRates,numberOfSecondaryWashMixes, secondaryWashMixVolumes,secondaryWashMixTemperatures, secondaryWashMixTipTypes,secondaryWashMixTipMaterials,secondaryWashDestinationWells,secondaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,secondaryWashBufferLabels];
 			(* --- TertiaryWash --- *)
-			tertiaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[tertiaryWashes,tertiaryWashBufferVolumes,tertiaryWashMagnetizationTimes,tertiaryWashAspirationVolumes,numberOfTertiaryWashes, tertiaryWashAirDries,tertiaryWashAirDryTimes,tertiaryWashMixes,tertiaryWashMixTypes,tertiaryWashMixTimes,tertiaryWashMixRates,numberOfTertiaryWashMixes, tertiaryWashMixVolumes,tertiaryWashMixTemperatures, tertiaryWashMixTipTypes,tertiaryWashMixTipMaterials,tertiaryWashDestinationWells,tertiaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,tertiaryWashBufferLabels];
+			tertiaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[tertiaryWashes,tertiaryWashBufferVolumes,tertiaryWashMagnetizationTimes,tertiaryWashAspirationVolumes,tertiaryWashAspirationPositions, tertiaryWashAspirationPositionOffsets,numberOfTertiaryWashes, tertiaryWashAirDries,tertiaryWashAirDryTimes,tertiaryWashMixes,tertiaryWashMixTypes,tertiaryWashMixTimes,tertiaryWashMixRates,numberOfTertiaryWashMixes, tertiaryWashMixVolumes,tertiaryWashMixTemperatures, tertiaryWashMixTipTypes,tertiaryWashMixTipMaterials,tertiaryWashDestinationWells,tertiaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,tertiaryWashBufferLabels];
 			(* --- QuaternaryWash --- *)
-			quaternaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quaternaryWashes,quaternaryWashBufferVolumes,quaternaryWashMagnetizationTimes,quaternaryWashAspirationVolumes,numberOfQuaternaryWashes, quaternaryWashAirDries,quaternaryWashAirDryTimes,quaternaryWashMixes,quaternaryWashMixTypes,quaternaryWashMixTimes,quaternaryWashMixRates,numberOfQuaternaryWashMixes, quaternaryWashMixVolumes,quaternaryWashMixTemperatures, quaternaryWashMixTipTypes,quaternaryWashMixTipMaterials,quaternaryWashDestinationWells,quaternaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,quaternaryWashBufferLabels];
+			quaternaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quaternaryWashes,quaternaryWashBufferVolumes,quaternaryWashMagnetizationTimes,quaternaryWashAspirationVolumes,quaternaryWashAspirationPositions, quaternaryWashAspirationPositionOffsets,numberOfQuaternaryWashes, quaternaryWashAirDries,quaternaryWashAirDryTimes,quaternaryWashMixes,quaternaryWashMixTypes,quaternaryWashMixTimes,quaternaryWashMixRates,numberOfQuaternaryWashMixes, quaternaryWashMixVolumes,quaternaryWashMixTemperatures, quaternaryWashMixTipTypes,quaternaryWashMixTipMaterials,quaternaryWashDestinationWells,quaternaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quaternaryWashBufferLabels];
 			(* --- QuinaryWash --- *)
-			quinaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quinaryWashes,quinaryWashBufferVolumes,quinaryWashMagnetizationTimes,quinaryWashAspirationVolumes,numberOfQuinaryWashes, quinaryWashAirDries,quinaryWashAirDryTimes,quinaryWashMixes,quinaryWashMixTypes,quinaryWashMixTimes,quinaryWashMixRates,numberOfQuinaryWashMixes, quinaryWashMixVolumes,quinaryWashMixTemperatures, quinaryWashMixTipTypes,quinaryWashMixTipMaterials,quinaryWashDestinationWells,quinaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,quinaryWashBufferLabels];
+			quinaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[quinaryWashes,quinaryWashBufferVolumes,quinaryWashMagnetizationTimes,quinaryWashAspirationVolumes,quinaryWashAspirationPositions, quinaryWashAspirationPositionOffsets,numberOfQuinaryWashes, quinaryWashAirDries,quinaryWashAirDryTimes,quinaryWashMixes,quinaryWashMixTypes,quinaryWashMixTimes,quinaryWashMixRates,numberOfQuinaryWashMixes, quinaryWashMixVolumes,quinaryWashMixTemperatures, quinaryWashMixTipTypes,quinaryWashMixTipMaterials,quinaryWashDestinationWells,quinaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,quinaryWashBufferLabels];
 			(* --- SenaryWash --- *)
-			senaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[senaryWashes,senaryWashBufferVolumes,senaryWashMagnetizationTimes,senaryWashAspirationVolumes,numberOfSenaryWashes, senaryWashAirDries,senaryWashAirDryTimes,senaryWashMixes,senaryWashMixTypes,senaryWashMixTimes,senaryWashMixRates,numberOfSenaryWashMixes, senaryWashMixVolumes,senaryWashMixTemperatures, senaryWashMixTipTypes,senaryWashMixTipMaterials,senaryWashDestinationWells,senaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,senaryWashBufferLabels];
+			senaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[senaryWashes,senaryWashBufferVolumes,senaryWashMagnetizationTimes,senaryWashAspirationVolumes,senaryWashAspirationPositions, senaryWashAspirationPositionOffsets,numberOfSenaryWashes, senaryWashAirDries,senaryWashAirDryTimes,senaryWashMixes,senaryWashMixTypes,senaryWashMixTimes,senaryWashMixRates,numberOfSenaryWashMixes, senaryWashMixVolumes,senaryWashMixTemperatures, senaryWashMixTipTypes,senaryWashMixTipMaterials,senaryWashDestinationWells,senaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,senaryWashBufferLabels];
 			(* --- SeptenaryWash --- *)
-			septenaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[septenaryWashes,septenaryWashBufferVolumes,septenaryWashMagnetizationTimes,septenaryWashAspirationVolumes,numberOfSeptenaryWashes, septenaryWashAirDries,septenaryWashAirDryTimes,septenaryWashMixes,septenaryWashMixTypes,septenaryWashMixTimes,septenaryWashMixRates,numberOfSeptenaryWashMixes, septenaryWashMixVolumes,septenaryWashMixTemperatures, septenaryWashMixTipTypes,septenaryWashMixTipMaterials,septenaryWashDestinationWells,septenaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,septenaryWashBufferLabels];
+			septenaryWashPrimitives=generateWashStagePrimitivesInResourcePacket[septenaryWashes,septenaryWashBufferVolumes,septenaryWashMagnetizationTimes,septenaryWashAspirationVolumes,septenaryWashAspirationPositions, septenaryWashAspirationPositionOffsets,numberOfSeptenaryWashes, septenaryWashAirDries,septenaryWashAirDryTimes,septenaryWashMixes,septenaryWashMixTypes,septenaryWashMixTimes,septenaryWashMixRates,numberOfSeptenaryWashMixes, septenaryWashMixVolumes,septenaryWashMixTemperatures, septenaryWashMixTipTypes,septenaryWashMixTipMaterials,septenaryWashDestinationWells,septenaryWashCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,septenaryWashBufferLabels];
 
 			(* --- Elution --- *)
 			elutionPrimitives=MapThread[
 				Function[
 					{
-						elutionsBatch,elutionBuffersBatch,elutionBufferVolumesBatch,elutionMagnetizationTimesBatch,elutionAspirationVolumesBatch,numberOfElutionsBatch,
+						elutionsBatch,elutionBuffersBatch,elutionBufferVolumesBatch,elutionMagnetizationTimesBatch,elutionAspirationVolumesBatch,
+						elutionAspirationPositionsBatch, elutionAspirationPositionOffsetsBatch, numberOfElutionsBatch,
 						elutionMixesBatch,elutionMixTypesBatch,elutionMixTimesBatch,elutionMixRatesBatch,numberOfElutionMixesBatch,
 						elutionMixVolumesBatch,elutionMixTemperaturesBatch,elutionCollectionContainersBatch,elutionCollectionStorageConditionsBatch,
-						elutionMixTipTypesBatch,
-						elutionMixTipMaterialsBatch,elutionDestinationWellsBatch,
-						elutionCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,elutionBufferLabelsBatch,sampleOutLabelsBatch
+						elutionMixTipTypesBatch, elutionMixTipMaterialsBatch,elutionDestinationWellsBatch,
+						elutionCollectionContainerLabelsBatch,assayContainerLabelsBatch,assayWellsBatch,magnetizationRacksBatch,
+						unresolvedMagnetizationRacksBatch,elutionBufferLabelsBatch,sampleOutLabelsBatch
 					},
 					Module[{maxNumElutions,numberOfElutionsBatchBools,mixingBools},
 						(* Get the max number of times we are Elutioning in this batch *)
@@ -19762,6 +20970,9 @@ experimentMagneticBeadSeparationResourcePackets[
 											MixRate->PickList[elutionMixRatesBatch,mixingBools],
 											NumberOfMixes->PickList[numberOfElutionMixesBatch,mixingBools],
 											MixVolume->PickList[elutionMixVolumesBatch,mixingBools],
+											MixFlowRate->Replace[PickList[elutionMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->500 Microliter/Second},2],(*give it a higher default than in Mix which is only 100 Microliter/Second*)
+											MixPosition -> Replace[PickList[elutionMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->Bottom},2],(*give it a default other than in Mix which is LiquidLevel*)
+											MixPositionOffset-> Replace[PickList[elutionMixTypesBatch,mixingBools],{Except[Pipette]->Null,Pipette->1 Millimeter},2],(*give it a smaller default other than in Mix which is 2mm*)
 											Temperature->PickList[elutionMixTemperaturesBatch,mixingBools],
 											TipType->PickList[elutionMixTipTypesBatch,mixingBools],
 											TipMaterial->PickList[elutionMixTipMaterialsBatch,mixingBools]
@@ -19780,8 +20991,10 @@ experimentMagneticBeadSeparationResourcePackets[
 										Magnetization->True,
 										MagnetizationTime->PickList[elutionMagnetizationTimesBatch,numberOfElutionsBatchBools],
 										MagnetizationRack->PickList[magnetizationRacksBatch,numberOfElutionsBatchBools],
-										AspirationPosition->Bottom,
-										AspirationPositionOffset->1 Centimeter,
+										UnresolvedMagnetizationRackFromParentProtocol -> PickList[unresolvedMagnetizationRacksBatch,numberOfElutionsBatchBools],
+										AspirationPosition->PickList[elutionAspirationPositionsBatch,numberOfElutionsBatchBools],
+										AspirationPositionOffset->PickList[elutionAspirationPositionOffsetsBatch,numberOfElutionsBatchBools],
+										AspirationMix -> False,
 										MultichannelTransfer->False
 									]
 								},
@@ -19792,11 +21005,11 @@ experimentMagneticBeadSeparationResourcePackets[
 					]
 				],
 				{
-					elutions,elutionBuffers,elutionBufferVolumes,elutionMagnetizationTimes,elutionAspirationVolumes,numberOfElutions,
+					elutions,elutionBuffers,elutionBufferVolumes,elutionMagnetizationTimes,elutionAspirationVolumes,elutionAspirationPositions, elutionAspirationPositionOffsets,numberOfElutions,
 					elutionMixes,elutionMixTypes,elutionMixTimes,elutionMixRates,numberOfElutionMixes,
 					elutionMixVolumes,elutionMixTemperatures,elutionCollectionContainers,elutionCollectionStorageConditions,
 					elutionMixTipTypes,elutionMixTipMaterials,elutionDestinationWells,
-					elutionCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,elutionBufferLabels,
+					elutionCollectionContainerLabels,assayContainerLabels,assayWells,magnetizationRacks,unresolvedMagnetizationRacks,elutionBufferLabels,
 					sampleOutLabels
 				}
 			];
@@ -19873,7 +21086,7 @@ experimentMagneticBeadSeparationResourcePackets[
 			updateCompositionRoboticSimulation= Module[
 				{workingSampleCompositions,magneticBeadsCompositions, magneticBeadResins,
 					allCollectionContainerLabels, containerSampleInfoPackets, containerContentsPackets,
-					sampleLabelsToUpdate,samplesToUpdate,compositionsToUpdate,
+					sampleLabelsToUpdate,samplesToUpdate,compositionsToUpdate,compositionsToUpdateNoTime,
 					loadingSamplesToUpdate,loadingSampleLabelsToUpdate,loadingCompositionsToUpdate,
 					elutionSamplesToUpdate,elutionSampleLabelsToUpdate,elutionCompositionsToUpdate,
 					preWashSamplesToUpdate,preWashSampleLabelsToUpdate,preWashCompositionsToUpdate,
@@ -19904,10 +21117,10 @@ experimentMagneticBeadSeparationResourcePackets[
 				}=Quiet[
 					Download[
 						{
-							Flatten[LookupLabeledObject[roboticSimulation,#]&/@Flatten[sampleLabels]],
+							LookupLabeledObject[roboticSimulation,Flatten[sampleLabels]],
 							Flatten@magneticBeads,
-							Flatten[LookupLabeledObject[roboticSimulation,#]&/@Flatten[allCollectionContainerLabels]],
-							Flatten[LookupLabeledObject[roboticSimulation,#]&/@Flatten[allCollectionContainerLabels]]
+							LookupLabeledObject[roboticSimulation,Flatten[allCollectionContainerLabels]],
+							LookupLabeledObject[roboticSimulation,Flatten[allCollectionContainerLabels]]
 						},
 						{
 							List[Composition],
@@ -19964,7 +21177,7 @@ experimentMagneticBeadSeparationResourcePackets[
 
 									Module[{sampleContainer,sampleToAdjust,sampleLabelToAdjust,updatedComposition},
 										(*look up the fake object id of the collection container*)
-										sampleContainer=LookupLabeledObject[roboticSimulation,First[collectionContainerLabels]][[1]];
+										sampleContainer=LookupLabeledObject[roboticSimulation,First[collectionContainerLabels]];
 
 										(*look up the fake sample id of the collected sample to adjust its composition*)
 										sampleToAdjust=FirstCase[
@@ -20004,7 +21217,7 @@ experimentMagneticBeadSeparationResourcePackets[
 												{destinationWell,collectionContainerLabel},
 												Module[{sampleContainer,sampleToAdjust,sampleLabelToAdjust,updatedComposition},
 													(*look up the fake object id of the collection container*)
-													sampleContainer=LookupLabeledObject[roboticSimulation,collectionContainerLabel][[1]];
+													sampleContainer=LookupLabeledObject[roboticSimulation,collectionContainerLabel];
 													(*look up the fake sample id of the collected sample to adjust its composition*)
 													sampleToAdjust=FirstCase[
 														Lookup[fetchPacketFromCache[sampleContainer, Flatten@containerContentsPackets], Contents,Null],
@@ -20153,12 +21366,14 @@ experimentMagneticBeadSeparationResourcePackets[
 					preWashCompositionsToUpdate, equilibrationCompositionsToUpdate, loadingCompositionsToUpdate, washCompositionsToUpdate, secondaryWashCompositionsToUpdate, tertiaryWashCompositionsToUpdate, quaternaryWashCompositionsToUpdate, quinaryWashCompositionsToUpdate, senaryWashCompositionsToUpdate, septenaryWashCompositionsToUpdate, elutionCompositionsToUpdate
 				];
 
+        compositionsToUpdateNoTime=compositionsToUpdate[[All,All,{1,2}]];
+
 
 				(*Update the compositions in simulation*)
 				newLabelSamplePrimitives=LabelSample[
 					Sample->sampleLabelsToUpdate,
 					Label->sampleLabelsToUpdate,
-					Composition->compositionsToUpdate/.x:ObjectP[]:>Link[x]
+					Composition->compositionsToUpdateNoTime/.x:ObjectP[]:>Link[x]
 				];
 
 				experimentFunction[
@@ -20238,14 +21453,16 @@ experimentMagneticBeadSeparationResourcePackets[
 				Module[{nonHiddenOptions},
 					nonHiddenOptions=allowedKeysForUnitOperationType[Object[UnitOperation,MagneticBeadSeparation]];
 					(* Override any options with resource. *)
-					MagneticBeadSeparation@Join[
-						Cases[expandedResolvedOptionsWithLabels,Verbatim[Rule][Alternatives@@nonHiddenOptions, _]],
+					{
+						If[NullQ[newLabelSampleUO], Nothing, newLabelSampleUO],
+						MagneticBeadSeparation@Join[
+						Cases[expandedResolvedOptionsWithLabels, Verbatim[Rule][Alternatives @@ nonHiddenOptions, _]],
 						{
-							Sample->simulatedSamplesWithLabels,
-							SampleResources->samplesInResources,
-							RoboticUnitOperations->(Link/@Lookup[roboticUnitOperationPacketsCorrectedResources, Object])
+							Sample -> simulatedSamplesWithLabels,
+							SampleResources -> samplesInResources /. oldResourceToNewResourceRules,
+							RoboticUnitOperations -> (Link /@ Lookup[roboticUnitOperationPacketsCorrectedResources, Object])
 						}
-					]
+					]}
 				],
 				UnitOperationType->Output,
 				Upload->False
@@ -20261,8 +21478,14 @@ experimentMagneticBeadSeparationResourcePackets[
 						ResolvedOptions->{}
 					|>;
 
-					SimulateResources[protocolPacket, {outputUnitOperationPacket}, ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null], Simulation->currentSimulation]
+					SimulateResources[protocolPacket, ToList@outputUnitOperationPacket, ParentProtocol->Lookup[myResolvedOptions, ParentProtocol, Null], Simulation->currentSimulation]
 				]
+			];
+
+			(* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+			roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+				roboticSimulation,
+				updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
 			];
 
 			(* Return back our packets and simulation. *)
@@ -20330,7 +21553,7 @@ experimentMagneticBeadSeparationResourcePackets[
 
 
 resolveExperimentMagneticBeadSeparationWorkCell[
-	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
+	mySemiNestedInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}]],
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{workCell,rateOptions,tempOptions},
@@ -20404,7 +21627,7 @@ DefineOptions[ExperimentMagneticBeadSeparationOptions,
 
 
 ExperimentMagneticBeadSeparationOptions[
-	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String]],
+	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String]],
 	myOptions:OptionsPattern[ExperimentMagneticBeadSeparationOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -20435,7 +21658,7 @@ DefineOptions[ExperimentMagneticBeadSeparationPreview,
 
 
 ExperimentMagneticBeadSeparationPreview[
-	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String]],
+	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String]],
 	myOptions:OptionsPattern[ExperimentMagneticBeadSeparationPreview]
 ]:=Module[
 	{listedOptions},
@@ -20458,7 +21681,7 @@ DefineOptions[ValidExperimentMagneticBeadSeparationQ,
 
 
 ValidExperimentMagneticBeadSeparationQ[
-	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String]],
+	myInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String]],
 	myOptions:OptionsPattern[ValidExperimentMagneticBeadSeparationQ]
 ]:=Module[
 	{listedOptions,preparedOptions,experimentMagneticBeadSeparationTests,initialTestDescription,allTests,verbose,outputFormat},

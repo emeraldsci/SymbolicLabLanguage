@@ -92,7 +92,7 @@ DefineObjectType[Object[Protocol, MeasureSurfaceTension], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Model[Item, Lid]|Object[Item, Lid],
-			Description->"The covers that are placed on the AsssayPlates before and after measurement.",
+			Description->"The covers that are placed on the AssayPlates before and after measurement.",
 			Category->"Sample Preparation"
 		},
 		SampleLoadingVolume -> {
@@ -129,7 +129,7 @@ DefineObjectType[Object[Protocol, MeasureSurfaceTension], {
 		AssayPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|RoboticSamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the assay plate with the required samples.",
 			Category -> "Sample Preparation"
 		},
@@ -181,17 +181,17 @@ DefineObjectType[Object[Protocol, MeasureSurfaceTension], {
 		SampleRecoveryPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the movement of samples from the AssayPlates to the ContainersOut.",
 			Category -> "Sample Preparation"
 		},
-		SampleRecoveryManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to move the samples from the AssayPlates to the ContainersOut.",
-			Category->"Sample Preparation"
+		SampleRecoveryManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "A sample manipulation protocol used to move the samples from the AssayPlates to the ContainersOut.",
+			Category -> "Sample Preparation"
 		},
 		DilutionStorageConditions->{
 			Format->Multiple,
@@ -344,17 +344,17 @@ DefineObjectType[Object[Protocol, MeasureSurfaceTension], {
 		CleaningSolutionPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|RoboticSamplePreparationP,
 			Description -> "A set of instructions specifying the loading of the CleaningSolution into the CleaningSolutionContainer.",
 			Category -> "Cleaning"
 		},
-		CleaningSolutionManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"A sample manipulation protocol used to load the CleaningSolutionContainer.",
-			Category->"Cleaning"
+		CleaningSolutionManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
+			Description -> "A sample manipulation protocol used to load the CleaningSolutionContainer.",
+			Category -> "Cleaning"
 		},
 		PreheatingTime->{
 			Format->Single,

@@ -92,11 +92,7 @@ DefineUsage[PlotImage,
 		"Plot",
 		"ListLinePlot"
 	},
-	Author -> {
-		"sebastian.bernasek",
-		"brad",
-		"hayley"		
-	},
+	Author -> {"dirk.schild", "sebastian.bernasek", "brad", "hayley"},
 	Preview->True
 }];
 
@@ -176,11 +172,7 @@ DefineUsage[PlotImageOptions,
 			"Plot",
 			"ListLinePlot"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"brad",
-			"hayley"
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "brad", "hayley"},
 		Preview->True
 	}];
 
@@ -274,7 +266,7 @@ DefineUsage[PlotImagePreview,
 			"ListLinePlot"
 		},
 		Author -> {
-			"SciComp",
+			"scicomp",
 			"sebastian.bernasek",
 			"brad",
 			"hayley"

@@ -1,3 +1,2707 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:03ba4821cfa9c3d0263df3922f7bdc3313974395b239eb5a13b53003ac8e80d7
-size 106385
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[    106185,       2697]
+NotebookOptionsPosition[     82824,       2310]
+NotebookOutlinePosition[     86413,       2376]
+CellTagsIndexPosition[     86370,       2373]
+WindowTitle->Oligonucleotides
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "88b83532-8314-40ae-943f-db2bf1d408f3"]
+        }],ExpressionUUID->"febd7561-75a6-4802-9c83-d3c0ccc7becb"],
+        StripOnInput->False], {"\<\"AllPalindromes\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/AllPalindromes"], "\<\"AllSequences\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/AllSequences"], "\<\"ClassifyReaction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ClassifyReaction"], "\<\"ComplementSequence\"\
+\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ComplementSequence"], \
+"\<\"ComplementSequenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ComplementSequenceQ"], "\<\"DefineMotifs\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/DefineMotifs"], "\<\"Dimers\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Dimers"], \
+"\<\"DNAPhosphoramiditeMolecularWeights\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/DNAPhosphoramiditeMolecularWeights"], \
+"\<\"DNAQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/DNAQ"], "\<\"EmeraldSubsequences\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/EmeraldSubsequences"], "\<\"ExactMass\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/ExactMass"], "\<\"ExplicitlyType\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ExplicitlyType"], "\<\"ExplicitlyTypedQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ExplicitlyTypedQ"], \
+"\<\"ExtinctionCoefficient\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/ExtinctionCoefficient"], \
+"\<\"FoldingMatrix\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FoldingMatrix"], "\<\"FoldingSequences\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FoldingSequences"], "\<\"FoldsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FoldsQ"], "\<\"FractionAT\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionAT"], "\<\"FractionAU\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionAU"], "\<\"FractionGC\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionGC"], "\<\"FractionMono\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionMono"], "\<\"FractionPurine\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionPurine"], \
+"\<\"FractionPyrimidine\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionPyrimidine"], "\<\"GammaLeftPNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GammaLeftPNAQ"], "\<\"GammaRightPNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GammaRightPNAQ"], "\<\"GenerateSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GenerateSequence"], "\<\"Hybridize\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/Hybridize"], "\<\"Hyperchromicity260\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/Hyperchromicity260"], "\<\"KineticRates\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/KineticRates"], "\<\"MechanismFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MechanismFirst"], "\<\"MechanismJoin\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MechanismJoin"], "\<\"MechanismLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MechanismLast"], "\<\"MechanismMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MechanismMost"], "\<\"MechanismRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MechanismRest"], "\<\"ModificationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ModificationQ"], \
+"\<\"ModifierPhosphoramiditeMolecularWeights\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/ModifierPhosphoramiditeMolecularWeights"], \
+"\<\"MolecularWeight\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/MolecularWeight"], "\<\"Monomers\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Monomers"], "\<\"MotifForm\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/MotifForm"], "\<\"MotifLabel\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifLabel"], "\<\"MotifPolymer\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifPolymer"], "\<\"MotifSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/MotifSequence"], "\<\"NameMotifs\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/NameMotifs"], "\<\"NumberOfBonds\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/NumberOfBonds"], "\<\"NumberOfFolds\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/NumberOfFolds"], "\<\"NumberOfRepeats\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/NumberOfRepeats"], "\<\"Pairing\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/Pairing"], "\<\"ParseStrand\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ParseStrand"], "\<\"PeptideQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PeptideQ"], "\<\"PlotTrajectory\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotTrajectory"], "\<\"PNAMolecularWeights\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Physics/ref/PNAMolecularWeights"], "\<\"PNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PNAQ"], "\<\"PolymerType\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PolymerType"], "\<\"RandomSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RandomSequence"], "\<\"Reaction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Reaction"], "\<\"ReactionMechanism\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReactionMechanism"], \
+"\<\"ReactionMechanismQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReactionMechanismQ"], "\<\"ReactionQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReactionQ"], "\<\"RepeatingMatrix\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RepeatingMatrix"], \
+"\<\"RepeatingSequences\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RepeatingSequences"], "\<\"RepeatsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RepeatsQ"], \
+"\<\"ReverseComplementSequence\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseComplementSequence"], \
+"\<\"ReverseComplementSequenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseComplementSequenceQ"], \
+"\<\"ReverseSequence\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseSequence"], "\<\"ReverseSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseSequenceQ"], "\<\"RNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RNAQ"], "\<\"SameSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SameSequenceQ"], "\<\"SequenceDrop\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceDrop"], "\<\"SequenceFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceFirst"], "\<\"SequenceJoin\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceJoin"], "\<\"SequenceLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceLast"], "\<\"SequenceLength\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceLength"], "\<\"SequenceMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceMost"], "\<\"SequencePalindromeQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequencePalindromeQ"], "\<\"SequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceQ"], "\<\"SequenceRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRest"], "\<\"SequenceRotateLeft\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRotateLeft"], \
+"\<\"SequenceRotateRight\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceRotateRight"], "\<\"SequenceTake\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceTake"], "\<\"SpeciesList\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SpeciesList"], "\<\"SplitReaction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SplitReaction"], "\<\"SplitStructure\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SplitStructure"], "\<\"State\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/State"], "\<\"StateFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateFirst"], "\<\"StateLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateLast"], "\<\"StateMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateMost"], "\<\"StateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateQ"], "\<\"StateRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StateRest"], "\<\"Strand\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Strand"], "\<\"StrandDrop\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandDrop"], "\<\"StrandFirst\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandFirst"], "\<\"StrandFlatten\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandFlatten"], "\<\"StrandJoin\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandJoin"], "\<\"StrandLast\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandLast"], "\<\"StrandLength\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandLength"], "\<\"StrandMost\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandMost"], "\<\"StrandQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandQ"], "\<\"StrandRest\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandRest"], "\<\"StrandTake\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StrandTake"], "\<\"Structure\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Structure"], "\<\"StructureFaces\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/StructureFaces"], "\<\"StructureForm\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/StructureForm"], "\<\"StructureJoin\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StructureJoin"], "\<\"StructureQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StructureQ"], "\<\"StructureSort\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StructureSort"], "\<\"StructureTake\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/StructureTake"], "\<\"ToDNA\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToDNA"], "\<\"ToLRNA\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToLRNA"], "\<\"ToPeptide\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToPeptide"], "\<\"ToReactionMechanism\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToReactionMechanism"], "\<\"ToRNA\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToRNA"], "\<\"ToSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToSequence"], "\<\"ToState\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToState"], "\<\"ToStrand\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToStrand"], "\<\"ToStructure\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToStructure"], "\<\"ToTrajectory\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ToTrajectory"], "\<\"Trajectory\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Trajectory"], "\<\"Truncate\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Truncate"], "\<\"UnTypeSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/UnTypeSequence"], \
+"\<\"UploadModification\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/UploadModification"], "\<\"ValidMotifQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ValidMotifQ"], "\<\"ValidPolymerQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Physics/ref/ValidPolymerQ"], "\<\"ValidSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ValidSequenceQ"], "\<\"ValidStrandQ\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/ValidStrandQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "9d8214a7-95b8-4549-8772-19954355c383"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "7d787375-5c0f-47aa-9c27-0c25f2b50d05"]
+        }],ExpressionUUID->"a4b10205-4871-4150-8eed-00811f56536b"],
+        StripOnInput->False], {"\<\"Biomolecules\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/Biomolecules"], "\<\"Glycan\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/Glycan"], "\<\"PhysicalProperties\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/PhysicalProperties"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "fd232f5e-0167-41ba-9cf6-6c7ab2bdbed4"]
+    }], "AnchorBar",ExpressionUUID->"778335d0-68e1-4526-a51d-99f0a8319003"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"18f8d60d-43bc-4676-b805-930fb8599d8d"],
+
+Cell["Oligonucleotides", "GuideTitle",
+ CellID->835661823,ExpressionUUID->"56ad278d-acba-4e2c-9d01-3aa581e73509"],
+
+Cell["\<\
+Collection of functions for manipulating and looking up properties for \
+oligonucleotides.\
+\>", "GuideAbstract",
+ CellID->425207781,ExpressionUUID->"12521067-3ebe-42d8-bd3a-814d77817d1e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1789081698,ExpressionUUID->"15ffc009-b94d-42fc-899c-27b46c36de1f"],
+
+Cell["Sequence Properties", "GuideFunctionsSubsection",
+ CellID->30072992,ExpressionUUID->"f5e4f6d2-7a73-4b3f-8ba3-6c01c79a28bf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceQ"]], "paclet:NucleicAcids/ref/SequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a380902c-fdeb-4a51-bfe9-a8b49b1daacb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is matching the given polymer type, such as DNA, RNA, \
+or peptide."
+}], "GuideText",
+ CellID->778119499,ExpressionUUID->"7da8b15f-872a-4db3-afcf-de36b5874dc5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidSequenceQ"]], "paclet:NucleicAcids/ref/ValidSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1f3f6764-3cc2-4854-a96d-a7ab3962ce53"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid DNA, RNA, or peptide sequence."
+}], "GuideText",
+ CellID->1826493110,ExpressionUUID->"d69d6fd8-3e29-48bf-882d-43997bbe9d4f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceLength"]], "paclet:NucleicAcids/ref/SequenceLength"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8016d21a-8d61-470d-b92a-34ff0cefe77d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the number of monomers in the provided polymer sequence."
+}], "GuideText",
+ CellID->1738449552,ExpressionUUID->"351f97c1-fe28-4219-bbf2-356a3691d8f2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PolymerType"]], "paclet:NucleicAcids/ref/PolymerType"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b0dd9f4c-8e2c-45a1-b731-554307d69205"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determines the possible polymer type that the provided sequence could be \
+composed of."
+}], "GuideText",
+ CellID->1606603029,ExpressionUUID->"91d54a3e-1518-4c8e-8138-7aebdf3f1a81"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DNAQ"]], "paclet:NucleicAcids/ref/DNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ce99f795-f1bc-4a79-a1d4-932f0ac97cdd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid DNA sequence."
+}], "GuideText",
+ CellID->1865214672,ExpressionUUID->"e383137d-ba52-4919-b64b-864ef6272b3f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RNAQ"]], "paclet:NucleicAcids/ref/RNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9bfec326-2368-4679-ab25-2e7989d8c3dd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid RNA sequence."
+}], "GuideText",
+ CellID->1844197045,ExpressionUUID->"95a6d756-de5d-4450-8d42-112fedfa23f5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PeptideQ"]], "paclet:NucleicAcids/ref/PeptideQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "17695786-d417-4f9d-b1c9-ab9c84f1ff96"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid peptide sequence."
+}], "GuideText",
+ CellID->788258164,ExpressionUUID->"7ab71de1-c364-4948-a4d2-00a1c72b5bbe"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PNAQ"]], "paclet:NucleicAcids/ref/PNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "34c5e592-5a1f-47e8-9980-21df9b3c3e14"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid peptide nucleic acid (PNA) sequence."
+}], "GuideText",
+ CellID->428344005,ExpressionUUID->"248a1ba9-d7c8-4bec-b023-9356d113ff6e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GammaRightPNAQ"]], "paclet:NucleicAcids/ref/GammaRightPNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c576e567-9c99-4337-a54f-7c2f2839641d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid right-handed gamma-modified PNA sequence."
+}], "GuideText",
+ CellID->812507291,ExpressionUUID->"872d6f0a-de8e-4b21-9bf8-34bfaec25a41"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GammaLeftPNAQ"]], "paclet:NucleicAcids/ref/GammaLeftPNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1dac9a6a-54a9-49c9-9e29-e27a3f21844f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid left-handed gamma-modified PNA sequence."
+}], "GuideText",
+ CellID->2109012211,ExpressionUUID->"5f5d4dc3-9542-4cb2-9f24-44ab494651b3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ModificationQ"]], "paclet:NucleicAcids/ref/ModificationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5c059456-ed9a-4924-96b5-39b0a56eafc6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a sequence of modifications."
+}], "GuideText",
+ CellID->1950636542,ExpressionUUID->"636aaa77-0863-46d9-8382-8f7035de46b3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SameSequenceQ"]], "paclet:NucleicAcids/ref/SameSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7ae96dfe-eaeb-4c88-8f61-497966be3e1a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks that for the provided list of sequences, if each of them are or \
+could represent the same sequence."
+}], "GuideText",
+ CellID->863006292,ExpressionUUID->"d283831c-eced-4368-bda9-b1550601ac71"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReverseSequenceQ"]], 
+    "paclet:NucleicAcids/ref/ReverseSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9e0a8ad4-7387-4541-959a-53812f75bf24"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if two sequences are the reverse sequence of each other."
+}], "GuideText",
+ CellID->442197806,ExpressionUUID->"b07d357f-170e-41fe-9ee9-cc3ee2c77e2b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ComplementSequenceQ"]], 
+    "paclet:NucleicAcids/ref/ComplementSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "50d13a81-2cf3-4dd2-84db-ca7d7ef9df76"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if two sequences are the Watson-Crick complement of each other."
+}], "GuideText",
+ CellID->1725106822,ExpressionUUID->"64e93f1d-cdd7-407b-acbb-7b6f7861716e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReverseComplementSequenceQ"]], 
+    "paclet:NucleicAcids/ref/ReverseComplementSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9d3de54f-f87b-4097-8e25-86438fb2eb29"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if two sequences are the reverse complement of each other."
+}], "GuideText",
+ CellID->693639207,ExpressionUUID->"9e968b82-9107-484b-bb4c-4d61faeb23f7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequencePalindromeQ"]], 
+    "paclet:NucleicAcids/ref/SequencePalindromeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6292faab-eef0-429f-b29d-a328f9818eba"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is palindromic, which means that the sequence is its \
+own reverse complement."
+}], "GuideText",
+ CellID->1452916133,ExpressionUUID->"c1676f23-934b-4fa7-9e5b-ab82e7dcf3a1"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->124897294,ExpressionUUID->"dd5ac6b5-7c49-4a43-9b81-521cca9c5596"],
+
+Cell["Sequence Manipulation", "GuideFunctionsSubsection",
+ CellID->1057297139,ExpressionUUID->"7832dfab-4b5b-4e19-93e9-58bbd894c427"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceFirst"]], "paclet:NucleicAcids/ref/SequenceFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d064ddc8-c512-4932-a580-fcf001c5147b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the first monomer of the provided sequence."
+}], "GuideText",
+ CellID->1713319895,ExpressionUUID->"12c6a35c-0cd7-4d77-9c2c-6b4487dae1d8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceLast"]], "paclet:NucleicAcids/ref/SequenceLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "77e77511-9e0f-4368-9456-cb8e078f4f6a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the last monomer of the provided sequence."
+}], "GuideText",
+ CellID->159252642,ExpressionUUID->"59e82eb3-2011-4b10-a2ea-722e8489b885"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceMost"]], "paclet:NucleicAcids/ref/SequenceMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3a49f7e0-a99c-4256-b60f-01ae6ac5e3c4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the last monomer of the provided sequence."
+}], "GuideText",
+ CellID->794529932,ExpressionUUID->"23a5678c-7bba-4bfc-9658-2b01a45c62c6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceRest"]], "paclet:NucleicAcids/ref/SequenceRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2be2ccde-bcfe-4ce4-a09e-1e7895bc252e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the first monomer of the provided sequence."
+}], "GuideText",
+ CellID->611250078,ExpressionUUID->"f7726fff-a09c-41d6-bb31-dfb91a9512cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceTake"]], "paclet:NucleicAcids/ref/SequenceTake"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2736a4c3-da00-4bb8-9c15-f5b13d34361c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the specified part of the provided sequence."
+}], "GuideText",
+ CellID->1865777345,ExpressionUUID->"299426cd-b9ad-47e5-b468-8ccb0f3392ac"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceDrop"]], "paclet:NucleicAcids/ref/SequenceDrop"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3d3df939-5be5-464b-a89e-7a050ceea06f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a sequence with the specified part dropped from the provided \
+sequence."
+}], "GuideText",
+ CellID->563623921,ExpressionUUID->"8ae13081-c29d-44cb-ac5a-c1cd5b4324ff"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceJoin"]], "paclet:NucleicAcids/ref/SequenceJoin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "09534887-f6e0-4750-8398-a7653c021ced"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins the provided sequences together into a single sequence."
+}], "GuideText",
+ CellID->276873330,ExpressionUUID->"bd0b4cf8-3e72-4c6d-82ee-571945f4d38b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceRotateLeft"]], 
+    "paclet:NucleicAcids/ref/SequenceRotateLeft"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "68dc795a-bc04-441a-b657-d390dacccfaa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Moves the first n monomers from the front (left hand side) of the sequence \
+to the rear (right hand side) of sequence."
+}], "GuideText",
+ CellID->1960477908,ExpressionUUID->"cebc4b74-5768-4213-9ac4-9bdfd8c500a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SequenceRotateRight"]], 
+    "paclet:NucleicAcids/ref/SequenceRotateRight"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7daecf6a-463c-4c02-885e-3b90283581d7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Moves the last n monomers from the rear (right hand side) of the sequence \
+to the front (left hand side) of sequence."
+}], "GuideText",
+ CellID->910603835,ExpressionUUID->"a09a35d2-acbd-4430-9286-ba52e607a39e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExplicitlyTypedQ"]], 
+    "paclet:NucleicAcids/ref/ExplicitlyTypedQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3d02921c-bc0c-462c-9ea2-7b6936500faf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is explicitly typed."
+}], "GuideText",
+ CellID->1550186323,ExpressionUUID->"d03f226f-441f-4702-9216-2d59f8c296e2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExplicitlyType"]], "paclet:NucleicAcids/ref/ExplicitlyType"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4d2ca979-f0b7-4c58-9e70-af040dde93fe"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Removes or adds the explicit polymer type to a sequence."
+}], "GuideText",
+ CellID->709925257,ExpressionUUID->"a4327db4-b18c-4cc5-bb61-67383664de64"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnTypeSequence"]], "paclet:NucleicAcids/ref/UnTypeSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3d2ea418-3604-4172-8f50-23131306b25a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Removes the polymer type and motif from a sequence."
+}], "GuideText",
+ CellID->294651667,ExpressionUUID->"2d46b104-0b28-4747-800a-6c2e2c1ce2a4"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->113277287,ExpressionUUID->"2dc814cd-fb1e-4249-8445-6db4e4c44ad7"],
+
+Cell["Sequence Generation", "GuideFunctionsSubsection",
+ CellID->1180851367,ExpressionUUID->"3e1e53c3-45e7-4029-8063-66439175f3a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Monomers"]], "paclet:NucleicAcids/ref/Monomers"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "12e241c7-5de6-4ad0-ad17-97ef2f0ca1ff"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Splits a sequence into a list of its composite monomers."
+}], "GuideText",
+ CellID->1672543242,ExpressionUUID->"5b6e419b-c0bb-470f-9646-07e2cc847482"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Dimers"]], "paclet:NucleicAcids/ref/Dimers"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ff11d364-194b-4750-a831-389ee2951cf8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Splits a sequence into a list of its composite overlapping dimers in order \
+of the sequence."
+}], "GuideText",
+ CellID->2020812711,ExpressionUUID->"484f23d2-1872-43e4-8236-57ea4068f055"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AllSequences"]], "paclet:NucleicAcids/ref/AllSequences"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b2ded57c-4648-442b-9b0c-61a5608feb4f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of all possible sequences of the requested length."
+}], "GuideText",
+ CellID->1345356472,ExpressionUUID->"b06008ad-6dee-4b3c-b5c2-3f09c0db186f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RandomSequence"]], "paclet:NucleicAcids/ref/RandomSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2b1a3367-5c1e-45f3-8503-456fee818bf6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a random sequence of the requested length."
+}], "GuideText",
+ CellID->550905641,ExpressionUUID->"804d2d3e-a9f6-48fe-a339-dc06e7b25c0f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AllPalindromes"]], "paclet:NucleicAcids/ref/AllPalindromes"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13cd7ffd-8f4e-42e0-89b7-d52e76e31668"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all palindromic sequences of the requested length."
+}], "GuideText",
+ CellID->1269106070,ExpressionUUID->"09aee41d-09d0-4d7f-9a60-b20059a696a6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReverseSequence"]], "paclet:NucleicAcids/ref/ReverseSequence"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bb9f3b67-4101-46d7-9308-7f3927f49fbc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the reverse sequence of the provided sequence."
+}], "GuideText",
+ CellID->1058136486,ExpressionUUID->"ae7a574f-384b-4444-bfa4-805fc65d58f9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ComplementSequence"]], 
+    "paclet:NucleicAcids/ref/ComplementSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1946b558-5f8f-437d-a309-9bd36025b28c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the complement sequence of the provided sequence."
+}], "GuideText",
+ CellID->787839395,ExpressionUUID->"6a0572a3-207b-460e-9db8-3224f147a1a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReverseComplementSequence"]], 
+    "paclet:NucleicAcids/ref/ReverseComplementSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f6524205-3481-4f10-96e4-c90445e546dc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the reverse complement of the provided sequence."
+}], "GuideText",
+ CellID->1980028010,ExpressionUUID->"b36947c7-001d-4616-8759-137a3456f69d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToDNA"]], "paclet:NucleicAcids/ref/ToDNA"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "23f39395-7f0b-4969-acc9-70006132d77f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a sequence into its equivalent DNA sequence."
+}], "GuideText",
+ CellID->924170158,ExpressionUUID->"6d3bb2bc-7955-4683-9135-92293f47cee9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToRNA"]], "paclet:NucleicAcids/ref/ToRNA"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bf5a726e-1f8c-4651-b1de-03a6671ed82b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a sequence into its equivalent RNA sequence."
+}], "GuideText",
+ CellID->1926110402,ExpressionUUID->"196929f6-11dc-4573-acd9-26a70f290042"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToLRNA"]], "paclet:NucleicAcids/ref/ToLRNA"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "63797401-674b-4baf-8119-ddcd7c19c869"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a sequence into its equivalent L-form RNA sequence."
+}], "GuideText",
+ CellID->969031536,ExpressionUUID->"af88e207-6419-46a5-9d57-6a8d50bf7f44"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToPeptide"]], "paclet:NucleicAcids/ref/ToPeptide"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "67c79218-6a1f-4122-b20f-e8384a1ce8d5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a protein sequence in the single letter amino acid form into an \
+explicitly typed Peptide in the triple letter abbreviation form."
+}], "GuideText",
+ CellID->2144530351,ExpressionUUID->"1f76b16b-24b4-4ea7-b08b-b9046a9da781"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToSequence"]], "paclet:NucleicAcids/ref/ToSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d3601f8c-24d6-4841-8814-d36c18985b0e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of sequences in the strand or in the motifs."
+}], "GuideText",
+ CellID->1903561656,ExpressionUUID->"6b46dc65-9ff5-4ac2-b7ad-951753dadb9c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GenerateSequence"]], 
+    "paclet:NucleicAcids/ref/GenerateSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e61caf4e-c876-4478-abdb-4b9290b90a22"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an optimal sequence with degenerate bases filled in, given \
+certain parameters and specific sequences."
+}], "GuideText",
+ CellID->2096863033,ExpressionUUID->"ba3be098-987a-42cd-827d-2674bd40b49c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadModification"]], "paclet:Physics/ref/UploadModification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e13ef3c8-fa7d-4858-90c3-15296803ed94"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a new Constellation object referring to a specified chemical \
+modification."
+}], "GuideText",
+ CellID->1770348361,ExpressionUUID->"8bba4b70-dc2f-4f4a-8188-49288aa0b383"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->858974142,ExpressionUUID->"fcaea119-2de8-491d-8fe8-b57dc9ee83c1"],
+
+Cell["Base Composition", "GuideFunctionsSubsection",
+ CellID->1393329460,ExpressionUUID->"62f99d10-21bd-4d21-99bf-f51b56a366e9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionAT"]], "paclet:NucleicAcids/ref/FractionAT"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "88053b2d-7709-4471-ab9c-4d3181ca0ee6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided DNA/PNA sequence that is composed of \
+As or Ts."
+}], "GuideText",
+ CellID->1526547332,ExpressionUUID->"22851c96-c727-4bac-aa02-09fa1d6e49af"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionAU"]], "paclet:NucleicAcids/ref/FractionAU"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e382c848-1260-45f4-98e1-bbd17fc30612"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided RNA sequence that is composed of As \
+or Us."
+}], "GuideText",
+ CellID->693878215,ExpressionUUID->"f451cc40-b3a4-4643-bf58-186929bde648"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionGC"]], "paclet:NucleicAcids/ref/FractionGC"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2e5261d1-b4b5-495c-a2f9-1d34b3833345"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided DNA/RNA/PNA sequence that is \
+composed of As or Us."
+}], "GuideText",
+ CellID->1174956295,ExpressionUUID->"f470a109-7168-4624-9ded-2f52da062134"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionMono"]], "paclet:NucleicAcids/ref/FractionMono"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cfbecee9-8c0c-415b-8d1e-908dd5dac2a8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided sequence that is composed of members \
+of the provided list of monomers."
+}], "GuideText",
+ CellID->1378315900,ExpressionUUID->"097aa6a2-10ce-4a76-acc5-ebb011482341"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionPurine"]], "paclet:NucleicAcids/ref/FractionPurine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7edb08ad-7fc2-4dd6-87be-3f6c42d3370f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided DNA/RNA/PNA sequence that is \
+composed of purines (As and Gs)."
+}], "GuideText",
+ CellID->449231111,ExpressionUUID->"1c9aa6a2-a30b-4d89-927d-fd862a0187cf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FractionPyrimidine"]], 
+    "paclet:NucleicAcids/ref/FractionPyrimidine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b4067da2-4531-41e1-a691-9e1f7fcc3a8a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the fraction of the provided DNA/RNA/PNA sequence that is \
+composed of purines (Cs, Ts, and Us)."
+}], "GuideText",
+ CellID->1822263372,ExpressionUUID->"08ab2bdc-79f9-4df0-bb25-b49c403a7f5f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1516203337,ExpressionUUID->"d3997063-ded0-4c5e-97f7-d53ce0508938"],
+
+Cell["Subsequence Analysis", "GuideFunctionsSubsection",
+ CellID->788529657,ExpressionUUID->"1e9b21e6-00cf-4f4f-8897-ef4829c34c2d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EmeraldSubsequences"]], 
+    "paclet:NucleicAcids/ref/EmeraldSubsequences"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97bb84b1-70a4-4ae2-a07b-620332b5ebdd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Splits the provides sequence into a list of overlapping subsequences of \
+length n."
+}], "GuideText",
+ CellID->696359562,ExpressionUUID->"3e21f586-39e5-4a98-becb-f14cf088e388"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FoldsQ"]], "paclet:NucleicAcids/ref/FoldsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e2348799-0f88-4862-9a14-32e862935938"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a fold of a specific length exists anywhere in the provided \
+sequence."
+}], "GuideText",
+ CellID->2076766031,ExpressionUUID->"1d449034-ceca-4c2f-a418-fce359b19feb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NumberOfFolds"]], "paclet:NucleicAcids/ref/NumberOfFolds"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fac01276-0348-4364-8181-243682b830dd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the total number of overlapping subsequences of a specific length \
+that could fold from the provided sequence."
+}], "GuideText",
+ CellID->1154968326,ExpressionUUID->"2cb844ee-3158-4fac-8278-edf895da4b6b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FoldingSequences"]], 
+    "paclet:NucleicAcids/ref/FoldingSequences"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c9702c72-af9b-45de-a802-fb330438360b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of subsequences of a specific length from the provided \
+sequence that could potentially fold."
+}], "GuideText",
+ CellID->447969849,ExpressionUUID->"4f4beb8e-5551-41dc-a3c6-234f3bd828a5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FoldingMatrix"]], "paclet:NucleicAcids/ref/FoldingMatrix"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e1edaf43-e543-418a-b434-e5f2384d7b43"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a matrix describing if the overlapping subsequences of a specific \
+length from start to finish of the provided sequence could fold onto each \
+other."
+}], "GuideText",
+ CellID->2099069408,ExpressionUUID->"e4f2f6c1-0560-46b0-9926-4cc688ee7bc9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RepeatsQ"]], "paclet:NucleicAcids/ref/RepeatsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1e3993aa-54a2-4040-b97b-3d409c72b835"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a repeated subsequence of a specific length exists anywhere in \
+the provided sequence."
+}], "GuideText",
+ CellID->198187340,ExpressionUUID->"f74b861d-d4fc-4f39-9d2b-a698e70ce12e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NumberOfRepeats"]], "paclet:NucleicAcids/ref/NumberOfRepeats"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "67e5a44b-bd9e-4f4b-a69e-9b9e6ec6ac1b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the total number of overlapping subsequences of a specific length \
+that are repeated from the provided sequence."
+}], "GuideText",
+ CellID->187486883,ExpressionUUID->"3a669710-52c8-491f-814b-ed025be29b1a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RepeatingSequences"]], 
+    "paclet:NucleicAcids/ref/RepeatingSequences"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e69a22b8-bddf-4f7d-9b43-025372f99dbd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of subsequences of a specific length that are repeated from \
+the provided sequence."
+}], "GuideText",
+ CellID->733532432,ExpressionUUID->"ab42b06f-56ca-4c67-99d5-4cd809ae613c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RepeatingMatrix"]], "paclet:NucleicAcids/ref/RepeatingMatrix"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a73c8bf1-88cd-454f-8f00-7404a9e68506"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a matrix describing if the overlapping subsequences of a specific \
+length from start to finish the provided sequence are repeated."
+}], "GuideText",
+ CellID->1923450844,ExpressionUUID->"c9906403-4b3e-4a79-8089-4a53c34aa2b0"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1366996817,ExpressionUUID->"1d090b17-ba67-482b-a4e7-4af9bb4dd1ea"],
+
+Cell["Motifs", "GuideFunctionsSubsection",
+ CellID->1335447713,ExpressionUUID->"02b3ff97-ef14-417b-96ea-debb1131e4ce"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MotifForm"]], "paclet:Plot/ref/MotifForm"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "50bfba2b-ab38-48b0-a403-13178d430fdb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Looks for anything in Structure form from the provided input and renders \
+them as graph images at the motif level."
+}], "GuideText",
+ CellID->1518117594,ExpressionUUID->"aef09193-c3e3-4741-837e-252651c1d677"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidMotifQ"]], "paclet:NucleicAcids/ref/ValidMotifQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d360def5-6056-4171-b2b9-0314212cbee8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sequence is a valid motif, which mean an explicitly typed \
+sequence."
+}], "GuideText",
+ CellID->749192351,ExpressionUUID->"2d8cb5e1-e916-487a-b084-450f3c00fbb0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MotifSequence"]], "paclet:NucleicAcids/ref/MotifSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "991afb22-5116-41b4-9b86-0cad090df0c6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the sequence of the provided motif."
+}], "GuideText",
+ CellID->979220896,ExpressionUUID->"9cb2b6bc-4997-4987-afc8-62474dcfc1b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MotifPolymer"]], "paclet:NucleicAcids/ref/MotifPolymer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "66058da8-a1f5-4bb1-94ce-5a482b503fb7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the polymer type of the provided motif."
+}], "GuideText",
+ CellID->1598412111,ExpressionUUID->"016a1a6a-74ce-408e-8156-3794586ac718"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MotifLabel"]], "paclet:NucleicAcids/ref/MotifLabel"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6eebd175-1a18-4d08-b2d8-35a6dd0b7831"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the label of the provided motif."
+}], "GuideText",
+ CellID->1639409254,ExpressionUUID->"4c253eb1-baf6-4326-875a-cf7d2338ab85"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NameMotifs"]], "paclet:NucleicAcids/ref/NameMotifs"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1483413e-c246-4f21-86d3-6c2b6aa32605"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Names any unnamed motifs with a unique string in the provided structure, \
+strand, or sequence."
+}], "GuideText",
+ CellID->1336140968,ExpressionUUID->"a5e0db4a-9d74-40bc-9782-56ebc85cecf1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DefineMotifs"]], "paclet:NucleicAcids/ref/DefineMotifs"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a91a82ad-33d9-40a9-b619-78a821cc41b3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Applies the replacement rules to all motifs to replace them with specified \
+sequences."
+}], "GuideText",
+ CellID->284752497,ExpressionUUID->"cef38b49-352a-4ce9-a86c-79558e144f66"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1241651563,ExpressionUUID->"60567ca6-9473-45f8-a097-61b6814c65d2"],
+
+Cell["Physical Properties", "GuideFunctionsSubsection",
+ CellID->1339221442,ExpressionUUID->"6c15859b-17bd-4443-9268-35acd8eb3d4f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExactMass"]], "paclet:Simulation/ref/ExactMass"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "123af1de-a863-46c4-82ca-47a1e97c46d9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the most probable exact mass of a given molecule."
+}], "GuideText",
+ CellID->518671487,ExpressionUUID->"df5d5700-fb62-485a-8276-aeabfb629a8c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MolecularWeight"]], "paclet:Simulation/ref/MolecularWeight"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "06a457fd-53ab-467b-a099-7739ecd5690c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the molecular weight of a molecule, oligomer, or the average \
+molecular weight of a polymer."
+}], "GuideText",
+ CellID->675558836,ExpressionUUID->"d5ea4bb3-4ec9-45be-83c9-41f5fa4f7bdc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExtinctionCoefficient"]], 
+    "paclet:Simulation/ref/ExtinctionCoefficient"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "195a1b05-772c-49c3-8a57-8ca3aada95a7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the extinction coefficient at 260 nm of the provided sequence."
+}], "GuideText",
+ CellID->371314963,ExpressionUUID->"1aa5b801-2066-4279-84f8-f03d999f5f4f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Hyperchromicity260"]], 
+    "paclet:Simulation/ref/Hyperchromicity260"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "658ce8cd-7d5e-451a-bdf0-f2becce812b0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the hyperchromicity correction of the provided sequence."
+}], "GuideText",
+ CellID->103104959,ExpressionUUID->"c5efa629-3426-4880-abf6-bdd70faff217"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidPolymerQ"]], "paclet:Physics/ref/ValidPolymerQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d98d27e-f506-4b23-8bbe-fd44a5b36059"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the info contained in the provided input is of correct \
+construction."
+}], "GuideText",
+ CellID->2013226431,ExpressionUUID->"8118391c-a054-4cb9-8d79-6c77d7c35471"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DNAPhosphoramiditeMolecularWeights"]], 
+    "paclet:Physics/ref/DNAPhosphoramiditeMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dde54084-f8f6-4a96-b86c-91465124358d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights (in grams/mole) of the DNA \
+phosphoramidite monomer as rules."
+}], "GuideText",
+ CellID->544283685,ExpressionUUID->"2727992b-baed-4ded-8e52-46b6bc71e58a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PNAMolecularWeights"]], 
+    "paclet:Physics/ref/PNAMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dc13627d-bd81-4f17-a342-519b68c67e25"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights for PNA reagents."
+}], "GuideText",
+ CellID->1643041222,ExpressionUUID->"a6924b30-f525-4ae9-b515-eac2400e6bda"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ModifierPhosphoramiditeMolecularWeights"]], 
+    "paclet:Physics/ref/ModifierPhosphoramiditeMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fc5e5b89-4902-415c-88c1-3f2e01bfcb1c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights (in grams/mole) of the modifier \
+phosphoramidite monomer as rules."
+}], "GuideText",
+ CellID->101601381,ExpressionUUID->"b674ab0b-1590-4b05-8ab5-e52462075f68"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->364911102,ExpressionUUID->"5aee07e8-ecc8-4991-b157-f8d9e285b8d2"],
+
+Cell["Strand Properties", "GuideFunctionsSubsection",
+ CellID->1995079129,ExpressionUUID->"f915577d-2c32-4cf4-afa2-0ddc4ad0f667"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Strand"]], "paclet:NucleicAcids/ref/Strand"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6ed7330a-7aec-4757-98af-72c3f1b2a8cd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a strand with one or more motifs."
+}], "GuideText",
+ CellID->485256845,ExpressionUUID->"d4b6b81a-c574-4cc7-905b-bed4a39850e2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandQ"]], "paclet:NucleicAcids/ref/StrandQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "15c66858-00c4-4a22-aed2-9c2d4a88740c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a properly formatted strand (each sequence \
+is a properly formatted sequence of the given polymer type)."
+}], "GuideText",
+ CellID->1716386256,ExpressionUUID->"07a8bea7-e27c-4418-b41b-b43a83841353"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidStrandQ"]], "paclet:NucleicAcids/ref/ValidStrandQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "971ea303-071d-40c1-96d2-b472680f1dd8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a properly formatted strand (each sequence \
+is a properly formatted sequence of the given polymer type)."
+}], "GuideText",
+ CellID->155974441,ExpressionUUID->"3a8af507-d1e7-4934-849a-5cdeaf24429a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandLength"]], "paclet:NucleicAcids/ref/StrandLength"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "92ae8221-a766-4a5c-9730-9e07d5e7b798"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the length of the strand as defined by the total number of \
+monomers."
+}], "GuideText",
+ CellID->1532380547,ExpressionUUID->"baedd51e-f7c8-49bd-9656-a993ceca8f6e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2095958605,ExpressionUUID->"788ba8d9-4af1-4629-b5bd-b0b5c0d4eb65"],
+
+Cell["SequenceManipulation", "GuideFunctionsSubsection",
+ CellID->1602012494,ExpressionUUID->"6b32304e-3881-4ade-bbf0-395449268b8a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandFirst"]], "paclet:NucleicAcids/ref/StrandFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e801547e-6842-43c7-aa93-86d317fd21df"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a strand containing only the first monomer of the provided \
+strand."
+}], "GuideText",
+ CellID->2021504219,ExpressionUUID->"2b91e793-42ac-48cf-808d-39644a353ff7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandLast"]], "paclet:NucleicAcids/ref/StrandLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "43a38af6-706f-4fed-bd1f-c5b43120522a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a strand containing only the last monomer of the provided strand."
+}], "GuideText",
+ CellID->82629546,ExpressionUUID->"cb33a9cd-0fcf-4f2e-9461-93036e7f34bc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandRest"]], "paclet:NucleicAcids/ref/StrandRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "464b908b-6816-46cb-b4e4-fc021ea02639"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a strand with of all but the first monomer of the provided \
+strand."
+}], "GuideText",
+ CellID->1480343660,ExpressionUUID->"f3452ef9-9189-4130-a067-da2872bf745b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandMost"]], "paclet:NucleicAcids/ref/StrandMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "441a1aa9-d69d-4576-99a1-4df7f0460966"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a strand with of all but the last monomer of the provided strand."
+}], "GuideText",
+ CellID->1537843125,ExpressionUUID->"2bf38beb-4a2c-4d9d-b1a9-95ffff80f2fc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandTake"]], "paclet:NucleicAcids/ref/StrandTake"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "15858da2-d285-4114-bbb6-dd6cb5e53bf8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the specified part of the provided strand."
+}], "GuideText",
+ CellID->1563710230,ExpressionUUID->"102e5247-6f85-49c5-aa48-c4cedb473283"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandDrop"]], "paclet:NucleicAcids/ref/StrandDrop"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a0e24ece-9a35-499e-948b-409f41510c52"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a strand with the specified part dropped from the provided \
+strand."
+}], "GuideText",
+ CellID->372963624,ExpressionUUID->"3b1e0fe4-806a-4513-b7b5-e49aeca28125"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandJoin"]], "paclet:NucleicAcids/ref/StrandJoin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "94bb1996-3fd0-4a4c-bafb-e44961e6872e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins the provided strands together into a single strand."
+}], "GuideText",
+ CellID->2042346622,ExpressionUUID->"7b08f4a7-1c34-4481-940f-f5f681220404"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrandFlatten"]], "paclet:NucleicAcids/ref/StrandFlatten"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b40088ef-e60c-4d8e-a2a8-8e9e62b8c3eb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Takes a strand and joins consecutive stretches of like polymer types into \
+single polymers."
+}], "GuideText",
+ CellID->341062306,ExpressionUUID->"b4274590-1447-44d7-aead-4f233f846864"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Truncate"]], "paclet:NucleicAcids/ref/Truncate"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2edf68fe-092e-4521-8477-e139408bc074"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of strands by removing a specific number of monomers from \
+the provided strand and replacing them with a single cap monomer."
+}], "GuideText",
+ CellID->600323099,ExpressionUUID->"4a4b5e24-f568-4d13-bcac-2e2969105e93"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToStrand"]], "paclet:NucleicAcids/ref/ToStrand"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e5d49a6f-5a6c-45a4-aa7d-0e51e6b6bae4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a single strand or a list of strands containing from the provided \
+sequences or structures."
+}], "GuideText",
+ CellID->752151287,ExpressionUUID->"cfa56de8-3c73-44ee-81d6-5bbcfd19def2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ParseStrand"]], "paclet:NucleicAcids/ref/ParseStrand"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0bfd6f1d-53f4-4794-b4b3-3d237802a840"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the motif name, reverse complement status, sequence, and polymer \
+type of the provided strand."
+}], "GuideText",
+ CellID->1317934367,ExpressionUUID->"d0cff092-f177-4b5a-8302-804b51358946"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1376571011,ExpressionUUID->"b249e368-cef6-4229-96fc-95f0b49135ee"],
+
+Cell["Structures", "GuideFunctionsSubsection",
+ CellID->1187652746,ExpressionUUID->"89d25626-8dd1-481f-b790-b16bcdbb6f43"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Structure"]], "paclet:NucleicAcids/ref/Structure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c137ed58-97d5-4023-8767-57a6c778db26"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a structure with one or more strands and zero or more bonds."
+}], "GuideText",
+ CellID->19203157,ExpressionUUID->"bc80e2ca-0710-4a97-91c4-0620a820763b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureQ"]], "paclet:NucleicAcids/ref/StructureQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dcc60439-7b56-4ed4-9d74-f1aa2cbcc48d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a properly formatted structure."
+}], "GuideText",
+ CellID->624912649,ExpressionUUID->"c928cbd9-faa1-4f1c-aae3-4aaa2fa41374"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureFaces"]], "paclet:Simulation/ref/StructureFaces"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d97a2a3a-eb9c-47df-8b54-d28f5ab01e10"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of faces for the structure, which contains the \
+corresponding loop type and start/end indices in the original structure."
+}], "GuideText",
+ CellID->1711857913,ExpressionUUID->"74fb90b8-4519-45c1-a677-e5821f3c602f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureJoin"]], "paclet:NucleicAcids/ref/StructureJoin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fb154918-9b1b-43bd-9c12-b5956657c3af"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins the provided structures together into a single structure."
+}], "GuideText",
+ CellID->1357524932,ExpressionUUID->"a92ee693-fcc2-4f23-ae13-577951099308"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureSort"]], "paclet:NucleicAcids/ref/StructureSort"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3f89aab9-4c52-48cf-a206-3951829d7a18"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Sorts a structure into canonical form using alphabet and graph topology."
+}], "GuideText",
+ CellID->1055266396,ExpressionUUID->"4c54dd1c-05ea-4069-814e-b3ade0a0ea3a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureTake"]], "paclet:NucleicAcids/ref/StructureTake"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd546c05-3836-4b9c-913b-ea3c25bea4a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the specified part of the provided structure."
+}], "GuideText",
+ CellID->1942360646,ExpressionUUID->"3b712cd7-3e4a-4f91-8538-15f4260371f2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SplitStructure"]], "paclet:NucleicAcids/ref/SplitStructure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fa814961-c168-46df-beac-907469a4325d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Splits a structure into separate structures that share no bonds between \
+strands."
+}], "GuideText",
+ CellID->1356459275,ExpressionUUID->"a8c26f55-7dbe-43a6-9f4d-023897f05832"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToStructure"]], "paclet:NucleicAcids/ref/ToStructure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "911500d5-ad7e-4933-9fa3-07ad3d4bdd15"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a single structure containing a single strand or multiple strands \
+from the provided sequences or strands."
+}], "GuideText",
+ CellID->324638373,ExpressionUUID->"01143734-7a32-41df-ac31-3c03031335ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Hybridize"]], "paclet:Simulation/ref/Hybridize"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "be4c895b-132d-4f4b-9cb7-95907788c23a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins reverse-complementary sequences until no more are available."
+}], "GuideText",
+ CellID->1588671631,ExpressionUUID->"d306d19c-7834-4817-b266-821a6264267e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Pairing"]], "paclet:Simulation/ref/Pairing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8ef5f885-eae2-4d64-9b5e-a9a40ee5c304"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all possible pairings of two provided sequences, strands, or \
+structures."
+}], "GuideText",
+ CellID->1139919066,ExpressionUUID->"e30c5f81-cad6-446c-bc65-d03c564b8f57"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NumberOfBonds"]], "paclet:NucleicAcids/ref/NumberOfBonds"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1a632ca5-518a-4f1d-a023-d648f3d500ae"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the number of bonds in the provide structure."
+}], "GuideText",
+ CellID->918127375,ExpressionUUID->"35c406a1-a06b-445d-850d-a2026de2957f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StructureForm"]], "paclet:Plot/ref/StructureForm"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d8de1c03-1502-43a3-af56-32f09cdb90fd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Looks for anything in Structure form from the provided input and renders \
+them as graph images at the nucleotide level."
+}], "GuideText",
+ CellID->1296787930,ExpressionUUID->"80a3bcb6-4137-425d-8b3b-8ea2755bff66"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->303206107,ExpressionUUID->"aee4a655-2d6c-4755-b688-ecb4d9a1e021"],
+
+Cell["State", "GuideFunctionsSubsection",
+ CellID->6346018,ExpressionUUID->"e5e77688-6a79-4740-aa83-a4e0a1118b29"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["State"]], "paclet:NucleicAcids/ref/State"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9bc75023-7b9f-4a0e-bb4b-2c51c4bf43ef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a state containing species and their concentrations."
+}], "GuideText",
+ CellID->1430825823,ExpressionUUID->"98bdfc50-1fc6-4c5f-9334-4d4c168210cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StateQ"]], "paclet:NucleicAcids/ref/StateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef9c5fc2-09c2-4911-9946-f1de23cf3407"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a properly formatted state."
+}], "GuideText",
+ CellID->367728055,ExpressionUUID->"c60d50fc-2e1d-4b43-b6e9-251de69e0519"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToState"]], "paclet:NucleicAcids/ref/ToState"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "339202f1-e339-4431-b86e-83671b5023fe"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a list of rules, relating species name with concentration, to a \
+properly formatted state."
+}], "GuideText",
+ CellID->2094967966,ExpressionUUID->"4f4c146e-756b-4d2d-af91-6036f08f0bb4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StateFirst"]], "paclet:NucleicAcids/ref/StateFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b695011d-22d0-4686-9364-70b1cc8e73d4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the first name and concentration pair of the provided state."
+}], "GuideText",
+ CellID->2132211997,ExpressionUUID->"855b8e8e-0aa0-4866-aca2-f6e39162f7e5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StateLast"]], "paclet:NucleicAcids/ref/StateLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b617816a-a7d0-4aba-b346-e5fc17e4def2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the last name and concentration pair of the provided state."
+}], "GuideText",
+ CellID->1027416090,ExpressionUUID->"97c0e2dd-748b-410a-a93e-3c19978f815e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StateRest"]], "paclet:NucleicAcids/ref/StateRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7104632f-deee-49ed-ba02-1e6668039a4f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the first name and concentration pair of the provided \
+state."
+}], "GuideText",
+ CellID->2013702750,ExpressionUUID->"db68ddb8-bc34-4cbd-93ae-2ef49aa7c5c9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StateMost"]], "paclet:NucleicAcids/ref/StateMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dc51a037-84d3-4e4f-bd50-611647e43e5c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the last name and concentration pair of the provided state."
+}], "GuideText",
+ CellID->2107326177,ExpressionUUID->"df40be88-1401-4274-af39-c6add0a56f58"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1530750515,ExpressionUUID->"e584dc60-8dfc-425c-b4c3-8aa951cd2e1a"],
+
+Cell["Reaction", "GuideFunctionsSubsection",
+ CellID->469814545,ExpressionUUID->"c68ab0d8-a78d-4b3e-97f4-165898bfaec8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Reaction"]], "paclet:NucleicAcids/ref/Reaction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "83a00e58-8819-4b6a-a11f-cf27e63f1adf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents either an irreversible or a reversible chemical reaction."
+}], "GuideText",
+ CellID->2023171443,ExpressionUUID->"2faf3072-d894-467c-bdb1-82ea347c128f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReactionQ"]], "paclet:NucleicAcids/ref/ReactionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4567b590-1f9e-49b0-8d58-2550d4c24b57"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks that if the provided nucleic acid reaction is properly formatted."
+}], "GuideText",
+ CellID->186375903,ExpressionUUID->"d1088e26-6d2d-44f5-a2d4-3eb09abfa553"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SplitReaction"]], "paclet:NucleicAcids/ref/SplitReaction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cec21984-5022-43c0-9703-4a91bcfaff6b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Splits a reversible reaction into forward and reverse reactions."
+}], "GuideText",
+ CellID->1388644395,ExpressionUUID->"c8bdcd34-62cb-452a-a2a9-b5715b6ccb55"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToReactionMechanism"]], 
+    "paclet:NucleicAcids/ref/ToReactionMechanism"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4733c203-21a9-48da-b7a3-20c3a4487081"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Constructs a properly formatted ReactionMechanism from the provided \
+reactions and rates."
+}], "GuideText",
+ CellID->94071169,ExpressionUUID->"0efce604-2a42-4f37-af96-4f19473e377b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ClassifyReaction"]], 
+    "paclet:NucleicAcids/ref/ClassifyReaction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d20c8faa-f4a9-4b6c-9099-923e4aa966a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the classical type of a nucleic acid secondary structure \
+transformation based on the provided nucleic acid reactants and products."
+}], "GuideText",
+ CellID->506173191,ExpressionUUID->"520359f2-f6a7-4e7b-aeb3-1598be7d8f03"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["KineticRates"]], "paclet:Simulation/ref/KineticRates"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5e2a9302-1beb-4cb5-a5ee-5f1c88e4eece"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns an estimated kinetic rate parameterized from literature precedence \
+for the nucleic acid reaction with a classified reaction type."
+}], "GuideText",
+ CellID->1070095370,ExpressionUUID->"9c3f3dca-55d0-4940-ab95-3e47666f3940"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2064823612,ExpressionUUID->"9b80a4c8-b988-4e35-a11d-352264f440f6"],
+
+Cell["Mechanism", "GuideFunctionsSubsection",
+ CellID->154711364,ExpressionUUID->"81a9c05b-004b-4d0c-8a53-71e28e5f1c64"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReactionMechanism"]], 
+    "paclet:NucleicAcids/ref/ReactionMechanism"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "94062de0-871a-4240-a8fd-2780f9d050ad"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a ReactionMechanism containing a set of reactions."
+}], "GuideText",
+ CellID->1778681878,ExpressionUUID->"47cb383f-f6d3-4c6c-b13d-5c8b7c9e8d6b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReactionMechanismQ"]], 
+    "paclet:NucleicAcids/ref/ReactionMechanismQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "87933b14-a2dd-43a0-bdd5-d0f26cdfa77a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a properly formatted mechanism."
+}], "GuideText",
+ CellID->1333957306,ExpressionUUID->"6cba8632-7289-47e4-99cc-1b6effccffc5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MechanismFirst"]], "paclet:NucleicAcids/ref/MechanismFirst"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6acc5f6a-fe26-4d2d-994f-b88934bf5219"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the first reaction from the provided mechanism."
+}], "GuideText",
+ CellID->91167262,ExpressionUUID->"c563089b-6c52-4014-9051-c1522e72556c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MechanismLast"]], "paclet:NucleicAcids/ref/MechanismLast"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c319fc98-07e8-425c-821a-da7a8f17f38b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the last reaction from the provided mechanism."
+}], "GuideText",
+ CellID->1092332123,ExpressionUUID->"966910a3-948c-482b-9710-cb3d6fc70e01"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MechanismRest"]], "paclet:NucleicAcids/ref/MechanismRest"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dbf3dfa5-f517-4a8f-9703-40cece08187e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the first reaction from the provided mechanism."
+}], "GuideText",
+ CellID->2135776705,ExpressionUUID->"023a7cc1-2876-47d7-97f1-ff5f3c5170e6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MechanismMost"]], "paclet:NucleicAcids/ref/MechanismMost"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b5de61a5-444d-4c5f-af41-b92040477ba3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns all but the last reaction from the provided mechanism."
+}], "GuideText",
+ CellID->809921330,ExpressionUUID->"8b24f371-8d74-41e9-b21e-fac5d6950fe9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MechanismJoin"]], "paclet:NucleicAcids/ref/MechanismJoin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4fbf0247-6d0d-428a-a425-b1f1f6b85cc5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Joins two or more mechanisms together and deletes redundant reactions."
+}], "GuideText",
+ CellID->1596438624,ExpressionUUID->"e7c10831-4a8e-4cc3-828f-f8e7aa34f723"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SpeciesList"]], "paclet:NucleicAcids/ref/SpeciesList"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c35f2bf-0d59-46df-9d58-6cf4ceb3a609"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of unique species present in the provided reactions."
+}], "GuideText",
+ CellID->683267950,ExpressionUUID->"bce4a000-6cd8-4ce2-99dd-16e9a3f39202"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1089375141,ExpressionUUID->"969401b6-ecf3-4ee7-b532-052e78339f20"],
+
+Cell["Trajectory", "GuideFunctionsSubsection",
+ CellID->1829904112,ExpressionUUID->"83c02ffc-dafd-4c40-9e68-c73cdf56733d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Trajectory"]], "paclet:NucleicAcids/ref/Trajectory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fccc8222-2391-44b3-9536-8b283840f2c8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a trajectory describing the behavior of reactions."
+}], "GuideText",
+ CellID->1085101697,ExpressionUUID->"68a12654-81c2-47d0-b5d7-2b9b60b0f385"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToTrajectory"]], "paclet:NucleicAcids/ref/ToTrajectory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cede19ee-5d9c-4a97-8fb0-7db8b9dc4581"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Transforms a list of data points and time points into a properly formatted \
+Trajectory."
+}], "GuideText",
+ CellID->873091155,ExpressionUUID->"e07fd8ea-820c-4f23-95c9-7439211f22e0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotTrajectory"]], "paclet:Plot/ref/PlotTrajectory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "68d74e35-f44b-4e1a-8d03-4395186abb6d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plots the concentration of all species in the provided trajectory against \
+time."
+}], "GuideText",
+ CellID->287282134,ExpressionUUID->"80fbf122-62de-431a-8f3d-70f3d7e54d97"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->807587682,ExpressionUUID->"f5a327fc-c00e-420d-9b09-299251e73f11"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"6259b751-f569-4636-a142-7a1629a6070d"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1029522334,ExpressionUUID->"63fe06d2-d215-409a-ae87-9ba6f6fdfd09"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->906123659,ExpressionUUID->"d4bddc4d-d698-4674-ab3c-89ecd13d170f"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Biomolecules"]], "paclet:Docs/guide/Biomolecules"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1413795936,ExpressionUUID->"bdfcfdf3-ca3b-43e6-9add-efe0530d481a"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Glycan"]], "paclet:Docs/guide/Glycan"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1909225944,ExpressionUUID->"e6e7aee2-cb8a-4b17-85b0-471a7e1660c2"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["PhysicalProperties"]], "paclet:Docs/guide/PhysicalProperties"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->659787334,ExpressionUUID->"b4b9c82c-d635-4225-82b9-2d9f3532eb3b"],
+
+Cell["", "FooterCell",
+ CellID->1587653077,ExpressionUUID->"a988a016-c001-4404-bc7d-744fb64470e0"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"Oligonucleotides",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:07:00", "context" -> "Docs`", 
+    "keywords" -> {
+     "SequenceQ", "ValidSequenceQ", "SequenceLength", "PolymerType", "DNAQ", 
+      "RNAQ", "PeptideQ", "PNAQ", "GammaRightPNAQ", "GammaLeftPNAQ", 
+      "ModificationQ", "SameSequenceQ", "ReverseSequenceQ", 
+      "ComplementSequenceQ", "ReverseComplementSequenceQ", 
+      "SequencePalindromeQ", "SequenceFirst", "SequenceLast", "SequenceMost", 
+      "SequenceRest", "SequenceTake", "SequenceDrop", "SequenceJoin", 
+      "SequenceRotateLeft", "SequenceRotateRight", "ExplicitlyTypedQ", 
+      "ExplicitlyType", "UnTypeSequence", "Monomers", "Dimers", 
+      "AllSequences", "RandomSequence", "AllPalindromes", "ReverseSequence", 
+      "ComplementSequence", "ReverseComplementSequence", "ToDNA", "ToRNA", 
+      "ToLRNA", "ToPeptide", "ToSequence", "GenerateSequence", 
+      "UploadModification", "FractionAT", "FractionAU", "FractionGC", 
+      "FractionMono", "FractionPurine", "FractionPyrimidine", 
+      "EmeraldSubsequences", "FoldsQ", "NumberOfFolds", "FoldingSequences", 
+      "FoldingMatrix", "RepeatsQ", "NumberOfRepeats", "RepeatingSequences", 
+      "RepeatingMatrix", "MotifForm", "ValidMotifQ", "MotifSequence", 
+      "MotifPolymer", "MotifLabel", "NameMotifs", "DefineMotifs", "ExactMass",
+       "MolecularWeight", "ExtinctionCoefficient", "Hyperchromicity260", 
+      "ValidPolymerQ", "DNAPhosphoramiditeMolecularWeights", 
+      "PNAMolecularWeights", "ModifierPhosphoramiditeMolecularWeights", 
+      "Strand", "StrandQ", "ValidStrandQ", "StrandLength", "StrandFirst", 
+      "StrandLast", "StrandRest", "StrandMost", "StrandTake", "StrandDrop", 
+      "StrandJoin", "StrandFlatten", "Truncate", "ToStrand", "ParseStrand", 
+      "Structure", "StructureQ", "StructureFaces", "StructureJoin", 
+      "StructureSort", "StructureTake", "SplitStructure", "ToStructure", 
+      "Hybridize", "Pairing", "NumberOfBonds", "StructureForm", "State", 
+      "StateQ", "ToState", "StateFirst", "StateLast", "StateRest", 
+      "StateMost", "Reaction", "ReactionQ", "SplitReaction", 
+      "ToReactionMechanism", "ClassifyReaction", "KineticRates", 
+      "ReactionMechanism", "ReactionMechanismQ", "MechanismFirst", 
+      "MechanismLast", "MechanismRest", "MechanismMost", "MechanismJoin", 
+      "SpeciesList", "Trajectory", "ToTrajectory", "PlotTrajectory"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for manipulating and looking up properties for \
+oligonucleotides.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "Oligonucleotides", "title" -> "Oligonucleotides", "type" -> "Guide", 
+    "uri" -> "Docs/guide/Oligonucleotides", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"b68cbd3b-796e-4b56-bfab-00465e011b17"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 16244, 328, 58, "AnchorBarGrid",ExpressionUUID->"18f8d60d-43bc-4676-b805-930fb8599d8d",
+ CellID->1],
+Cell[16835, 351, 113, 1, 45, "GuideTitle",ExpressionUUID->"56ad278d-acba-4e2c-9d01-3aa581e73509",
+ CellID->835661823],
+Cell[16951, 354, 198, 4, 30, "GuideAbstract",ExpressionUUID->"12521067-3ebe-42d8-bd3a-814d77817d1e",
+ CellID->425207781],
+Cell[17152, 360, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"15ffc009-b94d-42fc-899c-27b46c36de1f",
+ CellID->1789081698],
+Cell[17269, 363, 129, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"f5e4f6d2-7a73-4b3f-8ba3-6c01c79a28bf",
+ CellID->30072992],
+Cell[17401, 366, 488, 13, 31, "GuideText",ExpressionUUID->"7da8b15f-872a-4db3-afcf-de36b5874dc5",
+ CellID->778119499],
+Cell[17892, 381, 473, 12, 37, "GuideText",ExpressionUUID->"d69d6fd8-3e29-48bf-882d-43997bbe9d4f",
+ CellID->1826493110],
+Cell[18368, 395, 476, 12, 37, "GuideText",ExpressionUUID->"351f97c1-fe28-4219-bbf2-356a3691d8f2",
+ CellID->1738449552],
+Cell[18847, 409, 492, 13, 37, "GuideText",ExpressionUUID->"91d54a3e-1518-4c8e-8138-7aebdf3f1a81",
+ CellID->1606603029],
+Cell[19342, 424, 436, 12, 37, "GuideText",ExpressionUUID->"e383137d-ba52-4919-b64b-864ef6272b3f",
+ CellID->1865214672],
+Cell[19781, 438, 436, 12, 37, "GuideText",ExpressionUUID->"95a6d756-de5d-4450-8d42-112fedfa23f5",
+ CellID->1844197045],
+Cell[20220, 452, 447, 12, 37, "GuideText",ExpressionUUID->"7ab71de1-c364-4948-a4d2-00a1c72b5bbe",
+ CellID->788258164],
+Cell[20670, 466, 458, 12, 37, "GuideText",ExpressionUUID->"248a1ba9-d7c8-4bec-b023-9356d113ff6e",
+ CellID->428344005],
+Cell[21131, 480, 483, 12, 37, "GuideText",ExpressionUUID->"872d6f0a-de8e-4b21-9bf8-34bfaec25a41",
+ CellID->812507291],
+Cell[21617, 494, 481, 12, 37, "GuideText",ExpressionUUID->"5f5d4dc3-9542-4cb2-9f24-44ab494651b3",
+ CellID->2109012211],
+Cell[22101, 508, 461, 12, 37, "GuideText",ExpressionUUID->"636aaa77-0863-46d9-8382-8f7035de46b3",
+ CellID->1950636542],
+Cell[22565, 522, 515, 13, 57, "GuideText",ExpressionUUID->"d283831c-eced-4368-bda9-b1550601ac71",
+ CellID->863006292],
+Cell[23083, 537, 482, 13, 37, "GuideText",ExpressionUUID->"b07d357f-170e-41fe-9ee9-cc3ee2c77e2b",
+ CellID->442197806],
+Cell[23568, 552, 496, 13, 37, "GuideText",ExpressionUUID->"64e93f1d-cdd7-407b-acbb-7b6f7861716e",
+ CellID->1725106822],
+Cell[24067, 567, 504, 13, 37, "GuideText",ExpressionUUID->"9e968b82-9107-484b-bb4c-4d61faeb23f7",
+ CellID->693639207],
+Cell[24574, 582, 525, 14, 57, "GuideText",ExpressionUUID->"c1676f23-934b-4fa7-9e5b-ab82e7dcf3a1",
+ CellID->1452916133],
+Cell[25102, 598, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"dd5ac6b5-7c49-4a43-9b81-521cca9c5596",
+ CellID->124897294],
+Cell[25218, 601, 133, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"7832dfab-4b5b-4e19-93e9-58bbd894c427",
+ CellID->1057297139],
+Cell[25354, 604, 460, 12, 31, "GuideText",ExpressionUUID->"12c6a35c-0cd7-4d77-9c2c-6b4487dae1d8",
+ CellID->1713319895],
+Cell[25817, 618, 456, 12, 37, "GuideText",ExpressionUUID->"59e82eb3-2011-4b10-a2ea-722e8489b885",
+ CellID->159252642],
+Cell[26276, 632, 464, 12, 37, "GuideText",ExpressionUUID->"23a5678c-7bba-4bfc-9658-2b01a45c62c6",
+ CellID->794529932],
+Cell[26743, 646, 465, 12, 37, "GuideText",ExpressionUUID->"f7726fff-a09c-41d6-bb31-dfb91a9512cb",
+ CellID->611250078],
+Cell[27211, 660, 459, 12, 37, "GuideText",ExpressionUUID->"299426cd-b9ad-47e5-b468-8ccb0f3392ac",
+ CellID->1865777345],
+Cell[27673, 674, 486, 13, 37, "GuideText",ExpressionUUID->"8ae13081-c29d-44cb-ac5a-c1cd5b4324ff",
+ CellID->563623921],
+Cell[28162, 689, 467, 12, 37, "GuideText",ExpressionUUID->"bd0b4cf8-3e72-4c6d-82ee-571945f4d38b",
+ CellID->276873330],
+Cell[28632, 703, 543, 14, 57, "GuideText",ExpressionUUID->"cebc4b74-5768-4213-9ac4-9bdfd8c500a0",
+ CellID->1960477908],
+Cell[29178, 719, 543, 14, 57, "GuideText",ExpressionUUID->"a09a35d2-acbd-4430-9286-ba52e607a39e",
+ CellID->910603835],
+Cell[29724, 735, 461, 13, 37, "GuideText",ExpressionUUID->"d03f226f-441f-4702-9216-2d59f8c296e2",
+ CellID->1550186323],
+Cell[30188, 750, 466, 12, 37, "GuideText",ExpressionUUID->"a4327db4-b18c-4cc5-bb61-67383664de64",
+ CellID->709925257],
+Cell[30657, 764, 461, 12, 37, "GuideText",ExpressionUUID->"2d46b104-0b28-4747-800a-6c2e2c1ce2a4",
+ CellID->294651667],
+Cell[31121, 778, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2dc814cd-fb1e-4249-8445-6db4e4c44ad7",
+ CellID->113277287],
+Cell[31237, 781, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"3e1e53c3-45e7-4029-8063-66439175f3a4",
+ CellID->1180851367],
+Cell[31371, 784, 455, 12, 31, "GuideText",ExpressionUUID->"5b6e419b-c0bb-470f-9646-07e2cc847482",
+ CellID->1672543242],
+Cell[31829, 798, 488, 13, 37, "GuideText",ExpressionUUID->"484f23d2-1872-43e4-8236-57ea4068f055",
+ CellID->2020812711],
+Cell[32320, 813, 472, 12, 37, "GuideText",ExpressionUUID->"b06008ad-6dee-4b3c-b5c2-3f09c0db186f",
+ CellID->1345356472],
+Cell[32795, 827, 460, 12, 37, "GuideText",ExpressionUUID->"804d2d3e-a9f6-48fe-a339-dc06e7b25c0f",
+ CellID->550905641],
+Cell[33258, 841, 469, 12, 37, "GuideText",ExpressionUUID->"09aee41d-09d0-4d7f-9a60-b20059a696a6",
+ CellID->1269106070],
+Cell[33730, 855, 471, 13, 37, "GuideText",ExpressionUUID->"ae7a574f-384b-4444-bfa4-805fc65d58f9",
+ CellID->1058136486],
+Cell[34204, 870, 480, 13, 37, "GuideText",ExpressionUUID->"6a0572a3-207b-460e-9db8-3224f147a1a4",
+ CellID->787839395],
+Cell[34687, 885, 494, 13, 37, "GuideText",ExpressionUUID->"b36947c7-001d-4616-8759-137a3456f69d",
+ CellID->1980028010],
+Cell[35184, 900, 445, 12, 37, "GuideText",ExpressionUUID->"6d3bb2bc-7955-4683-9135-92293f47cee9",
+ CellID->924170158],
+Cell[35632, 914, 446, 12, 37, "GuideText",ExpressionUUID->"196929f6-11dc-4573-acd9-26a70f290042",
+ CellID->1926110402],
+Cell[36081, 928, 454, 12, 37, "GuideText",ExpressionUUID->"af88e207-6419-46a5-9d57-6a8d50bf7f44",
+ CellID->969031536],
+Cell[36538, 942, 540, 13, 57, "GuideText",ExpressionUUID->"1f76b16b-24b4-4ea7-b08b-b9046a9da781",
+ CellID->2144530351],
+Cell[37081, 957, 462, 12, 37, "GuideText",ExpressionUUID->"6b46dc65-9ff5-4ac2-b7ad-951753dadb9c",
+ CellID->1903561656],
+Cell[37546, 971, 533, 14, 57, "GuideText",ExpressionUUID->"ba3be098-987a-42cd-827d-2674bd40b49c",
+ CellID->2096863033],
+Cell[38082, 987, 498, 13, 37, "GuideText",ExpressionUUID->"8bba4b70-dc2f-4f4a-8188-49288aa0b383",
+ CellID->1770348361],
+Cell[38583, 1002, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"fcaea119-2de8-491d-8fe8-b57dc9ee83c1",
+ CellID->858974142],
+Cell[38699, 1005, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"62f99d10-21bd-4d21-99bf-f51b56a366e9",
+ CellID->1393329460],
+Cell[38830, 1008, 489, 13, 31, "GuideText",ExpressionUUID->"22851c96-c727-4bac-aa02-09fa1d6e49af",
+ CellID->1526547332],
+Cell[39322, 1023, 484, 13, 37, "GuideText",ExpressionUUID->"f451cc40-b3a4-4643-bf58-186929bde648",
+ CellID->693878215],
+Cell[39809, 1038, 493, 13, 57, "GuideText",ExpressionUUID->"f470a109-7168-4624-9ded-2f52da062134",
+ CellID->1174956295],
+Cell[40305, 1053, 517, 13, 57, "GuideText",ExpressionUUID->"097aa6a2-10ce-4a76-acc5-ebb011482341",
+ CellID->1378315900],
+Cell[40825, 1068, 511, 13, 57, "GuideText",ExpressionUUID->"1c9aa6a2-a30b-4d89-927d-fd862a0187cf",
+ CellID->449231111],
+Cell[41339, 1083, 530, 14, 57, "GuideText",ExpressionUUID->"08ab2bdc-79f9-4df0-bb25-b49c403a7f5f",
+ CellID->1822263372],
+Cell[41872, 1099, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"d3997063-ded0-4c5e-97f7-d53ce0508938",
+ CellID->1516203337],
+Cell[41989, 1102, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"1e9b21e6-00cf-4f4f-8897-ef4829c34c2d",
+ CellID->788529657],
+Cell[42123, 1105, 508, 14, 51, "GuideText",ExpressionUUID->"3e21f586-39e5-4a98-becb-f14cf088e388",
+ CellID->696359562],
+Cell[42634, 1121, 476, 13, 37, "GuideText",ExpressionUUID->"1d449034-ceca-4c2f-a418-fce359b19feb",
+ CellID->2076766031],
+Cell[43113, 1136, 529, 13, 57, "GuideText",ExpressionUUID->"2cb844ee-3158-4fac-8278-edf895da4b6b",
+ CellID->1154968326],
+Cell[43645, 1151, 528, 14, 57, "GuideText",ExpressionUUID->"4f4beb8e-5551-41dc-a3c6-234f3bd828a5",
+ CellID->447969849],
+Cell[44176, 1167, 567, 14, 57, "GuideText",ExpressionUUID->"e4f2f6c1-0560-46b0-9926-4cc688ee7bc9",
+ CellID->2099069408],
+Cell[44746, 1183, 495, 13, 57, "GuideText",ExpressionUUID->"f74b861d-d4fc-4f39-9d2b-a698e70ce12e",
+ CellID->198187340],
+Cell[45244, 1198, 538, 14, 57, "GuideText",ExpressionUUID->"3a669710-52c8-491f-814b-ed025be29b1a",
+ CellID->187486883],
+Cell[45785, 1214, 522, 14, 57, "GuideText",ExpressionUUID->"ab42b06f-56ca-4c67-99d5-4cd809ae613c",
+ CellID->733532432],
+Cell[46310, 1230, 556, 14, 57, "GuideText",ExpressionUUID->"c9906403-4b3e-4a79-8089-4a53c34aa2b0",
+ CellID->1923450844],
+Cell[46869, 1246, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"1d090b17-ba67-482b-a4e7-4af9bb4dd1ea",
+ CellID->1366996817],
+Cell[46986, 1249, 118, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"02b3ff97-ef14-417b-96ea-debb1131e4ce",
+ CellID->1335447713],
+Cell[47107, 1252, 508, 13, 51, "GuideText",ExpressionUUID->"aef09193-c3e3-4741-837e-252651c1d677",
+ CellID->1518117594],
+Cell[47618, 1267, 485, 13, 37, "GuideText",ExpressionUUID->"2d8cb5e1-e916-487a-b084-450f3c00fbb0",
+ CellID->749192351],
+Cell[48106, 1282, 451, 12, 37, "GuideText",ExpressionUUID->"9cb2b6bc-4997-4987-afc8-62474dcfc1b7",
+ CellID->979220896],
+Cell[48560, 1296, 454, 12, 37, "GuideText",ExpressionUUID->"016a1a6a-74ce-408e-8156-3794586ac718",
+ CellID->1598412111],
+Cell[49017, 1310, 443, 12, 37, "GuideText",ExpressionUUID->"4c253eb1-baf6-4326-875a-cf7d2338ab85",
+ CellID->1639409254],
+Cell[49463, 1324, 498, 13, 57, "GuideText",ExpressionUUID->"a5e0db4a-9d74-40bc-9782-56ebc85cecf1",
+ CellID->1336140968],
+Cell[49964, 1339, 493, 13, 37, "GuideText",ExpressionUUID->"cef38b49-352a-4ce9-a86c-79558e144f66",
+ CellID->284752497],
+Cell[50460, 1354, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"60567ca6-9473-45f8-a097-61b6814c65d2",
+ CellID->1241651563],
+Cell[50577, 1357, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"6c15859b-17bd-4443-9268-35acd8eb3d4f",
+ CellID->1339221442],
+Cell[50711, 1360, 456, 12, 31, "GuideText",ExpressionUUID->"df5d5700-fb62-485a-8276-aeabfb629a8c",
+ CellID->518671487],
+Cell[51170, 1374, 512, 13, 57, "GuideText",ExpressionUUID->"d5ea4bb3-4ec9-45be-83c9-41f5fa4f7bdc",
+ CellID->675558836],
+Cell[51685, 1389, 498, 13, 37, "GuideText",ExpressionUUID->"1aa5b801-2066-4279-84f8-f03d999f5f4f",
+ CellID->371314963],
+Cell[52186, 1404, 486, 13, 37, "GuideText",ExpressionUUID->"c5efa629-3426-4880-abf6-bdd70faff217",
+ CellID->103104959],
+Cell[52675, 1419, 484, 13, 37, "GuideText",ExpressionUUID->"8118391c-a054-4cb9-8d79-6c77d7c35471",
+ CellID->2013226431],
+Cell[53162, 1434, 552, 14, 57, "GuideText",ExpressionUUID->"2727992b-baed-4ded-8e52-46b6bc71e58a",
+ CellID->544283685],
+Cell[53717, 1450, 478, 13, 37, "GuideText",ExpressionUUID->"a6924b30-f525-4ae9-b515-eac2400e6bda",
+ CellID->1643041222],
+Cell[54198, 1465, 567, 14, 57, "GuideText",ExpressionUUID->"b674ab0b-1590-4b05-8ab5-e52462075f68",
+ CellID->101601381],
+Cell[54768, 1481, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"5aee07e8-ecc8-4991-b157-f8d9e285b8d2",
+ CellID->364911102],
+Cell[54884, 1484, 129, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"f915577d-2c32-4cf4-afa2-0ddc4ad0f667",
+ CellID->1995079129],
+Cell[55016, 1487, 438, 12, 31, "GuideText",ExpressionUUID->"d4b6b81a-c574-4cc7-905b-bed4a39850e2",
+ CellID->485256845],
+Cell[55457, 1501, 534, 13, 57, "GuideText",ExpressionUUID->"07a8bea7-e27c-4418-b41b-b43a83841353",
+ CellID->1716386256],
+Cell[55994, 1516, 543, 13, 57, "GuideText",ExpressionUUID->"3a8af507-d1e7-4934-849a-5cdeaf24429a",
+ CellID->155974441],
+Cell[56540, 1531, 485, 13, 37, "GuideText",ExpressionUUID->"baedd51e-f7c8-49bd-9656-a993ceca8f6e",
+ CellID->1532380547],
+Cell[57028, 1546, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"788ba8d9-4af1-4629-b5bd-b0b5c0d4eb65",
+ CellID->2095958605],
+Cell[57145, 1549, 132, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"6b32304e-3881-4ade-bbf0-395449268b8a",
+ CellID->1602012494],
+Cell[57280, 1552, 481, 13, 31, "GuideText",ExpressionUUID->"2b91e793-42ac-48cf-808d-39644a353ff7",
+ CellID->2021504219],
+Cell[57764, 1567, 474, 12, 37, "GuideText",ExpressionUUID->"cb33a9cd-0fcf-4f2e-9461-93036e7f34bc",
+ CellID->82629546],
+Cell[58241, 1581, 479, 13, 37, "GuideText",ExpressionUUID->"f3452ef9-9189-4130-a067-da2872bf745b",
+ CellID->1480343660],
+Cell[58723, 1596, 476, 12, 37, "GuideText",ExpressionUUID->"2bf38beb-4a2c-4d9d-b1a9-95ffff80f2fc",
+ CellID->1537843125],
+Cell[59202, 1610, 453, 12, 37, "GuideText",ExpressionUUID->"102e5247-6f85-49c5-aa48-c4cedb473283",
+ CellID->1563710230],
+Cell[59658, 1624, 478, 13, 37, "GuideText",ExpressionUUID->"3b1e0fe4-806a-4513-b7b5-e49aeca28125",
+ CellID->372963624],
+Cell[60139, 1639, 460, 12, 37, "GuideText",ExpressionUUID->"7b08f4a7-1c34-4481-940f-f5f681220404",
+ CellID->2042346622],
+Cell[60602, 1653, 500, 13, 57, "GuideText",ExpressionUUID->"b4274590-1447-44d7-aead-4f233f846864",
+ CellID->341062306],
+Cell[61105, 1668, 538, 13, 57, "GuideText",ExpressionUUID->"4a4b5e24-f568-4d13-bcac-2e2969105e93",
+ CellID->600323099],
+Cell[61646, 1683, 498, 13, 57, "GuideText",ExpressionUUID->"cfa56de8-3c73-44ee-81d6-5bbcfd19def2",
+ CellID->752151287],
+Cell[62147, 1698, 508, 13, 57, "GuideText",ExpressionUUID->"d0cff092-f177-4b5a-8302-804b51358946",
+ CellID->1317934367],
+Cell[62658, 1713, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"b249e368-cef6-4229-96fc-95f0b49135ee",
+ CellID->1376571011],
+Cell[62775, 1716, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"89d25626-8dd1-481f-b790-b16bcdbb6f43",
+ CellID->1187652746],
+Cell[62900, 1719, 470, 12, 31, "GuideText",ExpressionUUID->"bc80e2ca-0710-4a97-91c4-0620a820763b",
+ CellID->19203157],
+Cell[63373, 1733, 465, 12, 37, "GuideText",ExpressionUUID->"c928cbd9-faa1-4f1c-aae3-4aaa2fa41374",
+ CellID->624912649],
+Cell[63841, 1747, 545, 13, 57, "GuideText",ExpressionUUID->"74fb90b8-4519-45c1-a677-e5821f3c602f",
+ CellID->1711857913],
+Cell[64389, 1762, 472, 12, 37, "GuideText",ExpressionUUID->"a92ee693-fcc2-4f23-ae13-577951099308",
+ CellID->1357524932],
+Cell[64864, 1776, 481, 12, 37, "GuideText",ExpressionUUID->"4c54dd1c-05ea-4069-814e-b3ade0a0ea3a",
+ CellID->1055266396],
+Cell[65348, 1790, 462, 12, 37, "GuideText",ExpressionUUID->"3b712cd7-3e4a-4f91-8538-15f4260371f2",
+ CellID->1942360646],
+Cell[65813, 1804, 493, 13, 37, "GuideText",ExpressionUUID->"a8c26f55-7dbe-43a6-9f4d-023897f05832",
+ CellID->1356459275],
+Cell[66309, 1819, 519, 13, 57, "GuideText",ExpressionUUID->"01143734-7a32-41df-ac31-3c03031335ca",
+ CellID->324638373],
+Cell[66831, 1834, 465, 12, 37, "GuideText",ExpressionUUID->"d306d19c-7834-4817-b266-821a6264267e",
+ CellID->1588671631],
+Cell[67299, 1848, 477, 13, 37, "GuideText",ExpressionUUID->"e30c5f81-cad6-446c-bc65-d03c564b8f57",
+ CellID->1139919066],
+Cell[67779, 1863, 462, 12, 37, "GuideText",ExpressionUUID->"35c406a1-a06b-445d-850d-a2026de2957f",
+ CellID->918127375],
+Cell[68244, 1877, 521, 13, 57, "GuideText",ExpressionUUID->"80a3bcb6-4137-425d-8b3b-8ea2755bff66",
+ CellID->1296787930],
+Cell[68768, 1892, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"aee4a655-2d6c-4755-b688-ecb4d9a1e021",
+ CellID->303206107],
+Cell[68884, 1895, 114, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"e5e77688-6a79-4740-aa83-a4e0a1118b29",
+ CellID->6346018],
+Cell[69001, 1898, 456, 12, 31, "GuideText",ExpressionUUID->"98bdfc50-1fc6-4c5f-9334-4d4c168210cb",
+ CellID->1430825823],
+Cell[69460, 1912, 453, 12, 37, "GuideText",ExpressionUUID->"c60d50fc-2e1d-4b43-b6e9-251de69e0519",
+ CellID->367728055],
+Cell[69916, 1926, 497, 13, 57, "GuideText",ExpressionUUID->"4f4c146e-756b-4d2d-af91-6036f08f0bb4",
+ CellID->2094967966],
+Cell[70416, 1941, 471, 12, 37, "GuideText",ExpressionUUID->"855b8e8e-0aa0-4866-aca2-f6e39162f7e5",
+ CellID->2132211997],
+Cell[70890, 1955, 468, 12, 37, "GuideText",ExpressionUUID->"97c0e2dd-748b-410a-a93e-3c19978f815e",
+ CellID->1027416090],
+Cell[71361, 1969, 479, 13, 37, "GuideText",ExpressionUUID->"db68ddb8-bc34-4cbd-93ae-2ef49aa7c5c9",
+ CellID->2013702750],
+Cell[71843, 1984, 476, 12, 37, "GuideText",ExpressionUUID->"df40be88-1401-4274-af39-c6add0a56f58",
+ CellID->2107326177],
+Cell[72322, 1998, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"e584dc60-8dfc-425c-b4c3-8aa951cd2e1a",
+ CellID->1530750515],
+Cell[72439, 2001, 119, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"c68ab0d8-a78d-4b3e-97f4-165898bfaec8",
+ CellID->469814545],
+Cell[72561, 2004, 467, 12, 31, "GuideText",ExpressionUUID->"2faf3072-d894-467c-bdb1-82ea347c128f",
+ CellID->2023171443],
+Cell[73031, 2018, 472, 12, 37, "GuideText",ExpressionUUID->"d1088e26-6d2d-44f5-a2d4-3eb09abfa553",
+ CellID->186375903],
+Cell[73506, 2032, 473, 12, 37, "GuideText",ExpressionUUID->"c8bdcd34-62cb-452a-a2a9-b5715b6ccb55",
+ CellID->1388644395],
+Cell[73982, 2046, 514, 14, 57, "GuideText",ExpressionUUID->"0efce604-2a42-4f37-af96-4f19473e377b",
+ CellID->94071169],
+Cell[74499, 2062, 559, 14, 57, "GuideText",ExpressionUUID->"520359f2-f6a7-4e7b-aeb3-1598be7d8f03",
+ CellID->506173191],
+Cell[75061, 2078, 544, 13, 57, "GuideText",ExpressionUUID->"9c3f3dca-55d0-4940-ab95-3e47666f3940",
+ CellID->1070095370],
+Cell[75608, 2093, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"9b80a4c8-b988-4e35-a11d-352264f440f6",
+ CellID->2064823612],
+Cell[75725, 2096, 120, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"81a9c05b-004b-4d0c-8a53-71e28e5f1c64",
+ CellID->154711364],
+Cell[75848, 2099, 483, 13, 31, "GuideText",ExpressionUUID->"47cb383f-f6d3-4c6c-b13d-5c8b7c9e8d6b",
+ CellID->1778681878],
+Cell[76334, 2114, 487, 13, 37, "GuideText",ExpressionUUID->"6cba8632-7289-47e4-99cc-1b6effccffc5",
+ CellID->1333957306],
+Cell[76824, 2129, 464, 12, 37, "GuideText",ExpressionUUID->"c563089b-6c52-4014-9051-c1522e72556c",
+ CellID->91167262],
+Cell[77291, 2143, 463, 12, 37, "GuideText",ExpressionUUID->"966910a3-948c-482b-9710-cb3d6fc70e01",
+ CellID->1092332123],
+Cell[77757, 2157, 472, 12, 37, "GuideText",ExpressionUUID->"023a7cc1-2876-47d7-97f1-ff5f3c5170e6",
+ CellID->2135776705],
+Cell[78232, 2171, 470, 12, 37, "GuideText",ExpressionUUID->"8b24f371-8d74-41e9-b21e-fac5d6950fe9",
+ CellID->809921330],
+Cell[78705, 2185, 479, 12, 37, "GuideText",ExpressionUUID->"e7c10831-4a8e-4cc3-828f-f8e7aa34f723",
+ CellID->1596438624],
+Cell[79187, 2199, 471, 12, 37, "GuideText",ExpressionUUID->"bce4a000-6cd8-4ce2-99dd-16e9a3f39202",
+ CellID->683267950],
+Cell[79661, 2213, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"969401b6-ecf3-4ee7-b532-052e78339f20",
+ CellID->1089375141],
+Cell[79778, 2216, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"83c02ffc-dafd-4c40-9e68-c73cdf56733d",
+ CellID->1829904112],
+Cell[79903, 2219, 464, 12, 31, "GuideText",ExpressionUUID->"68a12654-81c2-47d0-b5d7-2b9b60b0f385",
+ CellID->1085101697],
+Cell[80370, 2233, 494, 13, 37, "GuideText",ExpressionUUID->"e07fd8ea-820c-4f23-95c9-7439211f22e0",
+ CellID->873091155],
+Cell[80867, 2248, 483, 13, 37, "GuideText",ExpressionUUID->"80fbf122-62de-431a-8f3d-70f3d7e54d97",
+ CellID->287282134],
+Cell[81353, 2263, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f5a327fc-c00e-420d-9b09-299251e73f11",
+ CellID->807587682],
+Cell[81462, 2266, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"63fe06d2-d215-409a-ae87-9ba6f6fdfd09",
+ CellID->1029522334],
+Cell[81858, 2280, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"d4bddc4d-d698-4674-ab3c-89ecd13d170f",
+ CellID->906123659],
+Cell[81967, 2283, 249, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"bdfcfdf3-ca3b-43e6-9add-efe0530d481a",
+ CellID->1413795936],
+Cell[82219, 2291, 237, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"e6e7aee2-cb8a-4b17-85b0-471a7e1660c2",
+ CellID->1909225944],
+Cell[82459, 2299, 260, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"b4b9c82c-d635-4225-82b9-2d9f3532eb3b",
+ CellID->659787334],
+Cell[82722, 2307, 98, 1, 40, "FooterCell",ExpressionUUID->"a988a016-c001-4404-bc7d-744fb64470e0",
+ CellID->1587653077]
+}
+]
+*)
+
+(* End of internal cache information *)
+

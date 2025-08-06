@@ -156,7 +156,13 @@ DefineOptions[ExperimentAliquot,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
 								ObjectTypes -> {Model[Container], Object[Container]},
 								PreparedSample -> False,
-								PreparedContainer -> True
+								PreparedContainer -> True,
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -216,7 +222,15 @@ DefineOptions[ExperimentAliquot,
 					Type -> Object,
 					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 					PreparedSample -> True,
-					PreparedContainer -> True
+					PreparedContainer -> True,
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				]
 			},
 			{
@@ -254,7 +268,15 @@ DefineOptions[ExperimentAliquot,
 					Type -> Object,
 					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 					PreparedSample -> True,
-					PreparedContainer -> True
+					PreparedContainer -> True,
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -280,7 +302,15 @@ DefineOptions[ExperimentAliquot,
 					Type -> Object,
 					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
 					PreparedSample -> True,
-					PreparedContainer -> True
+					PreparedContainer -> True,
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -335,9 +365,28 @@ DefineOptions[ExperimentAliquot,
 			Description -> "If True, this resolver is being called as part of resolveAliquotMethod, and all messages should be suppressed.",
 			Category -> "Hidden"
 		},
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True
+				}
+			}
+		],
+		(* don't actually want this exposed to the customer, but do need it under the hood for ModelInputOptions to work *)
+		ModifyOptions[
+			PreparatoryUnitOperationsOption,
+			Category -> "Hidden"
+		],
 		SamplesOutStorageOptions,
-		PostProcessingOptions,
+		BiologyPostProcessingOptions,
 		ProtocolOptions,
+		WorkCellOption,
 		SimulationOption,
 		SubprotocolDescriptionOption,
 		PriorityOption,
@@ -360,7 +409,7 @@ Error::AliquotVolumeTooLarge = "The sample(s) `1` have their Amount option set t
 Error::MinimumAliquotAmount = "All Amounts must be above the minimum mass or volume that can be manipulated using standard transfer devices. Check `1` which have amounts of `2`.";
 Error::BufferDilutionMismatched = "One or more (but not all) of ConcentratedBuffer, BufferDilutionFactor and/or BufferDiluent are specified for `1`. Please supply values for all or none of these options.";
 Error::OverspecifiedBuffer = "Both AssayBuffer and some of ConcentratedBuffer/BufferDilutionFactor/BufferDiluent have been specified for `1`. These buffer options are in conflict; please specify either just AssayBuffer or just ConcentratedBuffer options.";
-Warning::BufferWillNotBeUsed = "AssayBuffer and/or ConcentratedBuffer were specified for `1`.  However, the buffer(s) will not be used because AssayVolume and Volume are equal and no dilution will occur for these samples.";
+Warning::BufferWillNotBeUsed = "AssayBuffer and/or ConcentratedBuffer were specified for `1`. However, the buffer(s) will not be used because AssayVolume and Amount are equal. The amount of buffer is determined by AssayVolume minus Amount, therefore currently no dilution will occur for these samples. If it is intended to use the buffer(s) to dilute, please set the the AssayVolume and Amount accordingly. Otherwise, please leave AssayBuffer and/or ConcentratedBuffer Automatic or Null.";
 Error::MissingMolecularWeight = "The TargetConcentration option cannot be reached for `1` because these sample(s) do not have a MolecularWeight.  Please request an Amount only for this sample, or specify its TargetConcentration as a mass concentration rather than a molarity concentration.";
 Error::StateAmountMismatch = "The Amount option is specified for the following sample(s): `1` using units `2` that do not correspond to these samples' states. Note that if a counted item, Amount must be specified as an integer and not a mass. Please leave Amount as Automatic or specify it directly to the right quantity for the sample's state.";
 Warning::TargetConcentrationNotUsed = "The TargetConcentration option has been specified for the following sample(s): `1` for which Amount has been specified as a Count: `2`.  TargetConcentration is not used if specified for counted items.";
@@ -370,9 +419,10 @@ Warning::NestedIndexMatchingConsolidateAliquotsNotSupported = "The ConsolidateAl
 Error::BufferDilutionFactorTooLow = "The BufferDilutionFactor option was specified or set automatically to `1`, but this value is too low for the specified or automatically set AssayVolume option `2` for the following sample(s) `3`.  Please increase AssayVolume to allow for sufficiently concentrated buffer, or increase BufferDilutionFactor and use a more concentrated ConcentratedBuffer.";
 
 (* post MapThreaded error checking *)
-Warning::TotalAliquotVolumeTooLarge = "The following sample(s) `1` have a volume requested `2` that exceed the volume of these sample(s).  The experiment will still attempt to aliquot these amounts with what is currently available; please change the Volume option if this is not desired.";
+Warning::TotalAliquotVolumeTooLarge = "The following sample(s) `1` have a volume requested `2` that exceed the volume of these sample(s). The experiment will still attempt to aliquot these amounts with what is currently available; please change the Amount option if this is not desired.";
 
 (* ContainerOut resolution stuff *)
+Error::AssayVolumeAboveMaximum = "The following sample(s) `1` have a specified or calculated AssayVolume (`2`) that exceeds the maximum volume supported at ECL (`3`).  Please adjust the options such that the AssayVolume is at or below that value.";
 Error::DestinationWellDoesntExist = "The specified `1` value(s) `2` do not exist for corresponding `3` value(s) `4`.  Please specify a destination well position that exists for this container by checking its Positions field, or leave `1` Automatic.";
 Error::VolumeOverContainerMax = "Some of the total assay volumes (`1`), exceed the max volume that the ContainerOut option, `2`, can hold (`3`). Please either lower these total volumes to a value below `3` or allow the ContainerOut to be chosen automatically.  If ConsolidateAliquots is set to True, consider turning it to False to ensure no container is overflowing.";
 Error::PreparationInvalid = "The specified Preparation requests Robotic, but some of the input containers or ContainerOut containers are not compatible with Robotic.  Please change to Manual, or first change the input or output containers.";
@@ -402,23 +452,25 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 	{
 		specifiedConcentratedBuffer, specifiedAssayBuffer, specifiedBufferDiluent, specifiedContainerOut, inheritedCache,
 		allBufferModels, allBufferObjs, containerOutModels, containerOutObjs, allDownloadValues, newCache, listedOptions,
-		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, fastTrack,
+		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, canaryBranch, fastTrack,
 		parentProt, validLengthTests, combinedOptions, expandedCombinedOptions, resolveOptionsResult, resolvedOptions,
 		resolutionTests, preCollapsedResolvedOptions, finalizedPackets, resourcePacketTests, allTests, validQ,
 		safeOptions, validLengths, unresolvedOptions, applyTemplateOptionTests, safeOpsWithNames, updatedSimulation,
 		preferredVesselContainerModels, previewRule, optionsRule, testsRule, resultRule, collapseAmountQ,
 		collapseTargetConcQ, resolvedOptionsCollapsedPooled, samplesWithoutTemporalLinks, optionsWithoutTemporalLinks,
-		simulation, resolvedOptionsCollapsedPooledWithHidden, performSimulationQ, resultQ, preparation, runTimeRule,
-		simulatedProtocol, newSimulation, simulationRule, enableSamplePreparation, semiCollapsedAmount,
-		semiCollapsedTargetConc, semiCollapsedTargetConcAnalyte, collapseTargetConcAnalyteQ, resolveMethod,
+		resourcePacketsSimulation, resolvedOptionsCollapsedPooledWithHidden, performSimulationQ, resultQ, runTimeRule,
+		simulatedProtocol, newSimulation, simulationRule, resolvedPreparation, enableSamplePreparation, resolvedWorkCell,
+		semiCollapsedAmount, semiCollapsedTargetConc, semiCollapsedTargetConcAnalyte, collapseTargetConcAnalyteQ, resolveMethod,
 		resourcePacketsResult, simulationResult, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly,
-		returnEarlyBecauseFailuresOrMethodQ},
+		returnEarlyBecauseFailuresOrMethodQ, samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,
+		validSamplePreparationResult, constellationMessageRule
+	},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages (also silence messages if we are just resolving the method) *)
+	(* determine if we should keep a running list of tests; if True, then silence messages (also silence messages if we are just resolving the method) *)
 	gatherTests = MemberQ[output, Tests];
 	resolveMethod = Lookup[ToList[myOptions], ResolveMethod, False];
 	messages = Not[gatherTests] && Not[resolveMethod];
@@ -426,25 +478,44 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 	(* make sure we're working with a list of options and samples, and remove all temporal links *)
 	{samplesWithoutTemporalLinks, optionsWithoutTemporalLinks} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
-	(* call SafeOptions to make sure all options match pattern *)
-	{safeOpsWithNames, safeOptionTests} = If[gatherTests,
-		SafeOptions[ExperimentAliquot, optionsWithoutTemporalLinks, Output -> {Result, Tests}, AutoCorrect -> False],
-		{SafeOptions[ExperimentAliquot, optionsWithoutTemporalLinks, AutoCorrect -> False], Null}
+	(* Simulate our sample preparation. *)
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation. *)
+		{samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentAliquot,
+			samplesWithoutTemporalLinks,
+			optionsWithoutTemporalLinks
+		],
+		$Failed,
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		Return[$Failed]
+	];
+
+	(* call SafeOptions to make sure all options match pattern *)
+	{safeOpsWithNames, safeOptionTests} = If[gatherTests,
+		SafeOptions[ExperimentAliquot, optionsWithPreparedSamplesNamed, Output -> {Result, Tests}, AutoCorrect -> False],
+		{SafeOptions[ExperimentAliquot, optionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
+	];
+
+	(* change all Names to objects *)
+	{listedSamples, safeOptions, listedOptions} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOpsWithNames, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
-	If[MatchQ[safeOpsWithNames, $Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[outputSpecification /. {
 			Result -> $Failed,
 			Tests -> safeOptionTests,
 			Options -> $Failed,
 			Preview -> Null,
-			Simulation -> Lookup[ToList[myOptions], Simulation, Simulation[]]
+			Simulation -> updatedSimulation
 		}]
 	];
-
-	(* change all Names to objects *)
-	{listedSamples, safeOptions, listedOptions} = sanitizeInputs[samplesWithoutTemporalLinks, safeOpsWithNames, optionsWithoutTemporalLinks];
 
 	(* call ValidInputLengthsQ to make sure all the options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
@@ -459,12 +530,12 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 			Tests -> Flatten[{safeOptionTests,validLengthTests}],
 			Options -> $Failed,
 			Preview -> Null,
-			Simulation -> Lookup[safeOptions, Simulation, Simulation[]]
+			Simulation -> updatedSimulation
 		}]
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache, simulation} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache, Simulation}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 6 for samples at this point *)
@@ -499,7 +570,13 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 
 	(* if the Container option is Automatic, we might end up calling PreferredContainer; so we've gotta make sure we download info from all the objects it might spit out *)
 	preferredVesselContainerModels = If[MatchQ[specifiedContainerOut, Automatic] || MemberQ[Flatten[ToList[specifiedContainerOut]], Automatic],
-		PreferredContainer[All],
+		DeleteDuplicates[
+			Flatten[{
+				PreferredContainer[All, Type -> All],
+				PreferredContainer[All, Sterile -> True, Type -> All],
+				PreferredContainer[All, Sterile -> True, LiquidHandlerCompatible -> True, Type -> All]
+			}]
+		],
 		{}
 	];
 
@@ -517,34 +594,34 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 				},
 				{
 					{
-						Packet[Name, Volume, Mass, Count, Status, Model, Position, Container, Sterile, State, Tablet, TabletWeight, Sterile, LiquidHandlerIncompatible, Composition, Analytes],
-						Packet[Model[{Name, Deprecated, LiquidHandlerIncompatible}]],
-						Packet[Container[{Name, Status, Model, Contents, Sterile, TareWeight, Container, Position}]],
+						Packet[Name, Volume, Mass, Count, Status, Model, Position, Container, Sterile, AsepticHandling, State, Tablet, SolidUnitWeight, Living, LiquidHandlerIncompatible, CellType, Composition, Analytes, IncompatibleMaterials],
+						Packet[Model[{Name, Living, CellType, Composition, Sterile, AsepticHandling, Deprecated, LiquidHandlerIncompatible, IncompatibleMaterials}]],
+						Packet[Container[{Name, Status, Model, Contents, Sterile, AsepticHandling, TareWeight, Container, Position}]],
 						Packet[Container[Model][{Name, Deprecated, MaxVolume, Sterile, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter, CoverTypes, CoverFootprints}]],
 						Packet[Composition[[All,2]][MolecularWeight]]
 					},
 					{
-						Packet[Name, Deprecated, ConcentratedBufferDilutionFactor, LiquidHandlerIncompatible]
+						Packet[Name, Sterile, AsepticHandling, Deprecated, ConcentratedBufferDilutionFactor, LiquidHandlerIncompatible, IncompatibleMaterials]
 					},
 					{
-						Packet[Name, Volume, Mass, Count, Status, Model, Position, Container, Sterile, State, Tablet, TabletWeight, Sterile, LiquidHandlerIncompatible, Composition, Analytes],
-						Packet[Model[{Name, Deprecated, ConcentratedBufferDilutionFactor, LiquidHandlerIncompatible}]],
-						Packet[Container[{Name, Status, Model, Contents, Sterile, TareWeight, Container, Position}]],
+						Packet[Name, Volume, Mass, Count, Status, Model, Position, Container, Sterile, AsepticHandling, State, Tablet, SolidUnitWeight, Sterile, LiquidHandlerIncompatible, Composition, Analytes, IncompatibleMaterials],
+						Packet[Model[{Name, Deprecated, ConcentratedBufferDilutionFactor, LiquidHandlerIncompatible, IncompatibleMaterials}]],
+						Packet[Container[{Name, Status, Model, Contents, Sterile, AsepticHandling, TareWeight, Container, Position}]],
 						Packet[Container[Model][{Name, Deprecated, MaxVolume, Sterile, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter, CoverTypes, CoverFootprints}]]
 					},
 					{
-						Packet[Name, MaxVolume, Sterile, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, CoverTypes, CoverFootprints, LiquidHandlerPrefix, LiquidHandlerAdapter]
+						Packet[Name, MaxVolume, Sterile, AsepticHandling, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, CoverTypes, CoverFootprints, LiquidHandlerPrefix, LiquidHandlerAdapter]
 					},
 					{
-						Packet[Name, Status, Model, Contents, TareWeight, Sterile, Position, Container],
-						Packet[Model[{Name, MaxVolume, Sterile, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter, CoverTypes, CoverFootprints}]]
+						Packet[Name, Status, Model, Contents, TareWeight, Sterile, AsepticHandling, Position, Container],
+						Packet[Model[{Name, MaxVolume, Sterile, AsepticHandling, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter, CoverTypes, CoverFootprints}]]
 					},
 					{
-						Packet[Name, MaxVolume, Sterile, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter]
+						Packet[Name, MaxVolume, Sterile, AsepticHandling, Deprecated, AspectRatio, Dimensions, NumberOfWells, Footprint, Positions, LiquidHandlerPrefix, LiquidHandlerAdapter]
 					}
 				},
 				Cache -> inheritedCache,
-				Simulation -> simulation,
+				Simulation -> updatedSimulation,
 				Date -> Now
 			],
 			{Download::FieldDoesntExist,Download::MissingCacheField}
@@ -560,24 +637,23 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 
 	(* make the new cache, removing any nulls or $Faileds *)
 	newCache = Cases[FlattenCachePackets[{inheritedCache, allDownloadValues}], PacketP[]];
-
 	(* --- Resolve the options! --- *)
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveExperimentAliquotOptions[listedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache, Simulation -> simulation],
-			{resolveExperimentAliquotOptions[listedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache, Simulation -> simulation], Null}
+			resolveExperimentAliquotOptions[listedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache, Simulation -> updatedSimulation],
+			{resolveExperimentAliquotOptions[listedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache, Simulation -> updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* pull out the Preparation option *)
-	{preparation, enableSamplePreparation} = Lookup[resolvedOptions, {Preparation, EnableSamplePreparation}];
+	{resolvedPreparation, enableSamplePreparation, resolvedWorkCell} = Lookup[resolvedOptions, {Preparation, EnableSamplePreparation, WorkCell}];
 
 	(* remove the hidden options and collapse the expanded options if necessary *)
-	(* need to do this at this level only because resolveExperimentAliquotOptions doens't have access to listedOptions *)
+	(* need to do this at this level only because resolveExperimentAliquotOptions doesn't have access to listedOptions *)
 	preCollapsedResolvedOptions = CollapseIndexMatchedOptions[
 		ExperimentAliquot,
 		resolvedOptions,
@@ -672,9 +748,9 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 	returnEarlyBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result|Simulation]];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
-	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
-	(* also return early if we are resolving the method becuase we don't want the overhead of everything else; we just want robotic vs manual *)
+	(* also return early if we are resolving the method because we don't want the overhead of everything else; we just want robotic vs manual *)
 	returnEarlyBecauseFailuresOrMethodQ = Which[
 		MatchQ[resolveOptionsResult, $Failed], True,
 		gatherTests, Not[RunUnitTest[<|"Tests" -> resolutionTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
@@ -693,7 +769,7 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 	If[(returnEarlyBecauseFailuresOrMethodQ && resolveMethod) || (!performSimulationQ && returnEarlyBecauseOptionsResolverOnly),
 		Return[outputSpecification /. {
 			Result -> $Failed,
-			Options -> If[MatchQ[preparation, Robotic] || enableSamplePreparation || resolveMethod,
+			Options -> If[MatchQ[resolvedPreparation, Robotic] || enableSamplePreparation || resolveMethod,
 				resolvedOptionsCollapsedPooledWithHidden,
 				resolvedOptionsCollapsedPooled
 			],
@@ -712,13 +788,13 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 	(* if we're gathering tests, make sure the function spits out both the result and the tests; if we are not gathering tests, the result is enough, and the other can be Null *)
 	(* if we have Output -> Options and we are in a SamplePrep sub call we are going to cut some corners to at least do some of the necessary error checking with fulfillableResourceQ; that's what this function is here; not sure if it is sufficient anymore though given how simulation works so might need to delete this; we'll see *)
 	resourcePacketsResult = Check[
-		{finalizedPackets, updatedSimulation, resourcePacketTests} = Which[
+		{finalizedPackets, resourcePacketsSimulation, resourcePacketTests} = Which[
 			(* if we're inside the work cell resolver then don't bother with this *)
-			(MatchQ[preparation, Robotic] && Not[MemberQ[output, Result|Simulation]]) || MatchQ[resolveOptionsResult, $Failed] || returnEarlyBecauseFailuresOrMethodQ, {$Failed, simulation, {}},
-			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]] && gatherTests, shortcutAliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> simulation],
-			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]], {shortcutAliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache, Simulation -> simulation], simulation, Null},
-			gatherTests, aliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> simulation],
-			True, {Sequence @@ aliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation}], Cache -> newCache, Simulation -> simulation], Null}
+			(MatchQ[resolvedPreparation, Robotic] && Not[MemberQ[output, Result|Simulation]]) || MatchQ[resolveOptionsResult, $Failed] || returnEarlyBecauseFailuresOrMethodQ, {$Failed, updatedSimulation, {}},
+			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]] && gatherTests, shortcutAliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> updatedSimulation],
+			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]], {shortcutAliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache, Simulation -> updatedSimulation], updatedSimulation, Null},
+			gatherTests, aliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> updatedSimulation],
+			True, {Sequence @@ aliquotResourcePackets[listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation}], Cache -> newCache, Simulation -> updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -741,7 +817,7 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 				ToList /@ listedSamples,
 				resolvedOptions,
 				Cache -> newCache,
-				Simulation -> updatedSimulation
+				Simulation -> resourcePacketsSimulation
 			],
 			performSimulationQ&&resultQ,
 			Quiet[
@@ -758,7 +834,7 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 					ToList /@ listedSamples,
 					resolvedOptions,
 					Cache -> newCache,
-					Simulation -> updatedSimulation
+					Simulation -> resourcePacketsSimulation
 				]
 			],
 			True,
@@ -789,7 +865,7 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 
 	(* generate the options output rule *)
 	optionsRule = Options -> Which[
-		MemberQ[output, Options] && (MatchQ[preparation, Robotic] || enableSamplePreparation), resolvedOptionsCollapsedPooledWithHidden,
+		MemberQ[output, Options] && (MatchQ[resolvedPreparation, Robotic] || enableSamplePreparation), resolvedOptionsCollapsedPooledWithHidden,
 		MemberQ[output, Options], resolvedOptionsCollapsedPooled,
 		True, Null
 	];
@@ -806,11 +882,17 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 		Null
 	];
 
-	(* generate the RUnTime rule *)
-	runTimeRule = RunTime -> If[MatchQ[preparation, Robotic],
+	(* generate the RunTime rule *)
+	runTimeRule = RunTime -> If[MatchQ[resolvedPreparation, Robotic],
 		Length[Flatten[mySamples]] * 20 Second,
 		Null
 	];
+
+	(* Set a rule for the ConstellationMessage since we can generate different protocol types. *)
+	constellationMessageRule = ConstellationMessage -> {
+		Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, RoboticCellPreparation], Object[Protocol, ManualCellPreparation]
+	};
 
 	(* generate the Result output rule, but only if we've got a Valid experiment call (determined above) *)
 	(* note that we are NOT calling UploadProtocol here because the ExperimentSamplePreparation call already did that so no need to do it again *)
@@ -818,16 +900,33 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 		Not[validQ], $Failed,
 		Not[MemberQ[output, Result]], $Failed,
 		(* if we're doing Preparation -> Robotic, return all our unit operation packets without RequireResources called if Upload -> False *)
-		MatchQ[preparation, Robotic] && MatchQ[upload, False],
+		MatchQ[resolvedPreparation, Robotic] && MatchQ[upload, False],
 			Rest[finalizedPackets],
 		(* if we are doing Preparation -> Robotic and Upload -> True, then call ExperimentRoboticSamplePreparation on the aliquot unit operations *)
-		MatchQ[preparation, Robotic],
-			Module[{unitOperation, nonHiddenOptions, unsortedPackets, samplesOutLabels, unsortedFutureLabeledObjects,
-				unsortedSampleOutFutureLabeledObjects, sortedSampleOutFutureLabeledObjects, sortedFutureLabeledObjects,
-				newProtocolPacket, allPackets},
+		MatchQ[resolvedPreparation, Robotic],
+			Module[
+				{
+					unitOperation, nonHiddenOptions, unsortedPackets, samplesOutLabels, unsortedFutureLabeledObjects,
+					unsortedSampleOutFutureLabeledObjects, sortedSampleOutFutureLabeledObjects, sortedFutureLabeledObjects,
+					newProtocolPacket, allPackets, samplesMaybeWithModels, experimentFunction
+				},
+
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important: need to use the simulation from before the resource packets function to do this sample -> model conversion, because we had to do some label shenanigans in the resource packets function that made the label-deconvolution here _not_ work *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					samplesWithoutTemporalLinks,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						updatedSimulation,
+						samplesWithoutTemporalLinks
+					]
+				];
+
 				unitOperation = Aliquot @@ Join[
 					{
-						Source -> samplesWithoutTemporalLinks
+						Source -> samplesMaybeWithModels
 					},
 					RemoveHiddenPrimitiveOptions[Aliquot, ToList[myOptions]]
 				];
@@ -855,11 +954,15 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 						}
 					];
 
-					unsortedPackets = ExperimentRoboticSamplePreparation[
+					(* pick the corresponding function from the association above *)
+					experimentFunction = Lookup[$WorkCellToExperimentFunction, resolvedWorkCell];
+
+					unsortedPackets = experimentFunction[
 						{unitOperation},
 						Name -> Lookup[safeOptions, Name],
 						Upload -> False,
 						Confirm -> False,
+						CanaryBranch -> Lookup[safeOptions, CanaryBranch],
 						ParentProtocol -> Lookup[safeOptions, ParentProtocol],
 						Priority -> Lookup[safeOptions, Priority],
 						StartDate -> Lookup[safeOptions, StartDate],
@@ -913,7 +1016,7 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 
 					If[upload,
 						(
-							Upload[allPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
+							Upload[allPackets, constellationMessageRule];
 							If[confirm, UploadProtocolStatus[Lookup[First[allPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
 							Lookup[First[allPackets], Object]
 						),
@@ -921,20 +1024,20 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 					]
 				]
 			],
-		(* don't need to call ExperimentManualSamplePreparation here because we already called it in the resource packet sfunction*)
-		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload && StringQ[Lookup[resolvedOptions, Name]],
+		(* don't need to call experimentFunction here because we already called it in the resource packets function *)
+		MatchQ[resolvedPreparation, Manual] && MemberQ[output, Result] && upload && StringQ[Lookup[resolvedOptions, Name]],
 			(
-				Upload[finalizedPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
+				Upload[finalizedPackets, constellationMessageRule];
 				If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
 				Append[Lookup[First[finalizedPackets], Type], Lookup[resolvedOptions, Name]]
 			),
-		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload,
+		MatchQ[resolvedPreparation, Manual] && MemberQ[output, Result] && upload,
 			(
-				Upload[finalizedPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
+				Upload[finalizedPackets, constellationMessageRule];
 				If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
 				Lookup[First[finalizedPackets], Object]
 			),
-		MatchQ[preparation, Manual] && MemberQ[output, Result] && Not[upload],
+		MatchQ[resolvedPreparation, Manual] && MemberQ[output, Result] && Not[upload],
 			finalizedPackets,
 		True,
 			$Failed
@@ -950,19 +1053,22 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:Op
 		- Takes a single container and passes it to the core container overload
 *)
 
-ExperimentAliquot[myContainer:ObjectP[Object[Container]], myOptions:OptionsPattern[ExperimentAliquot]]:=ExperimentAliquot[{{myContainer}}, myOptions];
+ExperimentAliquot[myContainer:ObjectP[{Object[Container], Model[Sample]}], myOptions:OptionsPattern[ExperimentAliquot]]:=ExperimentAliquot[{{myContainer}}, myOptions];
 
 (*
 	Multiple containers with no second input:
 		- expands the Containers into their contents and passes to the core function
 *)
 
-ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myOptions:OptionsPattern[ExperimentAliquot]]:=Module[
+ExperimentAliquot[myContainers:{ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]]..}, myOptions:OptionsPattern[ExperimentAliquot]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,
 		containerToSampleTests, inputSamples, samplesOptions, aliquotResults, initialReplaceRules, testsRule, resultRule,
-		previewRule, optionsRule, pooledContainers, safePooledOptions, simulationRule, runTimeRule},
+		previewRule, optionsRule, pooledContainers, safePooledOptions, simulationRule, runTimeRule, safeOptionsWithNames,
+		sanitizedContainers, optionsWithPreparedSamples, simulation, listedContainers, allPreparedContainers,
+		myOptionsWithPreparedSamplesNamed, updatedSimulation, validSamplePreparationResult},
 
 	(* make sure we're working with a list of options *)
+	listedContainers = ToList[myContainers];
 	listedOptions = ToList[myOptions];
 
 	(* determine the requested return value from the function *)
@@ -972,11 +1078,37 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myOpti
 	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 
-	(* call SafeOptions to make sure all options match pattern *)
-	{safeOptions, safeOptionTests} = If[gatherTests,
-		SafeOptions[ExperimentAliquot, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
-		{SafeOptions[ExperimentAliquot, listedOptions, AutoCorrect -> False], Null}
+	(* lookup the simulation, if one exists *)
+	simulation = Lookup[listedOptions, Simulation];
+
+	(*--Simulate sample preparation--*)
+	(* initialSamplePreparationCache,samplePreparationCache *)
+	validSamplePreparationResult = Check[
+		{allPreparedContainers, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentAliquot,
+			listedContainers,
+			listedOptions
+		],
+		$Failed,
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
+
+	(*If we are given an invalid define name, return early*)
+	If[MatchQ[validSamplePreparationResult,$Failed],
+		(* Return early *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets *)
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
+		Return[$Failed]
+	];
+
+	(* call SafeOptions to make sure all options match pattern *)
+	{safeOptionsWithNames, safeOptionTests} = If[gatherTests,
+		SafeOptions[ExperimentAliquot, myOptionsWithPreparedSamplesNamed, Output -> {Result, Tests}, AutoCorrect -> False],
+		{SafeOptions[ExperimentAliquot, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
+	];
+
+	(* Replace all objects referenced by Name to ID *)
+	{sanitizedContainers, safeOptions, optionsWithPreparedSamples} = sanitizeInputs[allPreparedContainers, safeOptionsWithNames, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns, return $Failed*)
 	If[MatchQ[safeOptions,$Failed],
@@ -989,13 +1121,33 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myOpti
 	];
 
 	(* need to pool the containers and safe options *)
-	pooledContainers = ToList[#]& /@ myContainers;
-	safePooledOptions = ReplaceRule[safeOptions,{Amount->If[MatchQ[Lookup[safeOptions, Amount], UnitsP[] | Automatic | Null], ConstantArray[{Lookup[safeOptions,Amount]}, Length[myContainers]], (ToList/@Lookup[safeOptions,Amount])],TargetConcentration->If[MatchQ[Lookup[safeOptions, TargetConcentration], UnitsP[] | Automatic | Null], ConstantArray[{Lookup[safeOptions,TargetConcentration]}, Length[myContainers]], (ToList/@Lookup[safeOptions,TargetConcentration])]}];
+	pooledContainers = ToList[#]& /@ sanitizedContainers;
+	safePooledOptions = ReplaceRule[
+		safeOptions,
+		{
+			Amount->If[MatchQ[Lookup[safeOptions, Amount], UnitsP[] | Automatic | Null], ConstantArray[{Lookup[safeOptions,Amount]}, Length[sanitizedContainers]], (ToList/@Lookup[safeOptions,Amount])],
+			TargetConcentration->If[MatchQ[Lookup[safeOptions, TargetConcentration], UnitsP[] | Automatic | Null], ConstantArray[{Lookup[safeOptions,TargetConcentration]}, Length[myContainers]], (ToList/@Lookup[safeOptions,TargetConcentration])]
+		}
+	];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
 	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation->Lookup[safeOptions, Simulation], Output -> {Result, Tests}],
-		{pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation->Lookup[safeOptions, Simulation]], Null}
+		pooledContainerToSampleOptions[
+			ExperimentAliquot,
+			pooledContainers,
+			safePooledOptions,
+			Simulation -> updatedSimulation,
+			Output -> {Result, Tests}
+		],
+		{
+			pooledContainerToSampleOptions[
+				ExperimentAliquot,
+				pooledContainers,
+				safePooledOptions,
+				Simulation -> updatedSimulation
+			],
+			Null
+		}
 	];
 
 	(* If the specified containers aren't allowed *)
@@ -1007,7 +1159,7 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myOpti
 	{inputSamples, samplesOptions} = containerToSampleResult;
 
 	(* call ExperimentAliquot and get all its outputs *)
-	aliquotResults = ExperimentAliquot[inputSamples, samplesOptions];
+	aliquotResults = ExperimentAliquot[inputSamples, ReplaceRule[samplesOptions, Simulation -> updatedSimulation]];
 
 	(* create a list of replace rules from the mass spec call above and whatever the output specification is *)
 	initialReplaceRules = If[MatchQ[outputSpecification, _List],
@@ -1059,13 +1211,13 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myAmount:(Gr
 (*
 	Single container, single amount; pass to listed overload
 *)
-ExperimentAliquot[myContainer:ObjectP[Object[Container]], myAmount:(GreaterP[0 Liter] | GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[{{myContainer}}, {{myAmount}}, myOptions];
+ExperimentAliquot[myContainer:ObjectP[{Object[Container], Object[Sample], Model[Sample]}], myAmount:(GreaterP[0 Liter] | GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[{{myContainer}}, {{myAmount}}, myOptions];
 
 (*
 	Many Containers, single Volume:
-		- Extend the single volume to match the lenght of the container list, and pass to MapThread overload
+		- Extend the single volume to match the length of the container list, and pass to MapThread overload
 *)
-ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myAmount:(GreaterP[0 Liter] | GreaterP[0 Gram] | All), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[myContainers, ConstantArray[myAmount, Length[myContainers]], myOptions];
+ExperimentAliquot[myContainers:{ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]]..}, myAmount:(GreaterP[0 Liter] | GreaterP[0 Gram] | All), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[myContainers, ConstantArray[myAmount, Length[myContainers]], myOptions];
 
 (*
 	MapThread Containers/Volumes overload:
@@ -1074,11 +1226,11 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myAmou
 		- pass to the core sample overload
 *)
 
-ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myAmounts:{ListableP[(GreaterP[0 Liter] | GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..}, myOptions:OptionsPattern[ExperimentAliquot]] := Module[
+ExperimentAliquot[myContainers:{ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]]..}, myAmounts:{ListableP[(GreaterP[0 Liter] | GreaterP[0 Gram] | GreaterP[0 Unit, 1 Unit] | GreaterP[0., 1.] | All)]..}, myOptions:OptionsPattern[ExperimentAliquot]] := Module[
 	{outputSpecification, output, gatherTests, validLengths, validLengthsTests, updatedOptions, safeOptions,
 		safeOptionTests, containerToSampleTests, containerToSampleResult, inputSamples, samplesOptions, aliquotResults,
 		initialReplaceRules, testsRule, resultRule, previewRule, optionsRule, pooledContainers, safePooledOptions,
-		simulationRule,runTimeRule},
+		simulationRule,runTimeRule, safeOptionsWithNames, sanitizedContainers, optionsWithPreparedSamples},
 
 	(* Determine the requested return value from the function; can't get from safe options since we need to GIVE it to SafeOptions! *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -1109,10 +1261,16 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myAmou
 	updatedOptions = ReplaceRule[ToList[myOptions], {Amount -> myAmounts}];
 
 	(* call SafeOptions to make sure all options match pattern *)
-	{safeOptions, safeOptionTests} = If[gatherTests,
+	{safeOptionsWithNames, safeOptionTests} = If[gatherTests,
 		SafeOptions[ExperimentAliquot, updatedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
 		{SafeOptions[ExperimentAliquot, updatedOptions, AutoCorrect -> False], Null}
 	];
+
+	(* Replace all objects referenced by Name to ID *)
+	{sanitizedContainers, safeOptions, optionsWithPreparedSamples} = sanitizeInputs[myContainers, safeOptionsWithNames, updatedOptions, Simulation -> Lookup[safeOptionsWithNames, Simulation]];
+
+
+	(* TODO simulate sample preparation packets new here *)
 
 	(* If the specified options don't match their patterns, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -1125,13 +1283,14 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myAmou
 	];
 
 	(* need to pool the containers and safe options *)
-	pooledContainers = ToList[#]& /@ myContainers;
+	pooledContainers = ToList[#]& /@ sanitizedContainers;
 	safePooledOptions = ReplaceRule[safeOptions,{Amount->(ToList/@Lookup[safeOptions,Amount]),TargetConcentration->(ToList/@Lookup[safeOptions,TargetConcentration])}];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
+	(* pooledContainerToSampleOptions for whatever reason needs its simulation passed directly in *)
 	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Output -> {Result, Tests}],
-		{pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions], Null}
+		pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation -> Lookup[safePooledOptions, Simulation], Output -> {Result, Tests}],
+		{pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation -> Lookup[safePooledOptions, Simulation]], Null}
 	];
 
 	(* If the specified containers aren't allowed *)
@@ -1277,13 +1436,13 @@ ExperimentAliquot[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myConcentrat
 (*
 	Single container, single concentration; pass to listed overload
 *)
-ExperimentAliquot[myContainer:ObjectP[Object[Container]], myConcentration:(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)]), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[{{myContainer}}, {{myConcentration}}, myOptions];
+ExperimentAliquot[myContainer:ObjectP[{Object[Container], Model[Sample]}], myConcentration:(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)]), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[{{myContainer}}, {{myConcentration}}, myOptions];
 
 (*
 	Many Containers, single concentration:
-		- Extend the single volume to match the lenght of the container list, and pass to MapThread overload
+		- Extend the single volume to match the length of the container list, and pass to MapThread overload
 *)
-ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConcentration:(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)]), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[myContainers, ConstantArray[myConcentration, Length[myContainers]], myOptions];
+ExperimentAliquot[myContainers:{ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]]..}, myConcentration:(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)]), myOptions:OptionsPattern[ExperimentAliquot]] := ExperimentAliquot[myContainers, ConstantArray[myConcentration, Length[myContainers]], myOptions];
 
 (*
 	MapThread Containers/concentration overload:
@@ -1292,11 +1451,11 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConc
 		- pass to the core sample overload
 *)
 
-ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConcentrations:{ListableP[(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)])]..}, myOptions:OptionsPattern[ExperimentAliquot]] := Module[
+ExperimentAliquot[myContainers:{ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}]]..}, myConcentrations:{ListableP[(GreaterP[0 Molar] | GreaterP[0 (Gram / Liter)])]..}, myOptions:OptionsPattern[ExperimentAliquot]] := Module[
 	{outputSpecification, output, gatherTests, validLengths, validLengthsTests, updatedOptions, safeOptions,
 		safeOptionTests, containerToSampleTests, containerToSampleResult, inputSamples, samplesOptions, aliquotResults,
 		initialReplaceRules, testsRule, resultRule, previewRule, optionsRule, pooledContainers, safePooledOptions,
-		simulationRule, runTimeRule},
+		simulationRule, runTimeRule, safeOptionsWithNames, optionsWithPreparedSamples, sanitizedContainers},
 
 	(* Determine the requested return value from the function; can't get from safe options since we need to GIVE it to SafeOptions! *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -1326,10 +1485,15 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConc
 	updatedOptions = ReplaceRule[ToList[myOptions], {TargetConcentration -> myConcentrations}];
 
 	(* call SafeOptions to make sure all options match pattern *)
-	{safeOptions, safeOptionTests} = If[gatherTests,
+	{safeOptionsWithNames, safeOptionTests} = If[gatherTests,
 		SafeOptions[ExperimentAliquot, updatedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
 		{SafeOptions[ExperimentAliquot, updatedOptions, AutoCorrect -> False], Null}
 	];
+
+	(* Replace all objects referenced by Name to ID *)
+	{sanitizedContainers, safeOptions, optionsWithPreparedSamples} = sanitizeInputs[myContainers, safeOptionsWithNames, updatedOptions, Simulation -> Lookup[safeOptionsWithNames, Simulation]];
+
+	(* TODO simulate sample preparation packets new *)
 
 	(* If the specified options don't match their patterns, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -1342,13 +1506,14 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConc
 	];
 
 	(* need to pool the containers and safe options *)
-	pooledContainers = ToList[#]& /@ myContainers;
+	pooledContainers = ToList[#]& /@ sanitizedContainers;
 	safePooledOptions = ReplaceRule[safeOptions,{Amount->(ToList/@Lookup[safeOptions,Amount]),TargetConcentration->(ToList/@Lookup[safeOptions,TargetConcentration])}];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
+	(* pooledContainerToSampleOptions for whatever reason needs its simulation passed directly in *)
 	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Output -> {Result, Tests}],
-		{pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions], Null}
+		pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation -> Lookup[safePooledOptions, Simulation], Output -> {Result, Tests}],
+		{pooledContainerToSampleOptions[ExperimentAliquot, pooledContainers, safePooledOptions, Simulation -> Lookup[safePooledOptions, Simulation]], Null}
 	];
 
 	(* If the specified containers aren't allowed *)
@@ -1404,7 +1569,8 @@ ExperimentAliquot[myContainers:{ListableP[ObjectP[Object[Container]]]..}, myConc
 
 DefineOptions[convertTransferStepsToPrimitives,
 	Options :> {
-		CacheOption
+		CacheOption,
+		SimulationOption
 	}
 ];
 
@@ -1423,15 +1589,17 @@ convertTransferStepsToPrimitives[
 		preparation, containerOutLabel, resolvedDestWell, sampleOutLabel, destLabelToStorageConditionRules,
 		expandedSamplesOutStorageCondition, sampleOutLabelReplaceRules, sampleOutLabelsForTransfer,
 		samplesInStorageCondition, safeOps, cache, resolvedContainerOut, containerOutModels, containerOutObjs,
-		containerOutPackets, containerOutModelPackets, resolvedContainerOutWithPacket,
+		containerOutPackets, containerOutModelPackets, resolvedContainerOutWithPacket, simulation,
 		resolvedAssayVolume, resolvedAmount, transferPrimitives, resolvedAmountNoAll, sourceLabel,
 		destinationAndWellToVolumeRules, totalVolumeToEachDestRules, destinationAndWellToBufferVolumeRules,
-		bufferVolumeToEachDestRules, mixPrimitives, allPrimitives, sourceContainerLabel,
-		poolingShapes, sampleContainerPackets, labelSamplePrimitives, labelDestinationContainerPrimitives},
+		bufferVolumeToEachDestRules, mixPrimitives, allPrimitives, sourceContainerLabel, resolvedPreparatoryUnitOperations,
+		poolingShapes, sampleContainerPackets, labelSamplePrimitives, labelDestinationContainerPrimitives,
+		labelSampleUOToPrepend, sampleToLabelRules, updatedSimulation},
 
 	(* get the cache to grab the packets *)
 	safeOps = SafeOptions[convertTransferStepsToPrimitives, ToList[ops]];
 	cache = Lookup[safeOps, Cache];
+	simulation = Lookup[safeOps, Simulation];
 
 	(* pull out relevant values from the resolved options *)
 	{
@@ -1452,7 +1620,8 @@ convertTransferStepsToPrimitives[
 		preparation,
 		(* note that this is the DestinationWell option, which is different from myDestWells because the index matching is different *)
 		resolvedDestWell,
-		resolvedContainerOut
+		resolvedContainerOut,
+		resolvedPreparatoryUnitOperations
 	} = Lookup[
 		myResolvedOptions,
 		{
@@ -1472,8 +1641,40 @@ convertTransferStepsToPrimitives[
 			SamplesOutStorageCondition,
 			Preparation,
 			DestinationWell,
-			ContainerOut
+			ContainerOut,
+			PreparatoryUnitOperations
 		}
+	];
+
+	(* get the LabelSample unit operation we're going to be using here *)
+	labelSampleUOToPrepend = If[MatchQ[resolvedPreparatoryUnitOperations, {_[_LabelSample]}],
+		resolvedPreparatoryUnitOperations[[1, 1]],
+		Null
+	];
+
+	(* get the samples from labels from the LabelSample we're prepending *)
+	sampleToLabelRules = If[NullQ[labelSampleUOToPrepend] || Not[MatchQ[simulation, _Simulation]],
+		{},
+		With[
+			{
+				labelRules = Lookup[simulation[[1]], Labels],
+				prepUOLabels = Flatten[{labelSampleUOToPrepend[Label], labelSampleUOToPrepend[ContainerLabel]}]
+			},
+			Reverse /@ Select[labelRules, MemberQ[prepUOLabels, #[[1]]]&]
+		]
+	];
+
+	(* update the simulation to _not_ have the labels that we are adding above *)
+	updatedSimulation = If[NullQ[simulation],
+		Null,
+		With[{oldLabelRules = Lookup[First[simulation], Labels], labelsToRemove = Values[sampleToLabelRules]},
+			Simulation[
+				Append[
+					First[simulation],
+					Labels -> Select[oldLabelRules, Not[MemberQ[labelsToRemove, #[[1]]]]&]
+				]
+			]
+		]
 	];
 
 	(* get the shape of the sample inputs *)
@@ -1500,10 +1701,11 @@ convertTransferStepsToPrimitives[
 	];
 
 	(* make the LabelSample primitives for the input samples and the destinations *)
+	(* note that if this label is already taken by the PreparatoryUnitOperation UnitOperation above, then don't put it in here *)
 	labelSamplePrimitives = DeleteDuplicates[Flatten[MapThread[
 		Function[{samplePacketsInPool, sampleContainerPacketsInPool, sampleLabelsInPool, sampleContainerLabelsInPool},
 			MapThread[
-				If[StringQ[#3] && StringQ[#4],
+				If[StringQ[#3] && StringQ[#4] && Not[MemberQ[Values[sampleToLabelRules], #3]],
 					LabelSample[Sample -> Lookup[#1, Object], Container -> Lookup[#2, Object], Label -> #3, ContainerLabel -> #4],
 					Nothing
 				]&,
@@ -1577,7 +1779,12 @@ convertTransferStepsToPrimitives[
 				SamplesInStorageCondition -> samplesInStorageCondition,
 				SamplesOutStorageCondition -> expandedSamplesOutStorageCondition,
 
-				DispenseMix -> True
+				DispenseMix -> True,
+
+				(* Make the post-processing options Automatic so that it can resolve based on sample's living/sterile properties *)
+				ImageSample -> Automatic,
+				MeasureVolume -> Automatic,
+				MeasureWeight -> Automatic
 			]
 		},
 		{
@@ -1589,7 +1796,11 @@ convertTransferStepsToPrimitives[
 				(* in case something didn't get labeled (and so is still a list) then set those to Null*)
 				DestinationLabel -> Replace[sampleOutLabelsForTransfer, _List :> Null, {1}],
 				SamplesInStorageCondition -> samplesInStorageCondition,
-				SamplesOutStorageCondition -> expandedSamplesOutStorageCondition
+				SamplesOutStorageCondition -> expandedSamplesOutStorageCondition,
+				(* Make the post-processing options Automatic so that it can resolve based on sample's living/sterile properties *)
+				ImageSample -> Automatic,
+				MeasureVolume -> Automatic,
+				MeasureWeight -> Automatic
 			]
 		}
 	];
@@ -1634,9 +1845,21 @@ convertTransferStepsToPrimitives[
 	]];
 
 	(* put all the primitives for the ExperimentSamplePreparation call *)
-	allPrimitives = Flatten[{labelSamplePrimitives, labelDestinationContainerPrimitives, bufferLabelSamplePrimitives, transferPrimitives, mixPrimitives}];
+	(* if we're doing a preparatory unit operation model input, we need to remove the simulated IDs here and replace them with the labels in question *)
+	allPrimitives = ReplaceAll[
+		Flatten[{
+			If[NullQ[labelSampleUOToPrepend], Nothing, labelSampleUOToPrepend],
+			labelSamplePrimitives,
+			labelDestinationContainerPrimitives,
+			bufferLabelSamplePrimitives,
+			transferPrimitives,
+			mixPrimitives
+		}],
+		sampleToLabelRules
+	];
 
-	allPrimitives
+	(* return the updated simulation too with the labels we replaced above removed *)
+	{allPrimitives, updatedSimulation}
 
 ];
 
@@ -2119,6 +2342,38 @@ resolveAliquotMethod[mySamples:ObjectP[{Object[Sample], Object[Container]}] | {L
 
 ];
 
+(* ::Subsection:: *)
+(*resolveAliquotWorkCell*)
+
+DefineOptions[resolveAliquotWorkCell,
+	SharedOptions :> {
+		ExperimentAliquot,
+		CacheOption,
+		SimulationOption,
+		OutputOption
+	}
+];
+
+resolveAliquotWorkCell[
+	mySamples:ObjectP[{Object[Sample], Object[Container], Model[Sample]}] | {ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]..},
+	myOptions:OptionsPattern[]
+] := Module[
+	{safeOptions, cache, simulation, workCell, preparation},
+
+	(* Get our safe options. *)
+	safeOptions = SafeOptions[resolveAliquotWorkCell, ToList[myOptions]];
+	{cache, simulation, workCell, preparation} = Lookup[safeOptions, {Cache, Simulation, WorkCell, Preparation}];
+
+	(* Determine the WorkCell that can be used *)
+	If[MatchQ[workCell, WorkCellP|Null],
+		(* If WorkCell is specified, use that *)
+		{workCell}/.{Null} -> {},
+		(* Otherwise, use helper function to resolve potential work cells based on experiment options and sample properties *)
+		(* Note: there is no Sterile or SterileTechnique for ExperimentAliquot *)
+		resolvePotentialWorkCells[Flatten[{mySamples}], {Preparation -> preparation}, Cache -> cache, Simulation -> simulation]
+	]
+];
+
 (* ::Subsubsection::Closed:: *)
 (*resolveExperimentAliquotOptions *)
 
@@ -2163,7 +2418,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		uniqueUniques, uniqueIntegers, integersToDrawFrom, integersWithIntegersRemoved, integersForOldUniques,
 		uniqueToIntegerReplaceRules, resolvedContainerOut, preferredVesselContainerModels, preferredVesselPackets,
 		couldBeMicroQ, consolidatedAssayVolume, consolidatedAmount, resolvedPostProcessingOptions,
-		preparation, preparationInvalidOptions, preparationInvalidTest,
+		preparation, allowedWorkCells, workCell, preparationInvalidOptions, preparationInvalidTest, allIncompatibleMaterials,
 		resolvedContainerOutGroupedByIndex, numContainersPerIndex, invalidContainerOutSpecs,
 		containerOutMismatchedIndexOptions, containerOutMismatchedIndexTest, numReservedWellsPerIndex,
 		numWellsPerContainerRules, numWellsAvailablePerIndex, overOccupiedContainerOutBool, overOccupiedContainerOut,
@@ -2171,7 +2426,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		destinationContainerModelPackets, maxVolumes, allWellsForContainerOut, allOpenWellsForContainerOut,
 		containerMaxVolumeAssayVolumes, containerMaxVolumeAssayVolumesGroupedByIndex, totalVolumeEachIndex,
 		maxVolumeEachIndex, tooMuchVolumeQ, volumeTooHighContainerOut, volumeTooHighAssayVolume, volumeTooHighMaxVolume,
-		volumeOverContainerMaxOptions, volumeOverContainerMaxTest, invalidOptions, invalidInputs, allTests, confirm,
+		volumeOverContainerMaxOptions, volumeOverContainerMaxTest, invalidOptions, invalidInputs, allTests, confirm, canaryBranch,
 		template, samplesInStorageCondition, cache, fastTrack, operator, parentProtocol, upload, outputOption, email,
 		resolvedOptions, testsRule, resultRule, resolvedAssayBuffer,
 		resolvedConcentratedBuffer, resolvedBufferDilutionFactor, resolvedBufferDiluent, bufferDilutionMismatchErrors,
@@ -2187,17 +2442,18 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		pooledVolumeAboveAssayVolumeErrors, cannotResolveAssayVolumeError, flatSamplePackets, flatAmounts, flatTargetConc,
 		unknownAmountWarningTests, pooledVolumeAboveAssayVolumeSamples, pooledVolume, pooledVolumeAboveAssayVolumeVolumes,
 		pooledVolumeAboveAssayVolumeAssayVolumes, pooledVolumeAboveAssayVolumeOptions, pooledVolumeAboveAssayVolumeTest,
-		cannotResolveAssayVolumeSamples, cannotResolveAssayVolumeOptions, cannotResolveAssayVolumeTest, pooledQ,
+		cannotResolveAssayVolumeSamples, cannotResolveAssayVolumeOptions, cannotResolveAssayVolumeTest, pooledQ, sterileQ,
 		specifiedConsolidateAliquots, pooledConsolidateAliquotsWarning, sampleCompositionPackets, preResolvedAnalyte,
 		potentialAnalytesToUseFlat, potentialAnalyteTests, potentialAnalytesToUse, potentialAnalytePackets,
 		targetConcentrationTooLargeAnalyte, bufferTooConcentratedErrors, bufferTooConcentratedSamples,
 		bufferTooConcentratedBufferDilutionFactors, bufferTooConcentratedAssayVolumes, bufferTooConcentratedOptions,
-		bufferTooConcentratedTests, resolvedSampleLabel, resolvedSampleContainerLabel,
+		bufferTooConcentratedTests, resolvedSampleLabel, resolvedSampleContainerLabel, fastAssoc,
 		simulation, resolvedConcentratedBufferLabel, resolvedBufferDiluentLabel, resolvedAssayBufferLabel,
 		samplesToTransferNoZeroes, destinationsToTransferToNoZeroes, amountsToTransferNoZeroes, potentialMethods,
 		destinationWellsToTransferToNoZeroes, resolvedContainerOutLabel, fakeResolvedOptions, resolvedSampleOutLabel,
 		resolveMethod, containerOutLabelReplaceRules, sampleOutLabelReplaceRules, allPotentiallyLabeledSamples,
-		allPotentiallyLabeledContainers, sampleLabelReplaceRules, containerLabelReplaceRules},
+		allPotentiallyLabeledContainers, sampleLabelReplaceRules, containerLabelReplaceRules, overMaxVolumeErrors,
+		overMaxVolumeOptions, overMaxVolumeTests},
 
 	(* --- Setup our user specified options and cache --- *)
 
@@ -2244,6 +2500,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* pull out lots of shared options *)
 	{
 		confirm,
+		canaryBranch,
 		template,
 		samplesInStorageCondition,
 		cache,
@@ -2254,6 +2511,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		safePooledOptions,
 		{
 			Confirm,
+			CanaryBranch,
 			Template,
 			SamplesInStorageCondition,
 			Cache,
@@ -2262,6 +2520,9 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 			Output
 		}
 	];
+
+	(* make a fast association from the cache *)
+	fastAssoc = makeFastAssocFromCache[cache];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -2280,7 +2541,13 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 
 	(* if the Container option is Automatic, we might end up calling PreferredContainer; so we've gotta make sure we download info from all the objects it might spit out *)
 	preferredVesselContainerModels = If[MatchQ[specifiedContainerOut, Automatic] || MemberQ[Flatten[ToList[specifiedContainerOut]], Automatic],
-		PreferredContainer[All],
+		DeleteDuplicates[
+			Flatten[{
+				PreferredContainer[All, Type -> All],
+				PreferredContainer[All, Sterile -> True, Type -> All],
+				PreferredContainer[All, Sterile -> True, LiquidHandlerCompatible -> True, Type -> All]
+			}]
+		],
 		{}
 	];
 
@@ -2289,9 +2556,9 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 
 	(* pull out all the sample/sample model/container/container model packets *)
 	samplePackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Download[Flatten[mySamples], Object], samplePoolLengths];
-	sampleModelPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[samplePackets], Model, {}], samplePoolLengths];
-	sampleContainerPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[samplePackets], Container, {}], samplePoolLengths];
-	sampleContainerModelPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[sampleContainerPackets], Model, {}], samplePoolLengths];
+	sampleModelPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[samplePackets], Model, Null], samplePoolLengths];
+	sampleContainerPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[samplePackets], Container, Null], samplePoolLengths];
+	sampleContainerModelPackets = TakeList[fetchPacketFromCache[#, inheritedCache]& /@ Lookup[Flatten[sampleContainerPackets]/.{Null-><||>}, Model, Null], samplePoolLengths];
 
 	(* pull out the sample composition identity model packets *)
 	sampleCompositionPackets = Map[
@@ -2575,8 +2842,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* decide the potential analyte using selectAnalyteFromSample (this is defined in AbsorbanceSpectroscopy/Experiment.m) *)
 	(* need to flatten everything though because pooling; will make correct after *)
 	{potentialAnalytesToUseFlat, potentialAnalyteTests} = If[gatherTests,
-		selectAnalyteFromSample[Flatten[samplePackets], Analyte -> Flatten[preResolvedAnalyte], Cache -> inheritedCache, Output -> {Result, Tests}],
-		{selectAnalyteFromSample[Flatten[samplePackets], Analyte -> Flatten[preResolvedAnalyte], Cache -> inheritedCache, Output -> Result], Null}
+		selectAnalyteFromSample[Flatten[samplePackets], Analyte -> Flatten[preResolvedAnalyte], Cache -> inheritedCache, DetectionMethod -> Absorbance, Output -> {Result, Tests}],
+		{selectAnalyteFromSample[Flatten[samplePackets], Analyte -> Flatten[preResolvedAnalyte], Cache -> inheritedCache, DetectionMethod -> Absorbance, Output -> Result], Null}
 	];
 
 	(* make the potential analyte the correct shape *)
@@ -2615,7 +2882,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		targetConcNotUsedWarnings,
 		pooledVolumeAboveAssayVolumeErrors,
 		cannotResolveAssayVolumeError,
-		bufferTooConcentratedErrors
+		bufferTooConcentratedErrors,
+		overMaxVolumeErrors
 	} = Transpose[MapThread[
 		Function[{pooledSamplePackets, options, maxResolutionAmounts, potentialAnalytes},
 			Module[
@@ -2627,7 +2895,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					missingMolecularWeightError, targetConcentrations, bufferTooConcentratedError,
 					potentialAssayVolume, validMinAmountBools, stateAmountMismatchError, targetConcNotUsedWarning,
 					pooledVolumeAboveAssayVolumeError, eitherConcP, dilutionFactors, concBufferPacket, concBufferModelPacket,
-					cannotResolveAssayVolumeError, amounts, bufferVolume, concBufferVolume},
+					cannotResolveAssayVolumeError, amounts, bufferVolume, concBufferVolume, rawAssayVolume, overMaxVolumeError},
 
 				(* set our error tracking variables *)
 				{
@@ -2644,7 +2912,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					targetConcNotUsedWarning,
 					pooledVolumeAboveAssayVolumeError,
 					cannotResolveAssayVolumeError,
-					bufferTooConcentratedError
+					bufferTooConcentratedError,
+					overMaxVolumeError
 				} = {
 					ConstantArray[False, Length[pooledSamplePackets]],
 					ConstantArray[False, Length[pooledSamplePackets]],
@@ -2657,6 +2926,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					ConstantArray[False, Length[pooledSamplePackets]],
 					ConstantArray[False, Length[pooledSamplePackets]],
 					ConstantArray[False, Length[pooledSamplePackets]],
+					False,
 					False,
 					False,
 					False
@@ -2741,11 +3011,11 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 
 							(* pull out the concentration and mass concentration of the chosen component from the composition field *)
 							sampleConc = If[MatchQ[potentialAnalytePacket, PacketP[]],
-								FirstCase[sampleComposition, {conc:ConcentrationP, ObjectP[Lookup[potentialAnalytePacket, Object]]} :> conc, Null],
+								FirstCase[sampleComposition, {conc:ConcentrationP, ObjectP[Lookup[potentialAnalytePacket, Object]], _?DateObjectQ | Null} :> conc, Null],
 								Null
 							];
 							sampleMassConc = If[MatchQ[potentialAnalytePacket, PacketP[]],
-								FirstCase[sampleComposition, {massConc:MassConcentrationP, ObjectP[Lookup[potentialAnalytePacket, Object]]} :> massConc, Null],
+								FirstCase[sampleComposition, {massConc:MassConcentrationP, ObjectP[Lookup[potentialAnalytePacket, Object]], _?DateObjectQ | Null} :> massConc, Null],
 								Null
 							];
 
@@ -3005,6 +3275,9 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 				(* resolve the AssayVolume value *)
 				assayVolume = specifiedAssayVolume /. {Automatic -> probableAssayVolume};
 
+				(* flip error switch if AssayVolume resolves to greater than $MaxTransferVolume *)
+				overMaxVolumeError = VolumeQ[assayVolume] && assayVolume > $MaxTransferVolume;
+
 				(* flip the cannotResolveAmountError switch now for the case where AssayVolume is not a volume but Amount is *)
 				cannotResolveAmountError = And[
 					Not[VolumeQ[assayVolume]],
@@ -3083,7 +3356,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 								(* 1.) TargetConcentration is specified *)
 								(* 2.) AssayVolume was specified *)
 								(* one of the two of the following are true *)
-								(* 3a.) Amount was specifed as All and the sample's volume is not Null *)
+								(* 3a.) Amount was specified as All and the sample's volume is not Null *)
 								(* 3b.) Amount was specified as a volume *)
 								(* 4.) Neither of the concentration-is-bad error booleans from above have been flipped *)
 								(* 5.) the ratio of the resolved aliquot volume to resolved volume does NOT equal the ratio of the sample concentration to target concentration *)
@@ -3207,7 +3480,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					targetConcNotUsedWarning,
 					pooledVolumeAboveAssayVolumeError,
 					cannotResolveAssayVolumeError,
-					bufferTooConcentratedError
+					bufferTooConcentratedError,
+					overMaxVolumeError
 				}
 
 			]
@@ -3585,8 +3859,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	];
 
 	(* Track Invalid Option - Blame any specified option that interplays with amount *)
+	(* Always include Amount option. There's a bug that in rare case when all three options are Automatic but error still triggered (e.g., sample volume is 0) *)
+	(* we get an empty list here so the protocol won't return $Failed *)
 	invalidMinOptions = If[!minsValid,
-		Keys[Select[KeyTake[myOptions,{TargetConcentration,Amount,AssayVolume}],MemberQ[Flatten[#],UnitsP[]]&]],
+		Union[Keys[Select[KeyTake[myOptions,{TargetConcentration,AssayVolume}],MemberQ[Flatten[#],UnitsP[]]&]], {Amount}],
 		{}
 	];
 
@@ -3908,7 +4184,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 
 	(* throw a warning if for any sample AssayBuffer and/or ConcentratedBuffer are specified but will not be used *)
 	If[MemberQ[bufferSpecifiedNoVolumeWarnings, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::BufferWillNotBeUsed, ObjectToString[noBufferWithBufferSamples, Cache -> inheritedCache]]
+		Message[Warning::BufferWillNotBeUsed, ObjectToString[Download[noBufferWithBufferSamples,Object], Cache -> inheritedCache]]
 	];
 
 	(* if we are gathering tests, create a passing and/or failing warning test with the appropriate result *)
@@ -4087,6 +4363,15 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* figure out if we're pooling (i.e., if there's more than one sample in a given list) *)
 	pooledQ = MemberQ[Length[#]& /@ pooledInputs, GreaterP[1]];
 
+	(* Check if sample is Sterile, contains cells, or require AsepticHandling *)
+	(* Note:ExperimentSerialDilute does not have SterileTechnique or Sterile option yet, so we do not need to check *)
+	sterileQ = Or[
+		MemberQ[Lookup[Flatten@samplePackets, Sterile], True],
+		MemberQ[Lookup[Flatten@samplePackets, Living], True],
+		MemberQ[Lookup[Flatten@samplePackets, CellType], CellTypeP],
+		MemberQ[Lookup[Flatten@samplePackets, AsepticHandling], True]
+	];
+
 	(* if we are pooling, we can't actually consolidate aliquots, and so the logic below gates on this *)
 	consolidateAliquots = If[pooledQ,
 		False,
@@ -4102,6 +4387,26 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	pooledConsolidateAliquotsWarning = If[gatherTests,
 		Warning["ConsolidateAliquots is not set to True if pooling multiple samples together:",
 			pooledQ && specifiedConsolidateAliquots,
+			False
+		]
+	];
+
+	(* determine if AssayVolume is too large (i.e., over $MaxTransferVolume) *)
+	overMaxVolumeOptions = If[messages && MemberQ[overMaxVolumeErrors, True],
+		(
+			Message[
+				Error::AssayVolumeAboveMaximum,
+				ObjectToString[PickList[mySamples, overMaxVolumeErrors], Cache -> inheritedCache],
+				ObjectToString[PickList[resolvedAssayVolume, overMaxVolumeErrors]],
+				ObjectToString[$MaxTransferVolume]
+			];
+			{TargetConcentration, AssayVolume}
+		),
+		{}
+	];
+	overMaxVolumeTests = If[gatherTests,
+		Test["The AssayVolume, either specified or calculated from other options, does not exceed $MaxTransferVolume:",
+			MemberQ[overMaxVolumeErrors, True],
 			False
 		]
 	];
@@ -4122,13 +4427,46 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	fakeAssayVolumes = MapThread[
 		Which[
 			(* if we're mixing solids and liquids, assume the density of water for the solid (probably going to be denser than that, but that's ok) *)
-			VolumeQ[#1] && MassQ[#2], #1 + (#2 / (0.997 Gram / Milliliter)),
-			VolumeQ[#1], #1,
+			VolumeQ[#1] && MassQ[#2], Min[{#1 + (#2 / (0.997 Gram / Milliliter)), $MaxTransferVolume}],
+			VolumeQ[#1], Min[{#1, $MaxTransferVolume}],
 			MassQ[#2], #2,
 			True, 2*Milliliter
 		]&,
 		{resolvedAssayVolume, fakeAmounts}
 	];
+
+	(* get the incompatible materials for each transfer *)
+	(* want to make sure we pick a PreferredContainer that isn't incompatible with any of the samples *)
+	allIncompatibleMaterials = MapThread[
+		Function[{samplePacket, assayBuffer, concentratedBuffer, bufferDiluent},
+			Module[{allIncompatibleMaterialsRaw},
+				allIncompatibleMaterialsRaw = DeleteDuplicates[Flatten[{
+					Lookup[samplePacket, IncompatibleMaterials],
+					If[MatchQ[assayBuffer, ObjectP[]],
+						fastAssocLookup[fastAssoc, assayBuffer, IncompatibleMaterials],
+						Nothing
+					],
+					If[MatchQ[concentratedBuffer, ObjectP[]],
+						fastAssocLookup[fastAssoc, concentratedBuffer, IncompatibleMaterials],
+						Nothing
+					],
+					If[MatchQ[bufferDiluent, ObjectP[]],
+						fastAssocLookup[fastAssoc, bufferDiluent, IncompatibleMaterials],
+						Nothing
+					]
+				}]];
+
+				(* note that if we have a bunch of junk, or multiple Nones, or {}, we want {None} *)
+				If[MatchQ[DeleteCases[allIncompatibleMaterialsRaw, None | Except[None|MaterialP]], {}],
+					{None},
+					(* otherwise just remove the junk + the None (since don't want None and materials)*)
+					DeleteCases[allIncompatibleMaterialsRaw, None | Except[None|MaterialP]]
+				]
+			]
+		],
+		{samplePackets, resolvedAssayBuffer, resolvedConcentratedBuffer, resolvedBufferDiluent}
+	];
+
 
 	(* convert any indices of the ContainerOut option to the indexed version of it; this is going to change depending if we have ConsolidateAliquots -> False or True *)
 	indexedContainerOut = If[consolidateAliquots,
@@ -4143,16 +4481,18 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		],
 		(* if we are not consolidating aliquots, we want to resolve the second index to PreferredContainer since everything is a lot simpler in this case *)
 		MapThread[
-			Switch[#1,
-				Automatic, {Automatic, PreferredContainer[#2]},
-				ObjectP[{Model[Container], Object[Container]}], {Automatic, #1},
-				{Automatic, Automatic}, {Automatic, PreferredContainer[#2]},
-				(* importantly, we are NOT worrying about more than one entry with the same index but Automatic _because_ we are not ConsolidateAliquots-ing *)
-				(* if a user has ConsolidateAliquots -> False and tries to aliquot two things into the same Automatic vessel, that is just going to be an error below *)
-				{_Integer, Automatic}, {#1[[1]], PreferredContainer[#2]},
-				_, #1
-			]&,
-			{specifiedContainerOut, fakeAssayVolumes}
+			Function[{specifiedContainerOut, fakeAssayVolume, incompatibleMaterials},
+				Switch[specifiedContainerOut,
+					Automatic, {Automatic, PreferredContainer[fakeAssayVolume, Sterile -> sterileQ, IncompatibleMaterials -> incompatibleMaterials]},
+					ObjectP[{Model[Container], Object[Container]}], {Automatic, specifiedContainerOut},
+					{Automatic, Automatic}, {Automatic, PreferredContainer[fakeAssayVolume, Sterile -> sterileQ, IncompatibleMaterials -> incompatibleMaterials]},
+					(* importantly, we are NOT worrying about more than one entry with the same index but Automatic _because_ we are not ConsolidateAliquots-ing *)
+					(* if a user has ConsolidateAliquots -> False and tries to aliquot two things into the same Automatic vessel, that is just going to be an error below *)
+					{_Integer, Automatic}, {specifiedContainerOut[[1]], PreferredContainer[fakeAssayVolume, Sterile -> sterileQ, IncompatibleMaterials -> incompatibleMaterials]},
+					_, specifiedContainerOut
+				]
+			],
+			{specifiedContainerOut, fakeAssayVolumes, allIncompatibleMaterials}
 		]
 	];
 
@@ -4164,7 +4504,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* need to add the Buffer options here too because if you're diluting the same concentration but with different buffers obviously that's an issue *)
 	(* also need to group by the specified well *)
 	samplesVolumeContainerTuples = If[consolidateAliquots,
-		Transpose[{Lookup[#, Object, {}]& /@ samplePackets, fakeAssayVolumes, fakeAmounts, indexedContainerOut, resolvedAssayBuffer, resolvedConcentratedBuffer, resolvedBufferDilutionFactor, resolvedBufferDiluent, specifiedDestWells}],
+		Transpose[{Lookup[#, Object, {}]& /@ samplePackets, fakeAssayVolumes, fakeAmounts, indexedContainerOut, resolvedAssayBuffer, resolvedConcentratedBuffer, resolvedBufferDilutionFactor, resolvedBufferDiluent, specifiedDestWells, allIncompatibleMaterials}],
 		{}
 	];
 
@@ -4204,8 +4544,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 				{sampleVolumeContainerValuesPlatesOnly, sampleVolumeContainerValuesNoPlates, automaticContainerEntries,
 					automaticContainerGroupedByIndex, autoContainerGroupingVolumes, resolvedContainerGroupsWithUniques,
 					preferredVesselByContainersGroupedByIndex, containerAutomaticsToContainersRules, tuplesNoAutomatics,
-					resolvedContainerGroupedByIndex, tuplesNoContainerAutomatics,
-					sampleVolumeContainerNoPlatesByContainerTuple, autoToIntegerReplaceRules,
+					resolvedContainerGroupedByIndex, tuplesNoContainerAutomatics, incompatibleMaterials,
+					sampleVolumeContainerNoPlatesByContainerTuple, autoToIntegerReplaceRules, incompatibleMaterialsRaw,
 					positionsOfAutomaticContainerGroupings, positionsOfAutomaticIndexGroupings},
 
 				(* --- Resolve the container Automatics to a container --- *)
@@ -4231,8 +4571,16 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					automaticContainerGroupedByIndex
 				];
 
+				(* get the incompatible materials from the grouping *)
+				(* need to do it this way because if we have one sample with {None} and one with {Glass}, we can't have {None, Glass} (but if we have only {None} we can't have {} *)
+				incompatibleMaterialsRaw = DeleteDuplicates[Flatten[{sampleVolumeContainerValues[[All, 10]]}]];
+				incompatibleMaterials = If[MatchQ[DeleteCases[incompatibleMaterialsRaw, None], {}],
+					{None},
+					DeleteCases[incompatibleMaterialsRaw, None]
+				];
+
 				(* get the PreferredContainer for each grouping *)
-				preferredVesselByContainersGroupedByIndex = PreferredContainer[#]& /@ autoContainerGroupingVolumes;
+				preferredVesselByContainersGroupedByIndex = PreferredContainer[#, IncompatibleMaterials -> incompatibleMaterials]& /@ autoContainerGroupingVolumes;
 
 				(* get the automaticContainerGroupedByIndex except the Automatics are replaced with the preferred vessel of note *)
 				resolvedContainerGroupedByIndex = MapThread[
@@ -4331,7 +4679,7 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		preResolvedContainerOut
 	];
 
-	(* get the model packets for these contianers/models from the destinations *)
+	(* get the model packets for these containers/models from the destinations *)
 	destinationContainerModelPackets = Map[
 		Function[{containerOrModel},
 			(* a little tricky to get the container model packet from the container object; basically need to do two different SelectFirsts *)
@@ -4703,6 +5051,11 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		True, Manual
 	];
 
+	(* Resolve the work cell that we're going to operator on. *)
+	allowedWorkCells = resolveAliquotWorkCell[Flatten[mySamples], {Preparation -> preparation, Simulation -> simulation, Cache -> inheritedCache, Output -> Result}];
+
+	workCell = FirstOrDefault[allowedWorkCells];
+
 	(* throw an error if the liquid handler is set to Micro but it can't be *)
 	preparationInvalidOptions = If[MatchQ[preparation, Robotic] && Not[couldBeMicroQ] && messages,
 		(
@@ -4888,7 +5241,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[
+		ReplaceRule[myOptions, Preparation -> preparation],
+		Living -> MemberQ[Lookup[Flatten[samplePackets], Living], True]
+	];
 
 	(* combine all the invalid options *)
 	invalidOptions = DeleteDuplicates[Join[
@@ -4910,7 +5266,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		stateAmountMismatchOptions,
 		pooledVolumeAboveAssayVolumeOptions,
 		cannotResolveAssayVolumeOptions,
-		bufferTooConcentratedOptions
+		bufferTooConcentratedOptions,
+		overMaxVolumeOptions
 	]];
 
 	(* throw the InvalidOption error if necessary *)
@@ -4959,7 +5316,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		pooledVolumeAboveAssayVolumeTest,
 		cannotResolveAssayVolumeTest,
 		pooledConsolidateAliquotsWarning,
-		bufferTooConcentratedTests
+		bufferTooConcentratedTests,
+		overMaxVolumeTests
 	}], _EmeraldTest];
 
 	(* --- Do the final preparations --- *)
@@ -4971,7 +5329,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 			Amount -> resolvedAmount,
 			TargetConcentration -> resolvedTargetConcentration,
 			TargetConcentrationAnalyte -> potentialAnalytesToUse,
-			AssayVolume -> resolvedAssayVolume,
+			(* returning a too-high value will break command builder, but we still want to throw messages for the too-high value which is why we didn't do this Min call above *)
+			AssayVolume -> (If[VolumeQ[#], Min[{#, $MaxTransferVolume}], #] & /@ resolvedAssayVolume),
 			ContainerOut -> resolvedContainerOut,
 			DestinationWell -> resolvedDestWells,
 			ConcentratedBuffer -> resolvedConcentratedBuffer,
@@ -4980,7 +5339,9 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 			AssayBuffer -> resolvedAssayBuffer,
 			ConsolidateAliquots -> specifiedConsolidateAliquots,
 			Preparation -> preparation,
+			WorkCell -> workCell,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Name -> name,
 			Template -> template,
 			SamplesInStorageCondition -> samplesInStorageCondition,
@@ -5044,12 +5405,12 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		protocolPackets, protocolTests, previewRule, optionsRule, testsRule, resultRule,
 		consolidateAliquots, resolvedDestWell, pooledQ, resolvedAmount, specifiedConsolidateAliquots, sampleOutLabel,
 		expandedNonListedOptions, poolingShapes, allUnitOperationPackets, roboticRunTime, updatedSimulation,
-		sourceLabel, sourceContainerLabel, containerOutLabel, resolvedPreparation, sourcesToTransfer,
+		sourceLabel, sourceContainerLabel, containerOutLabel, resolvedPreparation, resolvedWorkCell, sourcesToTransfer,
 		destinationsToTransferTo, expandedDestWells, amountsToTransfer, resolvedAmountNoAll,
 		assayBufferLabel, bufferDiluentLabel, concentratedBufferLabel, simulationRule, uoPacketsAndRunTime,
 		allPrimitives, experimentFunction, simulatedObjectsToLabel,expandedResolvedOptionsWithLabels,
-		protPacket, accessoryProtPackets, aliquotUnitOperationBlobs,
-		protPacketFinal, simulation, aliquotUnitOperationPackets, aliquotUnitOperationPacketsNotLinked,
+		protPacket, accessoryProtPackets, aliquotUnitOperationBlobs, modelExchangedInputs, uniqueSamplesInResources,
+		samplesInResources, protPacketFinal, simulation, aliquotUnitOperationPackets, aliquotUnitOperationPacketsNotLinked,
 		samplesOutLabels, unsortedFutureLabeledObjects, unsortedSampleOutFutureLabeledObjects,
 		sortedSampleOutFutureLabeledObjects, sortedFutureLabeledObjects, finalSimulation},
 
@@ -5137,6 +5498,7 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 	(* pull out the ContainerOut option *)
 	{
 		resolvedPreparation,
+		resolvedWorkCell,
 		resolvedDestWell,
 		resolvedAssayVolume,
 		resolvedAmount
@@ -5144,6 +5506,7 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		expandedResolvedOptions,
 		{
 			Preparation,
+			WorkCell,
 			DestinationWell,
 			AssayVolume,
 			Amount
@@ -5195,7 +5558,7 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		}
 	];
 
-	(* conver the inputs and resolved options into a list of inputs for the Transfer primitive *)
+	(* convert the inputs and resolved options into a list of inputs for the Transfer primitive *)
 	(* Label -> True is important because it meshes well with the LabelSample/LabelContainer calls going into the Experiment call below *)
 	{
 		sourcesToTransfer,
@@ -5205,29 +5568,59 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 	} = convertAliquotToTransferSteps[samplePackets, expandedResolvedOptions, Label -> True];
 
 	(* make the actual primitives we're going to be using *)
-	allPrimitives = convertTransferStepsToPrimitives[
+	(* if we have model inputs, we need to mess with the labels a little bit so that we don't get overwriting label messages *)
+	{allPrimitives, updatedSimulation} = convertTransferStepsToPrimitives[
 		samplePackets,
 		sourcesToTransfer,
 		destinationsToTransferTo,
 		expandedDestWells,
 		amountsToTransfer,
 		expandedResolvedOptions,
-		Cache -> inheritedCache
+		Cache -> inheritedCache,
+		Simulation -> simulation
+	];
+
+	(* Create Resources for input sample *)
+	(* We need resources here if our samples are simulated as we cannot upload non-existing IDs to the Sample field of the Resuspend/Dilute UO *)
+	(* By providing resources, the fields points back to the original model, if necessary *)
+	(* We only use this for RSP Dilute/Resuspend UO, which basically means we won't do resource picking on these directly. *)
+	(* Create a lookup of each unique sample to a resource of that sample *)
+	uniqueSamplesInResources = (# -> Resource[Sample -> #, Name -> CreateUUID[]]&) /@ DeleteDuplicates[Flatten[expandedInputs]];
+
+	(* Use the lookup to create a flat resource list *)
+	(* note that we are only using these resources if we are _not_ in _LabelSample land *)
+	(* this is because if we have a simulated sample that is just in sequence with a bunch of normal UOs, then we need to make resources (but if we're using model inputs, it shouldn't be necessary I think (?)) *)
+	samplesInResources = (expandedInputs) /. uniqueSamplesInResources;
+
+	(* get the expanded inputs converted to models *)
+	modelExchangedInputs = If[MatchQ[First[allPrimitives], _LabelSample],
+		simulatedSamplesToModels[
+			First[allPrimitives],
+			simulation,
+			expandedInputs
+		],
+		samplesInResources
+	];
+
+	(* Resolve the experiment function (MSP/RSP/MCP/RCP) to call using the shared helper function *)
+	experimentFunction = If[MatchQ[resolvedPreparation, Manual],
+		resolveManualFrameworkFunction[Flatten[{modelExchangedInputs}], myResolvedOptions, Cache -> inheritedCache, Simulation -> updatedSimulation, Output -> Function],
+		Lookup[$WorkCellToExperimentFunction, resolvedWorkCell]
 	];
 
 	(* --- get the unit operation packets for the UOs made above; need to replicate what ExperimentRoboticSamplePreparation does if that is what is happening (otherwise just do nothing) ---*)
 
 	(* make unit operation packets for the UOs we just made here *)
 	{uoPacketsAndRunTime, updatedSimulation} = If[MatchQ[resolvedPreparation, Manual],
-		{{{},Null}, simulation},
-		ExperimentRoboticSamplePreparation[
+		{{{},Null}, updatedSimulation},
+		experimentFunction[
 			allPrimitives,
 			UnitOperationPackets -> True,
 			Output -> {Result, Simulation},
 			FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
 			ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
 			Name -> Lookup[expandedResolvedOptions, Name],
-			Simulation -> simulation,
+			Simulation -> updatedSimulation,
 			Upload -> False,
 			ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
 			MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
@@ -5243,23 +5636,17 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		uoPacketsAndRunTime
 	];
 
-	(* preferably ExperimentSamplePreparation would be able to pick between ExperimentRoboticSamplePreparation and ExperimentManualSamplePreparation but here we are *)
-	experimentFunction = If[MatchQ[resolvedPreparation, Robotic],
-		ExperimentRoboticSamplePreparation,
-		ExperimentManualSamplePreparation
-	];
-
 	(* determine which objects in the simulation are simulated and make replace rules for those *)
-	simulatedObjectsToLabel = If[NullQ[simulation],
+	simulatedObjectsToLabel = If[NullQ[updatedSimulation],
 		{},
 		Module[{allObjectsInSimulation, simulatedQ},
 			(* Get all objects out of our simulation. *)
-			allObjectsInSimulation = Download[Lookup[simulation[[1]], Labels][[All, 2]], Object];
+			allObjectsInSimulation = Download[Lookup[updatedSimulation[[1]], Labels][[All, 2]], Object];
 
 			(* Figure out which objects are simulated. *)
-			simulatedQ = Experiment`Private`simulatedObjectQs[allObjectsInSimulation, simulation];
+			simulatedQ = Experiment`Private`simulatedObjectQs[allObjectsInSimulation, updatedSimulation];
 
-			(Reverse /@ PickList[Lookup[simulation[[1]], Labels], simulatedQ]) /. {link_Link :> Download[link, Object]}
+			(Reverse /@ PickList[Lookup[updatedSimulation[[1]], Labels], simulatedQ]) /. {link_Link :> Download[link, Object]}
 		]
 	];
 
@@ -5269,7 +5656,7 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 	(* make the aliquot unit operation blob *)
 	aliquotUnitOperationBlobs = If[MatchQ[resolvedPreparation, Robotic],
 		Aliquot[
-			Source -> expandedInputs,
+			Source -> modelExchangedInputs,
 			SourceLabel -> Lookup[expandedResolvedOptionsWithLabels, SourceLabel],
 			SourceContainerLabel -> Lookup[expandedResolvedOptionsWithLabels, SourceContainerLabel],
 			SampleOutLabel -> Lookup[expandedResolvedOptionsWithLabels, SampleOutLabel],
@@ -5290,13 +5677,13 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 			ConsolidateAliquots -> Lookup[expandedResolvedOptionsWithLabels, ConsolidateAliquots],
 			SamplesInStorageCondition -> Lookup[expandedResolvedOptionsWithLabels, SamplesInStorageCondition],
 			SamplesOutStorageCondition -> Lookup[expandedResolvedOptionsWithLabels, SamplesOutStorageCondition],
-			Preparation -> resolvedPreparation
+			Preparation -> resolvedPreparation,
+			WorkCell -> resolvedWorkCell
 		]
 	];
 
-
 	(* if we're doing robotic sample preparation, then make unit operation packets for the aliquot blob *)
-	aliquotUnitOperationPacketsNotLinked = If[MatchQ[experimentFunction, ExperimentRoboticSamplePreparation],
+	aliquotUnitOperationPacketsNotLinked = If[MatchQ[experimentFunction, ExperimentRoboticSamplePreparation|ExperimentRoboticCellPreparation],
 		UploadUnitOperation[
 			aliquotUnitOperationBlobs,
 			UnitOperationType -> Input,
@@ -5318,9 +5705,12 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		]
 	];
 
+	(* since we are putting this Aliquot inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+	updatedSimulation=updateLabelFieldReferences[updatedSimulation,RoboticUnitOperations];
+
 
 	{protocolPackets, finalSimulation, protocolTests} = Which[
-		MatchQ[experimentFunction, ExperimentRoboticSamplePreparation], {Flatten[{Null, aliquotUnitOperationPackets, allUnitOperationPackets}], updatedSimulation, {}},
+		MatchQ[experimentFunction, ExperimentRoboticSamplePreparation|ExperimentRoboticCellPreparation], {Flatten[{Null, aliquotUnitOperationPackets, allUnitOperationPackets}], updatedSimulation, {}},
 		gatherTests,
 			experimentFunction[
 				allPrimitives,
@@ -5405,8 +5795,8 @@ aliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnres
 		Append[
 			protPacket,
 			{
-				UnresolvedOptions -> myUnresolvedOptions,
-				ResolvedOptions -> expandedResolvedOptions,
+				UnresolvedOptions -> DeleteCases[myUnresolvedOptions, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
+				ResolvedOptions -> DeleteCases[expandedResolvedOptions, (Verbatim[Cache] -> _) | (Verbatim[Simulation] -> _)],
 				Replace[FutureLabeledObjects] -> sortedFutureLabeledObjects
 			}
 		]
@@ -5454,12 +5844,13 @@ DefineOptions[
 ];
 
 (* function _just_ to make the resources and call fulfillableResourceQ on them *)
-(* importantly, this does NOT call ExperimentSampleManipulation *)
 shortcutAliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, ops:OptionsPattern[aliquotResourcePackets]]:=Module[
-	{outputSpecification, output, amount, assayVolume, assayBuffer, concentratedBuffer, bufferDilutionFactor, bufferDiluent,
+	{
+		outputSpecification, output, amount, assayVolume, assayBuffer, concentratedBuffer, bufferDilutionFactor, bufferDiluent,
 		cache, sampleAmountRules, sampleResources, bufferVolumes, splitBufferVolumes, bufferVolumeRules, bufferResources,
-		allResources, fulfillable, frqTests, fakeProtocolPacket, gatherTests, resultRule, testsRule, preparation,
-		simulation},
+		allResources, fulfillable, frqTests, protocolType, simulatedProtocolPacket, gatherTests, resultRule, testsRule, preparation,
+		workCell, simulation
+	},
 
 	(* pull out the Output option *)
 	outputSpecification = Lookup[myResolvedOptions, Output];
@@ -5477,7 +5868,8 @@ shortcutAliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..},
 		concentratedBuffer,
 		bufferDilutionFactor,
 		bufferDiluent,
-		preparation
+		preparation,
+		workCell
 	} = Lookup[
 		myResolvedOptions,
 		{
@@ -5487,7 +5879,8 @@ shortcutAliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..},
 			ConcentratedBuffer,
 			BufferDilutionFactor,
 			BufferDiluent,
-			Preparation
+			Preparation,
+			WorkCell
 		}
 	];
 
@@ -5570,15 +5963,24 @@ shortcutAliquotResourcePackets[mySamples:{ListableP[ObjectP[Object[Sample]]]..},
 		True, {Resources`Private`fulfillableResourceQ[allResources, Output -> Result, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> cache, Simulation -> simulation], Null}
 	];
 
-	(* make a fake output packet *)
-	fakeProtocolPacket = <|
-		Type -> If[MatchQ[preparation, Robotic], Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]],
+	(* Get the protocol type that we want to create an ID for. *)
+	protocolType = If[MatchQ[preparation, Manual],
+		resolveManualFrameworkFunction[mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation, Output -> Type],
+		Module[{experimentFunction},
+			experimentFunction = Lookup[$WorkCellToExperimentFunction, workCell];
+			Object[Protocol, ToExpression@StringDelete[ToString[experimentFunction], "Experiment"]]
+		]
+	];
+
+	(* make a simulated output packet *)
+	simulatedProtocolPacket = <|
+		Type -> protocolType,
 		Name -> "Protocol that will never actually be uploaded since this is in a shortcut function only called if Output -> Options"
 	|>;
 
 	(* make Result and Tests output rules *)
 	resultRule = Result -> If[MemberQ[output, Result] && TrueQ[fulfillable],
-		ToList[fakeProtocolPacket],
+		ToList[simulatedProtocolPacket],
 		$Failed
 	];
 	testsRule = Tests -> If[gatherTests,
@@ -5603,17 +6005,19 @@ DefineOptions[simulateExperimentAliquot,
 
 (* very simple simulation function because it is entirely relying on ExperimentRobotic/ManualSamplePreparation to do the heavy lifting *)
 simulateExperimentAliquot[
-	myProtocolPacket:PacketP[{Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}]|$Failed,
+	myProtocolPacket:PacketP[{Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticCellPreparation], Object[Protocol, ManualCellPreparation]}]|$Failed,
 	myAccessoryPackets:{PacketP[]...}|$Failed,
 	mySamples:{{ObjectP[Object[Sample]]..}..},
 	myResolvedOptions:{___Rule},
 	ops:OptionsPattern[simulateExperimentAliquot]
 ]:=Module[
-	{safeResolutionOps, cache, simulation, preparation, protocolObject, samplePackets, sourcesToTransfer,
+	{
+		safeResolutionOps, cache, simulation, preparation, workCell, protocolObject, samplePackets, sourcesToTransfer,
 		destinationsToTransferTo, expandedDestWells, amountsToTransfer, accessoryPacketSimulation, containerOutLabelFields,
 		sampleOutLabelFields, updatedSimulation, assayBufferLabelFields, concentratedBufferLabelFields,
 		bufferDiluentLabelFields, sampleOutLabels, containerOutLabels, assayBufferLabels, concBufferLabels,
-		bufferDiluentLabels},
+		bufferDiluentLabels, protocolType
+	},
 
 	(* pull out the cache and simulation blob now *)
 	safeResolutionOps = SafeOptions[simulateExperimentAliquot, ToList[ops]];
@@ -5623,14 +6027,22 @@ simulateExperimentAliquot[
 		Lookup[safeResolutionOps, Simulation]
 	];
 
-	(* pull out the liquid handling scale *)
-	preparation = Lookup[myResolvedOptions, Preparation];
+	(* Get the resolved preparation and resolve the protocol type. *)
+	{preparation, workCell} = Lookup[myResolvedOptions, {Preparation, WorkCell}];
+
+	(* Get the protocol type that we want to create an ID for. *)
+	protocolType = If[MatchQ[preparation, Manual],
+		resolveManualFrameworkFunction[mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation, Output -> Type],
+		Module[{experimentFunction},
+			experimentFunction = Lookup[$WorkCellToExperimentFunction, workCell];
+			Object[Protocol, ToExpression@StringDelete[ToString[experimentFunction], "Experiment"]]
+		]
+	];
 
 	(* get the protocol object ID *)
-	protocolObject = Which[
-		MatchQ[myProtocolPacket, $Failed] && MatchQ[preparation, Manual], SimulateCreateID[Object[Protocol, ManualSamplePreparation]],
-		MatchQ[myProtocolPacket, $Failed] && MatchQ[preparation, Robotic], SimulateCreateID[Object[Protocol, RoboticSamplePreparation]],
-		True, Lookup[myProtocolPacket, Object]
+	protocolObject = If[MatchQ[myProtocolPacket, $Failed],
+		SimulateCreateID[protocolType],
+		Lookup[myProtocolPacket, Object]
 	];
 
 	(* get the sample packets from the input samples *)
@@ -5649,7 +6061,7 @@ simulateExperimentAliquot[
 		amountsToTransfer
 	} = convertAliquotToTransferSteps[samplePackets, myResolvedOptions, Label -> True];
 
-	(* if we don't have anything to transfer (and this only happnens if shit is fucked), just return early with the simulation we came in with *)
+	(* if we don't have anything to transfer (and this only happens if stuff is messed up), just return early with the simulation we came in with *)
 	If[MatchQ[amountsToTransfer, {}],
 		Return[
 			(* merge the simulation we started with with what we have now *)
@@ -5731,10 +6143,10 @@ simulateExperimentAliquot[
 		simulation
 	];
 
-	(* NOTE: SimulateResources requires you to have a protocol object, so just make a fake one to simulate our unit operation. *)
+	(* NOTE: SimulateResources requires you to have a protocol object, so just make one to simulate our unit operation. *)
 	accessoryPacketSimulation = Module[{protocolPacket},
 		protocolPacket = <|
-			Object -> SimulateCreateID[Object[Protocol, If[MatchQ[preparation, Manual], ManualSamplePreparation, RoboticSamplePreparation]]],
+			Object -> SimulateCreateID[protocolType],
 			Replace[OutputUnitOperations] -> Link[Lookup[Cases[myAccessoryPackets, Except[PacketP[Object[UnitOperation, Aliquot]], PacketP[Object[UnitOperation]]]], Object, {}], Protocol],
 			(* NOTE: If you have accessory primitive packets, you MUST put those resources into the main protocol object, otherwise *)
 			(* simulate resources will NOT simulate them for you. *)

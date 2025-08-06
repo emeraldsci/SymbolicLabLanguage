@@ -45,7 +45,7 @@ DefineUsage[PinObject,
 			{"pin", Null, "The Constellation pin that is returned."}
 		},
 		SeeAlso -> {"Download", "ValidPacketFormatQ", "Upload"},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"melanie.reschke", "hanming.yang", "thomas"}
 	}];
 
 

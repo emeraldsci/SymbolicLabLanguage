@@ -148,7 +148,7 @@ DefineObjectType[Object[Analysis, Peaks], {
 		Area -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> NumericP,
 			Units -> None,
 			Description -> "For each member of Position, the area of the peak at that position, calculated as the total area from the bottom baseline up to the y-coordinates ranging from PeakRangeStart to PeakRangeEnd .",
 			Category -> "Analysis & Reports",
@@ -283,7 +283,7 @@ DefineObjectType[Object[Analysis, Peaks], {
 		RelativeArea -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> NumericP,
 			Units -> None,
 			Description -> "For each member of Position, the ratio between the area of the peak and the area of the reference peak.",
 			Category -> "Analysis & Reports",

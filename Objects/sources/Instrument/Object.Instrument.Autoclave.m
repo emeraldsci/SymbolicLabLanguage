@@ -18,6 +18,13 @@ DefineObjectType[Object[Instrument, Autoclave], {
 			Category -> "Instrument Specifications",
 			Abstract -> True
 		},
+		PostAutoclaveCoolingArea->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>{LocationPositionP, ObjectP[{Object[Container, Shelf],Object[Container, ShelvingUnit]}]},
+			Description->"The location where the autoclaved samples, containers, items etc. (in their secondary container or without it) are placed after completing the autoclave cycle, in order to cool them down.",
+			Category->"Instrument Specifications"
+		},
 		MinPressure -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],MinPressure]],
@@ -62,6 +69,13 @@ DefineObjectType[Object[Instrument, Autoclave], {
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],MaxCycleTime]],
 			Pattern :> GreaterP[0*Minute],
 			Description -> "Maximum time the autoclave can run for.",
+			Category -> "Operating Limits"
+		},
+		AirCompressorRequired -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if an air-compressor is required to add extra pressure to operate the autoclave.",
 			Category -> "Operating Limits"
 		},
 		InternalDimensions->{

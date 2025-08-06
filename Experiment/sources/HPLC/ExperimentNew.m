@@ -82,7 +82,7 @@ DefineOptions[ExperimentHPLC,
 			Description -> "The type of measurement to employ. Options include Pressure (measures the pump pressure) , Temperature (measures the temperature of the column oven), UVVis (measures the absorbance of a single wavelength of light), PhotoDiodeArray (measures the absorbance of a range of wavelengths), Fluorescence (measures the emitted light from samples after light excitation),pH, Conductance, MultiAngleLightScattering (measures the scattered light intensity at different angles), DynamicLightScattering (measures the scattered light fluctuation), RefractiveIndex (measures how fast light travels through the sample) and EvaporativeLightScattering (separates the flow into airborne droplets and measures the light scattering).",
 			ResolutionDescription -> "Automatically set to the detector(s) available for the first selected instrument. For example, if Agilent 1290 Infinity II Instrument is requested, the Detector option will include Pressure and PhotoDiodeArray.",
 			AllowNull -> False,
-			(* Need to do these With shenanigans because of Widget pattern shit that is HoldSomething, but it is admittedly really dumb that we have to do that*)
+			(* Need to do these With shenanigans because of the Widget pattern is HoldSomething, but it is admittedly really dumb that we have to do that*)
 			Widget -> With[{insertMe = HPLCDetectorTypeP},
 				Widget[
 					Type -> MultiSelect,
@@ -333,13 +333,14 @@ DefineOptions[ExperimentHPLC,
 					"Guard Column" -> Alternatives[
 						Widget[
 							Type -> Object,
-							Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+							Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column], Model[Item, Cartridge, Column], Object[Item, Cartridge, Column]}],
 							OpenPaths -> {
 								{
 									Object[Catalog, "Root"],
 									"Materials",
 									"Liquid Chromatography",
-									"HPLC Columns"
+									"HPLC Columns",
+									"Guard Columns"
 								}
 							}
 						],
@@ -428,12 +429,45 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> ColumnStorageBuffer,
 				Default -> Automatic,
-				AllowNull -> False,
-				Description -> "The solvent in which the selected column should be stored in for long term storage after removing from the instrument.",
-				ResolutionDescription -> "Automatically set from the StorageBuffer field from the Model[Item,Column] specified for the specified Column, if it is one of the buffers specified in the protocol. Otherwise set to BufferA of the protocol.",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				AllowNull -> True,
+				Description -> "The solvent or gradient at the end of the column flush in which the column will be stored in long term after removed from the instrument. The provided solvent option must match one of the buffers used in the experiment and the column flush will end with 100% gradient of the selected buffer. If a gradient with percents of buffers is specified, the column flush will end with the specified gradient composition.",
+				ResolutionDescription -> "Automatically set to the last gradient composition of the ColumnFlushGradient option if provided. Otherwise set from the StorageBuffer field from the Model[Item,Column] specified for the specified Column, if it is one of the buffers specified in the protocol.",
+				Widget -> Alternatives[
+					"Buffer" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Buffers",
+								"HPLC Buffers"
+							}
+						}
+					],
+					"Gradient" -> {
+						"Buffer A Composition" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[0 Percent, 100 Percent],
+							Units -> Percent
+						],
+						"Buffer B Composition" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[0 Percent, 100 Percent],
+							Units -> Percent
+						],
+						"Buffer C Composition" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[0 Percent, 100 Percent],
+							Units -> Percent
+						],
+						"Buffer D Composition" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[0 Percent, 100 Percent],
+							Units -> Percent
+						]
+					}
 				],
 				Category -> "Separation"
 			}
@@ -465,7 +499,13 @@ DefineOptions[ExperimentHPLC,
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-							ObjectTypes -> {Model[Sample], Object[Sample]}
+							ObjectTypes -> {Model[Sample], Object[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -545,7 +585,7 @@ DefineOptions[ExperimentHPLC,
 				OptionName->ColumnTemperature,
 				Default -> Automatic,
 				Description -> "The temperature of the column assembly throughout the measurement and/or fraction collection.",
-				ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the Gradient option or the column temperature for the sample in the InjectionTable option; otherwise, set to Ambient.",
+				ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the Gradient option or the column temperature for the sample in the InjectionTable option; otherwise, set to Ambient (no column oven temperature control).",
 				AllowNull -> False,
 				Widget -> Alternatives[
 					Widget[
@@ -590,7 +630,9 @@ DefineOptions[ExperimentHPLC,
 						"Reagents",
 						"Solvents"
 					}
-				}
+				},
+				PreparedSample->False,
+				PreparedContainer->False
 			],
 			Category -> "Sample Parameters"
 		},
@@ -759,7 +801,7 @@ DefineOptions[ExperimentHPLC,
 			OptionName -> MaxAcceleration,
 			Default -> Automatic,
 			Description -> "When ramping up the FlowRate of solvent through the instrument, the maximum allowed change per time in the FlowRate.",
-			ResolutionDescription -> "For Waters instruments, automatically set to the lowest value from Max the Column, Instrument, and GuardColumn models. For other instruments, automatically set to Null. ",
+			ResolutionDescription -> "For Waters and Agilent instruments, automatically set to the lowest value from Max the Column, Instrument, and GuardColumn models. For other instruments, automatically set to Null.",
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Quantity,
@@ -837,7 +879,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Single" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+						Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 						Units -> Nanometer
 					],
 					"All" -> Widget[
@@ -847,12 +889,12 @@ DefineOptions[ExperimentHPLC,
 					"Range" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						],
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[200 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[200 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						]
 					]
@@ -890,11 +932,31 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values*)
+					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values for Waters and Agilent*)
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The number of times an absorbance measurement is made per second by the detector on the selected instrument. Lower values will be less susceptible to noise but will record less frequently across time.",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is selected or available on the selected instrument, automatically set to 20/Second .",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is selected or available on the selected instrument, automatically set to 20/Second.",
+				Category -> "Detection"
+			},
+			{
+				OptionName -> SmoothingTimeConstant,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[
+						Type -> Enumeration,
+						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
+						Pattern :> HPLCSmoothingTimeConstantP
+					],
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+						Units -> {Second, {Second, Millisecond}}
+					]
+				],
+				Description -> "The time window used on the instrument software for data filtering in absorbance collection, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
 				Category -> "Detection"
 			},
 			{
@@ -902,9 +964,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -924,9 +987,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -972,7 +1036,7 @@ DefineOptions[ExperimentHPLC,
 					]
 				],
 				Description -> "For each ExcitationWavelength/EmissionWavelength pair, the signal amplification factor which modulates the percentage of maximum voltage that can be applied to the Photomultiplier Tube of the Fluorescence Detector. Linear increase in voltage applied to the Photomultiplier tube leads to an exponential change in RFU signal. Variable Fluorescence Sensitivity implies a different fluorescence sensitivity for each Excitation/Emission Wavelength pair.",
-				ResolutionDescription -> "If an instrument Fluorescence Detector is selected (Ultimate 3000 with FLR Detector or Waters Acquity UPLC H-Class FLR), automatically set to 1.",
+				ResolutionDescription -> "If the \"Ultimate 3000 with FLR Detector\" or \"Waters Acquity UPLC H-Class FLR\" instrument is selected, automatically set to 100 Percent. If the \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\" instrument is selected, automatically set to 60 Percent.",
 				Category -> "Detection"
 			},
 			{
@@ -1281,7 +1345,7 @@ DefineOptions[ExperimentHPLC,
 					Pattern :> RangeP[0 * Percent, 100 * Percent],
 					Units -> Percent
 				],
-				Description -> "The percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
+				Description -> "The percent of maximum voltage sent to the Photo Multiplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
 				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and NebulizerGas is True, automatically set to 50 Percent.",
 				Category -> "Detection"
 			},
@@ -1295,7 +1359,7 @@ DefineOptions[ExperimentHPLC,
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The frequency of evaporative light scattering measurement. Lower values will be less susceptible to noise but will record less frequently across time. Lower or higher values do not affect the y axis of the measurement.",
-				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and NebulizerGas is True, automatically set to 1/Second.",
+				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and NebulizerGas is True, automatically set to 20/Second.",
 				Category -> "Detection"
 			}
 		],
@@ -1315,6 +1379,17 @@ DefineOptions[ExperimentHPLC,
 				]
 			}
 		],
+		{
+			OptionName->SamplesOutUltrasonicIncompatible,
+			Default -> Null,
+			Description -> "Indicates if the samples collected during the elution of this sample should get UltrasonicIncompatible property set. Null indicates that the UltrasonicIncompatible will be resolved from the composition of the fraction. If CollectFractions is set to False, this option is ignored.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Category -> "Fraction Collection"
+		},
 		{
 			OptionName -> FractionCollectionDetector,
 			Default -> Automatic,
@@ -1336,7 +1411,13 @@ DefineOptions[ExperimentHPLC,
 			Category -> "Fraction Collection",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Container]}]
+				Pattern :> ObjectP[{Model[Container]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
 			]
 		},
 		IndexMatching[
@@ -1381,7 +1462,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> FractionCollectionMode,
 				Default -> Automatic,
-				Description -> "The method by which fractions collection should be triggered (peak detection, a constant threshold, or a fixed fraction time). In peak detection mode, the fraction collection is triggered when a change in slope of the FractionCollectionDetector signal is observed for a specified PeakDuration time. In constant threshold method, whenever the signal from the FractionCollectionDetector is above the specified value, fraction collection is triggered. In fixed fraction time, fractions are collected during the whole time interval specified.",
+				Description -> "The method by which fractions collection should be triggered (peak detection, a constant threshold, or a fixed fraction time). In Peak detection mode, the fraction collection is triggered when a change in slope of the FractionCollectionDetector signal is observed for a specified PeakSlopeDuration time. In constant Threshold mode, whenever the signal from the FractionCollectionDetector is above the specified value, fraction collection is triggered. In fixed fraction Time mode, fractions are collected during the whole time interval specified.",
 				ResolutionDescription -> "Automatically inherited from a method specified by FractionCollectionMethod option, or implicitly resolved from other fraction collection options. If AbsoluteThreshold is specified, set to Threshold. If PeakSlope is specified, set to Peak. If MaxCollectionPeriod is specified, set to Time. Otherwise set to Threshold if CollectFractions is True.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
@@ -1394,7 +1475,7 @@ DefineOptions[ExperimentHPLC,
 				OptionName -> MaxFractionVolume,
 				Default -> Automatic,
 				Description -> "The maximum amount of sample to be collected in a single fraction. If fraction detection trigger is not off, the collector moves position to the next container. For example, if AbsorbanceThreshold is set to 180 MilliAbsorbanceUnit and at MaxFractionVolume the absorbance value is still above 180 MilliAbsorbanceUnit, the fraction collector continues to collect fractions in the next container in line.",
-				ResolutionDescription -> "If FractionCollection is True, automatically set according to the MaxFractionVolume in the method specified by FractionCollectionMethod option, if available. If FractionCollectionContainer is specified, set to MaxVolume of the Model specified. Otherwise, automatically set to 1.8 Milliliter for UltiMate 3000 HPLC instruments and 50 Milliliter for Agilent 1290 Infinity II instrument.",
+				ResolutionDescription -> "If FractionCollection is True, automatically set according to the MaxFractionVolume in the method specified by FractionCollectionMethod option, if available. If FractionCollectionContainer is specified, set to MaxVolume of the Model specified. Otherwise, automatically set to 1.8 Milliliter for UltiMate 3000 HPLC instruments and 45 Milliliter for Agilent 1290 Infinity II instrument.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
 				Widget -> Widget[
@@ -1407,7 +1488,7 @@ DefineOptions[ExperimentHPLC,
 				OptionName -> MaxCollectionPeriod,
 				Default -> Automatic,
 				Description -> "The amount of time after which a new fraction will be generated (Fraction Collector moves to the next vial) when FractionCollectionMode is Time. For example, if MaxCollectionPeriod is 120 Second, the fraction collector continues to collect fractions in the next container in line after 120 Second.",
-				ResolutionDescription -> "If FractionCollection is True, automatically set according to the MaxCollectionPeriod in the method specified by FractionCollectionMethod option, if available. Otherwise automatically set to the time it takes to fill the FractionCollectorContainer to 80% of the MaxFractionVolume.",
+				ResolutionDescription -> "If FractionCollection is True, automatically set according to the MaxCollectionPeriod in the method specified by FractionCollectionMethod option, if available. Otherwise automatically set to the time it takes to fill to the MaxFractionVolume based on the flow rates.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
 				Widget -> Widget[
@@ -1419,7 +1500,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> AbsoluteThreshold,
 				Default -> Automatic,
-				Description -> "The signal value from FractionCollectionDetector above which fractions will always be collected. Both AbsoluteThreshold and PeakSlope conditions must be met in order to trigger fraction collection.",
+				Description -> "The signal value from FractionCollectionDetector above which fractions will always be collected, when FractionCollectionMode is Threshold.",
 				ResolutionDescription -> "Inherited from a method specified by FractionCollectionMethod option or set based on FractionCollectionDetector if FractionCollectionMode is Threshold. If the FractionCollectionDetector is UVVis, automatically set to 500 Milli AbsorbanceUnit. If the FractionCollectionDetector is Fluorescence, automatically set to 100 Milli RFU.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
@@ -1445,14 +1526,15 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> PeakSlope,
 				Default -> Automatic,
-				Description -> "The minimum slope (signal change per second) for PeakSlopeDuration that must be met before a peak is detected and fraction collection begins, and collection ends when the AbsoluteThreshold value is reached. A new peak (and new fraction) can be registered once the slope drops below this. Both AbsoluteThreshold and PeakSlope conditions must be met in order to trigger fraction collection.",
+				Description -> "The minimum slope (signal change per second) required for PeakSlopeDuration to trigger peak detection and start fraction collection. Fraction collection end slope is defined as the opposite of PeakSlope and fraction collection will continue until the slope exceeds the negative of the PeakSlope. For instance, if PeakSlope is set to 1 Milli Absorbance Unit/Second, fraction collection begins when the slope surpasses this value and ends when the slope falls below -1 Milli Absorbance Unit/Second. If a PeakEndThreshold is specified, both the PeakEndThreshold and PeakSlope conditions must be satisfied to stop fraction collection. A new peak and corresponding fraction can be registered when the slope exceeds the PeakSlope again.",
 				ResolutionDescription -> "If FractionCollection is True, automatically set according to the PeakSlope in the method specified by FractionCollectionMethod option, if available. If the FractionCollectionDetector is UVVis and FractionCollectionMode is Peak, automatically set to 1 Milli AbsorbanceUnit/Second. If the FractionCollectionDetector is Fluorescence and FractionCollectionMode is Peak, automatically set to 0.2 Milli RFU/Second.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
 				Widget -> Alternatives[
 					"pH" -> Widget[
-						Type -> Number,
-						Pattern :> RangeP[0, 14]
+						Type -> Quantity,
+						Pattern :> GreaterEqualP[0*1/Second],
+						Units -> 1/Second
 					],
 					"Others" -> Widget[
 						Type -> Quantity,
@@ -1478,7 +1560,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> PeakSlopeDuration,
 				Default -> Automatic,
-				Description -> "The minimum duration that changes in slopes must be maintained before they are registered.",
+				Description -> "The minimum duration that changes in slopes must be maintained before fraction collection is registered or ended. This option is only applicable for UltiMate 3000 HPLC instruments.",
 				ResolutionDescription -> "If FractionCollection is True, automatically set according to the PeakSlopeDuration in the method specified by FractionCollectionMethod option, if available. Otherwise automatically set to 0.5 Second if FractionCollectionMode is Peak.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
@@ -1491,7 +1573,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> PeakEndThreshold,
 				Default -> Automatic,
-				Description -> "The signal value below which the end of a peak is marked and fraction collection stops.",
+				Description -> "The signal value below which the end of a peak is marked and fraction collection stops when FractionCollectionMode is Peak. Both the PeakEndThreshold and PeakSlope conditions must be satisfied to stop fraction collection. This option is only applicable for UltiMate 3000 HPLC instruments.",
 				ResolutionDescription -> "If FractionCollection is True, automatically set according to the PeakEndThreshold in the method specified by FractionCollectionMethod option, if available. If FractionCollectionMode is Peak, automatically set to 1 Milli AbsorbanceUnit for UVVis detector, 0.2 Milli * RFU for Fluorescence detector, 10 for pH detector or 10.0 Milli * Siemens / Centimeter for Conductivity detector.",
 				AllowNull -> True,
 				Category -> "Fraction Collection",
@@ -1527,7 +1609,15 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Standards",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Liquid Chromatography",
+							"Standards"
+						}
+					}
 				]
 			},
 			{
@@ -1813,7 +1903,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Single" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+						Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 						Units -> Nanometer
 					],
 					"All" -> Widget[
@@ -1823,12 +1913,12 @@ DefineOptions[ExperimentHPLC,
 					"Range" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						],
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[200 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[200 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						]
 					]
@@ -1866,11 +1956,32 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values*)
+					Pattern :> RangeP[0.2 * 1 / Second, 120 * 1 / Second], (*can be only specific values for Waters and Agilent*)
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The number of times an absorbance measurement is made per second for Standard sample. Lower values will be less susceptible to noise but will record less frequently across time.",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is selected or available on the selected instrument,  automatically set equal to the first entry in AbsorbanceSamplingRate.",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is selected or available on the selected instrument, automatically set equal to the first entry in AbsorbanceSamplingRate.",
+				Category -> "Standards"
+			},
+			{
+				OptionName -> StandardSmoothingTimeConstant,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[
+						Type -> Enumeration,
+						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
+						Pattern :> HPLCSmoothingTimeConstantP
+					],
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+						Units -> {Second, {Second, Millisecond}}
+					]
+				],
+				Description -> "The time window used on the instrument software for data filtering in absorbance collection of Standard sample, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
 				Category -> "Standards"
 			},
 			{
@@ -1878,9 +1989,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -1900,9 +2012,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -2099,7 +2212,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> StandardELSDGain,
 				Default -> Automatic,
-				Description -> "The percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
+				Description -> "The percent of maximum voltage sent to the Photo Multiplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
 				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and StandardNebulizerGas is True, automatically set to the first entry in ELSDGain.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -2146,7 +2259,22 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Blanks",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers",
+							"HPLC Buffers"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -2432,7 +2560,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Single" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+						Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 						Units -> Nanometer
 					],
 					"All" -> Widget[
@@ -2442,12 +2570,12 @@ DefineOptions[ExperimentHPLC,
 					"Range" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						],
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[200 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[200 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						]
 					]
@@ -2485,7 +2613,7 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values*)
+					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values for Waters and Agilent*)
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The number of times the absorbance measurement is made per second during Blank measurement. Lower values will be less susceptible to noise but will record less frequently across time.",
@@ -2493,13 +2621,35 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Blanks"
 			},
 			{
+				OptionName -> BlankSmoothingTimeConstant,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[
+						Type -> Enumeration,
+						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
+						Pattern :> HPLCSmoothingTimeConstantP
+					],
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+						Units -> {Second, {Second, Millisecond}}
+					]
+				],
+				Description -> "The time window used on the instrument software for data filtering in absorbance collection of Blank sample, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Category -> "Blanks"
+			},
+			{
 				OptionName -> BlankExcitationWavelength,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -2519,9 +2669,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -2718,7 +2869,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> BlankELSDGain,
 				Default -> Automatic,
-				Description -> "The percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
+				Description -> "The percent of maximum voltage sent to the Photo Multiplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
 				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and BlankNebulizerGas is True, automatically set to the first entry in ELSDGain.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -2917,7 +3068,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> ColumnPrimeFlowRate,
 				Default -> Automatic,
-				Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumePrimeGradient options during column prime. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
+				Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumnPrimeGradient options during column prime. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
 				ResolutionDescription -> "If ColumnPrimeGradient option is specified, automatically set from the method given in the ColumnPrimeGradient option. If NominalFlowRate of the column model is specified, set to lesser of the NominalFlowRate for each of the columns, guard columns or the instrument's MaxFlowRate. Otherwise set to 1 Milliliter / Minute.",
 				AllowNull -> True,
 				Category -> "Column Prime",
@@ -3012,7 +3163,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Single" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+						Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 						Units -> Nanometer
 					],
 					"All" -> Widget[
@@ -3022,12 +3173,12 @@ DefineOptions[ExperimentHPLC,
 					"Range" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						],
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[200 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[200 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						]
 					]
@@ -3065,7 +3216,7 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values*)
+					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values for Waters and Agilent*)
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The number of times an absorbance measurement is made per second during column prime. Lower values will be less susceptible to noise but will record less frequently across time.",
@@ -3073,13 +3224,35 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Column Prime"
 			},
 			{
+				OptionName -> ColumnPrimeSmoothingTimeConstant,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[
+						Type -> Enumeration,
+						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
+						Pattern :> HPLCSmoothingTimeConstantP
+					],
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+						Units -> {Second, {Second, Millisecond}}
+					]
+				],
+				Description -> "The time window used on the instrument software for data filtering in absorbance collection of column prime, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Category -> "Column Prime"
+			},
+			{
 				OptionName -> ColumnPrimeExcitationWavelength,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -3099,9 +3272,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -3298,7 +3472,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> ColumnPrimeELSDGain,
 				Default -> Automatic,
-				Description -> "The percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
+				Description -> "The percent of maximum voltage sent to the Photo Multiplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
 				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and ColumnPrimeNebulizerGas is True, automatically set to the first entry in ELSDGain.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -3559,7 +3733,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Single" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+						Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 						Units -> Nanometer
 					],
 					"All" -> Widget[
@@ -3569,12 +3743,12 @@ DefineOptions[ExperimentHPLC,
 					"Range" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[190 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[190 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						],
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[200 Nanometer, 900 Nanometer],
+							Pattern :> RangeP[200 Nanometer, 950 Nanometer],
 							Units -> Nanometer
 						]
 					]
@@ -3612,7 +3786,7 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values*)
+					Pattern :> RangeP[1 * 1 / Second, 120 * 1 / Second], (*can be only specific values for Waters and Agilent*)
 					Units -> {-1, {Minute, {Minute, Second}}}
 				],
 				Description -> "The number of times an absorbance measurement is made per second during column flush. Lower values will be less susceptible to noise but will record less frequently across time.",
@@ -3620,13 +3794,35 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Column Flush"
 			},
 			{
+				OptionName -> ColumnFlushSmoothingTimeConstant,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[
+						Type -> Enumeration,
+						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
+						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
+						Pattern :> HPLCSmoothingTimeConstantP
+					],
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
+						Units -> {Second, {Second, Millisecond}}
+					]
+				],
+				Description -> "The time window used on the instrument software for data filtering in absorbance collection of column flush, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Category -> "Column Flush"
+			},
+			{
 				OptionName -> ColumnFlushExcitationWavelength,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -3646,9 +3842,10 @@ DefineOptions[ExperimentHPLC,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					(* Up to 1200 nm is allowed for Ex/Em on "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors" and it only allows single-channel. Other instruments only allow up to 890 nm *)
 					"Single-Channel" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[200 Nanometer, 890Nanometer],
+						Pattern :> RangeP[200 Nanometer, 1200Nanometer],
 						Units :> Nanometer
 					],
 					"Multi-Channel" -> Adder[
@@ -3845,7 +4042,7 @@ DefineOptions[ExperimentHPLC,
 			{
 				OptionName -> ColumnFlushELSDGain,
 				Default -> Automatic,
-				Description -> "The percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
+				Description -> "The percent of maximum voltage sent to the Photo Multiplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
 				ResolutionDescription -> "If EvaporativeLightScattering Detector is selected and ColumnFlushNebulizerGas is True, automatically set to the first entry in ELSDGain.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -3870,15 +4067,28 @@ DefineOptions[ExperimentHPLC,
 			}
 		],
 		(* === END: Column Prime and Flush Options === *)
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+			}
+		],
 		{
 			OptionName -> InjectionSampleVolumeMeasurement,
-			Default -> False,
+			(* Null means False. Default to Null to hide it *)
+			Default -> Null,
 			Description -> "Indicates if any liquid samples prepared in the sub SamplePreparationProtocols of are volume checked prior to injection to provide QC data.",
-			AllowNull -> False,
+			AllowNull -> True,
 			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-			Category -> "Sample Preparation"
+			Category -> "Post Experiment"
 		},
+		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions
 
@@ -3895,12 +4105,13 @@ Error::InvalidHPLCAlternateInstruments = "The specified Instrument option cannot
 Error::HPLCIncompatibleAliquotContainer = "The specified AliquotContainer is not compatible with an instrument's autosampler. Please use a compatible container type: `1`.";
 Error::HPLCTooManySamples = "The number of samples and/or aliquots are in too many containers and cannot fit on one of the required instrument's autosampler.";
 Error::SamplesOutStorageConditionRequired = "The input samples for which fraction collection is specified have multiple distinct storage conditions. Please specify SamplesOutStorageCondition to disambiguate fraction sample storage.";
-Warning::ConflictingInjectionSampleVolumeMeasurementOption = "The InjectionSampleVolumeMeasurement option was specified True, but PreparatoryUnitOperations/PreparatoryPrimitives option were not specified. InjectionSampleVolumeMeasurement option will be ignored.";
+Warning::ConflictingInjectionSampleVolumeMeasurementOption = "The InjectionSampleVolumeMeasurement option was specified True, but PreparatoryUnitOperations option were not specified. InjectionSampleVolumeMeasurement option will be ignored.";
 
 Error::StandardOptionsButNoStandard = "Standard cannot be Null, if other Standard options `1` are set. Please specify a Standard or allow the other Standard options to be automatically resolved.";
 Error::BlankOptionsButNoBlank = "Blank cannot be Null, if other Blank options `1` are set. Please specify a Blank or allow the other Blank options to be automatically resolved.";
 Error::ColumnOptionsButNoColumn = "ColumnSelector and Column options cannot be Null, if other Column options `1` are set. Please allow ColumnSelector and Column options to resolve automatically or set it to the desired columns.";
 
+Error::RedundantGuardColumn = "The specified column `1` is a guard column, and GuardColumn option `2` is also specified. When the main column is a guard column, an additional guard column must not be set. Please either set GuardColumn to Null, or set Column to a non-guard type column.";
 Warning::IncompatibleColumnType = "The specified `1` `2` has a SeparationMode of `3` which is not the same as the selected SeparationMode for the experiment (`4`).";
 Warning::VariableColumnTypes = "The specified Columns `1` have a SeparationMode of `2`. When using Column SeparationMode to resolve automatic options, only the SeparationMode for the first column will be considered.";
 (* This warning is thrown in HPLC, SFC, and FPLC so it needs the `4` to specify that *)
@@ -3910,7 +4121,7 @@ Warning::IncompatibleColumnTemperature = "The specified column temperatures (`1`
 Error::ReverseMoreThanOneColumn = "ColumnOrientation cannot be Reverse with more than two columns specified. Please set ColumnOrientation to Forward or specify only one column.";
 Error::ColumnGap = "There are gaps between the following column options `1`. Please make sure the columns are connected with each other without gaps or allow these options to resolve automatically.";
 Error::GuardColumnSelector = "The specified GuardColumn option must match the Guard Column in the ColumnSelector option. Please set the GuardColumn and ColumnSelector options to be the same Model[Item,Column]/Object[Item,Column] or allow one of the options to be resolved automatically.";
-Error::ColumnOrientationSelector = "The specified GuardColumnOrientation and ColumnOrientation options must match the corresponding column orientations in the ColumnSelector option. Please set the GuardColumnOrientation, ColumnOrientation and ColumnSelector options to be copacetic or allow one of the options to be resolved automatically.";
+Error::ColumnOrientationSelector = "The specified GuardColumnOrientation and ColumnOrientation options must match the corresponding column orientations in the ColumnSelector option. Please set the GuardColumnOrientation, ColumnOrientation and ColumnSelector options to be compatible or allow one of the options to be resolved automatically.";
 Error::ColumnSelectorConflict = "The specified ColumnSelector does not match other the column options. Please allow ColumnSelector to resolve automatically or modify ColumnSelector to match the other column options.";
 Error::HPLCColumnsCannotFit = "The specified columns cannot fit into the instrument's column oven compartment. Please check the Dimensions of the column and the MaxColumnLength of the instruments or make sure IncubateColumn is set to False and all the specified column temperature values are set to Ambient temperatures.";
 Error::HPLCCannotIncubateColumn = "To incubate column to a non-ambient temperature, columns must fit into the instrument's column oven compartment and IncubateColumn option must be set to True. Please reset IncubateColumn option or select smaller columns to continue.";
@@ -3918,8 +4129,8 @@ Error::HPLCCannotIncubateColumnWaters = "Column compartment cannot be skipped fo
 Error::InjectionTableColumnConflictHPLC = "The specified column positions in InjectionTable require more sets of column assemblies that specified in the Column and ColumnSelector options. Please specify ColumnSelector option to match the required number of column sets or allow the options to resolve automatically.";
 Error::ColumnPositionColumnConflict = "The specified ColumnPosition options require more sets of column assemblies that specified in the Column and ColumnSelector options. Please specify ColumnSelector option to match the required number of column sets or allow the options to resolve automatically.";
 Error::DuplicateColumnSelectorPositions = "The specified ColumnSelector options has duplicated Column Positions. Only one set of columns can be installed per column selector position. Please specify different Column Positions.";
-Error::ColumnPositionInjectionTableConflict = "The specified InjectionTable does not match the required column positions in ColumnPosition/ StandardColumnPosition/ BlankColumnPosition options. Please update them to be copacetic or allow the options to resolve automatically.";
-Error::ColumnTemperatureInjectionTableConflict = "The specified InjectionTable does not match the required column temperatures in `1` options. Please update them to be copacetic or allow the options to resolve automatically.";
+Error::ColumnPositionInjectionTableConflict = "The specified InjectionTable does not match the required column positions in ColumnPosition/ StandardColumnPosition/ BlankColumnPosition options. Please update them to be compatible or allow the options to resolve automatically.";
+Error::ColumnTemperatureInjectionTableConflict = "The specified InjectionTable does not match the required column temperatures in `1` options. Please update them to be compatible or allow the options to resolve automatically.";
 
 Warning::InsufficientSampleVolume = "The samples `1` do not have sufficient volume for the injection volume (default to 10 uL for Analytical measurement or 500 uL for SemiPreparative measurement) plus the autosampler's dead volume of `2`. The experiment will still attempt to make injections with what is currently available; please change the InjectionVolume options if this is not desired.";
 
@@ -3928,16 +4139,16 @@ Error::MissingHPLCScaleInstrument = "The experiment is resolved to be performed 
 Error::UnsupportedSampleTemperature = "The specified Instrument `1` do not support the SampleTemperature option since its autosampler is not equipped with a temperature controller. Please specify another instrument or allow SampleTemperature to be automatically resolved.";
 Error::UnsupportedBufferD = "The specified Instrument `1` does not support the BufferD specification option because its pump only supports three buffers. Please use another instrument or any specified options related to BufferD.";
 Error::UnsupportedGradientD = "The specified Instrument `1` does not support gradient specifications that use BufferD since its pump only supports three buffers. Please use another instrument or remove any specified options related to BufferD.";
-Error::WavelengthOutOfRange = "The specified `1` value(s) (`2`) are outside of the specified Instrument's (`3`) combined wavelength range of `4` to `5`. Please provide Wavelength options that are within the instrument's operating range or select other instruments.";
+Error::WavelengthOutOfRange = "The specified `1` value(s) (`2`) are outside of the specified Instrument's (`3`) combined `6` wavelength range of `4` to `5`. Please provide Wavelength options that are within the instrument's operating range or select other instruments.";
 Error::BufferDMustExistForInstrument = "The specified Instrument, `1`, must have a BufferD and is therefore incompatible with BufferD->Null specification. Please set BufferD to Automatic or an Object[Sample]/Model[Sample] in order to use this instrument or select a different instrument.";
 Error::BufferDMustExistForSampleTemperature = "The only instrument that supports SampleTemperature specification must have BufferD. Please remove the BufferD->Null or SampleTemperature specification.";
 Error::BufferDMustExistForGradient = "BufferD cannot be set to Null when Gradient or GradientD specify usage of BufferD. Please modify gradient usage or specify BufferD as an object.";
 Error::IncompatibleInstrumentBufferD = "BufferD and its gradient are only available on the Waters Acquity UPLC H-Class instrument and cannot support fraction collection. Please remove any specified options related to BufferD or remove fraction collection options.";
-Error::WavelengthTemperatureConflict = "The specified `1` value(s) (`2`) are out of range for the instrument which supports SampleTemperature specification (Model[Instrument,HPLC,\"Waters Acquity UPLC H-Class PDA\"]). Please use wavelengths within range or remove temperature specification.";
+Error::WavelengthTemperatureConflict = "The specified `1` value(s) (`2`) are out of range for the instrument which supports SampleTemperature specification (Model[Instrument,HPLC,\"Waters Acquity UPLC H-Class PDA\"] and Model[Instrument, HPLC, \"Waters Acquity UPLC Premier PDA\"]). Please use wavelengths within range or remove temperature specification.";
 Error::ColumnSelectorInstrumentConflict = "The specified ColumnSelector option (`1`) requires a total of `2` sets of columns, which is not compatible with the required instrument supporting all other parameters (`3`). Please select a different instrument or fewer column sets.";
 Error::ScaleInstrumentConflict = "The specified Scale (`1`) is not compatible with the required instrument supporting all other parameters (`2`). Please specify scale as Analytical.";
 Error::SampleTemperatureConflict = "No suitable instrument exists that supports the specified SampleTemperature and all other options (e.g. Scale -> Preparative or FractionCollection -> True). Consider relaxing options to allow for a suitable instrument or not specifying SampleTemperature.";
-Error::IncompatibleDetectionWavelength = "The specified absorbance wavelengths are not within the compatible range of the best instrument (`1` to `2`).";
+Error::IncompatibleDetectionWavelength = "The specified `3` wavelengths are not within the compatible range of the best instrument to fulfill other requirements (`1` to `2`).";
 Error::IncompatibleNeedleWash = "BufferC and NeedleWashSolution cannot be specified differently for the Instrument `1`. Please set both NeedleWashSolution and BufferC to the same Object[Sample]/Model[Sample] or select an instrument that supports different BufferC and NeedleWashSolution solutions.";
 Error::IncompatibleHPLCColumnTemperature = "No instrument is available to meet the specified column temperature values. The allowed column temperature range is `1` to `2`. Please adjust the desired column temperature.";
 Error::InvalidHPLCMaxAcceleration = "The specified MaxAcceleration (`1`) is either greater than the MaxAcceleration of the required instrument model and column(s) (`2`)  or less than the instrument's MinAcceleration. Please specify a value less than the maximum, greater than the minimum or leave MaxAcceleration and MinAcceleration as Automatic.";
@@ -3950,11 +4161,12 @@ Error::HPLCIncompatibleInjectionVolume = "The following InjectionVolume/Standard
 Warning::HPLCSmallInjectionVolume = "The following InjectionVolume/StandardInjectionVolume/BlankInjectionVolume values: `1` are smaller than the recommended injection volume `2`. The minimum recommended volume is `3`. Please consider increasing the injection volume for better results.";
 
 Error::InvalidFractionCollectionContainer = "The selected FractionCollectionContainer `1` is not supported with the selected scale `2`. Please use `3` instead.";
-Error::FractionCollectionDetectorConflict = "Fraction collection parameters cannot be specified when the specified Detector does not match the AbsorbanceDetector (`2`) of the instrument supporting fraction collection (`1`). Please remove fraction collection parameter specification or Detector value.";
 Error::InvalidFractionCollectionEndTime = "The specified FractionCollectionEndTime values `1` are greater than their corresponding gradient durations. Please ensure the maximum fraction collection time is less than the total gradient runtime.";
+Error::ConflictScaleAndCollectFractions = "The specified Scale (Analytical) conflicts with the specified CollectFractions (True). These options will be ignored.";
 Warning::ConflictFractionOptionSpecification = "The specified options `1` conflict with the resolution of no fraction collection. These options will be ignored.";
 Error::ConflictingFractionCollectionMethodOptions = "When FractionCollectionMethod is specified, the other fraction collection options (AbsoluteThreshold, and PeakEndThreshold, PeakSlope and PeakEndThreshold) should be in accordance with the FractionCollectionMethod. Please specify only the FractionCollectionMethod or the other options.";
-Error::HPLCConflictingFractionCollectionOptions = "There is a conflict between the FractionCollectionMode option and Peak and/or Thresholding options.  If FractionCollectionMode is set to Threshold, PeakSlope, PeakSlopeDuration, and PeakEndThreshold must not be specified. If FractionCollectionMode is set to Peak, AbsoluteThreshold must not be specified. If FractionCollectionMode is Time, PeakSlope, and PeakSlopeEnd, AbsoluteThreshold, and PeakEndThreshold must not be specified.";
+Error::HPLCConflictingFractionCollectionOptions = "There is a conflict between the FractionCollectionMode option and Peak and/or Thresholding options. If FractionCollectionMode is set to Threshold, PeakSlope, PeakSlopeDuration, and PeakEndThreshold must not be specified and AbsoluteThreshold must be specified. If FractionCollectionMode is set to Peak, AbsoluteThreshold must not be specified and PeakSlope must be specified. If FractionCollectionMode is Time, PeakSlope, and PeakSlopeEnd, AbsoluteThreshold, and PeakEndThreshold must not be specified.";
+Error::NotApplicableHPLCPeakFractionCollectionOptions = "The fraction collection options PeakSlopeDuration and PeakEndThreshold are only supported on UltiMate 3000 HPLC instruments. These values cannot be specified for other instruments. Please remove these options or select a UltiMate 3000 HPLC instrument.";
 Error::MissingFractionCollectionDetector = "The specified FractionCollectionDetector `1` is not a member of the available detectors `2` on the resolved HPLC instrument `3`. Please change Detector or Instrument to use a different instrument or specify another FractionCollectionDetector.";
 Error::ConflictFractionCollectionUnit = "To use `1` as the FractionCollectionDetector, the `2` options should be set to the correct unit `3`. Please set all option values correctly or allow them to resolve automatically.";
 
@@ -3971,6 +4183,10 @@ Error::IncompatibleStandardFlowRate = "The required flow rate for standards `1` 
 Error::IncompatibleBlankFlowRate = "The required flow rate for blanks `1` is not less than the required instrument's or columns' maximum flow rate (`2`). Please specify a compatible flow rate.";
 Error::IncompatibleColumnPrimeFlowRate = "The required flow rate for the column prime of column selector `1` is not less than the required instrument's or columns' maximum flow rate (`2`). Please specify a compatible flow rate.";
 Error::IncompatibleColumnFlushFlowRate = "The required flow rate for the column flush of column selector `1` is not less than the required instrument's or columns' maximum flow rate (`2`). Please specify a compatible flow rate.";
+Error::ConflictColumnStorageBuffer = "The specified ColumnStorageBuffer `1` is not one of the buffers specified for the experiment. Please specify both the ColumnStorageBuffer option and one of the buffer options and make sure they match each other, or specify the option as gradient percents, or allow the ColumnStorageBuffer option to be automatically resolved.";
+Error::ConflictColumnStorageBufferFlushGradient = "The specified ColumnStorageBuffer gradient `1` does not match the end gradient of the specified ColumnFlushGradient. The column(s) are directly stored after column flush. Please update the options to have the same end gradient, or allow one or both of them to be automatically resolved.";
+Error::InvalidGradientColumnStorageBuffer = "The specified ColumnStorageBuffer gradient `1` do not sum to 100%. Please check the provided ColumnStorageBuffer option and make sure all buffer percents sum to 100%.";
+Warning::IncompatibleModelColumnStorageBuffer = "The ColumnStorageBuffer of the specified Column model `1` is not one of the buffers specified for the experiment and will not be used for the resolution of the ColumnStorageBuffer option.";
 
 Error::DetectorConflict = "The specified Detector option (`3`) are not available in the list of available Detectors (`2`) of the specified instrument (`1`). Please refer to the ExperimentHPLC Help File to find a different instrument with all desired Detector or select different detectors in the Detector option.";
 Error::InvalidHPLCDetectorOptions = "The following detectors `1` are not available in the specified `2` option while its detector related options `3` are specified. Please add the additional detectors to the Detector option, choose another instrument, or allow the related options to resolve automatically.";
@@ -3981,12 +4197,16 @@ Error::UnsupportedBufferDAndDetectors = "The detector-related options `1` reques
 Error::UnsupportedGradientDAndDetectors = "The detector related options `1` requested `2` detectors. These detectors are only available on HPLC instruments that do not support GradientD. Please select different detectors (in the Detector option or in detector-related options) or remove gradient specifications that use BufferD.";
 
 Error::WavelengthResolutionConflict = "The specified options for AbsorbanceWavelength and WavelengthResolution conflict. When AbsorbanceWavelength is a single value, the corresponding WavelengthResolution option must be left unspecified. Please allow WavelengthResolution to be automatically resolved or provide a wavelength range in AbsorbanceWavelength option.";
-Warning::AbsorbanceRateAdjusted = "The following absorbance sampling rate options, `1`, can only be specific values and were set to the closest one.";
+(* Argument 2 is to say if it is a requirement list of specific value or rounding *)
+Warning::AbsorbanceRateAdjusted = "The following absorbance sampling rate options, `1`, `2` and were set to the closest allowed value.";
+Error::InvalidAbsorbanceSmoothingTimeConstant = "The following absorbance filter time constant options, `1`, have been set to Small/Medium/Large values but this enumeration value is not valid for the selected instrument `2`. Please refer to the ExperimentHPLC help file for the valid SmoothingTimeConstant values.";
+(* Argument 2 is to say if it is a requirement list of specific value or rounding *)
+Warning::AbsorbanceSmoothingTimeConstantAdjusted = "The following absorbance smoothing time constant options, `1`, `2` and were set to the closest allowed value. Please refer to the ExperimentHPLC help file for the valid SmoothingTimeConstant values for different absorbance sampling rate.";
 Warning::WavelengthResolutionAdjusted = "The following wavelength resolution options, `1`, can only be specific values and were set to the closest one.";
 Warning::UVVisOptionsNotApplicable = "The following options `1` are not available for the UVVis detector on the instrument best suited to meet all options. These options will be ignored.";
 Error::FractionCollectionWavelengthConflict = "CollectFractions is set to True for `1` but the AbsorbanceWavelength is not a single wavelength value. Please provide a single AbsorbanceWavelength for fraction collection.";
-Error::GasPressureRequiresNebulizer = "The specified NebulizerGasPressure options require that NebulizerGas is True or Automatic. Please change NubulizerGas to True or allow it to be automatically resolved.";
-Error::GasHeatingRequiresNebulizer = "The specified NebulizerGasHeating options require that NebulizerGas is True or Automatic. Please change NubulizerGas to True or allow it to be automatically resolved.";
+Error::GasPressureRequiresNebulizer = "The specified NebulizerGasPressure options require that NebulizerGas is True or Automatic. Please change NebulizerGas to True or allow it to be automatically resolved.";
+Error::GasHeatingRequiresNebulizer = "The specified NebulizerGasHeating options require that NebulizerGas is True or Automatic. Please change NebulizerGas to True or allow it to be automatically resolved.";
 Error::HeatingPowerRequiresNebulizerHeating = "The specified NebulizerGasHeating options require that NebulizerGas is True or Automatic and that NebulizerGasHeating is also True or Automatic. Please change NebulizerGas and NebulizerGasHeating to True or allow both options to be automatically resolved.";
 
 Error::MissingHPLCpHCalibrationOptions = "When pHCalibration is set to True, the related options `1` cannot be Null. Please specify the desired values in these options.";
@@ -3996,7 +4216,7 @@ Error::InvalidHPLCConductivityCalibrationOptions = "When ConductivityCalibration
 Warning::HPLCpHCalibrationBufferSwapped = "The LowpHCalibrationTarget is larger than HighpHCalibrationTarget. The two calibration buffers will be swapped during calibration. Please choose different calibration buffers if this is not desired.";
 
 Error::HPLCEmissionLowerThanExcitation = "The following options `1` (for `2` `3`) have excitation wavelengths that are larger than the emission wavelengths. Please ensure that the excitation wavelengths are lower than the emission wavelengths.";
-Error::HPLCEmissionExcitationTooNarrow = "The following options `1` (for `2` `3`) have excitation wavelengths that are within 20 nm of the emission wavelengths. The `4` instrument cannot support emission wavelength within 20 nm of excitation wavelength. Please select different wavelength values or seleect another instrument.";
+Error::HPLCEmissionExcitationTooNarrow = "The following options `1` (for `2` `3`) have excitation wavelengths that are within 20 nm of the emission wavelengths. The `4` instrument cannot support emission wavelength within `5` of excitation wavelength. Please select different wavelength values or select another instrument.";
 Error::ConflictHPLCFluorescenceOptionsLengths = "The following options `1` contain different numbers of fluorescence detection channels for `2` `3`. Please ensure that there is a 1:1:1 ratio of excitation wavelengths, emission wavelengths, and fluorescence gains.";
 Error::HPLCFluorescenceWavelengthLimit = "The following options `1` have specified too many specified fluorescence channels to measure for `2` `3`. Only up to `4` channels can be measured per sample. Please ensure that the number of fluorescence channels is less than `4` per sample.";
 Error::InvalidHPLCEmissionCutOffFilter = "The fluorescence emission cut-off filter is not available on `1`. Please set the option `2` to Null or select a different instrument (like `3`).";
@@ -4031,6 +4251,34 @@ $DefaultIonExchangePreparativeColumn=Model[Item, Column, "id:rea9jl1or6Np"];
 $DefaultIonExchangeAnalyticalColumn=Model[Item, Column, "id:zGj91aR3d6GL"];
 $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$DefaultReversePhasePreparativeColumn,$DefaultReversePhaseAnalyticalColumn,$DefaultIonExchangePreparativeColumn,$DefaultIonExchangeAnalyticalColumn];
 
+(* HPLC Vials *)
+$ChromatographyLCCompatibleVials = {
+	(* "HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
+	(* "1mL HPLC Vial (total recovery)" *)
+	Model[Container, Vessel, "id:1ZA60vL48X85"],
+	(* "Amber HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:GmzlKjznOxmE"],
+	(* "HPLC vial (high recovery), LCMS Certified" *)
+	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
+	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
+	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
+	(* "Polypropylene HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:qdkmxz0A884Y"],
+	(* "PFAS Testing Vials, Agilent" *)
+	Model[Container, Vessel, "id:o1k9jAoPw5RN"]
+};
+
+$ChromatographyLCCompatibleVialsNamed = {
+	Model[Container, Vessel, "HPLC vial (high recovery)"],
+	Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
+	Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
+	Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
+	Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
+	Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],
+	Model[Container, Vessel, "PFAS Testing Vials, Agilent"]
+};
+
 (* ::Subsection:: *)
 (* ExperimentHPLC *)
 
@@ -4042,16 +4290,16 @@ $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$Default
 (* Core Sample Overload *)
 ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
 	{listedSamples, listedOptions, outputSpecification, output, gatherTestsQ, validSamplePreparationResult, mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples, samplePreparationCache, safeOps, safeOpsTests, validLengthsQ, validLengthTests,
+		myOptionsWithPreparedSamples, updatedSimulation, safeOps, safeOpsTests, validLengthsQ, validLengthTests,
 		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, instrumentFields, modelInstrumentFields, columnFields,
 		modelColumnFields, gradientFields, fractionCollectionFields, sampleFields, modelContainerFields, optionsWithObjects,
-		userSpecifiedObjects, objectsExistQs, simulatedSampleQ, objectsExistTests, availableInstruments, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
+		availableInstruments, availableInstrumentObjects, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
 		instrumentObjects, objectSampleFields, modelSampleFields, modelSampleFieldsPacket, objectContainerFields, modelContainerFieldsPacket, analyteFields,
-		modelContainerSyringeFields, syringeContainerFieldsPacket,
-		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, cacheBall,
+		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache,
+		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, authorObject, cacheBall,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets,
 		resourcePacketTests, cartridgeObjects, modelCartridgeObjects, cartridgeFields, modelCartridgeFields,
-		mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, syringeFields},
+		mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed},
 
 	(* Make sure we're working with a list of options *)
 	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
@@ -4066,13 +4314,13 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentHPLC,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -4090,7 +4338,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 	];
 
 	(* Sanitize named inputs *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -4152,10 +4400,13 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		}]
 	];
 
+	(* pull out relevant options *)
+	inheritedCache = Lookup[expandedSafeOps, Cache];
+
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	(* Fields to download from any instrument objects *)
 	instrumentFields = {
-		Packet[Model, Status, MinColumnTemperature, MaxColumnTemperature],
+		Packet[Model, Status, MinColumnTemperature, MaxColumnTemperature, Site],
 		Packet[Model[{
 			Name,
 			AutosamplerDeckModel,
@@ -4166,11 +4417,11 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			TubingMaxPressure,
 			PumpMaxPressure,
 			MaxColumnLength,
+			MaxColumnOutsideDiameter,
 			PumpType,
 			NumberOfBuffers,
 			SystemPrimeGradients,
 			SystemFlushGradients,
-			AbsorbanceDetector,
 			MinFlowRate,
 			MaxFlowRate,
 			MinSampleVolume,
@@ -4180,6 +4431,12 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			MaxSampleTemperature,
 			MinColumnTemperature,
 			MaxColumnTemperature,
+			MinAbsorbanceSamplingRate,
+			MaxAbsorbanceSamplingRate,
+			AbsorbanceSamplingRates,
+			MinSmoothingTimeConstant,
+			MaxSmoothingTimeConstant,
+			SmoothingTimeConstants,
 			WashSolution,
 			SampleLoop,
 			Detectors,
@@ -4189,7 +4446,8 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			WettedMaterials,
 			MaxNumberOfColumns,
 			Positions,
-			ColumnPreheater
+			ColumnPreheater,
+			Scale
 		}]],
 		Packet[Model[Field[SystemPrimeGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]]],
 		Packet[Model[Field[SystemFlushGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]]],
@@ -4205,6 +4463,10 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			MaxAcceleration,
 			MinAbsorbanceWavelength,
 			MaxAbsorbanceWavelength,
+			MinEmissionWavelength,
+			MaxEmissionWavelength,
+			MinExcitationWavelength,
+			MaxExcitationWavelength,
 			TubingMaxPressure,
 			PumpMaxPressure,
 			MaxColumnLength,
@@ -4212,7 +4474,6 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			NumberOfBuffers,
 			SystemPrimeGradients,
 			SystemFlushGradients,
-			AbsorbanceDetector,
 			MinFlowRate,
 			MaxFlowRate,
 			MinSampleVolume,
@@ -4222,6 +4483,12 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			MaxSampleTemperature,
 			MinColumnTemperature,
 			MaxColumnTemperature,
+			MinAbsorbanceSamplingRate,
+			MaxAbsorbanceSamplingRate,
+			AbsorbanceSamplingRates,
+			MinSmoothingTimeConstant,
+			MaxSmoothingTimeConstant,
+			SmoothingTimeConstants,
 			WashSolution,
 			SampleLoop,
 			Detectors,
@@ -4240,19 +4507,19 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 
 	(* Fields to download from any column objects *)
 	columnFields = {
-		Packet[Model],
-		Packet[Model[{SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter}]],
+		Packet[Model,Site],
+		Packet[Model[{SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter, ColumnType}]],
 		Packet[Model[PreferredGuardColumn][{SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter}]]
 	};
 
 	(* Fields to download from any column model objects *)
 	modelColumnFields = {
-		Packet[SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter, StorageBuffer],
+		Packet[SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter, StorageBuffer, ColumnType],
 		Packet[PreferredGuardColumn[{SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature, PreferredGuardCartridge, Dimensions, Diameter, StorageBuffer}]]};
 
 	(* Fields to download from any cartridge objects *)
 	cartridgeFields = {
-		Packet[Model],
+		Packet[Model,Site],
 		Packet[Model[{PreferredGuardColumn, MaxPressure}]],
 		Packet[Model[PreferredGuardColumn][{SeparationMode, ChromatographyType, MaxAcceleration, MinFlowRate, MaxFlowRate, MaxPressure, PreferredGuardColumn, PreferredColumnJoin, MinTemperature, MaxTemperature}]]
 	};
@@ -4293,6 +4560,10 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 	modelContainerFieldsPacket = {Packet[Sequence @@ modelContainerFields]};
 	syringeContainerFieldsPacket = {Packet[Sequence @@ modelContainerSyringeFields]};
 
+	(* User fields to download *)
+	(* UploadProtocol needs these fields, weirdly enough *)
+	authorPacket = {Packet[FinancingTeams,FirstName,LastName,Email,TeamEmailPreference,NotebookEmailPreferences,Site],Packet[FinancingTeams[ExperimentSites]]};
+
 	(* Any options whose values _could_ be an object *)
 	optionsWithObjects = {
 		Column,
@@ -4322,47 +4593,12 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		ColumnStorageBuffer
 	};
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[ToList[mySamples], Lookup[ToList[myOptions], optionsWithObjects, Null]],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Map[
-		If[MatchQ[#, ObjectP[Lookup[samplePreparationCache, Object, {}]]],
-			Lookup[fetchPacketFromCache[#, samplePreparationCache], Simulated, False],
-			False
-		]&,
-		userSpecifiedObjects
-	];
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects, simulatedSampleQ, False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTestsQ,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1], #2, True]&,
-			{PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And @@ objectsExistQs),
-		If[!gatherTestsQ,
-			Message[Error::ObjectDoesNotExist, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]];
-			Message[Error::InvalidInput, PickList[PickList[userSpecifiedObjects, simulatedSampleQ, False], objectsExistQs, False]]
-		];
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* All the instruments to download and possibly use from memoization *)
 	availableInstruments = allHPLCInstrumentSearch["Memoization"][[1]];
+	availableInstrumentObjects = Join[
+		allECL2HPLCInstrumentObjectsSearch["Memoization"],
+		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
+	];
 
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
@@ -4375,11 +4611,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards/blanks *)
-					Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
-					Model[Container, Vessel, "HPLC vial (high recovery)"],
-					Model[Container, Vessel, "HPLC vial (flat bottom)"],
-					Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
-					Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
+					$ChromatographyLCCompatibleVials,
 					(* Preparatory HPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
@@ -4387,6 +4619,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"],
 					(* Instruments *)
 					availableInstruments,
+					availableInstrumentObjects,
 					(* Autosampler Racks *)
 					Model[Container, Rack, "HPLC Vial Rack"],
 					Model[Container, Rack, "Waters Acquity UPLC Autosampler Rack"],
@@ -4422,16 +4655,17 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 	cartridgeObjects = Cases[allObjects, ObjectP[Object[Item, Cartridge, Column]]];
 	modelCartridgeObjects = Cases[allObjects, ObjectP[Model[Item, Cartridge, Column]]];
 	syringeObject = {Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]};
+	authorObject = {$PersonID};
 
 	(* Make one download for all possible parameters needed *)
 	cacheBall = DeleteCases[
 		FlattenCachePackets@Quiet[
 			{
-				samplePreparationCache,
+				inheritedCache,
 				Download[
-					{sampleObjects, modelSampleObjects, modelContainerObjects, instrumentObjects, modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, cartridgeObjects, modelCartridgeObjects, syringeObject},
-					{sampleFields, modelSampleFieldsPacket, modelContainerFieldsPacket, instrumentFields, modelInstrumentFields, columnFields, modelColumnFields, gradientFields, fractionCollectionFields, cartridgeFields, modelCartridgeFields, syringeContainerFieldsPacket},
-					Cache -> samplePreparationCache,
+					{sampleObjects, modelSampleObjects, modelContainerObjects, instrumentObjects, modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, cartridgeObjects, modelCartridgeObjects, syringeObject, authorObject},
+					{sampleFields, modelSampleFieldsPacket, modelContainerFieldsPacket, instrumentFields, modelInstrumentFields, columnFields, modelColumnFields, gradientFields, fractionCollectionFields, cartridgeFields, modelCartridgeFields, syringeContainerFieldsPacket, authorPacket},
+					Simulation -> updatedSimulation,
 					Date -> Now
 				]
 			},
@@ -4447,6 +4681,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			ToList[mySamplesWithPreparedSamples],
 			expandedSafeOps,
 			Cache -> cacheBall,
+			Simulation -> updatedSimulation,
 			Output -> {Result, Tests}
 		];
 
@@ -4462,7 +4697,8 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 				resolveExperimentHPLCOptions[
 					mySamplesWithPreparedSamples,
 					expandedSafeOps,
-					Cache -> cacheBall
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation
 				],
 				{}
 			},
@@ -4492,15 +4728,15 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 
 	(* Build packets with resources *)
 	{resourcePackets, resourcePacketTests} = If[gatherTestsQ,
-		HPLCResourcePacketsNew[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, Cache -> cacheBall, Output -> {Result, Tests}],
-		{HPLCResourcePacketsNew[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, Cache -> cacheBall], {}}
+		HPLCResourcePacketsNew[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{HPLCResourcePacketsNew[mySamplesWithPreparedSamples, templatedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
 	If[!MemberQ[output, Result],
 		Return[outputSpecification /. {
 			Result -> Null,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests, resolvedOptionsTests, resourcePacketTests],
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests],
 			Options -> RemoveHiddenOptions[ExperimentHPLC, collapsedResolvedOptions],
 			Preview -> Null
 		}]
@@ -4513,13 +4749,15 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			Rest[resourcePackets] /. {} -> Null,
 			Upload -> Lookup[safeOps, Upload],
 			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
 			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 			Priority -> Lookup[safeOps, Priority],
 			StartDate -> Lookup[safeOps, StartDate],
 			HoldOrder -> Lookup[safeOps, HoldOrder],
 			QueuePosition -> Lookup[safeOps, QueuePosition],
 			ConstellationMessage -> Object[Protocol, HPLC],
-			Cache -> samplePreparationCache
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -4527,7 +4765,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 	(* Return requested output *)
 	outputSpecification /. {
 		Result -> protocolObject,
-		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, objectsExistTests, resolvedOptionsTests, resourcePacketTests}],
+		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
 		Options -> RemoveHiddenOptions[ExperimentHPLC, collapsedResolvedOptions],
 		Preview -> Null
 	}
@@ -4536,13 +4774,10 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 
 
 (* Container overload *)
-ExperimentHPLC[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
-	{listedContainers, listedOptions, outputSpecification, output, gatherTestsQ, validSamplePreparationResult, mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples, samplePreparationCache, mySamples, mySampleOptions, containerToSampleOutput, mySampleCache,
-		containerToSampleTests, containerToSampleResult, updatedCache},
-
-	(* Make sure we're working with a list of options *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+ExperimentHPLC[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+	{updatedSimulation, outputSpecification, output, gatherTestsQ, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, samples, sampleOptions, containerToSampleOutput, mySampleCache,
+		containerToSampleTests, containerToSampleResult, containerToSampleSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = OptionValue[Output];
@@ -4554,31 +4789,32 @@ ExperimentHPLC[myContainers : ListableP[ObjectP[{Object[Container], Object[Sampl
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentHPLC,
-			ToList[listedContainers],
-			ToList[myOptions]
+			ToList[myContainers],
+			ToList[myOptions],
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult = If[gatherTestsQ,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput, containerToSampleTests} = containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentHPLC,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output -> {Result, Tests},
-			Cache -> samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -4589,22 +4825,17 @@ ExperimentHPLC[myContainers : ListableP[ObjectP[{Object[Container], Object[Sampl
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput = containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentHPLC,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Cache -> samplePreparationCache
+				Simulation -> updatedSimulation,
+				Output -> {Result, Simulation}
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache = Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions, Cache, {}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult, $Failed],
@@ -4615,9 +4846,9 @@ ExperimentHPLC[myContainers : ListableP[ObjectP[{Object[Container], Object[Sampl
 			Options -> $Failed,
 			Preview -> Null
 		},
-		{mySamples, mySampleOptions, mySampleCache} = containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 		(* Call our main function with our samples and converted options. *)
-		ExperimentHPLC[mySamples, ReplaceRule[mySampleOptions, Cache -> updatedCache]]
+		ExperimentHPLC[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -4631,15 +4862,16 @@ DefineOptions[
 	Options :> {
 		{InternalUsage -> False, BooleanP, "Indicates if this function is being called from another function (e.g. ExperimentLCMS) or not."},
 		HelperOutputOption,
-		CacheOption
+		CacheOption,
+		SimulationOption
 	}
 ];
 
 
 resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, ops : OptionsPattern[resolveExperimentHPLCOptions]] := Module[
 	{outputSpecification, output, gatherTestsQ, messagesQ, engineQ, testOrNull, warningOrNull, cache, simulatedSamplePackets,
-		samplePrepOptions, hplcOptions, samplePrepTests, simulatedSamples,
-		resolvedSamplePrepOptions, simulatedCache, optionsAssociation,
+		samplePrepOptions, hplcOptions, samplePrepTests, simulatedSamples, fastAssoc, simulation,
+		resolvedSamplePrepOptions, updatedSimulation, optionsAssociation,
 		samplePackets, sampleStatuses, discardedSamples,
 		discardedSamplesTest, sampleContainers, simulatedSampleContainers,
 		simulatedSampleContainerModels, containerlessSamples,
@@ -4656,26 +4888,30 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		guardColumnTechniqueCompatibleQ, guardColumnTechniqueTest,
 		columnTemperatureTests, fractionCollectionOptions,
 		absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool,
-		pdaAbsorbanceWavelengthBool, tuvOptions, pdaOptions, elsdOptions,
+		pdaAbsorbanceWavelengthBool, uvOptions, uvRequiredOptions, elsdOptions,
 		flrOptions, excitationWavelengthFlrOptions,
 		emissionWavelengthFlrOptions, dionexFlrOptions,
 		lightScatteringOptions, refractiveIndexSingleOptions,
 		refractiveIndexGradientOptions, refractiveIndexOptions, pHOptions,
 		conductivityOptions, numberOfReplicates, specifiedGradients,
-		availableInstruments, testHPLCInstruments,
+		availableInstruments, testHPLCInstruments, austinHPLCInstruments, cmuHPLCInstruments,
 		dionexHPLCInstruments, agilentHPLCInstruments, watersHPLCInstruments, dionexpHInstrument,
-		dionexHPLCPattern, agilentHPLCPattern, allHPLCInstruments,
-		nonDionexHPLCInstruments, allHPLCInstrumentPackets,
-		dionexHPLCInstrumentPackets, nonDionexHPLCInstrumentPackets,
-		dionexDetectors, nondionexDetectors, dionexOnlyDetectors,
+		dionexHPLCPattern, agilentHPLCInstrumentPackets, prepAgilentHPLCInstrumentPackets, prepAgilentHPLCInstruments, prepAgilentHPLCPattern,
+		semiPrepAgilentHPLCInstrumentPackets, semiPrepAgilentHPLCInstruments, semiPrepAgilentHPLCPattern,
+		allHPLCInstruments, allHPLCInstrumentPackets,
+		nonDionexHPLCInstruments, nonSemiPrepAgilentHPLCInstruments,
+		dionexHPLCInstrumentPackets, nonDionexHPLCInstrumentPackets, nonSemiPrepAgilentHPLCInstrumentPackets,
+		cmuHPLCInstrumentDetectors, austinHPLCInstrumentDetectors, cmuOnlyDetectors, austinOnlyDetectors, specifiedDetectors,
+		dionexDetectors, semiPrepAgilentDetectors, nonDionexDetectors, nonSemiPrepAgilentDetectors, dionexOnlyDetectors, semiPrepAgilentOnlyDetectors,
 		instrumentConflictInvalidOptions, requiredInstrumentConflictTests,
 		conflictUVOpsQ, conflictPDAOpsQ, conflictFlrOpsQ, conflictELSDOpsQ,
-		conflictCDOpsQ, conflictLightScatteringOpsQ, conflictRIOpsQ,
+		conflictLightScatteringOpsQ, conflictRIOpsQ,
 		conflictpHOpsQ, conflictConductivityOpsQ, conflictDetectorOptions,
-		conflictDetectorTests, resolvedSeparationMode, collectFractions,
-		resolvedColumn, resolvedGuardColumn, resolvedGuardColumnModelPackets,
-		resolvedType, semiResolvedDetector, resolvedGuardColumnOrientation,
-		incompatibleDetectionWavelengthsQ,
+		conflictDetectorTests, resolvedSeparationMode, collectFractions, collectFractionScaleConflictQ, collectFractionScaleTest,
+		resolvedColumn, resolvedGuardColumn,
+		semiResolvedDetector, resolvedGuardColumnOrientation,
+		incompatibleInstrumentDetectionWavelengthsQ, incompatibleInstrumentExcitationWavelengthsQ, incompatibleInstrumentEmissionWavelengthsQ,
+		specifiedDetectionWavelengths, specifiedExcitationWavelengths, specifiedEmissionWavelengths,
 		injectionTableLookup, compatibleColumnTemperatureRanges,
 		compatibleColumnTemperatureRange,
 		compatibleGuardColumnTemperatureRanges,
@@ -4692,6 +4928,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		instrumentSpecificOptionSet, columnSelectorInitialLookup,
 		preexpandedStandardOptions, preresolvedStandard,
 		preexpandedBlankOptions, preresolvedBlank, watersAbsorbanceOptions,
+		preexpandedColumnSelectorOptions,
 		validContainerCountQ, containerCountTest, tooManyInvalidInputs,
 		preresolvedAliquotBools, validAliquotContainerBools,
 		compatibleContainers, namedCompatibleContainers,
@@ -4715,9 +4952,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		columnTemperatureInjectionTableConflictTest,
 		instrumentSpecificOptionInvalidOptions, injectionTableSpecifiedQ,
 		columnSelectorSpecifiedQ, columnOptions, mainOptionsColumns, columnSelectorColumns,
-		allColumnObjects, maxAccelerationLookup,
-		maxAccelerationInstruments, resolvedColumnSelector,
-		defaultColumnPosition, resolvedColumnPosition,
+		allColumnObjects, maxAccelerationLookup, maxAccelerationInstruments,
+		resolvedColumnSelector, defaultColumnPosition, resolvedColumnPosition,
 		resolvedColumnSelection,
 		columnPositionInjectionTableConflictQ, standardColumnPositionInjectionTableConflictQ, blankColumnPositionInjectionTableConflictQ,
 		columnPositionInjectionTableConflictOptions,columnPositionInjectionTableConflictTest,
@@ -4735,9 +4971,12 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		gatheredStandardInjectionTuples, gatheredBlankInjectionTuples,
 		standardPartitions, blankPartitions,
 		numberOfStandardBlankContainersRequired, validDionexCountQ,
-		validWatersCountQ, agilentRackPositionRules, agilentSmallRackCount, agilentLargeRackCount, requestedFractionRack, validAgilentCountQ, containerCountBool, countCapableInstruments,
-		instrumentSpecificTests, columnLookup,
-		columnSelectorLookup, injectionTableSampleConflictQ, injectionTableStandardConflictQ, injectionTableBlankConflictQ,
+		validWatersCountQ, validSemiPrepAgilentCountQ,
+		agilentRackPositionRules, agilentSmallRackCount, agilentLargeRackCount, requestedFractionRack, validPrepAgilentCountQ,
+		containerCountBool, countCapableInstruments,
+		instrumentSpecificTests, columnLookup, columnSelectorLookup,
+		specifiedSite, financerPackets, allowedSites, resolvedSite, availableInstrumentsForSite,
+		injectionTableSampleConflictQ, injectionTableStandardConflictQ, injectionTableBlankConflictQ,
 		specifiedColumnPositions, injectionTableColumnPositions, defaultColumn,
 		columnLookupNoGap,secondaryColumnLookupNoGap,tertiaryColumnLookupNoGap,columnGapQ,
 		columnSelectorNoGap,columnSelectorGapQ,
@@ -4747,21 +4986,19 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		columnSelectorSampleConflictQ, tableColumnPositionConflictQ,
 		secondaryColumnLookup, tertiaryColumnLookup, guardColumnLookup,
 		guardColumnOrientationLookup, columnOrientationLookup,
-		expandedColumnSelectorOptions, guardColumnSelectorConflictBool,
 		resolvedSecondaryColumn, resolvedTertiaryColumn,
 		secondaryColumnSelectorSampleConflictQ, tertiaryColumnSelectorSampleConflictQ,
-		resolvedStandardColumnPosition, tableColumnStandardConflictQ,
-		columnSelectorStandardConflictQ, resolvedBlankColumn,
-		resolvedBlankColumnPosition, tableColumnBlankConflictQ,
-		columnSelectorBlankConflictQ, resolvedScale,
+		resolvedStandardColumnPosition,
+		resolvedBlankColumnPosition,
+		resolvedScale,
 		resolvedColumnRefreshFrequency, resolvedInjectionTableResult,
 		injectionTableTests, resolvedInjectionTable,
 		injectionTableInvalidOptions, resolvedEmail,
-		resolvedAnalyteGradients, analyteGradientTests,
-		resolvedStandardGradients, standardGradientTests,
-		resolvedBlankGradients, blankGradientTests,
-		resolvedColumnPrimeGradients, columnPrimeGradientTests,
-		resolvedColumnFlushGradients, columnFlushGradientTests,
+		resolvedAnalyteGradients,
+		resolvedStandardGradients,
+		resolvedBlankGradients,
+		resolvedColumnPrimeGradients,
+		resolvedColumnFlushGradients,
 		resolvedGradientAs, resolvedGradientBs, resolvedGradientCs,
 		resolvedGradientDs, resolvedFlowRates, resolvedStandardGradientAs,
 		resolvedStandardGradientBs, resolvedStandardGradientCs,
@@ -4777,12 +5014,18 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		compatibleColumnPrimeFlowRateQ, validColumnPrimeFlowRateTest,
 		compatibleColumnFlushFlowRateBool, compatibleColumnFlushFlowRateQ,
 		validColumnFlushFlowRateTest, autosamplerDeadVolume,
-		defaultInjectionVolume, standardOptionTests, standardVolumes,
-		standardInjectionVolumeOptionValues, columnSelectorOptions,
-		columnSelectorPrimaryColumns, columnSelectorConflictOptions,
-		semiResolvedColumnStorageBuffers, semiResolvedColumnStorageBufferPositions,
-		resolvedColumnStorageBuffer, columnSelectorConflictTest,
-		tableColumnConflictQ, tableColumnConflictOptions,
+		defaultInjectionVolume,
+		columnSelectorOptions,
+		columnSelectorConflictOptions,
+		allSpecifiedGradientMethods, allSpecifiedGradientMethodPackets,
+		specifiedBufferAMethodList, specifiedBufferBMethodList, specifiedBufferCMethodList, specifiedBufferDMethodList,
+		preResolvedBufferA, preResolvedBufferB, preResolvedBufferC, preResolvedBufferD, preResolvedBufferList,
+		semiResolvedColumnStorageBuffers, columnStorageBufferPercentInvalidBool,columnStorageBufferSampleInvalidBool,columnStorageBufferModelColumnConflictBool,semiResolvedColumnStorageBufferGradient,
+		resolvedColumnStorageBuffer, columnStorageBufferFlushGradientConflictBool,
+		columnStorageBufferPercentInvalidQ,columnStorageBufferSampleInvalidQ,columnStorageBufferFlushGradientConflictQ,
+		columnStorageBufferPercentTest, columnStorageBufferSampleTest, columnStorageBufferModelColumnTest, columnStorageBufferFlushGradientTest,
+		columnSelectorConflictTest,
+		tableColumnConflictOptions,
 		tableColumnConflictTest, resolvedStandardAnalyticalGradients,
 		standardGradientInjectionTableSpecifiedDifferentlyBool,
 		standardInvalidGradientCompositionBool,
@@ -4799,15 +5042,14 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		resolvedColumnOrientation, injectionTableStandardGradients,
 		injectionTableBlankGradients, injectionTableObjectified,
 		columnSelectorObjectified, resolvedStandardInjectionVolumes,
-		blankVolumes, blankConcentrations, blankMassConcentrations,
-		blankInjectionVolumeOptionValues, resolvedBlankInjectionVolumes,
+		resolvedBlankInjectionVolumes,
 		guardColumnSelectorConflictQ, guardColumnOrientationSelectorConflictQ,
 		columnOrientationSelectorConflictQ, guardColumnSelectorConflictOptions,
 		guardColumnSelectorConflictTest,
-		columnOrientationSelectorConflictOptions, columnOrientationSelectorConflictTest, compatibleBlankInjectionVolumeBools,
-		validBlankInjectionVolumeTest, aliquotOptions,
+		columnOrientationSelectorConflictOptions, columnOrientationSelectorConflictTest,
+		aliquotOptions,
 		resolvedAliquotOptions, aliquotOptionsTests,
-		resolvedInjectionVolumes, validInjectionVolumeTest, groupedVolumes,
+		resolvedInjectionVolumes, groupedVolumes,
 		validSampleVolumesQ, samplesWithInsufficientVolume,
 		insufficientVolumeTest, fractionCollectionModes,
 		fractionCollectionStartTimes, fractionCollectionEndTimes,
@@ -4815,11 +5057,12 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		maxFractionVolumes, resolvedFractionCollectionContainer,
 		invalidFractionCollectionContainerOption, fractionCollectionContainerTest,
 		resolvedFractionCollectionContainerMaxVolume,
-		maxFractionPeriods, absoluteThresholds, peakSlopes,
-		peakSlopeDurations, peakEndThresholds, gasPressureAsList,
+		maxFractionPeriods,
+		gasPressureAsList,
 		gasHeatingAsList, gasOptionAsList, powerOptionAsList,
 		columnGapOptions, columnGapTest, overallColumnGapQ,
-		absorbanceSamplingRateOptions, bufferAClashQ, bufferBClashQ, bufferCClashQ,
+		absorbanceSamplingRateOptions, absorbanceSmoothingTimeConstantOptions, watersSmoothingTimeConstantBool,
+		bufferAClashQ, bufferBClashQ, bufferCClashQ,
 		bufferDClashQ, allInstrumentPositions, instrumentMaxColumnLength, columnPosition,
 		columnPositionWidth, columnPositionDepth, columnPositionHeight,
 		maxColumnDiameter, maxTotalColumnLength, columnsFitQ,
@@ -4839,7 +5082,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		compatibleFractionCollectionAndNeedleWashBufferQ,
 		bufferNumberConflictQ, detectorInstrumentConflictQ,
 		incompatibleColumnSelectorQ,
-		flowRateInstrumentConflictQ, detectorInstrumentConflictOptions,
+		detectorInstrumentConflictOptions,
 		compatibleSampleTemperatureQ,
 		validBufferDQ, validBufferDNullQ, validGradientDQ, validGradientQ,
 		validGradientCompositionQ, injectionTableStandardInjectionVolumes,
@@ -4861,19 +5104,16 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		missingConductivityCalibrationTests,
 		invalidConductivityCalibrationOptions,
 		invalidConductivityCalibrationTests,
-		resolvedInjectionSampleVolumeMeasurement, validDetectionWavelengthQ,
-		compatibleDetectionWavelengthQ, validStandardDetectionWavelengthQ,
-		compatibleStandardDetectionWavelengthQ,
-		validBlankDetectionWavelengthQ, compatibleBlankDetectionWavelengthQ,
-		validColumnPrimeDetectionWavelengthQ,
-		compatibleColumnPrimeDetectionWavelengthQ,
-		validColumnFlushDetectionWavelengthQ,
-		compatibleColumnFlushDetectionWavelengthQ, compatibleDetectorQ,
-		compatibleCollectFractionsDetectorQ, compatibleScaleQ,
+		resolvedInjectionSampleVolumeMeasurement, validDetectionWavelengthQ, validExcitationWavelengthQ, validEmissionWavelengthQ, compatibleDetectionWavelengthQ,
+		validStandardDetectionWavelengthQ, validStandardExcitationWavelengthQ, validStandardEmissionWavelengthQ, compatibleStandardDetectionWavelengthQ,
+		validBlankDetectionWavelengthQ, validBlankExcitationWavelengthQ, validBlankEmissionWavelengthQ, compatibleBlankDetectionWavelengthQ,
+		validColumnPrimeDetectionWavelengthQ, validColumnPrimeExcitationWavelengthQ, validColumnPrimeEmissionWavelengthQ,compatibleColumnPrimeDetectionWavelengthQ,
+		validColumnFlushDetectionWavelengthQ, validColumnFlushExcitationWavelengthQ, validColumnFlushEmissionWavelengthQ, compatibleColumnFlushDetectionWavelengthQ,
+		compatibleDetectorQ, compatibleScaleQ,
 		sampleAnalytes, analyteTypes, validOptionLookup, invalidOptionsMap, invalidOptions,
 		compatibleStandardColumnTemperatureQ,
 		compatibleBlankColumnTemperatureQ, compatibleColumnPrimeTemperatureQ,
-		compatibleColumnFlushTemperatureQ, 
+		compatibleColumnFlushTemperatureQ,
 		validStandardGradientCompositionQ,
 		validBlankGradientCompositionQ,
 		validColumnPrimeGradientCompositionQ,
@@ -4885,7 +5125,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		detectorCapableInstruments, maxInjectionFlowRate,
 		instrumentFlowRates, flowRateCompatibleInstruments,
 		sampleTemperatureOption, watersInstrumentsBool,
-		agilentInstrumentsBool, watersRequestedQ, nonDionexUVRequestedQ,
+		agilentInstrumentsBool, semiPrepAgilentInstrumentsBool, dionexInstrumentsBool,
+		watersRequestedQ,
 		resolveAliquotOptionsResult, resolveAliquotOptionTests,
 		allTupledGradients, gradientTypes, instrumentGradientTypes,
 		gradientCapableInstruments, allColumnTemperatures,
@@ -4893,7 +5134,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		maxColumnTemperature, collectFractionsQ,
 		uvOptionSpecifiedBool, pdaOptionSpecifiedBool,
 		flrOptionSpecifiedBool, dionexFlrOptionSpecifiedBool,
-		watersFlrOptionSpecifiedBool, elsdOptionSpecifiedBool,
+		watersFlrOptionSpecifiedBool, nonDionexFlrOptionSpecifiedBool,nonAgilentFlrOptionSpecifiedBool, elsdOptionSpecifiedBool,
 		watersSpecifiedBool, nonDionexUVSpecifiedBool, lightScatteringSpecifiedBool,
 		refractiveIndexSpecifiedBoolSingleOption,
 		refractiveIndexSpecifiedGradientBool, refractiveIndexSpecifiedBool,
@@ -4902,29 +5143,31 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		elsdOptionNullBool, watersNullBool, lightScatteringNullBool,
 		refractiveIndexNullBool, phNullBool, conductivityNullBool,
 		pdaRequestedQ, flrRequestedQ, dionexFlrRequestedQ,
-		watersFlrRequestedQ, elsdRequestedQ, uvRequestedQ,
+		watersFlrRequestedQ, nonDionexFlrRequestedQ, nonAgilentFlrRequestedQ,
+		elsdRequestedQ, uvRequestedQ,
 		lightScatteringRequestedQ, refractiveIndexRequestedQ, pHRequestedQ,
-		conductivityRequestedQ, dionexDetectorRequestedQ, pdaRequestedNullQ,
+		conductivityRequestedQ, dionexDetectorRequestedQ, semiPrepAgilentDetectorRequestedQ, pdaRequestedNullQ,
 		flrRequestedNullQ, dionexFlrRequestedNullQ, elsdRequestedNullQ,
 		uvRequestedNullQ, lightScatteringRequestedNullQ,
 		refractiveIndexRequestedNullQ, pHRequestedNullQ,
-		conductivityRequestedNullQ, dionexDetectorRequestedNullQ,
+		conductivityRequestedNullQ,
 		watersRequestedNullQ, detectorOpsBoolLookupTable,
 		detectorOpsListLookupTable, detectorSpecifiedOpsListLookupTable,
 		impliedDetectors, impliedInstrumentBoolean, impliedInstruments,
-		instrumentOption, instrumentModelOption, detectorOption,
+		instrumentOption, detectorOption,
 		columnSelectorInstruments, primaryInstrumentDefault,
 		secondaryInstrumentDefault, leftoverInstruments,
-		alternateInstrumentConverted, semiResolvedAlternateInstruments,
-		eachInstrumentPacket, resolvedAlternateInstruments,combinedResolvedInstruments,
-		invalidAlternateInstrumentsQ, instrumentManufacturer,
-		watersManufacturedQ, bestInstruments, secondaryBestInstruments,
-		tertiaryBestInstruments, quaternatryBestInstruments,
+		semiResolvedAlternateInstruments,
+		resolvedAlternateInstruments,combinedResolvedInstruments,
+		invalidAlternateInstrumentsQ,
+		bestInstruments, secondaryBestInstruments,
+		tertiaryBestInstruments, quaternaryBestInstruments,
 		capableInstruments, fractionCollectionInstruments,
 		scaleInstruments, allInjectionVolumes,
 		capableInjectionVolumeInstruments, possibleInstrument,
 		nonInternalHPLCErrorQ, possibleInstrumentModelPacket,
-		compatibleWavelengthsQ, moreSpecificPDAOptions,
+		incompatibleAbsorbanceWavelengthsQ, incompatibleExcitationWavelengthsQ, incompatibleEmissionWavelengthsQ,
+		moreSpecificPDAOptions,
 		incompatibleNeedleWashQ, incompatibleNeedleWashOptions,
 		incompatibleNeedleWashTest, compatibleColumnTemperaturesQ,
 		instrumentColumnTemperatureRange, invalidColumnTemperatureOptions, sampleTemperatureInstruments,
@@ -4933,7 +5176,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		bufferAMethodList, bufferBMethodList, bufferCMethodList,
 		bufferDMethodList, allResolvedGradientMethods,
 		allGradientMethodPackets, anyGradientAQ, anyGradientBQ,
-		anyGradientCQ, anyGradientDQ, 
+		anyGradientCQ, anyGradientDQ,
 		gradientInjectionTableSpecifiedDifferentlyOptionsBool,
 		gradientInjectionTableSpecifiedDifferentlyQ,
 		gradientInjectionTableSpecifiedDifferentlyOptions,
@@ -4962,6 +5205,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		nonBinaryOptionQ, instrumentBinaryOnlyQ, nonBinaryOptions,
 		nonBinaryGradientTest, columnTypesConsistentQ,
 		columnTypeConsistencyTest, internalUsage, internalUsageQ,
+		redundantGuardColumnQ, redundantGuardColumnOptions, redundantGuardColumnTest,
 		columnPrimeQ, columnFlushQ, samplesInStorage, blankStorage,
 		standardStorage, validContainerStorageConditionBool,
 		validContainerStorageConditionTests,
@@ -5013,13 +5257,13 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		incorrectGradientOrderOverallTest,
 		standardColumnEquilibrationDurations,blankColumnEquilibrationDurations,
 		columnPrimeColumnEquilibrationDurations,columnFlushColumnEquilibrationDurations,
-		sufficientEquilibrationTimeQ,
-		resolvedColumnEquilibriumDuration, columnConfigurationVolumes,
-		columnEquilibrationDurationLookup, modelColumnStorageBuffers,
+		columnConfigurationVolumes,
+		modelColumnStorageBuffers,
 		injectionTableTemperaturesAssociation, injectionTableVolumeAssociation,
 		injectionTemperatureRoundedAssociation, injectionTemperatureRoundedTests,
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
-		roundedInjectionTable
+		roundedInjectionTable, instrumentMaxColumnOD,
+		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments
 	},
 
 	(* Determine the requested return value from the function *)
@@ -5050,12 +5294,14 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Set all error-checking variables to True (ie: valid) *)
 	(# = True)& /@ {retiredInstrumentQ, deprecatedInstrumentQ, validAgilentInstrumentQ, validSampleTemperatureQ,
-		validBufferDQ, validBufferDNullQ, validGradientDQ, validSampleTemperatureAndDionexDetectorQ, validBufferDAndDionexDetectorQ, validGradientDAndDionexDetectorQ, validGradientQ, validGradientCompositionQ, validDetectionWavelengthQ,
+		validBufferDQ, validBufferDNullQ, validGradientDQ, validSampleTemperatureAndDionexDetectorQ, validBufferDAndDionexDetectorQ, validGradientDAndDionexDetectorQ, validGradientQ, validGradientCompositionQ,
 		compatibleFlowRateQ, compatibleBlankFlowRateQ, compatibleStandardFlowRateQ, compatibleColumnPrimeFlowRateQ, compatibleColumnFlushFlowRateQ,
-		compatibleDetectionWavelengthQ, validStandardDetectionWavelengthQ, compatibleStandardDetectionWavelengthQ,
-		validBlankDetectionWavelengthQ, compatibleBlankDetectionWavelengthQ, validColumnPrimeDetectionWavelengthQ,
-		compatibleColumnPrimeDetectionWavelengthQ, validColumnFlushDetectionWavelengthQ, compatibleColumnFlushDetectionWavelengthQ,
-		compatibleDetectorQ, compatibleSampleTemperatureQ, compatibleCollectFractionsDetectorQ,
+		validDetectionWavelengthQ, validExcitationWavelengthQ, validEmissionWavelengthQ, compatibleDetectionWavelengthQ,
+		validStandardDetectionWavelengthQ, validStandardExcitationWavelengthQ, validStandardEmissionWavelengthQ, compatibleStandardDetectionWavelengthQ,
+		validBlankDetectionWavelengthQ, validBlankExcitationWavelengthQ, validBlankEmissionWavelengthQ, compatibleBlankDetectionWavelengthQ,
+		validColumnPrimeDetectionWavelengthQ, validColumnPrimeExcitationWavelengthQ, validColumnPrimeEmissionWavelengthQ,compatibleColumnPrimeDetectionWavelengthQ,
+		validColumnFlushDetectionWavelengthQ, validColumnFlushExcitationWavelengthQ, validColumnFlushEmissionWavelengthQ, compatibleColumnFlushDetectionWavelengthQ,
+		compatibleDetectorQ, compatibleSampleTemperatureQ,
 		validOptionLookup, invalidOptions, compatibleStandardColumnTemperatureQ, compatibleBlankColumnTemperatureQ,
 		compatibleColumnPrimeTemperatureQ, compatibleColumnFlushTemperatureQ,
 		validStandardGradientCompositionQ,
@@ -5063,22 +5309,27 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		validColumnFlushGradientCompositionQ,
 		knownStandardConcentrationQ, compatibleBlankInjectionVolumesQ,
 		knownBlankConcentrationQ, compatibleContainerModelQ, compatibleAliquotContainerQ,
-		knownSampleConcentrationQ, compatibleInjectionVolumeQ, tooSmallInjectionVolumeQ, validFractionCollectionEndTimeQ};
+		knownSampleConcentrationQ, compatibleInjectionVolumeQ, tooSmallInjectionVolumeQ, validFractionCollectionEndTimeQ,
+		columnStorageBufferPercentInvalidQ,columnStorageBufferSampleInvalidQ,columnStorageBufferFlushGradientConflictQ
+	};
 
 	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions, hplcOptions} = splitPrepOptions[myOptions];
 
+	(* Fetch passed cache *)
+	cache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
+
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTestsQ,
-		resolveSamplePrepOptions[ExperimentHPLC, mySamples, samplePrepOptions, Cache -> OptionValue[Cache], Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentHPLC, mySamples, samplePrepOptions, Cache -> OptionValue[Cache], Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTestsQ,
+		resolveSamplePrepOptionsNew[ExperimentHPLC, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentHPLC, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
 	];
 
-	(* Fetch passed cache *)
-	cache = Flatten[{OptionValue[Cache], simulatedCache}];
+	(* make a fastAssoc out of the simuluation + the cache *)
+	fastAssoc = makeFastAssocFromCache[FlattenCachePackets[{cache, Lookup[First[updatedSimulation], Packets]}]];
 
-	(* Fetch simulated samples' cached packets *)
-	simulatedSamplePackets = fetchPacketFromCacheHPLC[#, cache]& /@ simulatedSamples;
+	simulatedSamplePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ simulatedSamples;
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. Another step is to make sure our Gradient options match the pattern for ExperimentHPLC. ExperimentLCMS is missing the last column for refractive index loading status *)
 	optionsAssociation = If[internalUsageQ,
@@ -5132,7 +5383,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	simulatedSampleContainerModels = Map[
 		If[NullQ[#],
 			Null,
-			Download[Lookup[fetchPacketFromCacheHPLC[#, cache], Model], Object]
+			fastAssocLookup[fastAssoc, #, {Model, Object}]
 		]&,
 		simulatedSampleContainers
 	];
@@ -5171,11 +5422,21 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Build tests for the instrument's status and model instrument's deprecation *)
 
 	(* Get the Dionex HPLC models and create a pattern for them *)
-	{availableInstruments,dionexHPLCInstruments,agilentHPLCInstruments,watersHPLCInstruments,testHPLCInstruments}=allHPLCInstrumentSearch["Memoization"];
+	{availableInstruments,dionexHPLCInstruments,agilentHPLCInstruments,watersHPLCInstruments,testHPLCInstruments,austinHPLCInstruments,cmuHPLCInstruments}=allHPLCInstrumentSearch["Memoization"];
 
 	dionexHPLCPattern = Alternatives @@ dionexHPLCInstruments;
-	(* Agilent instrument has totally different requirements for containers etc so if Agilent is selected as one of the instruments, we will go with it and deny all the other instruments *)
-	agilentHPLCPattern = Alternatives @@ agilentHPLCInstruments;
+	dionexHPLCInstrumentPackets = fetchPacketFromCache[#, cache]& /@ dionexHPLCInstruments;
+	(* Agilent preparative instrument has totally different requirements for containers etc so if preparative Agilent is selected as one of the instruments, we will go with it and deny all the other instruments *)
+	agilentHPLCInstrumentPackets = Map[
+		fetchPacketFromCacheHPLC[#, cache]&,
+		agilentHPLCInstruments
+	];
+	prepAgilentHPLCInstrumentPackets = Cases[agilentHPLCInstrumentPackets,KeyValuePattern[Scale->{___,Preparative,___}]];
+	prepAgilentHPLCInstruments = Lookup[prepAgilentHPLCInstrumentPackets,Object];
+	prepAgilentHPLCPattern = Alternatives @@ prepAgilentHPLCInstruments;
+	semiPrepAgilentHPLCInstrumentPackets = Complement[agilentHPLCInstrumentPackets,prepAgilentHPLCInstrumentPackets];
+	semiPrepAgilentHPLCInstruments = Lookup[semiPrepAgilentHPLCInstrumentPackets,Object,{}];
+	semiPrepAgilentHPLCPattern = Alternatives @@ semiPrepAgilentHPLCInstruments;
 
 	(* Fetch instrument packet if specified *)
 	specifiedInstrumentPackets = If[MatchQ[Lookup[optionsAssociation, Instrument], Except[(Null|Automatic)]],
@@ -5233,14 +5494,14 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		If[retiredInstrumentQ,
 			If[messagesQ,
 				(* If we get here, we definitely have user-specified instruments so we can safely PickList *)
-				Message[Error::RetiredChromatographyInstrument, ObjectToString[PickList[Lookup[specifiedInstrumentPackets,Object],retiredInstrumentBool,True]], ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],retiredInstrumentBool,True]]]
+				Message[Error::RetiredChromatographyInstrument, ObjectToString[PickList[Lookup[specifiedInstrumentPackets,Object],retiredInstrumentBool,True],Simulation->updatedSimulation], ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],retiredInstrumentBool,True],Simulation->updatedSimulation]]
 			];
 			testOrNull["If specified, Instrument is not retired:", False],
 			testOrNull["If specified, Instrument is not retired:", True]
 		],
 		If[deprecatedInstrumentQ,
 			If[messagesQ,
-				Message[Error::DeprecatedInstrumentModel, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],deprecatedInstrumentBool,True]]]
+				Message[Error::DeprecatedInstrumentModel, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],deprecatedInstrumentBool,True],Simulation->updatedSimulation]]
 			];
 			testOrNull["Instrument model is not deprecated:", False],
 			testOrNull["Instrument model is not deprecated:", True]
@@ -5736,256 +5997,129 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 
-	(* Initial process of detector options so we can decide how to resolve column *)
-	absorbanceWavelengthOptions = {AbsorbanceWavelength, StandardAbsorbanceWavelength, BlankAbsorbanceWavelength, ColumnPrimeAbsorbanceWavelength, ColumnFlushAbsorbanceWavelength};
-	(* UVFilter is only available on Waters *)
-	watersAbsorbanceOptions = {
-		UVFilter,
-		StandardUVFilter,
-		BlankUVFilter,
-		ColumnPrimeUVFilter,
-		ColumnFlushUVFilter
-	};
-	(* SamplingRate is available on all instruments *)
-	absorbanceSamplingRateOptions = {AbsorbanceSamplingRate, StandardAbsorbanceSamplingRate, BlankAbsorbanceSamplingRate, ColumnPrimeAbsorbanceSamplingRate, ColumnFlushAbsorbanceSamplingRate};
+	(* Resolve Site option if Instrument is not specified, since we have different instrument Models at different site and we need this information to resolve instrument model and decide other information *)
+	specifiedSite=Lookup[roundedOptionsAssociation,Site,Automatic];
 
-	(* We need to figure out if any of the absorbanceWavelength options are TUV or PDA related *)
-	tuvAbsorbanceWavelengthBool = MatchQ[#, ListableP[GreaterP[0 * Nanometer]]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
-	pdaAbsorbanceWavelengthBool = MatchQ[#, ListableP[_Span]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
-	(*compile a list of the TUV related options. Some of these are shared with the PDA. The SamplingRate is associated only to the waters system*)
-	tuvOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
+	(* Check what site(s) our author can run experiment at. We only downloaded the financing teams for our author, so all packets from cache are valid *)
+	financerPackets=Cases[cache, PacketP[Object[Team, Financing]]];
+	allowedSites=DeleteDuplicates[Download[Flatten[Lookup[financerPackets,ExperimentSites,{}]],Object]];
 
-	(* Compile a list of the PDA related options. If the AbsorbanceWavelengths are a span pattern then it's a PDA. Some are shared with TUV *)
-	pdaOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, {
-		WavelengthResolution,
-		StandardWavelengthResolution,
-		BlankWavelengthResolution,
-		ColumnPrimeWavelengthResolution,
-		ColumnFlushWavelengthResolution
-	}, PickList[absorbanceWavelengthOptions, pdaAbsorbanceWavelengthBool]];
-
-	(* Compile a list of the FLR related options and FLR related options specifically for Ultimate 3000 FLD-3000 Detector *)
-	flrOptions = {
-		ExcitationWavelength,
-		EmissionWavelength,
-		FluorescenceGain,
-		StandardExcitationWavelength,
-		StandardEmissionWavelength,
-		StandardFluorescenceGain,
-		BlankExcitationWavelength,
-		BlankEmissionWavelength,
-		BlankFluorescenceGain,
-		ColumnPrimeExcitationWavelength,
-		ColumnPrimeEmissionWavelength,
-		ColumnPrimeFluorescenceGain,
-		ColumnFlushExcitationWavelength,
-		ColumnFlushEmissionWavelength,
-		ColumnFlushFluorescenceGain
-	};
-	excitationWavelengthFlrOptions = {
-		ExcitationWavelength,
-		StandardExcitationWavelength,
-		BlankExcitationWavelength,
-		ColumnPrimeExcitationWavelength,
-		ColumnFlushExcitationWavelength
-	};
-	emissionWavelengthFlrOptions = {
-		EmissionWavelength,
-		StandardEmissionWavelength,
-		BlankEmissionWavelength,
-		ColumnPrimeEmissionWavelength,
-		ColumnFlushEmissionWavelength
-	};
-	dionexFlrOptions = {
-		EmissionCutOffFilter,
-		FluorescenceFlowCellTemperature,
-		StandardEmissionCutOffFilter,
-		StandardFluorescenceFlowCellTemperature,
-		BlankEmissionCutOffFilter,
-		BlankFluorescenceFlowCellTemperature,
-		ColumnPrimeEmissionCutOffFilter,
-		ColumnPrimeFluorescenceFlowCellTemperature,
-		ColumnFlushEmissionCutOffFilter,
-		ColumnFlushFluorescenceFlowCellTemperature
-	};
-
-	(* Compile a list of the ELSD related options *)
-	elsdOptions = {
-		NebulizerGas,
-		NebulizerGasHeating,
-		NebulizerHeatingPower,
-		NebulizerGasPressure,
-		DriftTubeTemperature,
-		ELSDGain,
-		ELSDSamplingRate,
-		StandardNebulizerGas,
-		StandardNebulizerGasHeating,
-		StandardNebulizerHeatingPower,
-		StandardNebulizerGasPressure,
-		StandardDriftTubeTemperature,
-		StandardELSDGain,
-		StandardELSDSamplingRate,
-		BlankNebulizerGas,
-		BlankNebulizerGasHeating,
-		BlankNebulizerHeatingPower,
-		BlankNebulizerGasPressure,
-		BlankDriftTubeTemperature,
-		BlankELSDGain,
-		BlankELSDSamplingRate,
-		ColumnPrimeNebulizerGas,
-		ColumnPrimeNebulizerGasHeating,
-		ColumnPrimeNebulizerHeatingPower,
-		ColumnPrimeNebulizerGasPressure,
-		ColumnPrimeDriftTubeTemperature,
-		ColumnPrimeELSDGain,
-		ColumnPrimeELSDSamplingRate,
-		ColumnFlushNebulizerGas,
-		ColumnFlushNebulizerGasHeating,
-		ColumnFlushNebulizerHeatingPower,
-		ColumnFlushNebulizerGasPressure,
-		ColumnFlushDriftTubeTemperature,
-		ColumnFlushELSDGain,
-		ColumnFlushELSDSamplingRate
-	};
-
-
-	(* Compile a list of the MALS/DLS detector related options *)
-	lightScatteringOptions = {
-		LightScatteringLaserPower,
-		LightScatteringFlowCellTemperature,
-		StandardLightScatteringLaserPower,
-		StandardLightScatteringFlowCellTemperature,
-		BlankLightScatteringLaserPower,
-		BlankLightScatteringFlowCellTemperature,
-		ColumnPrimeLightScatteringLaserPower,
-		ColumnPrimeLightScatteringFlowCellTemperature,
-		ColumnFlushLightScatteringLaserPower,
-		ColumnFlushLightScatteringFlowCellTemperature
-	};
-
-	(* Compile a list of the pH detector related options *)
-	pHOptions = {
-		pHCalibration,
-		LowpHCalibrationBuffer,
-		LowpHCalibrationTarget,
-		HighpHCalibrationBuffer,
-		HighpHCalibrationTarget,
-		pHTemperatureCompensation
-	};
-
-	(* Compile a list of the Conductivity detector related options *)
-	conductivityOptions = {
-		ConductivityCalibration,
-		ConductivityCalibrationBuffer,
-		ConductivityCalibrationTarget,
-		ConductivityTemperatureCompensation
-	};
-
-	(* We should be more rigorous about the PDA options and exclude whatever is in the TUV *)
-	moreSpecificPDAOptions = Join[{
-		WavelengthResolution,
-		StandardWavelengthResolution,
-		BlankWavelengthResolution,
-		ColumnPrimeWavelengthResolution,
-		ColumnFlushWavelengthResolution
-	}, PickList[absorbanceWavelengthOptions, pdaAbsorbanceWavelengthBool]];
-
-	(* Note that Refractive Index detector related options are already gathered earlier because we used them to help resolve Graident options. *)
-
-	(* Check to see if the user positively specified any of the UVVis detector options *)
-	uvOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, tuvOptions];
-	(* PDA *)
-	pdaOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, moreSpecificPDAOptions];
-	(* Fluorescence *)
-	flrOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, flrOptions];
-	(* Dionex Fluorescence *)
-	dionexFlrOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, dionexFlrOptions];
-	(* Waters fluorescence - only Waters allow <20 nm Ex/Em *)
-	watersFlrOptionSpecifiedBool = MapThread[
-		Function[{exGroup, emGroup},
-			If[MatchQ[exGroup, ListableP[Null | Automatic]] || MatchQ[emGroup, ListableP[Null | Automatic]],
-				False,
-				Or @@ MapThread[
-					If[MatchQ[#1, Null | Automatic] || MatchQ[#2, Null | Automatic],
-						False,
-						TrueQ[#1 > #2 - 20Nanometer] && TrueQ[#1 < #2]
-					]&,
-					{ToList[exGroup], ToList[emGroup]}
-				]
-			]
-		],
-		{
-			Lookup[roundedOptionsAssociation, excitationWavelengthFlrOptions],
-			Lookup[roundedOptionsAssociation, emissionWavelengthFlrOptions]
-		}
+	(* Check what detectors are possible at each site *)
+	cmuHPLCInstrumentDetectors=Union@@Map[
+		Lookup[fetchPacketFromCacheHPLC[#, cache],Detectors]&,
+		cmuHPLCInstruments
 	];
-	(* ELSD *)
-	elsdOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, elsdOptions];
-	(* Waters specified *)
-	watersSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions];
-	(* Waters and Agilent UV *)
-	nonDionexUVSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, absorbanceSamplingRateOptions];
-	(* Light Scattering (MALS/DLS) *)
-	lightScatteringSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, lightScatteringOptions];
-	(* pH *)
-	phSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, pHOptions];
-	(* Conductivity *)
-	conductivitySpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, conductivityOptions];
+	austinHPLCInstrumentDetectors=Union@@Map[
+		Lookup[fetchPacketFromCacheHPLC[#, cache],Detectors]&,
+		austinHPLCInstruments
+	];
+	(* Check the unique detectors for each site to help decide our site *)
+	cmuOnlyDetectors=Complement[cmuHPLCInstrumentDetectors,austinHPLCInstrumentDetectors];
+	austinOnlyDetectors=Complement[austinHPLCInstrumentDetectors,cmuHPLCInstrumentDetectors];
 
-	(* Check to see if the user negatively specified any of the UVVis detector options to Null *)
-	uvOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, tuvOptions];
-	(* PDA *)
-	pdaOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, moreSpecificPDAOptions];
-	(* Fluorescence *)
-	flrOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, flrOptions];
-	(* Dionex Fluorescence *)
-	dionexFlrOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, dionexFlrOptions];
-	(* ELSD *)
-	elsdOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, elsdOptions];
-	(* Waters specified *)
-	watersNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions];
-	(* Light Scattering (MALS/DLS) *)
-	lightScatteringNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, lightScatteringOptions];
-	(* Refractive Index *)
-	refractiveIndexNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, refractiveIndexOptions];
-	(* pH *)
-	phNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, {pHCalibration, pHTemperatureCompensation}];
-	(* Conductivity *)
-	conductivityNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, {ConductivityCalibration, ConductivityTemperatureCompensation}];
+	(* Get the list of detectors that are specified by the user *)
+	specifiedDetectors=Complement[
+		Union[
+			ToList[Lookup[roundedOptionsAssociation, Detector]],
+			ToList[Lookup[roundedOptionsAssociation, FractionCollectionDetector]]
+		],
+		{Automatic,Null}
+	];
 
-	(* Were any of the detectors implicitly requested by option specification? *)
-	uvRequestedQ = Or @@ Flatten[uvOptionSpecifiedBool];
-	pdaRequestedQ = Or @@ Flatten[pdaOptionSpecifiedBool];
-	flrRequestedQ = Or @@ Flatten[flrOptionSpecifiedBool];
-	dionexFlrRequestedQ = Or @@ Flatten[dionexFlrOptionSpecifiedBool];
-	watersFlrRequestedQ = Or @@ Flatten[watersFlrOptionSpecifiedBool];
-	elsdRequestedQ = Or @@ Flatten[elsdOptionSpecifiedBool];
-	watersRequestedQ = Or @@ Flatten[watersSpecifiedBool];
-	nonDionexUVRequestedQ = Or @@ Flatten[nonDionexUVSpecifiedBool];
-	lightScatteringRequestedQ = Or @@ Flatten[lightScatteringSpecifiedBool];
-	pHRequestedQ = Or @@ Flatten[phSpecifiedBool];
-	conductivityRequestedQ = Or @@ Flatten[conductivitySpecifiedBool];
+	(* Resolve the site for future resolution of other options *)
+	(* This aligns with the logic in Resources`Private`fulfillableResources *)
+	resolvedSite=Which[
+		(* Use the option if already provided *)
+		!MatchQ[specifiedSite,Automatic],Download[specifiedSite,Object],
+		(* If we already have Instrument, get its site *)
+		MatchQ[Lookup[optionsAssociation, Instrument], ObjectP[Object]],
+		Download[Lookup[specifiedInstrumentPackets[[1]],Site],Object],
+		(* If we already have Instrument Model, see if they have CMU or Austin only models *)
+		(* Semi-prep Agilent HPLC is only available at CMU *)
+		And[
+			!NullQ[specifiedInstrumentModelPackets],
+			MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}],semiPrepAgilentHPLCPattern]
+		],
+		Object[Container, Site, "id:P5ZnEjZpRlK4"],
+		(* Dionex HPLC is only available at ECL-2 *)
+		And[
+			!NullQ[specifiedInstrumentModelPackets],
+			MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}],dionexHPLCPattern]
+		],
+		Object[Container, Site, "id:kEJ9mqJxOl63"],
+		(* If only one site is allowed for the user, go with $Site *)
+		Length[allowedSites]<=1,$Site,
+		(* If CMU only detectors are required, go with CMU *)
+		IntersectingQ[specifiedDetectors,cmuOnlyDetectors],
+		Object[Container, Site, "id:P5ZnEjZpRlK4"],
+		(* If Austin only detectors are required, go with ECL-2 *)
+		IntersectingQ[specifiedDetectors,austinOnlyDetectors],
+		Object[Container, Site, "id:kEJ9mqJxOl63"],
+		(* Go with the site that the samples are at *)
+		True,
+		Module[
+			{optionsWithObjects,userSpecifiedObjects,uniqueSitesPerSample,scorePerSite,sortedSiteTuples},
+			(* Check the site of specified samples and objects in other options *)
+			(* Any options whose values _could_ be an object *)
+			optionsWithObjects = {
+				Column,
+				SecondaryColumn,
+				TertiaryColumn,
+				ColumnSelector,
+				GuardColumn,
+				InjectionTable,
+				BufferA,
+				BufferB,
+				BufferC,
+				BufferD,
+				NeedleWashSolution,
+				Standard,
+				Blank,
+				LowpHCalibrationBuffer,
+				HighpHCalibrationBuffer,
+				ConductivityCalibrationBuffer,
+				ColumnStorageBuffer
+			};
 
-	(* Were any of the detectors implicitly set to Null by option specification? *)
-	uvRequestedNullQ = Or @@ Flatten[uvOptionNullBool];
-	pdaRequestedNullQ = Or @@ Flatten[pdaOptionNullBool];
-	flrRequestedNullQ = Or @@ Flatten[flrOptionNullBool];
-	dionexFlrRequestedNullQ = Or @@ Flatten[dionexFlrOptionNullBool];
-	elsdRequestedNullQ = Or @@ Flatten[elsdOptionNullBool];
-	watersRequestedNullQ = Or @@ Flatten[watersNullBool];
-	lightScatteringRequestedNullQ = Or @@ Flatten[lightScatteringNullBool];
-	refractiveIndexRequestedNullQ = Or @@ Flatten[refractiveIndexNullBool];
-	pHRequestedNullQ = Or @@ Flatten[phNullBool];
-	conductivityRequestedNullQ = Or @@ Flatten[conductivityNullBool];
+			(* Extract any objects that the user has explicitly specified *)
+			userSpecifiedObjects = DeleteDuplicates[
+				DeleteCases[
+					Cases[
+						Flatten@Join[ToList[mySamples], Lookup[roundedOptionsAssociation, optionsWithObjects, Null]],
+						ObjectP[Object]
+					],
+					(* We may have Gradient in InjectionTable and that must be removed *)
+					ObjectP[Object[Method]]
+				]
+			];
 
-	(* Column Selection Boolean is set to true if InjectionTable and ColumnSelector options are specified, if not set to False *)
-	resolvedColumnSelection = Which[
-		MatchQ[Lookup[roundedOptionsAssociation, ColumnSelection], Except[Automatic]], Lookup[roundedOptionsAssociation, ColumnSelection],
-		columnSelectorSpecifiedQ, True,
-		(* Check InjectionTable to see if we actually have more than 1 set of columns. If we have more than 1 set, set ColumnSelection to True *)
-		injectionTableSpecifiedQ,
-		MatchQ[Length[DeleteCases[DeleteDuplicates[injectionTableLookup[[All, 4]]],(Null|Automatic)]],LessEqualP[1]],
-		True, False
+			(* Lookup the site of every specified object. Every object must have a site *)
+			uniqueSitesPerSample=Map[
+				Download[Lookup[fetchPacketFromCache[#,cache],Site,Null],Object]&,
+				userSpecifiedObjects
+			];
+
+			(* Count the objects for each site *)
+			scorePerSite = Map[
+				Count[uniqueSitesPerSample,#]&,
+				allowedSites
+			];
+
+			sortedSiteTuples = ReverseSortBy[Transpose[{allowedSites,scorePerSite}],#[[2]]&];
+
+			If[
+				(* We only have two sites so if they are the same, we will go with $Site *)
+				(sortedSiteTuples[[1]][[2]])==(sortedSiteTuples[[2]][[2]]),
+				$Site,
+				First@FirstOrDefault[sortedSiteTuples,{Null,Null}]
+			]
+		]
+	];
+
+	(* Filter the instrument models by site *)
+	availableInstrumentsForSite=If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+		cmuHPLCInstruments,
+		austinHPLCInstruments
 	];
 
 	(* RESOLVE SeparationMode *)
@@ -6006,7 +6140,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		Cases[Flatten[columnSelectorLookup[[All, {4, 6, 7}]]], ObjectP[]],
 		{}
 	];
-	
+
 	(* Combine all of the columns *)
 	allColumnObjects = Join[mainOptionsColumns, columnSelectorColumns];
 
@@ -6044,10 +6178,32 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 						(* Otherwise, presumed to just be a molecule *)
 						_, Molecule
 					]
-				], 
+				],
 				sampleAnalytes
 			]
 		]
+	];
+
+	(* Column Selection Boolean is set to true if InjectionTable and ColumnSelector options are specified, if not set to False *)
+	resolvedColumnSelection = Which[
+		MatchQ[Lookup[roundedOptionsAssociation, ColumnSelection], Except[Automatic]], Lookup[roundedOptionsAssociation, ColumnSelection],
+		columnSelectorSpecifiedQ, True,
+		(* Check InjectionTable to see if we actually have more than 1 set of columns. If we have more than 1 set, set ColumnSelection to True *)
+		injectionTableSpecifiedQ,
+		MatchQ[Length[DeleteCases[DeleteDuplicates[injectionTableLookup[[All, 4]]],(Null|Automatic)]],GreaterP[1]],
+		True, False
+	];
+
+	(* Column options are singleton options *)
+	{columnLookup, secondaryColumnLookup, tertiaryColumnLookup, guardColumnLookup, guardColumnOrientationLookup, columnOrientationLookup} = Lookup[roundedOptionsAssociation, {Column, SecondaryColumn, TertiaryColumn, GuardColumn, GuardColumnOrientation, ColumnOrientation}];
+
+	(* Track the specified ColumnPosition *)
+	specifiedColumnPositions=DeleteCases[DeleteDuplicates[Flatten[Lookup[roundedOptionsAssociation, {ColumnPosition,StandardColumnPosition,BlankColumnPosition}]]],(Null|Automatic)];
+
+	(*if the injection table is specified, then grab the column positions to see how many sets of columns we need *)
+	injectionTableColumnPositions=If[injectionTableSpecifiedQ,
+		DeleteCases[DeleteDuplicates[injectionTableLookup[[All, 4]]],(Null|Automatic)],
+		{}
 	];
 
 	(* Resolve type based on sample strand types and the detector - if circular dichroism or MALS/DLS is requested *)
@@ -6135,21 +6291,22 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	];
 
 	defaultStandard = Which[
+		(* IE - "Thermo-Fisher dsDNA Ladder 10-300 bp, 50 ng/uL" *)
 		MatchQ[resolvedSeparationMode, IonExchange],
-		(* "Thermo-Fisher dsDNA Ladder 10-300 bp, 50 ng/uL" *)
-		Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],
+			Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],
 		(* Fluorescence Detector - Fluorescein *)
 		MemberQ[ToList[Lookup[roundedOptionsAssociation, Detector]], Fluorescence],
-		Model[Sample, StockSolution, "Fluorescein 1 mg/mL solution"],
-		(* BSA for SizeExclusion *)
+			Model[Sample, StockSolution, "id:Vrbp1jK4DejE"], (* "Fluorescein 1 mg/mL solution"] *)
+		(* SizeExclusion - BEH125 *)
 		MatchQ[resolvedSeparationMode, SizeExclusion],
-		Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"],
-		(* Ibuprofen for Chiral *)
+			Model[Sample, StockSolution, Standard, "BEH125 SEC Protein Standard Mix"], (* "BEH125 SEC Protein Standard Mix" *)
+		(* Chiral - Ibuprofen *)
 		MatchQ[resolvedSeparationMode, Chiral],
-		Model[Sample, "Ibuprofen"],
+			Model[Sample, "id:01G6nvkJprr1"], (* "Ibuprofen" *)
 		(* "Peptide HPLC Standard Mix" *)
 		True,
-		Model[Sample, StockSolution, Standard, "id:R8e1PjpkWx5X"]
+			(* We have had a horrible time keeping a suuitable standard stocked - these have all been ok but are not currently avaialble Model[Sample, StockSolution, Standard, "id:R8e1PjpkWx5X"] and Model[Sample, StockSolution, Standard, "id:o1k9jAolAnVr"]*)
+			Model[Sample, StockSolution, Standard, "id:P5ZnEjxX5pr4"] (*our in house standard, 4 component*)
 	];
 
 	(* Set list of all blank options so we can determine if blanks are being injected (if any are specified) *)
@@ -6348,18 +6505,356 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		}
 	];
 
-	(* Resolve Column options*)
-	(* Column options are singleton options *)
-	{columnLookup, secondaryColumnLookup, tertiaryColumnLookup, guardColumnLookup, guardColumnOrientationLookup, columnOrientationLookup} = Lookup[roundedOptionsAssociation, {Column, SecondaryColumn, TertiaryColumn, GuardColumn, GuardColumnOrientation, ColumnOrientation}];
+	(* Initial process of detector options so we can decide how to resolve column *)
+	absorbanceWavelengthOptions = {AbsorbanceWavelength, StandardAbsorbanceWavelength, BlankAbsorbanceWavelength, ColumnPrimeAbsorbanceWavelength, ColumnFlushAbsorbanceWavelength};
+	(* UVFilter is only available on Waters *)
+	watersAbsorbanceOptions = {
+		UVFilter,
+		StandardUVFilter,
+		BlankUVFilter,
+		ColumnPrimeUVFilter,
+		ColumnFlushUVFilter
+	};
+	(* SamplingRate is available on all instruments *)
+	absorbanceSamplingRateOptions = {AbsorbanceSamplingRate, StandardAbsorbanceSamplingRate, BlankAbsorbanceSamplingRate, ColumnPrimeAbsorbanceSamplingRate, ColumnFlushAbsorbanceSamplingRate};
+	absorbanceSmoothingTimeConstantOptions = {SmoothingTimeConstant, StandardSmoothingTimeConstant, BlankSmoothingTimeConstant, ColumnPrimeSmoothingTimeConstant, ColumnFlushSmoothingTimeConstant};
+	watersSmoothingTimeConstantBool = MemberQ[ToList[#], HPLCSmoothingTimeConstantP]& /@ Lookup[roundedOptionsAssociation, absorbanceSmoothingTimeConstantOptions];
 
-	(* Track the specified ColumnPosition *)
-	specifiedColumnPositions=DeleteCases[DeleteDuplicates[Flatten[Lookup[roundedOptionsAssociation, {ColumnPosition,StandardColumnPosition,BlankColumnPosition}]]],(Null|Automatic)];
+	(* We need to figure out if any of the absorbanceWavelength options are TUV or PDA related *)
+	tuvAbsorbanceWavelengthBool = MatchQ[#, ListableP[GreaterP[0 * Nanometer]]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
+	pdaAbsorbanceWavelengthBool = MatchQ[#, ListableP[(_Span)|All]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
+	(*compile a list of the TUV related options. Some of these are shared with the PDA*)
+	uvOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, absorbanceSmoothingTimeConstantOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
+	(* SmoothingTimeConstant option can be Null *)
+	uvRequiredOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
 
-	(*if the injection table is specified, then grab the column positions to see how many sets of columns we need *)
-	injectionTableColumnPositions=If[injectionTableSpecifiedQ,
-		DeleteCases[DeleteDuplicates[injectionTableLookup[[All, 4]]],(Null|Automatic)],
-		{}
+	(* Compile a list of the FLR related options and FLR related options specifically for Ultimate 3000 FLD-3000 Detector *)
+	(* Note that Agilent Fluorescence only allows one set of Ex/Em/Gain *)
+	flrOptions = {
+		ExcitationWavelength,
+		EmissionWavelength,
+		FluorescenceGain,
+		StandardExcitationWavelength,
+		StandardEmissionWavelength,
+		StandardFluorescenceGain,
+		BlankExcitationWavelength,
+		BlankEmissionWavelength,
+		BlankFluorescenceGain,
+		ColumnPrimeExcitationWavelength,
+		ColumnPrimeEmissionWavelength,
+		ColumnPrimeFluorescenceGain,
+		ColumnFlushExcitationWavelength,
+		ColumnFlushEmissionWavelength,
+		ColumnFlushFluorescenceGain
+	};
+	excitationWavelengthFlrOptions = {
+		ExcitationWavelength,
+		StandardExcitationWavelength,
+		BlankExcitationWavelength,
+		ColumnPrimeExcitationWavelength,
+		ColumnFlushExcitationWavelength
+	};
+	emissionWavelengthFlrOptions = {
+		EmissionWavelength,
+		StandardEmissionWavelength,
+		BlankEmissionWavelength,
+		ColumnPrimeEmissionWavelength,
+		ColumnFlushEmissionWavelength
+	};
+	(* These options are only available on Dionex Fluorescence instrument, not on Agilent or Waters *)
+	dionexFlrOptions = {
+		EmissionCutOffFilter,
+		FluorescenceFlowCellTemperature,
+		StandardEmissionCutOffFilter,
+		StandardFluorescenceFlowCellTemperature,
+		BlankEmissionCutOffFilter,
+		BlankFluorescenceFlowCellTemperature,
+		ColumnPrimeEmissionCutOffFilter,
+		ColumnPrimeFluorescenceFlowCellTemperature,
+		ColumnFlushEmissionCutOffFilter,
+		ColumnFlushFluorescenceFlowCellTemperature
+	};
+
+	(* Compile a list of the ELSD related options *)
+	elsdOptions = {
+		NebulizerGas,
+		NebulizerGasHeating,
+		NebulizerHeatingPower,
+		NebulizerGasPressure,
+		DriftTubeTemperature,
+		ELSDGain,
+		ELSDSamplingRate,
+		StandardNebulizerGas,
+		StandardNebulizerGasHeating,
+		StandardNebulizerHeatingPower,
+		StandardNebulizerGasPressure,
+		StandardDriftTubeTemperature,
+		StandardELSDGain,
+		StandardELSDSamplingRate,
+		BlankNebulizerGas,
+		BlankNebulizerGasHeating,
+		BlankNebulizerHeatingPower,
+		BlankNebulizerGasPressure,
+		BlankDriftTubeTemperature,
+		BlankELSDGain,
+		BlankELSDSamplingRate,
+		ColumnPrimeNebulizerGas,
+		ColumnPrimeNebulizerGasHeating,
+		ColumnPrimeNebulizerHeatingPower,
+		ColumnPrimeNebulizerGasPressure,
+		ColumnPrimeDriftTubeTemperature,
+		ColumnPrimeELSDGain,
+		ColumnPrimeELSDSamplingRate,
+		ColumnFlushNebulizerGas,
+		ColumnFlushNebulizerGasHeating,
+		ColumnFlushNebulizerHeatingPower,
+		ColumnFlushNebulizerGasPressure,
+		ColumnFlushDriftTubeTemperature,
+		ColumnFlushELSDGain,
+		ColumnFlushELSDSamplingRate
+	};
+
+
+	(* Compile a list of the MALS/DLS detector related options *)
+	lightScatteringOptions = {
+		LightScatteringLaserPower,
+		LightScatteringFlowCellTemperature,
+		StandardLightScatteringLaserPower,
+		StandardLightScatteringFlowCellTemperature,
+		BlankLightScatteringLaserPower,
+		BlankLightScatteringFlowCellTemperature,
+		ColumnPrimeLightScatteringLaserPower,
+		ColumnPrimeLightScatteringFlowCellTemperature,
+		ColumnFlushLightScatteringLaserPower,
+		ColumnFlushLightScatteringFlowCellTemperature
+	};
+
+	(* Compile a list of the pH detector related options *)
+	pHOptions = {
+		pHCalibration,
+		LowpHCalibrationBuffer,
+		LowpHCalibrationTarget,
+		HighpHCalibrationBuffer,
+		HighpHCalibrationTarget,
+		pHTemperatureCompensation
+	};
+
+	(* Compile a list of the Conductivity detector related options *)
+	conductivityOptions = {
+		ConductivityCalibration,
+		ConductivityCalibrationBuffer,
+		ConductivityCalibrationTarget,
+		ConductivityTemperatureCompensation
+	};
+
+	(* We should be more rigorous about the PDA options and exclude whatever is in the TUV *)
+	moreSpecificPDAOptions = Join[{
+		WavelengthResolution,
+		StandardWavelengthResolution,
+		BlankWavelengthResolution,
+		ColumnPrimeWavelengthResolution,
+		ColumnFlushWavelengthResolution
+	}, PickList[absorbanceWavelengthOptions, pdaAbsorbanceWavelengthBool]];
+
+	(* Note that Refractive Index detector related options are already gathered earlier because we used them to help resolve Gradient options. *)
+
+	(* Check to see if the user positively specified any of the UVVis detector options *)
+	uvOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, uvOptions];
+	(* PDA *)
+	pdaOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, moreSpecificPDAOptions];
+	(* Fluorescence *)
+	flrOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, flrOptions];
+	(* Dionex Fluorescence *)
+	dionexFlrOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, dionexFlrOptions];
+
+
+	(* Waters/Agilent fluorescence - only Waters/Agilent allow 10-20 nm Ex/Em *)
+	(* Waters fluorescence - only Agilent allow <10 nm Ex/Em *)
+	(* Agilent only allows one single channel of Ex/Em *)
+
+	(* Need to expand the column ex/em options so we can check if we need multi-channel or not *)
+	preexpandedColumnSelectorOptions = Last[ExpandIndexMatchedInputs[
+		ExperimentHPLC,
+		{mySamples},
+		Normal@Append[
+			KeyTake[
+				roundedOptionsAssociation,
+				{
+					ColumnPrimeExcitationWavelength,
+					ColumnPrimeEmissionWavelength,
+					ColumnPrimeFluorescenceGain,
+					ColumnFlushExcitationWavelength,
+					ColumnFlushEmissionWavelength,
+					ColumnFlushFluorescenceGain
+				}
+			],
+			(* Only care about the lengths of columns *)
+			ColumnSelector -> Table[
+				(* Use place holder Automatic for expanding purpose *)
+				Automatic,
+				(* The number of column selectors are decided from the options in ColumnSelector, ColumnPosition, and InjectionTable *)
+				Max[
+					{
+						Length[ToList[columnSelectorInitialLookup]],
+						Length[specifiedColumnPositions],
+						Length[injectionTableColumnPositions]
+					}
+				]
+			]
+		],
+		Messages -> False
+	]];
+
+	(* Check the column options  *)
+	{watersFlrOptionSpecifiedBool,nonDionexFlrOptionSpecifiedBool,nonAgilentFlrOptionSpecifiedBool} = Transpose[
+		MapThread[
+			Function[{exGroup, emGroup, gainGroup},
+				Module[
+					{narrowExEmQ,narrowerExEmQ,multiChannelQ},
+					narrowExEmQ=If[MatchQ[exGroup, ListableP[Null | Automatic]] || MatchQ[emGroup, ListableP[Null | Automatic]],
+						False,
+						Or @@ MapThread[
+							If[MatchQ[#1, Null | Automatic] || MatchQ[#2, Null | Automatic],
+								False,
+								TrueQ[#1 > #2 - 20Nanometer] && TrueQ[#1 < #2]
+							]&,
+							{ToList[exGroup], ToList[emGroup]}
+						]
+					];
+					narrowerExEmQ=If[MatchQ[exGroup, ListableP[Null | Automatic]] || MatchQ[emGroup, ListableP[Null | Automatic]],
+						False,
+						Or @@ MapThread[
+							If[MatchQ[#1, Null | Automatic] || MatchQ[#2, Null | Automatic],
+								False,
+								TrueQ[#1 > #2 - 10Nanometer] && TrueQ[#1 < #2]
+							]&,
+							{ToList[exGroup], ToList[emGroup]}
+						]
+					];
+					multiChannelQ=Or @@ MapThread[
+						Or[
+							Length[ToList[#1]]>1,
+							Length[ToList[#2]]>1,
+							Length[ToList[#3]]>1
+						]&,
+						{ToList[exGroup], ToList[emGroup], ToList[gainGroup]}
+					];
+					{
+						narrowerExEmQ,
+						narrowExEmQ&&!narrowerExEmQ,
+						multiChannelQ
+					}
+				]
+			],
+			{
+				Join[
+					{
+						Lookup[roundedOptionsAssociation, ExcitationWavelength],
+						Lookup[expandedStandardOptions,StandardExcitationWavelength],
+						Lookup[expandedBlankOptions,BlankExcitationWavelength]
+					},
+					Lookup[
+						preexpandedColumnSelectorOptions,
+						{
+							ColumnPrimeExcitationWavelength,
+							ColumnFlushExcitationWavelength
+						}
+					]
+				],
+				Join[
+					{
+						Lookup[roundedOptionsAssociation, EmissionWavelength],
+						Lookup[expandedStandardOptions,StandardEmissionWavelength],
+						Lookup[expandedBlankOptions,BlankEmissionWavelength]
+					},
+					Lookup[
+						preexpandedColumnSelectorOptions,
+						{
+							ColumnPrimeEmissionWavelength,
+							ColumnFlushEmissionWavelength
+						}
+					]
+				],
+				Join[
+					{
+						Lookup[roundedOptionsAssociation, FluorescenceGain],
+						Lookup[expandedStandardOptions,StandardFluorescenceGain],
+						Lookup[expandedBlankOptions,BlankFluorescenceGain]
+					},
+					Lookup[
+						preexpandedColumnSelectorOptions,
+						{
+							ColumnPrimeFluorescenceGain,
+							ColumnFlushFluorescenceGain
+						}
+					]
+				]
+			}
+		]
 	];
+
+	(* ELSD *)
+	elsdOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, elsdOptions];
+	(* Waters specified *)
+	watersSpecifiedBool = Join[
+		MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions],
+		watersSmoothingTimeConstantBool
+	];
+	(* Light Scattering (MALS/DLS) *)
+	lightScatteringSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, lightScatteringOptions];
+	(* pH *)
+	phSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, pHOptions];
+	(* Conductivity *)
+	conductivitySpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, conductivityOptions];
+
+	(* Check to see if the user negatively specified any of the UVVis detector options to Null *)
+	uvOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, uvRequiredOptions];
+	(* PDA *)
+	pdaOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, moreSpecificPDAOptions];
+	(* Fluorescence *)
+	flrOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, flrOptions];
+	(* Dionex Fluorescence *)
+	dionexFlrOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, dionexFlrOptions];
+	(* ELSD *)
+	elsdOptionNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, elsdOptions];
+	(* Waters specified *)
+	watersNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions];
+	(* Light Scattering (MALS/DLS) *)
+	lightScatteringNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, lightScatteringOptions];
+	(* Refractive Index *)
+	refractiveIndexNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, refractiveIndexOptions];
+	(* pH *)
+	phNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, {pHCalibration, pHTemperatureCompensation}];
+	(* Conductivity *)
+	conductivityNullBool = MatchQ[#, ListableP[Null]]& /@ Lookup[roundedOptionsAssociation, {ConductivityCalibration, ConductivityTemperatureCompensation}];
+
+	(* Were any of the detectors implicitly requested by option specification? *)
+	uvRequestedQ = Or @@ Flatten[uvOptionSpecifiedBool];
+	pdaRequestedQ = Or @@ Flatten[pdaOptionSpecifiedBool];
+	flrRequestedQ = Or @@ Flatten[flrOptionSpecifiedBool];
+	dionexFlrRequestedQ = Or @@ Flatten[dionexFlrOptionSpecifiedBool];
+	watersFlrRequestedQ = Or @@ Flatten[watersFlrOptionSpecifiedBool];
+	nonDionexFlrRequestedQ = Or @@ Flatten[nonDionexFlrOptionSpecifiedBool];
+	nonAgilentFlrRequestedQ = Or @@ Flatten[nonAgilentFlrOptionSpecifiedBool];
+	elsdRequestedQ = Or @@ Flatten[elsdOptionSpecifiedBool];
+	watersRequestedQ = Or @@ Flatten[watersSpecifiedBool];
+	lightScatteringRequestedQ = Or @@ Flatten[lightScatteringSpecifiedBool];
+	pHRequestedQ = Or @@ Flatten[phSpecifiedBool];
+	conductivityRequestedQ = Or @@ Flatten[conductivitySpecifiedBool];
+
+	(* Were any of the detectors implicitly set to Null by option specification? *)
+	uvRequestedNullQ = Or @@ Flatten[uvOptionNullBool];
+	pdaRequestedNullQ = Or @@ Flatten[pdaOptionNullBool];
+	flrRequestedNullQ = Or @@ Flatten[flrOptionNullBool];
+	dionexFlrRequestedNullQ = Or @@ Flatten[dionexFlrOptionNullBool];
+	elsdRequestedNullQ = Or @@ Flatten[elsdOptionNullBool];
+	watersRequestedNullQ = Or @@ Flatten[watersNullBool];
+	lightScatteringRequestedNullQ = Or @@ Flatten[lightScatteringNullBool];
+	refractiveIndexRequestedNullQ = Or @@ Flatten[refractiveIndexNullBool];
+	pHRequestedNullQ = Or @@ Flatten[phNullBool];
+	conductivityRequestedNullQ = Or @@ Flatten[conductivityNullBool];
+
+	(* Resolve Column options*)
 
 	defaultColumn = Which[
 		(* Use smaller column for LCMS instrument or ELSD as the column oven is smaller *)
@@ -6582,7 +7077,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 					!MatchQ[guardColumnOrientationLookup,Automatic],guardColumnOrientationLookup,
 					True,Forward
 				]&,
-				columnSelectorColumns
+				columnSelectorGuardColumns
 			]
 		];
 
@@ -6984,7 +7479,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	];
 
 	(* Resolve ColumnPosition *)
-	(* We need to make sure that if the injection table is specified that the samples and the input are copacetic *)
+	(* We need to make sure that if the injection table is specified that the samples and the input are compatible *)
 	injectionTableSampleConflictQ = If[injectionTableSpecifiedQ,
 		!MatchQ[Download[Cases[injectionTableLookup, {Sample, ___}] /. {Sample, x_, ___} :> x, Object, Cache -> cache], Download[mySamples, Object, Cache -> cache]],
 		(* Valid if there is no InjectionTable *)
@@ -7194,7 +7689,36 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Throw warning if Type and Column are incompatible *)
 	If[messagesQ && !columnTypesConsistentQ && !engineQ,
-		Message[Warning::VariableColumnTypes, ObjectToString@allColumnObjects, specifiedColumnTypes];
+		Message[Warning::VariableColumnTypes, ObjectToString[allColumnObjects,Simulation->updatedSimulation], specifiedColumnTypes];
+	];
+
+	(* - Redundant Guard Column Check - *)
+
+	(* If GuardColumn and a main column are specified as guard column, an error is thrown *)
+	redundantGuardColumnQ = And[
+		Or[
+			MatchQ[resolvedColumn, ObjectP[Model[Item, Column]]] && MatchQ[Lookup[fetchPacketFromCacheHPLC[resolvedColumn, cache], ColumnType], Guard],
+			MatchQ[resolvedColumn, ObjectP[Object[Item, Column]]] && MatchQ[Lookup[fetchModelPacketFromCacheHPLC[resolvedColumn, cache], ColumnType], Guard]
+		],
+		MatchQ[resolvedGuardColumn, ObjectP[]]
+	];
+
+	redundantGuardColumnOptions = If[redundantGuardColumnQ,
+		(* Throw error if GuardColumn and Column are incompatible *)
+		If[messagesQ && redundantGuardColumnQ,
+			Message[
+				Error::RedundantGuardColumn,
+				ObjectToString@resolvedColumn,
+				ObjectToString@resolvedGuardColumn
+			];
+		];
+		{Column, GuardColumn},
+		{}
+	];
+	(* Build test for Column-GuardColumn compatibility *)
+	redundantGuardColumnTest = If[redundantGuardColumnQ,
+		testOrNull["If GuardColumn is specified, Column cannot be guard column:", False],
+		testOrNull["If GuardColumn is specified, Column cannot be guard column:", True]
 	];
 
 	(* - GuardColumn's SeparationMode Check - *)
@@ -7232,7 +7756,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Throw warning if Type and Column are incompatible *)
 	If[messagesQ && !typeGuardColumnCompatibleQ && !engineQ,
-		Message[Warning::IncompatibleColumnType, GuardColumn, ObjectToString@Lookup[roundedOptionsAssociation, GuardColumn], specifiedGuardColumnTypes, Lookup[roundedOptionsAssociation, SeparationMode]];
+		Message[Warning::IncompatibleColumnType, GuardColumn, ObjectToString[Lookup[roundedOptionsAssociation, GuardColumn],Simulation->updatedSimulation], specifiedGuardColumnTypes, Lookup[roundedOptionsAssociation, SeparationMode]];
 	];
 
 
@@ -7258,7 +7782,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Throw warning if technique is not HPLC *)
 	If[messagesQ && !columnTechniqueCompatibleQ && !engineQ,
-		Message[Warning::IncompatibleColumnTechnique, Column, ObjectToString[allColumnObjects], specifiedColumnTechniques, HPLC];
+		Message[Warning::IncompatibleColumnTechnique, Column, ObjectToString[allColumnObjects,Simulation->updatedSimulation], specifiedColumnTechniques, HPLC];
 	];
 
 	(* - GuardColumn's ChromatographyType Check - *)
@@ -7282,7 +7806,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 
 	(* Throw warning if technique is not HPLC *)
 	If[messagesQ && !guardColumnTechniqueCompatibleQ && !engineQ,
-		Message[Warning::IncompatibleColumnTechnique, GuardColumn, ObjectToString@Lookup[specifiedGuardColumnModelPackets, Object], specifiedGuardColumnTechniques, HPLC];
+		Message[Warning::IncompatibleColumnTechnique, GuardColumn, ObjectToString[Lookup[specifiedGuardColumnModelPackets, Object],Simulation->updatedSimulation], specifiedGuardColumnTechniques, HPLC];
 	];
 
 	(* - Column/GuardColumn Temperature range check - *)
@@ -7417,7 +7941,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Throw warning if column temperatures are incompatible *)
 	columnTemperatureTests = If[Length[incompatibleColumnTemperatures] > 0,
 		If[messagesQ && !engineQ,
-			Message[Warning::IncompatibleColumnTemperature, incompatibleColumnTemperatures, "Column", ObjectToString[DeleteDuplicates[Cases[Download[Flatten[resolvedColumnSelector[[All,{4,6,7}]]],Object],ObjectP[]]]], compatibleColumnTemperatureRange[[1]], compatibleColumnTemperatureRange[[2]]]
+			Message[Warning::IncompatibleColumnTemperature, incompatibleColumnTemperatures, "Column", ObjectToString[DeleteDuplicates[Cases[Download[Flatten[resolvedColumnSelector[[All,{4,6,7}]]],Object],ObjectP[]]],Simulation->updatedSimulation], compatibleColumnTemperatureRange[[1]], compatibleColumnTemperatureRange[[2]]]
 		];
 		warningOrNull["If Column and Column Temperature in InjectionTable are specified, all specified column temperatures are within the column's MinTemperature/MaxTemperature range:", False],
 		warningOrNull["If Column and Column Temperature in InjectionTable are specified, all specified column temperatures are within the column's MinTemperature/MaxTemperature range:", True]
@@ -7426,7 +7950,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Throw warning if guard column temperatures are incompatible *)
 	guardColumnTemperatureTests = If[Length[incompatibleGuardColumnTemperatures] > 0,
 		If[messagesQ && !engineQ,
-			Message[Warning::IncompatibleColumnTemperature, incompatibleGuardColumnTemperatures, "Guard Column", ObjectToString[DeleteDuplicates[Cases[Download[resolvedColumnSelector[[All,1]],Object],ObjectP[]]]], compatibleGuardColumnTemperatureRange[[1]], compatibleGuardColumnTemperatureRange[[2]]]
+			Message[Warning::IncompatibleColumnTemperature, incompatibleGuardColumnTemperatures, "Guard Column", ObjectToString[DeleteDuplicates[Cases[Download[resolvedColumnSelector[[All,1]],Object],ObjectP[]]],Simulation->updatedSimulation], compatibleGuardColumnTemperatureRange[[1]], compatibleGuardColumnTemperatureRange[[2]]]
 		];
 		warningOrNull["If GuardColumn and Column Temperature in InjectionTable are specified, all specified column temperatures are within the column's MinTemperature/MaxTemperature range:", False],
 		warningOrNull["If GuardColumn and Column Temperature in InjectionTable are specified, all specified column temperatures are within the column's MinTemperature/MaxTemperature range:", True]
@@ -8084,13 +8608,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 				Module[
 					{allColumns},
 					allColumns=Cases[columnTuple,ObjectP[]];
-					Map[
-						If[MatchQ[#,ObjectP[Model]],
-							Download[Lookup[fetchPacketFromCache[#, cache], StorageBuffer,Null],Object],
-							(* Object *)
-							Download[Lookup[fetchModelPacketFromCacheHPLC[#, cache], StorageBuffer,Null],Object]
-						]&,
-						allColumns
+					FirstCase[
+						Map[
+							If[MatchQ[#,ObjectP[Model]],
+								Download[Lookup[fetchPacketFromCache[#, cache], StorageBuffer,Null],Object],
+								(* Object *)
+								Download[Lookup[fetchModelPacketFromCacheHPLC[#, cache], StorageBuffer,Null],Object]
+							]&,
+							allColumns
+						],
+						ObjectP[],
+						Null
 					]
 				]
 			],
@@ -8099,58 +8627,194 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		{}
 	];
 
-	(* Select the first storage buffer that matches any specified buffer or just use BufferA. Map through all column tuples *)
-	semiResolvedColumnStorageBuffers = MapThread[
-		Which[
-			!MatchQ[#2,Automatic],
-			FirstOrDefault[
-				Intersection[
-					{Download[#2,Object]},
-					Download[
-						DeleteCases[
-							Lookup[roundedOptionsAssociation,{BufferA,BufferB,BufferC,BufferD}],
-							Automatic|Null
-						],
-						Object
-					]
-				],
-				(* Default to BufferA, and we will fill in the sample model later *)
-				BufferA
-			],
-			NullQ[#],
-			(* Default to BufferA, and we will fill in the sample model later *)
-			BufferA,
-			True,
-			FirstOrDefault[
-				Intersection[
-					Cases[#,ObjectP[]],
-					Download[
-						DeleteCases[
-							Lookup[roundedOptionsAssociation,{BufferA,BufferB,BufferC,BufferD}],
-							Automatic|Null
-						],
-						Object
-					]
-				],
-				(* Default to BufferA, and we will fill in the sample model later *)
-				BufferA
+	(*
+		For different specified ColumnStorageBuffer options, do following check (Map through all column tuples):
+		(1) A Model[Sample] or Object[Sample] - must match the user's input buffer - Select the first storage buffer that matches any specified buffer;
+		(2) A gradient - always add up to 100%;
+		(3) Otherwise keep Automatic so that we can use the last gradient of ColumnFlushGradient (specified or resolved)
+  *)
+	(* Here, we first pre-resolve the buffers based on the user-specified gradient methods but we won't do full resolution as that will have to happen after we resolve the instrument. If we cannot find an exact match, we will throw an error for the user to specifically tell us what buffer to use. This makes resolution flow of gradients and buffers much easier. *)
+
+	allSpecifiedGradientMethods = Cases[
+		(* Specified gradient methods from stand-alone options and injection table, sorted with Sample->Standard->Blank->ColumnPrime->ColumnFlush *)
+		Flatten[{
+			Lookup[roundedOptionsAssociation, Gradient],
+			injectionTableSampleRoundedGradients,
+			Lookup[roundedOptionsAssociation, StandardGradient],
+			injectionTableStandardGradients,
+			Lookup[roundedOptionsAssociation, BlankGradient],
+			injectionTableBlankGradients,
+			Lookup[roundedOptionsAssociation, ColumnPrimeGradient],
+			injectionTableColumnPrimeGradients,
+			Lookup[roundedOptionsAssociation, ColumnFlushGradient],
+			injectionTableColumnFlushGradients
+		}],
+		ObjectP[Object[Method, Gradient]]
+	];
+
+	(* Get the packets for any associated gradient method objects *)
+	allSpecifiedGradientMethodPackets = Map[
+		fetchPacketFromCache[Download[#, Object], cache]&,
+		allSpecifiedGradientMethods
+	];
+	(* Get all the method buffers and dereference *)
+	{
+		specifiedBufferAMethodList,
+		specifiedBufferBMethodList,
+		specifiedBufferCMethodList,
+		specifiedBufferDMethodList
+	} = Transpose[
+		Map[
+			Download[#, Object]&,
+			Lookup[
+				allSpecifiedGradientMethodPackets,
+				{
+					BufferA,
+					BufferB,
+					BufferC,
+					BufferD
+				},
+				{Null, Null, Null, Null}
 			]
-		]&,
-		{
-			modelColumnStorageBuffers,
-			Lookup[expandedColumnGradientOptions,ColumnStorageBuffer]
-		}
+		]
+	];
+
+	(* Pre-resolve our buffers based on user options and the specified gradient methods *)
+	(* This is the same as the official resolution of BufferA-D, without considering the specific instrument usage *)
+	preResolvedBufferA = Which[
+		MatchQ[Lookup[roundedOptionsAssociation, BufferA], Except[Automatic]], Lookup[roundedOptionsAssociation, BufferA],
+		(* If the user specified a gradient method, we'll want to take from there *)
+		Count[specifiedBufferAMethodList, ObjectP[Model[Sample]]] > 0, FirstCase[specifiedBufferAMethodList, ObjectP[Model[Sample]]],
+		(* If this is LCMS, we want to use the formic acid in water*)
+		internalUsageQ, Model[Sample, "0.1% Formic acid in Water"],
+		(* "Ion Exchange Buffer A Native" *)
+		MatchQ[resolvedSeparationMode, IonExchange], Model[Sample, StockSolution, "id:9RdZXvKBeEbJ"],
+		(* "100 mM Phosphate Buffer - 0.02% Sodium Azide - pH 6.8" *)
+		MatchQ[resolvedSeparationMode, SizeExclusion], Model[Sample, StockSolution, "id:01G6nvwAxYYm"],
+		(* "Acetonitrile, HPLC Grade" *)
+		MatchQ[resolvedSeparationMode, Chiral], Model[Sample, "id:O81aEB4kJXr1"],
+		(* Reverse phase - buffer B 0.05% HFBA *)
+		True, Model[Sample, StockSolution, "id:Vrbp1jG80zwE"]
+	];
+
+	preResolvedBufferB = Which[
+		MatchQ[Lookup[roundedOptionsAssociation, BufferB], Except[Automatic]], Lookup[roundedOptionsAssociation, BufferB],
+		(* If the user specified a gradient method, we'll want to take from there *)
+		Count[specifiedBufferBMethodList, ObjectP[Model[Sample]]] > 0, FirstCase[specifiedBufferBMethodList, ObjectP[Model[Sample]]],
+		(* If this is LCMS, we want to use the formic acid in ACN *)
+		internalUsageQ, Model[Sample, "0.1% Formic acid in Acetonirile for LCMS"],
+		(* "Ion Exchange Buffer B Native" *)
+		MatchQ[resolvedSeparationMode, IonExchange], Model[Sample, StockSolution, "id:8qZ1VWNmdLbb"],
+		(* "Milli-Q water" *)
+		MatchQ[resolvedSeparationMode, Chiral | SizeExclusion], Model[Sample, "id:8qZ1VWNmdLBD"],
+		(* "Reverse phase buffer B 0.05% HFBA" *)
+		True, Model[Sample, StockSolution, "id:eGakld01zKqx"]
+	];
+
+	preResolvedBufferC = Which[
+		MatchQ[Lookup[roundedOptionsAssociation, BufferC], Except[Automatic]], Lookup[roundedOptionsAssociation, BufferC],
+		(* If the user specified a gradient method, we'll want to take from there *)
+		Count[specifiedBufferCMethodList, ObjectP[Model[Sample]]] > 0, FirstCase[specifiedBufferCMethodList, ObjectP[Model[Sample]]],
+		(* In case for a Dionex instrument, we should consider needle wash solution *)
+		MatchQ[Lookup[roundedOptionsAssociation, NeedleWashSolution], Except[Automatic]],
+		Lookup[roundedOptionsAssociation, NeedleWashSolution],
+		(* Model[Sample, "Milli-Q water"] *)
+		MatchQ[resolvedSeparationMode, IonExchange | SizeExclusion], Model[Sample, "id:8qZ1VWNmdLBD"],
+		(* Otherwise, we use Model[Sample, StockSolution, "20% Methanol in MilliQ Water"] in case to clean the needles *)
+		True, Model[Sample, StockSolution, "id:Z1lqpMzmp5MO"]
+	];
+
+	preResolvedBufferD = Which[
+		MatchQ[Lookup[roundedOptionsAssociation, BufferD], Except[Automatic]], Lookup[roundedOptionsAssociation, BufferD],
+		(* If the user specified a gradient method, we'll want to take from there *)
+		Count[specifiedBufferDMethodList, ObjectP[Model[Sample]]] > 0, FirstCase[specifiedBufferDMethodList, ObjectP[Model[Sample]]],
+		(* Otherwise just use water *)
+		True, Model[Sample, "Milli-Q water"]
+	];
+
+	preResolvedBufferList={preResolvedBufferA, preResolvedBufferB, preResolvedBufferC, preResolvedBufferD};
+
+	{semiResolvedColumnStorageBuffers,columnStorageBufferPercentInvalidBool,columnStorageBufferSampleInvalidBool,columnStorageBufferModelColumnConflictBool} = If[columnSelectorQ,
+		Transpose[
+			MapThread[
+				Which[
+					(* Gradient percents in ColumnStorageBuffer *)
+					MatchQ[#2,{PercentP..}],
+					If[MatchQ[Total[#2],EqualP[100Percent]],
+						{#2,False,False,False},
+						(* Set percent invalid bool to True, and change the option to Automatic *)
+						{Automatic,True,False,False}
+					],
+					(* Sample model or object in ColumnStorageBuffer *)
+					MatchQ[#2,ObjectP[]],
+					Module[
+						{storageBuffer},
+						storageBuffer=FirstOrDefault[
+							Intersection[
+								{Download[#2,Object]},
+								Download[preResolvedBufferList, Object]
+							],
+							(* Default to Automatic, and we will fill in the gradient from ColumnFlushGradient later *)
+							Automatic
+						];
+						If[MatchQ[storageBuffer,Automatic],
+							(* No matching buffer, set columnStorageBufferSampleInvalidBool to True to throw error *)
+							{Automatic,False,True,False},
+							{storageBuffer,False,False,False}
+						]
+					],
+					(* Sample model in the column model's ColumnStorageBuffer *)
+					MatchQ[#1,ObjectP[Model]],
+					Module[
+						{storageBuffer},
+						storageBuffer=FirstOrDefault[
+							Intersection[
+								{Download[#1,Object]},
+								Download[preResolvedBufferList, Object]
+							],
+							(* Default to Automatic, and we will fill in the gradient from ColumnFlushGradient later *)
+							Automatic
+						];
+						If[MatchQ[storageBuffer,Automatic],
+							(* No matching buffer, set columnStorageBufferSampleInvalidBool to True to throw warning *)
+							{Automatic,False,False,True},
+							{storageBuffer,False,False,False}
+						]
+					],
+					True,
+					(* Default to Automatic, and we will fill in the gradient from ColumnFlushGradient later *)
+					{Automatic,False,False,False}
+				]&,
+				{
+					modelColumnStorageBuffers,
+					Lookup[expandedColumnGradientOptions,ColumnStorageBuffer]
+				}
+			]
+		],
+		Table[{},4]
 	];
 
 	(* Get the buffer letter for semiResolvedColumnStorageBuffers *)
-	semiResolvedColumnStorageBufferPositions = Map[
-		FirstOrDefault[
-			PickList[
-				{BufferA,BufferB,BufferC,BufferD},
-				Lookup[roundedOptionsAssociation,{BufferA,BufferB,BufferC,BufferD}],
-				ObjectP[#]
-			],
-			BufferA
+	semiResolvedColumnStorageBufferGradient = Map[
+		If[MatchQ[#,{PercentP..}|Automatic],
+			(* Keep the gradient format or Automatic (failure to match the buffer) *)
+			#,
+			Module[
+				{bufferPosition},
+				bufferPosition=First[
+					PickList[
+						{BufferA,BufferB,BufferC,BufferD},
+						Download[preResolvedBufferList, Object],
+						Download[#,Object]
+					]
+				];
+				Switch[bufferPosition,
+					BufferA, {100Percent,0Percent,0Percent,0Percent},
+					BufferB, {0Percent,100Percent,0Percent,0Percent},
+					BufferC, {0Percent,0Percent,100Percent,0Percent},
+					BufferD, {0Percent,0Percent,0Percent,100Percent}
+				]
+			]
 		]&,
 		semiResolvedColumnStorageBuffers
 	];
@@ -8485,12 +9149,10 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 								];
 
 								(* We would like ColumnFlushGradient to end with the desired ColumnStorageBuffer *)
-								defaultEndingGradient = Switch[storageBuffer,
-									BufferA, {Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent]},
-									BufferB, {Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent]},
-									BufferC, {Quantity[0., Percent], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent]},
-									BufferD, {Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[100., Percent]},
-									_, {Quantity[90., Percent], Quantity[10., Percent], Quantity[0., Percent], Quantity[0., Percent]}
+								defaultEndingGradient = If[MatchQ[storageBuffer,Automatic],
+									(* Use starting gradient if ColumnStorageBuffer is not provided *)
+									defaultStartingGradient,
+									storageBuffer
 								];
 
 								(* This part is to semi-resolve gradient for binary pumps. If user does not give use the gradients for A/C or B/D, we want to make it possible to be binary *)
@@ -8668,7 +9330,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 										MatchQ[analyteGradientOptionTuple, gradientP], analyteGradientOptionTupleWithRILoading,
 										MatchQ[{analyteGradientOptionTuple, semiResolvedGradientA, semiResolvedGradientB, semiResolvedGradientC, semiResolvedGradientD}, {(Null | Automatic)..}],
 										resolveGradient[
-											defaultFlushGradient[defaultedAnalyteFlowRate, defaultEndingGradient],
+											defaultFlushGradient[defaultedAnalyteFlowRate, columnEquilibrationDuration, defaultEndingGradient],
 											semiResolvedGradientA,
 											semiResolvedGradientB,
 											semiResolvedGradientC,
@@ -8857,7 +9519,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 					ColumnPrime,
 					columnPrimeQ,
 					(* No need for column storage buffer for Prime *)
-					semiResolvedColumnStorageBufferPositions,
+					semiResolvedColumnStorageBufferGradient,
 					(* Column total volume to help decide gradient *)
 					columnConfigurationVolumes
 				}
@@ -8881,7 +9543,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 					ColumnFlush,
 					columnFlushQ,
 					(* Storage Buffer Position *)
-					semiResolvedColumnStorageBufferPositions,
+					semiResolvedColumnStorageBufferGradient,
 					(* Column total volume to help decide gradient *)
 					columnConfigurationVolumes
 				}
@@ -8910,11 +9572,11 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		{}
 	];
 
-	If[messagesQ && gradientInjectionTableSpecifiedDifferentlyQ, Message[Error::InjectionTableGradientConflict, ObjectToString[Drop[gradientInjectionTableSpecifiedDifferentlyOptions,-1]]]];
+	If[messagesQ && gradientInjectionTableSpecifiedDifferentlyQ, Message[Error::InjectionTableGradientConflict, ObjectToString[Drop[gradientInjectionTableSpecifiedDifferentlyOptions,-1],Simulation->updatedSimulation]]];
 
 	gradientInjectionTableSpecifiedDifferentlyTest = If[gradientInjectionTableSpecifiedDifferentlyQ,
-		testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are copacetic:", False],
-		testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are copacetic:", True]
+		testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are compatible:", False],
+		testOrNull["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are compatible:", True]
 	];
 
 	(* Check if we had to remove extra gradient tuples *)
@@ -9053,7 +9715,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 							(*check to see if the gradient was changed*)
 							!MatchQ[
 								Most[#]& /@ fullGradientSpecified,
-								Lookup[fetchPacketFromCache[Download[resolvedGradientOption, Object], simulatedCache], Gradient][[All, {1, 2, 3, 4, 5, -1}]]
+								fastAssocLookup[fastAssoc, Download[resolvedGradientOption, Object], Gradient][[All, {1, 2, 3, 4, 5, -1}]]
 							],
 							False
 						]
@@ -9220,8 +9882,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		True, Model[Sample, StockSolution, "id:eGakld01zKqx"]
 	];
 
-	(* We have a particular case where the dionex instrument shares the BufferC with the NeedleWashSolution *)
-	(* Because of this specifial case, we do this after the Instrument is resolved *)
+	(* We have a particular case where the Dionex instrument shares the BufferC with the NeedleWashSolution *)
+	(* Because of this special case, we do this after the Instrument is resolved *)
 
 	(* We would like to do a temporary resolution of BufferD in order to help resolve the instrument. Depending on the finally resolved instrument, we can resolve the BufferD to a solution or keep Null *)
 	resolvedBufferD = Which[
@@ -9234,7 +9896,91 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	];
 
 	(* Finally resolve ColumnStorageBuffer by replacing BufferA *)
-	resolvedColumnStorageBuffer=semiResolvedColumnStorageBuffers/.{BufferA->resolvedBufferA};
+	{resolvedColumnStorageBuffer,columnStorageBufferFlushGradientConflictBool}=If[columnSelectorQ,
+		Transpose[
+			MapThread[
+				Function[
+					{flushGradient,specifiedBuffer,semiResolvedBuffer},
+					Which[
+						(* If ColumnStorageBuffer is not specified (or specified with an error from earlier (we set semiResolvedColumnStorageBufferGradient to Automatic for those cases), we are all good and just resolve to the last point in ColumnFlushGradient *)
+						(* Special case if we don't have flush, we just Null out the ColumnStorageBuffer *)
+						MatchQ[specifiedBuffer,Automatic]&&NullQ[flushGradient],
+						{Null,False},
+						MatchQ[specifiedBuffer,Automatic],
+						{Last[flushGradient][[2;;5]],False},
+						MatchQ[semiResolvedBuffer,Automatic]&&!MatchQ[specifiedBuffer,Automatic],
+						{specifiedBuffer,False},
+						True,
+						{
+							specifiedBuffer,
+							Module[
+								{gradientMatchBool},
+								gradientMatchBool = MapThread[
+									EqualQ[#1,#2]&,
+									{semiResolvedBuffer, Last[flushGradient][[2;;5]]}
+								];
+								If[And@@gradientMatchBool,
+									(* semi-resolved storage buffer gradient considered the provided option and we consider this when resolving column flush gradient. The only possible conflict is when both options are provided *)
+									False,
+									True
+								]
+							]
+						}
+					]
+				],
+				{resolvedColumnFlushAnalyticalGradients/.{Null->Table[Null,Length[resolvedColumnSelector]]},Lookup[expandedColumnGradientOptions,ColumnStorageBuffer],semiResolvedColumnStorageBufferGradient}
+			]
+		],
+		{{},{}}
+	];
+
+	(* Error/Warning for ColumnStorageBuffer *)
+	(* InvalidGradientColumnStorageBuffer *)
+	columnStorageBufferPercentTest = If[(Or @@ columnStorageBufferPercentInvalidBool),
+		(
+			If[messagesQ,
+				Message[Error::InvalidGradientColumnStorageBuffer, PickList[resolvedColumnStorageBuffer, columnStorageBufferPercentInvalidBool, True]]
+			];
+			columnStorageBufferPercentInvalidQ = False;
+			testOrNull["The specified ColumnStorageBuffer gradients sum to 100%:", False]
+		),
+		testOrNull["The specified ColumnStorageBuffer gradients sum to 100%:", True]
+	];
+
+	(* ConflictColumnStorageBuffer *)
+	columnStorageBufferSampleTest = If[(Or @@ columnStorageBufferSampleInvalidBool),
+		(
+			If[messagesQ,
+				Message[Error::ConflictColumnStorageBuffer, PickList[resolvedColumnStorageBuffer, columnStorageBufferSampleInvalidBool, True]]
+			];
+			columnStorageBufferSampleInvalidQ = False;
+			testOrNull["The specified ColumnStorageBuffer sample matches one of the specified buffers:", False]
+		),
+		testOrNull["The specified ColumnStorageBuffer sample matches one of the specified buffers:", True]
+	];
+
+	(* IncompatibleModelColumnStorageBuffer *)
+	columnStorageBufferModelColumnTest = If[(Or @@ columnStorageBufferModelColumnConflictBool),
+		(
+			If[messagesQ,
+				Message[Warning::IncompatibleModelColumnStorageBuffer, PickList[resolvedColumnStorageBuffer, columnStorageBufferModelColumnConflictBool, True]]
+			];
+			warningOrNull["The specified column's ColumnStorageBuffer sample matches one of the specified buffers:", False]
+		),
+		warningOrNull["The specified column's ColumnStorageBuffer sample matches one of the specified buffers:", True]
+	];
+
+	(* ConflictColumnStorageBufferFlushGradient *)
+	columnStorageBufferFlushGradientTest = If[(Or @@ columnStorageBufferFlushGradientConflictBool),
+		(
+			If[messagesQ,
+				Message[Error::ConflictColumnStorageBufferFlushGradient, PickList[resolvedColumnStorageBuffer, columnStorageBufferFlushGradientConflictBool, True]]
+			];
+			columnStorageBufferFlushGradientConflictQ = False;
+			warningOrNull["The specified ColumnStorageBuffer gradient matches the end gradient of the specified ColumnFlushGradient:", False]
+		),
+		warningOrNull["The specified ColumnStorageBuffer gradient matches the end gradient of the specified ColumnFlushGradient:", True]
+	];
 
 	(* Resolve Column Temperature to help resolve Instrument *)
 	(* Get Column Temperature and Sample Temperature from injection Table or default to Automatic *)
@@ -9566,6 +10312,16 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		}
 	];
 
+	collectFractionScaleConflictQ=MatchQ[Lookup[roundedOptionsAssociation, Scale], Analytical]&&MemberQ[Lookup[roundedOptionsAssociation, CollectFractions],True];
+
+	collectFractionScaleTest = If[collectFractionScaleConflictQ,
+		If[messagesQ,
+			Message[Error::ConflictScaleAndCollectFractions]
+		];
+		testOrNull["If Scale -> Analytical, CollectFractions is not True:", False],
+		testOrNull["If Scale -> Analytical, CollectFractions is not True:", True]
+	];
+
 	(* Find where all the fraction options are specified *)
 	specifiedFractionBool = Map[
 		MatchQ[#, Except[ListableP[(Automatic | Null)]]] &,
@@ -9594,30 +10350,44 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		MatchQ[Lookup[roundedOptionsAssociation, Scale], Except[Automatic]], Lookup[roundedOptionsAssociation, Scale],
 		(* Did the user specify to collect fractions? *)
 		(* The flow rate higher than 8 mL/min -> Preparative (Agilent) *)
-		(* Dionex has a MaxFlowRate of 8 mL/min *)
+		(* Dionex has a MaxFlowRate of 8 mL/min on some instruments and 10 mL/min on some (we force 8 mL/min for Austin); Agilent SemiPrep at CMU has a MaxFlowRate of 10 mL/min *)
 		Or[
-			(* If Agilent is requested, we just use Preparative *)
+			(* If prep Agilent is requested, we just use Preparative *)
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object], agilentHPLCPattern]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern]
 			],
 			And[
 				Or @@ collectFractions,
-				(maxInjectionFlowRate > 8 Milliliter / Minute)
+				GreaterQ[
+					maxInjectionFlowRate,
+					(* Use our pre-resolved site to decide the flow rate cutoff *)
+					If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+						10 Milliliter / Minute,
+						8 Milliliter / Minute
+					]
+				]
 			]
 		],
 		Preparative,
 		(* The flow rate equal to or lower than 10 mL/min -> SemiPreparative (Dionex) *)
 		And[
 			Or @@ collectFractions,
-			(maxInjectionFlowRate <= 8 Milliliter / Minute)
+			LessEqualQ[
+				maxInjectionFlowRate,
+				(* Use our pre-resolved site to decide the flow rate cutoff *)
+				If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+					10 Milliliter / Minute,
+					8 Milliliter / Minute
+				]
+			]
 		],
 		SemiPreparative,
 		(*otherwise, go analytical*)
 		True, Analytical
 	];
 
-	(* Pause on some resolution of FractionCollection information because Agilent uses the same deck for fraction collection and autosampler. We would like to make sure to resolve a container that best fit the deck *)
+	(* Pause on some resolution of FractionCollection information because preparative Agilent uses the same deck for fraction collection and autosampler. We would like to make sure to resolve a container that best fit the deck *)
 
 	(* Resolve the injection volumes *)
 
@@ -9632,7 +10402,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		Or[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object], agilentHPLCPattern]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern]
 			],
 			MatchQ[resolvedScale, Preparative]
 		],
@@ -9643,9 +10413,10 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Find the possible injection volume range *)
 	defaultInjectionVolume = Which[
 		MatchQ[resolvedScale, Preparative], 5 Milliliter, (* Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] *)
+		(* Agilent SemiPrep at CMU and Dionex max injection volume = 500 Microliter *)
 		MatchQ[resolvedScale, SemiPreparative], 500 Microliter,
 		MatchQ[resolvedScale, Analytical],
-		If[!NullQ[specifiedInstrumentModelPackets] && MemberQ[Lookup[specifiedInstrumentModelPackets, Object], agilentHPLCPattern],
+		If[!NullQ[specifiedInstrumentModelPackets] && MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern],
 			200 Microliter, (* For Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] Analytical runs *)
 			10 Microliter
 		],
@@ -9929,7 +10700,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 					Or[
 						And[
 							!NullQ[specifiedInstrumentModelPackets],
-							MemberQ[Lookup[specifiedInstrumentModelPackets, Object], agilentHPLCPattern]
+							MemberQ[Lookup[specifiedInstrumentModelPackets, Object], prepAgilentHPLCPattern]
 						],
 						MatchQ[resolvedScale, Preparative]
 					],
@@ -9946,8 +10717,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 				];
 				totalVolume = Total[sampleEntry[[All, 4]]];
 				containerPacket = If[MatchQ[container, ObjectP[Model]],
-					fetchPacketFromCacheHPLC[container, simulatedCache],
-					fetchModelPacketFromCacheHPLC[container, simulatedCache]
+					fetchPacketFromFastAssoc[container, fastAssoc],
+					fastAssocPacketLookup[fastAssoc, container, Model]
 				];
 				maxVolume = If[MatchQ[containerPacket, PacketP[]],
 					Lookup[containerPacket, MaxVolume, Infinity * Microliter],
@@ -9966,14 +10737,14 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		!MemberQ[volumeFitAliquotContainerQ, False]
 	];
 
-	(* Extract all samples that could be aliquotted (ie: definitely cannot be aliquotted) *)
+	(* Extract all samples that could be aliquoted (ie: definitely cannot be aliquoted) *)
 	(* NOTE: We need to consider if the samples are consolidated or not *)
 	uniqueAliquotableSamples = If[preresolvedConsolidateAliquots,
 		DeleteDuplicates[PickList[simulatedSamples, specifiedAliquotBools, True | Automatic]],
 		Flatten[ConstantArray[PickList[simulatedSamples, specifiedAliquotBools, True | Automatic], numberOfReplicates]]
 	];
 
-	(* Find unique containers for samples that definitely cannot be aliquotted *)
+	(* Find unique containers for samples that definitely cannot be aliquoted *)
 	(* Plates are for Dionex and Waters instruments *)
 	uniqueNonAliquotablePlates = DeleteDuplicates@Cases[
 		PickList[simulatedSampleContainers, specifiedAliquotBools, False],
@@ -9983,22 +10754,22 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	uniqueNonAliquotableVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
-		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"]} *)
-		{False, ObjectP[{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:1ZA60vL48X85"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]}]}
+		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"], Model[Container, Vessel, "PFAS Testing Vials, Agilent"]} *)
+		{False, ObjectP[$ChromatographyLCCompatibleVials]}
 	];
 
-	(* For Agilent, split uniqueNonAliquotableVessels into two parts with different models *)
+	(* For prep Agilent, split uniqueNonAliquotableVessels into two parts with different models *)
 	uniqueNonAliquotableSmallVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
-		(* Model[Container, Vessel, "15mL Tube"] *)
+		(* {Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]} *)
 		{False, ObjectP[{Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:rea9jl1orrMp"]}]}
 	];
 
 	uniqueNonAliquotableLargeVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
-		(* Model[Container, Vessel, "50mL Tube"] *)
+		(* {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"]} *)
 		{False, ObjectP[{Model[Container, Vessel, "id:bq9LA0dBGGR6"],Model[Container, Vessel, "id:bq9LA0dBGGrd"]}]}
 	];
 
@@ -10017,7 +10788,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		Or[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], agilentHPLCPattern]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], prepAgilentHPLCPattern]
 			],
 			MatchQ[resolvedScale, Preparative]
 		],
@@ -10087,6 +10858,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Dionex has 2 * plate positions and 1 rack position, room for:
 		- 48 vials AND 2 plates
 	*)
+	(* Default aliquot container of HPLC is plate (this is same for all instruments except Agilent prep HPLC). This is important because we have to have the same default aliquot container for alternate instrument resolution purpose *)
 	validDionexCountQ = And[
 		Or[
 			(* If aliquotable samples can all fit in a DWP, then there can exist 1 non aliquotable plate *)
@@ -10099,7 +10871,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 				Length[uniqueAliquotableSamples] == 0,
 				Length[uniqueNonAliquotablePlates] <= 2
 			],
-			(* If all samples can be aliquotted, they must fit in fewer than 2 plates *)
+			(* If all samples can be aliquoted, they must fit in fewer than 2 plates *)
 			And[
 				Length[uniqueAliquotableSamples] <= (96 * 2),
 				Length[uniqueNonAliquotablePlates] == 0
@@ -10115,26 +10887,45 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		- 48 vials, 1 plate
 		- 2 plates, 0 vials (no standard/blank/vial samples)
 	*)
-	validWatersCountQ = Or[
-		(* If non-aliquotable samples and aliquotable samples exist, the non-aliquotable samples must be in at-most 1 plate and the aliquotable samples must be already - in or transferred to vials, therefore there must be <= (48 - number of standard vials - number of blank vials - non aliquotable vials) *)
-		And[
-			Length[uniqueNonAliquotablePlates] <= 1,
-			Length[uniqueAliquotableSamples] <= (48 - numberOfStandardBlankContainersRequired - Length[uniqueNonAliquotableVessels])
-		],
-		(* If non-aliquotable samples are all in vials, then the number of aliquottable samples must fit in 1 plate *)
-		And[
-			Length[uniqueNonAliquotablePlates] == 0,
-			Length[uniqueAliquotableSamples] <= (96 - numberOfStandardBlankContainersRequired - Length[uniqueNonAliquotableVessels])
-		],
-		(* If just plates and no Standards/Blanks *)
-		And[
-			Length[uniqueNonAliquotablePlates] == 2,
-			numberOfStandardBlankContainersRequired == 0,
-			Length[uniqueNonAliquotableVessels] == 0
-		]
-	];
+	(* Default aliquot container of HPLC is plate (this is same for all instruments except Agilent prep HPLC). This is important because we have to have the same default aliquot container for alternate instrument resolution purpose *)
+	validWatersCountQ = (
+		Total[{
+			Length[uniqueNonAliquotablePlates],
+			(* aliquotable samples transferred into plates *)
+			Ceiling[
+				Length[uniqueAliquotableSamples] / 96
+			],
+			Ceiling[
+				(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 48
+			]
+		}] <= 2
+	);
 
-	(* Agilent Instrument - Count the samples, Standards, Blanks and containers for the Agilent 1290 instrument *)
+	(* SemiPrep Agilent Instrument - Count the samples, Standards, Blanks and containers for the SemiPrep Agilent Acquity instrument *)
+	(* SemiPrep Agilent Instrument has 6 autosampler positions, room for:
+		- 54*6 vials, 0 plate
+		- 54*5 vials, 1 plate
+		- 54*4 vials, 2 plates
+		- 54*3 vials, 3 plates
+		- 54*2 vials, 4 plate
+		- 54*1 vials, 5 plate
+		- 0 vial, 6 plates (no standard/blank/vial samples)
+	*)
+	(* Default aliquot container of HPLC is plate (this is same for all instruments except Agilent prep HPLC). This is important because we have to have the same default aliquot container for alternate instrument resolution purpose *)
+	validSemiPrepAgilentCountQ = (
+		Total[{
+			Length[uniqueNonAliquotablePlates],
+			(* aliquotable samples transferred into plates *)
+			Ceiling[
+				Length[uniqueAliquotableSamples] / 96
+			],
+			Ceiling[
+				(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 54
+			]
+		}] <= 6
+	);
+
+	(* Prep Agilent Instrument - Count the samples, Standards, Blanks and containers for the Agilent 1290 instrument *)
 	(* Agilent has 6 autosampler positions for racks.
 		All racks:
 			{Model[Container, Rack, "30 x 100 mm Tube Container for Preparative HPLC"],
@@ -10161,7 +10952,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Large,
 		True,Null
 	];
-	validAgilentCountQ = If[Or @@ collectFractions,
+	validPrepAgilentCountQ = If[Or @@ collectFractions,
 		(* non aliquotable samples - we check for each type it is below the limit *)
 		(* Aliquotable samples - we always use 50mL tube so we count that only *)
 		And[
@@ -10188,15 +10979,26 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			Which[
 				MatchQ[Lookup[#, Object], dionexHPLCPattern],
 				validDionexCountQ,
-				MatchQ[Lookup[#, Object], agilentHPLCPattern],
-				validAgilentCountQ,
+				MatchQ[Lookup[#, Object], semiPrepAgilentHPLCPattern],
+				validSemiPrepAgilentCountQ,
+				MatchQ[Lookup[#, Object], prepAgilentHPLCPattern],
+				validPrepAgilentCountQ,
 				(* Waters *)
 				True,
 				validWatersCountQ
 			]&,
 			specifiedInstrumentModelPackets
 		],
-		Or[validDionexCountQ, validWatersCountQ, validAgilentCountQ]
+		Or[
+			(* Use our pre-resolved site to decide the semi-prep container count cutoff *)
+			If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+				validSemiPrepAgilentCountQ,
+				validDionexCountQ
+			],
+
+			validWatersCountQ,
+			validPrepAgilentCountQ
+		]
 	];
 
 	(* Build test for container count validity *)
@@ -10222,7 +11024,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Or[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], agilentHPLCPattern]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], prepAgilentHPLCPattern]
 			],
 			MatchQ[resolvedScale, Preparative]
 		],
@@ -10231,7 +11033,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			Model[Container, Vessel, "id:bq9LA0dBGGR6"],
 			Model[Container, Vessel, "id:xRO9n3vk11pw"]
 		],
-		(* Dionex - "96-well 2mL Deep Well Plate" *)
+		(* Dionex or Semi-prep Agilent - "96-well 2mL Deep Well Plate" *)
 		MatchQ[resolvedScale, SemiPreparative], Model[Container, Plate, "id:L8kPEjkmLbvW"],
 		True, Null
 	];
@@ -10241,7 +11043,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Or[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], agilentHPLCPattern]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}], prepAgilentHPLCPattern]
 			],
 			MatchQ[resolvedScale, Preparative]
 		],
@@ -10400,23 +11202,23 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		}
 	];
 
-	(* If collecting fractions, fetch max fraction period from: option value if specified, calculated from max volume and flow rate, fraction method, or if mode it Time, default to 30s otherwise Null *)
+	(* If collecting fractions, fetch max fraction period from: option value if specified, calculated from max volume and flow rate, fraction method, or if mode it Time, calculate based on max volume and flow rate *)
 	maxFractionPeriods = MapThread[
 		Function[{collectQ, maxVolume, maxPeriod, methodPacket, flowRateTuples, fractionCollectionMode},
 			If[TrueQ[collectQ],
 				Which[
 					!MatchQ[maxPeriod, Automatic], maxPeriod,
-					!MatchQ[maxVolume, Automatic], maxVolume / (flowRateTuples[[1]]),
 					MatchQ[methodPacket, PacketP[]], Lookup[methodPacket, MaxCollectionPeriod, Null],
-					MatchQ[fractionCollectionMode, Time], 0.8 * maxVolume / (flowRateTuples[[1]]),
-					True, Null
+					(* No MaxCollectionPeriod when Mode is not Time *)
+					!MatchQ[fractionCollectionMode, Time], Null,
+					True, resolvedMaxVolume / (flowRateTuples[[1]])
 				],
 				Null
 			]
 		],
 		{
 			collectFractions,
-			Lookup[roundedOptionsAssociation, MaxFractionVolume],
+			maxFractionVolumes,
 			Lookup[roundedOptionsAssociation, MaxCollectionPeriod],
 			fractionCollectionPackets,
 			(* flow rate *)
@@ -10435,31 +11237,47 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* LCMS HPLCs are not supported in HPLC procedure now. They are not H-Class and not covered in our procedure! Error out if we are given the I-Class instruments for stand-alone HPLCs *)
 	allHPLCInstruments = Which[
 		(* No change if we are called by LCMS *)
-		internalUsageQ, Complement[availableInstruments, testHPLCInstruments],
-		(* No specified instrument model. Then exclude I-Class UPLC from LCMS *)
+		internalUsageQ, Complement[availableInstrumentsForSite, testHPLCInstruments],
+		(* No specified instrument model. Then exclude I-Class UPLC from LCMS and select the ones for our site *)
 		NullQ[specifiedInstrumentModelPackets],
-		DeleteCases[Complement[availableInstruments, testHPLCInstruments], ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](* "Waters Acquity UPLC I-Class PDA" *)]],
+		DeleteCases[Complement[availableInstrumentsForSite, testHPLCInstruments], ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](* "Waters Acquity UPLC I-Class PDA" *)]],
 		(* If the LCMS HPLC is specified, go with it *)
-		MemberQ[Lookup[specifiedInstrumentModelPackets, Object, Null], ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"]]], Complement[availableInstruments, testHPLCInstruments],
+		MemberQ[Lookup[specifiedInstrumentModelPackets, Object, Null], ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"]]], Complement[availableInstrumentsForSite, testHPLCInstruments],
 		(* Otherwise exclude I-Class UPLC from LCMS *)
-		True, DeleteCases[Complement[availableInstruments, testHPLCInstruments],ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](* "Waters Acquity UPLC I-Class PDA" *)]]
+		True, DeleteCases[Complement[availableInstrumentsForSite, testHPLCInstruments],ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](* "Waters Acquity UPLC I-Class PDA" *)]]
 	];
+	(* This has site considered *)
 	nonDionexHPLCInstruments = Complement[allHPLCInstruments, dionexHPLCInstruments];
+	nonSemiPrepAgilentHPLCInstruments = Complement[allHPLCInstruments, semiPrepAgilentHPLCInstruments];
 
 	(* Fetch all the instrument model packets *)
-	(* Dionex is made special here because of the available detectors on it. We haven't split Waters and Agilent because Agilent has only PDA detector, which is also avaialble on Waters *)
+	(* Dionex is made special here because of the available detectors on it (pH/Conductivity) and the requirement of NeedleWashSolution being same as BufferC *)
 	allHPLCInstrumentPackets = fetchPacketFromCache[#, cache]& /@ allHPLCInstruments;
-	dionexHPLCInstrumentPackets = fetchPacketFromCache[#, cache]& /@ dionexHPLCInstruments;
 	nonDionexHPLCInstrumentPackets = fetchPacketFromCache[#, cache]& /@ nonDionexHPLCInstruments;
+	nonSemiPrepAgilentHPLCInstrumentPackets = fetchPacketFromCache[#, cache]& /@ nonSemiPrepAgilentHPLCInstruments;
 
 	(* Is a dionex only detector requested? *)
 	(* Get the types of HPLC detectors that are only available on Dionex HPLC instruments *)
 	dionexDetectors = DeleteDuplicates[Flatten[Lookup[dionexHPLCInstrumentPackets, Detectors]]];
-	nondionexDetectors = DeleteDuplicates[Flatten[Lookup[nonDionexHPLCInstrumentPackets, Detectors]]];
-	dionexOnlyDetectors = Complement[dionexDetectors, nondionexDetectors];
-	dionexDetectorRequestedQ = Or[
-		dionexFlrRequestedQ || lightScatteringRequestedQ || refractiveIndexRequestedQ || pHRequestedQ || conductivityRequestedQ,
-		MemberQ[ToList[Lookup[roundedOptionsAssociation, Detector]], Alternatives@@dionexOnlyDetectors]
+	semiPrepAgilentDetectors = DeleteDuplicates[Flatten[Lookup[semiPrepAgilentHPLCInstrumentPackets, Detectors,{}]]];
+	nonDionexDetectors = DeleteDuplicates[Flatten[Lookup[nonDionexHPLCInstrumentPackets, Detectors]]];
+	nonSemiPrepAgilentDetectors = DeleteDuplicates[Flatten[Lookup[nonSemiPrepAgilentHPLCInstrumentPackets, Detectors]]];
+	dionexOnlyDetectors = Complement[dionexDetectors, nonDionexDetectors];
+	semiPrepAgilentOnlyDetectors = Complement[semiPrepAgilentDetectors, nonSemiPrepAgilentDetectors];
+	(* Figure out the detector requirement based on site *)
+	dionexDetectorRequestedQ = If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+		False,
+		Or[
+			dionexFlrRequestedQ || lightScatteringRequestedQ || refractiveIndexRequestedQ || pHRequestedQ || conductivityRequestedQ,
+			MemberQ[ToList[Lookup[roundedOptionsAssociation, Detector]], Alternatives@@dionexOnlyDetectors]
+		]
+	];
+	semiPrepAgilentDetectorRequestedQ = If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+		Or[
+			lightScatteringRequestedQ || refractiveIndexRequestedQ,
+			MemberQ[ToList[Lookup[roundedOptionsAssociation, Detector]], Alternatives@@semiPrepAgilentOnlyDetectors]
+		],
+		False
 	];
 
 	(* Get the relations between the detectors and the option booleans *)
@@ -10476,7 +11294,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Get the relations between the detectors and the options list *)
 	detectorOpsListLookupTable = {
-		{UVVis, PhotoDiodeArray} -> Join[tuvOptions, watersAbsorbanceOptions],
+		{UVVis, PhotoDiodeArray} -> uvOptions,
 		PhotoDiodeArray -> moreSpecificPDAOptions,
 		Fluorescence -> Join[flrOptions, dionexFlrOptions],
 		EvaporativeLightScattering -> elsdOptions,
@@ -10488,7 +11306,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Get the relations between the detectors and the specified options list *)
 	detectorSpecifiedOpsListLookupTable = {
-		{UVVis, PhotoDiodeArray} -> PickList[Join[tuvOptions, watersAbsorbanceOptions], Join[uvOptionSpecifiedBool, watersSpecifiedBool]],
+		{UVVis, PhotoDiodeArray} -> PickList[Join[uvOptions, watersAbsorbanceOptions, absorbanceSmoothingTimeConstantOptions], Join[uvOptionSpecifiedBool, watersSpecifiedBool]],
 		PhotoDiodeArray -> PickList[moreSpecificPDAOptions, pdaOptionSpecifiedBool],
 		Fluorescence -> PickList[Join[flrOptions, dionexFlrOptions], Join[flrOptionSpecifiedBool, dionexFlrOptionSpecifiedBool]],
 		EvaporativeLightScattering -> PickList[elsdOptions, elsdOptionSpecifiedBool],
@@ -10502,15 +11320,32 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	watersInstrumentsBool = Map[
 		MatchQ[
 			(Lookup[#, Manufacturer] /. x_Link :> Download[x, Object]),
-			ObjectP[Object[Company, Supplier, "Waters"]]
+			(* Object[Company, Supplier, "Waters"] *)
+			ObjectP[Object[Company, Supplier, "id:aXRlGnZmpK1v"]]
 		]&,
 		allHPLCInstrumentPackets
 	];
 
 	agilentInstrumentsBool = Map[
 		MatchQ[
-			(Lookup[#, Manufacturer] /. x_Link :> Download[x, Object]),
-			ObjectP[Object[Company, Supplier, "Agilent"]]
+			Lookup[#,Object],
+			(prepAgilentHPLCPattern|semiPrepAgilentHPLCPattern)
+		]&,
+		allHPLCInstrumentPackets
+	];
+
+	semiPrepAgilentInstrumentsBool = Map[
+		MatchQ[
+			Lookup[#,Object],
+			semiPrepAgilentHPLCPattern
+		]&,
+		allHPLCInstrumentPackets
+	];
+
+	dionexInstrumentsBool = Map[
+		MatchQ[
+			Lookup[#,Object],
+			dionexHPLCPattern
 		]&,
 		allHPLCInstrumentPackets
 	];
@@ -10524,7 +11359,9 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	{instrumentConflictInvalidOptions, requiredInstrumentConflictTests} = Module[
 		{agilentInstrumentConflictTest,agilentInstrumentRequiredTest,sampleTemperatureSupportTest, bufferDSupportTest, gradientDSupportTest,
 			sampleTemperatureAndDionexDetectorSupportTest, bufferDAndDionexDetectorSupportTest, gradientDAndDionexDetectorSupportTest,
-			compatibleDetectionWavelengthRange, specifiedDetectionWavelengths, incompatibleDetectionWavelengths,
+			compatibleDetectionWavelengthRange, incompatibleDetectionWavelengths,
+			compatibleExcitationWavelengthRange, incompatibleExcitationWavelengths,
+			compatibleEmissionWavelengthRange, incompatibleEmissionWavelengths,
 			detectionWavelengthTests, watersHPLCInstrumentMaxWavelength, detectionWavelengthSampleTemperatureTests, bufferDNullTests, detectorCompatibilityTest,
 			requestedDetector, invalidDetectors, invalidDetectorOptions, invalidDetectorTrackingOptions, invalidDetectorTest, invalidDionexDetectors, invalidDionexDetectorOptions,
 			allInstrumentInvalidOptions, allInstrumentTests},
@@ -10534,12 +11371,12 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			(* It has Agilent instruments but not all are Agilent instrument, throw error *)
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
-				MemberQ[Lookup[specifiedInstrumentModelPackets, Object],agilentHPLCPattern],
-				!MatchQ[Lookup[specifiedInstrumentModelPackets, Object],ListableP[agilentHPLCPattern]]
+				MemberQ[Lookup[specifiedInstrumentModelPackets, Object],prepAgilentHPLCPattern],
+				!MatchQ[Lookup[specifiedInstrumentModelPackets, Object],ListableP[prepAgilentHPLCPattern]]
 			],
 			(
 				If[messagesQ,
-					Message[Error::HPLCInstrumentScaleConflict, ObjectToString@Lookup[roundedOptionsAssociation, Instrument]]
+					Message[Error::HPLCInstrumentScaleConflict, ObjectToString[Lookup[roundedOptionsAssociation, Instrument],Simulation->updatedSimulation]]
 				];
 				validAgilentInstrumentQ = False;
 				testOrNull["The Preparative scale HPLC instrument cannot be requested together with other instruments as potential choices in the Instrument option:", False]
@@ -10547,16 +11384,16 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			testOrNull["The Preparative scale HPLC instrument cannot be requested together with other instruments as potential choices in the Instrument option:", True]
 		];
 
-		(* If the resolvedScale is Preparative, check if Agilent instruments are requested or left Automatic *)
+		(* If the resolvedScale is Preparative, check if prep Agilent instruments are requested or left Automatic *)
 		agilentInstrumentRequiredTest = If[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
 				MatchQ[resolvedScale,Preparative],
-				!MemberQ[Lookup[specifiedInstrumentModelPackets, Object],agilentHPLCPattern]
+				!MemberQ[Lookup[specifiedInstrumentModelPackets, Object],prepAgilentHPLCPattern]
 			],
 			(
 				If[messagesQ,
-					Message[Error::MissingHPLCScaleInstrument, ObjectToString@Lookup[roundedOptionsAssociation, Instrument]]
+					Message[Error::MissingHPLCScaleInstrument, ObjectToString[Lookup[roundedOptionsAssociation, Instrument],Simulation->updatedSimulation]]
 				];
 				validAgilentInstrumentQ = False;
 				testOrNull["If the Scale of the experiment is Preparative, the matching HPLC instrument Model[Instrument, HPLC, \"Agilent 1290 Infinity II LC System\"] must be selected in the Instrument option:", False]
@@ -10564,7 +11401,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			testOrNull["If the Scale of the experiment is Preparative, the matching HPLC instrument Model[Instrument, HPLC, \"Agilent 1290 Infinity II LC System\"] must be selected in the Instrument option:", True]
 		];
 
-		(* If SampleTemperature is specified, Instrument cannot be specified as the Dionex or Agilent since they do not support sample incubation *)
+		(* If SampleTemperature is specified, Instrument cannot be specified as the Dionex or prep Agilent since they do not support sample incubation *)
 		sampleTemperatureSupportTest = If[
 			And[
 				!NullQ[specifiedInstrumentModelPackets],
@@ -10574,7 +11411,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			],
 			(
 				If[messagesQ,
-					Message[Error::UnsupportedSampleTemperature, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, MinSampleTemperature],Null]]]
+					Message[Error::UnsupportedSampleTemperature, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, MinSampleTemperature],Null],Simulation->updatedSimulation]]
 				];
 				validSampleTemperatureQ = False;
 				testOrNull["If SampleTemperature and Instrument are specified, the instrument(s) allow autosampler incubation:", False]
@@ -10592,7 +11429,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			],
 			(
 				If[messagesQ,
-					Message[Error::UnsupportedBufferD, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, PumpType],Ternary]]]
+					Message[Error::UnsupportedBufferD, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, PumpType],Ternary],Simulation->updatedSimulation]]
 				];
 				validBufferDQ = False;
 				testOrNull["If BufferD and Instrument are specified, the instrument supports four buffers:", False]
@@ -10610,7 +11447,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			],
 			(
 				If[messagesQ,
-					Message[Error::UnsupportedGradientD, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, PumpType],Ternary]]]
+					Message[Error::UnsupportedGradientD, ObjectToString[PickList[Lookup[specifiedInstrumentModelPackets,Object],Lookup[specifiedInstrumentModelPackets, PumpType],Ternary],Simulation->updatedSimulation]]
 				];
 				If[AnyTrue[Lookup[roundedOptionsAssociation, GradientD], !MatchQ[#, Null | Automatic]&],
 					validGradientDQ = False,
@@ -10626,7 +11463,16 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			{
 				(* Take the max of Min wavelength and min of Max to get the smallest range *)
 				Max[Append[Cases[Lookup[specifiedInstrumentModelPackets, MinAbsorbanceWavelength,Null],DistanceP],190 Nanometer]],
-				Min[Append[Cases[Lookup[specifiedInstrumentModelPackets, MaxAbsorbanceWavelength,Null],DistanceP],900 Nanometer]]
+				Min[
+					Append[
+						Cases[Lookup[specifiedInstrumentModelPackets, MaxAbsorbanceWavelength,Null],DistanceP],
+						If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+							(* Semi-prep Agilent instruments allow 950 nm Absorbance Wavelength *)
+							950 Nanometer,
+							900 Nanometer
+						]
+					]
+				]
 			},
 			Null
 		];
@@ -10647,35 +11493,169 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		];
 
 		(* Any failing cases? *)
-		incompatibleDetectionWavelengthsQ = Or @@ (Length[#] > 0& /@ incompatibleDetectionWavelengths);
+		incompatibleInstrumentDetectionWavelengthsQ = Or @@ (Length[#] > 0& /@ incompatibleDetectionWavelengths);
 
-		detectionWavelengthTests = MapThread[
-			If[Length[#2] > 0,
-				(
-					If[messagesQ,
-						Message[Error::WavelengthOutOfRange, #1, #2, ObjectToString@Lookup[roundedOptionsAssociation, Instrument], compatibleDetectionWavelengthRange[[1]], compatibleDetectionWavelengthRange[[2]]]
-					];
-					Switch[#1,
-						AbsorbanceWavelength,
-						validDetectionWavelengthQ = False,
-						StandardAbsorbanceWavelength,
-						validStandardDetectionWavelengthQ = False,
-						BlankAbsorbanceWavelength,
-						validBlankDetectionWavelengthQ = False,
-						ColumnPrimeAbsorbanceWavelength,
-						validColumnPrimeDetectionWavelengthQ = False,
-						ColumnFlushAbsorbanceWavelength,
-						validColumnFlushDetectionWavelengthQ = False
-					];
-					testOrNull[StringTemplate["If `1` and Instrument are specified, the specified wavelengths are within the instrument's supported range:"][#1], False]
-				),
-				testOrNull[StringTemplate["If `1` and Instrument are specified, the specified wavelengths are within the instrument's supported range:"][#1], True]
-			]&,
-			{absorbanceWavelengthOptions, incompatibleDetectionWavelengths}
+		(* If Instrument is specified, fetch its compatible excitation wavelength range *)
+		compatibleExcitationWavelengthRange = If[!NullQ[specifiedInstrumentModelPackets],
+			{
+				(* Take the max of Min Ex wavelength and min of Max to get the smallest range *)
+				Max[Append[Cases[Lookup[specifiedInstrumentModelPackets, MinExcitationWavelength,Null],DistanceP],200 Nanometer]],
+				Min[
+					Append[
+						Cases[Lookup[specifiedInstrumentModelPackets, MaxExcitationWavelength,Null],DistanceP],
+						If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+							(* Semi-prep Agilent instruments allow 1200 nm Excitation Wavelength *)
+							1200 Nanometer,
+							890 Nanometer
+						]
+					]
+				]
+			},
+			Null
 		];
 
-		(* Waters PDA can only support wavelengths < 500nm and Waters TUV can only support < 700 nm so SampleTemperature cannot be specified if wavelengths are > 700nm *)
-		(* SampleTemperature is not supported on Agilent or Doinex *)
+		(* Fetch any specified wavelengths from options *)
+		specifiedExcitationWavelengths = Map[
+			Cases[Flatten[ToList@Lookup[roundedOptionsAssociation, #]], DistanceP]&,
+			excitationWavelengthFlrOptions
+		];
+
+		(* Extract any specified detection wavelengths for each option that is not within the Instrument's compatible range *)
+		incompatibleExcitationWavelengths = Map[
+			If[!MatchQ[compatibleExcitationWavelengthRange, {DistanceP, DistanceP}] || MatchQ[#, {}],
+				{},
+				Cases[#, Except[RangeP @@ compatibleExcitationWavelengthRange]]
+			]&,
+			specifiedExcitationWavelengths
+		];
+
+		(* Any failing cases? *)
+		incompatibleInstrumentExcitationWavelengthsQ = Or @@ (Length[#] > 0& /@ incompatibleExcitationWavelengths);
+
+		(* If Instrument is specified, fetch its compatible emission wavelength range *)
+		compatibleEmissionWavelengthRange = If[!NullQ[specifiedInstrumentModelPackets],
+			{
+				(* Take the max of Min Ex wavelength and min of Max to get the smallest range *)
+				Max[Append[Cases[Lookup[specifiedInstrumentModelPackets, MinEmissionWavelength,Null],DistanceP],200 Nanometer]],
+				Min[
+					Append[
+						Cases[Lookup[specifiedInstrumentModelPackets, MaxEmissionWavelength,Null],DistanceP],
+						If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+							(* Semi-prep Agilent instruments allow 1200 nm Emission Wavelength *)
+							1200 Nanometer,
+							890 Nanometer
+						]
+					]
+				]
+			},
+			Null
+		];
+
+		(* Fetch any specified wavelengths from options *)
+		specifiedEmissionWavelengths = Map[
+			Cases[Flatten[ToList@Lookup[roundedOptionsAssociation, #]], DistanceP]&,
+			emissionWavelengthFlrOptions
+		];
+
+		(* Extract any specified detection wavelengths for each option that is not within the Instrument's compatible range *)
+		incompatibleEmissionWavelengths = Map[
+			If[!MatchQ[compatibleEmissionWavelengthRange, {DistanceP, DistanceP}] || MatchQ[#, {}],
+				{},
+				Cases[#, Except[RangeP @@ compatibleEmissionWavelengthRange]]
+			]&,
+			specifiedEmissionWavelengths
+		];
+
+		(* Any failing cases? *)
+		incompatibleInstrumentEmissionWavelengthsQ = Or @@ (Length[#] > 0& /@ incompatibleEmissionWavelengths);
+
+		detectionWavelengthTests = Join[
+			MapThread[
+				If[Length[#2] > 0,
+					(
+						If[messagesQ,
+							Message[Error::WavelengthOutOfRange, #1, #2, ObjectToString@Lookup[roundedOptionsAssociation, Instrument], compatibleDetectionWavelengthRange[[1]], compatibleDetectionWavelengthRange[[2]],"absorbance"]
+						];
+						Switch[#1,
+							AbsorbanceWavelength,
+							validDetectionWavelengthQ = False,
+							StandardAbsorbanceWavelength,
+							validStandardDetectionWavelengthQ = False,
+							BlankAbsorbanceWavelength,
+							validBlankDetectionWavelengthQ = False,
+							ColumnPrimeAbsorbanceWavelength,
+							validColumnPrimeDetectionWavelengthQ = False,
+							ColumnFlushAbsorbanceWavelength,
+							validColumnFlushDetectionWavelengthQ = False
+						];
+						testOrNull[StringTemplate["If `1` and Instrument are specified, the specified absorbance wavelengths are within the instrument's supported range:"][#1], False]
+					),
+					testOrNull[StringTemplate["If `1` and Instrument are specified, the specified absorbance wavelengths are within the instrument's supported range:"][#1], True]
+				]&,
+				{
+					absorbanceWavelengthOptions,
+					incompatibleDetectionWavelengths
+				}
+			],
+			MapThread[
+				If[Length[#2] > 0,
+					(
+						If[messagesQ,
+							Message[Error::WavelengthOutOfRange, #1, #2, ObjectToString@Lookup[roundedOptionsAssociation, Instrument], compatibleExcitationWavelengthRange[[1]], compatibleExcitationWavelengthRange[[2]],"excitation"]
+						];
+						Switch[#1,
+							ExcitationWavelength,
+							validExcitationWavelengthQ = False,
+							StandardExcitationWavelength,
+							validStandardExcitationWavelengthQ = False,
+							BlankExcitationWavelength,
+							validBlankExcitationWavelengthQ = False,
+							ColumnPrimeExcitationWavelength,
+							validColumnPrimeExcitationWavelengthQ = False,
+							ColumnFlushExcitationWavelength,
+							validColumnFlushExcitationWavelengthQ = False
+						];
+						testOrNull[StringTemplate["If `1` and Instrument are specified, the specified excitation wavelengths are within the instrument's supported range:"][#1], False]
+					),
+					testOrNull[StringTemplate["If `1` and Instrument are specified, the specified excitation wavelengths are within the instrument's supported range:"][#1], True]
+				]&,
+				{
+					excitationWavelengthFlrOptions,
+					incompatibleExcitationWavelengths
+				}
+			],
+			MapThread[
+				If[Length[#2] > 0,
+					(
+						If[messagesQ,
+							Message[Error::WavelengthOutOfRange, #1, #2, ObjectToString@Lookup[roundedOptionsAssociation, Instrument], compatibleEmissionWavelengthRange[[1]], compatibleEmissionWavelengthRange[[2]],"emission"]
+						];
+						Switch[#1,
+							EmissionWavelength,
+							validEmissionWavelengthQ = False,
+							StandardEmissionWavelength,
+							validStandardEmissionWavelengthQ = False,
+							BlankEmissionWavelength,
+							validBlankEmissionWavelengthQ = False,
+							ColumnPrimeEmissionWavelength,
+							validColumnPrimeEmissionWavelengthQ = False,
+							ColumnFlushEmissionWavelength,
+							validColumnFlushEmissionWavelengthQ = False
+						];
+						testOrNull[StringTemplate["If `1` and Instrument are specified, the specified emission wavelengths are within the instrument's supported range:"][#1], False]
+					),
+					testOrNull[StringTemplate["If `1` and Instrument are specified, the specified emission wavelengths are within the instrument's supported range:"][#1], True]
+				]&,
+				{
+					emissionWavelengthFlrOptions,
+					incompatibleEmissionWavelengths
+				}
+			]
+		];
+
+		(* For ECL-2, Waters PDA can only support wavelengths < 500nm and Waters TUV can only support < 700 nm so SampleTemperature cannot be specified if wavelengths are > 700nm *)
+		(* SampleTemperature is not supported on prep Agilent or Doinex *)
+		(* Note this is not a problem for ECL-CMU, as semiprep Agilent allows temperature + up to 950 nm PDA *)
 		watersHPLCInstrumentMaxWavelength=Max[
 			Cases[
 				Lookup[fetchPacketFromCache[#,cache],MaxAbsorbanceWavelength]&/@watersHPLCInstruments,
@@ -10685,7 +11665,9 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		detectionWavelengthSampleTemperatureTests = MapThread[
 			If[
 				And[
-					MatchQ[Lookup[roundedOptionsAssociation, SampleTemperature], TemperatureP], AnyTrue[#2, (# > watersHPLCInstrumentMaxWavelength)&]
+					MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]],
+					MatchQ[Lookup[roundedOptionsAssociation, SampleTemperature], TemperatureP],
+					AnyTrue[#2, (# > watersHPLCInstrumentMaxWavelength)&]
 				],
 				(
 					If[messagesQ,
@@ -10713,19 +11695,23 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* BufferD cannot be required if it is set to Null *)
 		bufferDNullTests = If[NullQ[Lookup[roundedOptionsAssociation, BufferD]],
 			{
-				(* "Waters HPLCs cannot have BufferD -> Null since some sort of BufferD needs to be hooked up *)
+				(* Any non-Dionex HPLCs cannot have BufferD -> Null since some sort of BufferD needs to be hooked up *)
 				If[!NullQ[specifiedInstrumentModelPackets] && MemberQ[Lookup[specifiedInstrumentModelPackets,Object],Alternatives@@nonDionexHPLCInstruments],
 					(
 						If[messagesQ,
-							Message[Error::BufferDMustExistForInstrument, ObjectToString[Cases[Lookup[specifiedInstrumentModelPackets,Object],Alternatives@@nonDionexHPLCInstruments]]]
+							Message[Error::BufferDMustExistForInstrument, ObjectToString[Cases[Lookup[specifiedInstrumentModelPackets,Object],Alternatives@@nonDionexHPLCInstruments],Simulation->updatedSimulation]]
 						];
 						validBufferDNullQ = False;
 						testOrNull["If Instrument is specified and BufferD is set to Null, the instrument does not have a quaternary pump:", False]
 					),
 					testOrNull["If Instrument is specified and BufferD is set to Null, the instrument does not have a quaternary pump:", True]
 				],
-				(* Only the waters HPLC can support SampleTemperature, and it needs a BufferD, therefore if BufferD->Null and SampleTemperature is specified, error *)
-				If[MatchQ[Lookup[roundedOptionsAssociation, SampleTemperature], TemperatureP],
+				(* Only the waters/semiprep HPLC can support SampleTemperature, and it needs a BufferD, therefore if BufferD->Null and SampleTemperature is specified at ECL-2, error *)
+				If[
+					And[
+						MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]],
+						MatchQ[Lookup[roundedOptionsAssociation, SampleTemperature], TemperatureP]
+					],
 					(
 						If[messagesQ,
 							Message[Error::BufferDMustExistForSampleTemperature]
@@ -10833,9 +11819,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			]
 		];
 
-		(* If we have to use Dionex due to the detector reason - Dionex only detector options are specified, SampleTemperature cannot be required *)
+		(* For ECL-2, If we have to use Dionex due to the detector reason - Dionex only detector options are specified, SampleTemperature cannot be required *)
 		sampleTemperatureAndDionexDetectorSupportTest = If[
 			And[
+				(* ECL-2 *)
+				MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]],
 				(* Only check this when we don't have conflict from Instrument option *)
 				validSampleTemperatureQ,
 				(* Dionex only Detectors are requested *)
@@ -10855,6 +11843,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* If we have to use Dionex due to the detector reason - Dionex only detector options are specified, BufferD cannot be required *)
 		bufferDAndDionexDetectorSupportTest = If[
 			And[
+				MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]],
 				(* Only check this when we don't have conflict from Instrument option *)
 				validBufferDQ,
 				(* Dionex only Detectors are requested *)
@@ -10874,6 +11863,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* If we have to use Dionex due to the detector reason - Dionex only detector options are specified, GradientD cannot be required *)
 		gradientDAndDionexDetectorSupportTest = If[
 			And[
+				MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]],
 				(* Only check this when we don't have conflict from Instrument option *)
 				validGradientDQ,
 				(* Dionex only Detectors are requested *)
@@ -10940,7 +11930,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	conflictDetectorOptions = MapThread[
 		If[TrueQ[#1],
 			Message[Error::ConflictHPLCDetectorOptions, ToString[#3], ToString[#2]];
-			#2,
+			#3,
 			Nothing
 		]&,
 		{
@@ -10954,7 +11944,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				conflictpHOpsQ,
 				conflictConductivityOpsQ
 			},
-			Keys[detectorOpsListLookupTable],
+			Keys[detectorSpecifiedOpsListLookupTable],
 			Values[detectorOpsListLookupTable]
 		}
 	];
@@ -10966,7 +11956,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			testOrNull["The " <> ToString[#1] <> " detector related options " <> ToString[#2] <> " are not set to Null or populated partially.", True]
 		]&,
 		{
-			Keys[detectorOpsListLookupTable],
+			Keys[detectorSpecifiedOpsListLookupTable],
 			Values[detectorOpsListLookupTable],
 			{
 				conflictUVOpsQ,
@@ -10982,7 +11972,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	];
 
 	(* Broadly there are many options that narrow our search for instrument. among them are as follows *)
-	(* Instrument, Detector, Detector-related Options, Fraction Collection, Fraction Collection Options, SampleTemperature, BufferD, GradientD, ColumnSelector, Quatenary/Ternary/Binary gradient (PumpType), Flow Rate, the weird sharing of NeedleWashSolution and BufferC on Dionex, counts of containers on Waters and Dionex (since they share the same type of containers *)
+	(* Instrument, Detector, Detector-related Options, Fraction Collection, Fraction Collection Options, SampleTemperature, BufferD, GradientD, ColumnSelector, Quaternary/Ternary/Binary gradient (PumpType), Flow Rate, the weird sharing of NeedleWashSolution and BufferC on Dionex, counts of containers on Waters and Dionex (since they share the same type of containers *)
 	(* Generally, the logic is that for each of these conditions, we'll have a list of instruments that meet the criteria *)
 	(* At the end, we'll take the intersection of all the instruments *)
 
@@ -10991,8 +11981,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Which[
 			MatchQ[#, dionexHPLCPattern],
 			validDionexCountQ,
-			MatchQ[#, agilentHPLCPattern],
-			validAgilentCountQ,
+			MatchQ[#, prepAgilentHPLCPattern],
+			validPrepAgilentCountQ,
+			MatchQ[#, semiPrepAgilentHPLCPattern],
+			validSemiPrepAgilentCountQ,
 			True,
 			validWatersCountQ
 		]&,
@@ -11013,7 +12005,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Get the scale required instruments *)
 	scaleInstruments = Switch[resolvedScale,
-		Preparative, agilentHPLCInstruments,
+		Preparative, prepAgilentHPLCInstruments,
 		SemiPreparative, Join[agilentHPLCInstruments,dionexHPLCInstruments],
 		(* Analytical operation mode is supported but not ideal on Agilent 1290 instrument due to the sample loop installed (20mL prep sample loop is installed) *)
 		(* We still include the Agilent instrument here but it will be filtered out later as being not preferred *)
@@ -11034,7 +12026,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				Module[
 					{currentMin, currentMax},
 					(* Get the current instrument temperature range*)
-					{currentMin, currentMax} = Lookup[packet, {MinColumnTemperature, MaxColumnTemperature},$AmbientTemperature];
+					{currentMin, currentMax} = Lookup[packet, {MinColumnTemperature, MaxColumnTemperature},$AmbientTemperature]/.{Null->$AmbientTemperature};
 					(* If it's capable, then add the instrument to our list; otherwise, don't *)
 					If[minColumnTemperature >= currentMin && maxColumnTemperature <= currentMax,
 						instrument,
@@ -11169,7 +12161,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Check to see if a fourth buffer is desired *)
 	(* Note that resolvedBufferD is resolved to Null as long as we don't have to have it, that does not really mean we cannot use Quaternary instruments *)
 	numberOfBufferInstruments = If[MatchQ[resolvedBufferD, Except[Null]],
-		(* Check for all of the instruments with a fourth buffe r*)
+		(* Check for all of the instruments with a fourth buffer *)
 		PickList[allHPLCInstruments, Lookup[allHPLCInstrumentPackets, NumberOfBuffers], GreaterEqualP[4]],
 		(* If no buffer D desired than we just give all the instruments *)
 		allHPLCInstruments
@@ -11239,11 +12231,13 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Which[
 			(* If Waters is implied, go for those *)
 			watersRequestedQ || watersFlrRequestedQ, PickList[allHPLCInstruments, MapThread[And, {watersInstrumentsBool, impliedInstrumentBoolean}]],
-			(* If Waters or Agilent UV option is implied, go for those *)
-			nonDionexUVRequestedQ, PickList[allHPLCInstruments, MapThread[And[Or[#1,#2], #3]&, {watersInstrumentsBool, agilentInstrumentsBool, impliedInstrumentBoolean}]],
-			(* If Dionex Detector is implied, go for those *)
+			(* If we have to exclude Dionex Fluorescence or Agilent Fluorescence because of detector options, do that *)
+			(* Depending on Site, that is equivalent to watersFlrRequestedQ *)
+			MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]] && nonAgilentFlrRequestedQ, PickList[allHPLCInstruments, MapThread[And, {watersInstrumentsBool, impliedInstrumentBoolean}]],
+			MatchQ[resolvedSite,Object[Container, Site, "id:kEJ9mqJxOl63"]] && nonAgilentFlrRequestedQ, PickList[allHPLCInstruments, MapThread[And, {watersInstrumentsBool, impliedInstrumentBoolean}]],
+			(* If a semi-prep (Dionex for ECL-2 and Agilent for ECL-CMU) Detector is implied, go for those *)
 			(* Technically we should do dionexBool here since we have Waters and Agilent besides Dionex. However, Fluorescence detector is not currently on Agilent and would have been disqualified in impliedInstrumentBoolean *)
-			dionexFlrRequestedQ, PickList[allHPLCInstruments, MapThread[And[Not[#1], #2]&, {watersInstrumentsBool, impliedInstrumentBoolean}]],
+			dionexFlrRequestedQ, PickList[allHPLCInstruments, MapThread[And[#1, #2]&, {dionexInstrumentsBool, impliedInstrumentBoolean}]],
 			True, PickList[allHPLCInstruments, impliedInstrumentBoolean]
 		],
 		allHPLCInstruments
@@ -11275,9 +12269,81 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		allHPLCInstruments
 	];
 
+	(* Select out the instruments by the possible wavelengths provided for detection *)
+	(* This requires comparing an instrument's wavelength range with specifiedDetectionWavelengths/specifiedExcitationWavelengths/specifiedEmissionWavelengths *)
+	absorbanceWavelengthInstruments = If[MatchQ[Flatten[specifiedDetectionWavelengths], {}],
+		allHPLCInstruments,
+		PickList[
+			allHPLCInstruments,
+			(* Generate a boolean of whether the specified max acceleration is in range*)
+			Map[
+				Function[
+					{instrumentPacket},
+					Module[
+						{minAbs,maxAbs},
+						minAbs=Lookup[instrumentPacket, MinAbsorbanceWavelength,Null]/.{Null->190Nanometer};
+						maxAbs=Lookup[instrumentPacket, MaxAbsorbanceWavelength,Null]/.{Null->950Nanometer};
+						And@@Map[
+							MatchQ[#,RangeP[minAbs,maxAbs]]&,
+							Flatten[specifiedDetectionWavelengths]
+						]
+					]
+				],
+				allHPLCInstrumentPackets
+			]
+		]
+	];
+
+	excitationWavelengthInstruments = If[MatchQ[Flatten[specifiedExcitationWavelengths], {}],
+		allHPLCInstruments,
+		PickList[
+			allHPLCInstruments,
+			(* Generate a boolean of whether the specified max acceleration is in range*)
+			Map[
+				Function[
+					{instrumentPacket},
+					Module[
+						{minEx,maxEx},
+						minEx=Lookup[instrumentPacket, MinExcitationWavelength,Null]/.{Null->200Nanometer};
+						maxEx=Lookup[instrumentPacket, MaxExcitationWavelength,Null]/.{Null->1200Nanometer};
+						And@@Map[
+							MatchQ[#,RangeP[minEx,maxEx]]&,
+							Flatten[specifiedExcitationWavelengths]
+						]
+					]
+				],
+				allHPLCInstrumentPackets
+			]
+		]
+	];
+
+	emissionWavelengthInstruments = If[MatchQ[Flatten[specifiedEmissionWavelengths], {}],
+		allHPLCInstruments,
+		PickList[
+			allHPLCInstruments,
+			(* Generate a boolean of whether the specified max acceleration is in range*)
+			Map[
+				Function[
+					{instrumentPacket},
+					Module[
+						{minEm,maxEm},
+						minEm=Lookup[instrumentPacket, MinEmissionWavelength,Null]/.{Null->200Nanometer};
+						maxEm=Lookup[instrumentPacket, MaxEmissionWavelength,Null]/.{Null->1200Nanometer};
+						And@@Map[
+							MatchQ[#,RangeP[minEm,maxEm]]&,
+							Flatten[specifiedEmissionWavelengths]
+						]
+					]
+				],
+				allHPLCInstrumentPackets
+			]
+		]
+	];
+
 	(* Take the intersection of all of instruments requirements *)
 	(* Two special steps here are about the impliedInstruments from the detectors - if the empty list is caused requesting Waters UV or WatersFLR or Dionex FLR because we can safely ignore those options with a Warning message or throw a more specific Error message *)
 	(* Another special case is about the flow rate. We have more specific Error message for flow rate later. We will just get rid of these instruments from alternate instruments (the combined Instrument option) *)
+	(* Below, bestInstruments is for instruments that fulfill both detector requirement and flow rate requirements; secondaryBestInstruments is to skip detector requirement; tertiaryBestInstruments is to skip flow rate requirement; quaternaryBestInstruments is to skip both *)
 	bestInstruments = Intersection[
 		countCapableInstruments,
 		fractionCollectionInstruments,
@@ -11292,7 +12358,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		capableInjectionVolumeInstruments,
 		impliedInstruments,
 		columnSelectorInstruments,
-		maxAccelerationInstruments
+		maxAccelerationInstruments,
+		absorbanceWavelengthInstruments,
+		excitationWavelengthInstruments,
+		emissionWavelengthInstruments
 	];
 
 	secondaryBestInstruments = Intersection[
@@ -11307,9 +12376,13 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		flowRateCompatibleInstruments,
 		detectorCapableInstruments,
 		capableInjectionVolumeInstruments,
+		(* impliedInstruments considers the FLR detector requirement on Waters/Agilent/Dionex and this PickList call only considers the detector specified by the user *)
 		PickList[allHPLCInstruments, impliedInstrumentBoolean],
 		columnSelectorInstruments,
-		maxAccelerationInstruments
+		maxAccelerationInstruments,
+		absorbanceWavelengthInstruments,
+		excitationWavelengthInstruments,
+		emissionWavelengthInstruments
 	];
 
 	tertiaryBestInstruments = Intersection[
@@ -11325,10 +12398,13 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		capableInjectionVolumeInstruments,
 		impliedInstruments,
 		columnSelectorInstruments,
-		maxAccelerationInstruments
+		maxAccelerationInstruments,
+		absorbanceWavelengthInstruments,
+		excitationWavelengthInstruments,
+		emissionWavelengthInstruments
 	];
 
-	quaternatryBestInstruments = Intersection[
+	quaternaryBestInstruments = Intersection[
 		countCapableInstruments,
 		fractionCollectionInstruments,
 		scaleInstruments,
@@ -11339,22 +12415,35 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		numberOfBufferInstruments,
 		detectorCapableInstruments,
 		capableInjectionVolumeInstruments,
-		impliedInstruments,
+		PickList[allHPLCInstruments, impliedInstrumentBoolean],
 		columnSelectorInstruments,
-		maxAccelerationInstruments
+		maxAccelerationInstruments,
+		absorbanceWavelengthInstruments,
+		excitationWavelengthInstruments,
+		emissionWavelengthInstruments
 	];
 
 	capableInstruments = Which[
 		!MatchQ[bestInstruments, {}], bestInstruments,
 		!MatchQ[secondaryBestInstruments, {}], secondaryBestInstruments,
 		!MatchQ[tertiaryBestInstruments, {}], tertiaryBestInstruments,
-		!MatchQ[quaternatryBestInstruments, {}], quaternatryBestInstruments,
+		!MatchQ[quaternaryBestInstruments, {}], quaternaryBestInstruments,
 		True, {}
 	];
 
 	(* Define our primary defaults, in the case, where we have a lot of flexibility *)
-	(* {Model[Instrument, HPLC, "UltiMate 3000"], Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"]} *)
-	{primaryInstrumentDefault, secondaryInstrumentDefault} = {Model[Instrument, HPLC, "id:N80DNjlYwwJq"], Model[Instrument, HPLC, "id:Z1lqpMGJmR0O"]};
+	(* {
+		For ECL-2: Model[Instrument, HPLC, "UltiMate 3000"],
+		For ECL-CMU: Model[Instrument, HPLC, "Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array Detector"]
+		Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"]
+	} *)
+	{primaryInstrumentDefault, secondaryInstrumentDefault} = {
+		If[MatchQ[resolvedSite,Object[Container, Site, "id:P5ZnEjZpRlK4"]],
+			Model[Instrument, HPLC, "id:dORYzZRWJlDD"],
+			Model[Instrument, HPLC, "id:N80DNjlYwwJq"]
+		],
+		Model[Instrument, HPLC, "id:Z1lqpMGJmR0O"]
+	};
 
 	(* Get some pertinent options that the user specified for instrument resolution*)
 	instrumentOption = Lookup[roundedOptionsAssociation, Instrument];
@@ -11362,16 +12451,16 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Do the first step resolution - to get the best instrument *)
 	(* If the user specified then we go with that *)
 	possibleInstrument = Which[
-		(* Stand-alone HPLC with I-Class *)
+		(* Stand-alone HPLC with I-Class - will error later *)
 		MatchQ[instrumentOption, Except[Automatic]] && !internalUsageQ && MatchQ[Lookup[specifiedInstrumentModelPackets, Object, Null], {ObjectReferenceP[Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](* "Waters Acquity UPLC I-Class PDA" *)]}],
 		instrumentOption,
 		(* Agilent instrument is in the capable instrument list and provided by the user, we will go with it *)
 		And[
 			MatchQ[instrumentOption, Except[Automatic]],
-			MemberQ[capableInstruments,agilentHPLCPattern],
-			MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}],agilentHPLCPattern]
+			MemberQ[capableInstruments,prepAgilentHPLCPattern],
+			MemberQ[Lookup[specifiedInstrumentModelPackets, Object, {}],prepAgilentHPLCPattern]
 		],
-		First[PickList[ToList[instrumentOption],Lookup[specifiedInstrumentModelPackets, Object, {}],agilentHPLCPattern]],
+		First[PickList[ToList[instrumentOption],Lookup[specifiedInstrumentModelPackets, Object, {}],prepAgilentHPLCPattern]],
 		MatchQ[instrumentOption, Except[Automatic]],
 		(* Resolve to the first possible instrument from capableInstruments list, or just the first one *)
 		FirstOrDefault[
@@ -11426,8 +12515,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	noCapableInstrumentQ = NullQ[possibleInstrument];
 
-	(* Some of the options may require Dionex while others require Waters. Check these instruments and track the error. Dionex is more generous about container count and fraction collection will also lead to resolution of Dionex. These two will not be conflicting with each other. *)
-	(* Agilent instruments are very specific as for container count requirement. For Agilent containers, we should have a pass for validDionexCountQ and validWatersCountQ *)
+	(* For ECL-2, Some of the options may require Dionex while others require Waters. Check these instruments and track the error. Dionex is more generous about container count and fraction collection will also lead to resolution of Dionex. These two will not be conflicting with each other. *)
+	(* Prep Agilent instruments are very specific as for container count requirement. For Agilent containers, we should have a pass for validDionexCountQ and validWatersCountQ *)
 	compatibleCountAndNeedleWashBufferQ = !And[
 		noCapableInstrumentQ,
 		!MatchQ[countCapableInstruments, {}],
@@ -11491,7 +12580,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				capableInjectionVolumeInstruments,
 				impliedInstruments,
 				columnSelectorInstruments,
-				maxAccelerationInstruments
+				maxAccelerationInstruments,
+				absorbanceWavelengthInstruments,
+				excitationWavelengthInstruments,
+				emissionWavelengthInstruments
 			],
 			{}
 		],
@@ -11526,7 +12618,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				detectorCapableInstruments,
 				capableInjectionVolumeInstruments,
 				impliedInstruments,
-				maxAccelerationInstruments
+				maxAccelerationInstruments,
+				absorbanceWavelengthInstruments,
+				excitationWavelengthInstruments,
+				emissionWavelengthInstruments
 			],
 			{}
 		],
@@ -11566,19 +12661,12 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				capableInjectionVolumeInstruments,
 				impliedInstruments,
 				columnSelectorInstruments,
-				maxAccelerationInstruments
+				maxAccelerationInstruments,
+				absorbanceWavelengthInstruments,
+				excitationWavelengthInstruments,
+				emissionWavelengthInstruments
 			],
 			{}
-		]
-	];
-
-	(* CollectFractions cannot be true if specified Detector does not match Dionex or Agilent's detector *)
-	compatibleCollectFractionsDetectorQ = !And[
-		MemberQ[collectFractions, True],
-		If[MatchQ[Lookup[roundedOptionsAssociation, Detector], Automatic],
-			False,
-			(* Did the user specify a detector that's not available, then throw an error *)
-			!SubsetQ[Lookup[possibleInstrumentModelPacket, Detectors, {}], ToList@Lookup[roundedOptionsAssociation, Detector]]
 		]
 	];
 
@@ -11590,29 +12678,94 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		NullQ[possibleInstrument],
 		And[
 			MatchQ[resolvedScale, SemiPreparative],
-			MatchQ[Lookup[possibleInstrumentModelPacket, Object, Null], dionexHPLCPattern|agilentHPLCPattern]
+			MatchQ[Lookup[possibleInstrumentModelPacket, Object, Null], dionexHPLCPattern|semiPrepAgilentHPLCPattern|prepAgilentHPLCPattern]
 		],
 		And[
 			MatchQ[resolvedScale, Preparative],
-			MatchQ[Lookup[possibleInstrumentModelPacket, Object, Null], agilentHPLCPattern]
+			MatchQ[Lookup[possibleInstrumentModelPacket, Object, Null], prepAgilentHPLCPattern]
 		]
 	];
 
-	(* Any specified detection wavelengths must be within one of the instruments' ranges *)
-	compatibleWavelengthsQ = And @@ Map[
-		Which[
-			(* If automatic or Null return True *)
-			MatchQ[#, (Automatic | Null | All)], True,
-			(* If a span. check each part *)
-			MatchQ[#, _Span],
-			And[
-				MatchQ[#[[1]], RangeP @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}]],
-				MatchQ[#[[-1]], RangeP @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}]]
+	(* Give specific errors if we need to reject instruments because of the wavelength issues *)
+	incompatibleAbsorbanceWavelengthsQ = And[
+		noCapableInstrumentQ,
+		!MatchQ[
+			Intersection[
+				countCapableInstruments,
+				fractionCollectionInstruments,
+				scaleInstruments,
+				needlewashBufferCDistinctInstruments,
+				capableColumnTemperatureInstruments,
+				sampleTemperatureInstruments,
+				gradientCapableInstruments,
+				numberOfBufferInstruments,
+				flowRateCompatibleInstruments,
+				detectorCapableInstruments,
+				capableInjectionVolumeInstruments,
+				impliedInstruments,
+				columnSelectorInstruments,
+				maxAccelerationInstruments,
+				excitationWavelengthInstruments,
+				emissionWavelengthInstruments
 			],
-			(* Otherwise singleton value that we can check *)
-			True, MatchQ[#, RangeP @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}]]
-		]&,
-		Flatten[Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions]]
+			{}
+		],
+		(* Stand-alone HPLC with I-Class *)
+		!nonInternalHPLCErrorQ
+	];
+
+	incompatibleExcitationWavelengthsQ = And[
+		noCapableInstrumentQ,
+		!MatchQ[
+			Intersection[
+				countCapableInstruments,
+				fractionCollectionInstruments,
+				scaleInstruments,
+				needlewashBufferCDistinctInstruments,
+				capableColumnTemperatureInstruments,
+				sampleTemperatureInstruments,
+				gradientCapableInstruments,
+				numberOfBufferInstruments,
+				flowRateCompatibleInstruments,
+				detectorCapableInstruments,
+				capableInjectionVolumeInstruments,
+				impliedInstruments,
+				columnSelectorInstruments,
+				maxAccelerationInstruments,
+				absorbanceWavelengthInstruments,
+				emissionWavelengthInstruments
+			],
+			{}
+		],
+		(* Stand-alone HPLC with I-Class *)
+		!nonInternalHPLCErrorQ
+	];
+
+	incompatibleEmissionWavelengthsQ = And[
+		noCapableInstrumentQ,
+		!MatchQ[
+			Intersection[
+				countCapableInstruments,
+				fractionCollectionInstruments,
+				scaleInstruments,
+				needlewashBufferCDistinctInstruments,
+				capableColumnTemperatureInstruments,
+				sampleTemperatureInstruments,
+				gradientCapableInstruments,
+				numberOfBufferInstruments,
+				flowRateCompatibleInstruments,
+				detectorCapableInstruments,
+				capableInjectionVolumeInstruments,
+				impliedInstruments,
+				columnSelectorInstruments,
+				maxAccelerationInstruments,
+				absorbanceWavelengthInstruments,
+				excitationWavelengthInstruments
+			],
+			{}
+		],
+		(* Stand-alone HPLC with I-Class *)
+		!nonInternalHPLCErrorQ
 	];
 
 	(* Any specified column temperatures must be within one of the instruments' ranges *)
@@ -11620,9 +12773,9 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		NullQ[possibleInstrument],
 		MemberQ[
 			Download[#, Object]& /@ capableColumnTemperatureInstruments,
-			If[Length[possibleInstrumentModelPacket] == 0,
+			If[NullQ[possibleInstrument],
 				Null,
-				Download[possibleInstrumentModelPacket, Object]
+				Lookup[possibleInstrumentModelPacket, Object]
 			]
 		]
 	];
@@ -11697,25 +12850,40 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			),
 			testOrNull["SampleTemperature is not a temperature when an instrument without SampleTemperature control is chosen:", True]
 		],
-		If[!compatibleCollectFractionsDetectorQ,
+		If[incompatibleAbsorbanceWavelengthsQ && !incompatibleInstrumentDetectionWavelengthsQ && (And @@ {validDetectionWavelengthQ, validStandardDetectionWavelengthQ, validBlankDetectionWavelengthQ, validColumnPrimeDetectionWavelengthQ, validColumnFlushDetectionWavelengthQ}),
 			(
 				If[messagesQ,
-					Message[Error::FractionCollectionDetectorConflict, ObjectToString[Model[Instrument, HPLC, "UltiMate 3000"]], Lookup[First[dionexHPLCInstrumentPackets], AbsorbanceDetector]];
-				];
-				testOrNull[StringTemplate["Fraction collection parameters are not specified when the specified Detector does not match the AbsorbanceDetector (`2`) of `1`:"][Model[Instrument, HPLC, "UltiMate 3000"], Lookup[First[dionexHPLCInstrumentPackets], AbsorbanceDetector]], False]
-			),
-			testOrNull[StringTemplate["Fraction collection parameters are not specified when the specified Detector does not match the AbsorbanceDetector (`2`) of `1`:"][Model[Instrument, HPLC, "UltiMate 3000"], Lookup[First[dionexHPLCInstrumentPackets], AbsorbanceDetector]], True]
-		],
-		If[!compatibleWavelengthsQ && !incompatibleDetectionWavelengthsQ && validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ,
-			(
-				If[messagesQ,
-					Message[Error::IncompatibleDetectionWavelength, Sequence @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}]];
+					Module[
+						{wavelengthAltInstrument,wavelengthAltInstrumentPacket},
+						wavelengthAltInstrument=First[
+							Intersection[
+								countCapableInstruments,
+								fractionCollectionInstruments,
+								scaleInstruments,
+								needlewashBufferCDistinctInstruments,
+								capableColumnTemperatureInstruments,
+								sampleTemperatureInstruments,
+								gradientCapableInstruments,
+								numberOfBufferInstruments,
+								flowRateCompatibleInstruments,
+								detectorCapableInstruments,
+								capableInjectionVolumeInstruments,
+								impliedInstruments,
+								columnSelectorInstruments,
+								maxAccelerationInstruments,
+								excitationWavelengthInstruments,
+								emissionWavelengthInstruments
+							]
+						];
+						wavelengthAltInstrumentPacket=fetchPacketFromCacheHPLC[wavelengthAltInstrument, cache];
+						Message[Error::IncompatibleDetectionWavelength, Sequence @@ Lookup[wavelengthAltInstrumentPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}], "absorbance"]
+					]
 				];
 				Map[
 					If[
 						MemberQ[
 							ToList[Lookup[roundedOptionsAssociation, #]],
-							Except[(Automatic | RangeP @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}])]
+							Except[(Automatic | Null | RangeP @@ Lookup[possibleInstrumentModelPacket, {MinAbsorbanceWavelength, MaxAbsorbanceWavelength}])]
 						],
 						Switch[#,
 							AbsorbanceWavelength,
@@ -11734,7 +12902,115 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				];
 				testOrNull["Detection wavelengths are compatible with at least one instrument model:", False]
 			),
-			testOrNull["Detection wavelengths are compatible with at least one instrument model:", True]
+			testOrNull["Absorbance wavelengths are compatible with at least one instrument model:", True]
+		],
+		If[incompatibleExcitationWavelengthsQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleInstrumentExcitationWavelengthsQ,
+			(
+				If[messagesQ,
+					Module[
+						{wavelengthAltInstrument,wavelengthAltInstrumentPacket},
+						wavelengthAltInstrument=First[
+							Intersection[
+								countCapableInstruments,
+								fractionCollectionInstruments,
+								scaleInstruments,
+								needlewashBufferCDistinctInstruments,
+								capableColumnTemperatureInstruments,
+								sampleTemperatureInstruments,
+								gradientCapableInstruments,
+								numberOfBufferInstruments,
+								flowRateCompatibleInstruments,
+								detectorCapableInstruments,
+								capableInjectionVolumeInstruments,
+								impliedInstruments,
+								columnSelectorInstruments,
+								maxAccelerationInstruments,
+								absorbanceWavelengthInstruments,
+								emissionWavelengthInstruments
+							]
+						];
+						wavelengthAltInstrumentPacket=fetchPacketFromCacheHPLC[wavelengthAltInstrument, cache];
+						Message[Error::IncompatibleDetectionWavelength, Sequence @@ Lookup[wavelengthAltInstrumentPacket, {MinExcitationWavelength, MaxExcitationWavelength}], "fluorescence excitation"];
+					]
+				];
+				Map[
+					If[
+						MemberQ[
+							Flatten[ToList[Lookup[roundedOptionsAssociation, #]]],
+							Except[(Automatic | Null | RangeP @@ Lookup[possibleInstrumentModelPacket, {MinExcitationWavelength, MaxExcitationWavelength}])]
+						],
+						Switch[#,
+							ExcitationWavelength,
+							validExcitationWavelengthQ = False,
+							StandardExcitationWavelength,
+							validStandardExcitationWavelengthQ = False,
+							BlankExcitationWavelength,
+							validBlankExcitationWavelengthQ = False,
+							ColumnPrimeExcitationWavelength,
+							validColumnPrimeExcitationWavelengthQ = False,
+							ColumnFlushExcitationWavelength,
+							validColumnFlushExcitationWavelengthQ = False
+						]
+					]&,
+					excitationWavelengthFlrOptions
+				];
+				testOrNull["Fluorescence Excitation wavelengths are compatible with at least one instrument model:", False]
+			),
+			testOrNull["Fluorescence Excitation wavelengths are compatible with at least one instrument model:", True]
+		],
+		If[incompatibleEmissionWavelengthsQ && !incompatibleExcitationWavelengthsQ&&!incompatibleAbsorbanceWavelengthsQ && !incompatibleInstrumentExcitationWavelengthsQ && !incompatibleInstrumentEmissionWavelengthsQ,
+			(
+				If[messagesQ,
+					Module[
+						{wavelengthAltInstrument,wavelengthAltInstrumentPacket},
+						wavelengthAltInstrument=First[
+							Intersection[
+								countCapableInstruments,
+								fractionCollectionInstruments,
+								scaleInstruments,
+								needlewashBufferCDistinctInstruments,
+								capableColumnTemperatureInstruments,
+								sampleTemperatureInstruments,
+								gradientCapableInstruments,
+								numberOfBufferInstruments,
+								flowRateCompatibleInstruments,
+								detectorCapableInstruments,
+								capableInjectionVolumeInstruments,
+								impliedInstruments,
+								columnSelectorInstruments,
+								maxAccelerationInstruments,
+								absorbanceWavelengthInstruments,
+								excitationWavelengthInstruments
+							]
+						];
+						wavelengthAltInstrumentPacket=fetchPacketFromCacheHPLC[wavelengthAltInstrument, cache];
+						Message[Error::IncompatibleDetectionWavelength, Sequence @@ Lookup[wavelengthAltInstrumentPacket, {MinEmissionWavelength, MaxEmissionWavelength}], "fluorescence emission"]
+					]
+				];
+				Map[
+					If[
+						MemberQ[
+							Flatten[ToList[Lookup[roundedOptionsAssociation, #]]],
+							Except[(Automatic | Null | RangeP @@ Lookup[possibleInstrumentModelPacket, {MinEmissionWavelength, MaxEmissionWavelength}])]
+						],
+						Switch[#,
+							EmissionWavelength,
+							validEmissionWavelengthQ = False,
+							StandardEmissionWavelength,
+							validStandardEmissionWavelengthQ = False,
+							BlankEmissionWavelength,
+							validBlankEmissionWavelengthQ = False,
+							ColumnPrimeEmissionWavelength,
+							validColumnPrimeEmissionWavelengthQ = False,
+							ColumnFlushEmissionWavelength,
+							validColumnFlushEmissionWavelengthQ = False
+						]
+					]&,
+					emissionWavelengthFlrOptions
+				];
+				testOrNull["Fluorescence Emission wavelengths are compatible with at least one instrument model:", False]
+			),
+			testOrNull["Fluorescence Emission wavelengths are compatible with at least one instrument model:", True]
 		],
 		If[!compatibleColumnTemperaturesQ && !deprecatedInstrumentQ && compatibleSampleTemperatureQ,
 			(
@@ -11757,7 +13033,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		If[!compatibleInjectionVolumeQ,
 			(
 				If[messagesQ,
-					Message[Error::HPLCIncompatibleInjectionVolume, ToString[Cases[allInjectionVolumes, GreaterP[Lookup[possibleInstrumentModelPacket, MaxSampleVolume]] | LessP[Lookup[possibleInstrumentModelPacket, MinSampleVolume]]]], ObjectToString[possibleInstrument], ToString[Lookup[possibleInstrumentModelPacket, MinSampleVolume]], ToString[Lookup[possibleInstrumentModelPacket, MaxSampleVolume]]];
+					Message[Error::HPLCIncompatibleInjectionVolume, ToString[Cases[allInjectionVolumes, GreaterP[Lookup[possibleInstrumentModelPacket, MaxSampleVolume]] | LessP[Lookup[possibleInstrumentModelPacket, MinSampleVolume]]]], ObjectToString[possibleInstrument,Simulation->updatedSimulation], ToString[Lookup[possibleInstrumentModelPacket, MinSampleVolume]], ToString[Lookup[possibleInstrumentModelPacket, MaxSampleVolume]]];
 				];
 				testOrNull["Sample/Standard/Blank InjectionVolume values are compatible with at least one instrument model:", False]
 			),
@@ -11766,7 +13042,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		If[tooSmallInjectionVolumeQ,
 			(
 				If[messagesQ,
-					Message[Warning::HPLCSmallInjectionVolume, ToString[Cases[allInjectionVolumes, LessP[Lookup[possibleInstrumentModelPacket, RecommendedSampleVolume]]]], ObjectToString[possibleInstrument], ToString[Lookup[possibleInstrumentModelPacket, RecommendedSampleVolume]]];
+					Message[Warning::HPLCSmallInjectionVolume, ToString[Cases[allInjectionVolumes, LessP[Lookup[possibleInstrumentModelPacket, RecommendedSampleVolume]]]], ObjectToString[possibleInstrument,Simulation->updatedSimulation], ToString[Lookup[possibleInstrumentModelPacket, RecommendedSampleVolume]]];
 				];
 				warningOrNull["Sample/Standard/Blank InjectionVolume values are higher than the minimum recommended injection volume:", False]
 			),
@@ -11777,22 +13053,22 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			And[
 				!compatibleCountAndNeedleWashBufferQ,
 				(* Avoid all other instrument related errors *)
-				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleCollectFractionsDetectorQ && compatibleScaleQ && compatibleWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
+				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleScaleQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleExcitationWavelengthsQ && !incompatibleEmissionWavelengthsQ &&compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
 			],
 			(
 				If[messagesQ,
-					Message[Error::IncompatibleContainerAndNeedleWashBuffer, ObjectToString[secondaryInstrumentDefault]];
+					Message[Error::IncompatibleContainerAndNeedleWashBuffer, ObjectToString[secondaryInstrumentDefault,Simulation->updatedSimulation]];
 				];
-				testOrNull["When BufferC and NeedleWashSolution are different, all sample containers must fit onto " <> ObjectToString[secondaryInstrumentDefault] <> " .", False]
+				testOrNull["When BufferC and NeedleWashSolution are different, all sample containers must fit onto " <> ObjectToString[secondaryInstrumentDefault,Simulation->updatedSimulation] <> ".", False]
 			),
-			testOrNull["When BufferC and NeedleWashSolution are different, all sample containers must fit onto " <> ObjectToString[secondaryInstrumentDefault] <> " .", True]
+			testOrNull["When BufferC and NeedleWashSolution are different, all sample containers must fit onto " <> ObjectToString[secondaryInstrumentDefault,Simulation->updatedSimulation] <> ".", True]
 		],
 		If[
 			(* If we get conflict between the requirement of fraction collection and the NeedleWashBuffer, throw error *)
 			And[
 				!compatibleFractionCollectionAndNeedleWashBufferQ,
 				(* Avoid all other instrument related errors *)
-				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleCollectFractionsDetectorQ && compatibleScaleQ && compatibleWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
+				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleScaleQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleExcitationWavelengthsQ && !incompatibleEmissionWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
 			],
 			(
 				If[messagesQ,
@@ -11807,7 +13083,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			And[
 				bufferNumberConflictQ,
 				(* Avoid all other instrument related errors *)
-				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleCollectFractionsDetectorQ && compatibleScaleQ && compatibleWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
+				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleScaleQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleExcitationWavelengthsQ && !incompatibleEmissionWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
 			],
 			(
 				If[messagesQ,
@@ -11822,7 +13098,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			And[
 				detectorInstrumentConflictQ,
 				(* Avoid all other instrument related errors *)
-				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleCollectFractionsDetectorQ && compatibleScaleQ && compatibleWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
+				validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleScaleQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleExcitationWavelengthsQ && !incompatibleEmissionWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ
 			],
 			(
 				If[messagesQ,
@@ -11859,7 +13135,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			noCapableInstrumentQ,
 			!nonInternalHPLCErrorQ,
 			(* Avoid all other instrument related errors *)
-			validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleCollectFractionsDetectorQ && compatibleScaleQ && !incompatibleColumnSelectorQ && compatibleWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ,
+			validSampleTemperatureQ && validBufferDQ && validGradientDQ && (validDetectionWavelengthQ && validStandardDetectionWavelengthQ && validBlankDetectionWavelengthQ && validColumnPrimeDetectionWavelengthQ && validColumnFlushDetectionWavelengthQ) && validBufferDNullQ && compatibleDetectorQ && validSampleTemperatureAndDionexDetectorQ && validBufferDAndDionexDetectorQ && validGradientDAndDionexDetectorQ && compatibleSampleTemperatureQ && compatibleScaleQ && !incompatibleColumnSelectorQ && !incompatibleAbsorbanceWavelengthsQ && !incompatibleExcitationWavelengthsQ && !incompatibleEmissionWavelengthsQ && compatibleColumnTemperaturesQ && compatibleInjectionVolumeQ,
 			(* Avoid other instrument checks leading to Null capableInstruments *)
 			compatibleCountAndNeedleWashBufferQ && compatibleFractionCollectionAndNeedleWashBufferQ && !bufferNumberConflictQ && !detectorInstrumentConflictQ
 		],
@@ -11873,7 +13149,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Default Null (erroneous case) to dionex *)
 	resolvedInstrument = If[NullQ[possibleInstrument],
-		Model[Instrument, HPLC, "UltiMate 3000"],
+		primaryInstrumentDefault,
 		possibleInstrument
 	];
 
@@ -11887,7 +13163,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	instrumentModel = Lookup[instrumentModelPacket, Object];
 
 	(* Figure out what left instruments we have *)
-	leftoverInstruments = DeleteCases[capableInstruments, ObjectP[Flatten[{instrumentModel,agilentHPLCInstruments}]]];
+	leftoverInstruments = DeleteCases[capableInstruments, ObjectP[Flatten[{instrumentModel,prepAgilentHPLCInstruments}]]];
 
 	(* If the user specified the alternate instruments, the we do some error checking *)
 	(* The pattern has required Instrument option to be a single Instrument object, single Instrument Model or a list of Instrument models *)
@@ -11895,7 +13171,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Resolve a possible list of alternate instruments so that we can check the dimensions of the column oven *)
 	semiResolvedAlternateInstruments = Switch[alternateInstrumentsOption,
 		(* If it's specified, no problems *)
-		Except[Automatic], alternateInstrumentsOption,
+		Except[Automatic], Download[alternateInstrumentsOption,Object],
 		(* If it's automatic, then we return the leftover list, unless the resolved Instrument was specified as an Object and we Null it *)
 		(*also if we have to put column outside, remember to get rid of Waters instruments*)
 		Automatic,
@@ -11904,15 +13180,6 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			leftoverInstruments
 		]
 	];
-
-
-	(* Post Instrument resolutions and error checking *)
-	(* Check whether the resolved instrument is a Waters or not *)
-	(* Look up the instrument manufacturer *)
-	instrumentManufacturer = Lookup[instrumentModelPacket, Manufacturer] /. x_Link :> Download[x, Object];
-
-	(* Is it a waters instrument? *)
-	watersManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "id:aXRlGnZmpK1v"](* "Waters" *)]];
 
 	(* Finally resolve BufferC and NeedleWashSolution *)
 	resolvedBufferC = Which[
@@ -11995,6 +13262,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	allInstrumentPositions = Lookup[instrumentModelPacket, Positions, {}];
 
 	instrumentMaxColumnLength = Lookup[instrumentModelPacket, MaxColumnLength, Infinity*Meter]/.{Null->Infinity*Meter};
+	instrumentMaxColumnOD = Lookup[instrumentModelPacket, MaxColumnOutsideDiameter, Infinity*Meter]/.{Null->Infinity*Meter};
 
 	(* Find the column slot of the Instrument - Depending on the configuration of the column oven (vertical or horizontal) *)
 	columnPosition = FirstCase[allInstrumentPositions, KeyValuePattern[Name -> "Column Slot"], <||>];
@@ -12046,50 +13314,60 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	];
 
 	(* Can the column fit into column compartment? - Make some room for diameter in Dionex as the inlet/outlet tend to be larger and this is significant for prep columns*)
+	(* we are checking depth/height of the column slot as a measure of the limit for the diameter*)
+	(* we are looking at the MaxColumnOutsideDiameter/MaxColumnLength when we can or column slot dimensions when we can't *)
 	columnsFitQ = If[MatchQ[Lookup[instrumentModelPacket, Object], dionexHPLCPattern],
 		And[
 			Or[
-				MatchQ[columnPositionDepth, Infinity * Meter],
-				TrueQ[maxColumnDiameter <= columnPositionDepth - 6Millimeter]
-			],
-			Or[
-				MatchQ[columnPositionHeight, Infinity * Meter],
-				TrueQ[maxColumnDiameter <= columnPositionHeight - 6Millimeter]
+				MatchQ[columnPositionDepth, Infinity * Meter]&&MatchQ[columnPositionHeight, Infinity * Meter],
+				TrueQ[maxColumnDiameter <= Min[columnPositionDepth,columnPositionHeight] - 6Millimeter]
 			],
 			Or[
 				MatchQ[columnPositionWidth,Infinity*Meter]&&MatchQ[instrumentMaxColumnLength, Infinity*Meter],
 				(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
 				(* Convert to unitless for the comparison and reconvert to a quantity after *)
 				TrueQ[maxTotalColumnLength<=Min[Unitless[{columnPositionWidth, instrumentMaxColumnLength}, Meter]] * Meter]
+			],
+			Or[
+				MatchQ[columnPositionDepth,Infinity*Meter]&&MatchQ[columnPositionHeight,Infinity*Meter]&&MatchQ[instrumentMaxColumnOD, Infinity*Meter],
+				(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
+				(* Convert to unitless for the comparison and reconvert to a quantity after *)
+				TrueQ[maxColumnDiameter<=Min[Unitless[{columnPositionDepth,columnPositionHeight,instrumentMaxColumnOD}, Meter]] * Meter]
 			]
 		],
 		And[
 			Or[
-				MatchQ[columnPositionDepth, Infinity * Meter],
-				TrueQ[maxColumnDiameter <= columnPositionDepth - 2Millimeter]
-			],
-			Or[
-				MatchQ[columnPositionHeight, Infinity * Meter],
-				TrueQ[maxColumnDiameter <= columnPositionHeight - 2Millimeter]
+				MatchQ[columnPositionDepth, Infinity * Meter]&&MatchQ[columnPositionHeight, Infinity * Meter],
+				TrueQ[maxColumnDiameter <= Min[columnPositionDepth,columnPositionHeight] - 2Millimeter]
 			],
 			Or[
 				MatchQ[columnPositionWidth,Infinity*Meter]&&MatchQ[instrumentMaxColumnLength, Infinity*Meter],
 				(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
 				(* Convert to unitless for the comparison and reconvert to a quantity after *)
 				TrueQ[maxTotalColumnLength<=Min[Unitless[{columnPositionWidth, instrumentMaxColumnLength}, Meter]] * Meter]
+			],
+			Or[
+				MatchQ[columnPositionDepth,Infinity*Meter]&&MatchQ[columnPositionHeight,Infinity*Meter]&&MatchQ[instrumentMaxColumnOD, Infinity*Meter],
+				(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
+				(* Convert to unitless for the comparison and reconvert to a quantity after *)
+				TrueQ[maxColumnDiameter<=Min[Unitless[{columnPositionDepth,columnPositionHeight,instrumentMaxColumnOD}, Meter]] * Meter]
 			]
 		]
 	];
 
 	(* Perform the same check for the possible alternative instruments *)
 	columnFitLeftOverInstrumentsQ = Map[
-		Module[{individualInstrument, individualInstrumentPacket, individualInstrumentPositions, individualInstrumentColumnPosition, individualInstrumentColumnPositionWidth, individualInstrumentMaxColumnLength, individualInstrumentColumnPositionDepth, individualInstrumentColumnPositionHeight},
+		Module[{
+			individualInstrument, individualInstrumentPacket, individualInstrumentPositions, individualInstrumentColumnPosition, individualInstrumentColumnPositionWidth,
+			individualInstrumentMaxColumnOD, individualInstrumentMaxColumnLength, individualInstrumentColumnPositionDepth, individualInstrumentColumnPositionHeight
+			},
 			individualInstrument = Download[#, Object];
 			individualInstrumentPacket = If[MatchQ[individualInstrument, ObjectP[Model]],
 				fetchPacketFromCacheHPLC[individualInstrument, cache],
 				fetchModelPacketFromCacheHPLC[individualInstrument, cache]
 			];
 			individualInstrumentMaxColumnLength=Lookup[individualInstrumentPacket, MaxColumnLength, Infinity*Meter]/.{Null->Infinity*Meter};
+			individualInstrumentMaxColumnOD=Lookup[individualInstrumentPacket, MaxColumnOutsideDiameter, Infinity*Meter]/.{Null->Infinity*Meter};
 			individualInstrumentPositions = Lookup[individualInstrumentPacket, Positions, {}];
 			individualInstrumentColumnPosition = FirstCase[individualInstrumentPositions, KeyValuePattern[Name -> "Column Slot"], <||>];
 
@@ -12105,34 +13383,38 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			If[MatchQ[Lookup[individualInstrumentPacket, Object], dionexHPLCPattern],
 				And[
 					Or[
-						MatchQ[individualInstrumentColumnPositionDepth, Infinity * Meter],
-						TrueQ[maxColumnDiameter <= individualInstrumentColumnPositionDepth - 6Millimeter]
-					],
-					Or[
-						MatchQ[individualInstrumentColumnPositionHeight, Infinity * Meter],
-						TrueQ[maxColumnDiameter <= individualInstrumentColumnPositionHeight - 6Millimeter]
+						MatchQ[individualInstrumentColumnPositionDepth, Infinity * Meter]&&MatchQ[individualInstrumentColumnPositionHeight, Infinity * Meter],
+						TrueQ[maxColumnDiameter <= Min[individualInstrumentColumnPositionDepth,individualInstrumentColumnPositionHeight] - 6Millimeter]
 					],
 					Or[
 						MatchQ[individualInstrumentColumnPositionWidth,Infinity*Meter]&&MatchQ[individualInstrumentMaxColumnLength,Infinity*Meter],
 						(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
 						(* Convert to unitless for the comparison and reconvert to a quantity after *)
 						TrueQ[maxTotalColumnLength<=Min[Unitless[{individualInstrumentColumnPositionWidth, individualInstrumentMaxColumnLength}, Meter]] * Meter]
+					],
+					Or[
+						MatchQ[individualInstrumentColumnPositionDepth,Infinity*Meter]&&MatchQ[individualInstrumentColumnPositionHeight,Infinity*Meter]&&MatchQ[individualInstrumentMaxColumnOD, Infinity*Meter],
+						(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
+						(* Convert to unitless for the comparison and reconvert to a quantity after *)
+						TrueQ[maxColumnDiameter<=Min[Unitless[{individualInstrumentColumnPositionDepth,individualInstrumentColumnPositionHeight,individualInstrumentMaxColumnOD}, Meter]] * Meter]
 					]
 				],
 				And[
 					Or[
-						MatchQ[individualInstrumentColumnPositionDepth, Infinity * Meter],
-						TrueQ[maxColumnDiameter <= individualInstrumentColumnPositionDepth - 2Millimeter]
-					],
-					Or[
-						MatchQ[individualInstrumentColumnPositionHeight, Infinity * Meter],
-						TrueQ[maxColumnDiameter <= individualInstrumentColumnPositionHeight - 2Millimeter]
+						MatchQ[individualInstrumentColumnPositionDepth, Infinity * Meter]&&MatchQ[individualInstrumentColumnPositionHeight, Infinity * Meter],
+						TrueQ[maxColumnDiameter <= Min[individualInstrumentColumnPositionDepth,individualInstrumentColumnPositionHeight] - 2Millimeter]
 					],
 					Or[
 						MatchQ[individualInstrumentColumnPositionWidth,Infinity*Meter]&&MatchQ[individualInstrumentMaxColumnLength,Infinity*Meter],
 						(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
 						(* Convert to unitless for the comparison and reconvert to a quantity after *)
 						TrueQ[maxTotalColumnLength<=Min[Unitless[{individualInstrumentColumnPositionWidth, individualInstrumentMaxColumnLength}, Meter]] * Meter]
+					],
+					Or[
+						MatchQ[individualInstrumentColumnPositionDepth,Infinity*Meter]&&MatchQ[individualInstrumentColumnPositionHeight,Infinity*Meter]&&MatchQ[individualInstrumentMaxColumnOD, Infinity*Meter],
+						(* MM 12.0.1 throws errors when comparing quantities involving Infinity *)
+						(* Convert to unitless for the comparison and reconvert to a quantity after *)
+						TrueQ[maxColumnDiameter<=Min[Unitless[{individualInstrumentColumnPositionDepth,individualInstrumentColumnPositionHeight,individualInstrumentMaxColumnOD}, Meter]] * Meter]
 					]
 				]
 			]
@@ -12147,7 +13429,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* IncubateColumn is not an option in LCMS yet *)
 		internalUsageQ, True,
 		!MatchQ[Lookup[roundedOptionsAssociation, IncubateColumn], Automatic], Lookup[roundedOptionsAssociation, IncubateColumn],
-		(* IncubateColumn must be True for Waters *)
+		(* IncubateColumn must be True for non Dionex instrument *)
 		!MatchQ[Lookup[instrumentModelPacket, Object], dionexHPLCPattern], True,
 		!columnsFitQ, False,
 		!columnSelectorQ, Null,
@@ -12400,7 +13682,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			],
 			False
 		},
-		(* If it's user specified, we got with it, but we make sure that everything is copacetic *)
+		(* If it's user specified, we got with it, but we make sure that everything is compatible *)
 		_,
 		{
 			alternateInstrumentsOption,
@@ -12437,8 +13719,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTestsQ,
-		CompatibleMaterialsQ[resolvedInstrument, allSamplesInContact, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{CompatibleMaterialsQ[resolvedInstrument, allSamplesInContact, Messages -> messagesQ, Cache -> simulatedCache], {}}
+		CompatibleMaterialsQ[resolvedInstrument, allSamplesInContact, Output -> {Result, Tests}, Cache -> cache, Simulation -> updatedSimulation],
+		{CompatibleMaterialsQ[resolvedInstrument, allSamplesInContact, Messages -> messagesQ, Cache -> cache, Simulation -> updatedSimulation], {}}
 	];
 
 	(* if the materials are incompatible, then the Instrument is invalid *)
@@ -12925,9 +14207,9 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* If Conductance is requested and user didn't specify the option pHCalibration, set it to True when any related option is populated *)
 		MatchQ[Lookup[roundedOptionsAssociation, ConductivityCalibration], Automatic] && conductivityDetectorQ && conductivityCalibrationRequestedQ, True,
 		(* If Conductance is requested and user didn't specify the option ConductivityCalibration, set it to False when any related option is set to Null *)
-		MatchQ[Lookup[roundedOptionsAssociation, ConductivityCalibration], Automatic] && conductivityDetectorQ && conductivityCalibrationRequestedQ, False,
+		MatchQ[Lookup[roundedOptionsAssociation, ConductivityCalibration], Automatic] && conductivityDetectorQ && conductivityCalibrationRequestedNullQ, False,
 		MatchQ[Lookup[roundedOptionsAssociation, ConductivityCalibration], Automatic] && conductivityDetectorQ, True,
-		(* If pH is not requested, set to Null *)
+		(* If Conductance is not requested, set to Null *)
 		MatchQ[Lookup[roundedOptionsAssociation, ConductivityCalibration], Automatic], Null,
 		True, Lookup[roundedOptionsAssociation, ConductivityCalibration]
 	];
@@ -12949,10 +14231,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			MatchQ[suppliedConductivityCalibrationBuffer, ObjectP[]], fetchModelPacketFromCacheHPLC[suppliedConductivityCalibrationBuffer, cache],
 			True, Null
 		];
+		(* note that this field stores a distribution but the option needs an actual value, so need to take the mean *)
 		suppliedConductivityCalibrationBufferConductivity = If[NullQ[suppliedConductivityCalibrationBufferModelPacket],
 			Null,
 			Lookup[suppliedConductivityCalibrationBufferModelPacket, Conductivity, Null]
-		];
+		] /. {x:DistributionP[] :> Mean[x]};
 
 		(* Get the corresponding buffer of the target Conductivity *)
 		suppliedConductivityCalibrationTargetBuffer = Which[
@@ -12979,7 +14262,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 		conductivityCalibrationTarget = Which[
 			(* Use the user-specified value *)
-			!MatchQ[suppliedConductivityCalibrationTarget, Automatic], suppliedConductivityCalibrationTarget,
+			!MatchQ[suppliedConductivityCalibrationTarget, Automatic],
+				suppliedConductivityCalibrationTarget,
 			(* Get the conductivity of the buffer*)
 			!MatchQ[suppliedConductivityCalibrationBuffer, Automatic] && TrueQ[resolvedConductivityCalibration], suppliedConductivityCalibrationBufferConductivity,
 			(* Get the conductivity of the resolved conductivityCalibrationBuffer when it is resolved *)
@@ -13085,10 +14369,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Resolve InjectionSampleVolumeMeasurement option*)
 	(* Changed from VolumeCheckSamplePrep *)
 	resolvedInjectionSampleVolumeMeasurement = Switch[
-		{Lookup[optionsAssociation, InjectionSampleVolumeMeasurement], Lookup[optionsAssociation, PreparatoryUnitOperations], Lookup[optionsAssociation, PreparatoryPrimitives]},
+		{Lookup[optionsAssociation, InjectionSampleVolumeMeasurement], Lookup[optionsAssociation, PreparatoryUnitOperations]},
 
 		(* If there are no PreparatoryUnitOperations specified and InjectionSampleVolumeMeasurement specified True, throw a warning and switch it to False*)
-		{True, NullP, NullP}, (If[messagesQ && !engineQ, Message[Warning::ConflictingInjectionSampleVolumeMeasurementOption]]; False),
+		{True, NullP}, (If[messagesQ && !engineQ, Message[Warning::ConflictingInjectionSampleVolumeMeasurementOption]]; False),
 		(* Otherwise use the specified value *)
 		_, Lookup[optionsAssociation, InjectionSampleVolumeMeasurement]
 	];
@@ -13100,8 +14384,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Call ValidContainerStorageConditionQ to do that *)
 	{validContainerStorageConditionBool, validContainerStorageConditionTests} = If[Not[messagesQ],
-		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> Result, Cache -> simulatedCache], {}}
+		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> {Result, Tests}, Cache -> cache, Simulation -> updatedSimulation],
+		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> Result, Cache -> cache, Simulation -> updatedSimulation], {}}
 	];
 	validContainerStorageConditionInvalidOptions = If[MemberQ[validContainerStorageConditionBool, False], SamplesInStorageCondition, Nothing];
 
@@ -13118,8 +14402,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Check whether the blanks are ok *)
 	{validBlankStorageConditionBool, validBlankStorageConditionTests} = Which[
 		MatchQ[blanksNoModels, {}], {{}, {}},
-		Not[messagesQ], ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> {Result, Tests}, Cache -> cache],
-		True, {ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> Result, Cache -> cache], {}}
+		Not[messagesQ], ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> {Result, Tests}, Cache -> cache, Simulation -> updatedSimulation],
+		True, {ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> Result, Cache -> cache, Simulation -> updatedSimulation], {}}
 	];
 	validBlankStorageConditionInvalidOptions = If[MemberQ[validBlankStorageConditionBool, False], BlankStorageCondition, Nothing];
 
@@ -13136,8 +14420,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Check whether the blanks are ok *)
 	{validStandardStorageConditionBool, validStandardStorageConditionTests} = Which[
 		MatchQ[standardsNoModels, {}], {{}, {}},
-		Not[messagesQ], ValidContainerStorageConditionQ[standardsNoModels, standardStorageNoModels, Output -> {Result, Tests}, Cache -> cache],
-		True, {ValidContainerStorageConditionQ[standardsNoModels, standardStorageNoModels, Output -> Result, Cache -> cache], {}}
+		Not[messagesQ], ValidContainerStorageConditionQ[standardsNoModels, standardStorageNoModels, Output -> {Result, Tests}, Cache -> cache, Simulation -> updatedSimulation],
+		True, {ValidContainerStorageConditionQ[standardsNoModels, standardStorageNoModels, Output -> Result, Cache -> cache, Simulation -> updatedSimulation], {}}
 	];
 	validStandardStorageConditionInvalidOptions = If[MemberQ[validStandardStorageConditionBool, False], StandardStorageCondition, Nothing];
 
@@ -13196,7 +14480,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		GuardColumn -> resolvedGuardColumn,
 		GuardColumnOrientation -> resolvedGuardColumnOrientation,
 		IncubateColumn -> resolvedIncubateColumn,
-		ColumnStorageBuffer -> resolvedColumnStorageBuffer,
+		ColumnStorageBuffer -> resolvedColumnStorageBuffer/.{{}->Null},
 
 		BufferA -> resolvedBufferA,
 		BufferB -> resolvedBufferB,
@@ -13247,21 +14531,21 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		BlankFlowRate -> If[blankExistsQ, resolvedBlankFlowRates, Null],
 		BlankFrequency -> If[blankExistsQ, resolvedBlankFrequency, Null],
 
-		ColumnRefreshFrequency -> resolvedColumnRefreshFrequency,
+		ColumnRefreshFrequency -> resolvedColumnRefreshFrequency /. {{} -> Null},
 		ColumnPrimeTemperature -> resolvedPrimeColumnTemperatures,
-		ColumnPrimeGradientA -> resolvedColumnPrimeGradientAs,
-		ColumnPrimeGradientB -> resolvedColumnPrimeGradientBs,
-		ColumnPrimeGradientC -> resolvedColumnPrimeGradientCs,
-		ColumnPrimeGradientD -> resolvedColumnPrimeGradientDs,
-		ColumnPrimeGradient -> shownColumnPrimeGradientList,
-		ColumnPrimeFlowRate -> resolvedColumnPrimeFlowRates,
+		ColumnPrimeGradientA -> resolvedColumnPrimeGradientAs /. {{} -> Null},
+		ColumnPrimeGradientB -> resolvedColumnPrimeGradientBs /. {{} -> Null},
+		ColumnPrimeGradientC -> resolvedColumnPrimeGradientCs /. {{} -> Null},
+		ColumnPrimeGradientD -> resolvedColumnPrimeGradientDs /. {{} -> Null},
+		ColumnPrimeGradient -> shownColumnPrimeGradientList /. {{} -> Null},
+		ColumnPrimeFlowRate -> resolvedColumnPrimeFlowRates /. {{} -> Null},
 		ColumnFlushTemperature -> resolvedFlushColumnTemperatures,
-		ColumnFlushGradientA -> resolvedColumnFlushGradientAs,
-		ColumnFlushGradientB -> resolvedColumnFlushGradientBs,
-		ColumnFlushGradientC -> resolvedColumnFlushGradientCs,
-		ColumnFlushGradientD -> resolvedColumnFlushGradientDs,
-		ColumnFlushGradient -> shownColumnFlushGradientList,
-		ColumnFlushFlowRate -> resolvedColumnFlushFlowRates,
+		ColumnFlushGradientA -> resolvedColumnFlushGradientAs /. {{} -> Null},
+		ColumnFlushGradientB -> resolvedColumnFlushGradientBs /. {{} -> Null},
+		ColumnFlushGradientC -> resolvedColumnFlushGradientCs /. {{} -> Null},
+		ColumnFlushGradientD -> resolvedColumnFlushGradientDs /. {{} -> Null},
+		ColumnFlushGradient -> shownColumnFlushGradientList /. {{} -> Null},
+		ColumnFlushFlowRate -> resolvedColumnFlushFlowRates /. {{} -> Null},
 
 		(* Part of the pH/Conductivity Detector related options *)
 		pHCalibration -> resolvedpHCalibration,
@@ -13280,14 +14564,15 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		SamplesOutStorageCondition -> Lookup[roundedOptionsAssociation, SamplesOutStorageCondition],
 		StandardStorageCondition -> standardStorage /. {{} -> Null},
 		BlankStorageCondition -> blankStorage /. {{} -> Null},
+		(* Null == False *)
 		InjectionSampleVolumeMeasurement -> resolvedInjectionSampleVolumeMeasurement (*Changed from VolumeCheckSamplePrep Volume*)
 	];
 
 	(* Resolve the instrument specific options *)
 
 	{{instrumentSpecificOptionSet, instrumentSpecificOptionInvalidOptions}, instrumentSpecificTests} = If[gatherTestsQ,
-		resolveHPLCInstrumentOptions[mySamples, resolvedInstrument, Join[roundedOptionsAssociation, preWavefunctionResolution], cache, Output -> {Result, Tests}],
-		{resolveHPLCInstrumentOptions[mySamples, resolvedInstrument, Join[roundedOptionsAssociation, preWavefunctionResolution], cache, Output -> Result], Null}
+		resolveHPLCInstrumentOptions[mySamples, resolvedInstrument, Join[roundedOptionsAssociation, preWavefunctionResolution], cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{resolveHPLCInstrumentOptions[mySamples, resolvedInstrument, Join[roundedOptionsAssociation, preWavefunctionResolution], cache, Simulation -> updatedSimulation, Output -> Result], Null}
 	];
 
 	(* We will now finish the resolution of the aliquot container.
@@ -13302,22 +14587,19 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(*get all of the associated racks with the instrument*)
 	availableAutosamplerRacks = Which[
-		MatchQ[instrumentModel, dionexHPLCPattern],
+		MatchQ[instrumentModel, dionexHPLCPattern|semiPrepAgilentHPLCPattern],
 		{Model[Container, Rack, "HPLC Vial Rack"]},
-		MatchQ[instrumentModel, agilentHPLCPattern],
+		MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		(* Agilent's last type of rack is 25 mm tube rack but it is only compatible with test tubes and we are not going to support it in our experiment *)
 		{$LargeAgilentHPLCAutosamplerRack, $SmallAgilentHPLCAutosamplerRack},
 		True, {Model[Container, Rack, "Waters Acquity UPLC Autosampler Rack"]}
 	];
 
 	(* The containers that wil fit on the instrument's autosampler *)
-	{compatibleContainers, namedCompatibleContainers} = Which[
-		MatchQ[instrumentModel, dionexHPLCPattern],
-		{{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:1ZA60vL48X85"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]}, {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"]}},
-		MatchQ[instrumentModel, agilentHPLCPattern],
+	(* Only prep HPLC uses different containers *)
+	{compatibleContainers, namedCompatibleContainers} = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		{{Model[Container, Vessel, "id:bq9LA0dBGGR6"], Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:bq9LA0dBGGrd"], Model[Container, Vessel, "id:rea9jl1orrMp"]}, {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]}},
-		True,
-		{{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:1ZA60vL48X85"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]}, {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"]}}
+		{$ChromatographyLCCompatibleVials, $ChromatographyLCCompatibleVialsNamed}
 	];
 
 	(* If the sample's container model is not compatible with the instrument, it will not be possible to run the samples. *)
@@ -13325,8 +14607,14 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		(* Check if we have plate, if so, check if it can fit on the autosampler *)
 		Function[
 			{currentContainer},
-			If[(MatchQ[currentContainer, ObjectP[Model[Container, Plate]]]) && !MatchQ[instrumentModel, agilentHPLCPattern],
-				!CompatibleFootprintQ[autosamplerDeckModel, currentContainer, ExactMatch -> False, Cache -> cache],
+			If[(MatchQ[currentContainer, ObjectP[Model[Container, Plate]]]) && !MatchQ[instrumentModel, prepAgilentHPLCPattern],
+				Or[
+					(* Incompatible footprint *)
+					!CompatibleFootprintQ[autosamplerDeckModel, currentContainer, ExactMatch -> False],
+					(* Plate that is not 96-well is currently not supported in HPLC *)
+					(* We can possibly set up layout files for all different plate layouts but that is not currently supported in all HPLC procedures *)
+					!MatchQ[Lookup[fetchPacketFromCache[currentContainer, cache], {AspectRatio,NumberOfWells}],{3/2,96}]
+				],
 				(* Otherwise, see if it fits into any of the Racks *)
 				!MatchQ[currentContainer, Alternatives @@ compatibleContainers | Alternatives @@ namedCompatibleContainers]
 			]
@@ -13344,7 +14632,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 				Switch[{aliquotContainer,instrumentModel},
 					{Except[ObjectP[]],_}, True,
 					(* Agilent is not compatible with plates *)
-					{ObjectP[Model[Container, Plate]],Except[agilentHPLCPattern]}, CompatibleFootprintQ[autosamplerDeckModel, aliquotContainer, ExactMatch -> False, Cache -> cache],
+					{ObjectP[Model[Container, Plate]],Except[prepAgilentHPLCPattern]}, CompatibleFootprintQ[autosamplerDeckModel, aliquotContainer, ExactMatch -> False, Cache -> cache],
 					_, MatchQ[aliquotContainer, Alternatives @@ compatibleContainers | Alternatives @@ namedCompatibleContainers]
 				]
 			]
@@ -13369,49 +14657,17 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	requiredAliquotVolumes = MapThread[
 		Function[
 			{samplePacket, injectionVolume},
-			Which[
-				MatchQ[injectionVolume, VolumeP],
-				(* Distribute autosampler dead volume across all instances of an identical aliquots *)
-				Total[{
-					injectionVolume,
-					Divide[
-						autosamplerDeadVolume,
-						If[preresolvedConsolidateAliquots,
-							Count[Download[mySamples, Object], Lookup[samplePacket, Object]] * numberOfReplicates,
-							1
-						]
+			(* Distribute autosampler dead volume across all instances of an identical aliquots *)
+			Total[{
+				injectionVolume,
+				Divide[
+					autosamplerDeadVolume,
+					If[preresolvedConsolidateAliquots,
+						Count[Download[mySamples, Object], Lookup[samplePacket, Object]] * numberOfReplicates,
+						1
 					]
-				}],
-				True,
-				If[MatchQ[Lookup[samplePacket, Volume], VolumeP],
-					If[MatchQ[Lookup[roundedOptionsAssociation, Scale], (SemiPreparative | Preparative)],
-						Lookup[samplePacket, Volume],
-						Min[
-							Lookup[samplePacket, Volume],
-							Total[{
-								25 Microliter,
-								Divide[
-									autosamplerDeadVolume,
-									If[preresolvedConsolidateAliquots,
-										Count[Download[mySamples, Object], Lookup[samplePacket, Object]] * numberOfReplicates,
-										1
-									]
-								]
-							}]
-						]
-					],
-					Total[{
-						25 Microliter,
-						Divide[
-							autosamplerDeadVolume,
-							If[preresolvedConsolidateAliquots,
-								Count[Download[mySamples, Object], Lookup[samplePacket, Object]] * numberOfReplicates,
-								1
-							]
-						]
-					}]
 				]
-			]
+			}]
 		],
 		{
 			samplePackets,
@@ -13422,27 +14678,54 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Determine if Aliquot is required
 		Dionex: If sample plate count >2, aliquot.
 		Waters: If sample plate count >1, aliquot.
-		Agilent: Samples not in 50 mL tube or 15 mL tube, aliquot.
+		SemiPrep Agilent: If sample plate count>4, aliquot.
+		Prep Agilent: Samples not in 50 mL tube or 15 mL tube, aliquot.
 	*)
 	preresolvedAliquotBools = Which[
-		MatchQ[instrumentModel, agilentHPLCPattern],
-		(* For Agilent, the aliquoting is solely decided based on the container model, we can keep any Automatic and let resolveAliquotOptions figure out *)
+		MatchQ[instrumentModel, prepAgilentHPLCPattern],
+		(* For prep Agilent, the aliquoting is solely decided based on the container model (always 1 sample/container), we can keep any Automatic and let resolveAliquotOptions figure out *)
 		specifiedAliquotBools,
-		Or[
-			And[
-				validContainerCountQ,
-				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]] > 2
+		(* Dionex - Aliquot if > 2 plates *)
+		And[
+			Or[
+				MatchQ[instrumentModel,dionexHPLCPattern],
+				MemberQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, dionexHPLCPattern]
 			],
-			(* In the case where we have waters instruments in our ensemble, we force this *)
-			And[
-				Or[
-					MemberQ[Download[watersHPLCInstruments, Object], instrumentModel],
-					IntersectingQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, watersHPLCInstruments]
-				],
-				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]] > 1
-			]
+			validDionexCountQ,
+			Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]]>2
 		],
 		Replace[specifiedAliquotBools, Automatic -> True, {1}],
+		(* Waters - Aliquot if unique plates + vessels > 2 positions *)
+		And[
+			Or[
+				MemberQ[Download[watersHPLCInstruments, Object], instrumentModel],
+				IntersectingQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, watersHPLCInstruments]
+			],
+			validWatersCountQ,
+			Total[
+				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
+				Ceiling[
+					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 48
+				]
+			]>2
+		],
+		Replace[specifiedAliquotBools, Automatic -> True, {1}],
+		(* SemiPrep Agilent - Aliquot if unique plates + vessels > 6 positions *)
+		And[
+			Or[
+				MatchQ[instrumentModel,semiPrepAgilentHPLCPattern],
+				MemberQ[semiResolvedAlternateInstruments /. {Automatic :> {}}, semiPrepAgilentHPLCPattern]
+			],
+			validSemiPrepAgilentCountQ,
+			Total[
+				Count[DeleteDuplicates[simulatedSampleContainers], ObjectP[Object[Container, Plate]]],
+				Ceiling[
+					(numberOfStandardBlankContainersRequired + Length[uniqueNonAliquotableVessels]) / 54
+				]
+			]>6
+		],
+		Replace[specifiedAliquotBools, Automatic -> True, {1}],
+		(* Otherwise just keep the raw Aliquot option *)
 		True,
 		specifiedAliquotBools
 	];
@@ -13451,7 +14734,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Set the container if we need to aliquot *)
 	resolvedAliquotContainers = MapThread[
 		Which[
-			TrueQ[#1] && MatchQ[instrumentModel, agilentHPLCPattern],
+			TrueQ[#1] && MatchQ[instrumentModel, prepAgilentHPLCPattern],
 			Model[Container, Vessel, "50mL Tube"],
 			(* If we have invalid container OR if we have to aliquot due to count of containers, give the default plate *)
 			TrueQ[#1]||TrueQ[#2],
@@ -13482,7 +14765,8 @@ tightly as possible, put them all in a single target grouping *)
 			RequiredAliquotContainers -> resolvedAliquotContainers,
 			AliquotWarningMessage -> "because the given samples are not in containers that are compatible with HPLC instruments.",
 			Output -> {Result, Tests},
-			Cache -> cache
+			Cache -> cache,
+			Simulation->updatedSimulation
 		], {Warning::InstrumentPrecision}],
 		{
 			Quiet[resolveAliquotOptions[
@@ -13493,7 +14777,8 @@ tightly as possible, put them all in a single target grouping *)
 				RequiredAliquotAmounts -> RoundOptionPrecision[requiredAliquotVolumes, 0.1 Microliter],
 				RequiredAliquotContainers -> resolvedAliquotContainers,
 				AliquotWarningMessage -> "because the given samples are not in containers that are compatible with HPLC instruments.",
-				Cache -> cache
+				Cache -> cache,
+				Simulation->updatedSimulation
 			], {Warning::InstrumentPrecision}],
 			{}
 		}
@@ -13515,10 +14800,7 @@ tightly as possible, put them all in a single target grouping *)
 	}];
 
 	(* Set all non-shared Experiment options *)
-	resolvedExperimentOptions = If[internalUsageQ,
-		Join[preWavefunctionResolution, instrumentSpecificOptionSet, reformattedGradientOptions],
-		Join[preWavefunctionResolution, instrumentSpecificOptionSet, reformattedGradientOptions]
-	];
+	resolvedExperimentOptions = Join[preWavefunctionResolution, instrumentSpecificOptionSet, reformattedGradientOptions];
 
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
@@ -13537,7 +14819,7 @@ tightly as possible, put them all in a single target grouping *)
 		Flatten[{aliquotOptionsTests, columnGapTest,
 			columnSelectorConflictTest,
 			columnTechniqueTest, columnTemperatureTests,
-			columnTypeConsistencyTest, containersExistTest, discardedSamplesTest,
+			columnTypeConsistencyTest, redundantGuardColumnTest, containersExistTest, discardedSamplesTest,
 			fractionCollectionEndTimeTest, multipleGradientsColumnPrimeFlushTest,
 			gradientInjectionTableSpecifiedDifferentlyTest,
 			columnOrientationSelectorConflictTest,
@@ -13561,7 +14843,8 @@ tightly as possible, put them all in a single target grouping *)
 			standardNullOptionsConflictTests, blankNullOptionsConflictTests, invalidStandardBlankTests, columnNullOptionsConflictTests,
 			validFlowRateTest, validBlankFlowRateTest, validStandardFlowRateTest, validColumnPrimeFlowRateTest, validColumnFlushFlowRateTest,
 			removedExtraTest, gradientReequilibratedWarning, gradientAmbiguityTest, incorrectGradientOrderOverallTest,
-			injectionTableTests, nonFitColumnTest, conflictColumnOvenTest, conflictColumnOutsideInstrumentTest
+			injectionTableTests, nonFitColumnTest, conflictColumnOvenTest, conflictColumnOutsideInstrumentTest,
+			columnStorageBufferPercentTest, columnStorageBufferSampleTest, columnStorageBufferModelColumnTest, columnStorageBufferFlushGradientTest
 		}],
 		Null
 	];
@@ -13627,12 +14910,23 @@ tightly as possible, put them all in a single target grouping *)
 			validColumnFlushDetectionWavelengthQ,
 			compatibleColumnFlushDetectionWavelengthQ
 		],
-		Detector -> And[
-			compatibleDetectorQ,
-			compatibleCollectFractionsDetectorQ
-		],
+		ExcitationWavelength -> validExcitationWavelengthQ,
+		StandardExcitationWavelength -> validStandardExcitationWavelengthQ,
+		BlankExcitationWavelength -> validBlankExcitationWavelengthQ,
+		ColumnPrimeExcitationWavelength -> validColumnPrimeExcitationWavelengthQ,
+		ColumnFlushExcitationWavelength -> validColumnFlushExcitationWavelengthQ,
+		EmissionWavelength -> validEmissionWavelengthQ,
+		StandardEmissionWavelength -> validStandardEmissionWavelengthQ,
+		BlankEmissionWavelength -> validBlankEmissionWavelengthQ,
+		ColumnPrimeEmissionWavelength -> validColumnPrimeEmissionWavelengthQ,
+		ColumnFlushEmissionWavelength -> validColumnFlushEmissionWavelengthQ,
+		Detector -> compatibleDetectorQ,
 		ColumnSelector -> !incompatibleColumnSelectorQ,
-		Scale -> compatibleScaleQ,
+		Scale -> And[
+			compatibleScaleQ,
+			!collectFractionScaleConflictQ
+		],
+		CollectFractions -> !collectFractionScaleConflictQ,
 		StandardGradient -> validStandardGradientCompositionQ,
 		BlankGradient -> validBlankGradientCompositionQ,
 		ColumnPrimeGradient -> validColumnPrimeGradientCompositionQ,
@@ -13648,7 +14942,12 @@ tightly as possible, put them all in a single target grouping *)
 		BlankFlowRate -> compatibleBlankFlowRateQ,
 		ColumnPrimeFlowRate -> compatibleColumnPrimeFlowRateQ,
 		ColumnFlushFlowRate -> compatibleColumnFlushFlowRateQ,
-		SamplesOutStorageCondition -> validSamplesOutStorageConditionQ
+		SamplesOutStorageCondition -> validSamplesOutStorageConditionQ,
+		ColumnStorageBuffer -> And[
+			columnStorageBufferPercentInvalidQ,
+			columnStorageBufferSampleInvalidQ,
+			columnStorageBufferFlushGradientConflictQ
+		]
 	];
 
 	(* Extract all invalid option names from lookup *)
@@ -13667,6 +14966,7 @@ tightly as possible, put them all in a single target grouping *)
 			invalidOptionsMap,
 			invalidStandardBlankOptions,
 			guardColumnSelectorConflictOptions,
+			redundantGuardColumnOptions,
 			columnOrientationSelectorConflictOptions,
 			tableColumnConflictOptions,
 			columnPositionConflictOptions,
@@ -13721,7 +15021,7 @@ tightly as possible, put them all in a single target grouping *)
 
 	outputSpecification /. {
 		Tests -> allTests,
-		Result -> If[!internalUsageQ, resolvedOptions, {simulatedSamples, resolvedOptions, invalidOptions, invalidInputs, simulatedCache}]
+		Result -> If[!internalUsageQ, resolvedOptions, {simulatedSamples, resolvedOptions, invalidOptions, invalidInputs, updatedSimulation}]
 	}
 
 ];
@@ -13738,7 +15038,10 @@ tightly as possible, put them all in a single target grouping *)
 
 DefineOptions[
 	resolveHPLCInstrumentOptions,
-	Options :> {OutputOption}
+	Options :> {
+		SimulationOption,
+		OutputOption
+	}
 ];
 
 (*this is a helper function to resolve the instrument specific options. it's important for generating the wavefunction ensemble of options*)
@@ -13746,19 +15049,20 @@ resolveHPLCInstrumentOptions[
 	mySamples : ListableP[ObjectP[Object[Sample]]],
 	currentInstrument : ObjectP[{Object[Instrument, HPLC], Model[Instrument, HPLC]}],
 	partiallyResolvedOptions : _Association,
-	cache_ : {PacketP..},
+	cache : {PacketP[]...},
 	myOptions : OptionsPattern[]
 ] := Module[
 	{
 		safeOps, output, gatherTestsQ, messagesQ, engineQ, testOrNull, warningOrNull, requiredOptions, resolvedColumnSelector, allColumnsUsed, allColumnModelPackets, maxAccelerations, minMaxAcceleration, minAcceleration, validMaxAccelerationQ, availableDetectors,
 		fractionCollectionQ, fractionCollectionDetectorOption, missingFractionCollectionDetectorTest, availableFractionCollectionDetectors, uvDetector, fractionCollectionUnitDetectors, resolvedFractionCollectionDetector,
 		fractionCollectionObjectPositions, fractionCollectionObjects, fractionCollectionPackets, conflictFractionCollectionUnitQ, fractionCollectionCorrectUnit, conflictFractionCollectionUnitOptions, conflictFractionCollectionUnitTests, resolvedAbsoluteThreshold, fractionCollectionModes, resolvedPeakSlope, resolvedPeakSlopeDuration, resolvedPeakEndThreshold,
-		conflictFractionCollectionOptionsBool, incompatibleFractionCollectionOptionsBool, incompatibleFractionCollectionOptions, incompatibleFractionCollectionOptionsQ, incompatibleFractionCollectionAllOptions, conflictFractionCollectionMethodOptions, incompatibleFractionCollectionTest, conflictFractionCollectionMethodTests,
-		pHRequiredOptions, conductivityRequiredOptions, fluorescenceRequiredOptions, dionexFluorescenceRequiredOptions, lightScatteringRequiredOptions, refractiveIndexRequiredOptions, finalFluorescenceRequiredOptions,
+		conflictFractionCollectionOptionsBool, incompatibleFractionCollectionOptionsBool, incompatibleFractionCollectionOptions, incompatibleFractionCollectionOptionsQ, incompatibleFractionCollectionAllOptions, conflictFractionCollectionMethodOptions, incompatibleFractionCollectionTest, conflictFractionCollectionMethodTests, notApplicableAgilentPeakOptionsBool, notApplicableAgilentPeakOptions, notApplicableAgilentPeakOptionsTest,
+		absorbanceRequiredOptions, pHRequiredOptions, conductivityRequiredOptions, fluorescenceRequiredOptions, dionexFluorescenceRequiredOptions, lightScatteringRequiredOptions, refractiveIndexRequiredOptions, finalFluorescenceRequiredOptions,
 		missingOptionsDetectorPairs, missingOptionDetectors, missingDetectionOptions, missingDetectionOptionsTests,
 		resolvedpHTemperatureCompensation, resolvedConductivityTemperatureCompensation,
-		resolvedInstrumentSpecificOptions, resultRule, testsRule, outputSpecification, resolvedDetector, resolvedMaxAcceleration, resolvedSampleTemperature, resolvedAbsorbanceWavelengths, missingFractionCollectionDetectorOption, resolvedAbsorbanceSamplingRates, resolvedUVFilters,
-		fluorescenceWavelengthLimit, resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
+		resolvedInstrumentSpecificOptions, resultRule, testsRule, outputSpecification, resolvedDetector, resolvedMaxAcceleration, resolvedSampleTemperature, resolvedAbsorbanceWavelengths, missingFractionCollectionDetectorOption, resolvedAbsorbanceSamplingRates, resolvedSmoothingTimeConstants,resolvedUVFilters,
+		fluorescenceWavelengthLimit, tooNarrowFluorescenceRange,
+		resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
 		resolvedStandardExcitationWavelength, resolvedStandardEmissionWavelength, resolvedStandardEmissionCutOffFilter, resolvedStandardFluorescenceGain, resolvedStandardFluorescenceFlowCellTemperature, standardWavelengthSwappedErrors, standardTooNarrowFluorescenceRangeErrors, standardConflictFluorescenceLengthErrors, standardTooManyFluorescenceWavelengthsErrors, standardInvalidEmissionCutOffFilterErrors, standardTooLargeEmissionCutOffFilterErrors, standardInvalidWatersFluorescenceGainErrors, standardInvalidFluorescenceFlowCellTemperatureErrors,
 		resolvedBlankExcitationWavelength, resolvedBlankEmissionWavelength, resolvedBlankEmissionCutOffFilter, resolvedBlankFluorescenceGain, resolvedBlankFluorescenceFlowCellTemperature, blankWavelengthSwappedErrors, blankTooNarrowFluorescenceRangeErrors, blankConflictFluorescenceLengthErrors, blankTooManyFluorescenceWavelengthsErrors, blankInvalidEmissionCutOffFilterErrors, blankTooLargeEmissionCutOffFilterErrors, blankInvalidWatersFluorescenceGainErrors, blankInvalidFluorescenceFlowCellTemperatureErrors,
 		resolvedColumnPrimeExcitationWavelength, resolvedColumnPrimeEmissionWavelength, resolvedColumnPrimeEmissionCutOffFilter, resolvedColumnPrimeFluorescenceGain, resolvedColumnPrimeFluorescenceFlowCellTemperature, columnPrimeWavelengthSwappedErrors, columnPrimeTooNarrowFluorescenceRangeErrors, columnPrimeConflictFluorescenceLengthErrors, columnPrimeTooManyFluorescenceWavelengthsErrors, columnPrimeInvalidEmissionCutOffFilterErrors, columnPrimeTooLargeEmissionCutOffFilterErrors, columnPrimeInvalidWatersFluorescenceGainErrors, columnPrimeInvalidFluorescenceFlowCellTemperatureErrors,
@@ -13776,23 +15080,27 @@ resolveHPLCInstrumentOptions[
 		columnFlushNebulizerGasHeating, columnFlushNebulizerHeatingPower, columnFlushNebulizerGasPressure, columnFlushDriftTubeTemperature, columnFlushELSDGain, columnFlushELSDSamplingRate,
 		currentInstrumentModelPacket, currentInstrumentModel, alternateInstrumentsOption, alternativeInstrumentModelPackets, allInstrumentDetectors,
 		invalidMaxAccerationOption, maxAccelerationTest, instrumentManufacturer,
-		watersManufacturedQ, agilentManufacturedQ, collectFractionsQ, detectorOption, possibleAbsorbanceRateValues, possibleWavelengthResolutions, samplePackets, possibleAnalytes, analyteTypes,
-		resolvedWavelengthResolutions, wavelengthResolutionSampleConflictBool, roundedSamplingSampleRateBool, roundedWavelengthSampleResolutionBool, wavelengthFractionCollectionConflictBool,
-		resolvedStandardAbsorbanceWavelengths, resolvedStandardWavelengthResolutions, resolvedStandardUVFilters, resolvedStandardAbsorbanceSamplingRates,
-		wavelengthResolutionStandardConflictBool, roundedSamplingStandardRateBool, roundedWavelengthStandardResolutionBool, roundedWavelengthColumnPrimeResolutionBool,
-		resolvedBlankAbsorbanceWavelengths, resolvedBlankWavelengthResolutions, resolvedBlankUVFilters, resolvedBlankAbsorbanceSamplingRates,
-		wavelengthResolutionBlankConflictBool, roundedSamplingBlankRateBool, roundedWavelengthBlankResolutionBool, resolvedColumnPrimeAbsorbanceWavelengths,
-		resolvedColumnPrimeWavelengthResolutions, resolvedColumnPrimeUVFilters, resolvedColumnPrimeAbsorbanceSamplingRates, wavelengthResolutionColumnPrimeConflictBool,
-		roundedSamplingColumnPrimeRateBool, resolvedColumnFlushAbsorbanceWavelengths, resolvedColumnFlushWavelengthResolutions, resolvedColumnFlushUVFilters,
-		resolvedColumnFlushAbsorbanceSamplingRates, wavelengthResolutionColumnFlushConflictBool, roundedSamplingColumnFlushRateBool, roundedWavelengthColumnFlushResolutionBool,
-		absorbanceRateOptions, roundedSamplingRateRoundingBool, roundedSamplingRateRoundingOptions, roundedWavelengthResolutionBool, roundedWavelengthResolutionBoolOptions,
+		watersManufacturedQ, agilentManufacturedQ, collectFractionsQ, detectorOption, possibleAbsorbanceRateValues, minPossibleAbsorbanceRate, maxPossibleAbsorbanceRate, possibleSmoothingTimeConstants, minPossibleSmoothingTimeConstant, maxPossibleSmoothingTimeConstant,
+		possibleWavelengthResolutions, samplePackets, possibleAnalytes, analyteTypes,
+		resolvedWavelengthResolutions, wavelengthResolutionSampleConflictBool, roundedSamplingSampleRateBool, invalidSmoothingTimeConstantBool, roundedSmoothingTimeConstantBool, roundedWavelengthSampleResolutionBool, wavelengthFractionCollectionConflictBool,
+		resolvedStandardAbsorbanceWavelengths, resolvedStandardWavelengthResolutions, resolvedStandardUVFilters, resolvedStandardAbsorbanceSamplingRates, resolvedStandardSmoothingTimeConstants,
+		wavelengthResolutionStandardConflictBool, roundedSamplingStandardRateBool, invalidStandardSmoothingTimeConstantBool, roundedStandardSmoothingTimeConstantBool,roundedWavelengthStandardResolutionBool, roundedWavelengthColumnPrimeResolutionBool,
+		resolvedBlankAbsorbanceWavelengths, resolvedBlankWavelengthResolutions, resolvedBlankUVFilters, resolvedBlankAbsorbanceSamplingRates, resolvedBlankSmoothingTimeConstants,
+		wavelengthResolutionBlankConflictBool, roundedSamplingBlankRateBool, invalidBlankSmoothingTimeConstantBool, roundedBlankSmoothingTimeConstantBool,roundedWavelengthBlankResolutionBool, resolvedColumnPrimeAbsorbanceWavelengths,
+		resolvedColumnPrimeWavelengthResolutions, resolvedColumnPrimeUVFilters, resolvedColumnPrimeAbsorbanceSamplingRates,resolvedColumnPrimeSmoothingTimeConstants,
+		wavelengthResolutionColumnPrimeConflictBool, invalidColumnPrimeSmoothingTimeConstantBool, roundedColumnPrimeSmoothingTimeConstantBool,
+		roundedSamplingColumnPrimeRateBool, resolvedColumnFlushAbsorbanceWavelengths, resolvedColumnFlushSmoothingTimeConstants, resolvedColumnFlushWavelengthResolutions, resolvedColumnFlushUVFilters,
+		resolvedColumnFlushAbsorbanceSamplingRates, wavelengthResolutionColumnFlushConflictBool, roundedSamplingColumnFlushRateBool, roundedWavelengthColumnFlushResolutionBool, invalidColumnFlushSmoothingTimeConstantBool, roundedColumnFlushSmoothingTimeConstantBool,
+		absorbanceRateOptions, roundedSamplingRateRoundingBool, roundedSamplingRateRoundingOptions, roundedSamplingRateRoundingTests,
+		smoothingTimeConstantOptions, invalidSmoothingTimeConstantInvalidBool, invalidSmoothingTimeConstantInvalidOptions, invalidSmoothingTimeConstantTests, roundedSmoothingTimeConstantRoundingBool, roundedSmoothingTimeConstantRoundingOptions, roundedSmoothingTimeConstantRoundingTests,
+		roundedWavelengthResolutionBool, roundedWavelengthResolutionBoolOptions,
 		wavelengthResolutionConflictBool, wavelengthResolutionConflictOptions, wavelengthResolutionConflictTests, wavelengthFractionCollectionConflictOptions, wavelengthFractionCollectionConflictTests,
 		innerResult, innerNebulizerGas, innerNebulizerGasHeating, innerNebulizerHeatingPower, innerNebulizerGasPressure, innerDriftTubeTemperature, innerELSDGain, innerELSDSamplingRate,
 		fluorescenceGreaterEmissionInvalidOptions, fluorescenceGreaterEmissionInvalidTests, fluorescenceRangeTooNarrowInvalidOptions, fluorescenceRangeTooNarrowInvalidTests, conflictFluorescenceLengthOptions, conflictFluorescenceLengthTests, tooManyFluorescenceChannelsOptions, tooManyFluorescenceChannelsTests, invalidEmissionCutOffFilterOptions, invalidEmissionCutOffFilterTests, tooLargeEmissionCutOffFilterOptions, tooLargeEmissionCutOffFilterTests, invalidDionexFluorescenceGainOptions, invalidWatersFluorescenceGainOptions, invalidWatersFluorescenceGainTests, invalidFluorescenceFlowCellTemperatureOptions, invalidFluorescenceFlowCellTemperatureTests, conflictRefractiveIndexMethodOptions, conflictRefractiveIndexMethodTests,
 		gasPressureOptions, nebulizerGasOptions, gasPressureConflictBool, gasPressureConflictOptions, gasPressureConflictTest, nebulizerGasHeatingOptions, gasHeatingConflictBool, gasHeatingConflictOptions, gasHeatingConflictTest, nebulizerHeatingPowerOptions,
 		heatingPowerConflictGasBool, heatingPowerConflictHeatingBool, gasHeatingPowerConflictOptions, gasHeatingPowerConflictTest, uvFilterOptions, samplingRateOptions, tuvOptionsNotNeededQ,
 		tuvNotNeededOptions, tuvOptionsNotNeededTest, resolvedInjectionTable, columnPrimeQ, columnFlushQ, columnPrimeOptions, columnFlushOptions,
-		preexpandedColumnOptions, fluorescenceEmissionMaximums, fluorescenceExcitationMaximums, extinctionCoefficientWavelengths
+		preexpandedColumnOptions, fluorescenceEmissionMaximums, fluorescenceExcitationMaximums, extinctionCoefficientWavelengths, simulation
 	},
 
 	(* Get the safe options *)
@@ -13801,6 +15109,9 @@ resolveHPLCInstrumentOptions[
 	(* Determine the requested return value from the function *)
 	outputSpecification = Lookup[safeOps, Output];
 	output = ToList[outputSpecification];
+
+	(* Get our simulation *)
+	simulation = Lookup[safeOps, Simulation, Simulation[]];
 
 	(* Determine if we should keep a running list of tests *)
 	gatherTestsQ = MemberQ[output, Tests];
@@ -13888,6 +15199,13 @@ resolveHPLCInstrumentOptions[
 		Lookup[#, Detectors]&,
 		Prepend[alternativeInstrumentModelPackets, currentInstrumentModelPacket]
 	];
+
+	(* Look up the instrument manufacturer *)
+	instrumentManufacturer = Lookup[currentInstrumentModelPacket, Manufacturer] /. x_Link :> Download[x, Object];
+	(* Is it a waters instrument? This is used to distinguish the Agilent PDA and Waters PDA *)
+	watersManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "id:aXRlGnZmpK1v"]]];
+	agilentManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "id:M8n3rxYERoq5"]]];
+	collectFractionsQ = Or@@Lookup[partiallyResolvedOptions, CollectFractions];
 
 	(* Define the required options that we need for the resolution here *)
 	requiredOptions = {
@@ -14009,9 +15327,9 @@ resolveHPLCInstrumentOptions[
 	missingFractionCollectionDetectorTest = If[!MatchQ[missingFractionCollectionDetectorOption, {}],
 		(
 			If[messagesQ,
-				Message[Error::MissingFractionCollectionDetector, Lookup[partiallyResolvedOptions, FractionCollectionDetector], resolvedDetector, ObjectToString[currentInstrument, Cache -> cache]]
+				Message[Error::MissingFractionCollectionDetector, Lookup[partiallyResolvedOptions, FractionCollectionDetector], resolvedDetector, ObjectToString[currentInstrument, Simulation->simulation]]
 			];
-			testOrNull["The specified FractionCollectionDetector " <> ToString[Lookup[partiallyResolvedOptions, FractionCollectionDetector]] <> " is a member of the available detectors " <> ToString[resolvedDetector] <> " of the resolved HPLC instrument " <> ObjectToString[currentInstrument, Cache -> cache] <> ".", False]
+			testOrNull["The specified FractionCollectionDetector " <> ToString[Lookup[partiallyResolvedOptions, FractionCollectionDetector]] <> " is a member of the available detectors " <> ToString[resolvedDetector] <> " of the resolved HPLC instrument " <> ObjectToString[currentInstrument, Simulation->simulation] <> ".", False]
 		),
 		testOrNull["The specified FractionCollectionDetector is a member of the available detectors of the resolved HPLC instrument when fraction collection is requested.", True]
 	];
@@ -14046,7 +15364,7 @@ resolveHPLCInstrumentOptions[
 		MemberQ[Lookup[partiallyResolvedOptions, PeakEndThreshold], GreaterEqualP[0 RFU]], {Fluorescence},
 		MemberQ[Lookup[partiallyResolvedOptions, PeakEndThreshold], GreaterEqualP[0]], {pH},
 		MemberQ[Lookup[partiallyResolvedOptions, PeakEndThreshold], GreaterEqualP[0 Siemens / Centimeter]], {Conductance},
-		(* Otherwise, anything is OK *)
+		(* Otherwise, anything is OK. Default to the common ones - UVVis and Fluorescence *)
 		True, {UVVis, Fluorescence}
 	];
 
@@ -14184,14 +15502,14 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* If collecting fractions, fetch PeakSlopeDuration from: option value if specified, fraction method, or default to Null *)
+	(* If collecting fractions, fetch PeakSlopeDuration from: option value if specified, fraction method, 0.5 Second for Peak mode on Dionex, or default to Null *)
 	resolvedPeakSlopeDuration = MapThread[
 		If[TrueQ[#1],
 			If[!MatchQ[#2, Automatic],
 				#2,
 				If[MatchQ[#3, PacketP[]],
 					Lookup[#3, PeakSlopeDuration],
-					If[MatchQ[#4, Peak], 1 Second, Null]
+					If[MatchQ[#4, Peak]&&!agilentManufacturedQ, 0.5 Second, Null]
 				]
 			],
 			Null
@@ -14204,14 +15522,14 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* If collecting fractions, fetch PeakEndThreshold from: option value if specified, fraction method, or default to Null *)
+	(* If collecting fractions, fetch PeakEndThreshold from: option value if specified, fraction method, default values based on unit for Peak mode on Dionex, or default to Null *)
 	resolvedPeakEndThreshold = MapThread[
 		If[TrueQ[#1],
 			If[!MatchQ[#2, Automatic],
 				#2,
 				If[MatchQ[#3, PacketP[]],
 					Lookup[#3, PeakEndThreshold],
-					If[MatchQ[#4, Peak],
+					If[MatchQ[#4, Peak]&&!agilentManufacturedQ,
 						Switch[resolvedFractionCollectionDetector,
 							Fluorescence, 0.2 Milli * RFU,
 							Conductivity, 10.0 Milli * Siemens / Centimeter,
@@ -14272,19 +15590,34 @@ resolveHPLCInstrumentOptions[
 			(* If we have method conflict, just do not throw message for the other options *)
 			If[methodConflict,
 				{False, {}},
-				Switch[{mode, absThres, peSlope, peDuration, peThreshold},
+				Switch[
+					{mode, absThres, peSlope, peDuration, peThreshold},
 					{Null, ___}, {False, {}},
 					(*none of these should be defined if time*)
 					{Time, Null..}, {False, {}},
-					{Time, ___}, {True,
-					PickList[{AbsoluteThreshold, PeakSlope, PeakSlopeDuration, PeakEndThreshold}, {absThres, peSlope, peDuration, peThreshold}, Except[Null]]
-				},
-					{Threshold, _, Null..}, {False, {}},
-					{Threshold, _, ___}, {True,
-					PickList[{PeakSlope, PeakSlopeDuration, PeakEndThreshold}, {peSlope, peDuration, peThreshold}, Except[Null]]
-				},
-					{Peak, Null, ___}, {False, {}},
-					{Peak, ___}, {True, {AbsoluteThreshold}}
+					{Time, ___},
+					{
+						True,
+						PickList[{AbsoluteThreshold, PeakSlope, PeakSlopeDuration, PeakEndThreshold}, {absThres, peSlope, peDuration, peThreshold}, Except[Null]]
+					},
+					{Threshold, Except[Null], Null..}, {False, {}},
+					{Threshold, ___},
+					{
+						True,
+						Join[
+							PickList[{AbsoluteThreshold},{absThres},Null],
+							PickList[{PeakSlope, PeakSlopeDuration, PeakEndThreshold}, {peSlope, peDuration, peThreshold}, Except[Null]]
+						]
+					},
+					{Peak, Null, Except[Null], ___}, {False, {}},
+					{Peak, ___},
+					{
+						True,
+						Join[
+							PickList[{AbsoluteThreshold},{absThres},Except[Null]],
+							PickList[{PeakSlope}, {peSlope}, Null]
+						]
+					}
 				]
 			]
 		],
@@ -14295,6 +15628,28 @@ resolveHPLCInstrumentOptions[
 			resolvedPeakSlopeDuration,
 			resolvedPeakEndThreshold,
 			conflictFractionCollectionOptionsBool
+		}
+	];
+
+	(* Fraction collection options that cannot be fulfilled on Agilent instruments - throw warning *)
+	notApplicableAgilentPeakOptionsBool=MapThread[
+		Function[{mode, peDuration, peThreshold, methodConflict, modeConflict},
+			(* If we have method or mode conflict or we are not using Agilent instrument or Peak mode, just do not throw message *)
+			If[methodConflict||modeConflict||!agilentManufacturedQ||!MatchQ[mode,Peak],
+				False,
+				!And[
+					(* 0Second works same as Null *)
+					MatchQ[peDuration,(Null|0Second)],
+					MatchQ[peThreshold,Null]
+				]
+			]
+		],
+		{
+			fractionCollectionModes,
+			resolvedPeakSlopeDuration,
+			resolvedPeakEndThreshold,
+			conflictFractionCollectionOptionsBool,
+			incompatibleFractionCollectionOptionsBool
 		}
 	];
 
@@ -14314,7 +15669,7 @@ resolveHPLCInstrumentOptions[
 
 	incompatibleFractionCollectionOptionsQ = Or @@ incompatibleFractionCollectionOptionsBool;
 
-	incompatibleFractionCollectionAllOptions = If[incompatibleFractionCollectionOptionsQ && messagesQ && !engineQ,
+	incompatibleFractionCollectionAllOptions = If[incompatibleFractionCollectionOptionsQ && messagesQ,
 		Message[Error::HPLCConflictingFractionCollectionOptions];
 		Flatten[incompatibleFractionCollectionOptions],
 		{}
@@ -14326,10 +15681,28 @@ resolveHPLCInstrumentOptions[
 		testOrNull["All of the fraction collection options are compatible with the FractionCollectionMode:", True]
 	];
 
+	notApplicableAgilentPeakOptions = If[MemberQ[notApplicableAgilentPeakOptionsBool,True] && messagesQ,
+		Message[Error::NotApplicableHPLCPeakFractionCollectionOptions];
+		{PeakSlope, PeakEndThreshold},
+		{}
+	];
+
+	notApplicableAgilentPeakOptionsTest = If[MemberQ[notApplicableAgilentPeakOptionsBool,True],
+		testOrNull["The fraction collection options PeakSlopeDuration and PeakEndThreshold are only supported on UltiMate 3000 HPLC instruments and cannot be specified for other instruments:", False],
+		testOrNull["The fraction collection options PeakSlopeDuration and PeakEndThreshold are only supported on UltiMate 3000 HPLC instruments and cannot be specified for other instruments:", True]
+	];
+
 	(* Perform Detector Conflict Checks and Option Resolution *)
 	(* Note that we don't need to check the case that detector related options are populated while the instrument/detector cannot provide this detector. This was checked earlier in the main resolver. Also, we don't need to check that the options are set to a mixture of Null/un-Null, those are also checked in the main resolver. *)
 
 	(* Conflict Check - If a detector is required, the related options cannot be set to Null *)
+	absorbanceRequiredOptions = {
+		AbsorbanceSamplingRate,
+		StandardAbsorbanceSamplingRate,
+		BlankAbsorbanceSamplingRate,
+		ColumnPrimeAbsorbanceSamplingRate,
+		ColumnFlushAbsorbanceSamplingRate
+	};
 	pHRequiredOptions = {
 		pHCalibration,
 		pHTemperatureCompensation
@@ -14419,7 +15792,7 @@ resolveHPLCInstrumentOptions[
 					Nothing
 				]
 			],
-			{{pH, Conductance, Fluorescence, MultiAngleLightScattering | DynamicLightScattering, RefractiveIndex}, {pHRequiredOptions, conductivityRequiredOptions, finalFluorescenceRequiredOptions, lightScatteringRequiredOptions, refractiveIndexRequiredOptions}}
+			{{UVVis| PhotoDiodeArray, pH, Conductance, Fluorescence, MultiAngleLightScattering | DynamicLightScattering, RefractiveIndex}, {absorbanceRequiredOptions, pHRequiredOptions, conductivityRequiredOptions, finalFluorescenceRequiredOptions, lightScatteringRequiredOptions, refractiveIndexRequiredOptions}}
 		],
 		(* Delete the detector with no invalid options *)
 		{_, {}}
@@ -14486,21 +15859,21 @@ resolveHPLCInstrumentOptions[
 
 	(* Define all of the options that we need *)
 	standardOptions = {Standard, StandardGradient,
-		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate,
+		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant,
 		StandardExcitationWavelength, StandardEmissionWavelength, StandardEmissionCutOffFilter, StandardFluorescenceGain, StandardFluorescenceFlowCellTemperature,
 		StandardLightScatteringLaserPower, StandardLightScatteringFlowCellTemperature, StandardRefractiveIndexMethod, StandardRefractiveIndexFlowCellTemperature,
 		StandardNebulizerGas, StandardNebulizerGasHeating, StandardNebulizerHeatingPower, StandardNebulizerGasPressure, StandardDriftTubeTemperature, StandardELSDGain, StandardELSDSamplingRate};
 	blankOptions = {Blank, BlankGradient,
-		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate,
+		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant,
 		BlankExcitationWavelength, BlankEmissionWavelength, BlankEmissionCutOffFilter, BlankFluorescenceGain, BlankFluorescenceFlowCellTemperature,
 		BlankLightScatteringLaserPower, BlankLightScatteringFlowCellTemperature, BlankRefractiveIndexMethod, BlankRefractiveIndexFlowCellTemperature,
 		BlankNebulizerGas, BlankNebulizerGasHeating, BlankNebulizerHeatingPower, BlankNebulizerGasPressure, BlankDriftTubeTemperature, BlankELSDGain, BlankELSDSamplingRate};
 	columnOptions = {ColumnSelector, ColumnPrimeGradient, ColumnFlushGradient,
-		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate,
+		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant,
 		ColumnPrimeExcitationWavelength, ColumnPrimeEmissionWavelength, ColumnPrimeEmissionCutOffFilter, ColumnPrimeFluorescenceGain, ColumnPrimeFluorescenceFlowCellTemperature,
 		ColumnPrimeLightScatteringLaserPower, ColumnPrimeLightScatteringFlowCellTemperature, ColumnPrimeRefractiveIndexMethod, ColumnPrimeRefractiveIndexFlowCellTemperature,
 		ColumnPrimeNebulizerGas, ColumnPrimeNebulizerGasHeating, ColumnPrimeNebulizerHeatingPower, ColumnPrimeNebulizerGasPressure, ColumnPrimeDriftTubeTemperature, ColumnPrimeELSDGain, ColumnPrimeELSDSamplingRate,
-		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate,
+		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant,
 		ColumnFlushExcitationWavelength, ColumnFlushEmissionWavelength, ColumnFlushEmissionCutOffFilter, ColumnFlushFluorescenceGain, ColumnFlushFluorescenceFlowCellTemperature,
 		ColumnFlushLightScatteringLaserPower, ColumnFlushLightScatteringFlowCellTemperature, ColumnFlushRefractiveIndexMethod, ColumnFlushRefractiveIndexFlowCellTemperature,
 		ColumnFlushNebulizerGas, ColumnFlushNebulizerGasHeating, ColumnFlushNebulizerHeatingPower, ColumnFlushNebulizerGasPressure, ColumnFlushDriftTubeTemperature, ColumnFlushELSDGain, ColumnFlushELSDSamplingRate
@@ -14555,13 +15928,6 @@ resolveHPLCInstrumentOptions[
 		If[!columnFlushQ, Association[# -> {}& /@ columnFlushOptions], Association[]]
 	];
 
-	(* Look up the instrument manufacturer *)
-	instrumentManufacturer = Lookup[currentInstrumentModelPacket, Manufacturer] /. x_Link :> Download[x, Object];
-	(* Is it a waters instrument? This is used to distinguish the Agilent PDA and Waters PDA *)
-	watersManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "id:aXRlGnZmpK1v"]]];
-	agilentManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "id:M8n3rxYERoq5"]]];
-	collectFractionsQ = Or@@Lookup[partiallyResolvedOptions, CollectFractions];
-
 	(* Default unresolved autosampler temperature to room temperature on the waters, Null on dionex *)
 	resolvedSampleTemperature = If[!MatchQ[Lookup[partiallyResolvedOptions, SampleTemperature], Automatic],
 		Lookup[partiallyResolvedOptions, SampleTemperature],
@@ -14573,12 +15939,44 @@ resolveHPLCInstrumentOptions[
 	];
 
 	(* Define the exact absorbance rate values that we can have *)
-	possibleAbsorbanceRateValues = If[agilentManufacturedQ,
-		{1.25 / (4 Second), 1.25 / (2 Second), 1.25 / Second, 2.5 * 1 / Second, 5 * 1 / Second, 10 * 1 / Second, 20 * 1 / Second, 40 * 1 / Second, 80 * 1 / Second, 120 * 1 / Second} * 1.,
-		{1 / Second, 2 * 1 / Second, 5 * 1 / Second, 10 * 1 / Second, 20 * 1 / Second, 40 * 1 / Second, 80 * 1 / Second} * 1.
+	possibleAbsorbanceRateValues = Lookup[currentInstrumentModelPacket,AbsorbanceSamplingRates,{}];
+	minPossibleAbsorbanceRate = Lookup[currentInstrumentModelPacket,MinAbsorbanceSamplingRate,{}];
+	maxPossibleAbsorbanceRate = Lookup[currentInstrumentModelPacket,MaxAbsorbanceSamplingRate,{}];
+
+	(* Define the possible SmoothingTimeConstants we may have *)
+	possibleSmoothingTimeConstants = Which[
+		MatchQ[Lookup[currentInstrumentModelPacket,SmoothingTimeConstants],{}],
+		{},
+		(* Agilent - No Range *)
+		MatchQ[Flatten[Lookup[currentInstrumentModelPacket,SmoothingTimeConstants][[All,-3;;]]],{}],
+		ReverseSort[
+			MapThread[
+				(* Pick the enumeration values that are supported *)
+				{#1,Cases[#2[[;;3]],Except[Null]]}&,
+				(* These are index matching fields and we expect them to be the same length *)
+				{possibleAbsorbanceRateValues,Lookup[currentInstrumentModelPacket,SmoothingTimeConstants]}
+			]
+		],
+		(* Waters *)
+		True,
+		ReverseSort[
+			MapThread[
+				Module[
+					{min,max,increment},
+					{min,max,increment}=#2[[-3;;]];
+					{#1,Range[min,max,increment]}
+				]&,
+				(* These are index matching fields and we expect them to be the same length *)
+				{possibleAbsorbanceRateValues,Lookup[currentInstrumentModelPacket,SmoothingTimeConstants]}
+			]
+		]
 	];
 
+	minPossibleSmoothingTimeConstant = Lookup[currentInstrumentModelPacket,MinSmoothingTimeConstant,{}];
+	maxPossibleSmoothingTimeConstant = Lookup[currentInstrumentModelPacket,MaxSmoothingTimeConstant,{}];
+
 	(* Define the possible resolutions for Waters instrument *)
+	(* Agilent resolution can be any value *)
 	possibleWavelengthResolutions = {1.2 * Nanometer, 2.4 * Nanometer, 3.6 * Nanometer, 4.8 * Nanometer, 6.0 * Nanometer, 7.2 * Nanometer, 8.4 * Nanometer, 9.6 * Nanometer, 10.8 * Nanometer, 12.0 * Nanometer};
 
 	(* Now do the photo diode array detector options *)
@@ -14587,15 +15985,18 @@ resolveHPLCInstrumentOptions[
 		resolvedWavelengthResolutions,
 		resolvedUVFilters,
 		resolvedAbsorbanceSamplingRates,
+		resolvedSmoothingTimeConstants,
 		wavelengthResolutionSampleConflictBool,
 		roundedSamplingSampleRateBool,
+		invalidSmoothingTimeConstantBool,
+		roundedSmoothingTimeConstantBool,
 		roundedWavelengthSampleResolutionBool,
 		wavelengthFractionCollectionConflictBool
 	} = Transpose@MapThread[
 		Function[
-			{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, fractionQ, analyteType, extinctionCoefficientWavelength},
+			{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, smoothingTimeConstant, fractionQ, analyteType, extinctionCoefficientWavelength},
 			Module[
-				{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, wavelengthFractionCollectionConflictQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate},
+				{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, wavelengthFractionCollectionConflictQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, allowedSmoothingTimeConstants, resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ},
 
 				(* The absorbanceWavelength and UV filter just comes from the input options *)
 				resolvedUVFilter = If[MatchQ[uvFilter, Except[Automatic]],
@@ -14635,23 +16036,105 @@ resolveHPLCInstrumentOptions[
 					!MatchQ[resolvedAbsorbanceWavelength,DistanceP]
 				];
 
-				(* For the sampling rate, need to make sure that it's rounded to one of the sensible options *)
-				{resolvedAbsorbanceSamplingRate, roundedSamplingRateQ} = Switch[absorbanceSampleRate,
-					GreaterEqualP[0 * 1 / Second],
+				(* For the sampling rate, need to make sure that it's rounded to one of the sensible options for Waters/Agilent or round it to the correct value for Dionex *)
+				{resolvedAbsorbanceSamplingRate, roundedSamplingRateQ} = Which[
+					MatchQ[absorbanceSampleRate, GreaterEqualP[0 * 1 / Second]]&&MatchQ[possibleAbsorbanceRateValues,Except[{}]],
 					(* If it's exact then we're okay *)
 					If[Count[Abs[possibleAbsorbanceRateValues - absorbanceSampleRate], LessEqualP[0 * 1 / Second]] > 0,
 						{absorbanceSampleRate, False},
 						(* Otherwise, we need to find the closest value in our array *)
 						{First@Nearest[possibleAbsorbanceRateValues, absorbanceSampleRate], True}
 					],
-					(* If Null, no problem here *)
-					Null, {Null, False},
+					(* For dionex, let's round it *)
+					(* To make it less complicated for alternate instrument system, even if we are slightly out of range, we will round it to a value in range with warning. Specifically this is only applicable to 100-120 Hz on Dionex *)
+					MatchQ[absorbanceSampleRate, GreaterEqualP[0 * 1 / Second]],
+					Which[
+						MatchQ[absorbanceSampleRate,GreaterP[maxPossibleAbsorbanceRate]],{maxPossibleAbsorbanceRate,True},
+						MatchQ[absorbanceSampleRate,LessP[minPossibleAbsorbanceRate]],{minPossibleAbsorbanceRate,True},
+						True,{SafeRound[absorbanceSampleRate,0.1/Second],!EqualQ[absorbanceSampleRate,SafeRound[absorbanceSampleRate,0.1/Second]]}
+					],
+					(* If Null, no problem here, as we already did the check for required options. *)
+					NullQ[absorbanceSampleRate], {Null, False},
 					(* Otherwise we resolve *)
-					_,
+					True,
 					{
-						If[Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]] && Or[watersManufacturedQ,agilentManufacturedQ], 20 / Second, Null],
+						Which[
+							(* Consider to make smoothing time constant valid. Pick the smallest absorbance sampling rate that can fulfill the requirement of time constant option (if specified). Select the exact match first, and then possible range (we allow rounding) *)
+							(* This only applies to Waters and Agilent where only certain values of smoothing time constants are allowed per absorbance sampling rate. On Dionex, these two options can be freely set as long as in range *)
+							MatchQ[smoothingTimeConstant,GreaterP[0Second]]&&!MatchQ[possibleSmoothingTimeConstants,{}],
+							Module[
+								{exactValueMatchPosition,rangeMatchPosition},
+								(* Find the first SmoothingTimeConstants entry that has the exact specified option *)
+								exactValueMatchPosition=FirstOrDefault[
+									FirstPosition[
+										possibleSmoothingTimeConstants[[All,2]],
+										{___, EqualP[smoothingTimeConstant], ___},
+										{}
+									]
+								];
+								(* Find the first SmoothingTimeConstants entry with the option in the range *)
+								rangeMatchPosition=FirstOrDefault[
+									FirstPosition[
+										possibleSmoothingTimeConstants[[All,2]],
+										{LessEqualP[smoothingTimeConstant],___,GreaterEqualP[smoothingTimeConstant]},
+										{}
+									]
+								];
+								(* Use the resolved possible AbsorbanceSamplingRate, or just do default and error later *)
+								Which[
+									!NullQ[exactValueMatchPosition],possibleSmoothingTimeConstants[[exactValueMatchPosition,1]],
+									!NullQ[rangeMatchPosition],possibleSmoothingTimeConstants[[rangeMatchPosition,1]],
+									Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
+									20 / Second,
+									True,
+									Null
+								]
+							],
+							Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
+							20 / Second,
+							True,
+							Null
+						],
 						False
 					}
+				];
+
+				allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[resolvedAbsorbanceSamplingRate],___},{Null,{}}][[2]];
+
+				(* SmoothingTimeConstant is not indeed an automatic option. It is defaulted to Null (not used). Only put it here so that we can do rounding and error checking *)
+				{resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ} = If[watersManufacturedQ,
+					(* For Waters instrument, we can allow the enumeration value or the numeric value *)
+					Switch[smoothingTimeConstant,
+						HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,False},
+						GreaterP[0Second],
+						(* Round the value to the nearest possible value *)
+						If[Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0,
+							{smoothingTimeConstant, False, False},
+							(* Otherwise, we need to find the closest value in our array *)
+							{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False}
+						],
+						(* Default to Null *)
+						_,{smoothingTimeConstant,False,False}
+					],
+					(* For Agilent instrument and Dionex instrument, check if the value is valid *)
+					Switch[smoothingTimeConstant,
+						(* Enumeration value is not allowed *)
+						HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,True},
+						GreaterP[0Second],
+						(* Round the value to the nearest possible value *)
+						Which[
+							!MatchQ[allowedSmoothingTimeConstants,{}] && (Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0),
+							{smoothingTimeConstant, False, False},
+							(* Otherwise, we need to find the closest value in our array *)
+							!MatchQ[allowedSmoothingTimeConstants,{}],
+							{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False},
+							MatchQ[smoothingTimeConstant,GreaterP[maxPossibleSmoothingTimeConstant]],{maxPossibleSmoothingTimeConstant,True,False},
+							MatchQ[smoothingTimeConstant,LessP[minPossibleSmoothingTimeConstant]],{minPossibleSmoothingTimeConstant,True,False},
+							True,{SafeRound[smoothingTimeConstant,0.01Second],!EqualQ[smoothingTimeConstant,SafeRound[smoothingTimeConstant,0.01Second]],False}
+						],
+						(* Default to Null *)
+						_,{smoothingTimeConstant,False,False}
+					]
 				];
 
 				(* The wavelength resolution needs to be resolved, and the errors must be checked *)
@@ -14661,7 +16144,7 @@ resolveHPLCInstrumentOptions[
 					{Automatic, GreaterP[0 * Nanometer]}, {Null, False, False},
 					(* If no absorbance wavelength is available, set resolution to Null *)
 					{Automatic, Null}, {Null, False, False},
-					(* If it's set, we need to make sure copacetic *)
+					(* If it's set, we need to make sure compatible *)
 					{Null, _Span | All}, {Null, True, False},
 					(* Need to round to one of the values potentially*)
 					{GreaterP[0 * Nanometer], _},
@@ -14684,14 +16167,17 @@ resolveHPLCInstrumentOptions[
 					resolvedWavelengthResolution,
 					resolvedUVFilter,
 					resolvedAbsorbanceSamplingRate,
+					resolvedSmoothingTimeConstant,
 					wavelengthResolutionConflictQ,
 					roundedSamplingRateQ,
+					invalidEnumerationSmoothingConstantQ,
+					roundedSmoothingTimeConstantQ,
 					roundedResolutionQ,
 					wavelengthFractionCollectionConflictQ
 				}
 			]
 		],
-		Join[Lookup[partiallyResolvedOptions, {AbsorbanceWavelength, WavelengthResolution, UVFilter, AbsorbanceSamplingRate, CollectFractions}], {analyteTypes, extinctionCoefficientWavelengths}]
+		Join[Lookup[partiallyResolvedOptions, {AbsorbanceWavelength, WavelengthResolution, UVFilter, AbsorbanceSamplingRate, SmoothingTimeConstant, CollectFractions}], {analyteTypes, extinctionCoefficientWavelengths}]
 	];
 
 	(* Now do all of the other options simultaneously *)
@@ -14701,8 +16187,11 @@ resolveHPLCInstrumentOptions[
 			resolvedStandardWavelengthResolutions,
 			resolvedStandardUVFilters,
 			resolvedStandardAbsorbanceSamplingRates,
+			resolvedStandardSmoothingTimeConstants,
 			wavelengthResolutionStandardConflictBool,
 			roundedSamplingStandardRateBool,
+			invalidStandardSmoothingTimeConstantBool,
+			roundedStandardSmoothingTimeConstantBool,
 			roundedWavelengthStandardResolutionBool
 		},
 		{
@@ -14710,8 +16199,11 @@ resolveHPLCInstrumentOptions[
 			resolvedBlankWavelengthResolutions,
 			resolvedBlankUVFilters,
 			resolvedBlankAbsorbanceSamplingRates,
+			resolvedBlankSmoothingTimeConstants,
 			wavelengthResolutionBlankConflictBool,
 			roundedSamplingBlankRateBool,
+			invalidBlankSmoothingTimeConstantBool,
+			roundedBlankSmoothingTimeConstantBool,
 			roundedWavelengthBlankResolutionBool
 		},
 		{
@@ -14719,8 +16211,11 @@ resolveHPLCInstrumentOptions[
 			resolvedColumnPrimeWavelengthResolutions,
 			resolvedColumnPrimeUVFilters,
 			resolvedColumnPrimeAbsorbanceSamplingRates,
+			resolvedColumnPrimeSmoothingTimeConstants,
 			wavelengthResolutionColumnPrimeConflictBool,
 			roundedSamplingColumnPrimeRateBool,
+			invalidColumnPrimeSmoothingTimeConstantBool,
+			roundedColumnPrimeSmoothingTimeConstantBool,
 			roundedWavelengthColumnPrimeResolutionBool
 		},
 		{
@@ -14728,29 +16223,32 @@ resolveHPLCInstrumentOptions[
 			resolvedColumnFlushWavelengthResolutions,
 			resolvedColumnFlushUVFilters,
 			resolvedColumnFlushAbsorbanceSamplingRates,
+			resolvedColumnFlushSmoothingTimeConstants,
 			wavelengthResolutionColumnFlushConflictBool,
 			roundedSamplingColumnFlushRateBool,
+			invalidColumnFlushSmoothingTimeConstantBool,
+			roundedColumnFlushSmoothingTimeConstantBool,
 			roundedWavelengthColumnFlushResolutionBool
 		}
 	} = Map[
 		Function[
 			{entry},
 			Module[
-				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates},
+				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants},
 
 				(* Split the entry variable *)
-				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates} = entry;
+				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants} = entry;
 
 				(* First we check whether there is actually anything (i.e. no standards) *)
-				If[MatchQ[{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates}, {(Null | {})..}],
+				If[MatchQ[{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants}, {(Null | {})..}],
 					(* In which case, we return all Null and empties *)
-					{Sequence @@ ConstantArray[Null, 4], {}, {}, {}},
+					{Sequence @@ ConstantArray[Null, 5], {}, {}, {}, {}, {}},
 					(* Otherwise, we'll resolve the detector options and map through *)
 					Transpose@MapThread[
 						Function[
-							{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate},
+							{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, smoothingTimeConstant},
 							Module[
-								{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate},
+								{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, allowedSmoothingTimeConstants, resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ},
 
 								(* For most of these options we can just take it if specified, otherwise we default to the first resolution *)
 								{
@@ -14771,17 +16269,112 @@ resolveHPLCInstrumentOptions[
 									}
 								];
 
-								(* For the sampling rate, need to make sure that it's rounded to one of the sensible options, if specified *)
-								{resolvedAbsorbanceSamplingRate, roundedSamplingRateQ} = If[MatchQ[absorbanceSampleRate, Except[Automatic]],
-									If[
-										(* If it's exact then we're okay *)
-										Count[Abs[possibleAbsorbanceRateValues - absorbanceSampleRate], LessEqualP[0 * 1 / Second]] > 0,
+								(* For the sampling rate, need to make sure that it's rounded to one of the sensible options for Waters/Agilent or round it to the correct value for Dionex *)
+								{resolvedAbsorbanceSamplingRate, roundedSamplingRateQ} = Which[
+									MatchQ[absorbanceSampleRate, GreaterEqualP[0 * 1 / Second]]&&MatchQ[possibleAbsorbanceRateValues,Except[{}]],
+									(* If it's exact then we're okay *)
+									If[Count[Abs[possibleAbsorbanceRateValues - absorbanceSampleRate], LessEqualP[0 * 1 / Second]] > 0,
 										{absorbanceSampleRate, False},
-										(*otherwise, we need to find the closest value in our array*)
-										{First@MinimalBy[possibleAbsorbanceRateValues, Abs[# - absorbanceSampleRate]&], True}
+										(* Otherwise, we need to find the closest value in our array *)
+										{First@Nearest[possibleAbsorbanceRateValues, absorbanceSampleRate], True}
 									],
-									(* If automatic, take the first resolved*)
-									{First@resolvedAbsorbanceSamplingRates, False}
+									(* For dionex, let's round it *)
+									(* To make it less complicated for alternate instrument system, even if we are slightly out of range, we will round it to a value in range with warning. Specifically this is only applicable to 100-120 Hz on Dionex *)
+									MatchQ[absorbanceSampleRate, GreaterEqualP[0 * 1 / Second]],
+									Which[
+										MatchQ[absorbanceSampleRate,GreaterP[maxPossibleAbsorbanceRate]],{maxPossibleAbsorbanceRate,True},
+										MatchQ[absorbanceSampleRate,LessP[minPossibleAbsorbanceRate]],{minPossibleAbsorbanceRate,True},
+										True,{SafeRound[absorbanceSampleRate,0.1/Second],!EqualQ[absorbanceSampleRate,SafeRound[absorbanceSampleRate,0.1/Second]]}
+									],
+									(* If Null, no problem here, as we already did the check for required options. *)
+									NullQ[absorbanceSampleRate], {Null, False},
+									(* Otherwise we resolve *)
+									True,
+									{
+										Which[
+											(* Consider to make smoothing time constant valid. Pick the smallest absorbance sampling rate that can fulfill the requirement of time constant option (if specified). Select the exact match first, and then possible range (we allow rounding) *)
+											(* This only applies to Waters and Agilent where only certain values of smoothing time constants are allowed per absorbance sampling rate. On Dionex, these two options can be freely set as long as in range *)
+											MatchQ[smoothingTimeConstant,GreaterP[0Second]]&&!MatchQ[possibleSmoothingTimeConstants,{}],
+											Module[
+												{exactValueMatchPosition,rangeMatchPosition},
+												(* Find the first SmoothingTimeConstants entry that has the exact specified option *)
+												exactValueMatchPosition=FirstOrDefault[
+													FirstPosition[
+														possibleSmoothingTimeConstants[[All,2]],
+														{___, EqualP[smoothingTimeConstant], ___},
+														{}
+													]
+												];
+												(* Find the first SmoothingTimeConstants entry with the option in the range *)
+												rangeMatchPosition=FirstOrDefault[
+													FirstPosition[
+														possibleSmoothingTimeConstants[[All,2]],
+														{LessEqualP[smoothingTimeConstant],___,GreaterEqualP[smoothingTimeConstant]},
+														{}
+													]
+												];
+												(* Use the resolved possible AbsorbanceSamplingRate, or just do default and error later *)
+												Which[
+													!NullQ[exactValueMatchPosition],possibleSmoothingTimeConstants[[exactValueMatchPosition,1]],
+													!NullQ[rangeMatchPosition],possibleSmoothingTimeConstants[[rangeMatchPosition,1]],
+													Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
+													FirstOrDefault[resolvedAbsorbanceSamplingRates],
+													True,
+													Null
+												]
+											],
+											Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
+											FirstOrDefault[resolvedAbsorbanceSamplingRates],
+											True,
+											Null
+										],
+										False
+									}
+								];
+
+								allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[resolvedAbsorbanceSamplingRate],___},{Null,{}}][[2]];
+
+								(* Resolve SmoothingTimeConstant and round values if needed *)
+								{resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ} = If[watersManufacturedQ,
+									(* For Waters instrument, we can allow the enumeration value or the numeric value *)
+									Switch[smoothingTimeConstant,
+										HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,False},
+										GreaterP[0Second],
+										(* Round the value to the nearest possible value *)
+										If[Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0Second]] > 0,
+											{smoothingTimeConstant, False, False},
+											(* Otherwise, we need to find the closest value in our array *)
+											{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False}
+										],
+										(* Keep Null *)
+										Except[Automatic],
+										{smoothingTimeConstant,False,False},
+										(* Default to first entry of sample option *)
+										_,{FirstOrDefault[resolvedSmoothingTimeConstants],False,False}
+									],
+									(* For Agilent instrument and Dionex instrument, check if the value is valid *)
+									Switch[smoothingTimeConstant,
+										(* Enumeration value is not allowed *)
+										HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,True},
+										GreaterP[0Second],
+										(* Round the value to the nearest possible value *)
+										Which[
+											!MatchQ[allowedSmoothingTimeConstants,{}] && (Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0),
+											{smoothingTimeConstant, False, False},
+											(* Otherwise, we need to find the closest value in our array *)
+											!MatchQ[allowedSmoothingTimeConstants,{}],
+											{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False},
+											MatchQ[smoothingTimeConstant,GreaterP[maxPossibleSmoothingTimeConstant]],{maxPossibleSmoothingTimeConstant,True,False},
+											MatchQ[smoothingTimeConstant,LessP[minPossibleSmoothingTimeConstant]],{minPossibleSmoothingTimeConstant,True,False},
+											True,{SafeRound[smoothingTimeConstant,0.01Second],!EqualQ[smoothingTimeConstant,SafeRound[smoothingTimeConstant,0.01Second]],False}
+										],
+										(* Default to Null *)
+										(* Keep Null *)
+										Except[Automatic],
+										{smoothingTimeConstant,False,False},
+										(* Default to first entry of sample option *)
+										_,{FirstOrDefault[resolvedSmoothingTimeConstants],False,False}
+									]
 								];
 
 								(* The wavelength resolution needs to be resolved, and the errors must be checked *)
@@ -14791,7 +16384,7 @@ resolveHPLCInstrumentOptions[
 									{Automatic, GreaterP[0 * Nanometer]}, {Null, False, False},
 									(* If no absorbance wavelength is available, set resolution to Null *)
 									{Automatic, Null}, {Null, False, False},
-									(* If it's set, we need to make sure copacetic *)
+									(* If it's set, we need to make sure compatible *)
 									{Null, _Span | All}, {Null, True, False},
 									(* Need to round to one of the values potentially *)
 									{GreaterP[0 * Nanometer], _},
@@ -14814,22 +16407,25 @@ resolveHPLCInstrumentOptions[
 									resolvedWavelengthResolution,
 									resolvedUVFilter,
 									resolvedAbsorbanceSamplingRate,
+									resolvedSmoothingTimeConstant,
 									wavelengthResolutionConflictQ,
 									roundedSamplingRateQ,
+									invalidEnumerationSmoothingConstantQ,
+									roundedSmoothingTimeConstantQ,
 									roundedResolutionQ
 								}
 							]
 						],
-						ToList /@ {absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates}
+						ToList /@ {absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants}
 					]
 				]
 			]
 		],
 		{
-			Lookup[expandedStandardOptions, {StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate}],
-			Lookup[expandedBlankOptions, {BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate}],
-			Lookup[expandedColumnOptions, {ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate}],
-			Lookup[expandedColumnOptions, {ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate}]
+			Lookup[expandedStandardOptions, {StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant}],
+			Lookup[expandedBlankOptions, {BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant}],
+			Lookup[expandedColumnOptions, {ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant}],
+			Lookup[expandedColumnOptions, {ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant}]
 		}
 	];
 
@@ -14842,7 +16438,55 @@ resolveHPLCInstrumentOptions[
 	roundedSamplingRateRoundingOptions = PickList[absorbanceRateOptions, roundedSamplingRateRoundingBool];
 
 	If[Length[roundedSamplingRateRoundingOptions] > 0 && messagesQ && !engineQ,
-		Message[Warning::AbsorbanceRateAdjusted, ObjectToString[roundedSamplingRateRoundingOptions]]
+		Message[
+			Warning::AbsorbanceRateAdjusted,
+			ObjectToString[roundedSamplingRateRoundingOptions],
+			If[MatchQ[possibleAbsorbanceRateValues,{}],"must be rounded to 0.1 / Second","can only be specific values"]
+		]
+	];
+
+	roundedSamplingRateRoundingTests = If[Length[roundedSamplingRateRoundingOptions] > 0,
+		warningOrNull["The absorbance sampling rate options are rounded to the nearest allowed value:", False],
+		warningOrNull["The absorbance sampling rate options are rounded to the nearest allowed value:", True]
+	];
+
+	(* Define the absorbance smoothing time constant options *)
+	smoothingTimeConstantOptions = {SmoothingTimeConstant, StandardSmoothingTimeConstant, BlankSmoothingTimeConstant, ColumnPrimeSmoothingTimeConstant, ColumnFlushSmoothingTimeConstant};
+
+	(* Invalid Message and Test *)
+	(* Find which options were offending *)
+	invalidSmoothingTimeConstantInvalidBool = (Or @@ #&) /@ {invalidSmoothingTimeConstantBool,invalidStandardSmoothingTimeConstantBool,invalidBlankSmoothingTimeConstantBool,invalidColumnPrimeSmoothingTimeConstantBool,invalidColumnFlushSmoothingTimeConstantBool};
+	invalidSmoothingTimeConstantInvalidOptions = PickList[smoothingTimeConstantOptions, invalidSmoothingTimeConstantInvalidBool];
+
+	If[Length[invalidSmoothingTimeConstantInvalidOptions] > 0 && messagesQ,
+		Message[
+			Error::InvalidAbsorbanceSmoothingTimeConstant,
+			ObjectToString[invalidSmoothingTimeConstantInvalidOptions],
+			ObjectToString[currentInstrumentModel]
+		]
+	];
+
+	invalidSmoothingTimeConstantTests = If[Length[invalidSmoothingTimeConstantInvalidOptions] > 0,
+		testOrNull["The smoothing time constant options are only set to Small / Medium / Large values on the Waters instruments:", False],
+		testOrNull["The smoothing time constant options are only set to Small / Medium / Large values on the Waters instruments:", True]
+	];
+
+	(* Rounding Message and Test *)
+	(* Find which options were offending *)
+	roundedSmoothingTimeConstantRoundingBool = (Or @@ #&) /@ {roundedSmoothingTimeConstantBool, roundedStandardSmoothingTimeConstantBool, roundedBlankSmoothingTimeConstantBool, roundedColumnPrimeSmoothingTimeConstantBool, roundedColumnFlushSmoothingTimeConstantBool};
+	roundedSmoothingTimeConstantRoundingOptions = PickList[smoothingTimeConstantOptions, roundedSmoothingTimeConstantRoundingBool];
+
+	If[Length[roundedSmoothingTimeConstantRoundingOptions] > 0 && messagesQ && !engineQ,
+		Message[
+			Warning::AbsorbanceSmoothingTimeConstantAdjusted,
+			ObjectToString[roundedSmoothingTimeConstantRoundingOptions],
+			If[MatchQ[possibleSmoothingTimeConstants,{}],"must be rounded to 0.01 Second","can only be specific values"]
+		]
+	];
+
+	roundedSmoothingTimeConstantRoundingTests = If[Length[roundedSmoothingTimeConstantRoundingOptions] > 0,
+		warningOrNull["The smoothing time constant options are rounded to the nearest allowed value:", False],
+		warningOrNull["The smoothing time constant options are rounded to the nearest allowed value:", True]
 	];
 
 	wavelengthResolutionOptions = {WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, ColumnFlushWavelengthResolution};
@@ -14882,8 +16526,19 @@ resolveHPLCInstrumentOptions[
 
 
 	(* Resolve Fluorescence detector options and track errors *)
-	(* Get the limit for the number of measurements. for now this is hard coded *)
-	fluorescenceWavelengthLimit = 4;
+	(* Get the limit for the number of measurements. for now this is hard coded based on instrument manufacturerer (detector) *)
+	(* We can turn this into a field in Model[Instrument,HPLC] *)
+	fluorescenceWavelengthLimit = If[agilentManufacturedQ,
+		1,
+		4
+	];
+
+	(* If Ex/Em are too narrow apart <20 nm for Dionex or <10 nm for Agilent, track the error *)
+	tooNarrowFluorescenceRange = Which[
+		watersManufacturedQ, Null,
+		agilentManufacturedQ, 10Nanometer,
+		True, 20Nanometer
+	];
 
 	(* Get the maximum emission wavelength from the model of the analytes, if the field is empty, set it to null *)
 	fluorescenceExcitationMaximums = Map[
@@ -14926,7 +16581,7 @@ resolveHPLCInstrumentOptions[
 				{excitationWavelength, emissionWavelength, emissionCutOffFilter, fluorescenceGain, fluorescenceFlowCellTemperature, maximumExcitationWavelength, maximumEmissionWavelength},
 				Module[
 					{
-						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
+						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
 						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 					},
 
@@ -14943,9 +16598,14 @@ resolveHPLCInstrumentOptions[
 								{maximumExcitationWavelength, Null}
 							],
 							{Automatic, Except[Automatic]},
-							If[NullQ[maximumExcitationWavelength],
+							Which[
+								NullQ[maximumExcitationWavelength],
 								{emissionWavelength - 35Nanometer, emissionWavelength},
-								{maximumExcitationWavelength, emissionWavelength}
+								!MatchQ[emissionWavelength,_List],
+								(* Singleton *)
+								{maximumExcitationWavelength,emissionWavelength},
+								True,
+								{Table[maximumExcitationWavelength,Length[emissionWavelength]], emissionWavelength}
 							],
 							{Null, Automatic},
 							If[NullQ[maximumEmissionWavelength],
@@ -14953,9 +16613,14 @@ resolveHPLCInstrumentOptions[
 								{Null, maximumEmissionWavelength}
 							],
 							{Except[Automatic], Automatic},
-							If[NullQ[maximumEmissionWavelength],
+							Which[
+								NullQ[maximumEmissionWavelength],
 								{excitationWavelength, excitationWavelength + 35Nanometer},
-								{excitationWavelength, maximumEmissionWavelength}
+								!MatchQ[excitationWavelength,_List],
+								(* Singleton *)
+								{excitationWavelength,maximumEmissionWavelength},
+								True,
+								{excitationWavelength, Table[maximumEmissionWavelength,Length[excitationWavelength]]}
 							],
 							{Automatic, Automatic},
 							Which[
@@ -14982,9 +16647,17 @@ resolveHPLCInstrumentOptions[
 						True, Null
 					];
 					(* Resolve the Gain from the provided values or automatically *)
+					defaultFluorescenceGain = If[agilentManufacturedQ,
+						(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+						60Percent,
+						100Percent
+					];
 					resolvedSingleFluorescenceGain = Which[
 						!MatchQ[fluorescenceGain, Automatic], fluorescenceGain,
-						MemberQ[resolvedDetector, Fluorescence], 100 Percent, (* Changed to percent *)
+						(* Single value if not multi-channel *)
+						MemberQ[resolvedDetector, Fluorescence] && !MatchQ[resolvedSingleExcitationWavelength, _List], defaultFluorescenceGain,
+						(* Expand the default value if multi-channel *)
+						MemberQ[resolvedDetector, Fluorescence], Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
 						True, Null
 					];
 					resolvedSingleFluorescenceFlowCellTemperature = Which[
@@ -15009,9 +16682,9 @@ resolveHPLCInstrumentOptions[
 						False
 					];
 
-					(* Track the error for more than 4 wavelength. Only do this when there is no length conflict to avoid giving too many errors *)
+					(* Track the error for more than 4 wavelength for Dionex or more than 1 wavelength for semi-prep Agilent. Only do this when there is no length conflict to avoid giving too many errors *)
 					tooManyFluorescenceWavelengthsError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError,
-						TrueQ[Length[ToList[resolvedSingleExcitationWavelength]] > 4],
+						TrueQ[Length[ToList[resolvedSingleExcitationWavelength]] > fluorescenceWavelengthLimit],
 						False
 					];
 
@@ -15024,12 +16697,11 @@ resolveHPLCInstrumentOptions[
 						False
 					];
 
-					(* If Ex/Em are too narrow apart <20 nm for Dionex, track the error *)
-					tooNarrowFluorescenceRangeError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError && MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]],
+					tooNarrowFluorescenceRangeError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError && !NullQ[tooNarrowFluorescenceRange],
 						And @@ MapThread[
 							And[
 								TrueQ[#1 < #2],
-								TrueQ[#1 > #2 - 20Nanometer]
+								TrueQ[#1 > #2 - tooNarrowFluorescenceRange]
 							]&,
 							{ToList[resolvedSingleExcitationWavelength], ToList[resolvedSingleEmissionWavelength]}
 						],
@@ -15137,7 +16809,7 @@ resolveHPLCInstrumentOptions[
 							{excitationWavelength, emissionWavelength, emissionCutOffFilter, fluorescenceGain, fluorescenceFlowCellTemperature},
 							Module[
 								{
-									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
+									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
 									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 								},
 
@@ -15179,9 +16851,34 @@ resolveHPLCInstrumentOptions[
 									True, Null
 								];
 								(* Resolve the Gain from the provided values or automatically *)
+								defaultFluorescenceGain = If[agilentManufacturedQ,
+									(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+									60Percent,
+									100Percent
+								];
+								(* Resolve the Gain from the provided values or automatically *)
 								resolvedSingleFluorescenceGain = Which[
 									!MatchQ[fluorescenceGain, Automatic], fluorescenceGain,
-									MemberQ[resolvedDetector, Fluorescence], 100 Percent,
+									(* If Ex/Em has to be a different length from sample due to any reason, avoid more conflict by using the default *)
+									!SameLengthQ[ToList[resolvedSingleExcitationWavelength],ToList[First[resolvedFluorescenceGain]]],
+									If[MatchQ[resolvedSingleExcitationWavelength,_List],
+										Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
+										defaultFluorescenceGain
+									],
+									(* For Waters instrument, avoid more conflict if the first gain from sample is invalid. Instead, default to 100 Percent *)
+									MemberQ[resolvedDetector, Fluorescence]&&MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"]]]&&TrueQ[First[invalidWatersFluorescenceGainErrors]],
+									If[MatchQ[resolvedSingleExcitationWavelength,_List],
+										Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
+										defaultFluorescenceGain
+									],
+									(* If first gain of sample is the same value as the wavelength, use it *)
+									MemberQ[resolvedDetector, Fluorescence]&&SameLengthQ[First[resolvedFluorescenceGain],resolvedSingleExcitationWavelength], First[resolvedFluorescenceGain],
+									(* Otherwise use a default *)
+									MemberQ[resolvedDetector, Fluorescence],
+									If[MatchQ[resolvedSingleExcitationWavelength,_List],
+										Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
+										defaultFluorescenceGain
+									],
 									True, Null
 								];
 								(* Resolve the flow cell temperature based on the provided value or the resolved Instrument *)
@@ -15189,7 +16886,7 @@ resolveHPLCInstrumentOptions[
 									!MatchQ[fluorescenceFlowCellTemperature, Automatic], fluorescenceFlowCellTemperature,
 									(* Flow cell temperature control is only available on UltiMate 3000 *)
 									MemberQ[resolvedDetector, Fluorescence] && MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]] && !NullQ[First[resolvedFluorescenceFlowCellTemperature]], First[resolvedFluorescenceFlowCellTemperature],
-									MemberQ[resolvedDetector, Fluorescence] && MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]], Ambient,
+									MemberQ[resolvedDetector, Fluorescence] && MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]], First[resolvedFluorescenceFlowCellTemperature],
 									(* Set to Null otherwise *)
 									True, Null
 								];
@@ -15208,9 +16905,9 @@ resolveHPLCInstrumentOptions[
 									False
 								];
 
-								(* Track the error for more than 4 wavelength. Only do this when there is no length conflict to avoid giving too many errors *)
+								(* Track the error for more than 4 wavelength for Dionex or more than 1 wavelength for semi-prep Agilent. Only do this when there is no length conflict to avoid giving too many errors *)
 								tooManyFluorescenceWavelengthsError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError,
-									TrueQ[Length[ToList[resolvedSingleExcitationWavelength]] > 4],
+									TrueQ[Length[ToList[resolvedSingleExcitationWavelength]] > fluorescenceWavelengthLimit],
 									False
 								];
 
@@ -15224,11 +16921,11 @@ resolveHPLCInstrumentOptions[
 								];
 
 								(* If Ex/Em are too narrow apart <20 nm for Dionex, track the error *)
-								tooNarrowFluorescenceRangeError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError && MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]],
+								tooNarrowFluorescenceRangeError = If[MemberQ[resolvedDetector, Fluorescence] && !conflictFluorescenceLengthError && !NullQ[tooNarrowFluorescenceRange],
 									And @@ MapThread[
 										And[
 											TrueQ[#1 < #2],
-											TrueQ[#1 > #2 - 20Nanometer]
+											TrueQ[#1 > #2 - tooNarrowFluorescenceRange]
 										]&,
 										{ToList[resolvedSingleExcitationWavelength], ToList[resolvedSingleEmissionWavelength]}
 									],
@@ -15703,7 +17400,7 @@ resolveHPLCInstrumentOptions[
 	resolvedELSDSamplingRates = Map[
 		If[MatchQ[#, Except[Automatic]],
 			#,
-			If[MemberQ[resolvedDetector, EvaporativeLightScattering], 1 / Second, Null]
+			If[MemberQ[resolvedDetector, EvaporativeLightScattering], 20 / Second, Null]
 		]&,
 		Lookup[partiallyResolvedOptions, ELSDSamplingRate]
 	];
@@ -15844,8 +17541,6 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* -- Fraction collection params -- *)
-
 	(* Consolidate all our assembled options *)
 	resolvedInstrumentSpecificOptions = Association[
 		Detector -> resolvedDetector,
@@ -15863,6 +17558,7 @@ resolveHPLCInstrumentOptions[
 		AbsorbanceWavelength -> resolvedAbsorbanceWavelengths,
 		WavelengthResolution -> resolvedWavelengthResolutions,
 		AbsorbanceSamplingRate -> resolvedAbsorbanceSamplingRates,
+		SmoothingTimeConstant -> resolvedSmoothingTimeConstants,
 		UVFilter -> resolvedUVFilters,
 		ExcitationWavelength -> resolvedExcitationWavelength /. {(x_) ..} :> x,
 		EmissionWavelength -> resolvedEmissionWavelength /. {(x_) ..} :> x,
@@ -15884,6 +17580,7 @@ resolveHPLCInstrumentOptions[
 		StandardAbsorbanceWavelength -> resolvedStandardAbsorbanceWavelengths,
 		StandardWavelengthResolution -> resolvedStandardWavelengthResolutions,
 		StandardAbsorbanceSamplingRate -> resolvedStandardAbsorbanceSamplingRates,
+		StandardSmoothingTimeConstant -> resolvedStandardSmoothingTimeConstants,
 		StandardUVFilter -> resolvedStandardUVFilters,
 		StandardExcitationWavelength -> resolvedStandardExcitationWavelength /. {(x_) ..} :> x,
 		StandardEmissionWavelength -> resolvedStandardEmissionWavelength /. {(x_) ..} :> x,
@@ -15905,6 +17602,7 @@ resolveHPLCInstrumentOptions[
 		BlankAbsorbanceWavelength -> resolvedBlankAbsorbanceWavelengths,
 		BlankWavelengthResolution -> resolvedBlankWavelengthResolutions,
 		BlankAbsorbanceSamplingRate -> resolvedBlankAbsorbanceSamplingRates,
+		BlankSmoothingTimeConstant -> resolvedBlankSmoothingTimeConstants,
 		BlankUVFilter -> resolvedBlankUVFilters,
 		BlankExcitationWavelength -> resolvedBlankExcitationWavelength /. {(x_) ..} :> x,
 		BlankEmissionWavelength -> resolvedBlankEmissionWavelength /. {(x_) ..} :> x,
@@ -15926,6 +17624,7 @@ resolveHPLCInstrumentOptions[
 		ColumnPrimeAbsorbanceWavelength -> resolvedColumnPrimeAbsorbanceWavelengths,
 		ColumnPrimeWavelengthResolution -> resolvedColumnPrimeWavelengthResolutions,
 		ColumnPrimeAbsorbanceSamplingRate -> resolvedColumnPrimeAbsorbanceSamplingRates,
+		ColumnPrimeSmoothingTimeConstant -> resolvedColumnPrimeSmoothingTimeConstants,
 		ColumnPrimeUVFilter -> resolvedColumnPrimeUVFilters,
 		ColumnPrimeExcitationWavelength -> resolvedColumnPrimeExcitationWavelength /. {(x_) ..} :> x,
 		ColumnPrimeEmissionWavelength -> resolvedColumnPrimeEmissionWavelength /. {(x_) ..} :> x,
@@ -15947,6 +17646,7 @@ resolveHPLCInstrumentOptions[
 		ColumnFlushAbsorbanceWavelength -> resolvedColumnFlushAbsorbanceWavelengths,
 		ColumnFlushWavelengthResolution -> resolvedColumnFlushWavelengthResolutions,
 		ColumnFlushAbsorbanceSamplingRate -> resolvedColumnFlushAbsorbanceSamplingRates,
+		ColumnFlushSmoothingTimeConstant -> resolvedColumnFlushSmoothingTimeConstants,
 		ColumnFlushUVFilter -> resolvedColumnFlushUVFilters,
 		ColumnFlushExcitationWavelength -> resolvedColumnFlushExcitationWavelength /. {(x_) ..} :> x,
 		ColumnFlushEmissionWavelength -> resolvedColumnFlushEmissionWavelength /. {(x_) ..} :> x,
@@ -15975,7 +17675,7 @@ resolveHPLCInstrumentOptions[
 	fluorescenceGreaterEmissionInvalidOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::HPLCEmissionLowerThanExcitation, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache]];{#2},
+			Message[Error::HPLCEmissionLowerThanExcitation, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache, Simulation->simulation]];{#2},
 			{}
 		]&,
 		{
@@ -16015,7 +17715,7 @@ resolveHPLCInstrumentOptions[
 	];
 
 	fluorescenceGreaterEmissionInvalidTests = MapThread[
-		testOrNull["All specified excitation wavelengths are less than emission wavelengths in " <> ToString[#2] <> " options for all " <> #3".", !MemberQ[#1, True]]&,
+		testOrNull["All specified excitation wavelengths are less than emission wavelengths in " <> ToString[#2] <> " options for all " <> #3<>".", !MemberQ[#1, True]]&,
 		{
 			(* Error tracking booleans *)
 			{
@@ -16048,7 +17748,7 @@ resolveHPLCInstrumentOptions[
 	fluorescenceRangeTooNarrowInvalidOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::HPLCEmissionExcitationTooNarrow, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache], ObjectToString[currentInstrument, Cache -> cache]];{#2},
+			Message[Error::HPLCEmissionExcitationTooNarrow, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache, Simulation->simulation], ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], tooNarrowFluorescenceRange];{#2},
 			{}
 		]&,
 		{
@@ -16088,7 +17788,7 @@ resolveHPLCInstrumentOptions[
 	];
 
 	fluorescenceRangeTooNarrowInvalidTests = MapThread[
-		testOrNull["If Model[Instrument, HPLC, \"UltiMate 3000 with FLR Detector\"] is selected, all specified excitation wavelengths are not within 20 nm of emission wavelengths in " <> ToString[#2] <> " options for all " <> #3".", !MemberQ[#1, True]]&,
+		testOrNull["If Model[Instrument, HPLC, \"UltiMate 3000 with FLR Detector\"] or Model[Instrument, HPLC, \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\"] is selected, all specified excitation wavelengths are not within "<>ToString[Unitless[tooNarrowFluorescenceRange/.{Null->10Nanometer},Nanometer]]<>" nm of emission wavelengths in " <> ToString[#2] <> " options for all " <> #3<>".", !MemberQ[#1, True]]&,
 		{
 			(* Error tracking booleans *)
 			{
@@ -16121,7 +17821,7 @@ resolveHPLCInstrumentOptions[
 	conflictFluorescenceLengthOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::ConflictHPLCFluorescenceOptionsLengths, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache]];{#2},
+			Message[Error::ConflictHPLCFluorescenceOptionsLengths, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache, Simulation->simulation]];{#2},
 			{}
 		]&,
 		{
@@ -16190,11 +17890,11 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* Fluorescence Error 3 - HPLCFluorescenceWavelengthLimit - too many detection channels - currently limit to 4*)
+	(* Fluorescence Error 3 - HPLCFluorescenceWavelengthLimit - too many detection channels - limit 4 for Dionex and limit 1 for semi-prep Agilent *)
 	tooManyFluorescenceChannelsOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::HPLCFluorescenceWavelengthLimit, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache], ToString[fluorescenceWavelengthLimit]];{#2},
+			Message[Error::HPLCFluorescenceWavelengthLimit, ToString[#2], #4, ObjectToString[PickList[#3, #1, True], Cache -> cache, Simulation->simulation], ToString[fluorescenceWavelengthLimit]];{#2},
 			{}
 		]&,
 		{
@@ -16234,7 +17934,7 @@ resolveHPLCInstrumentOptions[
 	];
 
 	tooManyFluorescenceChannelsTests = MapThread[
-		testOrNull["Only up to " <> ToString[fluorescenceWavelengthLimit] <> " channels can be detected for each member of the " <> #2 <> ".", !MemberQ[#1, True]]&,
+		testOrNull["Only up to " <> ToString[fluorescenceWavelengthLimit] <> " channels can be detected for each member of the " <> #2 <> " on the instrument "<>ObjectToString[currentInstrument, Cache->cache, Simulation->simulation]<>".", !MemberQ[#1, True]]&,
 		{
 			(* Error tracking booleans *)
 			{
@@ -16259,7 +17959,7 @@ resolveHPLCInstrumentOptions[
 	invalidEmissionCutOffFilterOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::InvalidHPLCEmissionCutOffFilter, ObjectToString[currentInstrument, Cache -> cache], ToString[#2], ObjectToString[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"], Cache -> cache]];{#2},
+			Message[Error::InvalidHPLCEmissionCutOffFilter, ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], ToString[#2], ObjectToString[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"], Cache -> cache, Simulation->simulation]];{#2},
 			{}
 		]&,
 		{
@@ -16308,7 +18008,7 @@ resolveHPLCInstrumentOptions[
 	tooLargeEmissionCutOffFilterOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::TooLargeHPLCEmissionCutOffFilter, #4, ObjectToString[PickList[#3, #1, True], Cache -> cache], ToString[First[#2]], ToString[PickList[#5, #1, True]], ToString[Last[#2]], ToString[PickList[#6, #1, True]]];{#2},
+			Message[Error::TooLargeHPLCEmissionCutOffFilter, #4, ObjectToString[PickList[#3, #1, True], Cache -> cache, Simulation->simulation], ToString[First[#2]], ToString[PickList[#5, #1, True]], ToString[Last[#2]], ToString[PickList[#6, #1, True]]];{#2},
 			{}
 		]&,
 		{
@@ -16389,7 +18089,7 @@ resolveHPLCInstrumentOptions[
 	invalidWatersFluorescenceGainOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::InvalidWatersHPLCFluorescenceGain, ObjectToString[currentInstrument, Cache -> cache], ToString[#2]];{#2},
+			Message[Error::InvalidWatersHPLCFluorescenceGain, ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], ToString[#2]];{#2},
 			{}
 		]&,
 		{
@@ -16438,7 +18138,7 @@ resolveHPLCInstrumentOptions[
 	invalidFluorescenceFlowCellTemperatureOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
-			Message[Error::InvalidHPLCFluorescenceFlowCellTemperature, ObjectToString[currentInstrument, Cache -> cache], ToString[#2], ObjectToString[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"], Cache -> cache]];{#2},
+			Message[Error::InvalidHPLCFluorescenceFlowCellTemperature, ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], ToString[#2], ObjectToString[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"], Cache -> cache, Simulation->simulation]];{#2},
 			{}
 		]&,
 		{
@@ -16642,7 +18342,7 @@ resolveHPLCInstrumentOptions[
 			If[messagesQ,
 				Message[Error::HeatingPowerRequiresNebulizerHeating, gasHeatingPowerConflictOptions]
 			];
-			testOrNull["When _NebulizerheatingPower is specified, the corresponding _NebulizerGas or _NebulizerGasHeating is not False or Null:", False]
+			testOrNull["When _NebulizerHeatingPower is specified, the corresponding _NebulizerGas or _NebulizerGasHeating is not False or Null:", False]
 		),
 		testOrNull["When _NebulizerGasPressure is specified, the corresponding _NebulizerGas or _NebulizerGasHeating is not False or Null:", True]
 	];
@@ -16670,9 +18370,9 @@ resolveHPLCInstrumentOptions[
 		True,
 		Module[
 			{innerResult},
-			innerResult = MatchQ[#, Except[ListableP[Automatic | Null]]]& /@ Lookup[partiallyResolvedOptions, Join[samplingRateOptions, uvFilterOptions]];
+			innerResult = MatchQ[#, Except[ListableP[Automatic | Null]]]& /@ Lookup[partiallyResolvedOptions, uvFilterOptions];
 			(* If we got a hit, then we return true with the offending options *)
-			If[Or @@ innerResult, {True, PickList[Join[samplingRateOptions, uvFilterOptions], innerResult]}, {False, {}}]
+			If[Or @@ innerResult, {True, PickList[uvFilterOptions, innerResult]}, {False, {}}]
 		]
 	];
 
@@ -16682,9 +18382,9 @@ resolveHPLCInstrumentOptions[
 			If[messagesQ && !engineQ,
 				Message[Warning::UVVisOptionsNotApplicable, tuvNotNeededOptions]
 			];
-			testOrNull["If the resolved Instrument has a UVVis detector on a Dionex HPLC instrument, AbsorbanceSamplingRate options and UVFilter options cannot be specified:", False]
+			testOrNull["If the resolved Instrument has a UVVis detector on a Dionex HPLC instrument, UVFilter options cannot be specified:", False]
 		),
-		testOrNull["If the resolved Instrument has a UVVis detector on a Dionex HPLC instrument, AbsorbanceSamplingRate options and UVFilter options cannot be specified:", True]
+		testOrNull["If the resolved Instrument has a UVVis detector on a Dionex HPLC instrument, UVFilter options cannot be specified:", True]
 	];
 
 	(* Tabulate all of the invalid options *)
@@ -16705,9 +18405,11 @@ resolveHPLCInstrumentOptions[
 		gasPressureConflictOptions,
 		gasHeatingPowerConflictOptions,
 		gasHeatingConflictOptions,
+		invalidSmoothingTimeConstantInvalidOptions,
 		wavelengthResolutionConflictOptions,
 		wavelengthFractionCollectionConflictOptions,
 		incompatibleFractionCollectionAllOptions,
+		notApplicableAgilentPeakOptions,
 		conflictFractionCollectionMethodOptions
 	};
 
@@ -16731,9 +18433,13 @@ resolveHPLCInstrumentOptions[
 		gasHeatingConflictTest,
 		gasHeatingPowerConflictTest,
 		tuvOptionsNotNeededTest,
+		roundedSamplingRateRoundingTests,
+		invalidSmoothingTimeConstantTests,
+		roundedSmoothingTimeConstantRoundingTests,
 		wavelengthResolutionConflictTests,
 		wavelengthFractionCollectionConflictTests,
 		incompatibleFractionCollectionTest,
+		notApplicableAgilentPeakOptionsTest,
 		conflictFractionCollectionMethodTests
 	}], _EmeraldTest];
 
@@ -16754,6 +18460,7 @@ DefineOptions[
 	Options :> {
 		{InternalUsage -> False, BooleanP, "Whether this function is being called from another function (e.g. ExperimentLCMS) or not."},
 		OutputOption,
+		SimulationOption,
 		CacheOption
 	}
 ];
@@ -16776,7 +18483,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		instrumentModel, columnFlushInitialFlowRate, protocolObjectID,
 		fractionPackets, existingFractionCollectionMethods, newFractionPackets,standardPositions, blankPositions,
 		instrumentManufacturer, alternateInstruments, alternateInstrumentOptions, resolvedStandard, resolvedBlank,
-		listifiedStandard, listifiedBlank, needleWashSolutionPlacements, instrumentResource,
+		needleWashSolutionPlacements, instrumentResource,
 		shutdownGradient, shutdownFileName, autosamplerDeadVolume, vialContainerMaxVolume, vialSampleMaxVolume,
 		calibrationBufferContainer, calibrationBufferVolume, lowpHCalibrationBufferResource, highpHCalibrationBufferResource, conductivityCalibrationBufferResource,
 		pHCalibrationQ, conductivityCalibrationQ, calibrationWashSolutionResource, calibrationWasteContainer, syringePumpResource,
@@ -16786,13 +18493,16 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		calibrationWashSolutionVolume, lowpHCalibrationBufferVolume, highpHCalibrationBufferVolume, conductivityCalibrationBufferVolume,
 		syringeInnerDiameter, calibrationWashSolutionSyringeInnerDiameter, lowpHCalibrationBufferSyringeInnerDiameter, highpHCalibrationBufferSyringeInnerDiameter, conductivityCalibrationBufferSyringeInnerDiameter,
 		instrumentSpecificOptions, unresolvedOptions, guardColumns, guardCartridgeModelPackets, guardColumnModelPackets, guardColumnObjects, guardCartridgeObjects,
-		availableInstruments, watersManufacturedQ, watersHPLCInstruments, dionexHPLCInstruments, testHPLCInstruments, dionexHPLCPattern, standardPositionsCorresponded, plateContainerCount, instrumentSpecifiedProtocolPacket,
+		availableInstruments, watersManufacturedQ, watersHPLCInstruments, dionexHPLCInstruments, testHPLCInstruments, austinHPLCInstruments,cmuHPLCInstruments,
+		dionexHPLCPattern, agilentHPLCInstrumentPackets, prepAgilentHPLCInstrumentPackets, prepAgilentHPLCInstruments, prepAgilentHPLCPattern,
+		semiPrepAgilentHPLCInstrumentPackets, semiPrepAgilentHPLCInstruments, semiPrepAgilentHPLCPattern,
+		standardPositionsCorresponded, plateContainerCount, instrumentSpecifiedProtocolPacket,
 		blankPositionsCorresponded, columnPrimePositionsCorresponded, columnFlushPositionsCorresponded,
 		blankColumnTupleResourcesUnmapped, standardColumnTupleResourcesUnmapped,
 		uniqueGradientPackets, allGradientTuples, totalRunTime, bufferAVolumePerGradient, bufferBVolumePerGradient, bufferCVolumePerGradient,
 		bufferDVolumePerGradient, systemPrimeBufferAVolumeUsage, systemPrimeBufferBVolumeUsage, systemPrimeBufferCVolumeUsage,
 		systemPrimeBufferDVolumeUsage, systemFlushBufferAVolumeUsage, systemFlushBufferBVolumeUsage, systemFlushBufferCVolumeUsage,
-		systemFlushBufferDVolumeUsage, bufferDeadVolume, bufferAVolume, bufferBVolume, bufferCVolume, bufferDVolume, systemPrimeBufferAVolume,
+		systemFlushBufferDVolumeUsage, bufferDeadVolume, extraBufferVolume, leakTestExtraVolume, bufferAVolume, bufferBVolume, bufferCVolume, bufferDVolume, systemPrimeBufferAVolume,
 		systemPrimeBufferBVolume, systemPrimeBufferCVolume, systemPrimeBufferDVolume, systemFlushBufferAVolume, systemFlushBufferBVolume,
 		systemFlushBufferCVolume, systemFlushBufferDVolume, bufferAContainer, bufferBContainer, bufferCContainer, bufferDContainer,
 		tableGradients, injectionTableFull, sampleTuples, insertionAssociation, injectionTableInserted, injectionTableWithReplicates, injectionTableUploadable,
@@ -16806,16 +18516,16 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		checkInFrequency,
 		systemPrimeBufferPlacements, systemFlushBufferPlacements,
 		componentMaxPressures, upperPressureLimit, sampleResources, expandedPreInstrumentOptions, resolvedAliquotAmount, resolvedAssayVolume, dilutionFactors,
-		columnPrimeGradientA, columnPrimeGradientB, columnPrimeGradientC, columnPrimeGradientD, columnPrimeFlowRates, columnPrimeFlowRatesConstant, columnPrimeFlowRatesVariable, 
+		columnPrimeGradientA, columnPrimeGradientB, columnPrimeGradientC, columnPrimeGradientD, columnPrimeFlowRates, columnPrimeFlowRatesConstant, columnPrimeFlowRatesVariable,
 		sampleGradientA, sampleGradientB, sampleGradientC, sampleGradientD, sampleFlowRates, sampleFlowRatesConstant, sampleFlowRatesVariable, sampleColumnTemperatures,
 		standardGradientA, standardGradientB, standardGradientC, standardGradientD, standardFlowRates, standardFlowRatesConstant, standardFlowRatesVariable, standardTemperatures,
 		blankGradientA, blankGradientB, blankGradientC, blankGradientD, blankFlowRates, blankFlowRatesConstant, blankFlowRatesVariable, blankTemperatures,
 		columnPrimeTemperatures, columnFlushGradientA, columnFlushGradientB, columnFlushGradientC, columnFlushGradientD, columnFlushFlowRates, columnFlushFlowRatesConstant, columnFlushFlowRatesVariable,
-		internalUsage, internalUsageQ,
+		internalUsage, internalUsageQ, simulation,
 		columnFlushTemperatures, uniqueSamples, uniqueSampleResources,
 		operatorResource, primeFlushTime, detectorCalibrationTime, checkpoints, sharedFieldPacket, joinedProtocolPacket, allPackets, preInstrumentOptionResolution,
 		expandedStandardsStorageConditions, standardStorageLookup, blankStorageLookup, expandedBlanksStorageConditions,
-		allResources, resourcesFulfillableQ, resourceTests, expandForNumberOfReplicates, agilentHPLCInstruments, agilentHPLCPattern},
+		allResources, resourcesFulfillableQ, resourceTests, expandForNumberOfReplicates, agilentHPLCInstruments},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = OptionValue[Output];
@@ -16824,12 +18534,13 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	(* Determine if we should keep a running list of tests *)
 	gatherTestsQ = MemberQ[output, Tests];
 
-	(* Determine whether this fucntion is just for internal usage or not *)
+	(* Determine whether this function is just for internal usage or not *)
 	internalUsage = OptionValue[InternalUsage];
 	internalUsageQ = MatchQ[internalUsage, True];
 
 	(* Fetch passed cache *)
-	cache = OptionValue[Cache];
+	cache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* Convert list of rules to an association *)
 	resolvedOptions = Association@Last[ExpandIndexMatchedInputs[ExperimentHPLC, {mySamples}, myResolvedOptions]];
@@ -16839,23 +18550,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	(* Most of the detector related options are instrument specific - except the pH/Conductivity calibration options. We don't want to resolve these options again because we cannot prepare the resources for the buffers again *)
 	instrumentSpecificOptions = {Detector, MaxAcceleration, SampleTemperature, FractionCollectionDetector, AbsoluteThreshold, PeakSlope, PeakSlopeDuration, PeakEndThreshold,
 		pHTemperatureCompensation, ConductivityTemperatureCompensation,
-		AbsorbanceWavelength, WavelengthResolution, AbsorbanceSamplingRate, UVFilter,
+		AbsorbanceWavelength, WavelengthResolution, AbsorbanceSamplingRate, SmoothingTimeConstant, UVFilter,
 		ExcitationWavelength, EmissionWavelength, EmissionCutOffFilter, FluorescenceGain, FluorescenceFlowCellTemperature,
 		NebulizerGas, NebulizerGasHeating, NebulizerHeatingPower, NebulizerGasPressure, DriftTubeTemperature, ELSDGain, ELSDSamplingRate,
 		LightScatteringLaserPower, LightScatteringFlowCellTemperature, RefractiveIndexMethod, RefractiveIndexFlowCellTemperature,
-		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardAbsorbanceSamplingRate, StandardUVFilter,
+		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant, StandardUVFilter,
 		StandardExcitationWavelength, StandardEmissionWavelength, StandardEmissionCutOffFilter, StandardFluorescenceGain, StandardFluorescenceFlowCellTemperature,
 		StandardNebulizerGas, StandardNebulizerGasHeating, StandardNebulizerHeatingPower, StandardNebulizerGasPressure, StandardDriftTubeTemperature, StandardELSDGain, StandardELSDSamplingRate,
 		StandardLightScatteringLaserPower, StandardLightScatteringFlowCellTemperature, StandardRefractiveIndexMethod, StandardRefractiveIndexFlowCellTemperature,
-		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankAbsorbanceSamplingRate, BlankUVFilter,
+		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant, BlankUVFilter,
 		BlankExcitationWavelength, BlankEmissionWavelength, BlankEmissionCutOffFilter, BlankFluorescenceGain, BlankFluorescenceFlowCellTemperature,
 		BlankNebulizerGas, BlankNebulizerGasHeating, BlankNebulizerHeatingPower, BlankNebulizerGasPressure, BlankDriftTubeTemperature, BlankELSDGain, BlankELSDSamplingRate,
 		BlankLightScatteringLaserPower, BlankLightScatteringFlowCellTemperature, BlankRefractiveIndexMethod, BlankRefractiveIndexFlowCellTemperature,
-		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeUVFilter,
+		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant, ColumnPrimeUVFilter,
 		ColumnPrimeExcitationWavelength, ColumnPrimeEmissionWavelength, ColumnPrimeEmissionCutOffFilter, ColumnPrimeFluorescenceGain, ColumnPrimeFluorescenceFlowCellTemperature,
 		ColumnPrimeNebulizerGas, ColumnPrimeNebulizerGasHeating, ColumnPrimeNebulizerHeatingPower, ColumnPrimeNebulizerGasPressure, ColumnPrimeDriftTubeTemperature, ColumnPrimeELSDGain, ColumnPrimeELSDSamplingRate,
 		ColumnPrimeLightScatteringLaserPower, ColumnPrimeLightScatteringFlowCellTemperature, ColumnPrimeRefractiveIndexMethod, ColumnPrimeRefractiveIndexFlowCellTemperature,
-		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushAbsorbanceSamplingRate, ColumnFlushUVFilter,
+		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant, ColumnFlushUVFilter,
 		ColumnFlushExcitationWavelength, ColumnFlushEmissionWavelength, ColumnFlushEmissionCutOffFilter, ColumnFlushFluorescenceGain, ColumnFlushFluorescenceFlowCellTemperature,
 		ColumnFlushNebulizerGas, ColumnFlushNebulizerGasHeating, ColumnFlushNebulizerHeatingPower, ColumnFlushNebulizerGasPressure, ColumnFlushDriftTubeTemperature, ColumnFlushELSDGain, ColumnFlushELSDSamplingRate,
 		ColumnFlushLightScatteringLaserPower, ColumnFlushLightScatteringFlowCellTemperature, ColumnFlushRefractiveIndexMethod, ColumnFlushRefractiveIndexFlowCellTemperature
@@ -16911,7 +18622,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	];
 
 	(* Expand our samples and options according to NumberOfReplicates. *)
-	{samplesWithReplicates, optionsWithReplicates} = expandNumberOfReplicates[ExperimentHPLC, sampleObjects, myResolvedOptions];
+	{samplesWithReplicates, optionsWithReplicates} = expandNumberOfReplicates[ExperimentHPLC, sampleObjects, Normal[resolvedOptions, Association]];
 
 	(* Helper for later use to expand SamplesIn-index-matched options to reflect NumberOfReplicates. This is needed in addition to expandNumberOfReplicates because some of these options (e.g., GradientMethod) have been modified in this resource packets function and can't just be pulled from optionsWithReplicates. *)
 	expandForNumberOfReplicates[unexpandedValue_] := Apply[Join, ConstantArray[#, numberOfReplicates]& /@ unexpandedValue];
@@ -16935,10 +18646,20 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	watersManufacturedQ = MatchQ[instrumentManufacturer, ObjectP[Object[Company, Supplier, "Waters"]]];
 
 	(* Get the Dionex/Agilent HPLC models and create a pattern for them *)
-	{availableInstruments,dionexHPLCInstruments,agilentHPLCInstruments,watersHPLCInstruments,testHPLCInstruments}=allHPLCInstrumentSearch["Memoization"];
+	{availableInstruments,dionexHPLCInstruments,agilentHPLCInstruments,watersHPLCInstruments,testHPLCInstruments,austinHPLCInstruments,cmuHPLCInstruments}=allHPLCInstrumentSearch["Memoization"];
 
 	dionexHPLCPattern = Alternatives @@ dionexHPLCInstruments;
-	agilentHPLCPattern = Alternatives @@ agilentHPLCInstruments;
+	(* Agilent preparative instrument has totally different requirements for containers etc so if preparative Agilent is selected as one of the instruments, we will go with it and deny all the other instruments *)
+	agilentHPLCInstrumentPackets = Map[
+		fetchPacketFromCacheHPLC[#, cache]&,
+		agilentHPLCInstruments
+	];
+	prepAgilentHPLCInstrumentPackets = Cases[agilentHPLCInstrumentPackets,KeyValuePattern[Scale->{___,Preparative,___}]];
+	prepAgilentHPLCInstruments = Lookup[prepAgilentHPLCInstrumentPackets,Object];
+	prepAgilentHPLCPattern = Alternatives @@ prepAgilentHPLCInstruments;
+	semiPrepAgilentHPLCInstrumentPackets = Complement[agilentHPLCInstrumentPackets,prepAgilentHPLCInstrumentPackets];
+	semiPrepAgilentHPLCInstruments = Lookup[semiPrepAgilentHPLCInstrumentPackets,Object,{}];
+	semiPrepAgilentHPLCPattern = Alternatives @@ semiPrepAgilentHPLCInstruments;
 
 	(* Look up the column selector *)
 	columnSelectorLookup = Lookup[resolvedOptions, ColumnSelector];
@@ -17174,18 +18895,18 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	(* Make all of the resources for standard, blank, samples *)
 
 	(* Depending on instrument model, different vial type is compatible. *)
-	compatibleVialContainer = If[MatchQ[instrumentModel,agilentHPLCPattern],
+	compatibleVialContainer = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		(* "50mL Tube" *)
 		{Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
-		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified"} *)
-		{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:1ZA60vL48X85"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]}
+		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
+		$ChromatographyLCCompatibleVials
 	];
 
 	(* Set autosampler dead volume (following the same number as in the resolver *)
 	autosamplerDeadVolume = Which[
 		internalUsageQ, 40 Microliter,
 		(* Model[Instrument, HPLC, "Agilent 1290 Infinity II LC System"] has a larger dead volume *)
-		MatchQ[instrumentModel,agilentHPLCPattern],
+		MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		5 Milliliter,
 		True, 40 Microliter
 	];
@@ -18070,30 +19791,38 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		650 Milliliter
 	];
 
+	(* Calculate the rough usage of buffer for purging *)
+	(* For Dionex/Semi-Prep Agilent/Waters, purging is done at max 6mL/min. Count 15 min for 90 mL. For prep HPLC, it is at 10 mL/min but default is ~5 min *)
+	extraBufferVolume = 90 Milliliter;
+
+	(* Calculate the rough usage of buffer for leak test (always BufferB) *)
+	(* Use initial flow rate * 15 minutes. Usually we run leak test for 4-5 minutes depending on instrument but it may leak and we may need to re-run. *)
+	leakTestExtraVolume = allGradientTuples[[1,1,-1]] * 15 Minute;
+
 	(* Round for water dispenser if buffer is water. 75 mL for initial purge instrument Purge *)
 	bufferAVolume = If[MatchQ[bufferAModel, WaterModelP],
-		roundToDispenseVolume[Total[bufferAVolumePerGradient] + 75 Milliliter],
-		Total[bufferAVolumePerGradient] + 75 Milliliter
+		roundToDispenseVolume[Total[bufferAVolumePerGradient] + extraBufferVolume],
+		Total[bufferAVolumePerGradient] + extraBufferVolume
 	];
 
 	(* Round for water dispenser if buffer is water. 75 mL for initial purge instrument Purge *)
 	bufferBVolume = If[MatchQ[bufferBModel, WaterModelP],
-		roundToDispenseVolume[Total[bufferBVolumePerGradient] + 75 Milliliter],
-		Total[bufferBVolumePerGradient] + 75 Milliliter
+		roundToDispenseVolume[Total[bufferBVolumePerGradient] + extraBufferVolume + leakTestExtraVolume],
+		Total[bufferBVolumePerGradient] + extraBufferVolume + leakTestExtraVolume
 	];
 
 	(* Round for water dispenser if buffer is water. 75 mL for initial purge instrument Purge *)
 	bufferCVolume = If[MatchQ[bufferCModel, WaterModelP],
-		roundToDispenseVolume[Total[bufferCVolumePerGradient] + 75 Milliliter],
-		Total[bufferCVolumePerGradient] + 75 Milliliter
+		roundToDispenseVolume[Total[bufferCVolumePerGradient] + extraBufferVolume],
+		Total[bufferCVolumePerGradient] + extraBufferVolume
 	];
 
 	(* Leave 0 mL if no BufferD used. Round for water dispenser if buffer is water. *)
 	bufferDVolume = If[NullQ[bufferDModel],
 		0 Milliliter,
 		If[MatchQ[bufferDModel, WaterModelP],
-			roundToDispenseVolume[Total[bufferDVolumePerGradient] + 75 Milliliter],
-			Total[bufferDVolumePerGradient] + 75 Milliliter
+			roundToDispenseVolume[Total[bufferDVolumePerGradient] + extraBufferVolume],
+			Total[bufferDVolumePerGradient] + extraBufferVolume
 		]
 	];
 
@@ -18359,27 +20088,28 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Same as BufferC for Dionex *)
 		bufferCResource,
 		Module[
-			{needleWashSolutionAmount, needleWashSolutionContainer},
+			{needleWashSolutionAmount, needleWashSolutionMaxVolume, needleWashSolutionContainer},
 			(* Estimate to be 5 mL per injection, plus dead volume *)
 			needleWashSolutionAmount = Length[allGradientTuples] * 5 * Milliliter + bufferDeadVolume;
-			needleWashSolutionContainer = Which[
-				MatchQ[instrumentModel,agilentHPLCPattern],
+
+			(* We have assigned caps for the needle wash solution and that decides the max volume we can use *)
+			(* Semi-prep Agilent HPLC uses 1L bottles due to deck size *)
+			needleWashSolutionMaxVolume = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
+				4 Liter,
+				1 Liter
+			];
+			needleWashSolutionContainer = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 				(* Amber Glass Bottle 4 L for Agilent *)
 				{Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
-				MatchQ[needleWashSolutionAmount, LessEqualP[1Liter]],
+				(* Otherwise 1 Liter bottle since we have 1 Liter cap assigned. It requires >130 injections to go beyond the max volume *)
 				If[internalUsageQ,
 					{Model[Container, Vessel, "id:4pO6dM5l83Vz"]}, (* 1L Glass Bottle, Detergent-Sensitive *)
 					{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
-				],
-				True,
-				If[internalUsageQ,
-					{Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-					{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle *)
 				]
 			];
 			Resource[
 				Sample -> needleWashSolution,
-				Amount -> needleWashSolutionAmount,
+				Amount -> Min[needleWashSolutionAmount,needleWashSolutionMaxVolume],
 				Container -> needleWashSolutionContainer,
 				Name -> CreateUUID[]
 			]
@@ -18524,8 +20254,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	];
 
 	(* Find out how many FractionContainers we need *)
-	(* We only care about thi for Agilent instrument *)
-	sampleContainerModels = If[MatchQ[instrumentModel,agilentHPLCPattern],
+	(* We only care about this for Agilent instrument *)
+	sampleContainerModels = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		Join[
 			MapThread[
 				Which[
@@ -18591,28 +20321,28 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	];
 
 	(* Check how many fraction containers we are going to have *)
-	fractionPositionCount =  If[MatchQ[instrumentModel,agilentHPLCPattern],
+	fractionPositionCount =  If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		agilentFractionCollectionRackPositions * If[MatchQ[Lookup[myResolvedOptions,FractionCollectionContainer],ObjectP[{Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:rea9jl1orrMp"]}]],
 			(* 15mL Tube - 36 per rack *)
 			(Lookup[agilentRackPositionRules,Experiment`Private`$SmallAgilentHPLCAutosamplerRack]),
 			(* 50mL Tube - 10 per rack *)
 			(Lookup[agilentRackPositionRules,Experiment`Private`$LargeAgilentHPLCAutosamplerRack])
 		],
-		(* 4 plates of 96 positions each *)
+		(* 4 plates of 96 positions each for semi prep instrument. same for Dionex/Agilent*)
 		96 * 4
 	];
-	fractionContainerCount = If[MatchQ[instrumentModel,agilentHPLCPattern],
+	fractionContainerCount = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		fractionPositionCount,
 		4
 	];
 
-	(* Get the maximum of fraciton volumes before we have to replace the fraction containers *)
+	(* Get the maximum of fraction volumes before we have to replace the fraction containers *)
 	maxFractionTotalVolume = If[NullQ[Lookup[myResolvedOptions,MaxFractionVolume]],
 		Null,
 		fractionPositionCount * Max[Cases[Lookup[myResolvedOptions,MaxFractionVolume],VolumeP]]
 	];
 
-	checkInFrequency = If[(Or @@ Lookup[myResolvedOptions, CollectFractions]),
+	checkInFrequency = If[TrueQ[(Or @@ Lookup[myResolvedOptions, CollectFractions])],
 		Module[{totalBufferUsage, totalTime, bufferUsePerTime},
 
 			totalBufferUsage = Total[
@@ -18759,7 +20489,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			}
 		]
 	];
-	
+
 	(* Split the field to be Constant or Variable *)
 	sampleFlowRatesConstant = Map[
 		If[MatchQ[#,GreaterEqualP[(0 * Milli * Liter) / Minute]],
@@ -18879,7 +20609,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			}
 		]
 	];
-	
+
 	(* Split the field to be Constant or Variable *)
 	blankFlowRatesConstant = Map[
 		If[MatchQ[#,GreaterEqualP[(0 * Milli * Liter) / Minute]],
@@ -18938,11 +20668,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Create the placement fields for the needle wash solution *)
 	needleWashSolutionPlacements = Which[
 		internalUsageQ,
-		{{Link[needleWashResource], {"SM Purge Reservoir Slot"}}},
+		{{Link[needleWashResource], {"SM Wash Reservoir Slot"}}},
 		(* Do not use resource yet if not used in LCMS. We will require resource in Engine so alternate instruments are exchangable  *)
 		watersManufacturedQ,
-		{{Link[needleWashSolution], {"SM Purge Reservoir Slot"}}},
-		MatchQ[instrumentModel,agilentHPLCPattern],
+		{{Link[needleWashSolution], {"SM Wash Reservoir Slot"}}},
+		MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		{{Link[needleWashSolution], {"Wash Solvent Slot 1"}}},
 		True,
 		{}
@@ -19169,10 +20899,10 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	];
 
 	(* Populate all shared fields using legacy Funtopia function *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, Normal[resolvedOptions], Cache -> cache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, Normal[resolvedOptions], Cache -> cache, Simulation -> simulation];
 
 	(* Use Level 0 Operators for HPLC *)
-	operatorResource = Model[User, Emerald, Operator, "Trainee"];
+	operatorResource = $BaselineOperator;
 
 	(* Checkpoints are different depending on the instrument-dependent procedure being used and whether calibration is required *)
 	checkpoints = Which[
@@ -19295,7 +21025,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		Replace[AlternateOptions]->Normal/@alternateInstrumentOptions,
 		SeparationTime -> totalRunTime,
 		CheckInFrequency -> checkInFrequency,
-		Replace[ColumnSelector] -> Lookup[resolvedOptions, ColumnSelection],
+		(* Turn False to Null so it is hidden from Inspect *)
+		Replace[ColumnSelector] -> Lookup[resolvedOptions, ColumnSelection]/.{False->Null},
 		Replace[ColumnSelectorAssembly] -> columnSelectorUploadable,
 		Column -> If[Length[columnSelectorResources]==1,
 			columnSelectorResources[[1, 5]],
@@ -19327,9 +21058,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		],
 		(* In the case we don't have column, make sure our GuardCartridge is also an empty list so the length matches *)
 		Replace[GuardCartridge] -> guardCartridgeResources,
-
-		(* We let Cover pick the plate seal resource and this is just a model here *)
-		PlateSeal -> Link[Model[Item, PlateSeal, "id:Vrbp1jKZJ0Rm"]],
+		(* We will create Cover resources in the compiler, when we have the WorkingContainers and can prepare resources that are index matched to the WorkingContainers field *)
 		BufferA -> Link[bufferAResource],
 		BufferB -> Link[bufferBResource],
 		BufferC -> Link[bufferCResource],
@@ -19437,7 +21166,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		HighpHCalibrationBufferVolume -> highpHCalibrationBufferVolume,
 
 		(* Conductivity detector calibration related *)
-		ConductivityCalibration -> Lookup[resolvedOptions, pHCalibration],
+		ConductivityCalibration -> Lookup[resolvedOptions, ConductivityCalibration],
 		ConductivityCalibrationBuffer -> conductivityCalibrationBufferResource,
 		ConductivityCalibrationTarget -> Lookup[resolvedOptions, ConductivityCalibrationTarget],
 		ConductivityCalibrationBufferSyringe -> conductivityCalibrationBufferSyringeResource,
@@ -19463,13 +21192,13 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		],
 		SeparationMode -> Lookup[myResolvedOptions, SeparationMode],
 		FractionCollection -> (Or @@ Lookup[myResolvedOptions, CollectFractions]),
-		Replace[FractionContainers] -> If[(Or @@ Lookup[myResolvedOptions, CollectFractions]),
+		Replace[FractionContainers] -> If[TrueQ[(Or @@ Lookup[myResolvedOptions, CollectFractions])],
 			Link /@ ConstantArray[Resource[Sample -> Download[Lookup[myResolvedOptions, FractionCollectionContainer], Object]], fractionContainerCount],
 			{}
 		],
 		NumberOfFractionContainers -> fractionContainerCount,
 		(* If fraction container replacement is required, it is picked from this field. Do not create resources for these. *)
-		Replace[ReplacementFractionContainers] -> If[(Or @@ Lookup[myResolvedOptions, CollectFractions]),
+		Replace[ReplacementFractionContainers] -> If[TrueQ[(Or @@ Lookup[myResolvedOptions, CollectFractions])],
 			Link /@ ConstantArray[Download[Lookup[myResolvedOptions, FractionCollectionContainer], Object], fractionContainerCount],
 			{}
 		],
@@ -19482,6 +21211,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			]&,
 			fractionPackets
 		],
+		SamplesOutUltrasonicIncompatible -> Lookup[myResolvedOptions,SamplesOutUltrasonicIncompatible],
 
 		SystemPrimeBufferA -> If[internalUsageQ,
 			Link[systemPrimeBufferAResource],
@@ -19528,6 +21258,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		ShutdownMethod -> If[NullQ[shutdownGradient],Null,Link[shutdownGradient]],
 		ShutdownFilename -> shutdownFileName,
 		MaxPressure -> upperPressureLimit,
+		DisplayedMaxPressure -> SafeRound[Convert[upperPressureLimit,Bar],1Bar],
 		MinPressure -> Lookup[myResolvedOptions, LowPressureLimit, 100PSI] /. {Null -> 100PSI},
 
 		Replace[Checkpoints] -> checkpoints,
@@ -19538,13 +21269,14 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		],
 		Replace[StandardsStorageConditions] -> expandedStandardsStorageConditions,
 		Replace[BlanksStorageConditions] -> expandedBlanksStorageConditions,
+		(* Null == False *)
 		InjectionSampleVolumeMeasurement -> Lookup[myResolvedOptions, InjectionSampleVolumeMeasurement],
 		UnresolvedOptions -> myUnresolvedOptions,
 		ResolvedOptions -> CollapseIndexMatchedOptions[ExperimentHPLC, myResolvedOptions, Ignore -> ToList[myUnresolvedOptions], Messages -> False]
 	];
 
 	(*Now get our instrument specific protocol packet*)
-	instrumentSpecifiedProtocolPacket = hplcInstrumentResourcePackets[protocolObjectID, instrumentModel, Cache -> Append[cache, majorityProtocolPacket], Upload -> False];
+	instrumentSpecifiedProtocolPacket = hplcInstrumentResourcePackets[protocolObjectID, instrumentModel, Cache -> Append[cache, majorityProtocolPacket], Simulation -> simulation, Upload -> False];
 
 	(* Join protocol-specific packet with shared fields packet and the instrument specific *)
 	joinedProtocolPacket = Join[
@@ -19571,8 +21303,8 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Don't need to do this test if internal*)
 	{resourcesFulfillableQ, resourceTests} = If[!internalUsageQ,
 		If[gatherTestsQ,
-			Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Output -> {Result, Tests}, Cache -> cache],
-			{Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Cache -> cache], {}}
+			Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Output -> {Result, Tests}, Cache -> cache, Simulation -> simulation],
+			{Resources`Private`fulfillableResourceQ[allResources, Site -> Lookup[myResolvedOptions, Site], Cache -> cache, Simulation -> simulation], {}}
 		],
 		{Null, Null}
 	];
@@ -19601,7 +21333,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 DefineOptions[
 	hplcInstrumentResourcePackets,
-	Options :> {OutputOption, CacheOption, UploadOption}
+	Options :> {OutputOption, CacheOption, UploadOption, SimulationOption}
 ];
 
 hplcInstrumentResourcePackets[
@@ -19610,28 +21342,28 @@ hplcInstrumentResourcePackets[
 	ops : OptionsPattern[hplcInstrumentResourcePackets]
 ] := Module[
 	{
-		cache, preuploadPacketQ, resolvedOptions, safeOptions, uploadQ, alternateOptions, instrumentModelPacket, pertinentOptions,
-		columnPrimeWavelengthResolutions, columnPrimeUVFilter, columnPrimeAbsorbanceSamplingRates,
+		cache, simulation, preuploadPacketQ, resolvedOptions, safeOptions, uploadQ, alternateOptions, instrumentModelPacket, pertinentOptions,
+		columnPrimeWavelengthResolutions, columnPrimeUVFilter, columnPrimeAbsorbanceSamplingRates,columnPrimeSmoothingTimeConstants,
 		columnPrimeExcitationWavelengths, columnPrimeSecondaryExcitationWavelengths, columnPrimeTertiaryExcitationWavelengths, columnPrimeQuaternaryExcitationWavelengths, columnPrimeEmissionWavelengths, columnPrimeSecondaryEmissionWavelengths, columnPrimeTertiaryEmissionWavelengths, columnPrimeQuaternaryEmissionWavelengths, columnPrimeEmissionCutOffFilters, columnPrimeFluorescenceGains, columnPrimeSecondaryFluorescenceGains, columnPrimeTertiaryFluorescenceGains, columnPrimeQuaternaryFluorescenceGains, columnPrimeFluorescenceFlowCellTemperatures,
 		columnPrimeLightScatteringLaserPowers, columnPrimeLightScatteringFlowCellTemperatures, columnPrimeRefractiveIndexMethods, columnPrimeRefractiveIndexFlowCellTemperatures,
 		columnPrimeNebulizerGases, columnPrimeNebulizerGasPressures, columnPrimeNebulizerGasHeatings, columnPrimeNebulizerHeatingPowers, columnPrimeDriftTubeTemperatures, columnPrimeELSDGains, columnPrimeELSDSamplingRates,
-		sampleWavelengthResolutions, sampleUVFilter, sampleAbsorbanceSamplingRates,
+		sampleWavelengthResolutions, sampleUVFilter, sampleAbsorbanceSamplingRates,sampleSmoothingTimeConstants,
 		sampleExcitationWavelengths, sampleSecondaryExcitationWavelengths, sampleTertiaryExcitationWavelengths, sampleQuaternaryExcitationWavelengths, sampleEmissionWavelengths, sampleSecondaryEmissionWavelengths, sampleTertiaryEmissionWavelengths, sampleQuaternaryEmissionWavelengths, sampleEmissionCutOffFilters, sampleFluorescenceGains, sampleSecondaryFluorescenceGains, sampleTertiaryFluorescenceGains, sampleQuaternaryFluorescenceGains, sampleFluorescenceFlowCellTemperatures,
 		sampleLightScatteringLaserPowers, sampleLightScatteringFlowCellTemperatures, sampleRefractiveIndexMethods, sampleRefractiveIndexFlowCellTemperatures,
 		nebulizerGas, nebulizerGasHeating, nebulizerHeatingPower, nebulizerGasPressure, driftTubeTemperature, elsdGain, elsdSamplingRate,
-		standardWavelengthResolutions, standardUVFilter, standardAbsorbanceSamplingRates,
+		standardWavelengthResolutions, standardUVFilter, standardAbsorbanceSamplingRates,standardSmoothingTimeConstants,
 		standardExcitationWavelengths, standardSecondaryExcitationWavelengths, standardTertiaryExcitationWavelengths, standardQuaternaryExcitationWavelengths, standardEmissionWavelengths, standardSecondaryEmissionWavelengths, standardTertiaryEmissionWavelengths, standardQuaternaryEmissionWavelengths, standardEmissionCutOffFilters, standardFluorescenceGains, standardSecondaryFluorescenceGains, standardTertiaryFluorescenceGains, standardQuaternaryFluorescenceGains, standardFluorescenceFlowCellTemperatures,
 		standardLightScatteringLaserPowers, standardLightScatteringFlowCellTemperatures, standardRefractiveIndexMethods, standardRefractiveIndexFlowCellTemperatures,
 		standardDriftTubeTemperature, standardELSDGain, standardELSDSamplingRate, standardNebulizerGas, standardNebulizerGasHeating, standardNebulizerHeatingPower, standardNebulizerGasPressure,
-		blankWavelengthResolutions, blankUVFilter, blankAbsorbanceSamplingRates,
+		blankWavelengthResolutions, blankUVFilter, blankAbsorbanceSamplingRates,blankSmoothingTimeConstants,
 		blankExcitationWavelengths, blankSecondaryExcitationWavelengths, blankTertiaryExcitationWavelengths, blankQuaternaryExcitationWavelengths, blankEmissionWavelengths, blankSecondaryEmissionWavelengths, blankTertiaryEmissionWavelengths, blankQuaternaryEmissionWavelengths, blankEmissionCutOffFilters, blankFluorescenceGains, blankSecondaryFluorescenceGains, blankTertiaryFluorescenceGains, blankQuaternaryFluorescenceGains, blankFluorescenceFlowCellTemperatures,
 		blankLightScatteringLaserPowers, blankLightScatteringFlowCellTemperatures, blankRefractiveIndexMethods, blankRefractiveIndexFlowCellTemperatures,
 		blankDriftTubeTemperature, blankELSDGain, blankELSDSamplingRate, blankNebulizerGas, blankNebulizerGasHeating, blankNebulizerHeatingPower, blankNebulizerGasPressure,
-		columnFlushWavelengthResolutions, columnFlushUVFilter, columnFlushAbsorbanceSamplingRates,
+		columnFlushWavelengthResolutions, columnFlushUVFilter, columnFlushAbsorbanceSamplingRates,columnFlushSmoothingTimeConstants,
 		columnFlushExcitationWavelengths, columnFlushSecondaryExcitationWavelengths, columnFlushTertiaryExcitationWavelengths, columnFlushQuaternaryExcitationWavelengths, columnFlushEmissionWavelengths, columnFlushSecondaryEmissionWavelengths, columnFlushTertiaryEmissionWavelengths, columnFlushQuaternaryEmissionWavelengths, columnFlushEmissionCutOffFilters, columnFlushFluorescenceGains, columnFlushSecondaryFluorescenceGains, columnFlushTertiaryFluorescenceGains, columnFlushQuaternaryFluorescenceGains, columnFlushFluorescenceFlowCellTemperatures,
 		columnFlushLightScatteringLaserPowers, columnFlushLightScatteringFlowCellTemperatures, columnFlushRefractiveIndexMethods, columnFlushRefractiveIndexFlowCellTemperatures,
 		columnFlushNebulizerGases, columnFlushNebulizerGasPressures, columnFlushNebulizerGasHeatings, columnFlushNebulizerHeatingPowers, columnFlushDriftTubeTemperatures, columnFlushELSDGains, columnFlushELSDSamplingRates,
-		instrumentSpecificPacket,
+		instrumentSpecificPacket,possibleSmoothingTimeConstants,
 		columnPrimeAbsorbanceWavelength, columnPrimeMinAbsorbanceWavelengths, columnPrimeMaxAbsorbanceWavelengths,
 		sampleAbsorbanceWavelength, sampleMinAbsorbanceWavelengths, sampleMaxAbsorbanceWavelengths, minAbsorbance, maxAbsorbance,
 		standardAbsorbanceWavelength, standardMinAbsorbanceWavelengths, standardMaxAbsorbanceWavelengths,
@@ -19641,7 +21373,7 @@ hplcInstrumentResourcePackets[
 		columnFlushAbsorbanceWavelength, columnFlushMinAbsorbanceWavelengths, columnFlushMaxAbsorbanceWavelengths,
 		standardPositionsCorresponded, blankPositionsCorresponded, columnPrimePositionsCorresponded, columnFlushPositionsCorresponded,
 		standardMappingAssociation, blankMappingAssociation, columnPrimeMappingAssociation, columnFlushMappingAssociation,
-		samplesInWithReplicates, samplesIn, unexpandedPertinentOptions, pertinentOptionsNoReplicate, sampleObjects, numberOfReplicates, samplesWithReplicates, protocolPacket, resolvedStandard, resolvedBlank, resolvedColumnSelector, listifiedStandard, listifiedBlank, listifiedColumnSelector,
+		samplesInWithReplicates, samplesIn, unexpandedPertinentOptions, pertinentOptionsNoReplicate, sampleObjects, numberOfReplicates, samplesWithReplicates, protocolPacket, resolvedStandard, resolvedBlank, resolvedColumnSelector, expandedPertinentOptions, listifiedStandard, listifiedBlank, listifiedColumnSelector,
 		fluorescenceListRequiredQ, processedExcitationWavelength, processedEmissionWavelength, processedFluorescenceGain, processedStandardExcitationWavelength, processedStandardEmissionWavelength, processedStandardFluorescenceGain, processedBlankExcitationWavelength, processedBlankEmissionWavelength, processedBlankFluorescenceGain, processedColumnPrimeExcitationWavelength, processedColumnPrimeEmissionWavelength, processedColumnPrimeFluorescenceGain, processedColumnFlushExcitationWavelength, processedColumnFlushEmissionWavelength, processedColumnFlushFluorescenceGain
 	},
 
@@ -19650,6 +21382,7 @@ hplcInstrumentResourcePackets[
 
 	(* Fetch passed cache *)
 	cache = OptionValue[Cache];
+	simulation = Lookup[ToList[ops],Simulation,Simulation[]];
 
 	(* Get Upload option *)
 	uploadQ = TrueQ[Lookup[safeOptions, Upload]];
@@ -19687,7 +21420,8 @@ hplcInstrumentResourcePackets[
 				{SamplesIn, ResolvedOptions, AlternateOptions, InjectionTable},
 				Packet[Detectors, MinAbsorbanceWavelength, MaxAbsorbanceWavelength]
 			},
-			Cache -> cache
+			Cache -> cache,
+			Simulation -> simulation
 		]
 	];
 
@@ -19711,20 +21445,54 @@ hplcInstrumentResourcePackets[
 	(* Get the standard, blank, and column selector *)
 	{resolvedStandard, resolvedBlank, resolvedColumnSelector} = Lookup[unexpandedPertinentOptions, {Standard, Blank, ColumnSelector}]/.{object:ObjectP[]:>Download[object,Object]};
 
-	(* We may need to listify if need be, i.e. if it's a singleton object *)
-	{listifiedStandard, listifiedBlank} = Map[
-		If[And[
-			Depth[#] <= 2,
-			MatchQ[#, Except[{} | Null]]
-		],
-			ToList[#],
-			#
-		]&,
-		{Download[resolvedStandard,Object], Download[resolvedBlank,Object]}
+	(* Expand the options based on existing options (this is not the final expansion for fluorescence related options, due to list of list patterns) *)
+
+	(* ColumnSelector may be collapsed and need to be wrapped with another list. This is safe as we cannot have duplicated ColumnSelector entries, not same as Standard/Blank *)
+	listifiedColumnSelector = If[Depth[resolvedColumnSelector] <= 3, List[resolvedColumnSelector], resolvedColumnSelector];
+
+	(* Here we change the resolved ColumnSelector to Automatic for success index matching expanding. It seems when ObjectP[] is resolved as the first element - GuardColumn of the ColumnSelector, ExpandIndexMatchedInputs is confused with the length. *)
+	expandedPertinentOptions = Association[
+		ReplaceRule[
+			Last[ExpandIndexMatchedInputs[
+				ExperimentHPLC,
+				{samplesIn},
+				Normal@Join[
+					unexpandedPertinentOptions,
+					Association[
+						Standard -> Download[resolvedStandard,Object],
+						Blank -> Download[resolvedBlank,Object],
+						ColumnSelector -> listifiedColumnSelector/.{ObjectP[]->Automatic}
+					]
+				],
+				Messages -> False
+			]],
+			ColumnSelector -> listifiedColumnSelector
+		]
 	];
 
-	(* ColumnSelector may be collapsed and need to be wrapped with another list *)
-	listifiedColumnSelector = If[Depth[resolvedColumnSelector] <= 3, List[resolvedColumnSelector], resolvedColumnSelector];
+
+	(* Get the listified Standard/Blank *)
+	(* If all our Standard/Blank options are singleton, we still need to turn them into list. Need to check resolvedInjectionTable for count of Standard/Blank *)
+	{listifiedStandard, listifiedBlank} = MapThread[
+		Module[
+			{sampleTypeCount},
+			(* Check how many Standard/Blank we have *)
+			sampleTypeCount=Count[injectionTable[[All,1]],#2];
+			(* Turn Standard/Blank into list if it is not list yet *)
+			If[
+				And[
+					Depth[#1] <= 2,
+					MatchQ[#1, Except[{} | Null]]
+				],
+				Table[#1,sampleTypeCount],
+				#1
+			]
+		]&,
+		{
+			Lookup[expandedPertinentOptions, {Standard, Blank}],
+			{Standard, Blank}
+		}
+	];
 
 	(* Another preparation is we may need to collapse ExcitationWavelength, EmissionWavelength and FluorescenceGain manually as these options allow both singleton and Adder widget and may be expanded wrongly *)
 	(* We will make each entry a list. For example, 485Nanometer will because {485Nanometer}. Only need to do this when each entry is a singleton and the length matches the sample *)
@@ -19904,6 +21672,12 @@ hplcInstrumentResourcePackets[
 	columnPrimePositionsCorresponded = If[Length[columnPrimePositions] > 0, Last /@ SortBy[Normal@columnPrimeReverseAssociation, First]];
 	columnFlushPositionsCorresponded = If[Length[columnFlushPositions] > 0, Last /@ SortBy[Normal@columnFlushReverseAssociation, First]];
 
+	(* Get a conversion rule for smoothing time constant *)
+	possibleSmoothingTimeConstants=If[MatchQ[Lookup[instrumentModelPacket,SmoothingTimeConstants],{}],
+		{},
+		Transpose[{Lookup[instrumentModelPacket,AbsorbanceSamplingRates,{}],Lookup[instrumentModelPacket,SmoothingTimeConstants]}]
+	];
+
 	(* Start with the column prime*)
 	(* Start with the ones that can be directly transferred into protocol object*)
 	{
@@ -19943,6 +21717,26 @@ hplcInstrumentResourcePackets[
 				ColumnPrimeELSDSamplingRate
 			}
 		]
+	];
+
+	(* Column Prime Absorbance SmoothingTimeConstant *)
+	columnPrimeSmoothingTimeConstants=If[!NullQ[columnPrimePositionsCorresponded] && !NullQ[Lookup[pertinentOptions, ColumnPrimeSmoothingTimeConstant]],
+		MapThread[
+			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
+				Module[{allowedSmoothingTimeConstants},
+					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
+					(* Convert to numeric value for uploading *)
+					Switch[#1,
+						Small,allowedSmoothingTimeConstants[[1]],
+						Medium,allowedSmoothingTimeConstants[[2]],
+						Large,allowedSmoothingTimeConstants[[3]]
+					]
+				],
+				#1
+			]&,
+			{Lookup[pertinentOptions, ColumnPrimeSmoothingTimeConstant], columnPrimeAbsorbanceSamplingRates}
+		][[DeleteDuplicates[columnPrimePositionsCorresponded]]],
+		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups*)
@@ -20044,6 +21838,23 @@ hplcInstrumentResourcePackets[
 			ELSDGain,
 			ELSDSamplingRate
 		}
+	];
+
+	(* Absorbance SmoothingTimeConstant *)
+	sampleSmoothingTimeConstants=MapThread[
+		If[MatchQ[#1,HPLCSmoothingTimeConstantP],
+			Module[{allowedSmoothingTimeConstants},
+				allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
+				(* Convert to numeric value for uploading *)
+				Switch[#1,
+					Small,allowedSmoothingTimeConstants[[1]],
+					Medium,allowedSmoothingTimeConstants[[2]],
+					Large,allowedSmoothingTimeConstants[[3]]
+				]
+			],
+			#1
+		]&,
+		{Lookup[pertinentOptions, SmoothingTimeConstant], sampleAbsorbanceSamplingRates}
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -20148,6 +21959,26 @@ hplcInstrumentResourcePackets[
 				StandardNebulizerGasPressure
 			}
 		]
+	];
+
+	(* Standard Absorbance SmoothingTimeConstant *)
+	standardSmoothingTimeConstants=If[!NullQ[standardPositionsCorresponded] && !NullQ[Lookup[pertinentOptions, StandardSmoothingTimeConstant]],
+		MapThread[
+			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
+				Module[{allowedSmoothingTimeConstants},
+					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
+					(* Convert to numeric value for uploading *)
+					Switch[#1,
+						Small,allowedSmoothingTimeConstants[[1]],
+						Medium,allowedSmoothingTimeConstants[[2]],
+						Large,allowedSmoothingTimeConstants[[3]]
+					]
+				],
+				#1
+			]&,
+			{Lookup[pertinentOptions, StandardSmoothingTimeConstant], standardAbsorbanceSamplingRates}
+		][[DeleteDuplicates[standardPositionsCorresponded]]],
+		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -20259,6 +22090,26 @@ hplcInstrumentResourcePackets[
 		]
 	];
 
+	(* Blank Absorbance SmoothingTimeConstant *)
+	blankSmoothingTimeConstants=If[!NullQ[blankPositionsCorresponded] && !NullQ[Lookup[pertinentOptions, BlankSmoothingTimeConstant]],
+		MapThread[
+			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
+				Module[{allowedSmoothingTimeConstants},
+					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
+					(* Convert to numeric value for uploading *)
+					Switch[#1,
+						Small,allowedSmoothingTimeConstants[[1]],
+						Medium,allowedSmoothingTimeConstants[[2]],
+						Large,allowedSmoothingTimeConstants[[3]]
+					]
+				],
+				#1
+			]&,
+			{Lookup[pertinentOptions, BlankSmoothingTimeConstant], blankAbsorbanceSamplingRates}
+		][[DeleteDuplicates[blankPositionsCorresponded]]],
+		Null
+	];
+
 	(* Fluorescence options - need to break up into 4 groups *)
 	{
 		blankExcitationWavelengths,
@@ -20365,6 +22216,26 @@ hplcInstrumentResourcePackets[
 				ColumnFlushELSDSamplingRate
 			}
 		]
+	];
+
+	(* Column Flush Absorbance SmoothingTimeConstant *)
+	columnFlushSmoothingTimeConstants=If[!NullQ[columnFlushPositionsCorresponded] && !NullQ[Lookup[pertinentOptions, ColumnFlushSmoothingTimeConstant]],
+		MapThread[
+			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
+				Module[{allowedSmoothingTimeConstants},
+					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
+					(* Convert to numeric value for uploading *)
+					Switch[#1,
+						Small,allowedSmoothingTimeConstants[[1]],
+						Medium,allowedSmoothingTimeConstants[[2]],
+						Large,allowedSmoothingTimeConstants[[3]]
+					]
+				],
+				#1
+			]&,
+			{Lookup[pertinentOptions, ColumnFlushSmoothingTimeConstant], columnFlushAbsorbanceSamplingRates}
+		][[DeleteDuplicates[columnFlushPositionsCorresponded]]],
+		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -20513,6 +22384,7 @@ hplcInstrumentResourcePackets[
 		Replace[ColumnPrimeWavelengthResolutions] -> columnPrimeWavelengthResolutions /. {{Null...} -> {}},
 		Replace[ColumnPrimeUVFilters] -> columnPrimeUVFilter /. {{Null...} -> {}},
 		Replace[ColumnPrimeAbsorbanceSamplingRates] -> columnPrimeAbsorbanceSamplingRates /. {{Null...} -> {}},
+		Replace[ColumnPrimeSmoothingTimeConstants] -> columnPrimeSmoothingTimeConstants /. {{Null...} -> {}},
 		Replace[ColumnPrimeExcitationWavelengths] -> columnPrimeExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnPrimeSecondaryExcitationWavelengths] -> columnPrimeSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnPrimeTertiaryExcitationWavelengths] -> columnPrimeTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -20545,6 +22417,7 @@ hplcInstrumentResourcePackets[
 		Replace[WavelengthResolution] -> sampleWavelengthResolutions /. {{Null...} -> {}},
 		Replace[UVFilter] -> sampleUVFilter /. {{Null...} -> {}},
 		Replace[AbsorbanceSamplingRate] -> sampleAbsorbanceSamplingRates /. {{Null...} -> {}},
+		Replace[SmoothingTimeConstants] -> sampleSmoothingTimeConstants /. {{Null...} -> {}},
 		Replace[ExcitationWavelengths] -> sampleExcitationWavelengths /. {{Null...} -> {}},
 		Replace[SecondaryExcitationWavelengths] -> sampleSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[TertiaryExcitationWavelengths] -> sampleTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -20577,6 +22450,7 @@ hplcInstrumentResourcePackets[
 		Replace[StandardWavelengthResolution] -> standardWavelengthResolutions /. {{Null...} -> {}},
 		Replace[StandardUVFilter] -> standardUVFilter /. {{Null...} -> {}},
 		Replace[StandardAbsorbanceSamplingRate] -> standardAbsorbanceSamplingRates /. {{Null...} -> {}},
+		Replace[StandardSmoothingTimeConstants] -> standardSmoothingTimeConstants /. {{Null...} -> {}},
 		Replace[StandardExcitationWavelengths] -> standardExcitationWavelengths /. {{Null...} -> {}},
 		Replace[StandardSecondaryExcitationWavelengths] -> standardSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[StandardTertiaryExcitationWavelengths] -> standardTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -20609,6 +22483,7 @@ hplcInstrumentResourcePackets[
 		Replace[BlankWavelengthResolution] -> blankWavelengthResolutions /. {{Null...} -> {}},
 		Replace[BlankUVFilter] -> blankUVFilter /. {{Null...} -> {}},
 		Replace[BlankAbsorbanceSamplingRate] -> blankAbsorbanceSamplingRates /. {{Null...} -> {}},
+		Replace[BlankSmoothingTimeConstants] -> blankSmoothingTimeConstants /. {{Null...} -> {}},
 		Replace[BlankExcitationWavelengths] -> blankExcitationWavelengths /. {{Null...} -> {}},
 		Replace[BlankSecondaryExcitationWavelengths] -> blankSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[BlankTertiaryExcitationWavelengths] -> blankTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -20641,6 +22516,7 @@ hplcInstrumentResourcePackets[
 		Replace[ColumnFlushWavelengthResolutions] -> columnFlushWavelengthResolutions /. {{Null...} -> {}},
 		Replace[ColumnFlushUVFilters] -> columnFlushUVFilter /. {{Null...} -> {}},
 		Replace[ColumnFlushAbsorbanceSamplingRates] -> columnFlushAbsorbanceSamplingRates /. {{Null...} -> {}},
+		Replace[ColumnFlushSmoothingTimeConstants] -> columnFlushSmoothingTimeConstants /. {{Null...} -> {}},
 		Replace[ColumnFlushExcitationWavelengths] -> columnFlushExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnFlushSecondaryExcitationWavelengths] -> columnFlushSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnFlushTertiaryExcitationWavelengths] -> columnFlushTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -20691,13 +22567,13 @@ DefineOptions[ExperimentHPLCPreview,
 	SharedOptions :> {ExperimentHPLC}
 ];
 
-ExperimentHPLCPreview[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[Object[Sample]] | _String)], myOptions : OptionsPattern[]] := Module[
+ExperimentHPLCPreview[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for ExperimentHPLC *)
@@ -20728,13 +22604,13 @@ DefineOptions[ExperimentHPLCOptions,
 	SharedOptions :> {ExperimentHPLC}
 ];
 
-ExperimentHPLCOptions[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[Object[Sample]] | _String)], myOptions : OptionsPattern[]] := Module[
+ExperimentHPLCOptions[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, (Output -> _) | (OutputFormat -> _)];
 
 	(* return only the preview for ExperimentHPLC *)
@@ -20771,29 +22647,27 @@ DefineOptions[ValidExperimentHPLCQ,
 ];
 
 
-ValidExperimentHPLCQ[myObject : (ObjectP[Object[Sample]] | _String), myOptions : OptionsPattern[]] := ValidExperimentHPLCQ[{myObject}, myOptions];
-
-ValidExperimentHPLCQ[myObjects : {(ObjectP[Object[Sample]] | _String)...}, myOptions : OptionsPattern[]] := Module[
+ValidExperimentHPLCQ[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, preparedOptions, hplcTests, validObjectBooleans, voqWarnings,
 		initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentHPLC *)
 	hplcTests = ExperimentHPLC[myObjects, Append[preparedOptions, Output -> Tests]];
 
 	(* Create warnings for invalid objects *)
-	validObjectBooleans = ValidObjectQ[DeleteCases[myObjects, _String], OutputFormat -> Boolean];
+	validObjectBooleans = ValidObjectQ[DeleteCases[ToList[myObjects], _String], OutputFormat -> Boolean];
 	voqWarnings = MapThread[
 		Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
 			#2,
 			True
 		]&,
-		{DeleteCases[myObjects, _String], validObjectBooleans}
+		{DeleteCases[ToList[myObjects], _String], validObjectBooleans}
 	];
 
 	(* Make a list of all the tests *)
@@ -20972,6 +22846,8 @@ defaultGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, myOptions : OptionsPa
 	]
 ];
 
+(* defaultPrimeGradient *)
+
 (* Overload for given FlowRate with timepoints with desired final flushing time and final composition *)
 (* Ignore the request of equilibration time since we are going to respect the timepoints in flow rate input *)
 defaultPrimeGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, equilibrationDuration: (TimeP|Null), finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}]:= defaultPrimeGradient[myDefaultFlowRate, finalComposition];
@@ -21032,6 +22908,13 @@ defaultPrimeGradient[myDefaultFlowRate : FlowRateP, equilibrationDuration: (Time
 	}
 ];
 
+
+(* defaultFlushGradient *)
+
+(* Overload for given FlowRate with timepoints with desired final flushing time and final composition *)
+(* Ignore the request of equilibration time since we are going to respect the timepoints in flow rate input *)
+defaultFlushGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, equilibrationDuration: (TimeP|Null), finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}]:= defaultFlushGradient[myDefaultFlowRate, finalComposition];
+
 defaultFlushGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}] := Module[
 	{flowRateLength,sortedFlowRate},
 	flowRateLength = Length[myDefaultFlowRate];
@@ -21039,7 +22922,7 @@ defaultFlushGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, finalComposition
 	If[LessEqualQ[flowRateLength,3],
 		(* <=3 flow rate points, use single gradient since we cannot adjust back to the original gradient at the end with the limited number of points *)
 		Map[
-			{#[[1]], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], #[[2]]}&,
+			{#[[1]], Sequence @@ finalComposition, #[[2]]}&,
 			sortedFlowRate
 		],
 		Join[
@@ -21050,7 +22933,7 @@ defaultFlushGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, finalComposition
 				{#[[1]], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], #[[2]]}&,
 				sortedFlowRate[[2;;-3]]
 			],
-			(* Point -2 - -1 - 90%A + 10% B*)
+			(* Point -2 - -1 - final Composition *)
 			(* Equilibrate to the starting composition *)
 			Map[
 				{#[[1]], Sequence @@ finalComposition, #[[2]]}&,
@@ -21060,18 +22943,30 @@ defaultFlushGradient[myDefaultFlowRate : {{TimeP,FlowRateP}..}, finalComposition
 	]
 ];
 
-defaultFlushGradient[myDefaultFlowRate : FlowRateP] := defaultFlushGradient[myDefaultFlowRate, {
+(* Overload for any flow rate and assign a default composition *)
+defaultFlushGradient[myDefaultFlowRate : (FlowRateP|{{TimeP,FlowRateP}..})] := defaultFlushGradient[myDefaultFlowRate, {
+	Quantity[90., Percent], Quantity[10., Percent], Quantity[0., Percent], Quantity[0., Percent]
+}];
+(* Overload for any flow rate and an equilibration duration, assign a default composition *)
+defaultFlushGradient[myDefaultFlowRate : (FlowRateP|{{TimeP,FlowRateP}..}),equilibrationDuration: (TimeP|Null)] := defaultFlushGradient[myDefaultFlowRate, equilibrationDuration, {
 	Quantity[90., Percent], Quantity[10., Percent], Quantity[0., Percent], Quantity[0., Percent]
 }];
 
-defaultFlushGradient[myDefaultFlowRate : FlowRateP, finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}] := {
-	{Quantity[0., Minute], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
-	{Quantity[10., Minute], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
-	{Quantity[10.1, Minute], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
-	{Quantity[20., Minute], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
-	{Quantity[20.1, Minute], Sequence @@ finalComposition, myDefaultFlowRate},
-	{Quantity[30., Minute], Sequence @@ finalComposition, myDefaultFlowRate}
-};
+(* Overload for a constant flow rate with a final composition *)
+defaultFlushGradient[myDefaultFlowRate : FlowRateP, finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}] := defaultFlushGradient[myDefaultFlowRate, 10 Minute, finalComposition];
+
+defaultFlushGradient[myDefaultFlowRate : FlowRateP, equilibrationDuration: (TimeP|Null), finalComposition : {GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent], GreaterEqualP[0 Percent]}] := Module[
+	{convertedTime},
+	convertedTime=If[NullQ[equilibrationDuration],10Minute,Convert[equilibrationDuration,Minute]];
+	{
+		{Quantity[0., Minute], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
+		{Quantity[10., Minute], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
+		{Quantity[10.1, Minute], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
+		{Quantity[20., Minute], Quantity[0., Percent], Quantity[100., Percent], Quantity[0., Percent], Quantity[0., Percent], myDefaultFlowRate},
+		{Quantity[20.1, Minute], Sequence @@ finalComposition, myDefaultFlowRate},
+		{Quantity[20.1, Minute]+convertedTime, Sequence @@ finalComposition, myDefaultFlowRate}
+	}
+];
 
 (* NOTE: This only works if the times are in Minutes *)
 interpolationFunctionForGradient = Function[
@@ -21109,7 +23004,7 @@ getInterpolationValuesForTimes[gradient_, times_] := RightComposition[
 (*calculateBufferUsage*)
 
 
-(* Buffer usage calculates the amount of buffer need to finish the run + 5  min for fraction collector cleaning + 2 min run time prior to injection *)
+(* Buffer usage calculates the amount of buffer need to finish the run + 5  min for fraction collector cleaning + 5 min run time prior to injection *)
 calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := Module[
 	{gradientInterpolation, flowRateInterpolation, lastFlowRate, unitlessMaxTime,
 		totalGradientProportion, totalVolume, extraVolume},
@@ -21130,7 +23025,7 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 	totalVolume = NIntegrate[flowRateInterpolation[t], {t, 0, unitlessMaxTime}];
 
 	(* add volume buffer with a rough estimate of 5 min for fraction collector cleaning + 2 min run time prior to injection *)
-	extraVolume = (Unitless[lastFlowRate, Milliliter / Minute] * 7 * Unitless[finalGradientPercentABC] / 100);
+	extraVolume = (Unitless[lastFlowRate, Milliliter / Minute] * 10 * Unitless[finalGradientPercentABC] / 100);
 
 	((totalVolume * totalGradientProportion) + extraVolume) Milliliter
 ];
@@ -21141,11 +23036,12 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 
 (* Function to search the database for all non-deprecated HPLC instruments.
  	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
-allHPLCInstrumentSearch[fakeString:_String] := allHPLCInstrumentSearch[fakeString] = Module[{},
+allHPLCInstrumentSearch[fakeString:_String] := allHPLCInstrumentSearch[fakeString] = Module[
+	{modelSearchResult,ecl2Objects,eclCMUObjects,ecl2Models,eclCMUModels},
 	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
 	AppendTo[$Memoization,Experiment`Private`allHPLCInstrumentSearch];
 
-	Search[
+	modelSearchResult=Search[
 		{
 			Model[Instrument, HPLC],
 			Model[Instrument, HPLC],
@@ -21165,5 +23061,53 @@ allHPLCInstrumentSearch[fakeString:_String] := allHPLCInstrumentSearch[fakeStrin
 			(* Test Instruments *)
 			StringContainsQ[Name, "Test"]
 		}
+	];
+
+	(* Get the models available for both sites *)
+	ecl2Objects=allECL2HPLCInstrumentObjectsSearch["Memoization"];
+	eclCMUObjects=allECLCMUHPLCInstrumentObjectsSearch["Memoization"];
+
+	{ecl2Models,eclCMUModels}=DeleteDuplicates/@Download[{ecl2Objects,eclCMUObjects},Model[Object]];
+
+	(* Return all results *)
+	Join[modelSearchResult,{ecl2Models,eclCMUModels}]
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*allECL2HPLCInstrumentObjectsSearch*)
+
+(* Function to search the database for all available ECL-2 HPLC instrument objects. This is used to decide what
+ 	memoized the result after first execution to avoid repeated database trips within a single kernel session. *)
+allECL2HPLCInstrumentObjectsSearch[fakeString:_String] := allECL2HPLCInstrumentObjectsSearch[fakeString] = Module[{},
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization,Experiment`Private`allECL2HPLCInstrumentObjectsSearch];
+
+	Search[
+		Object[Instrument,HPLC],
+		And[
+			Status!=Retired,
+			(* ECL-2 *)
+			Site==Object[Container, Site, "id:kEJ9mqJxOl63"]
+		]
+	]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*allECLCMUHPLCInstrumentObjectsSearch*)
+
+(* Function to search the database for all available ECL-CMU HPLC instrument objects. This is used to decide what
+ 	memoized the result after first execution to avoid repeated database trips within a single kernel session. *)
+allECLCMUHPLCInstrumentObjectsSearch[fakeString:_String] := allECLCMUHPLCInstrumentObjectsSearch[fakeString] = Module[{},
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization,Experiment`Private`allECLCMUHPLCInstrumentObjectsSearch];
+
+	Search[
+		Object[Instrument,HPLC],
+		And[
+			Status!=Retired,
+			(* ECL-CMU *)
+			Site==Object[Container, Site, "id:P5ZnEjZpRlK4"]
+		]
 	]
 ];

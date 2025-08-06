@@ -630,12 +630,12 @@ DefineTests[ExperimentNephelometryKinetics,
 			),
 			Variables :> {options}
 		],
-		Example[{Options, EquilibrationTime, "EquilibrationTime must be specified to the closest 0.1 second:"},
+		Example[{Options, EquilibrationTime, "EquilibrationTime must be specified to the closest 1 second:"},
 			options = ExperimentNephelometryKinetics[Object[Sample, "ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],
 				EquilibrationTime -> 300.58689 Second,
 				Output -> Options];
 			Lookup[options, EquilibrationTime],
-			300.6 Second,
+			301 Second,
 			EquivalenceFunction -> Equal,
 			Messages :> {
 				Warning::InstrumentPrecision
@@ -1407,7 +1407,7 @@ DefineTests[ExperimentNephelometryKinetics,
 			Lookup[options, BlankVolume],
 			17 Microliter,
 			EquivalenceFunction -> Equal,
-			Messages:>{Warning::NotEqualBlankVolumesWarning},
+			Messages:>{Warning::NotEqualBlankVolumes},
 			SetUp :> ($CreatedObjects = {}),
 			TearDown :> (
 				EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
@@ -1438,7 +1438,7 @@ DefineTests[ExperimentNephelometryKinetics,
 			EquivalenceFunction -> Equal,
 			Messages :> {
 				Warning::InstrumentPrecision,
-				Warning::NotEqualBlankVolumesWarning
+				Warning::NotEqualBlankVolumes
 			},
 			SetUp :> ($CreatedObjects = {}),
 			TearDown :> (
@@ -1584,7 +1584,52 @@ DefineTests[ExperimentNephelometryKinetics,
 			),
 			Variables :> {options}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentNephelometryKinetics[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 250 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[250 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared when Preparation is Robotic:"},
+			roboticProtocol = ExperimentNephelometryKinetics[{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"],
+				PreparedModelAmount -> 250 Microliter,
+				Preparation -> Robotic
+			];
+			Download[roboticProtocol, OutputUnitOperations[[1]][{
+				SampleLink,
+				ContainerLink,
+				AmountVariableUnit,
+				Well,
+				ContainerLabel
+			}]],
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]] ..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]] ..},
+				{EqualP[250 Microliter] ..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {roboticProtocol, labelSampleUO}
+		],
 
 		(* ----------- *)
 		(* -- TESTS -- *)
@@ -1621,6 +1666,82 @@ DefineTests[ExperimentNephelometryKinetics,
 		(* -------------- *)
 		(* -- MESSAGES -- *)
 		(* -------------- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentNephelometryKinetics[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentNephelometryKinetics[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentNephelometryKinetics[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentNephelometryKinetics[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentNephelometryKinetics[sampleID, AliquotAmount->100 Microliter,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentNephelometryKinetics[containerID, AliquotAmount->100 Microliter,Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "DuplicateName", "The Name option must not be the name of an already-existing NephelometryKinetics protocol:"},
 			ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],
 				Name -> "Already existing name" <> $SessionUUID],
@@ -1773,7 +1894,7 @@ DefineTests[ExperimentNephelometryKinetics,
 				Unset[$CreatedObjects]
 			),
 			Messages :> {
-				Error::NephelometryIncompatibleGasLevels,
+				Error::IncompatibleGasLevels,
 				Error::InvalidOption
 			}
 		],
@@ -1789,7 +1910,7 @@ DefineTests[ExperimentNephelometryKinetics,
 				Unset[$CreatedObjects]
 			),
 			Messages :> {
-				Error::NephelometryIncompatibleGasLevels,
+				Error::IncompatibleGasLevels,
 				Error::InvalidOption
 			}
 		],
@@ -2537,8 +2658,7 @@ DefineTests[ExperimentNephelometryKinetics,
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],Incubate->True,Centrifuge->True,Filtration->True,Aliquot->True,Output->Options];
 			{Lookup[options,Incubate],Lookup[options,Centrifuge],Lookup[options,Filtration],Lookup[options,Aliquot]},
 			{True,True,True,True},
-			Variables:>{options},
-			Messages :> {Warning::UnknownAmount}
+			Variables:>{options}
 		],
 
 		(*Incubate options tests*)
@@ -2691,35 +2811,35 @@ DefineTests[ExperimentNephelometryKinetics,
 			Lookup[options,Filtration],
 			True,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FiltrationType->Syringe,Output->Options];
 			Lookup[options,FiltrationType],
 			Syringe,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],Output->Options];
 			Lookup[options,FilterInstrument],
 			ObjectP[Model[Instrument,SyringePump,"NE-1010 Syringe Pump"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],Output->Options];
 			Lookup[options,Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterMaterial,"The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterMaterial->PES,FilterContainerOut->Model[Container,Vessel,"50mL Tube"],Output->Options];
 			Lookup[options,FilterMaterial],
 			PES,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,PrefilterMaterial,"The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
@@ -2727,14 +2847,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			Lookup[options,PrefilterMaterial],
 			GxF,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterPoreSize,"The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterPoreSize->0.22*Micrometer,Output->Options];
 			Lookup[options,FilterPoreSize],
 			0.22*Micrometer,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,PrefilterPoreSize,"The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
@@ -2742,14 +2862,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			Lookup[options,PrefilterPoreSize],
 			1.*Micrometer,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterSyringe,"The syringe used to force that sample through a filter:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FiltrationType->Syringe,FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"],Output->Options];
 			Lookup[options,FilterSyringe],
 			ObjectP[Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterHousing,"FilterHousing option resolves to Null because it can't be used reasonably for volumes we would use in this experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterHousing->Null,Output->Options];
@@ -2763,7 +2883,7 @@ DefineTests[ExperimentNephelometryKinetics,
 			20*Minute,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::AliquotRequired,Warning::UnknownAmount}
+			Messages:>{Warning::AliquotRequired}
 		],
 		(*Note: Put your sample in a 50mL tube for the following test*)
 		Example[{Options,FilterTemperature,"The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
@@ -2772,7 +2892,7 @@ DefineTests[ExperimentNephelometryKinetics,
 			10*Celsius,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterIntensity,"The rotational speed or force at which the samples will be centrifuged during filtration:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FiltrationType->Centrifuge,FilterIntensity->1000*RPM,Output->Options];
@@ -2780,14 +2900,14 @@ DefineTests[ExperimentNephelometryKinetics,
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterSterile,"Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterSterile->True,Output->Options];
 			Lookup[options,FilterSterile],
 			True,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquot,"The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample in 50mL tube" <> $SessionUUID],FilterAliquot->1*Milliliter,Output->Options];
@@ -2795,28 +2915,28 @@ DefineTests[ExperimentNephelometryKinetics,
 			1*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquotContainer,"The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterAliquotContainer->{1, Model[Container, Vessel, "2mL Tube"]},Output->Options];
 			Lookup[options,FilterAliquotContainer],
 			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterAliquotDestinationWell,"Indicates the desired position in the corresponding FilterAliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterAliquotDestinationWell->"A1",Output->Options];
 			Lookup[options,FilterAliquotDestinationWell],
 			"A1",
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 		Example[{Options,FilterContainerOut,"The desired container filtered samples should be produced in or transferred into by the end of filtration, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],FilterContainerOut->{1, Model[Container, Vessel, "2mL Tube"]},Output->Options];
 			Lookup[options,FilterContainerOut],
 			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
 			Variables:>{options},
-			Messages:>{Warning::UnknownAmount,Warning::AliquotRequired}
+			Messages:>{Warning::AliquotRequired}
 		],
 
 		(*Aliquot options tests*)
@@ -2905,13 +3025,13 @@ DefineTests[ExperimentNephelometryKinetics,
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],AliquotContainer->Model[Container, Plate, "96-well UV-Star Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]},
+			{{1, ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentNephelometryKinetics[Object[Sample,"ExperimentNephelometryKinetics test sample 1" <> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
@@ -3226,7 +3346,7 @@ DefineTests[ExperimentNephelometryKinetics,
 				(*Make a test model-less sample object*)
 				testModellessSample=UploadSample[
 					{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKinetics test DNA molecule" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
-					{"A1",Object[Container,Plate,"ExperimentNephelometryKinetics test 96-well plate 2" <> $SessionUUID]},
+					{"E1",Object[Container,Plate,"ExperimentNephelometryKinetics test 96-well plate 2" <> $SessionUUID]},
 					Name->"ExperimentNephelometryKinetics test model-less sample" <> $SessionUUID,
 					InitialAmount->0.5 Milliliter
 				];

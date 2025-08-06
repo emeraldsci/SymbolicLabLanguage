@@ -8,9 +8,9 @@
 
 
 DefineObjectType[Object[Maintenance, ReceiveInventory], {
-	Description->"A protocol that processes receiving inventory items.",
-	CreatePrivileges->None,
-	Cache->Session,
+	Description -> "A protocol that processes receiving inventory items.",
+	CreatePrivileges -> None,
+	Cache -> Session,
 	Fields -> {
 
 		Orders -> {
@@ -19,13 +19,142 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Transaction, Order][Receiving],
-				Object[Transaction,ShipToECL][Receiving],
+				Object[Transaction, ShipToECL][Receiving],
 				Object[Transaction, DropShipping][Receiving],
 				Object[Transaction, SiteToSite][Receiving]
 			],
 			Description -> "The orders that this maintenance is receiving.",
 			Category -> "Inventory",
 			Abstract -> True
+		},
+		Counter -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			Description -> "A range of numbers that represent the number of received products that are processed during this maintenance. It is used for looping purposes within procedures.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		OrderNumbers -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The order number provided by the operator to identify the received item.",
+			Category -> "Shipping Information",
+			Developer -> True
+		},
+		CatalogNumbers -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "Number or code provided by the operator to identify the received item.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		ProductNames -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The names of the products that are received by this maintenance.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		SupplierNames -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The names of the companies from which the items received in this maintenance were purchased.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		MatchingProduct -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Model[Container],
+				Model[Part],
+				Model[Plumbing],
+				Model[Wiring],
+				Model[Item],
+				Object[Product],
+				Model[Sensor]
+			],
+			Description -> "Products that match the entered catalog number.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		MatchingOrder -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Transaction, Order], Object[Transaction, DropShipping]],
+			Description -> "Orders that match the entered order number.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		MatchingOrders -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Alternatives[Object[Transaction, Order], Object[Transaction, DropShipping]],
+				Alternatives[
+					Model[Sample],
+					Model[Container],
+					Model[Part],
+					Model[Plumbing],
+					Model[Wiring],
+					Model[Item],
+					Object[Product],
+					Model[Sensor]
+				]
+			},
+			Headers -> {"MatchingOrders", "MatchingProducts"},
+			Description -> "Tuples of matching orders and products in cases where more than one order/product is found.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		VerifiedProducts -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Model[Container],
+				Model[Part],
+				Model[Plumbing],
+				Model[Wiring],
+				Model[Item],
+				Object[Product],
+				Model[Sensor]
+			],
+			Description -> "Products that are verified by operators as the exact product.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		VerifiedProductQuantities -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			Description -> "The number of units of the verified product.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		VerifiedOrders -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Transaction, Order],
+				Object[Transaction, DropShipping]
+			],
+			Description -> "Orders corresponding to the verified products.",
+			Category -> "Inventory",
+			Developer -> True
 		},
 		ProductModels -> {
 			Format -> Multiple,
@@ -68,7 +197,7 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Class -> Integer,
 			Pattern :> GreaterP[0, 1],
 			Units -> None,
-			Description -> "For each member of Orders, number of samples generated total, (e.g., 48 if 2 cases of 24 plates each were received).  This field is always the product of QuantityReceived and SamplesPerItem.",
+			Description -> "For each member of Orders, number of samples generated total, (e.g., 48 if 2 cases of 24 plates each were received). This field is always the product of QuantityReceived and SamplesPerItem.",
 			Category -> "Product Specifications",
 			IndexMatching -> Orders
 		},
@@ -86,25 +215,77 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 				Object[Plumbing][Receiving],
 				Object[Wiring][Receiving]
 			],
-			Description -> "The samples generated by running MainenanceReceiveInventory for this particular batch number.",
+			Description -> "The samples generated by running MaintenanceReceiveInventory for the orders included in this maintenance.",
 			Category -> "Inventory",
 			Abstract -> True
+		},
+		ListedItems -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ListableP[LinkP[{
+				Object[Sample],
+				Object[Item],
+				Object[Container],
+				Object[Instrument],
+				Object[Sensor],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			}]],
+			Description -> "A partitioned list of samples where each list of samples corresponds to a product or dropshipped model.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		CurrentItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Object[Item],
+				Object[Container],
+				Object[Instrument],
+				Object[Sensor],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "The samples that are actively being processed by this maintenance.",
+			Category -> "Inventory",
+			Developer -> True
 		},
 		Containers -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Container][Receiving],
-			Description -> "The containers generated by running MainenanceReceiveInventory.",
+			Description -> "The containers generated by running MaintenanceReceiveInventory.",
 			Category -> "Inventory",
 			Abstract -> True
+		},
+		ListedContainers -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {LinkP[Object[Container]]...},
+			Description -> "A partitioned list of containers where each list of containers corresponds to a product or dropshipped model.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		CurrentContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "The containers that are actively being processed by this maintenance.",
+			Category -> "Inventory",
+			Developer -> True
 		},
 		Covers -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Item, Cap], Object[Item, Lid], Object[Item, PlateSeal]],
-			Description -> "The covers generated by running MainenanceReceiveInventory.",
+			Description -> "The covers generated by running MaintenanceReceiveInventory.",
 			Category -> "Inventory",
 			Abstract -> False
 		},
@@ -114,6 +295,29 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Pattern :> _Link,
 			Relation -> Object[Container, Rack],
 			Description -> "The racks which were shipped along with the other received items.",
+			Category -> "Inventory"
+		},
+		BatchNumbers -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The batch numbers for the items that are actively being processed in this order.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		ExpirationDate -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "The date after which this item is considered expired. This date is recorded from the manufacturer's specified expiration date on the product label.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		ExpirationDates -> {
+			Format -> Multiple,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "For each member of VerifiedProducts, the date after which the items of this product are considered expired.",
 			Category -> "Inventory"
 		},
 		VolumeMeasuredSamples -> {
@@ -137,7 +341,7 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Sample],
-			Description -> "The sample objects that contain tablets and need to be counted upon being received.",
+			Description -> "The sample objects that contain tablets or sachets and need to be counted upon being received.",
 			Category -> "Inventory"
 		},
 		TransferSamples -> {
@@ -160,7 +364,7 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation],
+			Relation -> Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation],
 			Description -> "Any sample manipulation transfer protocols that were generated by and executed during the execution of this MaintenanceReceiveInventory.",
 			Category -> "Inventory"
 		},
@@ -180,11 +384,29 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Category -> "Inventory",
 			Developer -> True
 		},
+		CurrentReceiveInventoryPrograms -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Program],
+			Description -> "ReceiveInventory programs that are actively being processed by this maintenance.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		UnbagInBSCPrograms -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Program],
+			Description -> "ReceiveInventory programs that contain items that are processed in a biosafety cabinet for affixing stickers.",
+			Category -> "Inventory",
+			Developer -> True
+		},
 		WeightMeasurements -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,MeasureWeight],
+			Relation -> Object[Protocol, MeasureWeight],
 			Description -> "Protocols used to determine the initial weights of newly received samples.",
 			Category -> "Sample Post-Processing"
 		},
@@ -192,7 +414,7 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,MeasureVolume],
+			Relation -> Object[Protocol, MeasureVolume],
 			Description -> "Protocols used to determine the initial volume of newly received samples.",
 			Category -> "Sample Post-Processing"
 		},
@@ -200,7 +422,7 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,MeasureCount],
+			Relation -> Object[Protocol, MeasureCount],
 			Description -> "Protocols used to determine the initial count of newly received samples.",
 			Category -> "Sample Post-Processing"
 		},
@@ -220,6 +442,41 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			],
 			Description -> "All the objects created in this MaintenanceReceiveInventory that do not have containers created for them.",
 			Category -> "Inventory"
+		},
+		ListedContainerlessItems -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {LinkP[{
+				Object[Sample],
+				Object[Item],
+				Object[Container],
+				Object[Instrument],
+				Object[Sensor],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			}]...},
+			Description -> "A partitioned list of items where each list of items corresponds to a product or dropshipped model.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		CurrentContainerlessItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Object[Item],
+				Object[Container],
+				Object[Instrument],
+				Object[Sensor],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "The containerless items that are actively being processed by this maintenance.",
+			Category -> "Inventory",
+			Developer -> True
 		},
 		InstalledGasCylinders -> {
 			Format -> Multiple,
@@ -317,6 +574,78 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			],
 			Description -> "Any items that need to have their optimal storage orientation determined during receiving.",
 			Category -> "Qualifications & Maintenance"
+		},
+		ItemsToImage -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item],
+				Object[Container],
+				Object[Instrument],
+				Object[Sensor],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "Any items that need to have their image taken during receiving.",
+			Category -> "Qualifications & Maintenance"
+		},
+		RebaggingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, BiosafetyCabinet],
+				Object[Instrument, BiosafetyCabinet]
+			],
+			Description -> "An aseptic environment used for some or all parts of the maintenance.",
+			Category -> "General",
+			Abstract -> True
+		},
+		AsepticContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Bag, Aseptic],
+				Object[Container, Bag, Aseptic]
+			],
+			Description -> "An aseptic bag used to store some or all items received in the maintenance.",
+			Category -> "General",
+			Abstract -> True
+		},
+		StickerBags -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Bag],
+				Object[Container, Bag]
+			],
+			Description -> "Small plastic bags used to hold printed stickers for items that need to be stickered inside a biosafety cabinet, until the stickers are applied.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		Label -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Consumable],
+				Object[Item, Consumable]
+			],
+			Description -> "Circle labels used as tape for sticking the sticker bags to the product packages.",
+			Category -> "Inventory",
+			Developer -> True
+		},
+		Email -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Whether an email should be sent to accounts payable after the items in this maintenance were received. It is uploaded to False after an email is sent.",
+			Category -> "Organizational Information",
+			Developer -> True
 		}
 	}
 }];

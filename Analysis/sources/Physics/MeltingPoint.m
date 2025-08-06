@@ -341,6 +341,9 @@ Error::InvalidResponseDataSet="The response field in the input `1` is either not
 Error::NoMeltingCurveData="The object or data at position `1` do not have coordinates suitable for melting point analysis. Please ensure that at least one field in the data object from the following list is populated, `2`, or that the input coordinates contain x-coordinates with temperature units and y-coordinates with AbsorbanceUnit, RFU, or ArbitraryUnit units.";
 Error::NoqPCRMeltingCurvesData="The qPCR data objects `1` do not have coordinates suitable for melting point analysis. Please ensure that the MeltingCurves field is populated with x-coordinates with temperature units and y-coordinates with AbsorbanceUnit, RFU, or ArbitraryUnit units.";
 Error::InvalidAssayTypeForDLSProtocol="The protocol `1` needs to have the AssayType MeltingCurve to run the AnalyzeMeltingPoint function.";
+Warning::MeniscusPointThresholdUnreached="The meniscus point was not found in `1` because the melting curve did not cross the MeniscusPointThreshold of `2`.";
+Warning::StartPointThresholdUnreached="The start point was not found in `1` because the melting curve did not cross the StartPointThreshold of `2`.";
+Warning::ClearPointSlopeThresholdUnreached="The clear point was not found in `1` because the slope of the melting curve did not cross the ClearPointSlopeThreshold of `2`.";
 Warning::ObjectDoesNotContain3DCurves="The provided object/protocol does not contain data for 3D melting/cooling curves. Please provide only Object[Protocol, UVMelting] and Object[Data, MeltingCurve] that contain 3D data. Attempting to use 2D curves for this analysis.";
 Warning::AllWavelengthsOutOfRange="All of the specified wavelength values specified are out of the wavelength range that the data was acquired with. Attempting to use 2D curves for this analysis. Please modify the Wavelength option to values in the range from `1` nm to `2` nm.";
 Warning::SomeWavelengthsOutOfRange="At least one of the specified wavelength values is not in the wavelength range that the data has been acquired with. These wavelength values are being ignored in the analysis. The available wavelength range in this data set is from `1` nm to `2` nm.";
@@ -352,7 +355,7 @@ Warning::IncompatibleTransformation="A 3D transformation `1` is selected for a 2
 Warning::UnusedTemperatureTransformation="The TemperatureTransformationFunction is used if TemperatureDataSet and ResponseDataSet are not Null. Please specify DataSetTransformationFunction if you wish to apply a transformation to the DataSet or specify TemperatureDataSet and ResponseDataSet if you wish to set the field that the data points should be taken from.";
 Warning::UnusedResponseTransformation="The ResponseTransformationFunction is used if TemperatureDataSet and ResponseDataSet are not Null. Please specify DataSetTransformationFunction if you wish to apply a transformation to the DataSet or specify TemperatureDataSet and ResponseDataSet if you wish to set the field that the data points should be taken from.";
 Warning::UnusedDataSet="The DataSet is set to Null if the temperature and response datasets are not Null or if the input pattern is {{object1,object2,..}..}. Please specify TemperatureDataSet and ResponseDataSet if you wish to set the field that the data points should be taken from.";
-Warning::UnusedDataSetTransformation="The DataSetTransformationFunction is set to Null if the temperature and response datasets are not Null or if the input pattern is {{object1,object2,..}..}. Please specify TemperatureDataSet and ResponseDataSet and their TransofrmationFunction if you wish to set the field that the data points should be taken from.";
+Warning::UnusedDataSetTransformation="The DataSetTransformationFunction is set to Null if the temperature and response datasets are not Null or if the input pattern is {{object1,object2,..}..}. Please specify TemperatureDataSet and ResponseDataSet and their TransformationFunction if you wish to set the field that the data points should be taken from.";
 Warning::FitIssue="The NonlinearModelFit produced errors in fitting a logistic function to the curve `1`. \"Gradient\" method will be passed to NonLinearModelFit to improve the fit results. Please consider increasing the number of data points in the experiment by changing the temperature resolution.";
 
 (* ---------------------- *)
@@ -652,7 +655,7 @@ resolveDownloadFields[inputData_, protocol_, instrument___]:=Module[
 
 	(*if input data type is MeltingPoint, the data fields are different from others*)
 	If[MatchQ[inputData, {ObjectP[Object[Data, MeltingPoint]]..}],
-		Return[{Object,Type,Name,Instrument,CapillaryVideoFile,MeltingCurve,StartTemperature,EndTemperature,TemperatureRampRate}]
+		Return[{Object, Type, Name, Instrument, CapillaryVideoFile, MeltingCurve, StartTemperature, EndTemperature, TemperatureRampRate, MeasurementMethod}]
 	];
 
 	(*for other data types, melting data fields are different among protocols. standardMeltingDataSets is a general list that covers all cases. *)
@@ -679,8 +682,8 @@ resolveDownloadFields[inputData_, protocol_, instrument___]:=Module[
 
 (* convert downloaded list of list data to a packet*)
 (* overload: Object[Data, MeltingPoint]*)
-convertMixedDownloadsToPackets[bulkDownload_, inputData:{ObjectP[Object[Data, MeltingPoint]]..}, ___]:= createAssociationList[
-	{Object,Type,Name,Instrument,CapillaryVideoFile,MeltingCurve,StartTemperature,EndTemperature,TemperatureRampRate},
+convertMixedDownloadsToPackets[bulkDownload_, inputData : {ObjectP[Object[Data, MeltingPoint]]..}, ___] := createAssociationList[
+	{Object, Type, Name, Instrument, CapillaryVideoFile, MeltingCurve, StartTemperature, EndTemperature, TemperatureRampRate, MeasurementMethod},
 	Transpose[bulkDownload]
 ];
 
@@ -691,12 +694,12 @@ convertMixedDownloadsToPackets[bulkDownload_, inputData:{ObjectP[Object[Data, qP
 		myPackets, noMeltingCurvesIndices, inputDataObjects, noMeltingCurvesObjects,
 		meltingCurvePackets
 	},
-	
+
 	myPackets = createAssociationList[
 		{Object,Type,Name,Instrument,ID, MeltingCurves},
 		Transpose[bulkDownload]
 	];
-	
+
 	(* helper that checks if MeltingCurves is empty *)
 	associationDataCheck[tempAssoc_]:=Module[{assoc},
 		assoc = tempAssoc;
@@ -708,17 +711,17 @@ convertMixedDownloadsToPackets[bulkDownload_, inputData:{ObjectP[Object[Data, qP
 			assoc
 		]
 	];
-	
+
 	(* if melting curves do not have data, return failed, otherwise take the first MeltingCurves data *)
 	meltingCurvePackets = Map[
 		associationDataCheck,
 		myPackets
 	];
-	
+
 	(* return error for failed curves *)
 	(* find failed packet indices *)
 	noMeltingCurvesIndices = Flatten[Position[meltingCurvePackets, $Failed]];
-	
+
 	(* send message about all problematic objects *)
 	If[Length[noMeltingCurvesIndices]>0,
 		(* pull out all data objects *)
@@ -727,10 +730,10 @@ convertMixedDownloadsToPackets[bulkDownload_, inputData:{ObjectP[Object[Data, qP
 		noMeltingCurvesObjects = inputDataObjects[[noMeltingCurvesIndices]];
 		Message[Error::NoqPCRMeltingCurvesData, noMeltingCurvesObjects]
 	];
-	
+
 	(* return the packets with cleaned melting curves *)
 	meltingCurvePackets
-	
+
 ];
 
 (*overload: convert downloaded list of list data to a packet for Object[Data, AbsorbanceIntensity] *)
@@ -1023,13 +1026,14 @@ resolveInputsAnalyzeMeltingPoint[KeyValuePattern[{
 	{
 		useAlphasBool, resolvedInputsData, resolvedInputsTestList, resolvedTemperatureDataSet, resolvedResponseDataSet,
 		resolvedDataSets,resolvedFunctions,coordinateSetsID,coordinateSets,curvesTransform,resolvedMethod,curveDLS,curveSLS,
-		newPacket, thisType, thisInstrument, meltingCurve, startT, endT, rampRate
+		newPacket, thisType, thisInstrument, meltingCurve, startT, endT, rampRate,
+		measurementMethod
 	},
 
 	(*If the data type is Object[Data, MeltingPoint], the resolving input algorithm is different. *)
 	If[MatchQ[Lookup[packet, Type], Object[Data, MeltingPoint]],
 
-		{meltingCurve, startT, endT, rampRate, thisInstrument} = Lookup[packet, {MeltingCurve, StartTemperature, EndTemperature,TemperatureRampRate, Instrument}];
+		{meltingCurve, startT, endT, rampRate, thisInstrument, measurementMethod} = Lookup[packet, {MeltingCurve, StartTemperature, EndTemperature,TemperatureRampRate, Instrument, MeasurementMethod}];
 
 		Return[
 			<|
@@ -1039,7 +1043,8 @@ resolveInputsAnalyzeMeltingPoint[KeyValuePattern[{
 					StartTemperature -> startT,
 					EndTemperature -> endT,
 					TemperatureRampRate -> rampRate,
-					Instrument -> thisInstrument
+					Instrument -> thisInstrument,
+					MeasurementMethod -> measurementMethod
 				|>
 			|>
 		];
@@ -1194,28 +1199,63 @@ computeAnalyzeMeltingPoint[KeyValuePattern[{
 		StartTemperature -> startT_,
 		EndTemperature -> endT_,
 		TemperatureRampRate -> rate_,
-		Instrument -> thisInstrument_
+		Instrument -> thisInstrument_,
+		MeasurementMethod -> measurementMethod_
 	}],
-	ResolvedOptions -> KeyValuePattern[{
+	ResolvedOptions -> resolvedOps: KeyValuePattern[{
 		StartPointThreshold -> startPointThreshold_,
 		MeniscusPointThreshold -> meniscusPointThreshold_,
 		ClearPointSlopeThreshold -> clearPointSlope_
 	}]
 }]]:=Module[
 	{
-		startPosition, meniscusPosition, startPointTemp, meniscusPointTemp, clearPointTemp, allTemp, timeSeconds,
-		percents, derivatives, largestPosition, clearPointPosition, finalPosition, thermoStartPointTemp,
-		thermoMeniscusPointTemp, thermoClearPointTemp, magStartPointThres, magMeniscusPointThres, magClearPointSlope,
+		resolvedOpsList, startPositionList, meniscusPositionList, startPosition, meniscusPosition, startPointTemp, meniscusPointTemp, clearPointTemp, allTemp, timeSeconds,
+		percents, derivatives, largestPosition, clearPointPositionList, clearPointPosition, finalPosition, packet, magStartPointThres, magMeniscusPointThres, magClearPointSlope,
 		magMeltingData, magRate
 	},
+
+	resolvedOpsList = Normal[First[resolvedOps], Association];
+
+	$DefaultPacket = <|
+		Packet -> <|
+			Type -> Object[Analysis, MeltingPoint],
+			Instrument -> Link[thisInstrument],
+			ResolvedOptions -> resolvedOpsList,
+			Append[Reference] -> {Link[inputData, MeltingAnalyses]},
+			PharmacopeiaStartPointTemperature -> Null,
+			PharmacopeiaMeniscusPointTemperature -> Null,
+			PharmacopeiaClearPointTemperature -> Null,
+			ThermodynamicMeltingTemperature -> Null,
+			USPharmacopeiaMeltingRange -> {Null, Null},
+			BritishPharmacopeiaMeltingTemperature -> Null,
+			JapanesePharmacopeiaMeltingTemperature -> Null
+		|>,
+		Intermediate -> <|
+			PreviewQ -> True
+		|>
+	|>;
 
 	{magMeltingData, magStartPointThres, magMeniscusPointThres, magClearPointSlope, magRate} = QuantityMagnitude[
 		{meltingData, startPointThreshold, meniscusPointThreshold, clearPointSlope, rate}
 	];
 
+	(*Often, meltingData is not single-valued.  It typically occurs at the start of the dataset.*)
+	(*Delete duplicates by the x-values*)
+	magMeltingData = DeleteDuplicatesBy[magMeltingData, First];
+
 	(*find the first position that the transmission percentage is greater than the threshold point for all data*)
-	startPosition = First[FirstPosition[magMeltingData, {x_, y_}/; y>magStartPointThres]];
-	meniscusPosition = First[FirstPosition[magMeltingData, {x_, y_}/; y>magMeniscusPointThres]];
+	startPositionList = FirstPosition[magMeltingData, {x_, y_}/; y>magStartPointThres];
+	meniscusPositionList = FirstPosition[magMeltingData, {x_, y_}/; y>magMeniscusPointThres];
+
+	If[startPositionList === Missing["NotFound"],
+		Message[Warning::StartPointThresholdUnreached, Download[inputData, Object], magStartPointThres];
+		Return[$DefaultPacket]];
+	If[meniscusPositionList === Missing["NotFound"],
+		Message[Warning::MeniscusPointThresholdUnreached, Download[inputData, Object], magMeniscusPointThres];
+		Return[$DefaultPacket]];
+
+	startPosition = First[startPositionList];
+	meniscusPosition = First[meniscusPositionList];
 
 	(*get the temperature at the position*)
 	startPointTemp =  magMeltingData[[startPosition, 1]];
@@ -1236,50 +1276,57 @@ computeAnalyzeMeltingPoint[KeyValuePattern[{
 
 	(*calculate the derivative*)
 	percents = Transpose[magMeltingData][[2]];
-	derivatives = MapThread[(#1/#2)&, {Differences[percents], Differences[timeSeconds]}];
+	derivatives = MapThread[If[#2 == 0, 0, (#1/#2)]&, {Differences[percents], Differences[timeSeconds]}];
 
 	(*find the position of largest derivatives*)
-	largestPosition = First[First[Position[derivatives, Max[derivatives]]]];
+	largestPosition = First[Ordering[derivatives, -1]];
 
 	(*target temperature position should be after the largest position*)
-	clearPointPosition = First[
-		FirstPosition[
-			derivatives[[largestPosition;;]],
-			x_/; x<=magClearPointSlope
-		]
+	clearPointPositionList = FirstPosition[
+		derivatives[[largestPosition;;]],
+		x_/; x<=magClearPointSlope
 	];
+	If[clearPointPositionList === Missing["NotFound"],
+		Message[Warning::ClearPointSlopeThresholdUnreached, Download[inputData, Object], magClearPointSlope];
+		Return[$DefaultPacket]
+	];
+
+	clearPointPosition = First[clearPointPositionList];
 	finalPosition  = largestPosition + clearPointPosition - 1;
 
 	(*return the current temperature at this position*)
 	clearPointTemp = magMeltingData[[finalPosition, 1]];
 
-	(*This empirical formula was provided from manufacturer's manual*)
-	(*TODO: add the link to the manual here*)
-	thermoStartPointTemp = startPointTemp - 0.2 * N[Sqrt[magRate]];
-	thermoMeniscusPointTemp	= meniscusPointTemp - 1.5 * N[Sqrt[magRate]];
-	thermoClearPointTemp = clearPointTemp - 2.0 * N[Sqrt[magRate]];
-
-	<|
-		Packet -> <|
+	(* updated packet *)
+	packet = If[
+		MatchQ[measurementMethod, Thermodynamic],
+		<|
 			Type -> Object[Analysis, MeltingPoint],
 			Instrument -> Link[thisInstrument],
-			ResolvedOptions -> resolvedOps,
+			ResolvedOptions -> resolvedOpsList,
+			Append[Reference] -> {Link[inputData, MeltingAnalyses]},
+			ThermodynamicMeltingTemperature -> meniscusPointTemp * Celsius,
+			MeasurementMethod -> measurementMethod
+		|>,
+		<|
+			Type -> Object[Analysis, MeltingPoint],
+			Instrument -> Link[thisInstrument],
+			ResolvedOptions -> resolvedOpsList,
 			Append[Reference] -> {Link[inputData, MeltingAnalyses]},
 			PharmacopeiaStartPointTemperature -> startPointTemp * Celsius,
 			PharmacopeiaMeniscusPointTemperature -> meniscusPointTemp * Celsius,
 			PharmacopeiaClearPointTemperature -> clearPointTemp * Celsius,
-			ThermodynamicStartPointTemperature -> thermoStartPointTemp * Celsius,
-			ThermodynamicMeniscusPointTemperature -> thermoMeniscusPointTemp * Celsius,
-			ThermodynamicClearPointTemperature -> thermoClearPointTemp * Celsius,
 			USPharmacopeiaMeltingRange -> {startPointTemp, clearPointTemp} * Celsius,
-			BritishPharmacopeiaMeltingPoint -> clearPointTemp * Celsius,
-			JapanesePharmacopeiaMeltingPoint -> clearPointTemp * Celsius
-		|>,
-		Intermediate -> <|
-			PreviewQ -> True
+			BritishPharmacopeiaMeltingTemperature -> clearPointTemp * Celsius,
+			JapanesePharmacopeiaMeltingTemperature -> clearPointTemp * Celsius,
+			MeasurementMethod -> measurementMethod
 		|>
-	|>
+	];
 
+	<|
+		Packet -> packet,
+		Intermediate -> <|PreviewQ -> True|>
+	|>
 ];
 
 
@@ -1341,9 +1388,12 @@ previewAnalyzeMeltingPoint[in: KeyValuePattern[{
 	}]
 }]]:=Module[{bt, length, result},
 
+
 	bt = BatchTranspose[in];
 
 	length = Length[bt];
+
+
 
 	result = makeMeltingPointPreview[First[bt]];
 
@@ -1416,10 +1466,10 @@ resolveAnalyzeMeltingPointInputs[packet_,expandedOptions_]:=Module[
 
 	(* This is the method used for calculating the melting temperature *)
 	method = Lookup[expandedOptions, Method];
-	
+
 	(* check if input packet is qPCR, to default method to Derivative *)
 	qPCRDataQ = MatchQ[Lookup[packet, Object], ObjectP[Object[Data, qPCR]]];
-	
+
 	resolvedMethod=Which[
 		(* For fluoresenceSpectraDataQ and qPCRData, we set the method to Derivative *)
 		(method===Automatic && (fluoresenceSpectraDataQ||qPCRDataQ)), Derivative,
@@ -1614,7 +1664,7 @@ thermoCurveCoordinatesRules[thermoPacket:PacketP[Object[Data]],resultOps_,option
 	(* In case the instrument is multimode Spectrophotometer and we have ExcitationWavelength, we need to process the 3D fluoresence spectra data *)
 	fluoresenceSpectraInstrument=MatchQ[Lookup[thermoPacket,Instrument,Null], ObjectP[Object[Instrument, MultimodeSpectrophotometer]]];
 	fluoresenceSpectraDataQ= fluoresenceSpectraInstrument && MatchQ[Lookup[thermoPacket,ExcitationWavelength,Null],GreaterP[0*Nanometer]];
-	
+
 	(* <<< Resolving Temperature and Response Dataset Fields >>> *)
 
 	(* The type of the data object to lookup the automatic temperature and response fields *)
@@ -2620,7 +2670,7 @@ ratioTransformHelper[data3D_, wavelengths_] := Module[
 	(* For each temperature, the position of the datapoint that has the wavelength closest to numerator and denominator *)
 	wlPositions=Flatten@Nearest[#->"Index",{numerator,denominator}] & /@ groupedWavelengths;
 
-	(* The ratio of the intensity at the two wavelenghts - if two values are returned for the position, the average of intensity is taken *)
+	(* The ratio of the intensity at the two wavelengths - if two values are returned for the position, the average of intensity is taken *)
 	intensityRatio=MapThread[
 		If[!MatchQ[#2,{}],
 	    (myMean[#1[[Last[#2]]]]/myMean[#1[[First[#2]]]]),
@@ -2881,9 +2931,9 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 	}=Switch[Lookup[resolvedOps, DataProcessing],
 		(* smooth data processing *)
 		Smooth,
-		
+
 			(* xyCurve, xdyCurve, alphaCurve are calculated the same regardless of method *)
-		
+
 			(* smooth the xy curve to get a cleaner analysis and derivative *)
 			xyCurve=gaussianSmooth1D[xy, Lookup[resolvedOps, SmoothingRadius]];
 
@@ -2896,24 +2946,24 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 			*)
 			xdyCurve=If[Length[xyCurve]===1,
 				xyCurve,
-				
+
 				(* forward differences, first order *)
 				(*Compute finite differences from the X and Y data series, and determine the derivative*)
 				finiteDifferencesX = Differences[xyCurve[[ All, 1]]];
 				finiteDifferencesY = Differences[xyCurve[[ All, 2]]];
-				
+
 				finiteDerivatives = finiteDifferencesY/finiteDifferencesX;
-				
+
 				(*Pull out X coordinates, drop the last one since we have one fewer derivative from taking differences *)
 				coordinatesX = xyCurve[[ ;; -2, 1]];
-				
+
 				(*Construct the derivatives*)
 				derivativeCurves = Transpose[{coordinatesX, finiteDerivatives}];
-				
+
 				(*Need to smooth the noisy curves after taking derivatives*)
 				Lookup[AnalyzeSmoothing[derivativeCurves, EqualSpacing -> False, Upload -> False, Output -> Result], SmoothedDataPoints]
 			];
-			
+
 			(* if the data object is qPCR we use the negative derivative *)
 			xdyCurve = If[MatchQ[dataId, ObjectP[Object[Data, qPCR]]],
 				(* make the y-corrdinate negative *)
@@ -2923,9 +2973,9 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 				],
 				xdyCurve
 			];
-			
+
 			alphaCurve=RescaleY[xyCurve, Last[CoordinateBounds[xyCurve]], {1, 0}];
-			
+
 			(* calculate key values based on the selected method *)
 			Switch[Lookup[resolvedOps, Method],
 				MidPoint,
@@ -2935,7 +2985,7 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 						Null,
 						Null
 					},
-	
+
 				InflectionPoint,
 					{
 						Null,
@@ -2943,9 +2993,9 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 						Null,
 						Null
 					},
-	
+
 				Derivative,
-				
+
 					peakPack=AnalyzePeaks[xdyCurve,Upload->False];
 					positions=peakPack[Replace[Position]];
 					heights=peakPack[Replace[Height]];
@@ -2955,7 +3005,7 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 						Null,Null
 					}
 			],
-		
+
 		(* fitting a sigmoid function *)
 		Fit,
 			(* values regardless of method *)
@@ -2969,7 +3019,7 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 			Switch[Lookup[resolvedOps, Method],
 				MidPoint,
 					{Null,midPointFromFunction[alphaSigmoidFit, 0., 1.],Null,Null},
-	
+
 				InflectionPoint,
 					{meltingPointValue,meltingPointStdDevValue}=First[Cases[bestFitParams,{InflectionPoint,val_,stdDev_,___}:>{val,stdDev}]];
 					{
@@ -3036,7 +3086,7 @@ calculateMeltingPointFields[xy0:CoordinatesP,useAlpha: BooleanP,curveName_,resol
 	If[meltingOnsetPoint < 0*Kelvin,
 		meltingOnsetPoint=Null
 	];
-	
+
 	(* add derivative units back if data was qPCR because we store the data in the analysis object *)
 	xdyCurve = If[MatchQ[dataId, ObjectP[Object[Data, qPCR]]],
 		QuantityArray[xdyCurve, {Celsius, RFU/Celsius}],
@@ -3243,7 +3293,7 @@ formatMeltingPointFields[
 		mtrans,mps,mpstddevs,mpdists, goodInds, alphas, mpMean,mpStdDev,mpDist,xycurves,
 		monsets, smoothedDerivatives
 	},
-	
+
 	(* pull values out of the packets *)
 	mtrans=Lookup[packets,MeltingTransitions];
 	mps=Lookup[packets,MeltingPoint];
@@ -3253,7 +3303,7 @@ formatMeltingPointFields[
 	xycurves=Lookup[packets,XYCurve];
 	monsets=Lookup[packets,MeltingOnsetPoint];
 	smoothedDerivatives=Lookup[packets,Analysis`Private`DerivativeCurve];
-	
+
 	(* find good indices *)
 	goodInds=Flatten@Position[mps,Except[Null],{1},Heads->False];
 
@@ -3315,7 +3365,7 @@ formatMeltingPointFields[
 			},
 			{}
 		],
-		
+
 		(* If we pulled cures from qPCR we also want to save the derivatives *)
 		If[MatchQ[dataId, ObjectP[Object[Data, qPCR]]],
 			{

@@ -19,8 +19,8 @@ DefineUsage[
 		},
 		MoreInformation -> {
 			"The pricing is based on the PricePerExperiment for the Bill used for this protocol and is the protocol was a Priority one.",
-			"Pricing information is only calculated for Completed parent protocols.",
-			"For the Team or Notebook overloads, non-Completed and non-parent protocols are filtered out and not displayed.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
 			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices."
 		},
@@ -69,7 +69,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of storage condition, including what object is stored, for how long, and its price for that length of time.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -94,7 +94,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of storage condition, including what object is stored, for how long, and its price for that length of time.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -125,7 +125,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of storage condition, including what object is stored, for how long, and its price for that length of time.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -150,7 +150,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of storage condition, including what object is stored, for how long, and its price for that length of time.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -181,7 +181,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of storage condition, including what object is stored, for how long, and its price for that length of time.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -207,7 +207,7 @@ DefineUsage[
 			"PriceTransactions",
 			"PriceMaterials",
 			"PriceCleaning",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "steven", "dima"}
 	}
@@ -238,7 +238,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of waste generated, including what protocol generated it, how much, and its price for that quantity.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -263,7 +263,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of waste generated, including what protocol generated it, how much, and its price for that quantity.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -294,7 +294,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of waste generated, including what protocol generated it, how much, and its price for that quantity.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -319,7 +319,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of waste generated, including what protocol generated it, how much, and its price for that quantity.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -350,7 +350,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each type of waste generated, including what protocol generated it, how much, and its price for that quantity.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -362,8 +362,8 @@ DefineUsage[
 		},
 		MoreInformation -> {
 			"The pricing is based upon the PricingRate of each type of laboratory waste and how much was generated in the protocol.",
-			"Pricing information is only calculated for Completed parent protocols.",
-			"For the Team or Notebook overloads, non-Completed and non-parent protocols are filtered out and not displayed.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
 			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices.",
 			"In order to find the real pricing rate for a type of waste, please Download the PricingRate field from the corresponding Model[Sample] object."
@@ -374,7 +374,7 @@ DefineUsage[
 			"PriceInstrumentTime",
 			"PriceMaterials",
 			"PriceTransactions",
-			"PriceExperiment",
+			"SummaryPrice",
 			"PriceCleanup"
 		},
 		Author -> {"alou", "robert", "steven", "dima"}
@@ -398,8 +398,8 @@ DefineUsage[
 		},
 		MoreInformation -> {
 			"The pricing is based upon the PricingRate of each given instrument and how long that instrument was used in the protocol.",
-			"Pricing information is only calculated for Completed parent protocols.",
-			"For the Team or Notebook overloads, non-Completed and non-parent protocols are filtered out and not displayed.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
 			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices.",
 			"In order to find the real pricing rate for an instrument, please Download the PricingRate field from the corresponding Model[Instrument] object."
@@ -412,7 +412,7 @@ DefineUsage[
 			{"endDate", _?DateObjectQ, "The end date for the span of time of protocols this function is pricing."}
 		},
 		Output :> {
-			{"table", _Pane, "A table displaying information about each instrument used, including what protocol used it, for how long, and its price for that time."},
+			{"table", _Grid, "A table displaying information about each instrument used, including what protocol used it, for how long, and its price for that time."},
 			{"associations", {InstrumentPriceTableP...}, "A list of associations containing information about each instrument used, what protocol used it, for how long, and the price for that time (returned if OutputFormat -> Association)."}
 		},
 		Sync -> Automatic,
@@ -422,7 +422,7 @@ DefineUsage[
 			"PriceMaterials",
 			"PriceTransactions"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim", "steven"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim", "steven"}
 	}
 ];
 
@@ -444,8 +444,8 @@ DefineUsage[
 		},
 		MoreInformation -> {
 			"The pricing is based upon the PricingRate of each given operator and the time for which the operator was working on the protocol.",
-			"Pricing information is only calculated for Completed parent protocols.",
-			"For the Team or Notebook overloads, non-Completed and non-parent protocols are filtered out and not displayed.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
 			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices."
 		},
@@ -456,7 +456,7 @@ DefineUsage[
 			{"dateRange", Span[_?DateObjectQ, _?DateObjectQ], "The span of time of protocols this function is pricing."}
 		},
 		Output :> {
-			{"table", _Pane, "A table displaying information about each operator that participated in the protocol, including what protocol the operator worked on, for how long, and the price for that time."},
+			{"table", _Grid, "A table displaying information about each operator that participated in the protocol, including what protocol the operator worked on, for how long, and the price for that time."},
 			{"associations", {OperatorPriceTableP...}, "A list of associations containing information about each operator involved, what protocol the operator worked on, for how long, and the price for that time (returned if OutputFormat -> Association)."}
 		},
 		Sync -> Automatic,
@@ -494,7 +494,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -518,7 +518,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -543,7 +543,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -574,7 +574,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -599,7 +599,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -630,7 +630,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about each priced material, including what protocol or transaction it is affiliated with, its model and its name, the price category, the amount that was used or shipped, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -644,8 +644,8 @@ DefineUsage[
 			"The pricing of protocols is based on the list price of each given material and how much of that material was used, plus the applicable sales tax rate depending on the location of the ECL facility where the protocol was performed.",
 			"The pricing of transaction orders (items ordered from a supplier) is based on the list price of each given material and the quantity ordered, plus the applicable sales tax rate depending on the location of the ECL facility where the transaction was shipped to.",
 			"For clarity, the pricing components (product list price and tax price) are displayed as individual entries in the output association or table.",
-			"Pricing information is only calculated for completed parent protocols and non-cancelled transactions.",
-			"For the Team or Notebook overloads, only completed protocols and received transaction orders are priced; non-completed and/or non-parent protocols as-well as pending transactions are filtered out and not displayed in the output.",
+			"Pricing information is only calculated for completed root protocols and non-cancelled transactions.",
+			"For the Team or Notebook overloads, only completed protocols and received transaction orders are priced; non-completed and/or non-root protocols as-well as pending transactions are filtered out and not displayed in the output.",
 			"By default, if Teams or Notebooks are specified and no date range is provided, the function defaults to showing protocols and transactions completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of presentation and do not represent actual prices.",
 			"In order to find the real list price for a material, please Download the Price field from the corresponding Object[Product].",
@@ -658,9 +658,9 @@ DefineUsage[
 			"PriceOperatorTime",
 			"PriceStorage",
 			"PriceTransactions",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim", "alou", "dima", "steven", "waltraud.mair"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim", "alou", "dima", "steven", "waltraud.mair"}
 	}
 ];
 
@@ -686,7 +686,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying transactional information about each material, including what transaction it is affiliated with, its model and its name, the price category, the amount that was shipped or used, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -711,7 +711,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying transactional information about each material, including what transaction it is affiliated with, its model and its name, the price category, the amount that was shipped or used, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -742,7 +742,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying transactional information about each material, including what transaction it is affiliated with, its model and its name, the price category, the amount that was shipped or used, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -767,7 +767,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying transactional information about each material, including what transaction it is affiliated with, its model and its name, the price category, the amount that was shipped or used, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -798,7 +798,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying transactional information about each material, including what transaction it is affiliated with, its model and its name, the price category, the amount that was shipped or used, and the corresponding price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -826,7 +826,7 @@ DefineUsage[
 			"PriceStorage",
 			"PriceMaterials",
 			"PriceTransactions",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "dima"}
 	}
@@ -856,7 +856,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the dishwashing and/or autoclaving of objects used by the relevant protocols, including the cleaning category, cleaning method, the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -881,7 +881,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the dishwashing and/or autoclaving of objects used by the relevant protocols, including the cleaning category, cleaning method, the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -912,7 +912,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the dishwashing and/or autoclaving of objects used by the relevant protocols, including the cleaning category, cleaning method, the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -937,7 +937,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the dishwashing and/or autoclaving of objects used by the relevant protocols, including the cleaning category, cleaning method, the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -968,7 +968,7 @@ DefineUsage[
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the dishwashing and/or autoclaving of objects used by the relevant protocols, including the cleaning category, cleaning method, the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -991,7 +991,7 @@ DefineUsage[
 			"PriceStorage",
 			"PriceMaterials",
 			"PriceTransactions",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "steven", "dima"}
 	}
@@ -1019,7 +1019,7 @@ DefineUsage[PriceStocking,
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the stocking of objects used by the relevant protocols, including the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -1044,7 +1044,7 @@ DefineUsage[PriceStocking,
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the stocking of objects used by the relevant protocols, including the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -1075,7 +1075,7 @@ DefineUsage[PriceStocking,
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the stocking of objects used by the relevant protocols, including the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -1100,7 +1100,7 @@ DefineUsage[PriceStocking,
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the stocking of objects used by the relevant protocols, including the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -1131,7 +1131,7 @@ DefineUsage[PriceStocking,
 					{
 						OutputName -> "table",
 						Description -> "A table displaying information about the stocking of objects used by the relevant protocols, including the item ID and name of its model, and the corresponding total price.",
-						Pattern :> _Pane
+						Pattern :> _Grid
 					},
 					{
 						OutputName -> "associations",
@@ -1155,7 +1155,7 @@ DefineUsage[PriceStocking,
 			"PriceOperatorTime",
 			"PriceMaterials",
 			"PriceCleaning",
-			"PriceExperiment",
+			"SummaryPrice",
 			"PriceTransactions"
 		},
 		Author -> {"alou", "robert", "dima", "steven"}
@@ -1242,14 +1242,14 @@ DefineUsage[
 
 
 (* ::Subsubsection:: *)
-(*PriceExperiment*)
+(*SummaryPrice*)
 
 
-DefineUsage[PriceExperiment,
+DefineUsage[SummaryPrice,
 	{
 		BasicDefinitions -> {
 			{
-				Definition -> {"PriceExperiment[protocol]", "table"},
+				Definition -> {"SummaryPrice[protocol]", "table"},
 				Description -> "provides a 'table' listing the pricing information for all of the charges associated to 'protocol'.",
 				Inputs :> {
 					{
@@ -1273,7 +1273,7 @@ DefineUsage[PriceExperiment,
 			},
 
 			{
-				Definition -> {"PriceExperiment[notebook]", "table"},
+				Definition -> {"SummaryPrice[notebook]", "table"},
 				Description -> "provides a 'table' listing the pricing information for all completed protocols in 'notebook' for the last month.",
 				Inputs :> {
 					{
@@ -1298,7 +1298,7 @@ DefineUsage[PriceExperiment,
 
 
 			{
-				Definition -> {"PriceExperiment[notebook, dateRange]", "table"},
+				Definition -> {"SummaryPrice[notebook, dateRange]", "table"},
 				Description -> "provides a 'table' listing the pricing information for all completed protocols in 'notebook' in the time period defined by the 'dateRange'.",
 				Inputs :> {
 					{
@@ -1329,7 +1329,7 @@ DefineUsage[PriceExperiment,
 
 
 			{
-				Definition -> {"PriceExperiment[team]", "table"},
+				Definition -> {"SummaryPrice[team]", "table"},
 				Description -> "provides a 'table' listing the pricing information for all completed protocols in notebooks financed by 'team' in the last month.",
 				Inputs :> {
 					{
@@ -1354,7 +1354,7 @@ DefineUsage[PriceExperiment,
 
 
 			{
-				Definition -> {"PriceExperiment[team, dateRange]", "table"},
+				Definition -> {"SummaryPrice[team, dateRange]", "table"},
 				Description -> "provides a 'table' listing the pricing information for all completed protocols in notebooks financed by 'team' in the time period defined by the 'dateRange'.",
 				Inputs :> {
 					{
@@ -1386,9 +1386,9 @@ DefineUsage[PriceExperiment,
 		},
 
 		MoreInformation -> {
-			"The pricing is an aggregate of PriceInstrumentTime, PriceOperatorTime, PriceCleaning, PriceStocking, PriceWaste, PriceMaterials, as well as any per experiment charges.",
-			"Pricing information is only calculated for Completed parent protocols.",
-			"For the Team or Notebook overloads, non-Completed and non-parent protocols are filtered out and not displayed.",
+			"The pricing is an aggregate of PriceInstrumentTime, PriceOperatorTime, PriceCleaning, PriceStocking, PriceWaste, PriceMaterials.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
 			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
 			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices."
 		},
@@ -1400,8 +1400,147 @@ DefineUsage[PriceExperiment,
 			"PriceOperatorTime",
 			"PriceMaterials",
 			"PriceCleaning",
-			"PriceTransactions"
+			"PriceTransactions",
+			"PriceExperiment"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim", "alou", "dima", "steven"}
+		Author -> {"xu.yi"}
+	}
+];
+(* ::Subsubsection:: *)
+(*PriceExperiment*)
+
+
+DefineUsage[PriceExperiment,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"PriceExperiment[protocol]", "table"},
+				Description -> "provides all the pricing tables for all of the charges associated to 'protocol', including PirceWaste, PriceCleaning, PriceInstrumentTime, PriceOperatorTime, PriceMaterial and PriceStocking.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol(s) whose pricing is calculated.",
+						Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol]]]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "table",
+						Description -> "A table displaying the details of each price function, including the protocol the operator worked on, the duration of the work, and the corresponding price for that time.",
+						Pattern :> _Column
+					}
+				}
+			},
+
+			{
+				Definition -> {"PriceExperiment[notebook]", "table"},
+				Description -> "provides all the pricing tables for all of the charges associated to all completed protocols in 'notebook' for the last month.",
+				Inputs :> {
+					{
+						InputName -> "notebook",
+						Description -> "The notebook(s) whose pricing for all its protocols is calculated.",
+						Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[LaboratoryNotebook]]]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "table",
+						Description -> "A table displaying the details of each price function, including the protocol the operator worked on, the duration of the work, and the corresponding price for that time.",
+						Pattern :> _Column
+					}
+				}
+			},
+
+
+			{
+				Definition -> {"PriceExperiment[notebook, dateRange]", "table"},
+				Description -> "provides all the pricing tables for all of the charges associated to all completed protocols in 'notebook' in the time period defined by the 'dateRange'.",
+				Inputs :> {
+					{
+						InputName -> "notebook",
+						Description -> "The notebook(s) whose pricing for all its protocols is calculated.",
+						Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[LaboratoryNotebook]]]
+					},
+					{
+						InputName -> "dateRange",
+						Description -> "The span of time of protocols this function is pricing.",
+						Widget -> Widget[Type -> Expression, Pattern :> Span[_?DateObjectQ, _?DateObjectQ], Size -> Word]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "table",
+						Description ->"A table displaying the details of each price function, including the protocol the operator worked on, the duration of the work, and the corresponding price for that time.",
+						Pattern :> _Column
+					}
+				}
+			},
+
+
+			{
+				Definition -> {"PriceExperiment[team]", "table"},
+				Description -> "provides all the pricing tables for all of the charges associated to all completed protocols in notebooks financed by 'team' in the last month.",
+				Inputs :> {
+					{
+						InputName -> "team",
+						Description -> "The team(s) whose pricing for all its protocols is calculated.",
+						Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Team, Financing]]]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "table",
+						Description -> "A column table displaying all the pricing tables about each operator that participated in the protocol, including what protocol the operator worked on, for how long, and the price for that time.",
+						Pattern :> _Column
+					}
+				}
+			},
+
+
+			{
+				Definition -> {"PriceExperiment[team, dateRange]", "table"},
+				Description -> "provides all the pricing tables for all of the charges associated to all completed protocols in notebooks financed by 'team' in the time period defined by the 'dateRange'.",
+				Inputs :> {
+					{
+						InputName -> "team",
+						Description -> "The notebook(s) whose operator pricing for all its protocols is calculated.",
+						Widget -> Widget[Type -> Object, Pattern :> ObjectP[Object[Team, Financing]]]
+					},
+					{
+						InputName -> "dateRange",
+						Description -> "The span of time of protocols this function is pricing.",
+						Widget -> Widget[Type -> Expression, Pattern :> Span[_?DateObjectQ, _?DateObjectQ], Size -> Word]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "table",
+						Description -> "A table displaying all the pricing tables about each operator that participated in the protocol, including what protocol the operator worked on, for how long, and the price for that time.",
+						Pattern :> _Column
+					}
+				}
+			}
+
+		},
+
+		MoreInformation -> {
+			"The pricing is an aggregate of PriceInstrumentTime, PriceOperatorTime, PriceCleaning, PriceStocking, PriceWaste, PriceMaterials, as well as any per experiment charges.",
+			"Pricing information is only calculated for Completed root protocols.",
+			"For the Team or Notebook overloads, non-Completed and non-root protocols are filtered out and not displayed.",
+			"By default, if teams or notebooks are specified and no date range is provided, function defaults to showing protocols completed in the past 30 days.",
+			"Note that the prices displayed in this documentation are only for the sake of example and do not represent actual prices."
+		},
+		Sync -> Automatic,
+		SeeAlso -> {
+			"PriceStorage",
+			"PriceWaste",
+			"PriceInstrumentTime",
+			"PriceOperatorTime",
+			"PriceMaterials",
+			"PriceCleaning",
+			"PriceTransactions",
+			"SummaryPrice"
+		},
+		Author -> {"xu.yi"}
 	}
 ];

@@ -149,6 +149,7 @@ canonicalUnitLookup=Hold[
 	EmeraldCell -> IndependentUnit["Cells"],
 	Particle -> IndependentUnit["Particles"],
 	CFU -> IndependentUnit["Cfus"],
+	Colony -> IndependentUnit["Colonies"],
 	OD600 -> IndependentUnit["OD600s"],
 	RelativeNephelometricUnit -> IndependentUnit["RelativeNephelometricUnits"],
 	NephelometricTurbidityUnit -> IndependentUnit["NephelometricTurbidityUnits"],
@@ -258,6 +259,7 @@ emeraldUnitLookup=<|
 	IndependentUnit["Cells"] -> "EmeraldCell",
 	IndependentUnit["Particles"] -> "Particle",
 	IndependentUnit["Cfus"] -> "CFU",
+	IndependentUnit["Colonies"] -> "Colony",
 	IndependentUnit["OD600s"] -> "OD600",
 	IndependentUnit["RelativeNephelometricUnits"] -> "RelativeNephelometricUnit",
 	IndependentUnit["NephelometricTurbidityUnits"] -> "NephelometricTurbidityUnit",
@@ -573,6 +575,7 @@ unitDimensionLookup:=Association[Map[Rule[Sort[First[#]], Last[#]]&, {
 	{{legacyIndependentUnitDimension["Particles"], 1}, {"LengthUnit", -3}} -> "ParticleConcentration",
 	{{legacyIndependentUnitDimension["Cfus"], 1}} -> "CFU",
 	{{legacyIndependentUnitDimension["Cfus"], 1}, {"LengthUnit", -3}} -> "CFUConcentration",
+	{{legacyIndependentUnitDimension["Colonies"], 1}} -> "Colony",
 	{{legacyIndependentUnitDimension["OD600s"], 1}} -> "OD600",
 	{{legacyIndependentUnitDimension["RelativeNephelometricUnits"], 1}} -> "Turbidity",
 	{{legacyIndependentUnitDimension["NephelometricTurbidityUnits"], 1}} -> "Turbidity",
@@ -1170,7 +1173,7 @@ KnownUnitP=_?knownUnitQ;
 (* ::Subsubsection::Closed:: *)
 (*stringUnitP*)
 
-
+Authors[stringUnitP]:={"xu.yi"};
 stringUnitP=_String | HoldPattern[Power[_String, _Integer]] | HoldPattern[Times[(_String | Power[_String, _Integer])..]];
 
 
@@ -1755,6 +1758,7 @@ unitQDimensionLookup[]:=Map[Rule[First[#], Sort[Last[#]]]&, {
 	{ParticleCountP, ParticleCountQ} -> {{legacyIndependentUnitDimension["Particles"], 1}},
 	{ParticleConcentrationP, ParticleConcentrationQ} -> {{legacyIndependentUnitDimension["Particles"], 1}, {"LengthUnit", -3}},
 	{CFUP, CFUQ} -> {{legacyIndependentUnitDimension["Cfus"], 1}},
+	{ColonyCountP, ColonyCountQ} -> {{legacyIndependentUnitDimension["Colonies"], 1}},
 	{CFUConcentrationP, CFUConcentrationQ} -> {{legacyIndependentUnitDimension["Cfus"], 1}, {"LengthUnit", -3}},
 	{OD600P, OD600Q} -> {{legacyIndependentUnitDimension["OD600s"], 1}},
 	{RelativeNephelometricUnitP,RelativeNephelometricUnitQ} -> {{legacyIndependentUnitDimension["RelativeNephelometricUnits"], 1}},
@@ -2951,7 +2955,9 @@ getPossibleUnits[q:prefixedUnitP[1 / Molar]]:=1 / (metricPrefixesForMetricForm *
 getPossibleUnits[q_Quantity]:=getPossibleUnits[q, UnitDimensions[q]];
 
 getPossibleUnits[q_Quantity, {}]:={q};
-getPossibleUnits[q_Quantity, {{"TimeUnit", 1}}]:=Second metricPrefixesForMetricForm/;Less[q, Second];
+
+(* For a fraction of a second express with prefix * second *)
+getPossibleUnits[q_Quantity, {{"TimeUnit", 1}}]:=Second metricPrefixesForMetricForm/;(-1 Second < q < 1 Second);
 getPossibleUnits[q_Quantity, {{"TimeUnit", 1}}]:=TimeUnits;
 getPossibleUnits[q_Quantity, {{"TemperatureUnit", 1}}]:={q};
 (* Force numerator to Celsius, scale denominator as we do with time *)
@@ -2977,6 +2983,63 @@ getPossibleUnits[q:Quantity[mag_, un_], ud_]:=getPossibleUnits[Quantity[1, un], 
 (*UnitForm*)
 
 
+(* Use hold to prevent units from evaluating prematurely *)
+unitPrefixShorthands = Hold[Yotta -> "Y", Zetta -> "Z", Exa -> "E", Peta -> "P", Tera -> "T", Giga -> "G", Mega -> "M", Kilo -> "k", Hecto -> "h", Deca -> "da", 1 -> "", Deci -> "d", Centi -> "c", Milli -> "m", Micro -> "\[Mu]", Nano -> "n", Pico -> "p", Femto -> "f", Atto -> "a", Zepto -> "z", Yocto -> "y"];
+unitPostfixShorthands = Hold[
+	AbsorbanceUnit -> "AU",
+	Ampere -> "Amp.",
+	Angstrom -> "\[CapitalARing]",
+	AnisotropyUnit -> "A",
+	ArbitraryUnit -> "Arb.",
+	Atmosphere -> "atm",
+	Bar -> "Bar",
+	BasePair -> "bp",
+	Calorie -> "Cal",
+	Calorie / (Kelvin * Mole) -> "e.u.",
+	Celsius -> "\[Degree]C",
+	Centigrade -> "\[Degree]C",
+	Century -> "Centuries",
+	Cycle -> "Cycles",
+	Dalton -> "Da",
+	Day -> "Days",
+	Decade -> "Decades",
+	Fahrenheit -> "\[Degree]F",
+	Gram -> "g",
+	Joule -> "J",
+	Liter -> "L",
+	Liter / (Centimeter * Mole) -> "L/(cm Mol.)",
+	Liter / Mole -> "\!\(\*SuperscriptBox[\(M\), \(-1\)]\)",
+	Lumen -> "lm",
+	Lux -> "Lux",
+	LSU -> "LSU",
+	Kelvin -> "K",
+	Hertz -> "Hz",
+	Hour -> "Hrs.",
+	Meter -> "m",
+	Millennium -> "Millennia",
+	Minute -> "Min.",
+	Mole -> "Mol.",
+	Mole / Liter -> "M",
+	Month -> "Mo.",
+	None -> "",
+	Nucleotide -> "nt",
+	Pascal -> "Pa",
+	Percent -> "%",
+	PolarizationUnit -> "P",
+	PPM -> "PPM",
+	PSI -> "PSI",
+	RFU -> "RFU",
+	RLU -> "RLU",
+	Second -> "s",
+	Siemens -> "S",
+	USD -> "$",
+	Volt -> "V",
+	Watt -> "W",
+	Week -> "Weeks",
+	Year -> "Yr."
+];
+
+
 DefineOptions[UnitForm,
 	Options :> {
 		{Metric -> True, True | False, "If True, converts to UnitScale before formatting."},
@@ -2984,8 +3047,9 @@ DefineOptions[UnitForm,
 		{Number -> Automatic, Automatic | True | False, "If True, will include the number in the string: i.e. 2 Micro Molar -> \"2 [\[Mu]M]\" if true or \"[\[Mu]M]\" if false."},
 		{Round->False, BooleanP | RangeP[-Infinity, Infinity], "Indicates if numbers should be rounded in their final form. When Round->True the value is rounded to $RoundIncrement."},
 		{Brackets -> True, True | False, "If True, includes brackets ( ) or [ ] around the unit type in the string."},
-		{PrefixShorthand -> {Yotta -> "Y", Zetta -> "Z", Exa -> "E", Peta -> "P", Tera -> "T", Giga -> "G", Mega -> "M", Kilo -> "k", Hecto -> "h", Deca -> "da", 1 -> "", Deci -> "d", Centi -> "c", Milli -> "m", Micro -> "\[Micro]", Nano -> "n", Pico -> "p", Femto -> "f", Atto -> "a", Zepto -> "z", Yocto -> "y"}, _List | Null, "List of rules specifying how to handle the metric prefixes such as Micro -> \"\[Micro]\"."},
-		{PostfixShorthand -> {Joule -> "J", Calorie -> "Cal", Meter -> "m", Angstrom -> "\[AHat]\.84\[LeftGuillemet]", Dalton -> "Da", PSI -> "PSI", Bar -> "Bar", Pascal -> "PA", Gram -> "g", Liter / (Centimeter * Mole) -> "L/(cm Mol.)", Mole / Liter -> "M", Liter / Mole -> "\!\(\*SuperscriptBox[\(M\), \(-1\)]\)", Calorie / (Kelvin * Mole) -> "e.u.", PPM -> "PPM", Lux -> "Lux", LSU -> "LSU", RFU -> "RFU", RLU -> "RLU", AnisotropyUnit -> "A", PolarizationUnit -> "P", Liter -> "L", Volt -> "V", Hertz -> "Hz", Ampere -> "Amp.", Watt -> "W", Mole -> "Mol.", Cycle -> "Cycles", Nucleotide -> "nt", BasePair -> "bp", AbsorbanceUnit -> "AU", Percent -> "%", ArbitraryUnit -> "Arb.", Lumen -> "lm", Siemens -> "S", None -> "", Celsius -> "\[CapitalAHat]\[Degree]C", Centigrade -> "\[CapitalAHat]\[Degree]C", Fahrenheit -> "\[CapitalAHat]\[Degree]F", Kelvin -> "K", Millennium -> "Millennia", Century -> "Centuries", Decade -> "Decades", Year -> "Yr.", Month -> "Mo.", Week -> "Weeks", Day -> "Days", Hour -> "Hrs.", Minute -> "Min.", Second -> "Seconds", USD -> "$"}, _List | Null, "List of rules specifying how to handle the core Units such as years ->\"Yr\"."}
+		(* This function uses certain custom conversions which are added with Prepend. ReplaceRule isn't loaded at this time *)
+		{PrefixShorthand :> DeleteDuplicates[Prepend[List @@ unitPrefixShorthands, Micro -> "\[Micro]"]], _List | Null, "List of rules specifying how to handle the metric prefixes such as Micro -> \"\[Micro]\"."},
+		{PostfixShorthand :> DeleteDuplicates[Prepend[List @@ unitPostfixShorthands, Second -> "Seconds"]], _List | Null, "List of rules specifying how to handle the core Units such as years ->\"Yr\"."}
 	}];
 
 
@@ -3229,7 +3293,7 @@ writeQuantityComparisonPatternFunction[qName_Symbol, funcItCalls_Symbol]:=Module
 		qName[testQuantity_, fixedQuantity_?NumericQ],
 		Quiet[
 			TrueQ[funcItCalls[testQuantity, fixedQuantity]],
-			{General::nord2}
+			{General::nord2, Less::nord2, LessEqual::nord2, Greater::nord2, GreaterEqual::nord2, Equal::nord2}
 		]
 	];
 
@@ -3238,7 +3302,7 @@ writeQuantityComparisonPatternFunction[qName_Symbol, funcItCalls_Symbol]:=Module
 		qName[testQuantity:Quantity[magnitudeA_, units_], fixedQuantity:Quantity[magnitudeB_, units_]],
 		Quiet[
 			TrueQ[funcItCalls[magnitudeA, magnitudeB]],
-			{General::nord2}
+			{General::nord2, Less::nord2, LessEqual::nord2, Greater::nord2, GreaterEqual::nord2, Equal::nord2}
 		]
 	];
 
@@ -3248,7 +3312,7 @@ writeQuantityComparisonPatternFunction[qName_Symbol, funcItCalls_Symbol]:=Module
 		If[Quiet[UnitsQ[testQuantity] && compatibleUnitQold[fixedQuantity, testQuantity], {Quantity::unkunit}],
 			Quiet[
 				TrueQ[funcItCalls[testQuantity, fixedQuantity]],
-				{General::nord2}
+				{General::nord2, Less::nord2, LessEqual::nord2, Greater::nord2, GreaterEqual::nord2, Equal::nord2}
 			],
 			False
 		]
@@ -3266,7 +3330,7 @@ writeDateComparisonPatternFunction[qName_Symbol, funcItCalls_Symbol]:=Module[{},
 		If[DateObjectQ[testDate],
 			Quiet[
 				TrueQ[funcItCalls[AbsoluteTime[testDate], AbsoluteTime[fixedDate]]],
-				{General::nord2}
+				{General::nord2, Less::nord2, LessEqual::nord2, Greater::nord2, GreaterEqual::nord2, Equal::nord2}
 			],
 			False
 		]
@@ -4040,4 +4104,823 @@ OnLoad[
 		installEmeraldQuantityArrayBlobsStructuredArray[]
 	];
 	updateUnitPaclets[];
+];
+
+
+
+(* Hard code the TextString conversions for ECL units (TextString[quantity]) *)
+unitTextStringForms = {
+	"AbsorbanceUnit" -> "AbsorbanceUnit",
+	"Ampere" -> "A",
+	"Angstrom" -> "\[CapitalARing]",
+	"AngularDegree" -> "\[Degree]",
+	"AnisotropyUnit" -> "AnisotropyUnits",
+	"ArbitraryUnit" -> "ArbitraryUnits",
+	"Atmosphere" -> "atm",
+	"Bar" -> "bar",
+	"BasePair" -> "Basepairs",
+	"Calorie" -> "thermochemical calories",
+	"Celsius" -> "\[Degree]C",
+	"Centimeter" -> "cm",
+	"Century" -> "centuries",
+	"CFU" -> "Cfus",
+	"Colony" -> "Colonies",
+	"Coulomb" -> "C",
+	"Cup" -> "c",
+	"Cycle" -> "Cycles",
+	"Dalton" -> "g/mol",
+	"Day" -> "days",
+	"Decade" -> "decades",
+	(*"Dozen" -> "doz.", Ignore this unit. Not useful and causes a headache because the unit ends with "." and doz could also be deci-ounce*)
+	"ElectronVolt" -> "eV",
+	"EmeraldCell" -> "Cells",
+	"Event" -> "Events",
+	"Fahrenheit" -> "\[Degree]F",
+	"FluidOunce" -> "fl oz",
+	"Foot" -> "ft",
+	"FormazinNephelometricUnit" -> "FormazinTurbidityUnits",
+	"FormazinTurbidityUnit" -> "FormazinTurbidityUnits",
+	"Gallon" -> "gal",
+	"Gram" -> "g",
+	"GravitationalAcceleration" -> "standard accelerations due to gravity on the surface of the earth",
+	"Gross" -> "gross",
+	"Hertz" -> "Hz",
+	"Hour" -> "h",
+	"Inch" -> "in",
+	"InternationalUnit" -> "IU",
+	"ISO" -> "ISO",
+	"Joule" -> "J",
+	"Kelvin" -> "K",
+	"KilocaloriesThermochemical" -> "thermochemical kilocalories",
+	"Liter" -> "L",
+	"LSU" -> "Lsus",
+	"Lumen" -> "lm",
+	"Lux" -> "lumens per foot squared",
+	"MassPercent" -> "MassPercent",
+	"MegacaloriesThermochemical" -> "thermochemical megacalories",
+	"Meter" -> "m",
+	"Micron" -> "\[Mu]m",
+	"Mile" -> "mi",
+	"Millennium" -> "millennia",
+	"MilliAbsorbanceUnit" -> "milli AbsorbanceUnit",
+	"MillimeterMercury" -> "mmHg",
+	"Millimicron" -> "millimicrons",
+	"Millinewton" -> "mN",
+	"MilliPolarizationUnit" -> "milli PolarizationUnits",
+	"Minute" -> "min",
+	"Molar" -> "M",
+	"Mole" -> "mol",
+	"Month" -> "mo",
+	"NephelometricTurbidityUnit" -> "NephelometricTurbidityUnits",
+	"Newton" -> "N",
+	"Nucleotide" -> "Nucleotides",
+	"OD600" -> "OD600s",
+	"Ohm" -> "\[CapitalOmega]",
+	"Ounce" -> "oz",
+	"Particle" -> "Particles",
+	"Pascal" -> "Pa",
+	"Percent" -> "%",
+	"PercentConfluency" -> "PercentConfluency",
+	"Pint" -> "pt",
+	"Pixel" -> "Pixels",
+	"Poise" -> "P",
+	"PolarizationUnit" -> "PolarizationUnits",
+	"Pound" -> "lb",
+	"PoundFoot" -> "ft\[ThinSpace]lbf",
+	"PPB" -> "ppb",
+	"PPM" -> "ppm",
+	"PSI" -> "pounds\[Hyphen]force per inch squared",
+	"Quart" -> "qt",
+	"Radian" -> "rad",
+	"RefractiveIndexUnit" -> "RefractiveIndexUnits",
+	"RelativeNephelometricUnit" -> "RelativeNephelometricUnits",
+	"Revolution" -> "rev",
+	"RFU" -> "Rfus",
+	"RLU" -> "Rlus",
+	"RPM" -> "rev/min",
+	"RRT" -> "RRT",
+	"Second" -> "s",
+	"Siemens" -> "S",
+	"Stone" -> "stone",
+	"Tesla" -> "T",
+	"Ton" -> "sh tn",
+	"Torr" -> "Torr",
+	"Unit" -> "U",
+	"USD" -> "$",
+	"Volt" -> "V",
+	"VolumePercent" -> "VolumePercent",
+	"Watt" -> "W",
+	"Week" -> "wk",
+	"WeightVolumePercent" -> "WeightVolumePercent",
+	"Yard" -> "yd",
+	"Year" -> "yr"
+};
+
+(* Hard code the ToString conversions for ECL units (ToString[quantity]) *)
+unitToStringForms = {
+	"AbsorbanceUnit" -> "AbsorbanceUnit",
+	"Ampere" -> "ampere",
+	"Angstrom" -> "\[ARing]ngstr\[ODoubleDot]m",
+	"AngularDegree" -> "degree",
+	"AnisotropyUnit" -> "AnisotropyUnits",
+	"ArbitraryUnit" -> "ArbitraryUnits",
+	"Atmosphere" -> "atmosphere",
+	"Bar" -> "bar",
+	"BasePair" -> "Basepairs",
+	"Calorie" -> "thermochemical calorie",
+	"Celsius" -> "degree Celsius",
+	"Centimeter" -> "centimeter",
+	"Century" -> "century",
+	"CFU" -> "Cfus",
+	"Colony" -> "Colonies",
+	"Coulomb" -> "coulomb",
+	"Cup" -> "cup",
+	"Cycle" -> "Cycles",
+	"Dalton" -> "gram per mole",
+	"Day" -> "day",
+	"Decade" -> "decade",
+	"Dozen" -> "dozen",
+	"ElectronVolt" -> "electronvolt",
+	"EmeraldCell" -> "Cells",
+	"Event" -> "Events",
+	"Fahrenheit" -> "degree Fahrenheit",
+	"FluidOunce" -> "fluid ounce",
+	"Foot" -> "foot",
+	"FormazinNephelometricUnit" -> "FormazinTurbidityUnits",
+	"FormazinTurbidityUnit" -> "FormazinTurbidityUnits",
+	"Gallon" -> "gallon",
+	"Gram" -> "gram",
+	"GravitationalAcceleration" -> "standard acceleration due to gravity on the surface of the earth",
+	"Gross" -> "gross",
+	"Hertz" -> "hertz",
+	"Hour" -> "hour",
+	"Inch" -> "inch",
+	"InternationalUnit" -> "international unit",
+	"ISO" -> "ISO",
+	"Joule" -> "joule",
+	"Kelvin" -> "kelvin",
+	"KilocaloriesThermochemical" -> "thermochemical kilocalorie",
+	"Liter" -> "liter",
+	"LSU" -> "Lsus",
+	"Lumen" -> "lumen",
+	"Lux" -> "lumen per foot squared",
+	"MassPercent" -> "MassPercent",
+	"MegacaloriesThermochemical" -> "thermochemical megacalorie",
+	"Meter" -> "meter",
+	"Micron" -> "micrometer",
+	"Mile" -> "mile",
+	"Millennium" -> "millennium",
+	"MilliAbsorbanceUnit" -> "milli AbsorbanceUnit",
+	"MillimeterMercury" -> "millimeter of mercury",
+	"Millimicron" -> "millimicron",
+	"Millinewton" -> "millinewton",
+	"MilliPolarizationUnit" -> "milli PolarizationUnits",
+	"Minute" -> "minute",
+	"Molar" -> "molar",
+	"Mole" -> "mole",
+	"Month" -> "month",
+	"NephelometricTurbidityUnit" -> "NephelometricTurbidityUnits",
+	"Newton" -> "newton",
+	"Nucleotide" -> "Nucleotides",
+	"OD600" -> "OD600s",
+	"Ohm" -> "ohm",
+	"Ounce" -> "ounce",
+	"Particle" -> "Particles",
+	"Pascal" -> "pascal",
+	"Percent" -> "percent",
+	"PercentConfluency" -> "PercentConfluency",
+	"Pint" -> "pint",
+	"Pixel" -> "Pixels",
+	"Poise" -> "poise",
+	"PolarizationUnit" -> "PolarizationUnits",
+	"Pound" -> "pound",
+	"PoundFoot" -> "foot pound\[Hyphen]force",
+	"PPB" -> "part per billion",
+	"PPM" -> "part per million",
+	"PSI" -> "pound\[Hyphen]force per inch squared",
+	"Quart" -> "quart",
+	"Radian" -> "radian",
+	"RefractiveIndexUnit" -> "RefractiveIndexUnits",
+	"RelativeNephelometricUnit" -> "RelativeNephelometricUnits",
+	"Revolution" -> "revolution",
+	"RFU" -> "Rfus",
+	"RLU" -> "Rlus",
+	"RPM" -> "revolution per minute",
+	"RRT" -> "RRT",
+	"Second" -> "second",
+	"Siemens" -> "siemens",
+	"Stone" -> "stone",
+	"Tesla" -> "tesla",
+	"Ton" -> "short ton",
+	"Torr" -> "torr",
+	"Unit" -> "unity",
+	"USD" -> "US dollar",
+	"Volt" -> "volt",
+	"VolumePercent" -> "VolumePercent",
+	"Watt" -> "watt",
+	"Week" -> "week",
+	"WeightVolumePercent" -> "WeightVolumePercent",
+	"Yard" -> "yard",
+	"Year" -> "year"
+};
+
+unitToStringPluralForms = {
+	"AbsorbanceUnit" -> "AbsorbanceUnit",
+	"Ampere" -> "amperes",
+	"Angstrom" -> "\[ARing]ngstr\[ODoubleDot]m",
+	"AngularDegree" -> "degrees",
+	"AnisotropyUnit" -> "AnisotropyUnits",
+	"ArbitraryUnit" -> "ArbitraryUnits",
+	"Atmosphere" -> "atmospheres",
+	"Bar" -> "bars",
+	"BasePair" -> "Basepairs",
+	"Calorie" -> "thermochemical calories",
+	"Celsius" -> "degrees Celsius",
+	"Centimeter" -> "centimeters",
+	"Century" -> "centuries",
+	"CFU" -> "Cfus",
+	"Colony" -> "Colonies",
+	"Coulomb" -> "coulombs",
+	"Cup" -> "cups",
+	"Cycle" -> "Cycles",
+	"Dalton" -> "grams per mole",
+	"Day" -> "days",
+	"Decade" -> "decades",
+	"Dozen" -> "dozen",
+	"ElectronVolt" -> "electronvolts",
+	"EmeraldCell" -> "Cells",
+	"Event" -> "Events",
+	"Fahrenheit" -> "degrees Fahrenheit",
+	"FluidOunce" -> "fluid ounces",
+	"Foot" -> "feet",
+	"FormazinNephelometricUnit" -> "FormazinTurbidityUnits",
+	"FormazinTurbidityUnit" -> "FormazinTurbidityUnits",
+	"Gallon" -> "gallons",
+	"Gram" -> "grams",
+	"GravitationalAcceleration" -> "standard accelerations due to gravity on the surface of the earth",
+	"Gross" -> "gross",
+	"Hertz" -> "hertz",
+	"Hour" -> "hours",
+	"Inch" -> "inches",
+	"InternationalUnit" -> "international units",
+	"ISO" -> "ISO",
+	"Joule" -> "joules",
+	"Kelvin" -> "kelvins",
+	"KilocaloriesThermochemical" -> "thermochemical kilocalories",
+	"Liter" -> "liters",
+	"LSU" -> "Lsus",
+	"Lumen" -> "lumens",
+	"Lux" -> "lumens per foot squared",
+	"MassPercent" -> "MassPercent",
+	"MegacaloriesThermochemical" -> "thermochemical megacalorie",
+	"Meter" -> "meters",
+	"Micron" -> "micrometers",
+	"Mile" -> "miles",
+	"Millennium" -> "millennia",
+	"MilliAbsorbanceUnit" -> "milli AbsorbanceUnit",
+	"MillimeterMercury" -> "millimeters of mercury",
+	"Millimicron" -> "millimicrons",
+	"Millinewton" -> "millinewtons",
+	"MilliPolarizationUnit" -> "milli PolarizationUnits",
+	"Minute" -> "minutes",
+	"Molar" -> "molar",
+	"Mole" -> "moles",
+	"Month" -> "months",
+	"NephelometricTurbidityUnit" -> "NephelometricTurbidityUnits",
+	"Newton" -> "newtons",
+	"Nucleotide" -> "Nucleotides",
+	"OD600" -> "OD600s",
+	"Ohm" -> "ohms",
+	"Ounce" -> "ounces",
+	"Particle" -> "Particles",
+	"Pascal" -> "pascals",
+	"Percent" -> "percent",
+	"PercentConfluency" -> "PercentConfluency",
+	"Pint" -> "pints",
+	"Pixel" -> "Pixels",
+	"Poise" -> "poise",
+	"PolarizationUnit" -> "PolarizationUnits",
+	"Pound" -> "pounds",
+	"PoundFoot" -> "foot pounds\[Hyphen]force",
+	"PPB" -> "parts per billion",
+	"PPM" -> "parts per million",
+	"PSI" -> "pounds\[Hyphen]force per inch squared",
+	"Quart" -> "quarts",
+	"Radian" -> "radians",
+	"RefractiveIndexUnit" -> "RefractiveIndexUnits",
+	"RelativeNephelometricUnit" -> "RelativeNephelometricUnits",
+	"Revolution" -> "revolutions",
+	"RFU" -> "Rfus",
+	"RLU" -> "Rlus",
+	"RPM" -> "revolutions per minute",
+	"RRT" -> "RRT",
+	"Second" -> "seconds",
+	"Siemens" -> "siemens",
+	"Stone" -> "stone",
+	"Tesla" -> "teslas",
+	"Ton" -> "short tons",
+	"Torr" -> "torr",
+	"Unit" -> "unities",
+	"USD" -> "US dollars",
+	"Volt" -> "volts",
+	"VolumePercent" -> "VolumePercent",
+	"Watt" -> "watts",
+	"Week" -> "weeks",
+	"WeightVolumePercent" -> "WeightVolumePercent",
+	"Yard" -> "yards",
+	"Year" -> "years"
+};
+
+(* Function to parse a quantity out of a string *)
+DefineOptions[StringToQuantity,
+	Options :> {
+		{Server -> Automatic, Alternatives[Automatic, BooleanP], "Indicates if the function should contact the Wolfram server for units interpretation if local string methods fail. Defaults to False in Engine and True otherwise."},
+		{Debug -> False, BooleanP, "Indicates if debugging information is printed to the terminal."}
+	}
+];
+
+(* Dev notes *)
+(* String matching is done in a case-insensitive manner. If case doesn't matter when matching a set of rules, use the lower case word on the LHS. Note that case *does* matter for the RHS and MM typically only recognizes capitalized words *)
+(* If case sensitivity is required, such as for unit symbols, use CaseSensitive to wrap around rules *)
+
+(* Helper for Echoing when debugging only *)
+stringToQuantityDebugQ = False;
+stringToQuantityDebugEcho[args___] := If[stringToQuantityDebugQ, Echo[args], args];
+
+StringToQuantity[{}] := {};
+StringToQuantity[myString_String, myOptions : OptionsPattern[StringToQuantity]] := First[StringToQuantity[{myString}, myOptions]];
+StringToQuantity[myStrings : {_String..}, myOptions : OptionsPattern[StringToQuantity]] := Module[
+	{
+		serverOption, sanitizedStrings, standardizedStrings,
+		combinedReplacementRules, debugOption
+	},
+
+	(* Should we contact the server if local conversion fails? *)
+	serverOption = Module[{specifiedServerOption},
+
+		(* Unresolved server option *)
+		specifiedServerOption = OptionDefault[OptionValue[Server]];
+
+		(* Disable Quantity in engine if left Automatic as it doesn't work. Maybe a licensing thing *)
+		If[MatchQ[specifiedServerOption, Automatic],
+			!MatchQ[$ECLApplication, Engine],
+			specifiedServerOption
+		]
+	];
+
+	(* Are we debugging? *)
+	debugOption = OptionDefault[OptionValue[Debug]];
+	stringToQuantityDebugQ = debugOption;
+
+	(* Sanitize the input strings *)
+	sanitizedStrings = Module[
+		{whitespaceTrimmed},
+
+		(* Trim off whitespace *)
+		whitespaceTrimmed = StringTrim[myStrings];
+
+		StringReplace[
+			whitespaceTrimmed,
+			{
+				(* Ensure there's a space between number and units - helps make ToExpression more consistent *)
+				(* Make sure we only match the first switch between the number and the units *)
+				(* Alternatives with "." account for cases where a float has a trailing ., such as 1.ms *)
+				x : Alternatives[DigitCharacter, DigitCharacter ~~ "."] ~~ Whitespace... ~~ y : Except[Alternatives[DigitCharacter, "."]] :> x <> " " <> y,
+
+				(* Add a space between $ and number. Unique case of units coming first *)
+				x : "$" ~~ y : DigitCharacter :> x <> " " <> y
+			},
+			1
+		]
+	];
+
+	stringToQuantityDebugEcho["Generating string replacement rules ", Now];
+
+	(* Generate the memoized replacement rules *)
+	combinedReplacementRules = stringToQuantityReplacementRules[];
+
+	stringToQuantityDebugEcho["String replacement rules generated ", Now];
+	stringToQuantityDebugEcho["Performing replacements ", Now];
+
+	(* Perform the actual replacement *)
+	(* The idea here is to convert the input string into a standardized string form that MM ToExpression can handle *)
+	(* This means that this function doesn't have to interpret the mathematical operators in the unit *)
+	(* MM only recognizes Meter as a unit, so convert meter, meters, Meters, m -> Meter *)
+	standardizedStrings = StringReplace[
+		sanitizedStrings,
+		combinedReplacementRules,
+
+		(* We do case insensitive as individual rules can use CaseSensitive to override this *)
+		IgnoreCase -> True
+	];
+
+	stringToQuantityDebugEcho["Replacements completed ", Now];
+
+	(* Attempt to convert our standardized string to an expression *)
+	(* Check we get a valid quantity out and use Wolfram Interpretation as a fall back if requested *)
+	MapThread[
+		With[{expression = Quiet[ToExpression[#2]]},
+			Which[
+				(* If ToExpression returned a valid quantity or plain number, return it *)
+				Or[QuantityQ[expression], NumberQ[expression]],
+				(
+					stringToQuantityDebugEcho[#1 <> " converted locally as " <> #2];
+					expression
+				),
+
+				(* If not and the Wolfram server is an option, hit it with the original string (~0.5 s per string, hence why this function exists...) *)
+				TrueQ[serverOption],
+				(
+					stringToQuantityDebugEcho[#1 <> " converted by Wolfram. Local expression: " <> #2];
+					Quantity[#1]
+				),
+
+				(* Otherwise return $Failed *)
+				True,
+				(
+					stringToQuantityDebugEcho[#1 <> " conversion failed. Local expression: " <> #2];
+					$Failed
+				)
+			]
+		] &,
+		{myStrings, standardizedStrings}
+	]
+];
+
+(* Generate and memoize string replacement rules *)
+(* The idea here is to convert the input string into a standardized string form that MM ToExpression can handle *)
+(* This means that this function doesn't have to interpret the mathematical operators in the unit *)
+(* MM only recognizes Meter as a unit, so convert meter, meters, Meters, m -> Meter *)
+stringToQuantityReplacementRules[] := Set[
+	stringToQuantityReplacementRules[],
+	Module[
+		{
+			toStringReversalLookup, textStringReversalLookup, metricPrefixLookup, fullFormMetricPrefixes,
+			shortFormMetricPrefixes, prefixedUnitsPluralLookup, canonicalUnitsPluralLookup, prefixedUnitsCapitalizationLookup, canonicalUnitsCapitalizationLookup,
+			prefixedUnitsPlurals, canonicalUnitsPlurals, prefixedUnits, canonicalUnits, unitSymbolLookup, unitSymbols, metricPrefixCapitalizationRules,
+			combinedReplacementRules, additionalPlurals
+		},
+
+		(* Add custom plurals. LHS is case insensitive, but keep lower case for convention. RHS needs to be the form of the unit recognized by ToExpression - typically capitalized *)
+		additionalPlurals = {
+			(* Poise is sometimes pluralized as poises (normally Poise) *)
+			"poises" -> "Poise"
+		};
+
+		(* Create lookup to reverse ToString[quantity] *)
+		(* e.g. "8 degrees Celsius" -> "8 Celsius" *)
+		(* These are typically words / phrases - so treat case insensitive. "degrees Celsius" == "degrees celsius" *)
+		toStringReversalLookup = DeleteDuplicates[Join[
+			ToLowerCase[Last[#]] -> First[#] & /@ unitToStringForms,
+			ToLowerCase[Last[#]] -> First[#] & /@ unitToStringPluralForms
+		]];
+
+		(* Create lookup to reverse TextString[quantity] *)
+		(* e.g. "8 \[Degree]C" -> "8 Celsius" *)
+		(* These are typically symbols or abbreviations - so treat case sensitive. "m" != "M" *)
+		textStringReversalLookup = DeleteDuplicates[Last[#] -> First[#] & /@ unitTextStringForms];
+
+		(* Create a lookup of shortform metric prefixes, to full form names *)
+		(* e.g. "\[Mu]" -> "Micro", "M" -> "Mega", "m" -> "Milli" *)
+		metricPrefixLookup = Module[{fullList},
+
+			(* Convert the full list from Held symbols to strings and swap order *)
+			fullList = (Last[#] -> ToString[First[#]]) & /@ (List @@ unitPrefixShorthands);
+
+			(* Filter out any unhelpful rules, such as for no prefix *)
+			Select[fullList, !MatchQ[First[#], ""] &]
+		];
+
+		(* Get lists of known full-form and short-form metric prefixes *)
+		fullFormMetricPrefixes = ToLowerCase /@ Values[metricPrefixLookup];
+		shortFormMetricPrefixes = Keys[metricPrefixLookup];
+
+		(* Rules for capitalizing full form metric prefixes. Key must be lowercase despite case-insensitive matching so that it's easy to look up values manually *)
+		(* e.g. "milli" -> "Milli" *)
+		metricPrefixCapitalizationRules =  AssociationThread[ToLowerCase /@ fullFormMetricPrefixes, Capitalize /@ fullFormMetricPrefixes];
+
+		(* Create a lookup of known prefixed unit plurals to recognized singular forms *)
+		(* e.g. "millimeters" -> "Millimeter" *)
+		prefixedUnitsPluralLookup = Module[{ruleList, convertedStrings},
+
+			(* Convert the association to a list of rules, as StringReplace can't work with the former *)
+			ruleList = Replace[emeraldPrefixedUnitLookup, Association[x__] :> List[x], {0}];
+
+			(* Some keys are in the form ("Unit1" / "Unit 2"). Convert these to a single string "Unit1/Unit2" *)
+			convertedStrings = If[!StringQ[First[#]],
+				(* ToString of the InputForm gives us what we want, but puts in explicit " around the strings. So remove those *)
+				{ToLowerCase[StringReplace[ToString[InputForm[#]], "\"" -> ""]], Last[#]},
+				{ToLowerCase[First[#]], Last[#]}
+			] & /@ ruleList;
+
+			(* Return only those that are String -> String for sure *)
+			Cases[convertedStrings, HoldPattern[_String -> _String]]
+		];
+
+		(* Get lists of known singular and plural prefixed units *)
+		prefixedUnits = Values[prefixedUnitsPluralLookup];
+		prefixedUnitsPlurals = Keys[prefixedUnitsPluralLookup];
+
+		(* Create a lookup of known canonical unit plurals to recognized singular forms *)
+		(* e.g. "meters" -> "Meter" *)
+		canonicalUnitsPluralLookup = Module[{ruleList, convertedStrings, augmentedRules},
+
+			(* Convert the association to a list of rules, as StringReplace can't work with the former *)
+			ruleList = Replace[emeraldUnitLookup, Association[x__] :> List[x], {0}];
+
+			(* Some keys are in the form ("Unit1" / "Unit 2"). Convert these to a single string "Unit1/Unit2" *)
+			convertedStrings = If[!StringQ[First[#]],
+				(* ToString of the InputForm gives us what we want, but puts in explicit " around the strings. So remove those *)
+				ToLowerCase[StringReplace[ToString[InputForm[First[#]]], "\"" -> ""]] -> Last[#],
+				ToLowerCase[First[#]] -> Last[#]
+			] & /@ ruleList;
+
+			(* Append any custom rules *)
+			augmentedRules = Join[
+				convertedStrings,
+				additionalPlurals
+			];
+
+			(* Return only those that are String -> String for sure *)
+			Cases[augmentedRules, HoldPattern[_String -> _String]]
+		];
+
+		(* Get lists of known singular and plural canonical units *)
+		canonicalUnits = Values[canonicalUnitsPluralLookup];
+		canonicalUnitsPlurals = Keys[canonicalUnitsPluralLookup];
+
+		(* Create a lookup to capitalize known units *)
+		(* e.g. "milligram" -> "Milligram" and "gram" -> "Gram" *)
+		prefixedUnitsCapitalizationLookup = AssociationThread[ToLowerCase /@ prefixedUnits, Capitalize /@ prefixedUnits];
+		canonicalUnitsCapitalizationLookup = AssociationThread[ToLowerCase /@ canonicalUnits, Capitalize /@ canonicalUnits];
+
+		(* Create a lookup from known unit symbols/abbreviations. Case matters here *)
+		(* e.g. "m" -> "Meter", "\[CapitalARing]" -> "Angstrom" *)
+		unitSymbolLookup = Module[{rawList, filteredList},
+
+			(* Convert the full list from Held symbols to strings. Ensure compound units (Unit1 / Unit2) are converted sensibly using InputForm *)
+			rawList = (Last[#] -> First[#] &) /@ List @@ (
+				unitPostfixShorthands /. HoldPattern[x_ -> y_] :> (ToString[Unevaluated[InputForm[x]]] -> y)
+			);
+
+			(* Filter out any conversions we don't want *)
+			(* We want Celsius not Centigrade *)
+			filteredList = Select[rawList, !MatchQ[Last[#], Alternatives["Centigrade", "None"]] &];
+
+			(* Return only those that are String -> String for sure *)
+			Cases[filteredList, HoldPattern[_String -> _String]]
+		];
+
+		(* Get list of recognized unit symbols *)
+		unitSymbols = Keys[unitSymbolLookup];
+
+		(* Create the string patterns to match and combine all the replacement rules *)
+		combinedReplacementRules = Module[
+			{
+				toStringRules, textStringRules, prefixedUnitsRules, prefixedUnitsCapitalizationRules, canonicalUnitsRules,
+				canonicalUnitsCapitalizationRules, prefixCapitalizationRules, unitSymbolRules, sortRules, startOfUnitP, endOfUnitP,
+				customReplacements
+			},
+
+			(* Sort rules so that longer words match first *)
+			(* This is important if we might partially match a unit with another *)
+			(* For example, \[Degree]C - is this degrees celsius, or angular degrees * Coulombs? *)
+			sortRules[rules_] := ReverseSortBy[rules, StringLength[First[#]] &];
+
+			(* In the following rules you might see the following *)
+			(*
+				space1 : Ensures we're matching whole words only. WordBoundary works in most cases but not if the unit contains a symbol, so also check Whitespace or start of string
+				prefix : Test if we can match a prefix before a canonical unit
+				" " : Sometimes the prefix and unit may already have a space. Milli Meter = Millimeter
+				space2: As for space 1
+
+				Parentheses: If we match a unit as prefix + canonical unit it means we didn't find the composite prefix-unit in SLL. For example, there's not much call for YottaCelsius
+				If we find "Yottacelsius" we therefore split into "Yotta Celsius". Add parentheses as it's possible we had "Yottacelsius^3" which becomes "(Yotta Celsius)^3"
+			*)
+			(* The reason I match a general string expression rather than explicitly check each replacement is that StringReplace will only match each part of a string once *)
+			(* So each string expression is designed to match a whole 'word'/unit *)
+			(* In this case StringReplace's property is actually quite useful. It means "Millimeter" won't match "meter" as we already matched it with "Millimeter" *)
+			(* And \[Degree]C won't match "Angular Degree" and "Coulomb" because it already matched "Degrees Celsius" *)
+
+			(* Make some patterns for matching the start and end of a unit *)
+			startOfUnitP = Alternatives[WordBoundary, Whitespace, StartOfString];
+			endOfUnitP = Alternatives[WordBoundary, Whitespace, EndOfString];
+
+			(* ToString reversals *)
+			toStringRules = {
+				StringExpression[
+					space1 : startOfUnitP,
+					toStringPhrase : Alternatives @@ Keys[sortRules[toStringReversalLookup]],
+					space2 : endOfUnitP
+				] :> Module[{converted},
+
+					converted = space1 <> (ToLowerCase[toStringPhrase] /. toStringReversalLookup) <> space2;
+
+					stringToQuantityDebugEcho["toStringRules converted " <> ToString[{space1, toStringPhrase, space2}] <> " to " <> converted];
+
+					converted
+				],
+				StringExpression[
+					space1 : startOfUnitP,
+					prefix : Alternatives[Alternatives @@ fullFormMetricPrefixes, ""],
+					" "...,
+					toStringPhrase : Alternatives @@ Keys[sortRules[toStringReversalLookup]],
+					space2 : endOfUnitP
+				] :> Module[{converted},
+
+					converted = space1 <> "(" <> (ToLowerCase[prefix] /. metricPrefixCapitalizationRules) <> " " <> (ToLowerCase[toStringPhrase] /. toStringReversalLookup) <> ")" <> space2;
+
+					stringToQuantityDebugEcho["toStringRules converted " <> ToString[{space1, prefix, toStringPhrase, space2}] <> " to " <> converted];
+
+					converted
+				]
+			};
+
+			(* TextString reversals *)
+			(* CaseSensitive ensures we match in CaseSensitive manner even though StringReplace is set to non-sensitive *)
+			textStringRules = {
+				(* Match without prefix first - as there is no space between a prefix, we need to prioritize min -> Minute over Milli Inch *)
+				StringExpression[
+					space1 : startOfUnitP,
+					textStringPhrase : Alternatives @@ (CaseSensitive /@ Keys[sortRules[textStringReversalLookup]]),
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> (textStringPhrase /. textStringReversalLookup) <> space2;
+
+					stringToQuantityDebugEcho["textStringRules converted " <> ToString[{space1, textStringPhrase, space2}] <> " to " <> converted];
+
+					converted
+				],
+				StringExpression[
+					space1 : startOfUnitP,
+					prefix : Alternatives[Alternatives @@ (CaseSensitive /@ shortFormMetricPrefixes)],
+					(* No space allowed between short form prefix and units *)
+					textStringPhrase : Alternatives @@ (CaseSensitive /@ Keys[sortRules[textStringReversalLookup]]),
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> "(" <> (prefix /. metricPrefixLookup) <> " " <> (textStringPhrase /. textStringReversalLookup) <> ")" <> space2;
+
+					stringToQuantityDebugEcho["textStringRules converted " <> ToString[{space1, prefix, textStringPhrase, space2}] <> " to " <> converted];
+
+					converted
+				]
+			};
+
+			(* Prefixed units - plurals first *)
+			(* Match whole words as prefix is already attached. Case-insensitive *)
+			prefixedUnitsRules = StringExpression[
+				space1 : startOfUnitP,
+				unit : Alternatives @@ prefixedUnitsPlurals,
+				space2 : endOfUnitP
+			] :> Module[{converted},
+				converted = space1 <> (ToLowerCase[unit] /. prefixedUnitsPluralLookup) <> space2;
+
+				stringToQuantityDebugEcho["prefixedUnitsRules converted " <> ToString[{space1, unit, space2}] <> " to " <> converted];
+
+				converted
+			];
+
+			(* Prefixed units - ensure singulars are capitalized *)
+			(* Match whole words as prefix is already attached. Case-insensitive *)
+			prefixedUnitsCapitalizationRules = StringExpression[
+				space1 : startOfUnitP,
+				unit : Alternatives @@ prefixedUnits,
+				space2 : endOfUnitP
+			] :> Module[{converted},
+				converted = space1 <> (ToLowerCase[unit] /. prefixedUnitsCapitalizationLookup) <> space2;
+
+				stringToQuantityDebugEcho["prefixedUnitsCapitalizationRules converted " <> ToString[{space1, unit, space2}] <> " to " <> converted];
+
+				converted
+			];
+
+			(* Canonical units - plurals first. Try with full metric prefixes *)
+			canonicalUnitsRules = {
+				StringExpression[
+					space1 : startOfUnitP,
+					unit : Alternatives @@ canonicalUnitsPlurals,
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> (ToLowerCase[unit] /. canonicalUnitsPluralLookup) <> space2;
+
+					stringToQuantityDebugEcho["canonicalUnitsRules converted " <> ToString[{space1, unit, space2}] <> " to " <> converted];
+
+					converted
+				],
+				StringExpression[
+					space1 : startOfUnitP,
+					prefix : Alternatives[Alternatives @@ fullFormMetricPrefixes, ""],
+					" "...,
+					unit : Alternatives @@ canonicalUnitsPlurals,
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> "(" <> (ToLowerCase[prefix] /. metricPrefixCapitalizationRules) <> " " <> (ToLowerCase[unit] /. canonicalUnitsPluralLookup) <> ")" <> space2;
+
+					stringToQuantityDebugEcho["canonicalUnitsRules converted " <> ToString[{space1, prefix, unit, space2}] <> " to " <> converted];
+
+					converted
+				]
+			};
+
+			(* Canonical units - ensure singular units are capitalized *)
+			canonicalUnitsCapitalizationRules = {
+				StringExpression[
+					space1 : startOfUnitP,
+					unit : Alternatives @@ canonicalUnits,
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> (ToLowerCase[unit] /. canonicalUnitsCapitalizationLookup) <> space2;
+
+					stringToQuantityDebugEcho["canonicalUnitsCapitalizationRules converted " <> ToString[{space1, unit, space2}] <> " to " <> converted];
+
+					converted
+				],
+				StringExpression[
+					space1 : startOfUnitP,
+					prefix : Alternatives[Alternatives @@ fullFormMetricPrefixes, ""],
+					" "...,
+					unit : Alternatives @@ canonicalUnits,
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> "(" <> (ToLowerCase[prefix] /. metricPrefixCapitalizationRules) <> " " <> (ToLowerCase[unit] /. canonicalUnitsCapitalizationLookup) <> ")" <> space2;
+
+					stringToQuantityDebugEcho["canonicalUnitsCapitalizationRules converted " <> ToString[{space1, prefix, unit, space2}] <> " to " <> converted];
+
+					converted
+				]
+			};
+
+			(* Full-form prefix last chance. Convert any loose prefixes, just in case the text has weird ordering *)
+			prefixCapitalizationRules = StringExpression[
+				space1 : startOfUnitP,
+				prefix : Alternatives @@ fullFormMetricPrefixes,
+				space2 : endOfUnitP
+			] :> Module[{converted},
+				converted = space1 <> (ToLowerCase[prefix] /. metricPrefixCapitalizationRules) <> space2;
+
+				stringToQuantityDebugEcho["prefixCapitalizationRules converted " <> ToString[{space1, prefix, space2}] <> " to " <> converted];
+
+				converted
+			];
+
+			(* Final rules for unit symbols and abbreviations *)
+			(* These are all case sensitive *)
+			(* There is no space between a unit and its prefix, but there is (should be) a space between two separate units *)
+			(* E.g. ms will be interpreted as milliseconds and m s will be interpreted as meter-seconds *)
+			unitSymbolRules = {
+				StringExpression[
+					space1 : startOfUnitP,
+					unit : Alternatives @@ (CaseSensitive /@ ReverseSortBy[unitSymbols, StringLength]),
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> (unit /. unitSymbolLookup) <> space2;
+
+					stringToQuantityDebugEcho["unitSymbolRules converted " <> ToString[{space1, unit, space2}] <> " to " <> converted];
+
+					converted
+				],
+				StringExpression[
+					space1 : startOfUnitP,
+					prefix : Alternatives @@ (CaseSensitive /@ shortFormMetricPrefixes),
+					unit : Alternatives @@ (CaseSensitive /@ ReverseSortBy[unitSymbols, StringLength]),
+					space2 : endOfUnitP
+				] :> Module[{converted},
+					converted = space1 <> "(" <> (prefix /. metricPrefixLookup) <> " " <> (unit /. unitSymbolLookup) <> ")" <> space2;
+
+					stringToQuantityDebugEcho["unitSymbolRules converted " <> ToString[{space1, prefix, unit, space2}] <> " to " <> converted];
+
+					converted
+				]
+			};
+
+			(* Add in some edge case custom replacements *)
+			customReplacements = {
+				"megohm" -> "Megaohm",
+				"megaohms" -> "Megaohm",
+				"kilohm" -> "Kiloohm",
+				"kilohms" -> "Kiloohm",
+				"sqft" -> "Foot^2",
+				"'" -> "Foot",
+				"\"" -> "Inch"
+			};
+
+			(* Register memoization if we got this far *)
+			If[!MemberQ[$Memoization, EmeraldUnits`Private`stringToQuantityReplacementRules],
+				AppendTo[$Memoization, EmeraldUnits`Private`stringToQuantityReplacementRules]
+			];
+
+			(* Combine the match rules. Order matters - the earliest match will be used *)
+			Flatten[{
+				toStringRules,
+				textStringRules,
+				prefixedUnitsRules,
+				prefixedUnitsCapitalizationRules,
+				canonicalUnitsRules,
+				canonicalUnitsCapitalizationRules,
+				prefixCapitalizationRules,
+				unitSymbolRules,
+				customReplacements
+			}]
+		]
+	]
 ];

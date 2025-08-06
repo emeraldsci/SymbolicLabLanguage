@@ -18,6 +18,15 @@ DefineObjectType[Object[Qualification,Training,Aspiration], {
       Category -> "General"
     },
 
+    ContainerObject -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Container], Model[Container]],
+      Description -> "The container object that will be weighed before addition of the sample and after removal of the sample by aspiration.",
+      Category -> "General"
+    },
+
     Disinfectant -> {
       Format -> Single,
       Class -> Link,
@@ -45,12 +54,30 @@ DefineObjectType[Object[Qualification,Training,Aspiration], {
       Category -> "General"
     },
 
+    TransferSubprotocol -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Protocol],
+      Description -> "The protocol object corresponding to the addition of sample to the tared SampleContainer.",
+      Category -> "General"
+    },
+
+    TareContainerProtocol -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Protocol],
+      Description -> "The MeasureWeight protocol for taring the container prior to aspiration.",
+      Category -> "General"
+    },
+
     MeasureWeightProtocol -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
       Relation -> Object[Protocol],
-      Description -> "The MeasureWeight protocol for the sample after aspiration.",
+      Description -> "The MeasureWeight protocol for weighing the container after aspiration.",
       Category -> "General"
     },
 

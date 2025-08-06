@@ -35,6 +35,12 @@ DefineTests[PlotAbsorbanceSpectroscopy,
 			TimeConstraint->120
 		],
 		Example[
+			{Basic,"Plots data objects linked to a protocol when given an AbsorbanceSpectrscopy protocol object:"},
+			PlotAbsorbanceSpectroscopy[Object[Protocol, AbsorbanceSpectroscopy, "AbsorbanceSpectroscopy Protocol For PlotAbsorbanceSpectroscopy Test " <> $SessionUUID]],
+			_?ValidGraphicsQ,
+			TimeConstraint->120
+		],
+		Example[
 			{Basic,"Plots multiple sets of data on the same graph:"},
 			PlotAbsorbanceSpectroscopy[{Object[Data, AbsorbanceSpectroscopy, "id:rea9jl1o9473"],Object[Data, AbsorbanceSpectroscopy, "id:bq9LA0dBL6lL"]}],
 			_?ValidGraphicsQ,
@@ -282,5 +288,63 @@ DefineTests[PlotAbsorbanceSpectroscopy,
 	Variables:>{dynamicSample},
 	SetUp:>(
 		dynamicSample={Object[Data, AbsorbanceSpectroscopy, "id:bq9LA0dBL6lL"],Object[Data, AbsorbanceSpectroscopy, "id:rea9jl1o9473"],Object[Data, AbsorbanceSpectroscopy, "id:8qZ1VWNm1aRn"]};
-	)
+	),
+	SymbolSetUp :> (
+
+		$CreatedObjects={};
+
+		(* Gather and erase all pre-existing objects created in SymbolSetUp *)
+		Module[
+			{
+				allObjects, existingObjects, protocol1, data1
+			},
+
+			(* All data objects generated for unit tests *)
+
+			allObjects=
+				{
+					Object[Protocol, AbsorbanceSpectroscopy, "AbsorbanceSpectroscopy Protocol For PlotAbsorbanceSpectroscopy Test " <> $SessionUUID],
+					Object[Data, AbsorbanceSpectroscopy, "AbsorbanceSpectroscopy Data For PlotAbsorbanceSpectroscopy Test 1 " <> $SessionUUID]
+				};
+
+			(* Check whether the names we want to give below already exist in the database *)
+			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
+
+			(* Erase any test objects and models that we failed to erase in the last unit test *)
+			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+
+			{protocol1, data1} = CreateID[{Object[Protocol, AbsorbanceSpectroscopy], Object[Data, AbsorbanceSpectroscopy]}];
+
+			Upload[
+				<|
+					Name -> "AbsorbanceSpectroscopy Data For PlotAbsorbanceSpectroscopy Test 1 " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, AbsorbanceSpectroscopy],
+					AbsorbanceSpectrum -> QuantityArray[{#, RandomReal[1]} & /@ Range[220, 1000], {Nanometer, AbsorbanceUnit}],
+					UnblankedAbsorbanceSpectrum -> QuantityArray[{#, RandomReal[1]} & /@ Range[220, 1000], {Nanometer, AbsorbanceUnit}]
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "AbsorbanceSpectroscopy Protocol For PlotAbsorbanceSpectroscopy Test " <> $SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, AbsorbanceSpectroscopy],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		];
+	),
+	SymbolTearDown :> Module[{objects},
+		objects = {
+			Object[Protocol, AbsorbanceSpectroscopy, "AbsorbanceSpectroscopy Protocol For PlotAbsorbanceSpectroscopy Test " <> $SessionUUID],
+			Object[Data, AbsorbanceSpectroscopy, "AbsorbanceSpectroscopy Data For PlotAbsorbanceSpectroscopy Test 1 " <> $SessionUUID]
+		};
+
+		EraseObject[
+			PickList[objects,DatabaseMemberQ[objects],True],
+			Verbose->False,
+			Force->True
+		]
+	]
 ];

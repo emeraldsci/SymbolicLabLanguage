@@ -213,7 +213,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 		BlankPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the preparation of cuvettes with buffer for blanking the instrument prior to measurement.",
 			Category -> "Blanking",
 			Developer -> True
@@ -221,7 +221,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 		PoolingPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of the experimental samples into the cuvettes prior to reading in the spectrophotometer.",
 			Category -> "Cuvette Preparation",
 			Developer -> True
@@ -230,7 +230,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The sample manipulation protocol used to prepare the buffer-containing cuvettes for blanking the instrument prior to the experiment.",
 			Category -> "Blanking",
 			Developer -> True
@@ -239,7 +239,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The sample manipulation protocol used to aliquot experimental samples into cuvettes for reading in a spectrophotometer.",
 			Category -> "Cuvette Preparation",
 			Developer -> True
@@ -247,7 +247,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 		StoragePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfer of the pooled samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Storage Information",
 			Developer -> True
@@ -256,7 +256,7 @@ DefineObjectType[Object[Protocol, UVMelting], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The sample manipulation protocol used to transfer the pooled samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Storage Information",
 			Developer -> True

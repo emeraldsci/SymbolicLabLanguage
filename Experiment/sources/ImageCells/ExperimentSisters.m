@@ -22,7 +22,7 @@ DefineOptions[ValidExperimentImageCellsQ,
 
 
 (* --- Overloads --- *)
-ValidExperimentImageCellsQ[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=ValidExperimentImageCellsQ[{mySample},myOptions];
+ValidExperimentImageCellsQ[mySample:ObjectP[{Object[Sample],Model[Sample]}],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=ValidExperimentImageCellsQ[{mySample},myOptions];
 ValidExperimentImageCellsQ[myContainer:ObjectP[Object[Container]],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=ValidExperimentImageCellsQ[{myContainer},myOptions];
 
 ValidExperimentImageCellsQ[myContainers:{ObjectP[Object[Container]]..},myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=Module[
@@ -74,7 +74,7 @@ ValidExperimentImageCellsQ[myContainers:{ObjectP[Object[Container]]..},myOptions
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ValidExperimentImageCellsQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=Module[
+ValidExperimentImageCellsQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Model[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=Module[
 	{listedOptions,preparedOptions,imageCellsTests,allTests,verbose,outputFormat},
 
 	(* get the options as a list *)
@@ -115,7 +115,7 @@ ValidExperimentImageCellsQ[mySemiPooledInputs:ListableP[ListableP[Alternatives[O
 
 
 (* --- Core Function --- *)
-ValidExperimentImageCellsQ[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=Module[
+ValidExperimentImageCellsQ[myPooledSamples:ListableP[{ObjectP[{Object[Sample],Model[Sample]}]..}],myOptions:OptionsPattern[ValidExperimentImageCellsQ]]:=Module[
 	{listedOptions,preparedOptions,imageCellsTests,allTests,verbose,outputFormat},
 
 	(* get the options as a list *)
@@ -174,7 +174,7 @@ DefineOptions[ExperimentImageCellsOptions,
 ];
 
 (* --- Overloads --- *)
-ExperimentImageCellsOptions[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=ExperimentImageCellsOptions[{mySample},myOptions];
+ExperimentImageCellsOptions[mySample:ObjectP[{Object[Sample],Model[Sample]}],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=ExperimentImageCellsOptions[{mySample},myOptions];
 ExperimentImageCellsOptions[myContainer:ObjectP[Object[Container]],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=ExperimentImageCellsOptions[{myContainer},myOptions];
 ExperimentImageCellsOptions[myContainers:{ObjectP[Object[Container]]..},myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
@@ -197,7 +197,7 @@ ExperimentImageCellsOptions[myContainers:{ObjectP[Object[Container]]..},myOption
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ExperimentImageCellsOptions[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=Module[
+ExperimentImageCellsOptions[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Model[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
@@ -217,7 +217,7 @@ ExperimentImageCellsOptions[mySemiPooledInputs:ListableP[ListableP[Alternatives[
 ];
 
 (* --- Core Function for PooledSamples--- *)
-ExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=Module[
+ExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[{Object[Sample],Model[Sample]}]..}],myOptions:OptionsPattern[ExperimentImageCellsOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -246,7 +246,7 @@ DefineOptions[ExperimentImageCellsPreview,
 ];
 
 (* --- Overloads --- *)
-ExperimentImageCellsPreview[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=ExperimentImageCellsPreview[{mySample},myOptions];
+ExperimentImageCellsPreview[mySample:ObjectP[{Object[Sample],Model[Sample]}],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=ExperimentImageCellsPreview[{mySample},myOptions];
 ExperimentImageCellsPreview[myContainer:ObjectP[Object[Container]],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=ExperimentImageCellsPreview[{myContainer},myOptions];
 ExperimentImageCellsPreview[myContainers:{ObjectP[Object[Container]]..},myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=Module[
 	{listedOptions,noOutputOptions},
@@ -263,7 +263,7 @@ ExperimentImageCellsPreview[myContainers:{ObjectP[Object[Container]]..},myOption
 ];
 
 (* SemiPooledInputs *)
-ExperimentImageCellsPreview[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=Module[
+ExperimentImageCellsPreview[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Model[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
@@ -277,7 +277,7 @@ ExperimentImageCellsPreview[mySemiPooledInputs:ListableP[ListableP[Alternatives[
 ];
 
 (* --- Core Function --- *)
-ExperimentImageCellsPreview[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=Module[
+ExperimentImageCellsPreview[myPooledSamples:ListableP[{ObjectP[{Object[Sample],Model[Sample]}]..}],myOptions:OptionsPattern[ExperimentImageCellsPreview]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)

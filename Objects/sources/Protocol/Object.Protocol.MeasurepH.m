@@ -181,15 +181,6 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Developer->True,
 			Category -> "General"
 		},
-		ProbeRecoupPrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Relation->None,
-			Description->"For each member of ProbeSamples, the instructions used to put the requested amount of ProbeSample back into the original container.",
-			Developer->True,
-			Category -> "General"
-		},
 		ProbeRecoupManipulations->{
 			Format->Multiple,
 			Class -> Link,
@@ -198,12 +189,12 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Description->"For each member of ProbeSamples, the subprotocols used to put the loaded amount of ProbeSample back into the original container.",
 			Category -> "General"
 		},
-		SurfaceDropletSampleManipulations->{
-			Format->Multiple,
+		SurfaceDropletSampleManipulations -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol],
-			Description->"The subprotocols used to make droplets which can then be read by the surface probe.",
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "The subprotocols used to make droplets which can then be read by the surface probe.",
 			Category -> "General"
 		},
 		ProbeAcquisitionTimes -> {
@@ -288,11 +279,11 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Pattern:>{
 				Sample->_Link,
 				NumberOfAcquisitions->_?NumericQ,
-				RecoupPrimitive->SampleManipulationP,
+				RecoupPrimitive->SampleManipulationP|SamplePreparationP,
 				RecoupSample->BooleanP,
 				SampleName -> _String,
 				DropletContainer->ObjectP[{Model[Container],Object[Container]}],
-				DropletPrimitive->SampleManipulationP
+				DropletPrimitive->SampleManipulationP|SamplePreparationP
 			},
 			Relation->{
 				Sample->Object[Sample]|Model[Sample],
@@ -343,12 +334,28 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Category -> "General",
 			Developer -> True
 		},
+		InitialDataFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each probe instrument, the file path of the data file exported prior to the experiment. This file includes any existing data from the instrument and will be used to verify data export after measurements are taken in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		InitialCalibrationFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each probe instrument, the file path of the calibration file exported prior to the experiment. This file includes any existing calibration data from the instrument and will be used to verify calibration data export after calibration steps are performed in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
 		WasteBeaker->{ (*NOTE: not in use. We just call the WasteContainer of the pHMeter*)
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Container,Vessel]|Model[Container,Vessel],
-			Description->"A vessel that will be used to catch any residual water that comes off the pH instrument as it is washed between measurements.",
+			Relation->Object[Sample]|Model[Sample],
+			Description->"A vessel that contains water to dilute base and acid and will be used to catch any residual water that comes off the pH instrument as it is washed between measurements.",
 			Developer->True,
 			Category->"Cleaning"
 		},
@@ -392,6 +399,38 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Description->"A temporary junk field to store the result of monitor sensor using a 1 second heartbeat. This is to prevent engine sluggishness when multiple readings are requested by the user.",
 			Category->"Experimental Results",
 			Developer->True
+		},
+		MaxpHSlope -> {
+			Format->Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Percent],
+			Units -> Percent,
+			Description-> "The maximum allowed pH slope, expressed as a percentage of the theoretical value. When the temperature is 25 °C, the theoretical value is 59.16 mV per pH unit, as calculated using the Nernst equation.",
+			Category->"General"
+		},
+		MinpHSlope -> {
+			Format->Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Percent],
+			Units -> Percent,
+			Description-> "The minimum allowed pH slope, expressed as a percentage of the theoretical value. When the temperature is 25 °C, the theoretical value is 59.16 mV per pH unit, as calculated using the Nernst equation.",
+			Category->"General"
+		},
+		MinpHOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> LessP[0 Milli*Volt],
+			Units -> Milli*Volt,
+			Description -> "The minimum allowed y-intercept of the fitted slope when using SevenExcellence instrument.",
+			Category -> "General"
+		},
+		MaxpHOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milli*Volt],
+			Units -> Milli*Volt,
+			Description -> "The maximum allowed y-intercept of the fitted slope when using SevenExcellence instrument.",
+			Category -> "General"
 		}
 	}
 }];

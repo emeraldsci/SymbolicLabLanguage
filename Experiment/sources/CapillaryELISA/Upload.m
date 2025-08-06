@@ -925,7 +925,7 @@ UploadCapillaryELISACartridge[myAnalytes:{ObjectP[Model[Molecule]]..}|{Capillary
 		Expires->True,
 		ShelfLife->12 Month,
 		DefaultStorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"]],
-		Reusability->False,
+		Reusable->False,
 		CrossSectionalShape->Rectangle,
 		Footprint->Plate,
 		MinTemperature->-20 Celsius,

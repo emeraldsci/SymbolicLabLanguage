@@ -33,6 +33,26 @@ DefineUsage[PlotCapillaryIsoelectricFocusingEvolution,
 				}
 			},
 			{
+				Definition -> {"PlotCapillaryIsoelectricFocusingEvolution[protocol]", "plot"},
+				Description -> "creates a 'plot' of the separation evolution data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing capillary isoelectric focusing data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, CapillaryIsoelectricFocusing]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the capillary isoelectric focusing protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotCapillaryIsoelectricFocusingEvolution[chromatograph]", "plot"},
 				Description->"generates a graphical plot of the provided CapillaryIsoelectricFocusing separation data over time.",
 				Inputs:>{
@@ -70,8 +90,6 @@ DefineUsage[PlotCapillaryIsoelectricFocusingEvolution,
 			"PlotCapillaryGelElectrophoresisSDS",
 			"PlotPAGE"
 		},
-		Author -> {
-			"gil.sharon"
-		},
+		Author -> {"xu.yi", "gil.sharon"},
 		Preview->True
 	}];

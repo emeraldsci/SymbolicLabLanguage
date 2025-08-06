@@ -46,10 +46,7 @@ DefineUsage[ExperimentThawCellsOptions,
 			"ExperimentThawCells",
 			"ValidExperimentThawCellsQ"
 		},
-		Author -> {
-			"tim.pierpont",
-			"thomas"
-		}
+		Author -> {"jireh.sacramento", "tim.pierpont", "thomas"}
 	}
 ];
 
@@ -95,9 +92,6 @@ DefineUsage[ValidExperimentThawCellsQ,
 			"ExperimentThawCellsOptions"
 
 		},
-		Author -> {
-			"tim.pierpont",
-			"thomas"
-		}
+		Author -> {"jireh.sacramento", "tim.pierpont", "thomas"}
 	}
 ];

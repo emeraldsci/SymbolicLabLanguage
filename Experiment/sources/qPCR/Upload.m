@@ -311,7 +311,7 @@ UploadArrayCard[
 		(*Container Specifications*)
 		ImageFile->Link[Object[EmeraldCloudFile,"id:D8KAEvGOeDvl"]],
 		Replace[Schematics]->{Link[Object[EmeraldCloudFile,"id:o1k9jAGYBBd7"]],"A quantitative polymerase chain reaction (qPCR) microfluidic array card that contains 8 sample loading reservoirs and 384 reaction wells."},
-		Reusability->False,
+		Reusable->False,
 		Opaque->True,
 		SelfStanding->True,
 		TareWeight->29.5 Gram,

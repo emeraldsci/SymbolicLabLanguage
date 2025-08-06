@@ -243,7 +243,8 @@ DefineTests[PlotCyclicVoltammetry,
 					Type -> Object[Protocol, CyclicVoltammetry],
 					Name -> "Example protocol 1 for PlotCyclicVoltammetry tests",
 					Replace[ElectrodePretreatmentData] -> {Link[dataObject1, Protocol], Null},
-					Replace[CyclicVoltammetryData] -> {Link[dataObject2, Protocol], Link[dataObject3, Protocol]},
+					Replace[CyclicVoltammetryData] -> {Link[dataObject2], Link[dataObject3]},
+    					Replace[Data] -> {Link[dataObject2, Protocol], Link[dataObject3, Protocol]},
 					Replace[PostMeasurementStandardAdditionData] -> {Link[dataObject5, Protocol], Null}
 				|>];
 
@@ -251,7 +252,8 @@ DefineTests[PlotCyclicVoltammetry,
 					Type -> Object[Protocol, CyclicVoltammetry],
 					Name -> "Example protocol 2 for PlotCyclicVoltammetry tests",
 					Replace[ElectrodePretreatmentData] -> {Null},
-					Replace[CyclicVoltammetryData] -> {Link[dataObject4, Protocol]},
+					Replace[CyclicVoltammetryData] -> {Link[dataObject4]},
+     					Replace[Data] -> {Link[dataObject4, Protocol]},
 					Replace[PostMeasurementStandardAdditionData] -> {Null}
 				|>]
 			]

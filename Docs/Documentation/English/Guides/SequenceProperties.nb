@@ -1,3 +1,374 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ed4f4376e2f73f1dc9ebbde59ea90f14dc1a64fcb78aa9cd50b8f59e0ce712da
-size 14871
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     14297,        364]
+NotebookOptionsPosition[     11049,        301]
+NotebookOutlinePosition[     12511,        337]
+CellTagsIndexPosition[     12468,        334]
+WindowTitle->Sequence Properties
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "df32c5ec-69d0-4eb0-8c22-ac05d918cbeb"]
+        }],ExpressionUUID->"37169c39-8ac8-4b47-bfd2-245e645b1512"],
+        StripOnInput->False], {"\<\"ComplementSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ComplementSequenceQ"], "\<\"DNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/DNAQ"], "\<\"ModificationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ModificationQ"], "\<\"PeptideQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PeptideQ"], "\<\"PNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PNAQ"], "\<\"PolymerType\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/PolymerType"], \
+"\<\"ReverseComplementSequenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseComplementSequenceQ"], \
+"\<\"ReverseSequenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReverseSequenceQ"], "\<\"RNAQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/RNAQ"], "\<\"SameSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SameSequenceQ"], "\<\"SequenceLength\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceLength"], \
+"\<\"SequencePalindromeQ\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequencePalindromeQ"], "\<\"SequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/SequenceQ"], "\<\"ValidSequenceQ\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/ValidSequenceQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "ccdfd6a6-6e7d-4f38-afd8-c6702cab4402"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "5bfc3629-0161-4272-959a-6b9d50ff51e8"]
+        }],ExpressionUUID->"78a591bc-52e5-4b19-98cc-7b61058864bd"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8199b42e-8cfe-4ac8-99b3-aacfc6a36c51"]
+    }], "AnchorBar",ExpressionUUID->"5909b122-24f3-447d-b1f9-1347a793daeb"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"fcd998b0-177f-4429-9a42-78deee298a86"],
+
+Cell["Sequence Properties", "GuideTitle",
+ CellID->527978421,ExpressionUUID->"aa5808ec-fa8b-4b05-92bf-05cc8d1942c4"],
+
+Cell["", "GuideAbstract",
+ CellID->13030943,ExpressionUUID->"c6974be6-47be-47b6-84a1-24ed6511e1f8"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->280344385,ExpressionUUID->"2bdbe912-1dec-4bdc-9460-4ed383a8b404"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SequenceQ"]],"paclet:NucleicAcids/ref/SequenceQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"bb5dc4a8-f43a-46d7-8404-af51158dc52d"]],\
+ "InlineGuideFunctionListing",
+ CellID->83272333,ExpressionUUID->"72a6c958-43a1-41b6-aefb-c3708f6bf9cb"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ValidSequenceQ"]],"paclet:NucleicAcids/ref/ValidSequenceQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"a75e27ea-afe6-435f-8a22-8c3571547316"]],\
+ "InlineGuideFunctionListing",
+ CellID->131491936,ExpressionUUID->"b8271164-e7be-42bf-873a-6ab97912df2e"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SequenceLength"]],"paclet:NucleicAcids/ref/SequenceLength"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"9ba296d8-6d6d-4228-bc4a-e10a58b22fd6"]],\
+ "InlineGuideFunctionListing",
+ CellID->164666343,ExpressionUUID->"0db07cca-fc21-4c17-b7ae-8fbeaf379f76"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PolymerType"]],"paclet:NucleicAcids/ref/PolymerType"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"553bfa7d-8bf8-441e-8d4a-f82bcf037ac7"]],\
+ "InlineGuideFunctionListing",
+ CellID->10793539,ExpressionUUID->"75e99f02-b496-4a31-a345-633376991d6c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DNAQ"]],"paclet:NucleicAcids/ref/DNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "76d97ccb-357f-4c21-87d8-817072555f0e"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["RNAQ"]],"paclet:NucleicAcids/ref/RNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "18ee64dd-3b78-4dcd-a28f-6b2576a4f8e7"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PeptideQ"]],"paclet:NucleicAcids/ref/PeptideQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "98462f49-9157-4ae5-8b75-f19182d8d727"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PNAQ"]],"paclet:NucleicAcids/ref/PNAQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eeb22312-da73-4929-bc33-b062e1017d55"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ModificationQ"]],"paclet:NucleicAcids/ref/ModificationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0b12cc7b-ac10-4177-b6e6-609fbefcf9b0"]
+}], "InlineGuideFunctionListing",
+ CellID->117888041,ExpressionUUID->"e3d65d2f-cc66-4419-b8a0-f968a7a7e00c"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SameSequenceQ"]],"paclet:NucleicAcids/ref/SameSequenceQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"45967fed-68e8-47b3-b560-e76beeb20195"]],\
+ "InlineGuideFunctionListing",
+ CellID->1011345632,ExpressionUUID->"54718adc-3d60-4ad8-bd30-1f4e4ecfba68"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ReverseSequenceQ"]],"paclet:NucleicAcids/ref/ReverseSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "15ccaecd-dbfa-4b0e-9078-07f507c73d78"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ComplementSequenceQ"]],
+    "paclet:NucleicAcids/ref/ComplementSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "22f9f71c-abe7-4651-b9a1-4ff4473a2545"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ReverseComplementSequenceQ"]],
+    "paclet:NucleicAcids/ref/ReverseComplementSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "18eb616d-7bd0-47c0-bec3-2e3e28a59b23"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SequencePalindromeQ"]],
+    "paclet:NucleicAcids/ref/SequencePalindromeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "616246e8-18eb-4306-9f88-f1120cff22b5"]
+}], "InlineGuideFunctionListing",
+ CellID->522730323,ExpressionUUID->"405754fd-442f-47a5-9671-0fadd45d5ee7"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->379355831,ExpressionUUID->"37745a01-d0f0-43ee-80e3-4126709adf2f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"46cde6b1-329d-48ce-a0ba-ea36ac295a13"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->78260112,ExpressionUUID->"de24ee1f-a620-4344-95cc-2217638ea916"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->838967896,ExpressionUUID->"04322a5b-c381-4986-a624-15118eefb8ba"],
+
+Cell["", "FooterCell",
+ CellID->81395332,ExpressionUUID->"8f5b99b0-6afc-4d2d-9801-e6dc6feb520f"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"Sequence Properties",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:31:21", "context" -> "Docs`", 
+    "keywords" -> {
+     "SequenceQ", "ValidSequenceQ", "SequenceLength", "PolymerType", "DNAQ", 
+      "RNAQ", "PeptideQ", "PNAQ", "ModificationQ", "SameSequenceQ", 
+      "ReverseSequenceQ", "ComplementSequenceQ", "ReverseComplementSequenceQ",
+       "SequencePalindromeQ"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "Sequence Properties", "title" -> "Sequence Properties", "type" -> 
+    "Guide", "uri" -> "Docs/guide/SequenceProperties", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[591, 21, 4311, 103, 58, "AnchorBarGrid",ExpressionUUID->"fcd998b0-177f-4429-9a42-78deee298a86",
+ CellID->1],
+Cell[4905, 126, 116, 1, 50, "GuideTitle",ExpressionUUID->"aa5808ec-fa8b-4b05-92bf-05cc8d1942c4",
+ CellID->527978421],
+Cell[5024, 129, 99, 1, 31, "GuideAbstract",ExpressionUUID->"c6974be6-47be-47b6-84a1-24ed6511e1f8",
+ CellID->13030943],
+Cell[5126, 132, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"2bdbe912-1dec-4bdc-9460-4ed383a8b404",
+ CellID->280344385],
+Cell[5242, 135, 353, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"72a6c958-43a1-41b6-aefb-c3708f6bf9cb",
+ CellID->83272333],
+Cell[5598, 145, 364, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"b8271164-e7be-42bf-873a-6ab97912df2e",
+ CellID->131491936],
+Cell[5965, 155, 364, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"0db07cca-fc21-4c17-b7ae-8fbeaf379f76",
+ CellID->164666343],
+Cell[6332, 165, 357, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"75e99f02-b496-4a31-a345-633376991d6c",
+ CellID->10793539],
+Cell[6692, 175, 1750, 48, 25, "InlineGuideFunctionListing",ExpressionUUID->"e3d65d2f-cc66-4419-b8a0-f968a7a7e00c",
+ CellID->117888041],
+Cell[8445, 225, 363, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"54718adc-3d60-4ad8-bd30-1f4e4ecfba68",
+ CellID->1011345632],
+Cell[8811, 235, 1523, 41, 25, "InlineGuideFunctionListing",ExpressionUUID->"405754fd-442f-47a5-9671-0fadd45d5ee7",
+ CellID->522730323],
+Cell[10337, 278, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"37745a01-d0f0-43ee-80e3-4126709adf2f",
+ CellID->379355831],
+Cell[10446, 281, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"de24ee1f-a620-4344-95cc-2217638ea916",
+ CellID->78260112],
+Cell[10840, 295, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"04322a5b-c381-4986-a624-15118eefb8ba",
+ CellID->838967896],
+Cell[10949, 298, 96, 1, 41, "FooterCell",ExpressionUUID->"8f5b99b0-6afc-4d2d-9801-e6dc6feb520f",
+ CellID->81395332]
+}
+]
+*)
+
+(* End of internal cache information *)
+

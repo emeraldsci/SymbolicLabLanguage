@@ -16,7 +16,7 @@ DefineOptions[ExperimentFluorescenceIntensityPreview,
 	SharedOptions :> {ExperimentFluorescenceIntensity}
 ];
 
-ExperimentFluorescenceIntensityPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceIntensityPreview]]:=Module[
+ExperimentFluorescenceIntensityPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceIntensityPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -42,7 +42,7 @@ DefineOptions[ExperimentFluorescenceIntensityOptions,
 	SharedOptions :> {ExperimentFluorescenceIntensity}
 ];
 
-ExperimentFluorescenceIntensityOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceIntensityOptions]]:=Module[
+ExperimentFluorescenceIntensityOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFluorescenceIntensityOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -72,7 +72,7 @@ DefineOptions[ValidExperimentFluorescenceIntensityQ,
 	SharedOptions :> {ExperimentFluorescenceIntensity}
 ];
 
-ValidExperimentFluorescenceIntensityQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceIntensityQ]]:=Module[
+ValidExperimentFluorescenceIntensityQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFluorescenceIntensityQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

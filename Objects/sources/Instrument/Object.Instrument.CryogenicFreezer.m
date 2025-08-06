@@ -62,6 +62,30 @@ DefineObjectType[Object[Instrument, CryogenicFreezer], {
 			Pattern :> {GreaterP[0*Milli*Meter], GreaterP[0*Milli*Meter], GreaterP[0*Milli*Meter]},
 			Description -> "The size of the space inside the cryogenic freezer in the form of: {X Direction (Width),Y Direction (Depth),Z Direction (Height)}.",
 			Category -> "Dimensions & Positions"
+		},
+		LiquidLevelSensor -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sensor, LiquidLevel],
+			Description -> "The built-in sensor that monitors the level of liquid nitrogen in the tank.",
+			Category -> "Sensor Information"
+		},
+		TriggerThreshold -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Inch],
+			Units -> Inch,
+			Description -> "The threshold liquid nitrogen level that a cryogenic freezer will open an inlet valve and refill the cryogenic freezer.",
+			Category -> "Sensor Information"
+		},
+		Cylinder->{
+			Format->Single,
+			Class-> Link,
+			Pattern:> _Link,
+			Relation-> Object[Container,GasCylinder][CryogenicFreezer],
+			Description->"Gas cylinder connected to the inlet of Cryogenic Freezer.",
+			Category->"Instrument Specifications"
 		}
 	}
 }];

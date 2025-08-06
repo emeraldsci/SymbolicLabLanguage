@@ -106,6 +106,16 @@ DefineTests[
 			],
 			InCart,
 			Variables:>{protocol}
+		],
+
+		Test[
+			"Specify the CanaryBranch on which the protocol is run:",
+			Module[{},
+				protocol=ExperimentAssembleCrossFlowFiltrationTubing[Model[Plumbing,PrecutTubing,"PharmaPure #14 FQD to FLL 0.5 Meter"],CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"];
+				Download[protocol, CanaryBranch]],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Variables:>{protocol},
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		]
 	},
 

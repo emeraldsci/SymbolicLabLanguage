@@ -24,6 +24,20 @@ DefineObjectType[Object[User,Emerald, Developer],{
 			Description -> "A boolean indicating whether a developer is working from a remote location.",
 			Category -> "Company Information",
 			Developer -> True
+		},
+		ShiftTime -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ShiftTimeP,
+			Description -> "If the developer works on a shift, the hours that the developer is scheduled to work on a regular basis - options include Morning, Night, Swing.",
+			Category -> "Organizational Information"
+		},
+		ShiftName -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ShiftNameP,
+			Description -> "If the developer works on a shift, the team name they are scheduled to work with. Options include Alpha and Bravo.",
+			Category -> "Organizational Information"
 		}
 	}
 }];

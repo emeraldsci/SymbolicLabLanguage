@@ -110,6 +110,11 @@ prepareAbsorbanceUploadPacket[
 
 (* helper that combines the streaming and uploading into one call *)
 (* Overload 1 - Data Overload *)
+
+
+(* Authors definition for Analysis`Private`streamAndUploadAbsorbanceSlices *)
+Authors[Analysis`Private`streamAndUploadAbsorbanceSlices]:={"malav.desai"};
+
 streamAndUploadAbsorbanceSlices[object:ObjectP[Data,ChromatographyMassSpectra]]:=streamAndUploadAbsorbanceSlices[{object}];
 streamAndUploadAbsorbanceSlices[objects:{ObjectP[Data,ChromatographyMassSpectra]..}]:=Module[
 	{slices, packets},
@@ -620,7 +625,11 @@ analyzeDownsampling[obj:downsampleObjectP, field:_Symbol, myOps:OptionsPattern[A
 	(* Apply a noise threshold to the data to take advantage of sparsity *)
 	{thresholdedInput,resolvedNoiseThreshold}=(
 		If[collectMessages,PrintTemporary["Applying noise threshold ..."]];
-		thresholdData[downsampledInput,combinedOptions]
+		(*If NoiseThreshold is set to None, skip the threshold step*)
+		If[MatchQ[Lookup[combinedOptions, NoiseThreshold],None],
+			{downsampledInput,{NoiseThreshold -> None}},
+			thresholdData[downsampledInput,combinedOptions]
+			]
 	);
 
 	If[collectMessages,
@@ -1352,7 +1361,7 @@ resample2D[xyData_,{xmin_,xmax_,dx_}]:=Module[
 ];
 
 (* True if the input list of numbers is evenly spaced, False otherwise. Tol sets a relative tolerance for numerical precision *)
-evenlySpacedQ[nums_]:=evenlySpacedQ[nums,0.2];
+evenlySpacedQ[nums_]:=evenlySpacedQ[nums,0.25];
 evenlySpacedQ[nums_,tol_]:=Module[
 	{diffs,threshold,diffSpacings},
 
@@ -1362,11 +1371,8 @@ evenlySpacedQ[nums_,tol_]:=Module[
 	(* Threshold value to round to *)
 	threshold=tol*Mean[diffs];
 
-	(* List of different spacings after rounding to the threshold *)
-	diffSpacings=DeleteDuplicates[Round[diffs,threshold]];
-
-	(* This list has one element if evenly spaced *)
-	Length[diffSpacings]==1
+	(* If the difference between the Min and Max is above the threshold (25%), the data is considered unevenly spaced *)
+	Max[diffs] - Min[diffs] < threshold
 ];
 
 
@@ -1471,7 +1477,8 @@ fastResample2D=Core`Private`SafeCompile[
 		{xmax, _Real},
 		{dx, _Real}
 	},
-
+	(* The first input's size needs to be two sorted lists or larger to extrapolate any data, Else output the preallocated result array instead *)
+	If[Length[list] >= 2,
 	(* Block for loop variables *)
 	Block[
 		{
@@ -1515,7 +1522,9 @@ fastResample2D=Core`Private`SafeCompile[
 
 		(* Return the result *)
 		res
-	]
+	],
+		ConstantArray[0.0, Floor[(xmax - xmin)/dx] + 1]
+		]
 ];
 
 (* Compiled binary for O(N) partitioning of a sorted list *)

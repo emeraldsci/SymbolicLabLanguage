@@ -1,3 +1,444 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6d5810053bd713fee94469ce6d43a06fe96d3a19282a684155e1c1c164e63994
-size 18352
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     17708,        434]
+NotebookOptionsPosition[     13135,        348]
+NotebookOutlinePosition[     14650,        385]
+CellTagsIndexPosition[     14607,        382]
+WindowTitle->PricingFunctions
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "cc13818d-2093-4a5d-84da-589bfd2cff8f"]
+        }],ExpressionUUID->"7ade62d2-1609-460c-8b39-02a301f21292"],
+        StripOnInput->False], {"\<\"PriceCleaning\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceCleaning"], \
+"\<\"PriceExperiment\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceExperiment"], \
+"\<\"PriceInstrumentTime\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceInstrumentTime"], \
+"\<\"PriceMaterials\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceMaterials"], "\<\"PriceStocking\"\
+\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceStocking"], \
+"\<\"PriceStorage\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceStorage"], "\<\"PriceTransactions\
+\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceTransactions"], "\<\"PriceWaste\"\
+\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceWaste"], "\<\"Resource\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Resources/ref/Resource"], "\<\"ValidResourceQ\"\>":>
+       Documentation`HelpLookup["paclet:Resources/ref/ValidResourceQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "e7f1149d-1161-4698-8b89-0080173ef43a"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "26f1e44d-060b-450d-ba0d-e37d3a781b83"]
+        }],ExpressionUUID->"bb4f82ee-00a8-4ff4-986d-d1ce664a1146"],
+        StripOnInput->False], {"\<\"ExperimentTrackingAndManagement\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ExperimentTrackingAndManagement"], \
+"\<\"FacilitiesCapabilitiesAndLimitations\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"], \
+"\<\"RunningExperiments\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/RunningExperiments"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "6568c5ef-ab3a-47bd-99d1-9dcae649ae6a"]
+    }], "AnchorBar",ExpressionUUID->"43ad51f6-b94e-4972-b98e-61ea023c8e78"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"b20a2eac-4811-4f57-965a-cf2475275c74"],
+
+Cell["Pricing Functions", "GuideTitle",
+ CellID->50957505,ExpressionUUID->"57663a31-6bd2-437a-88b5-dd4ce7bd2186"],
+
+Cell["\<\
+Collection of functions uses to estimate charges generated through the \
+conduct of experimentation in an ECL facility.\
+\>", "GuideAbstract",
+ CellID->86219141,ExpressionUUID->"7d0e8dec-4bbd-49dc-bf01-2efa5564a0da"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->108504694,ExpressionUUID->"2df10a26-ae00-4de3-9002-dc0dd2fd186a"],
+
+Cell["Experiment Pricing", "GuideFunctionsSubsection",
+ CellID->218335093,ExpressionUUID->"c5a7ec28-f57b-491e-95a8-d5f4f64423c7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceExperiment"]],
+    "paclet:ExperimentUtilities/ref/PriceExperiment"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27070e67-347d-4034-81a2-5351807e59f1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a summary table of all the charges associated with the conduct \
+of a given experimental protocol or all of the protocols in a given notebook."
+}], "GuideText",
+ CellID->47225630,ExpressionUUID->"90aad68e-b613-40c6-920b-afc58549e283"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceMaterials"]],
+    "paclet:ExperimentUtilities/ref/PriceMaterials"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "984a03b4-acbf-43b5-a8b6-f37913a9f462"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the materials ordered or purchased in order to \
+conduct a given experimental protocol or all of the protocols in a given \
+notebook."
+}], "GuideText",
+ CellID->88162376,ExpressionUUID->"a669a41c-c7ee-42f7-a63a-4be6cd5d90b3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceInstrumentTime"]],
+    "paclet:ExperimentUtilities/ref/PriceInstrumentTime"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ecc27b3a-59b0-4741-8cf6-97114608ada8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the instrument time purchased in order to conduct a \
+given experimental protocol or all of the protocols in a given notebook."
+}], "GuideText",
+ CellID->71488372,ExpressionUUID->"232aa8f8-3b19-419c-9770-bc430eafc7d6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceWaste"]],"paclet:ExperimentUtilities/ref/PriceWaste"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "48404412-dc7d-4812-8234-5f821c8dd378"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the generated waste and disposal charges in order to \
+conduct a given experimental protocol or all of the protocols in a given \
+notebook."
+}], "GuideText",
+ CellID->81587616,ExpressionUUID->"f3604c1e-dd7f-40e5-9a89-7f0a34dd06e2"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->688334668,ExpressionUUID->"17129439-deb5-4b3f-91ca-1fc397c754c9"],
+
+Cell["Sample Management", "GuideFunctionsSubsection",
+ CellID->46219792,ExpressionUUID->"6669b267-1075-40b0-bffe-0d1478e815e8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceTransactions"]],
+    "paclet:ExperimentUtilities/ref/PriceTransactions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bc35c611-4b3c-4e98-a319-9c47d7959d21"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the transactional charges associated with a given \
+transaction or protocol, or all of the transactions and protocols in a given \
+notebook."
+}], "GuideText",
+ CellID->457609918,ExpressionUUID->"195bf6ed-7da3-48f5-8c24-2095c4bdb3a2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceCleaning"]],
+    "paclet:ExperimentUtilities/ref/PriceCleaning"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f2b67086-5703-4049-9cb9-d91f320314a7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the charges associated with the cleaning of all the \
+containers associated with a given notebook or all the notebooks of a given \
+team."
+}], "GuideText",
+ CellID->56342654,ExpressionUUID->"1692da24-ed23-4e90-a379-d4b4ad3cdaa6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceStorage"]],"paclet:ExperimentUtilities/ref/PriceStorage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2174041e-6398-4e6d-b3a8-e06e916856e9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the ongoing storage costs for storing all the samples \
+associated with a given notebook or all the notebooks of a given team."
+}], "GuideText",
+ CellID->95464333,ExpressionUUID->"1819f7fa-36f0-4919-b532-3e0c12c1590a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PriceStocking"]],
+    "paclet:ExperimentUtilities/ref/PriceStocking"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9b9309c8-c3c2-4e94-a5e4-b2284965d20e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the pricing information for the restocking of public \
+samples generated during a protocol or associated with a given notebook or \
+all the notebooks of a given team."
+}], "GuideText",
+ CellID->886858332,ExpressionUUID->"d9f5a719-34e7-437d-9d21-739c5bb9b1e0"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->98092835,ExpressionUUID->"43461c99-16a8-4b5f-979c-4f95a188ac85"],
+
+Cell["Resource Requests", "GuideFunctionsSubsection",
+ CellID->41840770,ExpressionUUID->"feeba10b-5090-4043-a67a-695af728dd51"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Resource"]],"paclet:Resources/ref/Resource"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "890b15a5-91c0-48cf-be18-9384fadc1849"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Wrapper for defining a resource request within the ECL facility for use in \
+conducting experiments."
+}], "GuideText",
+ CellID->361367893,ExpressionUUID->"7de91017-2dea-47d9-a133-6061aeb9b8e5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidResourceQ"]],"paclet:Resources/ref/ValidResourceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3e0ade3e-cc80-4de3-ba3e-c2b37ae3a08f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a give Resource request is properly formatted for its given type \
+of resource."
+}], "GuideText",
+ CellID->305005671,ExpressionUUID->"1c1d7e2a-7e79-4cf3-a22c-8a41acf33212"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->196192118,ExpressionUUID->"6eb2ef7a-e397-49f4-8178-7dd080b9ba65"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"78c057a3-6d92-4c18-9cf6-5c2e40197ea0"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->67650621,ExpressionUUID->"25636dae-888a-4dff-bfd9-506b194b0f4f"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->830239232,ExpressionUUID->"5a423001-c2f9-43e7-bd8d-341355758bb2"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["RunningExperiments"]],"paclet:Docs/guide/RunningExperiments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->353805102,ExpressionUUID->"aaa7c66d-0c52-45a3-a09e-b139d29e89d7"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExperimentTrackingAndManagement"]],
+   "paclet:Docs/guide/ExperimentTrackingAndManagement"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->168490972,ExpressionUUID->"2de15ebf-4245-4131-9062-e4753c7992f8"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FacilitiesCapabilitiesAndLimitations"]],
+   "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->24248013,ExpressionUUID->"2b980cf6-673e-496e-9626-e5a8a9151f84"],
+
+Cell["", "FooterCell",
+ CellID->240950429,ExpressionUUID->"973b6bea-b3b8-4e22-b186-639b44815ab8"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"PricingFunctions",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 18:43:15", "context" -> "Docs`", 
+    "keywords" -> {
+     "PriceExperiment", "PriceMaterials", "PriceInstrumentTime", "PriceWaste",
+       "PriceTransactions", "PriceCleaning", "PriceStorage", "PriceStocking", 
+      "Resource", "ValidResourceQ"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions uses to estimate charges generated through the \
+conduct of experimentation in an ECL facility.", "synonyms" -> {}, 
+    "titlemodifier" -> "", "Windowtitle" -> "PricingFunctions", "title" -> 
+    "PricingFunctions", "type" -> "Guide", "uri" -> 
+    "Docs/guide/PricingFunctions", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 4315, 101, 56, "AnchorBarGrid",ExpressionUUID->"b20a2eac-4811-4f57-965a-cf2475275c74",
+ CellID->1],
+Cell[4906, 124, 113, 1, 50, "GuideTitle",ExpressionUUID->"57663a31-6bd2-437a-88b5-dd4ce7bd2186",
+ CellID->50957505],
+Cell[5022, 127, 226, 4, 52, "GuideAbstract",ExpressionUUID->"7d0e8dec-4bbd-49dc-bf01-2efa5564a0da",
+ CellID->86219141],
+Cell[5251, 133, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"2df10a26-ae00-4de3-9002-dc0dd2fd186a",
+ CellID->108504694],
+Cell[5367, 136, 129, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"c5a7ec28-f57b-491e-95a8-d5f4f64423c7",
+ CellID->218335093],
+Cell[5499, 139, 569, 13, 53, "GuideText",ExpressionUUID->"90aad68e-b613-40c6-920b-afc58549e283",
+ CellID->47225630],
+Cell[6071, 154, 569, 14, 59, "GuideText",ExpressionUUID->"a669a41c-c7ee-42f7-a63a-4be6cd5d90b3",
+ CellID->88162376],
+Cell[6643, 170, 572, 13, 59, "GuideText",ExpressionUUID->"232aa8f8-3b19-419c-9770-bc430eafc7d6",
+ CellID->71488372],
+Cell[7218, 185, 562, 13, 59, "GuideText",ExpressionUUID->"f3604c1e-dd7f-40e5-9a89-7f0a34dd06e2",
+ CellID->81587616],
+Cell[7783, 200, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"17129439-deb5-4b3f-91ca-1fc397c754c9",
+ CellID->688334668],
+Cell[7899, 203, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"6669b267-1075-40b0-bffe-0d1478e815e8",
+ CellID->46219792],
+Cell[8029, 206, 583, 14, 53, "GuideText",ExpressionUUID->"195bf6ed-7da3-48f5-8c24-2095c4bdb3a2",
+ CellID->457609918],
+Cell[8615, 222, 571, 14, 59, "GuideText",ExpressionUUID->"1692da24-ed23-4e90-a379-d4b4ad3cdaa6",
+ CellID->56342654],
+Cell[9189, 238, 553, 12, 59, "GuideText",ExpressionUUID->"1819f7fa-36f0-4919-b532-3e0c12c1590a",
+ CellID->95464333],
+Cell[9745, 252, 601, 14, 59, "GuideText",ExpressionUUID->"d9f5a719-34e7-437d-9d21-739c5bb9b1e0",
+ CellID->886858332],
+Cell[10349, 268, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"43461c99-16a8-4b5f-979c-4f95a188ac85",
+ CellID->98092835],
+Cell[10464, 271, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"feeba10b-5090-4043-a67a-695af728dd51",
+ CellID->41840770],
+Cell[10594, 274, 489, 12, 53, "GuideText",ExpressionUUID->"7de91017-2dea-47d9-a133-6061aeb9b8e5",
+ CellID->361367893],
+Cell[11086, 288, 490, 12, 59, "GuideText",ExpressionUUID->"1c1d7e2a-7e79-4cf3-a22c-8a41acf33212",
+ CellID->305005671],
+Cell[11579, 302, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"6eb2ef7a-e397-49f4-8178-7dd080b9ba65",
+ CellID->196192118],
+Cell[11688, 305, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"25636dae-888a-4dff-bfd9-506b194b0f4f",
+ CellID->67650621],
+Cell[12082, 319, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"5a423001-c2f9-43e7-bd8d-341355758bb2",
+ CellID->830239232],
+Cell[12191, 322, 255, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"aaa7c66d-0c52-45a3-a09e-b139d29e89d7",
+ CellID->353805102],
+Cell[12449, 329, 285, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"2de15ebf-4245-4131-9062-e4753c7992f8",
+ CellID->168490972],
+Cell[12737, 337, 294, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"2b980cf6-673e-496e-9626-e5a8a9151f84",
+ CellID->24248013],
+Cell[13034, 345, 97, 1, 41, "FooterCell",ExpressionUUID->"973b6bea-b3b8-4e22-b186-639b44815ab8",
+ CellID->240950429]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -114,7 +114,26 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       Variables :> {protocol},
       Messages:>{Warning::CosolventConflict}
     ],
-
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentSupercriticalFluidChromatography[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentSupercriticalFluidChromatography[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentSupercriticalFluidChromatography[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentSupercriticalFluidChromatography[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
 	(*injection Table must match the order and repetition of the input samples*)
 	Example[{Messages,"InjectionTableForeignSamples","Return an error when the injection table is specified but has a different order and repetition to that of the input samples:"},
 		  customInjectionTable={
@@ -2433,32 +2452,41 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       {PacketP[Object[Protocol,SupercriticalFluidChromatography]],___},
       Variables:>{protocol}
     ],
-    Example[
-      {Options,PreparatoryPrimitives,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
-      protocol=ExperimentSupercriticalFluidChromatography[{Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 3" <> $SessionUUID]},
-        CosolventA->"My Cosolvent with additive",
-        PreparatoryPrimitives->{
-          Define[
-            Name -> "My Cosolvent with additive",
-            Sample -> {Model[Container, Vessel, "1L Glass Bottle"],"A1"}
-          ],
-          Transfer[
-            Source -> Model[Sample, "Methanol - LCMS grade"],
-            Destination -> "My Cosolvent with additive",
-            Amount -> 499 Milliliter
-          ],
-          Transfer[
-            Source -> Model[Sample, "Heptafluorobutyric acid"],
-            Destination -> "My Cosolvent with additive",
-            Amount -> 1 Milliliter
-          ]
-        }
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+      options = ExperimentSupercriticalFluidChromatography[
+        {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+        PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+        PreparedModelAmount -> 1 Milliliter,
+        Output -> Options
+      ];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+        {ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+        {EqualP[1 Milliliter]..},
+        {"A1", "B1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
+    ],
+    Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+      ExperimentSupercriticalFluidChromatography[
+        Model[Sample, "Ammonium hydroxide"],
+        PreparedModelAmount -> 0.5 Milliliter,
+        Aliquot -> True,
+        Mix -> True
       ],
-      ObjectP[Object[Protocol,SupercriticalFluidChromatography]],
-      Variables:>{protocol}
+      ObjectP[Object[Protocol, SupercriticalFluidChromatography]]
     ],
     Example[
-      {Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation:"},
+      {Options,PreparatoryUnitOperations,"Specify a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation:"},
       protocol=ExperimentSupercriticalFluidChromatography[{Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 3" <> $SessionUUID]},
         CosolventA->"My Cosolvent with additive",
         PreparatoryUnitOperations->{
@@ -2986,11 +3014,11 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       {Options,TargetConcentration,"Specify the desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
       options=ExperimentSupercriticalFluidChromatography[
         Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID],
-        TargetConcentration -> 45 Micromolar,
+        TargetConcentration -> 450 Micromolar,
         Output -> Options
       ];
       Lookup[options,TargetConcentration],
-      45 Micromolar,
+      EqualP[450 Micromolar],
       Variables:>{options}
     ],
     Example[{Options, TargetConcentrationAnalyte, "The analyte whose desired final concentration is specified:"},
@@ -3086,7 +3114,7 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
         Output -> Options
       ];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1","A1","A1"},
       Variables:>{options}
     ],
     Example[
@@ -3097,7 +3125,11 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
         Output -> Options
       ];
       Lookup[options,AliquotContainer],
-      {1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
+      {
+        {1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
+        {1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
+        {1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}
+      },
       Variables:>{options}
     ],
     Example[
@@ -3167,6 +3199,8 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       Variables:>{options}
     ]
   },
+  (* without this, telescope crashes and the test fails *)
+  HardwareConfiguration->HighRAM,
   SymbolSetUp:>(
     Off[Warning::SamplesOutOfStock];
     Off[Warning::InstrumentUndergoingMaintenance];
@@ -3333,7 +3367,7 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
         {
           Association[
             Object -> Object[Sample,"ExperimentSFC Test Sample 1" <> $SessionUUID],
-            Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+            Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
           ],
           Association[
             Object -> Object[Sample,"ExperimentSFC Test Sample 4" <> $SessionUUID],
@@ -3702,7 +3736,7 @@ DefineTests[
     ];
     (*module for creating objects*)
     Module[{testBench,samplePackets,gradientOne,gradientTwo,gradientPackets},
-      Block[{DeveloperUpload = True},
+      Block[{$DeveloperUpload = True},
 
         (* Create a test bench *)
         testBench = Upload[<|

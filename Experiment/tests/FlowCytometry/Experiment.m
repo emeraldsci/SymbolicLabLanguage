@@ -47,6 +47,83 @@ DefineTests[
 			ExperimentFlowCytometry[{{"A1",Object[Container,Plate, "plate for ExperimentFlowCytometry tests"<> $SessionUUID]},Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID]}],
 			ObjectP[Object[Protocol, FlowCytometry]]
 		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFlowCytometry[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFlowCytometry[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFlowCytometry[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFlowCytometry[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFlowCytometry[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFlowCytometry[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		
 		(* --- InValidOptions --- *)
 		Example[{Messages, "ConflictingContinuousModeFlowRateOptions", "If a Continuous injection mode is selected the flow rate must be the same for each sample and 0.5-2.5 µl/sec:"},
 			ExperimentFlowCytometry[
@@ -491,7 +568,7 @@ DefineTests[
 				Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID],
 				NumberOfReplicates -> 2,
 				InjectionTable -> {
-					{Sample, Object[Sample, "sample 2 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], 40*Microliter, Automatic},
+					{Sample, Object[Sample, "sample 2 in 50mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], 40*Microliter, Automatic},
 					{Sample, Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], 40*Microliter, 10 Second}
 				}
 			],
@@ -1948,12 +2025,12 @@ DefineTests[
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], AliquotContainer -> Model[Container, Plate, "24-well V-bottom 10 mL Deep Well Plate Sterile"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2"
+			{"A2"}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
 			options = ExperimentFlowCytometry[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometry testing"<> $SessionUUID], ImageSample -> True, Output -> Options];
@@ -2293,16 +2370,16 @@ DefineTests[
 					}
 				];
 
-				Upload[Flatten[{
+				Upload[{
 					<|
 						Object -> Object[Sample, "sample with no model in 50mL tube for ExperimentFlowCytometry testing"<> $SessionUUID],
 						Model -> Null
 					|>,
 					<|
 						Object -> Object[Sample, "sample 4 in 2mL tube for ExperimentFlowCytometry testing with concentration"<> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 					|>
-				}]];
+				}];
 				UploadSampleStatus[samplediscarded, Discarded, FastTrack -> True];
 
 				Upload[<|Type->Object[Protocol,FlowCytometry],Name->"test protocol for ExperimentFlowCytometry tests"<> $SessionUUID|>];
@@ -2594,7 +2671,7 @@ DefineTests[
 				sample1, sample2, samplediscarded, sampleconc
 			}];
 
-			Upload[Flatten[{
+			Upload[{
 				<|Object -> #, DeveloperObject -> True|>& /@ allObjs,
 				<|
 					Object -> Object[Sample, "sample with no model in 50mL tube for ExperimentFlowCytometryOptions testing"<> $SessionUUID],
@@ -2602,9 +2679,9 @@ DefineTests[
 				|>,
 				<|
 					Object -> Object[Sample, "sample 4 in 2mL tube for ExperimentFlowCytometryOptions testing with concentration"<> $SessionUUID],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 				|>
-			}]];
+			}];
 			UploadSampleStatus[samplediscarded, Discarded, FastTrack -> True];
 
 			Upload[<|Type->Object[Protocol,FlowCytometry],Name->"test protocol for ExperimentFlowCytometryOptions tests"<> $SessionUUID|>];
@@ -2651,7 +2728,7 @@ DefineTests[
 			ExperimentFlowCytometryPreview[Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometryPreview testing"<> $SessionUUID]],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentFlowCytometryPreview[{Object[Sample, "sample 1 in 2mL tube for ExperimentFlowCytometryPreview testing"<> $SessionUUID], Object[Sample, "sample 2 in 50mL tube for ExperimentFlowCytometryPreview testing"<> $SessionUUID]}],
 			Null
 		],
@@ -2843,7 +2920,7 @@ DefineTests[
 				sample1, sample2, samplediscarded, sampleconc
 			}];
 
-			Upload[Flatten[{
+			Upload[{
 				<|Object -> #, DeveloperObject -> True|>& /@ allObjs,
 				<|
 					Object -> Object[Sample, "sample with no model in 50mL tube for ExperimentFlowCytometryPreview testing"<> $SessionUUID],
@@ -2851,9 +2928,9 @@ DefineTests[
 				|>,
 				<|
 					Object -> Object[Sample, "sample 4 in 2mL tube for ExperimentFlowCytometryPreview testing with concentration"<> $SessionUUID],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 				|>
-			}]];
+			}];
 			UploadSampleStatus[samplediscarded, Discarded, FastTrack -> True];
 
 			Upload[<|Type->Object[Protocol,FlowCytometry],Name->"test protocol for ExperimentFlowCytometryPreview tests"<> $SessionUUID|>];
@@ -3113,7 +3190,7 @@ DefineTests[
 				sample1, sample2, samplediscarded, sampleconc
 			}];
 
-			Upload[Flatten[{
+			Upload[{
 				<|Object -> #, DeveloperObject -> True|>& /@ allObjs,
 				<|
 					Object -> Object[Sample, "sample with no model in 50mL tube for ValidExperimentFlowCytometryQ testing"<> $SessionUUID],
@@ -3121,9 +3198,9 @@ DefineTests[
 				|>,
 				<|
 					Object -> Object[Sample, "sample 4 in 2mL tube for ValidExperimentFlowCytometryQ testing with concentration"<> $SessionUUID],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 				|>
-			}]];
+			}];
 			UploadSampleStatus[samplediscarded, Discarded, FastTrack -> True];
 
 			Upload[<|Type->Object[Protocol,FlowCytometry],Name->"test protocol for ValidExperimentFlowCytometryQ tests"<> $SessionUUID|>];

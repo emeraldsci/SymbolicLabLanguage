@@ -372,6 +372,22 @@ DefineTests[ExperimentCircularDichroism,
 			Variables:>{protocol}
 		],
 		Example[
+			{Options,Analyte,"Analyte can be supplied as a Link"},
+			protocol=ExperimentCircularDichroism[
+				{
+					Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID],
+					Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID]
+				},
+				Analyte->{
+					Object[Sample, "ExperimentCircularDichroism Test ee=+50% sample"<>$SessionUUID][Composition][[1,2]],
+					Object[Sample, "ExperimentCircularDichroism Test ee=0% sample"<>$SessionUUID][Composition][[1,2]]
+				}
+			];
+			Download[protocol,Analytes],
+			ObjectP /@ {Model[Molecule, "id:J8AY5jDB0nlE"], Model[Molecule, "id:J8AY5jDB0nlE"]},
+			Variables:>{protocol}
+		],
+		Example[
 			{Options,AnalyteConcentrations,"Specify the known concentration of the Analyte for each of the SamplesIn:"},
 			protocol=ExperimentCircularDichroism[
 				{
@@ -473,7 +489,11 @@ DefineTests[ExperimentCircularDichroism,
 				Output->Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,Download[Model[Container, Plate, "Hellma Black Quartz Microplate"],Object]},
+			{
+				{1, Download[Model[Container, Plate, "Hellma Black Quartz Microplate"], Object]},
+				{1, Download[Model[Container, Plate, "Hellma Black Quartz Microplate"], Object]},
+				{1, Download[Model[Container, Plate, "Hellma Black Quartz Microplate"], Object]}
+			},
 			Variables:>{options}
 		],
 		Example[
@@ -530,6 +550,30 @@ DefineTests[ExperimentCircularDichroism,
 					EraseObject[Object[Protocol, CircularDichroism, "Test ExperimentCD Protocol"],Force->True,Verbose->False]
 				]
 			}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCircularDichroism[
+				{Model[Sample, "Methanol"], Model[Sample, "Methanol"]},
+				PreparedModelContainer -> Model[Container, Plate, "Hellma Black Quartz Microplate"],
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "Methanol"]]..},
+				{ObjectP[Model[Container, Plate, "Hellma Black Quartz Microplate"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[
 			{Options,PreparatoryUnitOperations,"Use PreparatoryUnitOperations to prepare the samples:"},
@@ -1082,6 +1126,81 @@ DefineTests[ExperimentCircularDichroism,
 			Download[protocol,ImageSample],
 			False,
 			Variables:>{protocol}
+		],
+		(* == Messages == *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCircularDichroism[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCircularDichroism[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCircularDichroism[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCircularDichroism[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCircularDichroism[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCircularDichroism[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		],
 		Example[{Messages, "DiscardedSamples", "Discarded samples cannot be used:"},
 			ExperimentCircularDichroism[Object[Sample,"ExperimentCircularDichroism Discarded Sample for Test"<>$SessionUUID]],

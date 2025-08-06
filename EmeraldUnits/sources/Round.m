@@ -62,7 +62,7 @@ mapThreadSafeRoundOptions[nInputs_Integer, options:OptionsPattern[SafeRound]]:=M
 	Transpose[
 		Module[{optionSymbol, optionValues, optionSymbolList},
 
-			(* Seperate out the option symbol from the option values. *)
+			(* Separate out the option symbol from the option values. *)
 			optionSymbol=#[[1]];
 			optionValues=ToList[#[[2]]];
 

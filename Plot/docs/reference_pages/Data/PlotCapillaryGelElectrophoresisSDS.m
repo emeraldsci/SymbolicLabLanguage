@@ -33,12 +33,32 @@ DefineUsage[PlotCapillaryGelElectrophoresisSDS,
 				}
 			},
 			{
-				Definition->{"PlotCapillaryGelElectrophoresisSDS[chromatograph]", "plot"},
+				Definition -> {"PlotCapillaryGelElectrophoresisSDS[protocol]", "plot"},
+				Description -> "creates a 'plot' of the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing capillary gel electrophoresis data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, CapillaryGelElectrophoresisSDS]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the capillary gel electrophoresis protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition->{"PlotCapillaryGelElectrophoresisSDS[data]", "plot"},
 				Description->"generates a graphical plot of the provided CapillaryGelElectrophoresisSDS data.",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "electrophoratogram",
+							InputName -> "data",
 							Description-> "The electrophoresis data you wish to plot.",
 							Widget->Alternatives[
 								(* Migration Time vs absorbance*)
@@ -65,9 +85,6 @@ DefineUsage[PlotCapillaryGelElectrophoresisSDS,
 			"PlotChromatography",
 			"PlotPAGE"
 		},
-		Author -> {
-			"gil.sharon",
-			"kevin.hou"
-		},
+		Author -> {"xu.yi", "gil.sharon", "kevin.hou"},
 		Preview->True
 	}];

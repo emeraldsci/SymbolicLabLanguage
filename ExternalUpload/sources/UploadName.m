@@ -335,7 +335,7 @@ UploadNamePreview[myObjects:ListableP[ObjectP[]], myNames:ListableP[_String], my
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense *)
+	(* remove the Output option before passing to the core function because it doesn't make sense *)
 	noOutputOptions=DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for UploadName *)

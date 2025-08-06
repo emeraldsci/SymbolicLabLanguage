@@ -160,6 +160,374 @@ DefineUsage[ExperimentMedia,{
 		"UploadStockSolution"
 	},
 	Author->{
-		{"daniel.shlian", "eunbin.go"}
+		"daniel.shlian"
 	}
 }];
+
+(* ::Subsubsection::Closed:: *)
+(*ExperimentMediaOptions*)
+
+DefineUsage[ExperimentMediaOptions,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"ExperimentMediaOptions[Media]", "ResolvedOptions"},
+				Description -> "returns 'ResolvedOptions' from ExperimentMedia for preparation of the given 'Media' according to its formula and using its preparation parameters as defaults.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Media",
+							Description -> "The model of media to be prepared during this protocol.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample, Media]]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "ResolvedOptions",
+						Description -> "The resolved options from an ExperimentMedia call for preparing the provided media.",
+						Pattern :> {Rule[_Symbol, Except[Automatic]]..}
+					}
+				}
+			},
+			{
+				Definition -> {"ExperimentMediaOptions[Components,Solvent,TotalVolume]", "ResolvedOptions"},
+				Description -> "returns 'ResolvedOptions' from ExperimentMedia for combining 'Components' and using 'Solvent' to fill to 'TotalVolume' after initial component combination.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Components",
+							Description -> "A list of components and amounts to combine before solvent addition, with each component in the form {component, amount}.",
+							Widget -> Adder[
+								{
+									"Amount" -> Alternatives[
+										"Mass" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milligram],
+											Units -> {Gram, {Milligram, Gram, Kilogram}}
+										],
+										"Volume" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milliliter],
+											Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+										],
+										"Count" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										]
+									],
+									"Component" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+									]
+								},
+								Orientation -> Vertical
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "Solvent",
+							Description -> "The solvent used to bring up the volume to the solution's target volume after all other formula components have been added.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Sample]}]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "TotalVolume",
+							Description -> "The total volume of solvent in which the provided components should be dissolved when this media model is prepared.",
+							Widget -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 * Milliliter],
+								Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "ResolvedOptions",
+						Description -> "The resolved options from an ExperimentMedia call for preparing the provided stock solution.",
+						Pattern :> {Rule[_Symbol, Except[Automatic]]..}
+					}
+				}
+			}
+		},
+		MoreInformation -> {
+			"Because this function may automatically generate names for new media models, it is possible that two different media models may have identical names. Please take care to avoid naming overlap with existing media."
+		},
+		SeeAlso -> {
+			"ExperimentMedia",
+			"ValidExperimentMediaQ",
+			"ExperimentMediaPreview",
+			"UploadMedia",
+			"ExperimentStockSolution",
+			"ExperimentSamplePreparation",
+			"ExperimentAliquot",
+			"ExperimentIncubate",
+			"ExperimentFilter",
+			"UploadSampleModel"
+		},
+		Author -> {"daniel.shlian"}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*ExperimentMediaPreview*)
+
+
+DefineUsage[ExperimentMediaPreview,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"ExperimentMediaPreview[Media]", "Preview"},
+				Description -> "returns a graphical representation for preparation of the given 'Media' according to its formula and using its preparation parameters as defaults. This 'Preview' is always Null.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Media",
+							Description -> "The model of media to be prepared during this protocol.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample, Media]]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "Preview",
+						Description -> "A graphical representation of the provided media preparation. This value is always Null.",
+						Pattern :> Null
+					}
+				}
+			},
+			{
+				Definition -> {"ExperimentMediaPreview[Components,Solvent,TotalVolume]", "Preview"},
+				Description -> "returns a graphical representation for combining 'Components' and using 'Solvent' to fill to 'TotalVolume' after initial component combination. This 'Preview' is always Null.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Components",
+							Description -> "A list of components and amounts to combine before solvent addition, with each component in the form {component, amount}.",
+							Widget -> Adder[
+								{
+									"Amount" -> Alternatives[
+										"Mass" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milligram],
+											Units -> {Gram, {Milligram, Gram, Kilogram}}
+										],
+										"Volume" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milliliter],
+											Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+										],
+										"Count" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										]
+									],
+									"Component" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+									]
+								},
+								Orientation -> Vertical
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "Solvent",
+							Description -> "The solvent used to bring up the volume to the solution's target volume after all other formula components have been added.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Sample]}]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "TotalVolume",
+							Description -> "The total volume of solvent in which the provided components should be dissolved when this stock solution model is prepared.",
+							Widget -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 * Milliliter],
+								Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "Preview",
+						Description -> "A graphical representation of the provided media preparation. This value is always Null.",
+						Pattern :> Null
+					}
+				}
+			}
+		},
+		MoreInformation -> {
+			"Currently, this preview function always returns Null."
+		},
+		SeeAlso -> {
+			"ExperimentMedia",
+			"ValidExperimentMediaQ",
+			"ExperimentMediaPreview",
+			"UploadMedia",
+			"ExperimentStockSolution",
+			"ExperimentSamplePreparation",
+			"ExperimentAliquot",
+			"ExperimentIncubate",
+			"ExperimentFilter",
+			"UploadSampleModel"
+		},
+		Author -> {"daniel.shlian"}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*ValidExperimentMediaQ*)
+
+
+DefineUsage[ValidExperimentMediaQ,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"ValidExperimentMediaQ[Media]", "Boolean"},
+				Description -> "checks the validity of an ExperimentMedia call for preparation of the given 'Media' according to its formula and using its preparation parameters as defaults, returning a validity 'Boolean'.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Media",
+							Description -> "The model of stock solution to be prepared during this protocol.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Model[Sample, Media]]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "Boolean",
+						Description -> "A boolean indicating the validity of the ExperimentMedia call.",
+						Pattern :> BooleanP
+					}
+				}
+			},
+			{
+				Definition -> {"ValidExperimentMediaQ[Components,Solvent,TotalVolume]", "Boolean"},
+				Description -> "checks the validity of an ExperimentMedia call for combining 'Components' and using 'Solvent' to fill to 'TotalVolume' after initial component combination, returning a validity 'Boolean'.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Components",
+							Description -> "A list of components and amounts to combine before solvent addition, with each component in the form {component, amount}.",
+							Widget -> Adder[
+								{
+									"Amount" -> Alternatives[
+										"Mass" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milligram],
+											Units -> {Gram, {Milligram, Gram, Kilogram}}
+										],
+										"Volume" -> Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 * Milliliter],
+											Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+										],
+										"Count" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										]
+									],
+									"Component" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+									]
+								},
+								Orientation -> Vertical
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "Solvent",
+							Description -> "The solvent used to bring up the volume to the solution's target volume after all other formula components have been added.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Sample]}]
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					],
+					IndexMatching[
+						{
+							InputName -> "TotalVolume",
+							Description -> "The total volume of solvent in which the provided components should be dissolved when this stock solution model is prepared.",
+							Widget -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 * Milliliter],
+								Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+							],
+							Expandable -> False
+						},
+						IndexName -> "experiment samples"
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "Boolean",
+						Description -> "A boolean indicating the validity of the ExperimentMedia call.",
+						Pattern :> BooleanP
+					}
+				}
+			}
+		},
+		MoreInformation -> {
+			"Because this function may automatically generate names for new media models, it is possible that two different media models may have identical names. Please take care to avoid naming overlap with existing media."
+		},
+		SeeAlso -> {
+			"ExperimentMedia",
+			"ValidExperimentMediaQ",
+			"ExperimentMediaPreview",
+			"UploadMedia",
+			"ExperimentStockSolution",
+			"ExperimentSamplePreparation",
+			"ExperimentAliquot",
+			"ExperimentIncubate",
+			"ExperimentFilter",
+			"UploadSampleModel"
+		},
+		Author -> {"daniel.shlian"}
+	}
+];

@@ -88,7 +88,7 @@ Guide[
 		},
 		"Crystallography" -> {
 			{ExperimentGrowCrystal, "Prepares crystals in crystallization plate and monitors the growth of crystals using visible light, ultraviolet light and cross polarized light."},
-			{ExperimentPowderXRD, "Measures the diffraction of x-ray radiation on given powder samples."}
+			{ExperimentPowderXRD, "Measures the diffraction of X-ray radiation on given powder samples."}
 		},
 		"Sample Preparation" -> {
 			{ExperimentDilute, "Adds a specified amount of solvent to specified samples."},
@@ -140,8 +140,11 @@ Guide[
 		},
 		"Cellular Experiments" -> {
 			{ExperimentImageCells, "Performs imaging on provided cellular samples using a bright-field microscope or a high content imager."},
+			{ExperimentImageColonies, "Acquires bright-field, absorbance or fluorescence images of the provided samples containing microbial cells on a solid media plate using a colony handler."},
 			{ExperimentLyseCells, "Ruptures the cell membranes of provided cell samples to enable extraction of targeted cellular components."},
-			{ExperimentCoulterCount, "Measures the number and size distribution of suspended cells in a cellular sample."}
+			{ExperimentFreezeCells, "Lowers the temperature of cell samples under controlled conditions to prepare cells for long term cryopreservation."},
+			{ExperimentCoulterCount, "Measures the number and size distribution of suspended cells in a cellular sample."},
+			{ExperimentQuantifyColonies, "Measures the microbial cell concentration in the provided samples."}
 		}
 	},
 	RelatedGuides -> {

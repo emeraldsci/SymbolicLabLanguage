@@ -499,6 +499,10 @@ DefineOptions[ExperimentICPMS,
 								"Molar Concentration"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Micromolar],Units->{1,{Micromolar, {Nanomolar, Micromolar, Millimolar, Molar}}}]
 							}
 						]
+					],
+					"No Elements In Standard" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[{}]
 					]
 				],
 				Category->"Standards"
@@ -551,7 +555,7 @@ DefineOptions[ExperimentICPMS,
 					],
 					"Fixed volume"->Adder[
 						{
-							"Standard Volume"->Widget[Type->Quantity,Pattern:>RangeP[0 Milliliter, 5 Milliliter],Units -> {Milliliter,{Microliter, Milliliter}}]
+							"Standard Volume"->Widget[Type->Quantity,Pattern:>RangeP[0 Milliliter, 15 Milliliter],Units -> {Milliliter,{Microliter, Milliliter}}]
 						}
 					]
 				]
@@ -596,7 +600,8 @@ DefineOptions[ExperimentICPMS,
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
 		},
 
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
 		AnalyticalNumberOfReplicatesOption,
 		SimulationOption,
@@ -655,8 +660,8 @@ Warning::ReadSpacingTooFineForSweep="The specified ReadSpacing value was below t
 (*ExperimentICPMS Experiment function*)
 
 (* Mixed Input *)
-ExperimentICPMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
-	{listedContainers, listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, samples,
+ExperimentICPMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+	{outputSpecification, output, gatherTests, containerToSampleResult, samples,
 		sampleOptions, containerToSampleTests, containerToSampleOutput, validSamplePreparationResult,containerToSampleSimulation,
 		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation},
 
@@ -667,19 +672,16 @@ ExperimentICPMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
-	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = sanitizeInputs[ToList[myInputs], ToList[myOptions]];
-
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
 		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentICPMS,
-			listedContainers,
-			listedOptions
+			ToList[myInputs],
+			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -748,7 +750,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, instrumentOption,
 		instrumentObjects, allObjects, allInstruments, allContainers, objectSampleFields,modelSampleFields,objectContainerFields,
 		modelContainerFields, packetObjectSample, updatedSimulation,
-		upload, confirm, fastTrack, parentProtocol, cache, downloadedStuff, cacheBall, resolvedOptionsResult,
+		upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, downloadedStuff, cacheBall, resolvedOptionsResult,
 		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, returnEarlyQ, performSimulationQ, protocolPacket, resourcePacketTests, simulatedProtocol,
 		simulation, resolvedPreparation, result, samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,
 		safeOptionsNamed, allContainerModels,
@@ -775,7 +777,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -792,7 +794,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed];
+	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -843,7 +845,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 
@@ -910,7 +912,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 			SelfStanding, Dimensions, Aperture, OpenContainer, InternalDimensions, MaxTemperature, LiquidHandlerPrefix,
 			Counterweights, FilterType, PoreSize, MolecularWeightCutoff, DestinationContainerModel, RetentateCollectionContainerModel, PrefilterPoreSize,
 			Diameter, MembraneMaterial, PrefilterMembraneMaterial, InletConnectionType, OutletConnectionType, MaxPressure, RentByDefault, StorageBuffer, StorageBufferVolume,
-			BuiltInCover, CompatibleCoverTypes, CompatibleCoverFootprints, Opaque, Reusability, EngineDefault
+			BuiltInCover, CompatibleCoverTypes, CompatibleCoverFootprints, Opaque, Reusable, EngineDefault
 		}
 	];
 
@@ -1028,7 +1030,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
 	(*performSimulationQ = MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];*)
-	performSimulationQ = MemberQ[output, Result|Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}];
+	performSimulationQ = MemberQ[output, Result|Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[returnEarlyQ && !performSimulationQ,
@@ -1071,16 +1073,18 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 	];
 
 	(* If we were asked for a simulation, also return a simulation *)
-	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentICPMS[
-			protocolPacket,
-			Null, (* Always set to Null for unit operation packet *)
-			ToList[samplesWithPreparedSamples],
-			resolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> simulationWithMicrowaveDigestion
-		],
-		{Null, Null}
+	{simulatedProtocol, simulation} = Which[
+		MatchQ[protocolPacket, $Failed], {$Failed, Simulation[]},
+		performSimulationQ,
+			simulateExperimentICPMS[
+				protocolPacket,
+				Null, (* Always set to Null for unit operation packet *)
+				ToList[samplesWithPreparedSamples],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> simulationWithMicrowaveDigestion
+			],
+		True, {Null, Null}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -5253,15 +5257,15 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 
 	(* Create checkpoints *)
 	checkpoints = {
-		{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->resourcePickingTime]},
-		{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 0*Minute]},
+		{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time ->resourcePickingTime]},
+		{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->$BaselineOperator,Time -> 0*Minute]},
 		{"Digesting Samples", 0*Hour(*TBD*), "Samples are digested with microwave reactor, if required.",Resource[Operator->Model[User,Emerald,Operator,"Level 3"],Time -> 0*Hour(*TBD*)]},
 		{"Making dilutions", 0*Hour(*TBD*), "Samples and standards after digestion are diluted and mixed, as required by StandardDilutionCurve or StandardAdditionCurve.", Resource[Operator->Model[User,Emerald,Operator,"Level 3"],Time -> 0*Hour(*TBD*)]},
-		{"Warmup and Tune Instrument",25 Minute, "Check if the instrument is warmedup and ready to run the sample.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->25 Minute]},
-		{"Acquiring Data",sampleRunTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+sampleRunTime)]},
-		{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->0*Minute]},
-		{"Turning off Instrument", 10 Minute, "Instrument is turned off.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->10*Minute]},
-		{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->20*Minute]}
+		{"Warmup and Tune Instrument",25 Minute, "Check if the instrument is warmedup and ready to run the sample.",Resource[Operator->$BaselineOperator,Time ->25 Minute]},
+		{"Acquiring Data",sampleRunTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+sampleRunTime)]},
+		{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->$BaselineOperator,Time ->0*Minute]},
+		{"Turning off Instrument", 10 Minute, "Instrument is turned off.",Resource[Operator->$BaselineOperator,Time ->10*Minute]},
+		{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->$BaselineOperator,Time ->20*Minute]}
 	};
 
 	(* Now we need to separate parameters of sweep and main scans *)

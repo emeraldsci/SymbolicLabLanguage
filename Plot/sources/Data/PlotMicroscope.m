@@ -572,7 +572,7 @@ interactiveMicroscope[dataPacket_, ops:OptionsPattern[PlotMicroscope]]:=Module[
 (* color selection helper *)
 colorSelection[{mode_, excitation_, dichroic_, emission_}]:=fauxColor[mode, QuantityMagnitude@excitation, QuantityMagnitude@dichroic, QuantityMagnitude@emission];
 fauxColor[mode_, excitation_, dichroic_, emission_]:=ColorData["VisibleSpectrum"][Min[Max[emission, 400], 700]];
-fauxColor[BrightField, _, _, _]:= RGBColor[{0.7, 0.7, 0.7}];
+fauxColor[BrightField, _, _, _]:= RGBColor[0.7, 0.7, 0.7];
 fauxColor[mode_, 405, 421, 452]:= RGBColor[0.3446448848402421`,0.`,1.`]; (* DAPI *)
 fauxColor[mode_, 446, 445, 483]:= RGBColor[0.`,0.5671672227632978`,0.9608462062440879`]; (* CFP *)
 fauxColor[mode_, 477, 488, 520]:= RGBColor[0.`,1.`,0.`]; (* FITC *)

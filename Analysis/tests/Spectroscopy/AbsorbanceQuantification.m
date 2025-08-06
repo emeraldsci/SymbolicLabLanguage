@@ -154,14 +154,14 @@ DefineTests[AnalyzeAbsorbanceQuantification,
 			];
 			Download[analysisObjs, SamplesIn[Composition]],
 			{
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
 				{
-					{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}},
-					{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}
+					{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}},
+					{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}
 				}
 			},
 			Variables :> {analysisObjs}
@@ -232,13 +232,13 @@ DefineTests[AnalyzeAbsorbanceQuantification,
 				AliquotSamples[Composition]
 			],
 			{
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}},
-				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]]}, {Null, Null}}}
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}},
+				{{{ConcentrationP, LinkP[Model[Molecule, "id:L8kPEjn6vbwA"]], _}, {Null, Null, _}}}
 			}
 		],
 
@@ -438,119 +438,98 @@ DefineTests[AnalyzeAbsorbanceQuantification,
 			<|
 				Object -> Object[Sample, "id:KBL5DvwY0oad"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["MassPercent"]], Link[Model[Molecule, Oligomer, "id:O81aEBZnjvnN"]]},
-					{Null, Null}
-				}
-			|>,
-			<|
-				Object -> Object[Sample, "id:KBL5DvwY0oad"],
-				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["MassPercent"]], Link[Model[Molecule, Oligomer, "id:O81aEBZnjvnN"]]},
-					{Null, Null}
-				}
-			|>,
-			<|
-				Object -> Object[Sample, "id:KBL5DvwY0oad"],
-				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["MassPercent"]], Link[Model[Molecule, Oligomer, "id:O81aEBZnjvnN"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["MassPercent"]], Link[Model[Molecule, Oligomer, "id:O81aEBZnjvnN"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:L8kPEjnoL8DV"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:E8zoYvNJR8l7"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:Y0lXejMxK0d1"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:kEJ9mqR5VEPV"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:P5ZnEjd6P58l"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:3em6ZvLxNejz"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
-				}
-			|>,
-			<|
-				Object -> Object[Sample, "id:3em6ZvLxNejz"],
-				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:GmzlKjPB5mOE"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:AEqRl9KV4Epp"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:o1k9jAGWO1L7"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:zGj91a7x3G5e"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:lYq9jRxWXYop"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>,
 			<|
 				Object -> Object[Sample, "id:L8kPEjnoL8lV"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}|>,
 			<|
 				Object -> Object[Sample, "id:E8zoYvNJR8q7"],
 				Replace[Composition] -> {
-					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]]},
-					{Null, Null}
+					{Quantity[100, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:L8kPEjn6vbwA"]], Now},
+					{Null, Null, Null}
 				}
 			|>
 		}]
