@@ -53,7 +53,7 @@ DefineUsage[
 			"StopScript",
 			"ValidExperimentScriptQ"
 		},
-		Author->{"thomas","robert","hayley"}
+		Author->{"hayley","robert"}
 	}
 ];
 
@@ -172,7 +172,7 @@ DefineUsage[
 			"StopScript",
 			"ValidExperimentScriptQ"
 		},
-		Author->{"olatunde.olademehin", "daniel.shlian", "josh.kenchel", "thomas"}
+		Author->{"yanzhe.zhu", "olatunde.olademehin", "daniel.shlian", "josh.kenchel", "thomas"}
 	}
 ];
 

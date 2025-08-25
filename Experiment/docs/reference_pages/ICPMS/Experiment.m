@@ -10,10 +10,39 @@ DefineUsage[ExperimentICPMS,
 						{
 							InputName->"Samples",
 							Description->"The samples to be ionized and analyzed using ICP-MS, which can be predigested or digested as part of the experiment.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to H12."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -37,7 +66,7 @@ DefineUsage[ExperimentICPMS,
 			"ICPMSDefaultIsotopes"
 
 		},
-		Author->{"hanming.yang","steven"}
+		Author->{"hanming.yang", "steven"}
 	}];
 
 DefineUsage[ICPMSDefaultIsotopes,
@@ -58,4 +87,3 @@ DefineUsage[ICPMSDefaultIsotopes,
 		Author -> {"hanming.yang"}
 	}
 ];
-

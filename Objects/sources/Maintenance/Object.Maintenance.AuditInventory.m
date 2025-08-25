@@ -104,6 +104,30 @@ DefineObjectType[Object[Maintenance, AuditInventory], {
 			Description -> "The destinations in which MovedItems are placed when the audit is complete.",
 			Category -> "General",
 			Developer->True
+		},
+		RetryState -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[True, False, Skip],
+			Description -> "Indicate if operator needs to retry auditing of items from current iteration.",
+			Category -> "General",
+			Developer -> True
+		},
+		CurrentMissingObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample],
+				Object[Item],
+				Object[Item],
+				Object[Part],
+				Object[Plumbing],
+				Object[Wiring]
+			],
+			Description -> "Objects that were not found in the current iteration.",
+			Category -> "General"
 		}
 	}
 }];

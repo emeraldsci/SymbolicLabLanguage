@@ -177,7 +177,32 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 				Class->Link,
 				Pattern:>Alternatives[_Link,Null],
 				Relation->Model[Container,ProteinCapillaryElectrophoresisCartridgeInsert]|Object[Container,ProteinCapillaryElectrophoresisCartridgeInsert],
-				Description->"The insert to be picked if needed, based on ReplaceCartridgeInsert.",
+				Description->"The new insert to be picked and installed if the cartridge insert in the picked Cartridge has exceeded its maximum usage at the end of the protocol. The indicator light on the insert will turn red when it has surpassed its maximum use, signaling that it must be replaced before the next experiment can proceed.",
+				Category->"Instrument Setup"
+			},
+			CartridgeContainer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container],
+				Description -> "A container used for storing and transporting the Cartridge.",
+				Category -> "Instrument Setup",
+				Developer -> True
+			},
+			InitialCartridgeAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The front-view and side-view images of the Cartridge captured before the experiment starts.",
+				Category->"Instrument Setup"
+			},
+			FinalCartridgeAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The front-view and side-view images of the Cartridge captured after the experiment finishes.",
 				Category->"Instrument Setup"
 			},
 			TopRunningBuffer->{
@@ -1594,7 +1619,7 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 			SamplePreparationPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>SampleManipulationP,
+				Pattern:>SampleManipulationP|SamplePreparationP,
 				Description->"A set of instructions specifying the preparation of samples, ladders, standards, and blanks for capillary gel Electrophoresis SDS experiments, including dilution in SDS buffer, spiking internal standards, and addition of any reducing and / or alkylating agents.",
 				Category->"Sample Preparation"
 			},
@@ -1602,14 +1627,14 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 				Format->Single,
 				Class->Link,
 				Pattern:>_Link,
-				Relation->Object[Protocol,SampleManipulation],
+				Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation],
 				Description->"The sample manipulation protocol used to prepare samples for capillary gel Electrophoresis SDS experiments.",
 				Category->"Sample Preparation"
 			},
 			PostIncubationTransferSMPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>SampleManipulationP,
+				Pattern:>SampleManipulationP|SamplePreparationP,
 				Description->"A set of instructions specifying the transfer of samples, ladders, standards, and blanks from sample preparation plate to assay plate after incubation and centrifugation for capillary gel Electrophoresis SDS experiments.",
 				Category->"Sample Preparation"
 			},
@@ -1617,7 +1642,7 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 				Format->Single,
 				Class->Link,
 				Pattern:>_Link,
-				Relation->Object[Protocol,SampleManipulation],
+				Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 				Description->"The sample manipulation protocol used to transfer of samples, ladders, standards, and blanks from sample preparation plate to assay plate after incubation and centrifugation for capillary gel Electrophoresis SDS experiments.",
 				Category->"Sample Preparation"
 			},
@@ -1685,6 +1710,15 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 				Description->"A placement used to move the CartridgeCleanup solution into position in the instrument.",
 				Headers->{"Object to Place","Placement Tree"},
 				Category->"Sample Preparation",
+				Developer->True
+			},
+			InstrumentPlacementAppearance->{
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The image of the instrument deck after all reagents and the AssayPlate have been loaded.",
+				Category -> "General",
 				Developer->True
 			}
 		}

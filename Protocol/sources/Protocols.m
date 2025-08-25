@@ -27,7 +27,7 @@ ConfirmProtocol[myProtocol:ObjectP[ProtocolTypes[]]]:=Module[
 ];
 
 (* Core Overload: Listed Input - Pass directly to UploadProtocolStatus to Enqueue *)
-ConfirmProtocol[myProtocols:{ObjectP[ProtocolTypes[]]..}]:=UploadProtocolStatus[myProtocols,OperatorStart,Upload->True,FastTrack->False,UpdatedBy->$PersonID];
+ConfirmProtocol[myProtocols:{ObjectP[ProtocolTypes[Output -> Short]]..}]:=UploadProtocolStatus[myProtocols,OperatorStart,Upload->True,FastTrack->False,UpdatedBy->$PersonID];
 
 
 
@@ -55,7 +55,7 @@ CancelProtocol[myProtocol:ObjectP[ProtocolTypes[]]]:=Module[
 ];
 
 (* Core Overload: Listed Input - Pass directly to UploadProtocolStatus to Cancel *)
-CancelProtocol[myProtocols:{ObjectP[ProtocolTypes[]]..}]:=UploadProtocolStatus[myProtocols,Canceled,Upload->True,FastTrack->False,UpdatedBy->$PersonID];
+CancelProtocol[myProtocols:{ObjectP[ProtocolTypes[Output -> Short]]..}]:=UploadProtocolStatus[myProtocols,Canceled,Upload->True,FastTrack->False,UpdatedBy->$PersonID];
 
 
 
@@ -83,4 +83,4 @@ UnconfirmProtocol[myProtocol:ObjectP[ProtocolTypes[]]]:=Module[
 ];
 
 (* Core Overload: Listed Input - Pass directly to UploadProtocolStatus for putting back into InCart *)
-UnconfirmProtocol[myProtocols:{ObjectP[ProtocolTypes[]]..}]:=UploadProtocolStatus[myProtocols,InCart,Upload->True,FastTrack->False,UpdatedBy->$PersonID];
+UnconfirmProtocol[myProtocols:{ObjectP[ProtocolTypes[Output -> Short]]..}]:=UploadProtocolStatus[myProtocols,InCart,Upload->True,FastTrack->False,UpdatedBy->$PersonID];

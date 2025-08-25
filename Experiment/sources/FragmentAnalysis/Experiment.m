@@ -18,7 +18,7 @@ DefineOptions[ExperimentFragmentAnalysis,
 		{
 			OptionName->Instrument,
 			Default->Automatic,
-			Description->"The array-based capillary electrophoresis instrument used for parallel qualitative or quantitative analysis of nucleic acids via separation based on analyte fragment size of up to 96 samples in a single run.",
+			Description->"The array-based capillary electrophoresis instrument used for parallel qualitative or quantitative analysis of nucleic acids via separation based on analyte fragment size of up to 84 samples in a single run.",
 			(*ResolutionDescription->"Automatically set to Model[Instrument,FragmentAnalyzer,\"Agilent Fragment Analyzer 5200\"] if number of SamplesIn is less than 12. Otherwise, set to Model[Instrument,FragmentAnalyzer,\"Agilent Fragment Analyzer 5300\"].", *)
 			AllowNull->False,
 			Widget->Widget[
@@ -121,6 +121,28 @@ DefineOptions[ExperimentFragmentAnalysis,
 				Pattern:>BooleanP
 			],
 			Category->"General"
+		},
+		{
+			OptionName->MaxNumberOfRetries,
+			Default->1,
+			Description->"The maximum number of separation runs that can be performed for contents of the sample plate when the raw data (electropherogram) for a sample or ladder indicates no peak(s) detected as assessed by the lack of any baseline-corrected signal above 100 RFU. For each separation run retry, resources such as SeparationGel, Dye and ConditioningSolution are re-prepared by preparing new solutions in new containers. Plate resources (SamplePlate,RunningBufferPlate,PreMarkerRinseBufferPlate and PreSampleRinseBufferPlate) are re-prepared by moving the contents to a new plate with a newly re-assigned well position for any sample(s)/ladder(s) that are affected, as well as their index-matched counterparts (RunningBuffer, PreMarkerRinseBuffer, PreSampleRinseBuffer). The well re-assignment is to avoid the underperforming capillary array assigned in the previous run. Note that the MarkerPlate is not re-prepared and is used as-is for every retry, if applicable, due to the oil-layer that prevents effective reusability of the transferred components.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,3]
+			]
+		},
+		{
+			OptionName->NumberOfReplicates,
+			Default->Null,
+			Description->"The number of wells each input sample is loaded into. For example {input 1, input 2} with NumberOfReplicates->2 will act like {input 1, input 1, input 2, input 2}.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>GreaterEqualP[2,1]
+			]
 		},
 		IndexMatching[
 			IndexMatchingInput->"experiment samples",
@@ -278,7 +300,7 @@ DefineOptions[ExperimentFragmentAnalysis,
 				OptionName->Ladder,
 				Default->Automatic,
 				Description->"The solution(s) that contain nucleic acids of known lengths used for qualitative or quantitative data analysis. One ladder solution, which is dispensed to Position H12 (for a 96-capillary array), is recommended for each run of the capillary array. If multiple ladders are specified, each ladder is dispensed on the sample plate to occupy successive wells up until Position H12 (for a 96-capillary array). For example, with a 96-capillary array with 3 specified ladders, the first ladder is dispensed to Position H10, the second ladder to Position H11 and the third ladder to position H12. If PreparedPlate is set to True, Ladder is specified as the Well Position(s) the ladder solution(s) has been dispensed to, and are consecutive Well Positions to end in H12 (for example, if there are three ladder solutions in the PreparedPlate, Ladder is set to H10, H11 and H12).",
-				ResolutionDescription->"If PreparedPlate is False, automatically set to the Ladder field of the AnalysisMethod and is dispensed to occupy successive wells until Position H12 for a 96-capillary array. If PreparedPlate is True, automatically set to Null unless Well Position(s) are specified. For a list of the default Ladders for each AnalysisMethod, see Figure 3.3 under Ladder of Experiment Options. At ladder is always required at Position H12.",
+				ResolutionDescription->"If PreparedPlate is False, automatically set to the Ladder field of the AnalysisMethod and is dispensed to occupy successive wells until Position H12 for a 96-capillary array. If PreparedPlate is True, automatically set to {\"H12\"} unless Well Position(s) are specified. For a list of the default Ladders for each AnalysisMethod, see Figure 3.3 under Ladder of Experiment Options. At ladder is always required at Position H12.",
 				AllowNull->True,
 				Widget->Alternatives[
 					"Ladder Solution"->Widget[
@@ -355,34 +377,37 @@ DefineOptions[ExperimentFragmentAnalysis,
 				Category->"Sample Preparation"
 			}
 		],
-		{
-			OptionName->Blank,
-			Default->Automatic,
-			Description->"The solution that is dispensed in the well(s) of the sample plate required to be filled that are not filled by a sample or a ladder. For example, for a run using a 96-capillary array, if there are only 79 samples and 1 ladder, 16 wells are filled with Blank.). Wells filled with Blank each contain a volume equal to the total volume of TargetSampleVolume and LoadingBufferVolume of the AnalysisMethod. If PreparedPlate is set to True, Blank is specified as the Well Position(s) the blank solution(s) have been dispensed to.",
-			ResolutionDescription->"Automatically set to the Blank field of the AnalysisMethod if there are wells unoccupied by the samples or ladders. If PreparedPlate is True and Blank is not specified, automatically set to the Null. For a list of the default Blank for each AnalysisMethod, see Figure 3.5 under Blank of Experiment Options.",
-			AllowNull->True,
-			Widget->Alternatives[
-				"Blank Solution"->Widget[
-					Type->Object,
-					Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-					OpenPaths->{
-						{
-							Object[Catalog,"Root"],
-							"Materials",
-							"Fragment Analysis",
-							"Blanks"
+		IndexMatching[
+			IndexMatchingParent -> Blank,
+			{
+				OptionName->Blank,
+				Default->Automatic,
+				Description->"The solution that is dispensed in the well(s) of the sample plate required to be filled that are not filled by a sample or a ladder. For example, for a run using a 96-capillary array, if there are only 79 samples and 1 ladder, 16 wells are filled with Blank.). Wells filled with Blank each contain a volume equal to the total volume of TargetSampleVolume and LoadingBufferVolume of the AnalysisMethod. If PreparedPlate is set to True, Blank is specified as the Well Position(s) the blank solution(s) have been dispensed to.",
+				ResolutionDescription->"Automatically set to the Blank field of the AnalysisMethod if there are wells unoccupied by the samples or ladders. If PreparedPlate is True and Blank is not specified, automatically set to  Null. For a list of the default Blank for each AnalysisMethod, see Figure 3.5 under Blank of Experiment Options.",
+				AllowNull->True,
+				Widget->Alternatives[
+					"Blank Solution"->Widget[
+						Type->Object,
+						Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+						OpenPaths->{
+							{
+								Object[Catalog,"Root"],
+								"Materials",
+								"Fragment Analysis",
+								"Blanks"
+							}
 						}
-					}
+					],
+					"Prepared Plate Well"->Widget[
+						Type->Enumeration,
+						Pattern:>Alternatives @@ Flatten[AllWells[NumberOfWells -> 96]],
+						PatternTooltip -> "Enumeration must be any well from A1 to H12."
+					]
 				],
-				"Prepared Plate Well"->Adder[Widget[
-					Type->Enumeration,
-					Pattern:>Alternatives @@ Flatten[AllWells[NumberOfWells -> 96]],
-					PatternTooltip -> "Enumeration must be any well from A1 to H12."
-				]
-				]
-			],
-			Category->"Sample Preparation"
-		},
+
+				Category->"Sample Preparation"
+			}
+		],
 		(*===Capillary Conditioning===*)
 		{
 			OptionName->SeparationGel,
@@ -737,26 +762,29 @@ DefineOptions[ExperimentFragmentAnalysis,
 				Category->"Capillary Equilibration"
 			}
 		],
-		{
-			OptionName->BlankRunningBuffer,
-			Default->Automatic,
-			Description->"The buffer solution that contains ions that help conduct current through the gel in the capillaries that contain the blank. The tips of the capillaries are immersed in the wells of a RunningBufferPlate during the CapillaryEquilibration and Separation steps. If PreparedRunningBufferPlate is not specified, a new 96-well plate that contains the BlankRunningBuffer in the matching WellPosition(s) of the Blank is prepared.",
-			ResolutionDescription->"If PreparedRunningBufferPlate is specified and Blank is not Null, set to the content(s) of the well matching the well position of the Blank(s). If PreparedRunningBufferPlate is Null and Blank is not Null, automatically set to the BlankRunningBuffer field of the AnalysisMethod.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				OpenPaths->{
-					{
-						Object[Catalog,"Root"],
-						"Materials",
-						"Fragment Analysis",
-						"Running Buffers"
+		IndexMatching[
+			IndexMatchingParent -> Blank,
+			{
+				OptionName->BlankRunningBuffer,
+				Default->Automatic,
+				Description->"The buffer solution that contains ions that help conduct current through the gel in the capillaries that contain the blank. The tips of the capillaries are immersed in the wells of a RunningBufferPlate during the CapillaryEquilibration and Separation steps. If PreparedRunningBufferPlate is not specified, a new 96-well plate that contains the BlankRunningBuffer in the matching WellPosition(s) of the Blank is prepared.",
+				ResolutionDescription->"If PreparedRunningBufferPlate is specified and Blank is not Null, set to the content(s) of the well matching the well position of the Blank(s). If PreparedRunningBufferPlate is Null and Blank is not Null, automatically set to the BlankRunningBuffer field of the AnalysisMethod.",
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+					OpenPaths->{
+						{
+							Object[Catalog,"Root"],
+							"Materials",
+							"Fragment Analysis",
+							"Running Buffers"
+						}
 					}
-				}
-			],
-			Category->"Capillary Equilibration"
-		},
+				],
+				Category->"Capillary Equilibration"
+			}
+		],
 		{
 			OptionName->RunningBufferPlateStorageCondition,
 			Default->Refrigerator,
@@ -921,26 +949,29 @@ DefineOptions[ExperimentFragmentAnalysis,
 				Category->"Marker Injection"
 			}
 		],
-		{
-			OptionName->BlankMarker,
-			Default->Automatic,
-			Description->"The solution that contains upper and/or lower marker that elutes at a time corresponding to a known nucleotide size. Tha BlankMarker is injected into the capillaries during MarkerInjection and runs with the Blank(s) during Separation. If PreparedMarkerPlate is not specified, a new 96-well plate that contains the BlankMarker in the matching WellPosition(s) of the Blank(s) is prepared.",
-			ResolutionDescription->"If PreparedMarkerPlate is specified, set to the content(s) of the well matching the WellPosition of the Blank. If PreparedMarkerPlate is Null, MarkerInjection is True and Blank is not Null, automatically set to the BlankMarker field of the AnalysisMethod, if not Null. If PreparedMarkerPlate is Null, MarkerInjection is True, Blank is not Null and BlankMarker field of AnalysisMethod is Null, automatically set to Model[Sample, \"100-3000 bp DNA Ladder for ExperimentFragmentAnalysis\"].",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
-				OpenPaths->{
-					{
-						Object[Catalog,"Root"],
-						"Materials",
-						"Fragment Analysis",
-						"Running Buffers"
+		IndexMatching[
+			IndexMatchingParent -> Blank,
+			{
+				OptionName->BlankMarker,
+				Default->Automatic,
+				Description->"The solution that contains upper and/or lower marker that elutes at a time corresponding to a known nucleotide size. Tha BlankMarker is injected into the capillaries during MarkerInjection and runs with the Blank(s) during Separation. If PreparedMarkerPlate is not specified, a new 96-well plate that contains the BlankMarker in the matching WellPosition(s) of the Blank(s) is prepared.",
+				ResolutionDescription->"If PreparedMarkerPlate is specified, set to the content(s) of the well matching the WellPosition of the Blank. If PreparedMarkerPlate is Null, MarkerInjection is True and Blank is not Null, automatically set to the BlankMarker field of the AnalysisMethod, if not Null. If PreparedMarkerPlate is Null, MarkerInjection is True, Blank is not Null and BlankMarker field of AnalysisMethod is Null, automatically set to Model[Sample, \"100-3000 bp DNA Ladder for ExperimentFragmentAnalysis\"].",
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+					OpenPaths->{
+						{
+							Object[Catalog,"Root"],
+							"Materials",
+							"Fragment Analysis",
+							"Running Buffers"
+						}
 					}
-				}
-			],
-			Category->"Marker Injection"
-		},
+				],
+				Category->"Marker Injection"
+			}
+		],
 		{
 			OptionName->MarkerInjectionTime,
 			Default->Automatic,
@@ -1113,10 +1144,10 @@ DefineOptions[ExperimentFragmentAnalysis,
 
 		(*===Storage===*)
 		(*need to figure this out*)
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		ProtocolOptions,
 		SimulationOption,
-		PostProcessingOptions,
 		OutputOption,
 		CacheOption
 
@@ -1134,24 +1165,27 @@ Error::PrimaryCapillaryFlushMismatchError="The options PrimaryCapillaryFlushSolu
 Error::SecondaryCapillaryFlushMismatchError="The options SecondaryCapillaryFlushSolution, SecondaryCapillaryFlushPressure, SecondaryCapillaryFlushFlowRate and SecondaryCapillaryFlushTime can only be Null if, and only if, NumberOfCapillaryFlushes is less than 2 OR Null. Please change the following option(s) (`1`) to Null if NumberOfCapillaryFlushes is less than 2 OR Null, OR Except[Null] if NumberOfCapillaryFlushes is greater than 1.";
 Error::TertiaryCapillaryFlushMismatchError="The options TertiaryCapillaryFlushSolution, TertiaryCapillaryFlushPressure, TertiaryCapillaryFlushFlowRate and TertiaryCapillaryFlushTime can only be Null if, and only if, NumberOfCapillaryFlushes is less than 3 OR Null. Please change the following option(s) (`1`) to Null if NumberOfCapillaryFlushes is less than 3 OR Null, OR Except[Null] if NumberOfCapillaryFlushes is greater than 2.";
 Warning::AnalysisMethodOptionsMismatch="The values of the following options `1` do(es) not match the suggested field value(s) from the AnalysisMethod and may not yield optimized results. Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
-Error::BlankRunningBufferMismatch="The values of BlankRunningBuffer (`1`) and Blank (`2`) are mismatched. If Blank is Null, BlankRunningBuffer must be Null. If Blank is not Null, BlankRunningBuffer must be not Null. Please change either of the options or leave as Automatic.";
-Error::BlankMarkerMismatch="The values of BlankMarker (`1`) and Blank (`2`) are mismatched. If Blank is Null, BlankMarker must be Null. Please change either of the options or allow to set as Automatic.";
 Error::CapillaryEquilibrationOptionsMismatchErrors="The following Capillary Equilibration options are mismatched `1` with CapillaryEquilibration (`2`). If CapillaryEquilibration is False, EquilibrationVoltage and EquilibrationTime must be Null. If CapillaryEquilibration is True, EquilibrationVoltage and EquilibrationTime must be not be Null.";
 Error::PreMarkerRinseOptionsMismatchErrors="The following values `1` of the PreMarker Rinse options `2` are mismatched. If PreMarkerRinse is False, NumberOfPreMarkerRinses, PreMarkerRinseBuffer and PreMarkerRinseBufferPlateStorageCondition must be Null. If PreMarkerRinse is True, NumberOfPreMarkerRinses, PreMarkerRinseBuffer and PreMarkerRinseBufferPlateStorageCondition must not be Null.";
 Error::MarkerInjectionOptionsMismatchErrors="The following Marker Injection option(s) `1` are mismatched with MarkerInjection (`2`). If MarkerInjection is False, MarkerInjectionVoltage and MarkerInjectionTime must be Null. If MarkerInjection is True, MarkerInjectionVoltage and MarkerInjectionTime must not be Null.";
 Error::MarkerInjectionPreparedMarkerPlateMismatchError="PreparedMarkerPlate cannot be an object if MarkerInjection is False. If MarkerInjection is False, PreparedMarkerPlate must be Null.";
 Error::PreSampleRinseOptionsMismatchErrors="The following values `1` of the PreSample Rinse options `2` are mismatched. If PreSampleRinse is False, NumberOfPreSampleRinses, PreSampleRinseBuffer and PreSampleRinseBufferPlateStorageCondition must be Null. If PreSampleRinse is True, NumberOfPreSampleRinses, PreSampleRinseBuffer and PreSampleRinseBufferPlateStorageCondition must not be Null.";
 Error::LadderPreparedPlateMismatchError="The Ladder `1` and PreparedPlate (`2`) options are mismatched. If PreparedPlate is False, Ladder can only be an Model[Sample] or Object[Sample] or Null. If PreparedPlate is True, Ladder can only be a WellPositionP or Null.";
+Error::BlankPreparedPlateMismatchError="The Blank `1` and PreparedPlate (`2`) options are mismatched. If PreparedPlate is False, Blank can only be an Model[Sample] or Object[Sample] or Null. If PreparedPlate is True, Blank can only be a WellPositionP or Null.";
 Error::LadderOptionsPreparedPlateMismatchError="The following options `1` for ladder`2`,respectively, are mismatched. If PreparedPlate is True, ladder related options including LadderVolume,LadderLoadingBuffer, and LadderLoadingBufferVolume are not applicable and must be Null.";
 Error::LadderVolumeMismatchError="The following LadderVolume `1` is incompatible with the respective Ladder `2`. LadderVolume cannot be Null if Ladder is a specified object.";
 Error::LadderLoadingBufferMismatchError="The following LadderLoadingBuffer `1` is incompatible with the respective Ladder `2`. LadderLoadingBuffer cannot be an object if Ladder is a Null.";
 Error::LadderLoadingBufferVolumeMismatchError="The following LadderLoadingBufferVolume `1` is incompatible with the respective LadderLoadingBuffer `2`. LadderLoadingBufferVolume cannot be Null if Ladder is a specified object.";
 Error::MaxLadderVolumeError="The total volume(s) `1` for the following option(s) `2` of the Ladder `3` are above the maximum volume limit (200 Microliter).";
 Error::LadderRunningBufferMismatchError="The following LadderRunningBuffer `1` is incompatible with the respective Ladder `2`. LadderRunningBuffer can only be Null if, and only if, Ladder is Null.";
+Error::BlankRunningBufferMismatchError="The following BlankRunningBuffer `1` is incompatible with the respective Blank `2`. BlankRunningBuffer can only be Null if, and only if, Blank is Null.";
 Error::LadderMarkerMismatchError="The following LadderMarker `1` is incompatible with the respective Ladder `2`. If Ladder is Null, LadderMarker must be Null.";
+Error::BlankMarkerMismatchError="The following BlankMarker `1` is incompatible with the respective Blank `2`. If Blank is Null, BlankMarker must be Null.";
 Error::DuplicateWells="The following wells `1` are duplicated and found assigned for the following: `2`. Each Sample, Ladder or Blank must be assigned to a unique well. Please make changes to the relevant options to avoid duplicates.";
 Warning::AnalysisMethodLadderOptionsMismatch="The values of the following option(s) `1` for the following Ladder(s) `2`  do(es) not match the suggested field value(s) from the AnalysisMethod and may not yield optimized results. Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
+Warning::AnalysisMethodBlankOptionsMismatch="The values of the following option(s) `1` for the following Blank(s) `2`  do(es) not match the suggested field value(s) from the AnalysisMethod and may not yield optimized results. Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
 Warning::AnalysisMethodLadderMismatch="The following Ladder(s) `1` do(es) not match the recommended Ladder of the AnalysisMethod and may not yield optimized results. Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
+Warning::AnalysisMethodBlankMismatch="The following Blank(s) `1` do(es) not match the recommended Blank of the AnalysisMethod and may not yield optimized results. Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
 Warning::CantCalculateSampleVolume="The SampleVolume for following samples `2` cannot be calculated based on sample information and has defaulted to the following `1`.";
 Warning::CantCalculateSampleDiluentVolume="The SampleDiluentVolume for following samples `2` cannot be calculated based on sample information and has defaulted to the following `1`.";
 Error::SampleOptionsPreparedPlateMismatchError="The value(s) of the following options `1` is incompatible with PreparedPlate (`2`) for the following samples: `3`. If PreparedPlate is True, SampleDilution must be False and sample-related options (SampleDiluent,SampleVolume,SampleDiluentVolume,SampleLoadingBuffer,SampleLoadingBufferVolume) must be Null.";
@@ -1159,13 +1193,9 @@ Error::SampleDilutionMismatch="The option(s) `1` is incompatible with SampleDilu
 Error::SampleLoadingBufferVolumeMismatchError="The SampleLoadingBufferVolume `1` for the corresponding SampleLoadingBuffer `2` of the following samples `3` are incompatible. If SampleLoadingBuffer is Null, SampleLoadingBufferVolume must be Null. If SampleLoadingBuffer is an object, SampleLoadingBufferVolume must be a quantity.";
 Error::MaxSampleVolumeError="The total volume(s) `1` for the following option(s) `2` of the Sample(s) `3` are above the maximum volume limit (200 Microliter).";
 Warning::AnalysisMethodSampleOptionsMismatch="The values of the following option(s) `1` for the following sample(s) `2`  do(es) not match the suggested field value(s) from the AnalysisMethod and may not yield optimized results.  Please check the appropriate Tables of Option Values for different AnalysisMethods under Experiment Options.";
-Error::BlankPreparedPlateMisMatchError="The following Blank (`1`) is incompatible with PreparedPlate (`2`). If PreparedPlate is False, Blank cannot be a WellPositionP. If PreparedPlate is True, Blank cannot be an object.";
-Error::AllOrNothingMarkerError="The following marker options `1` are not all of the same pattern. For all samples, Ladder and Blank that are Not Null, the options index-matching SampleMarker,LadderMarker and BlankMarker must either be all Null OR all Not Null. Please have all relevant SampleMarker, LadderMarker or BlankMarker to have the same pattern OR allow to be set automatically.";
-Error::FragmentAnalysisTooManySamples="The number of samples is greater than 96. Please remove samples to get the total number of samples down to less than or equal to 96.";
-Error::TooManySolutionsForInjection="The total number of samples (`1`), Ladder (`2`) and Blank (`3`) are greater than 96. Please consider removing some to get to a total of 96 solutions for injection.";
+Error::TooManySolutionsForInjection="The total number of samples (`1`), Ladder (`2`) and Blank (`3`) are greater than 96. Please consider removing some to get to a total of 96 solutions for injection. A minimum of 11 blank solution(s) is set by default.";
 Error::NotEnoughSolutionsForInjection="The total number of samples (`1`), Ladder (`2`) and Blank (`3`) are less than 96. If PreparedPlate is True, the total number of solutions for injection must be equal to 96. Please specify more samples or wells for Ladder or Blank to reach a total of 96.";
 Error::PreparedPlateAliquotMismatchError="If PreparedPlate is True, Aliquot must all be False. Please change conflicting options or allow to resolve automatically.";
-Error::AssayVolumeSampleVolumeMismatchError="The following AssayVolume `1` and SampleVolume `2` do not match for the following samples `3`.AssayVolume must match the SampleVolume for any given sample. Please change the value of either AssayVolume or SampleVolume or allow to resolve automatically.";
 Error::SampleVolumeError="The following SampleVolume `1` for the following samples `2` are invalid. If PreparedPlate is False, SampleVolume must be a quantity.";
 Error::PreparedPlateModelError="The following container(s) `1` that holds the input samples is not valid if PreparedPlate is True. If PreparedPlate is True, samples must all be in the same container and the plate must be Instrument-compatible.";
 Error::PreparedRunningBufferPlateModelError="The following container(s) `1` that holds the running buffer solutions is not valid. If PreparedRunningBufferPlate is specified, the plate must be Instrument-compatible and of this model: Model[Container, Plate, \"96-well 1mL Deep Well Plate (Short) for FragmentAnalysis\"].";
@@ -1198,6 +1228,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		fragmentAnalysisOptionsAssociation,
 		upload,
 		confirm,
+		canaryBranch,
 		fastTrack,
 		parentProtocol,
 		cache,
@@ -1246,6 +1277,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		suppliedCapillaryArray,
 		suppliedInstrument,
 		suppliedAliquotContainer,
+		suppliedNumberOfReplicates,
 		
 		(*download Objects and Fields*)
 		possibleAnalysisMethodObjects,
@@ -1355,7 +1387,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 			listedOptionsNamed
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1372,14 +1404,8 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 	];
 	
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation -> updatedSimulation];
 	
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentFragmentAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentFragmentAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -1390,6 +1416,13 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 			Simulation->Null
 		}]
 	];
+	
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentFragmentAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentFragmentAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+	];
+
 	
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
@@ -1423,7 +1456,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentFragmentAnalysis,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
@@ -1458,7 +1491,8 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		suppliedBlankMarker,
 		suppliedCapillaryArray,
 		suppliedInstrument,
-		suppliedAliquotContainer
+		suppliedAliquotContainer,
+		suppliedNumberOfReplicates
 	}=Lookup[
 		fragmentAnalysisOptionsAssociation,
 		{
@@ -1486,7 +1520,8 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 			BlankMarker,
 			CapillaryArray,
 			Instrument,
-			AliquotContainer
+			AliquotContainer,
+			NumberOfReplicates
 		}
 	];
 	
@@ -1517,6 +1552,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		LadderMarker,
 		LadderRunningBuffer,
 		LadderVolume,
+		LadderLoading,
 		MarkerInjection,
 		MarkerInjectionTime,
 		MarkerInjectionVoltage,
@@ -1730,7 +1766,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		},
 		{
 			(*1*){
-				Packet[Name, Status, Composition, Container, Well],
+				Packet[Name, Status, Composition, Container, Well,Volume,Position],
 				Packet[Composition[[All, 2]][{PolymerType, Molecule, MolecularWeight}]],
 				Packet[Container[{Model, Contents}]],
 				Packet[Container[Model][{MinVolume, MaxVolume}]]
@@ -1868,7 +1904,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 	
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ = MemberQ[output, Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}];
+	performSimulationQ = MemberQ[output, Simulation];
 	
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
@@ -1922,7 +1958,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 			Cache->cacheBall,
 			Simulation->updatedSimulation
 		],
-		{Null, Null}
+		{Null, updatedSimulation}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -1935,7 +1971,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 			Simulation->simulation
 		}]
 	];
-
+	
 	(* We have to return our result. Either return a protocol with a simulated procedure if SimulateProcedure\[Rule]True or return a real protocol that's ready to be run. *)
 	protocolObject = Which[
 		(* If there was a problem with our resource packets function or option resolver, we can't return a protocol. *)
@@ -1948,9 +1984,10 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 				resourcePackets,
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				ConstellationMessage->Object[Protocol,FragmentAnalysis],
-				Simulation->updatedSimulation
+				Simulation->simulation
 			]
 	];
 	
@@ -1968,7 +2005,7 @@ ExperimentFragmentAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 ];
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedContainers,
 		listedOptions,
@@ -2003,8 +2040,8 @@ ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Obj
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=sanitizeInputs[ToList[myContainers], ToList[myOptions]];
+	(* pass listed containers and options. *)
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -2015,7 +2052,7 @@ ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Obj
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -2080,7 +2117,7 @@ ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Obj
 
 		(*If PreparedPlate is True and user specified the Ladder and Blank options correctly, these should be a WellPositionP or a list of WellPositionP; otherwise, an error in the resolver is thrown*)
 		preparedPlateLadderOption=If[MatchQ[preparedPlate,True],
-			Lookup[sampleOptionsAssociation,Ladder],
+			Lookup[sampleOptionsAssociation,Ladder,Automatic],
 			Null
 		];
 		preparedPlateBlankOption=If[MatchQ[preparedPlate,True],
@@ -2088,8 +2125,15 @@ ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Obj
 			Null
 		];
 
-		ladderWells=If[MatchQ[preparedPlateLadderOption,WellPositionP|{WellPositionP..}],
+		ladderWells=Which[
+			(* If resolvedPreparedPlate is True and Ladder is Automatic, the H12 position is automatically resolved as a Ladder *)
+			MatchQ[preparedPlate,True]&&MatchQ[preparedPlateLadderOption,Automatic],
+			{"H12"},
+
+			MatchQ[preparedPlateLadderOption,WellPositionP|{WellPositionP..}],
 			ToList[preparedPlateLadderOption],
+
+			True,
 			Null
 		];
 
@@ -2104,7 +2148,7 @@ ExperimentFragmentAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Obj
 		];
 
 		wellContents=If[MatchQ[preparedPlate,True],
-			Download[samples,{Position,Object}],
+			Download[samples,{Position,Object},Simulation->updatedSimulation],
 			Null
 		];
 
@@ -2155,6 +2199,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		allTests,
 		(*suppliedOptions*)
 		(*suppliedOptions that need to be downloaded*)
+		suppliedPreparedPlate,
 		suppliedPrimaryCapillaryFlushSolution,
 		suppliedSecondaryCapillaryFlushSolution,
 		suppliedTertiaryCapillaryFlushSolution,
@@ -2186,6 +2231,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		resolvedConsolidateAliquots,
 		(*suppliedOptions that need to be rounded*)
 		suppliedSampleVolume,
+		suppliedLadderVolume,
 		suppliedSampleDiluentVolume,
 		suppliedSampleLoadingBufferVolume,
 		suppliedLadderLoadingBufferVolume,
@@ -2208,8 +2254,8 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		suppliedSeparationVoltage,
 
 		(*other suppliedOptions*)
+		suppliedMaxNumberOfRetries,
 		suppliedAnalysisMethodName,
-		suppliedPreparedPlate,
 		suppliedCapillaryFlush,
 		suppliedNumberOfCapillaryFlushes,
 		suppliedAnalysisStrategy,
@@ -2229,6 +2275,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		suppliedMarkerPlateStorageCondition,
 		suppliedPreSampleRinseBufferPlateStorageCondition,
 		suppliedNumberOfCapillaries,
+		suppliedNumberOfReplicates,
 
 		(*Download Objects,Fields,Packets,FastAssoc*)
 		invalidInputs,
@@ -2241,6 +2288,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		
 		(*Resolved Options*)
 		resolvedAnalysisMethodName,
+		resolvedMaxNumberOfRetries,
 		resolvedPreparedPlate,
 		resolvedCapillaryArrayLength,
 		resolvedAnalysisStrategy,
@@ -2250,6 +2298,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		resolvedSampleAnalysisMethod,
 		resolvedAnalysisMethod,
 		resolvedBlank,
+		listedResolvedBlank,
 		resolvedSeparationGel,
 		resolvedDye,
 		resolvedConditioningSolution,
@@ -2289,8 +2338,23 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		resolvedLadderLoadingBufferVolume,
 		resolvedLadderRunningBuffer,
 		resolvedLadderMarker,
+		mapResolvedLadderVolume,
+		mapResolvedLadderLoadingBuffer,
+		mapResolvedLadderLoadingBufferVolume,
+		mapResolvedLadderRunningBuffer,
+		mapResolvedLadderMarker,
 		resolvedBlankRunningBuffer,
 		resolvedBlankMarker,
+		mapResolvedBlankRunningBuffer,
+		mapResolvedBlankMarker,
+		resolvedBlankPreparedPlateMismatchError,
+		resolvedBlankRunningBufferMismatchError,
+		resolvedBlankMarkerMismatchError,
+		resolvedAnalysisMethodBlankMismatchWarning,
+		resolvedAnalysisMethodBlankOptionsMismatchList,
+		resolvedAnalysisMethodBlankOptionsMismatchWarning,
+		resolvedPreparedBlankRunningBufferMismatchCheck,
+		resolvedPreparedBlankMarkerMismatchCheck,
 		resolvedPreparedRunningBufferPlate,
 		resolvedPreparedRunningBufferPlateModel,
 		resolvedPreparedMarkerPlateModel,
@@ -2315,7 +2379,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		blankWells,
 		sampleWells,
 		(*Warnings and Errors*)
-		tooManySamplesError,
 		validNameError,
 		resolvedCantDetermineSampleAnalyteTypeWarning,
 		sampleAnalyteTypeAnalysisMethodMismatchWarnings,
@@ -2368,8 +2431,8 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		resolvedCantCalculateSampleDiluentVolumeWarning,
 		resolvedSampleDilutionMismatchOptions,
 		resolvedSampleDilutionMismatchErrors,
-		blankPreparedPlateMismatchError,
 		allOrNothingMarkerError,
+		allOrNothingRunningBufferError,
 		tooManySolutionsForInjectionError,
 		notEnoughSolutionsForInjectionError,
 		preparedPlateAliquotMismatchError,
@@ -2396,6 +2459,9 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		sampleLoadingBufferVolumeMismatchTests,
 		blankPreparedPlateMismatchTests,
 		allOrNothingMarkerTests,
+		notEnoughMarkerTests,
+		notEnoughRunningBufferTests,
+		allOrNothingRunningBufferTests,
 		tooManySolutionsForInjectionTests,
 		notEnoughSolutionsForInjectionTests,
 		preparedPlateAliquotMismatchTests,
@@ -2406,8 +2472,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		duplicateWellsTests,
 		markerInjectionMismatchTests,
 		markerInjectionPreparedPlateMismatchTest,
-		(*Invalid Inputs*)
-		tooManySamplesInvalidInputs,
 		(*Invalid Options*)
 		analysisMethodNameInvalidOptions,
 		capillaryFlushNumberOfCapillaryFlushesMismatchInvalidOptions,
@@ -2435,6 +2499,9 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		maxSampleVolumeInvalidOptions,
 		blankPreparedPlateMismatchInvalidOptions,
 		allOrNothingMarkerInvalidOptions,
+		notEnoughMarkerInvalidOptions,
+		notEnoughRunningBufferInvalidOptions,
+		allOrNothingRunningBufferInvalidOptions,
 		tooManySolutionsForInjectionInvalidOptions,
 		notEnoughSolutionsForInjectionInvalidOptions,
 		preparedPlateAliquotMismatchInvalidOptions,
@@ -2455,13 +2522,14 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		analysisMethodPreSampleRinse,
 		analysisMethodPreSampleRinseBuffer,
 		analysisMethodBlank,
-		analysisMethodBlankMarker,
+		analysisMethodLadder,
 		ladderOptions,
 		ladderOptionValues,
 		ladderMapThreadFriendlyOptions,
-		ladderList,
+		listedResolvedLadder,
 		resolvedSampleAnalyteConcentration,
 		analysisMethodOptionsCheckFunction,
+		intNumberOfReplicates,
 		numberOfSamples,
 		numberOfLadders,
 		numberOfBlanks,
@@ -2471,6 +2539,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		duplicatedWells,
 		optionsWithDuplicatedWellCheck,
 		markerList,
+		runningBufferList,
 		aliquotWarningMessage,
 		allSampleContainers,
 		uniqueSampleContainers,
@@ -2481,6 +2550,9 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		preparedLadderMarkerObjects,
 		preparedBlankRunningBufferObjects,
 		preparedBlankMarkerObjects,
+		blankOptions,
+		blankOptionValues,
+		blankMapThreadFriendlyOptions,
 		preparedSampleRunningBufferObjects,
 		preparedSampleMarkerObjects,
 		resolvedPreparedLadderRunningBufferMismatchCheck,
@@ -2543,6 +2615,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	
 	(*get supplied option values that may require download and set as suppliedBlah*)
 	{
+		suppliedPreparedPlate,
 		suppliedPrimaryCapillaryFlushSolution,
 		suppliedSecondaryCapillaryFlushSolution,
 		suppliedTertiaryCapillaryFlushSolution,
@@ -2570,6 +2643,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	} = Lookup[
 		fragmentAnalysisOptionsAssociation,
 		{
+			PreparedPlate,
 			PrimaryCapillaryFlushSolution,
 			SecondaryCapillaryFlushSolution,
 			TertiaryCapillaryFlushSolution,
@@ -2619,7 +2693,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			(*Inputs*)
 			simulatedSamples,
 			{
-				Packet[Name, Status, Composition, Container, Well],
+				Packet[Name, Status, Composition, Container, Well,Position],
 				Packet[Composition[[All, 2]][{PolymerType, Molecule, MolecularWeight}]],
 				Packet[Container[{Model, Contents}]],
 				Packet[Container[Model][{MinVolume, MaxVolume}]]
@@ -2679,38 +2753,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Nothing
 	];
 	
-	(*Check if input samples are greater than 96 - a maximum number of only 96 samples can be accommodated in each Experiment call*)
-	tooManySamplesError = MatchQ[Length[simulatedSamples], GreaterP[96]];
-	
-	(*Set tooManySamplesInvalidInputs to all sample objects*)
-	tooManySamplesInvalidInputs = If[tooManySamplesError,
-		Lookup[Flatten[simulatedSamplePackets], Object],
-		{}
-	];
-	
-	(*If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs*)
-	If[Length[tooManySamplesInvalidInputs] > 0 && messages,
-		Message[Error::FragmentAnalysisTooManySamples]
-	];
-	
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	tooManySamplesTests = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[tooManySamplesInvalidInputs] == 0,
-				Nothing,
-				Test["There are more than 96 input samples:", True, False]
-			];
-			
-			passingTest = If[Length[tooManySamplesInvalidInputs] > 0,
-				Nothing,
-				Test["There are 96 or fewer input samples:", True, True]
-			];
-			
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-	
 	(*-- OPTION PRECISION CHECKS --*)
 	(* First, define the option precisions that need to be checked for FragmentAnalysis *)
 	optionPrecisions = {
@@ -2754,6 +2796,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		suppliedSampleVolume,
 		suppliedSampleDiluentVolume,
 		suppliedSampleLoadingBufferVolume,
+		suppliedLadderVolume,
 		suppliedLadderLoadingBufferVolume,
 		suppliedPrimaryCapillaryFlushPressure,
 		suppliedPrimaryCapillaryFlushFlowRate,
@@ -2777,6 +2820,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			SampleVolume,
 			SampleDiluentVolume,
 			SampleLoadingBufferVolume,
+			LadderVolume,
 			LadderLoadingBufferVolume,
 			PrimaryCapillaryFlushPressure,
 			PrimaryCapillaryFlushFlowRate,
@@ -2810,8 +2854,8 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	
 	(*set all other options from fragmentAnalysisOptionsAssociation as suppliedBlah*)
 	{
+		suppliedMaxNumberOfRetries,
 		suppliedAnalysisMethodName,
-		suppliedPreparedPlate,
 		suppliedCapillaryFlush,
 		suppliedNumberOfCapillaryFlushes,
 		suppliedAnalysisStrategy,
@@ -2830,12 +2874,13 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		suppliedPreMarkerRinseBufferPlateStorageCondition,
 		suppliedMarkerPlateStorageCondition,
 		suppliedPreSampleRinseBufferPlateStorageCondition,
-		suppliedNumberOfCapillaries
+		suppliedNumberOfCapillaries,
+		suppliedNumberOfReplicates
 	} = Lookup[
 		fragmentAnalysisOptionsAssociation,
 		{
+			MaxNumberOfRetries,
 			AnalysisMethodName,
-			PreparedPlate,
 			CapillaryFlush,
 			NumberOfCapillaryFlushes,
 			AnalysisStrategy,
@@ -2854,16 +2899,26 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			PreMarkerRinseBufferPlateStorageCondition,
 			MarkerPlateStorageCondition,
 			PreSampleRinseBufferPlateStorageCondition,
-			NumberOfCapillaries
+			NumberOfCapillaries,
+			NumberOfReplicates
 		}
 	];
 	
+	(* convert numberOfReplicates such that Null->1 *)
+	intNumberOfReplicates=suppliedNumberOfReplicates/.{Null->1};
+
+	(* identify the numberOfSamples in consideration of NumberOfReplicates option *)
+	numberOfSamples=(Length[simulatedSamples]*intNumberOfReplicates);
+
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
 	(*AnalysisMethodName Resolution*)
 	resolvedAnalysisMethodName = suppliedAnalysisMethodName;
 	
 	(*PreparedPlate Resolution*)
 	resolvedPreparedPlate = suppliedPreparedPlate;
+	
+	(*MaxNumberOfRetries Resolution*)
+	resolvedMaxNumberOfRetries = suppliedMaxNumberOfRetries;
 	
 	(*Capillary Flush Options Resolution*)
 	(*CapillaryFlush Resolution*)
@@ -3200,7 +3255,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				sampleObjectPacket = mapThreadSamples[[1]];
 				
 				(*get the list of {Amount,Models} under Composition that have PolymerType\[Equal]sampleAnalyteType*)
-				analyteComposition = Flatten[Cases[Lookup[sampleObjectPacket, Composition, {}], {_, Link[#, _]}]& /@ Lookup[analytePackets, Object, {}], 1];
+				analyteComposition = Flatten[Cases[Lookup[sampleObjectPacket, Composition, {}], {_, Link[#, _], _}]& /@ Lookup[analytePackets, Object, {}], 1];
 				
 				(*put together the list of Amounts that fall under MassConcentrationP and ConcentrationP, where all ConcentrationP are converted to MassConcentrationP via MolecularWeight*)
 				analyteConcentrations=Which[
@@ -3792,45 +3847,65 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	(*Index-matched Ladder options*)
-	(*Turn the suppliedLadder input into a list so it can be used in a MapThread resolution*)
-	ladderList = ToList[suppliedLadder];
+
+	analysisMethodLadder = fastAssocLookup[fastAssoc, resolvedAnalysisMethod, Ladder];
+	resolvedLadder = Which[
+		!MemberQ[ToList[suppliedLadder],Automatic],
+		suppliedLadder,
+
+		(* if suppliedLadder is Automatic and PreparedPlate is True, set to H12 well *)
+		MatchQ[suppliedLadder,Automatic]&&MatchQ[resolvedPreparedPlate,True],
+		"H12",
+
+		(* if given a list with Automatic and PreparedPlate is False, replace any Automatic with analysisMethodLadder *)
+		MatchQ[resolvedPreparedPlate,False],
+		suppliedLadder/.Automatic->analysisMethodLadder,
+
+		(* if given a list with Automatic and PreparedPlate is True, replace any Automatic with analysisMethodLadder *)
+		MatchQ[resolvedPreparedPlate,True],
+		suppliedLadder/.Automatic->Null
+	];
+
+	(*Turn the resolvedLadder input into a list so it can be used in a MapThread resolution*)
+	listedResolvedLadder = ToList[resolvedLadder];
+
+	numberOfLadders = Length[DeleteCases[listedResolvedLadder,Null]];
 	
 	(*Set-up the list of Ladder-related options (keys) that are indexed-matched and needs to be resolved in a map thread*)
 	ladderOptions = {LadderVolume, LadderLoadingBuffer, LadderLoadingBufferVolume, LadderRunningBuffer, LadderMarker};
 	
 	(*Lookup the values for the options and create a transposed list that groups key-values for each ladder*)
-	ladderOptionValues = If[MatchQ[Length[ladderList], 1],
-		Flatten[Lookup[roundedExperimentFragmentAnalysisOptions, ladderOptions]],
+	ladderOptionValues = If[!MatchQ[Length[Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, ladderOptions]]],Length[listedResolvedLadder]],
+		ConstantArray[Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, ladderOptions]],Length[listedResolvedLadder]],
 		Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, ladderOptions]]
 	];
 	
 	(*If PreparedRunningBufferPlate is an object, pick out the relevant objects that are index-matched to Ladder(s)*)
-	preparedLadderRunningBufferObjects = If[MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]] && MatchQ[ladderList, Except[{Null}]],
-		Take[preparedRunningBufferPlateContentsObjects, -Length[ladderList]],
-		Table[Null, Length[ladderList]]
+	preparedLadderRunningBufferObjects = If[MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]] && MatchQ[numberOfLadders,GreaterP[0]],
+		Take[preparedRunningBufferPlateContentsObjects, -Length[listedResolvedLadder]],
+		Table[Null, Length[listedResolvedLadder]]
 	];
 	
 	(*If PreparedMarkerPlate is an object, pick out the relevant objects that are index-matched to Ladder(s)*)
-	preparedLadderMarkerObjects = If[MatchQ[suppliedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]] && MatchQ[ladderList, Except[{Null}]],
-		Take[preparedMarkerPlateContentsObjects, -Length[ladderList]],
-		Table[Null, Length[ladderList]]
+	preparedLadderMarkerObjects = If[MatchQ[suppliedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]] && MatchQ[numberOfLadders,GreaterP[0]],
+		Take[preparedMarkerPlateContentsObjects, -Length[listedResolvedLadder]],
+		Table[Null, Length[listedResolvedLadder]]
 	];
 	
 	(*Create the ladderMapThreadFriendlyOptions that can be used for resolution in a MapThread*)
-	ladderMapThreadFriendlyOptions = ToList[If[Length[ladderList] == 1,
-		Association[MapThread[#1 -> #2&, {ladderOptions, ladderOptionValues}]],
-		MapThread[Function[optionFields, Association[MapThread[#1 -> #2&, {ladderOptions, optionFields}]]], {ladderOptionValues}]
-	]];
-	
+	ladderMapThreadFriendlyOptions = MapThread[
+		Function[optionFields, Association[MapThread[#1 -> #2&, {ladderOptions, optionFields}]]],
+		{ladderOptionValues}
+	];
 	
 	(*Resolution of Index-Matched AnalysisMethod Options of Ladder*)
 	(* MapThread over each of our ladders.*)
-	{    resolvedLadder,
-		resolvedLadderVolume,
-		resolvedLadderLoadingBuffer,
-		resolvedLadderLoadingBufferVolume,
-		resolvedLadderRunningBuffer,
-		resolvedLadderMarker,
+	{
+		mapResolvedLadderVolume,
+		mapResolvedLadderLoadingBuffer,
+		mapResolvedLadderLoadingBufferVolume,
+		mapResolvedLadderRunningBuffer,
+		mapResolvedLadderMarker,
 		resolvedLadderPreparedPlateMismatchError,
 		resolvedLadderOptionsPreparedPlateMismatchOptions,
 		resolvedLadderOptionsPreparedPlateErrors,
@@ -3850,10 +3925,11 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	} =
 		Transpose[MapThread[Function[
 			{
-				myMapLadders,
+				myMapLadder,
 				myMapOptions,
-				myPreparedLadderRunningBuffers,
-				myPreparedLadderMarkers},
+				myPreparedLadderRunningBuffer,
+				myPreparedLadderMarker
+			},
 			Module[
 				{(*suppliedLadderOptions*)
 					suppliedLadderVolume,
@@ -3862,14 +3938,12 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					suppliedLadderRunningBuffer,
 					suppliedLadderMarker,
 					(*analysisMethodLadderOptions*)
-					analysisMethodLadder,
 					analysisMethodLadderVolume,
 					analysisMethodLadderLoadingBuffer,
 					analysisMethodLadderLoadingBufferVolume,
 					analysisMethodLadderRunningBuffer,
 					analysisMethodLadderMarker,
 					(*resolvedLadderOptions*)
-					ladder,
 					ladderVolume,
 					ladderLoadingBuffer,
 					ladderLoadingBufferVolume,
@@ -3916,7 +3990,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				
 				(*get the field values in the resolvedAnalysisMethod*)
 				{
-					analysisMethodLadder,
 					analysisMethodLadderVolume,
 					analysisMethodLadderLoadingBuffer,
 					analysisMethodLadderLoadingBufferVolume,
@@ -3924,34 +3997,13 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					analysisMethodLadderMarker
 				} =
 					fastAssocLookup[fastAssoc, resolvedAnalysisMethod, #]& /@ {
-						Ladder,
 						LadderVolume,
 						LadderLoadingBuffer,
 						LadderLoadingBufferVolume,
 						LadderRunningBuffer,
 						LadderMarker
 					};
-				
-				(*Ladder Resolution*)
-				ladder = Which[
-					(*if user-specified, set to suppliedLadder*)
-					MatchQ[myMapLadders, Except[Automatic]],
-					myMapLadders,
-					
-					(*if Automatic AND PreparedPlate is True,set to Null*)
-					(*If user has added a ladder to a PreparedPlate, it would have already been supplied as not Automatic*)
-					MatchQ[resolvedPreparedPlate, True],
-					Null,
-					
-					(*if Automatic and number of samples is >= 96, set to Null*)
-					MatchQ[Length[simulatedSamples],GreaterEqualP[96]],
-					Null,
-					
-					(*if Automatic AND PreparedPlate is False, set to field value of AnalysisMethod*)
-					MatchQ[myMapLadders, Automatic] && MatchQ[resolvedPreparedPlate, False],
-					analysisMethodLadder
-				];
-				
+
 				(*LadderVolume Resolution*)
 				ladderVolume = Which[
 					(*If not Automatic, set to suppliedLadderVolume*)
@@ -3959,7 +4011,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					suppliedLadderVolume,
 					
 					(*If suppliedLadderVolume is Automatic AND, resolvedPreparedPlate is True OR ladder is Null, option is not applicable and is set to Null*)
-					MatchQ[resolvedPreparedPlate, True] || MatchQ[ladder, Null],
+					MatchQ[resolvedPreparedPlate, True] || MatchQ[myMapLadder, Null],
 					Null,
 					
 					(*If suppliedLadderVolume is Automatic AND resolvedPreparedPlate is False AND there is a specified Ladder AND analysisMethodLadderVolume is Not Null, set to field value in AnalysisMethod*)
@@ -3982,11 +4034,11 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					Null,
 					
 					(*If suppliedLadderLoadingBuffer is Automatic AND resolvedPreparedPlate is False AND there is no specified Ladder, set to Null*)
-					MatchQ[ladder, Null],
+					MatchQ[myMapLadder, Null],
 					Null,
 					
 					(*If suppliedLadderLoadingBuffer is Automatic AND resolvedPreparedPlate is False AND there is a specified Ladder, set to field value in AnalysisMethod*)
-					MatchQ[ladder, Except[Null]],
+					MatchQ[myMapLadder, Except[Null]],
 					analysisMethodLadderLoadingBuffer
 				];
 				
@@ -4020,12 +4072,12 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					suppliedLadderRunningBuffer,
 					
 					(*If suppliedLadderRunningBuffer is Automatic AND there is no specified Ladder, set to Null*)
-					MatchQ[ladder, Null],
+					MatchQ[myMapLadder, Null],
 					Null,
 					
 					(*If suppliedLadderRunningBuffer is Automatic AND suppliedPreparedRunningBufferPlate is an Object[Container,Plate]*)
 					MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
-					myPreparedLadderRunningBuffers,
+					myPreparedLadderRunningBuffer,
 					
 					(*If suppliedLadderRunningBuffer is Automatic AND there is a specified Ladder AND analysisMethodLadderRunningBuffer is Not Null, set to field value in AnalysisMethod*)
 					MatchQ[analysisMethodLadderRunningBuffer, Except[Null]],
@@ -4044,10 +4096,10 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 					
 					(*If suppliedLadderMarker is Automatic AND suppliedPreparedMarkerPlate is an Object[Container,Plate]*)
 					MatchQ[resolvedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
-					myPreparedLadderMarkers,
+					myPreparedLadderMarker,
 					
 					(*If suppliedLadderMarker is Automatic AND, there is no specified Ladder OR resolvedMarkerInjection is False, set to Null*)
-					MatchQ[ladder, Null] || MatchQ[resolvedMarkerInjection, False],
+					MatchQ[myMapLadder, Null] || MatchQ[resolvedMarkerInjection, False],
 					Null,
 					
 					(*If suppliedLadderMarker is Automatic AND there is a specified Ladder, set to field value in AnalysisMethod; LadderMarker is not required for Ladder*)
@@ -4063,8 +4115,8 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				(*If PreparedPlate is True AND Ladder is an object, throw and Error*)
 				(*If PreparedPlate is False AND Ladder is a WellPositionP, throw an Error*)
 				ladderPreparedPlateMismatchError = Or[
-					MatchQ[resolvedPreparedPlate, True] && MatchQ[ladder, ObjectP[]],
-					MatchQ[resolvedPreparedPlate, False] && MatchQ[ladder, WellPositionP]
+					MatchQ[resolvedPreparedPlate, True] && MatchQ[myMapLadder, ObjectP[]],
+					MatchQ[resolvedPreparedPlate, False] && MatchQ[myMapLadder, WellPositionP]
 				];
 				
 				(*If PreparedPlate is True, LadderVolume,LadderLoadingBuffer,LadderLoadingBufferVolume must be Null,otherwise throw an Error for the Ladder*)
@@ -4080,12 +4132,12 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				(*If PreparedPlate is False AND Ladder is Null AND LadderVolume is not Null, throw an error*)
 				(*If PreparedPlate is False AND Ladder is not Null AND LadderVolume is Null, throw an error*)
 				ladderVolumeMismatchError = Or[
-					MatchQ[resolvedPreparedPlate, False] && MatchQ[ladder, Null] && MatchQ[ladderVolume, Except[Null]],
-					MatchQ[resolvedPreparedPlate, False] && MatchQ[ladder, Except[Null]] && MatchQ[ladderVolume, Null]
+					MatchQ[resolvedPreparedPlate, False] && MatchQ[myMapLadder, Null] && MatchQ[ladderVolume, Except[Null]],
+					MatchQ[resolvedPreparedPlate, False] && MatchQ[myMapLadder, Except[Null]] && MatchQ[ladderVolume, Null]
 				];
 				
 				(*If PreparedPlate is False AND Ladder is Null AND LadderLoadingBuffer is not Null, throw an error*)
-				ladderLoadingBufferMismatchError = MatchQ[resolvedPreparedPlate, False] && MatchQ[ladder, Null] && MatchQ[ladderLoadingBuffer, Except[Null]];
+				ladderLoadingBufferMismatchError = MatchQ[resolvedPreparedPlate, False] && MatchQ[myMapLadder, Null] && MatchQ[ladderLoadingBuffer, Except[Null]];
 				
 				(*If PreparedPlate is False AND LadderLoadingBuffer is Null AND LadderLoadingBufferVolume is not Null, throw an error*)
 				(*If PreparedPlate is False AND LadderLoadingBuffer is not Null AND LadderLoadingBufferVolume is Null, throw an error*)
@@ -4098,13 +4150,13 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				(*If Ladder is Null AND LadderRunningBuffer is not Null, throw an error*)
 				(*If Ladder is not Null AND LadderRunningBuffer is Null, throw an error*)
 				ladderRunningBufferMismatchError = Or[
-					MatchQ[ladder, Null] && MatchQ[ladderRunningBuffer, Except[Null]],
-					MatchQ[ladder, Except[Null]] && MatchQ[ladderRunningBuffer, Null]
+					MatchQ[myMapLadder, Null] && MatchQ[ladderRunningBuffer, Except[Null]],
+					MatchQ[myMapLadder, Except[Null]] && MatchQ[ladderRunningBuffer, Null]
 				];
 				
 				(*LadderMarker is not required if Ladder is not Null*)
 				(*If Ladder is Null AND LadderMarker is not Null, throw an error*)
-				ladderMarkerMismatchError = MatchQ[ladder, Null] && MatchQ[ladderMarker, Except[Null]];
+				ladderMarkerMismatchError = MatchQ[myMapLadder, Null] && MatchQ[ladderMarker, Except[Null]];
 				
 				(*get the total solution volume that goes in the well, if any*)
 				totalLadderSolutionVolume = Plus @@ Select[{ladderVolume, ladderLoadingBufferVolume}, QuantityQ];
@@ -4124,18 +4176,18 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				(*If the Ladder does not match the Ladder value in the AnalysisMethod, throw a Warning. This check is not applicable for a PreparedPlate.*)
 				analysisMethodLadderMismatchWarning = If[resolvedPreparedPlate,
 					False,
-					analysisMethodOptionsCheckFunction[Ladder, ladder]
+					analysisMethodOptionsCheckFunction[Ladder, myMapLadder]
 				];
 				
 				(*Check each relevant option if it matches the AnalysisMethod. Set Check to True for each option that does not match.*)
 				analysisMethodLadderOptionsMismatchCheck = Which[
 					(*If PreparedPlate is True AND there is a specified Ladder, check values of LadderRunningBuffer and LadderMarker*)
 					(*Options LadderVolume,LadderLoadingBuffer,LadderLoadingBufferVolume are not applicable in a PreparedPlate and will not be checked*)
-					resolvedPreparedPlate && MatchQ[ladder, Except[Null]],
+					resolvedPreparedPlate && MatchQ[myMapLadder, Except[Null]],
 					MapThread[analysisMethodOptionsCheckFunction[#1, #2]&, {{LadderRunningBuffer, LadderMarker}, {ladderRunningBuffer, ladderMarker}}],
 					
 					(*If PreparedPlate is True AND there is no specified Ladder, no need to check against AnalysisMethod*)
-					resolvedPreparedPlate && MatchQ[ladder, Null],
+					resolvedPreparedPlate && MatchQ[myMapLadder, Null],
 					{False, False},
 					
 					(*If PreparedPlate is False, check LadderVolume,LadderLoadingBuffer,LadderLoadingBufferVolume,LadderRunningBuffer,LadderMarker*)
@@ -4162,14 +4214,18 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				analysisMethodLadderOptionsMismatchWarning = Length[analysisMethodLadderOptionsMismatchList] > 0;
 				
 				(*If resolvedPreparedRunningBufferPlate is an Object[Container,Plate], ladderRunningBuffer and ladderMarker must match the Contents*)
-				preparedLadderRunningBufferMismatchCheck = !MatchQ[myPreparedLadderRunningBuffers, ObjectP[ladderRunningBuffer] | ladderRunningBuffer];
+				preparedLadderRunningBufferMismatchCheck = If[MatchQ[ladderRunningBuffer,Null],
+					!MatchQ[myPreparedLadderRunningBuffer, Null],
+					!MatchQ[myPreparedLadderRunningBuffer, ObjectP[ladderRunningBuffer]]
+				];
 				
-				(*If resolvedPreparedRunningBufferPlate is an Object[Container,Plate], ladderRunningBuffer and ladderMarker must match the Contents*)
-				preparedLadderMarkerMismatchCheck = !MatchQ[myPreparedLadderMarkers, ObjectP[ladderMarker] | ladderMarker];
+				preparedLadderMarkerMismatchCheck = If[MatchQ[ladderMarker,Null],
+					!MatchQ[myPreparedLadderMarker, Null],
+					!MatchQ[myPreparedLadderMarker, ObjectP[ladderMarker]]
+				];
 				
 				(* Gather MapThread results *)
 				{
-					ladder,
 					ladderVolume,
 					ladderLoadingBuffer,
 					ladderLoadingBufferVolume,
@@ -4194,7 +4250,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 				}
 			]
 		],
-			{ladderList, ladderMapThreadFriendlyOptions, preparedLadderRunningBufferObjects, preparedLadderMarkerObjects}
+			{listedResolvedLadder, ladderMapThreadFriendlyOptions, preparedLadderRunningBufferObjects, preparedLadderMarkerObjects}
 		]];
 	
 	preparedSampleRunningBufferObjects = If[MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
@@ -4545,58 +4601,84 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			{simulatedSamples, mapThreadFriendlyOptions, resolvedSampleAnalyteConcentration, preparedSampleRunningBufferObjects, preparedSampleMarkerObjects}
 		]];
 	
-	(*determine numberOfSolutions for Injection in order to resolve Blank-related options and NumberOfCapillaries, CapillaryArray and Instrument*)
-	
-	numberOfSamples = Length[simulatedSamples];
-	
-	(*This ensures that numberOfLadders is always an Integer*)
-	(*In the case of PreparedPlate is True, it counts the WellPositions specified*)
-	(*In the case of PreparedPlate is False, it counts the solutions (Model[Sample]/Object[Sample]) specified*)
-	numberOfLadders = Length[Cases[ToList[resolvedLadder], Except[Null]]];
-	
+	(* For non-prepared plate, there is a minimum of 11 blanks required to account for required retry positions *)
 	numberOfBlanks = Which[
-		(*If suppliedBlank is a list of WellPositions which is only in the case of PreparedPlate is True, count the number of Wells*)
-		MatchQ[suppliedBlank, WellPositionP | {WellPositionP..}],
+
+		(* if WellPositionP or list of WellPositionP, we count all wells specified *)
+		MatchQ[suppliedBlank,WellPositionP|{WellPositionP..}],
 		Length[ToList[suppliedBlank]],
 		
-		(*If PreparedPlate is True and no WellPositions are supplied in the Blank field, then there are no Blanks*)
-		MatchQ[resolvedPreparedPlate, True] || MatchQ[suppliedBlank, Null],
+		(* if suppliedBlank is a single ObjectP[] and blanks are needed, we calculate the needed blanks; the suppliedBlank is later expanded to a list with length numberOfBlanks*)
+		MatchQ[suppliedBlank, ObjectP[]] && MatchQ[numberOfSamples + numberOfLadders, LessEqualP[85]],
+		96 - numberOfSamples - numberOfLadders,
+
+		(* if suppliedBlank is a single ObjectP[] and numberOfSamples + numberOfLadders > 85, set to 11 and TooManySolutionsForInjection is thrown later *)
+		MatchQ[suppliedBlank, ObjectP[]],
+		11,
+
+		MatchQ[suppliedBlank,Null],
 		0,
 		
-		(*If PreparedPlate is False*)
+		(* anything else, turn to list and count *)
+		MatchQ[suppliedBlank,Except[Automatic]],
+		Length[ToList[suppliedBlank]],
+
+		(* suppliedBlank is Automatic *)
+		(*If PreparedPlate is True and no WellPositions are supplied in the Blank field, set to 0*)
+		MatchQ[resolvedPreparedPlate, True],
+		0,
+
 		(*numberOfBlanks is dependent on how many samples and ladders are specified*)
-		MatchQ[numberOfSamples + numberOfLadders, LessP[96]],
+		(* 85 is the max total of ladders and samples combined since 11 wells are always alotted for blanks *)
+		MatchQ[numberOfSamples + numberOfLadders, LessEqualP[85]],
 		96 - numberOfSamples - numberOfLadders,
 		
 		True,
-		0
-	];
-	
-	sampleWells = If[MatchQ[resolvedPreparedPlate, True],
-		fastAssocLookup[fastAssoc, #, Well]& /@ mySamples,
-		Drop[Drop[Flatten[AllWells[]], -numberOfLadders], -numberOfBlanks]
+		11 (* 11 wells are reserved for blanks, and also for samples to be moved into during the compiler if the selected CapillaryArray has CloggedChannels *)
 	];
 	
 	ladderWells = Which[
+		(* If using PreparedPlate and Ladder is Automatic, H12 is designated as a LadderWell *)
+		MatchQ[resolvedPreparedPlate,True]&&MatchQ[suppliedLadder,Automatic],
+		{"H12"},
+
 		MatchQ[resolvedPreparedPlate, True],
 		ToList[suppliedLadder]/.Automatic->Null,
 		
 		MatchQ[numberOfLadders,GreaterP[0]],
-		Take[Flatten[AllWells[]], -numberOfLadders],
+		(* ladders can only be placed from A1 to G12 and H12 since H1 to H11 is reserved for blanks, if only one ladder is requested, it goes to H12 by default*)
+		Take[Flatten[Join[AllWells[][[1 ;; 7]], {"H12"}]], -numberOfLadders],
 		
 		True,
 		{}
 	];
 	
-	blankWells = Which[
-		MatchQ[resolvedPreparedPlate, True],
-		ToList[suppliedBlank]/.Automatic->Null,
+	sampleWells = Which[
+		MatchQ[resolvedPreparedPlate, True]&&plateModelError,
+		fastAssocLookup[fastAssoc, #, Well]& /@ mySamples,
 		
-		MatchQ[numberOfBlanks,GreaterP[0]],
-		Drop[Drop[Flatten[AllWells[]], numberOfSamples],-numberOfLadders],
+		MatchQ[resolvedPreparedPlate, True],
+		fastAssocLookup[fastAssoc, #, Position]& /@ mySamples,
 		
 		True,
-		{}
+		Drop[DeleteElements[Flatten[AllWells[]], ladderWells], -numberOfBlanks]
+	];
+	
+	blankWells = Which[
+		(*If suppliedBlank is a well position or a list of well positions, take as is*)
+		MatchQ[resolvedPreparedPlate,True]&&MatchQ[suppliedBlank,{WellPositionP..}|WellPositionP],
+		ToList[suppliedBlank],
+
+		MatchQ[resolvedPreparedPlate,True]&&MatchQ[suppliedBlank,Except[Automatic]],
+		ToList[suppliedBlank]/.{Automatic->Null,ObjectP[]->Null},
+
+		(*suppliedBlank is Automatic*)
+		(* if resolvedPreparedPlate is True, no BlankWells*)
+		MatchQ[resolvedPreparedPlate,True],
+		{},
+		
+		True,
+		DeleteElements[Flatten[AllWells[]],Join[{ladderWells,sampleWells}]]
 	];
 	
 	numberOfSolutionsForInjection = numberOfSamples + numberOfLadders + numberOfBlanks;
@@ -4606,90 +4688,282 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	analysisMethodBlank = fastAssocLookup[fastAssoc, resolvedAnalysisMethod, Blank];
 	
 	resolvedBlank = Which[
-		(*if user-specified, set to suppliedBlank*)
-		MatchQ[suppliedBlank, Except[Automatic]],
+		(* NO Automatics, take as is *)
+		!MemberQ[ToList[suppliedBlank],Automatic],
 		suppliedBlank,
 		
-		(*if not User-specified AND, resolvedPreparedPlate is True OR numberOfBlanks is 0, set to Null*)
-		MatchQ[numberOfBlanks, 0] || MatchQ[resolvedPreparedPlate, True],
+		(*  Not Automatic (list with Automatic, Null or {Null..}), and resolvedPreparedPlate is True -  take as is and if there are any Automatic, replace with Null *)
+		MatchQ[suppliedBlank,Except[Automatic]]&&MatchQ[resolvedPreparedPlate,True],
+		suppliedBlank/.Automatic->Null,
+
+		(* Not Automatic (list with Automatic, Null or {Null..}) and resolvedPreparedPlate is False, take as is and replace any Automatic with analysisMethodBlank if not Null *)
+		MatchQ[suppliedBlank,Except[Automatic]]&&MatchQ[analysisMethodBlank,Except[Null]],
+		suppliedBlank/.Automatic->analysisMethodBlank,
+
+		(* Not Automatic (list with Automatic, Null or {Null..}) and resolvedPreparedPlate is False, take as is and replace any Automatic with reasonable value *)
+		MatchQ[suppliedBlank,Except[Automatic]],
+		suppliedBlank/.Automatic->Model[Sample, "1x Tris-EDTA (TE) Buffer for ExperimentFragmentAnalysis"],
+
+		(* suppliedBlank is Automatic *)
+		(* If PreparedPlate is True and no well positions are specified as blanks, set to Null *)
+		MatchQ[resolvedPreparedPlate,True],
 		Null,
 		
-		(*if not User-specified AND resolvedPreparedPlate is False AND numberOfSolutionsForInjection is less than 96, set to field value of AnalysisMethod,if Not Null*)
-		MatchQ[numberOfBlanks, GreaterP[0]] && MatchQ[analysisMethodBlank, Except[Null]],
-		fastAssocLookup[fastAssoc, resolvedAnalysisMethod, Blank],
+		(*if not User-specified AND resolvedPreparedPlate is False AND numberOfSolutionsForInjection is less than 96, set to field value of AnalysisMethod,if Not Null, and expand*)
+		MatchQ[analysisMethodBlank, Except[Null]],
+		ConstantArray[analysisMethodBlank,numberOfBlanks],
 		
-		(*if not User-specified AND resolvedPreparedPlate is False AND numberOfSolutionsForInjection is less than 96 AND field value of AnalysisMethod is Null, set to a reasonable value*)
-		MatchQ[numberOfBlanks, GreaterP[0]] && MatchQ[analysisMethodBlank, Null],
-		Model[Sample, "1x Tris-EDTA (TE) Buffer for ExperimentFragmentAnalysis"]
+		(*if not User-specified AND resolvedPreparedPlate is False AND numberOfSolutionsForInjection is less than 96 AND field value of AnalysisMethod is Null, set to a reasonable value, and expand*)
+		True,
+		ConstantArray[Model[Sample, "1x Tris-EDTA (TE) Buffer for ExperimentFragmentAnalysis"],numberOfBlanks]
 	];
 	
-	preparedBlankRunningBufferObjects = If[MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]] && MatchQ[numberOfBlanks, GreaterP[0]],
+	listedResolvedBlank = ToList[resolvedBlank];
+
+	(* Identify the contents matched to blanks of a PreparedRunningBufferPlate, if specified. Otherwise, create a list of Nulls to work with mapthread *)
+	preparedBlankRunningBufferObjects = If[MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]]&&MatchQ[numberOfBlanks,GreaterP[0]],
 		Drop[Drop[preparedRunningBufferPlateContentsObjects, numberOfSamples], -numberOfLadders],
-		Null
+		Table[Null, Length[listedResolvedBlank]]
 	];
 	
-	preparedBlankMarkerObjects = If[MatchQ[suppliedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]] && MatchQ[numberOfBlanks, GreaterP[0]],
+	(* Identify the contents matched to blanks of a PreparedMarkerPlate, if specified. Otherwise, create a list of Nulls to work with mapthread *)
+	preparedBlankMarkerObjects = If[MatchQ[suppliedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]]&&MatchQ[numberOfBlanks,GreaterP[0]],
 		Drop[Drop[preparedMarkerPlateContentsObjects, numberOfSamples], -numberOfLadders],
-		Table[Null, Length[numberOfBlanks]]
+		Table[Null, Length[listedResolvedBlank]]
 	];
 	
-	(*BlankRunningBuffer Resolution*)
-	resolvedBlankRunningBuffer = Which[
-		(*if user-specified, set to suppliedBlankRunningBuffer*)
-		MatchQ[suppliedBlankRunningBuffer, Except[Automatic]],
-		suppliedBlankRunningBuffer,
-		
-		(*if suppliedBlankRunningBuffer is Automatic and resolvedBlank is Null, set to Null*)
-		MatchQ[resolvedBlank, Null],
-		Null,
-		
-		(*If suppliedBlankRunningBuffer is Automatic AND suppliedPreparedRunningBufferPlate is an Object[Container,Plate]*)
-		MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
-		preparedBlankRunningBufferObjects,
-		
-		(*if suppliedBlankRunningBuffer is Automatic and resolvedBlank is not Null, set to field value of AnalysisMethod*)
-		True,
-		fastAssocLookup[fastAssoc, resolvedAnalysisMethod, BlankRunningBuffer]
+	(*Index-matched Blank options*)
+	(*use the listedResolvedBlank for the MapThread resolution*)
+
+	(*Set-up the list of Blank-related options (keys) that are indexed-matched and needs to be resolved in a map thread*)
+	blankOptions = {BlankRunningBuffer, BlankMarker};
+
+	(*Lookup the values for the options and create a transposed list that groups key-values for each blank*)
+	(* For cases of singleton Blank input that has been expanded to match the numberOfBlanks required, also expand the blankOptionValues to match*)
+	blankOptionValues = If[!MatchQ[Length[Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, blankOptions]]],Length[listedResolvedBlank]],
+		ConstantArray[Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, blankOptions]],Length[listedResolvedBlank]],
+		Transpose[Lookup[roundedExperimentFragmentAnalysisOptions, blankOptions]]
 	];
-	
-	(*BlankMarker Resolution*)
-	analysisMethodBlankMarker = fastAssocLookup[fastAssoc, resolvedAnalysisMethod, BlankMarker];
-	resolvedBlankMarker = Which[
-		(*if user-specified, set to suppliedBlankMarker*)
-		MatchQ[suppliedBlankMarker, Except[Automatic]],
-		suppliedBlankMarker,
-		
-		(*If suppliedBlankMarker is Automatic AND suppliedPreparedMarkerPlate is an Object[Container,Plate]*)
-		MatchQ[resolvedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
-		preparedBlankMarkerObjects,
-		
-		(*if suppliedBlankMarker is Automatic AND, resolvedBlank is Null OR resolvedMarkerInjection is False, set to Null*)
-		MatchQ[resolvedBlank, Null],
-		Null,
-		
-		MatchQ[resolvedMarkerInjection, False],
-		Null,
-		
-		(*if suppliedBlankMarker is Automatic AND resolvedBlank is not Null AND resolvedMarkerInjection is True, set to field value of AnalysisMethod, if Not Null*)
-		MatchQ[analysisMethodBlankMarker, Except[Null]],
-		analysisMethodBlankMarker,
-		
-		True,
-		Model[Sample, "75 bp and 20000 bp Markers for ExperimentFragmentAnalysis"]
+
+	(*Create the blankMapThreadFriendlyOptions that can be used for resolution in a MapThread*)
+	blankMapThreadFriendlyOptions = MapThread[Function[optionFields, Association[MapThread[#1 -> #2&, {blankOptions, optionFields}]]], {blankOptionValues}];
+
+	(*Resolution of Index-Matched AnalysisMethod Options of Blank*)
+	(* MapThread over each of our blanks.*)
+	{
+		mapResolvedBlankRunningBuffer,
+		mapResolvedBlankMarker,
+		resolvedBlankPreparedPlateMismatchError,
+		resolvedBlankRunningBufferMismatchError,
+		resolvedBlankMarkerMismatchError,
+		resolvedAnalysisMethodBlankMismatchWarning,
+		resolvedAnalysisMethodBlankOptionsMismatchList,
+		resolvedAnalysisMethodBlankOptionsMismatchWarning,
+		resolvedPreparedBlankRunningBufferMismatchCheck,
+		resolvedPreparedBlankMarkerMismatchCheck
+	} = Transpose[MapThread[Function[
+			{
+				myBlank,
+				myMapOptions,
+				myPreparedBlankRunningBuffer,
+				myPreparedBlankMarker
+			},
+			Module[
+				{
+					(*suppliedBlankOptions*)
+					suppliedBlankRunningBuffer,
+					suppliedBlankMarker,
+					(*analysisMethodBlankOptions*)
+					analysisMethodBlank,
+					analysisMethodBlankRunningBuffer,
+					analysisMethodBlankMarker,
+					(*resolvedBlankOptions*)
+					blankRunningBuffer,
+					blankMarker,
+					(*blankOptionsErrors*)
+					blankPreparedPlateMismatchError,
+					blankRunningBufferMismatchError,
+					analysisMethodBlankMismatchWarning,
+					analysisMethodBlankOptionsMismatchCheck,
+					analysisMethodBlankOptionsMismatchList,
+					analysisMethodBlankOptionsMismatchWarning,
+					blankMarkerMismatchError,
+					preparedBlankRunningBufferMismatchCheck,
+					preparedBlankMarkerMismatchCheck
+				},
+
+				(* Setup our error tracking variables *)
+				{
+					blankPreparedPlateMismatchError,
+					blankRunningBufferMismatchError,
+					analysisMethodBlankMismatchWarning,
+					analysisMethodBlankOptionsMismatchWarning,
+					blankMarkerMismatchError
+				} = ConstantArray[False, 5];
+
+				(*get supplied values*)
+				suppliedBlankRunningBuffer = Lookup[myMapOptions, BlankRunningBuffer];
+				suppliedBlankMarker = Lookup[myMapOptions, BlankMarker];
+
+				(*get the field values in the resolvedAnalysisMethod*)
+				{
+					analysisMethodBlank,
+					analysisMethodBlankRunningBuffer,
+					analysisMethodBlankMarker
+				} =
+					fastAssocLookup[fastAssoc, resolvedAnalysisMethod, #]& /@ {
+						Blank,
+						BlankRunningBuffer,
+						BlankMarker
+					};
+
+				(*BlankRunningBuffer Resolution*)
+				blankRunningBuffer = Which[
+					(*If not Automatic, set to suppliedBlankRunningBuffer*)
+					MatchQ[suppliedBlankRunningBuffer, Except[Automatic]],
+					suppliedBlankRunningBuffer,
+
+					(*If suppliedBlankRunningBuffer is Automatic AND there is no specified Blank, set to Null*)
+					MatchQ[myBlank, Null],
+					Null,
+
+					(*If suppliedBlankRunningBuffer is Automatic AND suppliedPreparedRunningBufferPlate is an Object[Container,Plate]*)
+					MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
+					myPreparedBlankRunningBuffer,
+
+					(*If suppliedBlankRunningBuffer is Automatic AND there is a specified Blank AND analysisMethodBlankRunningBuffer is Not Null, set to field value in AnalysisMethod*)
+					MatchQ[analysisMethodBlankRunningBuffer, Except[Null]],
+					analysisMethodBlankRunningBuffer,
+
+					(*If suppliedBlankRunningBuffer is Automatic AND there is a specified Blank AND analysisMethodBlankRunningBuffer is Null, set to a reasonable value - BlankRunningBuffer is required for Blank*)
+					True,
+					Model[Sample, StockSolution, "1x Running Buffer for ExperimentFragmentAnalysis"]
+				];
+
+				(*BlankMarker Resolution*)
+				blankMarker = Which[
+					(*If not Automatic, set to suppliedBlankMarker*)
+					MatchQ[suppliedBlankMarker, Except[Automatic]],
+					suppliedBlankMarker,
+
+					(*If suppliedBlankMarker is Automatic AND suppliedPreparedMarkerPlate is an Object[Container,Plate]*)
+					MatchQ[resolvedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
+					myPreparedBlankMarker,
+
+					(*If suppliedBlankMarker is Automatic AND, there is no specified Blank OR resolvedMarkerInjection is False, set to Null*)
+					MatchQ[myBlank, Null] || MatchQ[resolvedMarkerInjection, False],
+					Null,
+
+					(*If suppliedBlankMarker is Automatic AND there is a specified Blank, set to field value in AnalysisMethod; BlankMarker is not required for Blank*)
+					MatchQ[analysisMethodBlankMarker, Except[Null]],
+					analysisMethodBlankMarker,
+
+					(*If suppliedBlankMarker is Automatic AND there is a specified Blank, set to field value in AnalysisMethod; BlankMarker is not required for Ladder so a Null value can be in the AnalysisMethod*)
+					True,
+					Model[Sample, "75 bp and 20000 bp Markers for ExperimentFragmentAnalysis"]
+				];
+
+				(*Error Checking*)
+				(*If PreparedPlate is True AND Blank is an object, throw and Error*)
+				(*If PreparedPlate is False AND Blank is a WellPositionP, throw an Error*)
+				blankPreparedPlateMismatchError = Or[
+					MatchQ[resolvedPreparedPlate, True] && MatchQ[myBlank, ObjectP[]],
+					MatchQ[resolvedPreparedPlate, False] && MatchQ[myBlank, WellPositionP]
+				];
+
+
+				(*BlankRunningBuffer is required is Blank is not Null*)
+				(*If Blank is Null AND BlankRunningBuffer is not Null, throw an error*)
+				(*If Blank is not Null AND BlankRunningBuffer is Null, throw an error*)
+				blankRunningBufferMismatchError = Or[
+					MatchQ[myBlank, Null] && MatchQ[blankRunningBuffer, Except[Null]],
+					MatchQ[myBlank, Except[Null]] && MatchQ[blankRunningBuffer, Null]
+				];
+
+				(*BlankMarker is not required if Blank is not Null*)
+				(*If Blank is Null AND BlankMarker is not Null, throw an error*)
+				blankMarkerMismatchError = MatchQ[myBlank, Null] && MatchQ[blankMarker, Except[Null]];
+
+				(*If the Blank does not match the Blank value in the AnalysisMethod, throw a Warning. This check is not applicable for a PreparedPlate.*)
+				analysisMethodBlankMismatchWarning = If[resolvedPreparedPlate,
+					False,
+					analysisMethodOptionsCheckFunction[Blank, myBlank]
+				];
+
+				(*Check each relevant option if it matches the AnalysisMethod. Set Check to True for each option that does not match.*)
+				analysisMethodBlankOptionsMismatchCheck = If[
+					(*If there is no specified Blank, no need to check against AnalysisMethod*)
+					resolvedPreparedPlate && MatchQ[myBlank, Null],
+					{False, False},
+
+					(*If there is a specified Blank, check values of BlankRunningBuffer and BlankMarker*)
+					MapThread[analysisMethodOptionsCheckFunction[#1, #2]&, {{BlankRunningBuffer, BlankMarker}, {blankRunningBuffer, blankMarker}}]
+				];
+
+				(*Identify the relevant options that does not match the AnalysisMethod*)
+				analysisMethodBlankOptionsMismatchList = PickList[{BlankRunningBuffer, BlankMarker}, analysisMethodBlankOptionsMismatchCheck];
+
+				(*Throw a Warning for each Blank that have relevant option(s) that does not match the AnalysisMethod*)
+				analysisMethodBlankOptionsMismatchWarning = Length[analysisMethodBlankOptionsMismatchList] > 0;
+
+				(*If resolvedPreparedRunningBufferPlate is an Object[Container,Plate], blankRunningBuffer and blankMarker must match the Contents*)
+				preparedBlankRunningBufferMismatchCheck = If[MatchQ[blankRunningBuffer,Null],
+					!MatchQ[myPreparedBlankRunningBuffer, Null],
+					!MatchQ[myPreparedBlankRunningBuffer, ObjectP[blankRunningBuffer]]
+				];
+
+				(*If resolvedPreparedRunningBufferPlate is an Object[Container,Plate], blankRunningBuffer and blankMarker must match the Contents*)
+				preparedBlankMarkerMismatchCheck = If[MatchQ[blankMarker,Null],
+					!MatchQ[myPreparedBlankMarker, Null],
+					!MatchQ[myPreparedBlankMarker, ObjectP[blankMarker]]
+				];
+
+				(* Gather MapThread results *)
+				{
+					blankRunningBuffer,
+					blankMarker,
+					blankPreparedPlateMismatchError,
+					blankRunningBufferMismatchError,
+					blankMarkerMismatchError,
+					analysisMethodBlankMismatchWarning,
+					analysisMethodBlankOptionsMismatchList,
+					analysisMethodBlankOptionsMismatchWarning,
+					preparedBlankRunningBufferMismatchCheck,
+					preparedBlankMarkerMismatchCheck
+				}
+			]
+		],
+			{listedResolvedBlank, blankMapThreadFriendlyOptions, preparedBlankRunningBufferObjects, preparedBlankMarkerObjects}
+		]];
+
+	(* create a runningBufferList to check that includes applicable RunningBuffer associated with Sample, Ladder or Blank. This is also to verify that the correct number of RunningBuffer has been resolved (equal to 96) *)
+	runningBufferList = Which[
+		MatchQ[listedResolvedBlank, {Null..}] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleRunningBuffer], ToList[mapResolvedLadderRunningBuffer]],
+
+		MatchQ[listedResolvedBlank, {Null..}] && MatchQ[resolvedLadder, Null | {Null..}],
+		ToList[resolvedSampleRunningBuffer],
+
+		MatchQ[resolvedLadder, {Null..}] && MatchQ[listedResolvedBlank, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleRunningBuffer], ToList[mapResolvedBlankRunningBuffer]],
+
+		MatchQ[listedResolvedBlank, Except[{Null..}]] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleRunningBuffer], ToList[mapResolvedLadderRunningBuffer], ToList[mapResolvedBlankRunningBuffer]]
 	];
-	
+
+	(* create a markerList to check that includes applicable RunningBuffer associated with Sample, Ladder or Blank. This is also to verify that the correct number of RunningBuffer has been resolved (equal to 96) *)
 	markerList = Which[
-		MatchQ[resolvedBlank, Null | {Null..}] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
-		Join[ToList[resolvedSampleMarker], ToList[resolvedLadderMarker]],
+		MatchQ[listedResolvedBlank, {Null..}] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleMarker], ToList[mapResolvedLadderMarker]],
 		
-		MatchQ[resolvedBlank, Null | {Null..}] && MatchQ[resolvedLadder, Null | {Null..}],
+		MatchQ[listedResolvedBlank, {Null..}] && MatchQ[resolvedLadder, Null | {Null..}],
 		ToList[resolvedSampleMarker],
 		
-		MatchQ[resolvedLadder, Null | {Null..}] && MatchQ[resolvedBlank, Except[Null | {Null..}]],
-		Join[ToList[resolvedSampleMarker], ToList[resolvedBlankMarker]],
+		MatchQ[resolvedLadder, {Null..}] && MatchQ[listedResolvedBlank, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleMarker], ToList[mapResolvedBlankMarker]],
 		
-		MatchQ[resolvedBlank, Except[Null | {Null..}]] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
-		Join[ToList[resolvedSampleMarker], ToList[resolvedLadderMarker], ToList[resolvedBlankMarker]]
+		MatchQ[listedResolvedBlank, Except[{Null..}]] && MatchQ[resolvedLadder, Except[Null | {Null..}]],
+		Join[ToList[resolvedSampleMarker], ToList[mapResolvedLadderMarker], ToList[mapResolvedBlankMarker]]
 	];
 	
 	(*MarkerPlateStorageCondition Resolution*)
@@ -5037,7 +5311,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	If[analysisMethodAnalysisStrategyMismatchWarning && messages && Not[MatchQ[$ECLApplication, Engine]],
 		Message[
 			Warning::AnalysisMethodAnalysisStrategyMismatchWarning,
-			ObjectToString[resolvedAnalysisMethod], ToString[resolvedAnalysisStrategy]
+			ObjectToString[resolvedAnalysisMethod,Cache -> cacheBall], ToString[resolvedAnalysisStrategy]
 		],
 		Nothing
 	];
@@ -5166,53 +5440,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Message[Warning::AnalysisMethodOptionsMismatch, ToString[analysisMethodOptionsMismatchList]];,
 		Nothing
 	];
-	
-	(*BlankRunningBuffer can only be Null if, and only if, Blank is Null*)
-	blankRunningBufferMismatchInvalidOptions = If[Or[MatchQ[resolvedBlank, Null] && MatchQ[resolvedBlankRunningBuffer, Except[Null]], MatchQ[resolvedBlank, Except[Null]] && MatchQ[resolvedBlankRunningBuffer, Null]],
-		Message[Error::BlankRunningBufferMismatch, ObjectToString[resolvedBlankRunningBuffer], ObjectToString[resolvedBlank]];
-		{BlankRunningBuffer, Blank},
-		{}
-	];
-	
-	blankRunningBufferMismatchTests = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[blankRunningBufferMismatchInvalidOptions] == 0,
-				Nothing,
-				Test["BlankRunningBuffer can only be Null if, and only if, Blank is Null.:", True, False]
-			];
-			passingTest = If[Length[blankRunningBufferMismatchInvalidOptions] != 0,
-				Nothing,
-				Test["BlankRunningBuffer can only be Null if, and only if, Blank is Null.:", True, True]
-			];
-			
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-	
-	(*If Blank is Null, BlankMarker must be Null*)
-	blankMarkerMismatchInvalidOptions = If[MatchQ[resolvedBlank, Null] && MatchQ[resolvedBlankMarker, Except[Null]],
-		Message[Error::BlankMarkerMismatch, ObjectToString[resolvedBlankMarker], ObjectToString[resolvedBlank]];
-		{BlankMarker, Blank},
-		{}
-	];
-	
-	blankMarkerMismatchTests = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[blankMarkerMismatchInvalidOptions] == 0,
-				Nothing,
-				Test["If Blank is Null, BlankMarker must be Null.:", True, False]
-			];
-			passingTest = If[Length[blankMarkerMismatchInvalidOptions] != 0,
-				Nothing,
-				Test["If Blank is Null, BlankMarker must be Null.:", True, True]
-			];
-			
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-	
+
 	(* ---Capillary Equilibration Conflicting Options check--- *)
 	capillaryEquilibrationMismatchErrors = Map[
 		Or[MatchQ[resolvedCapillaryEquilibration, False] && MatchQ[#1, Except[Null]], MatchQ[resolvedCapillaryEquilibration, True] && MatchQ[#1, Null]]&,
@@ -5250,7 +5478,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	preMarkerRinseMismatchInvalidOptions = If[MemberQ[preMarkerRinseMismatchErrors, True] && messages,
-		Message[Error::PreMarkerRinseOptionsMismatchErrors, ObjectToString[Join[PickList[{resolvedPreMarkerRinseBuffer, resolvedNumberOfPreMarkerRinses, resolvedPreMarkerRinseBufferPlateStorageCondition}, preMarkerRinseMismatchErrors], {resolvedPreMarkerRinse}]], Join[PickList[{PreMarkerRinseBuffer, NumberOfPreMarkerRinses, PreMarkerRinseBufferPlateStorageCondition}, preMarkerRinseMismatchErrors], {PreMarkerRinse}]];
+		Message[Error::PreMarkerRinseOptionsMismatchErrors, ObjectToString[Join[PickList[{resolvedPreMarkerRinseBuffer, resolvedNumberOfPreMarkerRinses, resolvedPreMarkerRinseBufferPlateStorageCondition}, preMarkerRinseMismatchErrors], {resolvedPreMarkerRinse}],Cache -> cacheBall], Join[PickList[{PreMarkerRinseBuffer, NumberOfPreMarkerRinses, PreMarkerRinseBufferPlateStorageCondition}, preMarkerRinseMismatchErrors], {PreMarkerRinse}]];
 		Join[PickList[{PreMarkerRinseBuffer, NumberOfPreMarkerRinses, PreMarkerRinseBufferPlateStorageCondition}, preMarkerRinseMismatchErrors], {PreMarkerRinse}],
 		{}
 	];
@@ -5339,7 +5567,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	preSampleRinseMismatchInvalidOptions = If[MemberQ[preSampleRinseMismatchErrors, True] && messages,
-		Message[Error::PreSampleRinseOptionsMismatchErrors, ObjectToString[Join[PickList[{resolvedPreSampleRinseBuffer, resolvedNumberOfPreSampleRinses, resolvedPreSampleRinseBufferPlateStorageCondition}, preSampleRinseMismatchErrors], {resolvedPreSampleRinse}]], Join[PickList[{PreSampleRinseBuffer, NumberOfPreSampleRinses, PreSampleRinseBufferPlateStorageCondition}, preSampleRinseMismatchErrors], {PreSampleRinse}]];
+		Message[Error::PreSampleRinseOptionsMismatchErrors, ObjectToString[Join[PickList[{resolvedPreSampleRinseBuffer, resolvedNumberOfPreSampleRinses, resolvedPreSampleRinseBufferPlateStorageCondition}, preSampleRinseMismatchErrors], {resolvedPreSampleRinse}],Cache -> cacheBall], Join[PickList[{PreSampleRinseBuffer, NumberOfPreSampleRinses, PreSampleRinseBufferPlateStorageCondition}, preSampleRinseMismatchErrors], {PreSampleRinse}]];
 		Join[PickList[{PreSampleRinseBuffer, NumberOfPreSampleRinses, PreSampleRinseBufferPlateStorageCondition}, preSampleRinseMismatchErrors], {PreSampleRinse}],
 		{}
 	];
@@ -5379,7 +5607,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	ladderPreparedPlateMismatchInvalidOptions = If[MemberQ[resolvedLadderPreparedPlateMismatchError, True] && messages,
-		Message[Error::LadderPreparedPlateMismatchError, ObjectToString[PickList[ToList[resolvedLadder], resolvedLadderPreparedPlateMismatchError]], resolvedPreparedPlate];
+		Message[Error::LadderPreparedPlateMismatchError, ObjectToString[PickList[listedResolvedLadder, resolvedLadderPreparedPlateMismatchError],Cache -> cacheBall], resolvedPreparedPlate];
 		{Ladder, PreparedPlate},
 		{}
 	];
@@ -5402,7 +5630,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	ladderOptionsPreparedPlateMismatchInvalidOptions = If[MemberQ[resolvedLadderOptionsPreparedPlateErrors, True] && messages,
-		Message[Error::LadderOptionsPreparedPlateMismatchError, resolvedLadderOptionsPreparedPlateMismatchOptions, ObjectToString[PickList[resolvedLadder, resolvedLadderOptionsPreparedPlateErrors]]];
+		Message[Error::LadderOptionsPreparedPlateMismatchError, resolvedLadderOptionsPreparedPlateMismatchOptions, ObjectToString[PickList[listedResolvedLadder, resolvedLadderOptionsPreparedPlateErrors],Cache -> cacheBall]];
 		DeleteDuplicates[Flatten[Join[resolvedLadderOptionsPreparedPlateMismatchOptions, {Ladder}]]],
 		{}
 	];
@@ -5425,63 +5653,85 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	ladderVolumeMismatchInvalidOptions = If[MemberQ[resolvedLadderVolumeMismatchError, True] && messages,
-		Message[Error::LadderVolumeMismatchError, PickList[resolvedLadderVolume, resolvedLadderVolumeMismatchError], PickList[resolvedLadder, resolvedLadderVolumeMismatchError]];
+		Message[Error::LadderVolumeMismatchError, PickList[mapResolvedLadderVolume, resolvedLadderVolumeMismatchError], PickList[listedResolvedLadder, resolvedLadderVolumeMismatchError]];
 		{Ladder, LadderVolume},
 		{}
 	];
 	
 	ladderLoadingBufferMismatchInvalidOptions = If[MemberQ[resolvedLadderLoadingBufferMismatchError, True] && messages,
-		Message[Error::LadderLoadingBufferMismatchError, PickList[resolvedLadderLoadingBuffer, resolvedLadderLoadingBufferMismatchError], PickList[resolvedLadder, resolvedLadderLoadingBufferMismatchError]];
+		Message[Error::LadderLoadingBufferMismatchError, PickList[mapResolvedLadderLoadingBuffer, resolvedLadderLoadingBufferMismatchError], PickList[listedResolvedLadder, resolvedLadderLoadingBufferMismatchError]];
 		{Ladder, LadderLoadingBuffer},
 		{}
 	];
 	
 	ladderLoadingBufferVolumeMismatchInvalidOptions = If[MemberQ[resolvedLadderLoadingBufferVolumeMismatchError, True] && messages,
-		Message[Error::LadderLoadingBufferVolumeMismatchError, PickList[resolvedLadderLoadingBufferVolume, resolvedLadderLoadingBufferVolumeMismatchError], PickList[resolvedLadderLoadingBuffer, resolvedLadderLoadingBufferVolumeMismatchError]];
+		Message[Error::LadderLoadingBufferVolumeMismatchError, PickList[mapResolvedLadderLoadingBufferVolume, resolvedLadderLoadingBufferVolumeMismatchError], PickList[mapResolvedLadderLoadingBuffer, resolvedLadderLoadingBufferVolumeMismatchError]];
 		{LadderLoadingBuffer, LadderLoadingBufferVolume},
 		{}
 	];
 	
 	maxLadderVolumeInvalidOptions = If[MemberQ[resolvedMaxLadderVolumeError, True] && messages,
-		Message[Error::MaxLadderVolumeError, PickList[resolvedTotalLadderSolutionVolume, resolvedMaxLadderVolumeError], PickList[resolvedMaxLadderVolumeBadOptions, resolvedMaxLadderVolumeError], ObjectToString[PickList[resolvedLadder, resolvedMaxLadderVolumeError]]];
+		Message[Error::MaxLadderVolumeError, PickList[resolvedTotalLadderSolutionVolume, resolvedMaxLadderVolumeError], PickList[resolvedMaxLadderVolumeBadOptions, resolvedMaxLadderVolumeError], ObjectToString[PickList[listedResolvedLadder, resolvedMaxLadderVolumeError],Cache -> cacheBall]];
 		PickList[resolvedMaxLadderVolumeBadOptions, resolvedMaxLadderVolumeError],
 		{}
 	];
 	
 	ladderRunningBufferMismatchInvalidOptions = If[MemberQ[resolvedLadderRunningBufferMismatchError, True] && messages,
-		Message[Error::LadderRunningBufferMismatchError, PickList[resolvedLadderRunningBuffer, resolvedLadderRunningBufferMismatchError], PickList[resolvedLadder, resolvedLadderRunningBufferMismatchError]];
+		Message[Error::LadderRunningBufferMismatchError, PickList[mapResolvedLadderRunningBuffer, resolvedLadderRunningBufferMismatchError], PickList[listedResolvedLadder, resolvedLadderRunningBufferMismatchError]];
 		{LadderRunningBuffer, Ladder},
 		{}
 	];
 	
 	ladderMarkerMismatchInvalidOptions = If[MemberQ[resolvedLadderMarkerMismatchError, True] && messages,
-		Message[Error::LadderMarkerMismatchError, PickList[resolvedLadderMarker, resolvedLadderMarkerMismatchError], PickList[resolvedLadder, resolvedLadderMarkerMismatchError]];
+		Message[Error::LadderMarkerMismatchError, PickList[mapResolvedLadderMarker, resolvedLadderMarkerMismatchError], PickList[listedResolvedLadder, resolvedLadderMarkerMismatchError]];
 		{LadderMarker, Ladder},
 		{}
 	];
 	
+	blankRunningBufferMismatchInvalidOptions = If[MemberQ[resolvedBlankRunningBufferMismatchError, True] && messages,
+		Message[Error::BlankRunningBufferMismatchError, PickList[mapResolvedBlankRunningBuffer, resolvedBlankRunningBufferMismatchError], PickList[resolvedBlank, resolvedBlankRunningBufferMismatchError]];
+		{BlankRunningBuffer, Blank},
+		{}
+	];
+
+	blankMarkerMismatchInvalidOptions = If[MemberQ[resolvedBlankMarkerMismatchError, True] && messages,
+		Message[Error::BlankMarkerMismatchError, PickList[mapResolvedBlankMarker, resolvedBlankMarkerMismatchError], PickList[resolvedBlank, resolvedBlankMarkerMismatchError]];
+		{BlankMarker, Blank},
+		{}
+	];
+
 	If[MemberQ[resolvedAnalysisMethodLadderMismatchWarning, True] && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::AnalysisMethodLadderMismatch, ObjectToString[PickList[resolvedLadder, resolvedAnalysisMethodLadderMismatchWarning]]],
+		Message[Warning::AnalysisMethodLadderMismatch, ObjectToString[PickList[listedResolvedLadder, resolvedAnalysisMethodLadderMismatchWarning],Cache -> cacheBall]],
+		Nothing
+	];
+
+	If[MemberQ[resolvedAnalysisMethodBlankMismatchWarning, True] && Not[MatchQ[$ECLApplication, Engine]],
+		Message[Warning::AnalysisMethodBlankMismatch, ObjectToString[PickList[resolvedBlank, resolvedAnalysisMethodBlankMismatchWarning],Cache -> cacheBall]],
 		Nothing
 	];
 	
 	If[MemberQ[resolvedAnalysisMethodLadderOptionsMismatchWarning, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::AnalysisMethodLadderOptionsMismatch, PickList[resolvedAnalysisMethodLadderOptionsMismatchList, resolvedAnalysisMethodLadderOptionsMismatchWarning], ObjectToString[PickList[resolvedLadder, resolvedAnalysisMethodLadderOptionsMismatchWarning]]],
+		Message[Warning::AnalysisMethodLadderOptionsMismatch, PickList[resolvedAnalysisMethodLadderOptionsMismatchList, resolvedAnalysisMethodLadderOptionsMismatchWarning], ObjectToString[PickList[listedResolvedLadder, resolvedAnalysisMethodLadderOptionsMismatchWarning],Cache -> cacheBall]],
+		Nothing
+	];
+
+	If[MemberQ[resolvedAnalysisMethodBlankOptionsMismatchWarning, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
+		Message[Warning::AnalysisMethodBlankOptionsMismatch, PickList[resolvedAnalysisMethodBlankOptionsMismatchList, resolvedAnalysisMethodBlankOptionsMismatchWarning], ObjectToString[PickList[resolvedBlank, resolvedAnalysisMethodBlankOptionsMismatchWarning],Cache -> cacheBall]],
 		Nothing
 	];
 	
 	If[MemberQ[resolvedCantCalculateSampleVolumeWarning, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::CantCalculateSampleVolume, PickList[resolvedSampleVolume, resolvedCantCalculateSampleVolumeWarning], ObjectToString[PickList[simulatedSamples, resolvedCantCalculateSampleVolumeWarning]]],
+		Message[Warning::CantCalculateSampleVolume, PickList[resolvedSampleVolume, resolvedCantCalculateSampleVolumeWarning], ObjectToString[PickList[simulatedSamples, resolvedCantCalculateSampleVolumeWarning],Cache -> cacheBall]],
 		Nothing
 	];
 	
 	If[MemberQ[resolvedCantCalculateSampleDiluentVolumeWarning, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::CantCalculateSampleDiluentVolume, PickList[resolvedSampleDiluentVolume, resolvedCantCalculateSampleDiluentVolumeWarning], ObjectToString[PickList[simulatedSamples, resolvedCantCalculateSampleDiluentVolumeWarning]]],
+		Message[Warning::CantCalculateSampleDiluentVolume, PickList[resolvedSampleDiluentVolume, resolvedCantCalculateSampleDiluentVolumeWarning], ObjectToString[PickList[simulatedSamples, resolvedCantCalculateSampleDiluentVolumeWarning],Cache -> cacheBall]],
 		Nothing
 	];
 	
 	sampleOptionsPreparedPlateMismatchInvalidOptions = If[MemberQ[resolvedSampleOptionsPreparedPlateError, True] && messages,
-		Message[Error::SampleOptionsPreparedPlateMismatchError, resolvedSampleOptionsPreparedPlateMismatchOptions, resolvedPreparedPlate, ObjectToString[PickList[simulatedSamples, resolvedSampleOptionsPreparedPlateError]]];
+		Message[Error::SampleOptionsPreparedPlateMismatchError, resolvedSampleOptionsPreparedPlateMismatchOptions, resolvedPreparedPlate, ObjectToString[PickList[simulatedSamples, resolvedSampleOptionsPreparedPlateError],Cache -> cacheBall]];
 		Join[Flatten[resolvedSampleOptionsPreparedPlateMismatchOptions], {PreparedPlate}],
 		{}
 	];
@@ -5504,7 +5754,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	sampleVolumeErrorInvalidOptions = If[MemberQ[resolvedSampleVolumeErrors, True] && messages,
-		Message[Error::SampleVolumeError, PickList[resolvedSampleVolume, resolvedSampleVolumeErrors], ObjectToString[PickList[simulatedSamples, resolvedSampleVolumeErrors]]];
+		Message[Error::SampleVolumeError, PickList[resolvedSampleVolume, resolvedSampleVolumeErrors], ObjectToString[PickList[simulatedSamples, resolvedSampleVolumeErrors],Cache -> cacheBall]];
 		Join[PickList[resolvedSampleVolume, resolvedSampleVolumeErrors], {SampleVolume}],
 		{}
 	];
@@ -5572,7 +5822,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	sampleLoadingBufferVolumeMismatchInvalidOptions = If[MemberQ[resolvedSampleLoadingBufferVolumeMismatchError, True] && messages,
-		Message[Error::SampleLoadingBufferVolumeMismatchError, PickList[resolvedSampleLoadingBufferVolume, resolvedSampleLoadingBufferVolumeMismatchError], ObjectToString[PickList[resolvedSampleLoadingBuffer, resolvedSampleLoadingBufferVolumeMismatchError]], PickList[simulatedSamples, resolvedSampleLoadingBufferVolumeMismatchError]];
+		Message[Error::SampleLoadingBufferVolumeMismatchError, PickList[resolvedSampleLoadingBufferVolume, resolvedSampleLoadingBufferVolumeMismatchError], ObjectToString[PickList[resolvedSampleLoadingBuffer, resolvedSampleLoadingBufferVolumeMismatchError],Cache -> cacheBall], PickList[simulatedSamples, resolvedSampleLoadingBufferVolumeMismatchError]];
 		{SampleLoadingBuffer, SampleLoadingBufferVolume},
 		{}
 	];
@@ -5595,65 +5845,32 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	maxSampleVolumeInvalidOptions = If[MemberQ[resolvedMaxSampleVolumeError, True] && messages,
-		Message[Error::MaxSampleVolumeError, PickList[resolvedTotalSampleSolutionVolume, resolvedMaxSampleVolumeError], PickList[resolvedMaxSampleVolumeBadOptions, resolvedMaxSampleVolumeError], ObjectToString[PickList[simulatedSamples, resolvedMaxSampleVolumeError]]];
+		Message[Error::MaxSampleVolumeError, PickList[resolvedTotalSampleSolutionVolume, resolvedMaxSampleVolumeError], PickList[resolvedMaxSampleVolumeBadOptions, resolvedMaxSampleVolumeError], ObjectToString[PickList[simulatedSamples, resolvedMaxSampleVolumeError]],Cache -> cacheBall];
 		PickList[resolvedMaxSampleVolumeBadOptions, resolvedMaxSampleVolumeError],
 		{}
 	];
-	
-	
+
 	If[MemberQ[resolvedAnalysisMethodSampleOptionsMismatchWarning, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::AnalysisMethodSampleOptionsMismatch, PickList[resolvedAnalysisMethodSampleOptionsMismatchList, resolvedAnalysisMethodSampleOptionsMismatchWarning], ObjectToString[PickList[simulatedSamples, resolvedAnalysisMethodSampleOptionsMismatchWarning]]],
+		Message[Warning::AnalysisMethodSampleOptionsMismatch, PickList[resolvedAnalysisMethodSampleOptionsMismatchList, resolvedAnalysisMethodSampleOptionsMismatchWarning], ObjectToString[PickList[simulatedSamples, resolvedAnalysisMethodSampleOptionsMismatchWarning],Cache -> cacheBall]],
 		Nothing
 	];
 	
-	(*If PreparedPlate is False AND Blank is a WellPosition or a list of WellPosition, throw an Error*)
-	(*If PreparedPlate is True AND Blank is an Object, throw an Error*)
-	blankPreparedPlateMismatchError = Or[
-		MatchQ[resolvedPreparedPlate, False] && MatchQ[resolvedBlank, WellPositionP | {WellPositionP..}],
-		MatchQ[resolvedPreparedPlate, True] && MatchQ[resolvedBlank, ObjectP[]]
-	];
-	
-	blankPreparedPlateMismatchInvalidOptions = If[blankPreparedPlateMismatchError && messages,
-		Message[Error::BlankPreparedPlateMisMatchError, resolvedBlank, resolvedPreparedPlate];
+	blankPreparedPlateMismatchInvalidOptions = If[MemberQ[resolvedBlankPreparedPlateMismatchError, True] && messages,
+		Message[Error::BlankPreparedPlateMismatchError, ObjectToString[PickList[ToList[resolvedBlank], resolvedBlankPreparedPlateMismatchError],Cache -> cacheBall], resolvedPreparedPlate];
 		{Blank, PreparedPlate},
 		{}
 	];
 	
 	(* Generate Test for Blank and PreparedPlate check *)
-	blankPreparedPlateMismatchTests = If[gatherTests,
+	blankPreparedPlateMismatchTests = If[gatherTests && MemberQ[resolvedBlankPreparedPlateMismatchError, True],
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[blankPreparedPlateMismatchInvalidOptions] == 0,
 				Nothing,
-				Test["If PreparedPlate is False, Blank cannot be WellPositionP or {WellPositionP..}. If PreparedPlate is True, Blank cannot be an object:", True, False]
+				Test["Blank value can only have pattern WellPositionP if PreparedPlate is True.:", True, False]
 			];
 			passingTest = If[Length[blankPreparedPlateMismatchInvalidOptions] != 0,
 				Nothing,
-				Test["If PreparedPlate is False, Blank cannot be WellPositionP or {WellPositionP..}. If PreparedPlate is True, Blank cannot be an object:", True, True]
-			];
-			
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-	
-	allOrNothingMarkerError = ! (AllTrue[markerList, NullQ] || AllTrue[markerList, MatchQ[#, ObjectP[Object[Sample]] | ObjectP[Model[Sample]]] &] || AllTrue[markerList, MatchQ[#, ObjectP[Object[Container, Plate]]] &]);
-	
-	allOrNothingMarkerInvalidOptions = If[allOrNothingMarkerError && messages,
-		Message[Error::AllOrNothingMarkerError, ObjectToString[markerList]];
-		{LadderMarker, SampleMarker, BlankMarker},
-		{}
-	];
-	
-	(* Generate Test for allOrNothingMarker check *)
-	allOrNothingMarkerTests = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[allOrNothingMarkerInvalidOptions] == 0,
-				Nothing,
-				Test["For all samples, Ladder and Blank that are Not Null, the corresponding SampleMarker,LadderMarker and BlankMarker must all be Objects or all Null:", True, False]
-			];
-			passingTest = If[Length[allOrNothingMarkerInvalidOptions] != 0,
-				Nothing,
-				Test["For all samples, Ladder and Blank that are Not Null, the corresponding SampleMarker,LadderMarker and BlankMarker must all be Objects or all Null:", True, True]
+				Test["Blank value can only have pattern WellPositionP if PreparedPlate is True.:", True, True]
 			];
 			
 			{failingTest, passingTest}
@@ -5725,26 +5942,19 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 	
 	(*If PreparedRunningBufferPlate is an Object[Container,Plate], SampleRunningBuffer, LadderRunningBuffer and BlankRunningBuffer must be the contents of the Object[Container,Plate] or Null (if applicable)*)
-	preparedLadderRunningBufferPlateMismatchError = Which[
-		!MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
+	preparedLadderRunningBufferPlateMismatchError = If[!MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
 		False,
-		
-		MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
 		MemberQ[resolvedPreparedLadderRunningBufferMismatchCheck, True]
 	];
 	
-	preparedSampleRunningBufferPlateMismatchError = Which[
-		!MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
+	preparedSampleRunningBufferPlateMismatchError = If[!MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
 		False,
-		
-		MatchQ[suppliedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
 		MemberQ[resolvedPreparedSampleRunningBufferMismatchCheck, True]
 	];
 	
-	(*If resolvedPreparedRunningBufferPlate is an Object[Container,Plate], resolvedBlankRunningBuffer must match the Contents*)
-	preparedBlankRunningBufferPlateMismatchError = If[MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
-		!MatchQ[preparedBlankRunningBufferObjects, resolvedBlankRunningBuffer],
-		False
+	preparedBlankRunningBufferPlateMismatchError = If[!MatchQ[resolvedPreparedRunningBufferPlate, ObjectP[Object[Container, Plate]]],
+		False,
+		MemberQ[resolvedPreparedBlankRunningBufferMismatchCheck, True]
 	];
 	
 	preparedRunningBufferPlateIncompatibleOptionsList = PickList[{SampleRunningBuffer, LadderRunningBuffer, BlankRunningBuffer}, {preparedSampleRunningBufferPlateMismatchError, preparedLadderRunningBufferPlateMismatchError, preparedBlankRunningBufferPlateMismatchError}];
@@ -5772,10 +5982,12 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		MemberQ[resolvedPreparedSampleMarkerMismatchCheck, True]
 	];
 	
-	(*If resolvedPreparedMarkerPlate is an Object[Container,Plate], resolvedBlankMarker must match the Contents*)
-	preparedBlankMarkerPlateMismatchError = If[MatchQ[resolvedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
-		!MatchQ[preparedBlankMarkerObjects, resolvedBlankMarker],
-		False
+	preparedBlankMarkerPlateMismatchError = Which[
+		!MatchQ[resolvedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
+		False,
+
+		MatchQ[suppliedPreparedMarkerPlate, ObjectP[Object[Container, Plate]]],
+		MemberQ[resolvedPreparedBlankMarkerMismatchCheck, True]
 	];
 	
 	preparedMarkerPlateIncompatibleOptionsList = PickList[{SampleMarker, LadderMarker, BlankMarker}, {preparedSampleMarkerPlateMismatchError, preparedLadderMarkerPlateMismatchError, preparedBlankMarkerPlateMismatchError}];
@@ -5986,7 +6198,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	(*DuplicateWells Check*)
 	(*Get the list of all assigned wells dedicated to samples, ladders, and blanks*)
 	assignedWells = If[MatchQ[resolvedPreparedPlate, True],
-		Join[Cases[ToList[sampleWells], _String], Cases[ToList[resolvedLadder], _String], Cases[ToList[resolvedBlank], _String]],
+		Join[Cases[ToList[sampleWells], _String], Cases[listedResolvedLadder, _String], Cases[ToList[resolvedBlank], _String]],
 		{}
 	];
 	
@@ -6001,7 +6213,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	
 	(*Check which options have duplicated wells in order to indicate this in the Error message*)
 	optionsWithDuplicatedWellCheck = If[MatchQ[resolvedPreparedPlate, True],
-		ContainsAny[#, duplicatedWells]& /@ {sampleWells, ToList[resolvedLadder], ToList[resolvedBlank]},
+		ContainsAny[#, duplicatedWells]& /@ {sampleWells, listedResolvedLadder, ToList[resolvedBlank]},
 		{}
 	];
 	
@@ -6032,7 +6244,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	
 	
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs = DeleteDuplicates[Flatten[{discardedInvalidInputs,tooManySamplesInvalidInputs}]];
+	invalidInputs = DeleteDuplicates[Flatten[{discardedInvalidInputs}]];
 	invalidOptions = DeleteDuplicates[Flatten[{
 		analysisMethodNameInvalidOptions,
 		capillaryFlushNumberOfCapillaryFlushesMismatchInvalidOptions,
@@ -6058,7 +6270,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		sampleDilutionMismatchInvalidOptions,
 		maxSampleVolumeInvalidOptions,
 		blankPreparedPlateMismatchInvalidOptions,
-		allOrNothingMarkerInvalidOptions,
 		tooManySolutionsForInjectionInvalidOptions,
 		notEnoughSolutionsForInjectionInvalidOptions,
 		preparedPlateAliquotMismatchInvalidOptions,
@@ -6074,7 +6285,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 	
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs] > 0 && !gatherTests,
-		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> cache]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> cacheBall]]
 	];
 	
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -6082,9 +6293,69 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Message[Error::InvalidOption, invalidOptions]
 	];
 	
+	(* get the final values for the resolved options related to Ladder and Blank *)
+	{
+		resolvedLadderVolume,
+		resolvedLadderLoadingBuffer,
+		resolvedLadderLoadingBufferVolume,
+		resolvedLadderRunningBuffer,
+		resolvedLadderMarker
+	} = MapThread[
+		If[MatchQ[#1,Except[Automatic]]&&!MemberQ[ToList[#1],Automatic],
+			#1,
+
+			(* if resolvedLadder is not a List (singleton input), related resolved option also returns singleton from the map resolution *)
+			If[MatchQ[resolvedLadder,Except[_List]],
+				#2[[1]],
+				#2
+			]
+		]&,
+		{
+			{
+				suppliedLadderVolume,
+				suppliedLadderLoadingBuffer,
+				suppliedLadderLoadingBufferVolume,
+				suppliedLadderRunningBuffer,
+				suppliedLadderMarker
+			},
+			{
+
+				mapResolvedLadderVolume,
+				mapResolvedLadderLoadingBuffer,
+				mapResolvedLadderLoadingBufferVolume,
+				mapResolvedLadderRunningBuffer,
+				mapResolvedLadderMarker
+			}
+		}
+	];
+
+	{
+		resolvedBlankRunningBuffer,
+		resolvedBlankMarker
+	} = MapThread[
+		If[MatchQ[#1,Except[Automatic]]&&!MemberQ[ToList[#1],Automatic],
+			#1,
+
+			(* if resolvedBlank is not a List (singleton input), related resolved option also returns singleton from the map resolution *)
+			If[MatchQ[resolvedBlank,Except[_List]],
+				#2[[1]],
+				#2
+			]
+		]&,
+		{
+			{
+				suppliedBlankRunningBuffer,
+				suppliedBlankMarker
+			},
+			{
+				mapResolvedBlankRunningBuffer,
+				mapResolvedBlankMarker
+			}
+		}
+	];
+
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
-	
 	resolvedOptions = ReplaceRule[
 		allOptionsRounded,
 		Join[
@@ -6094,6 +6365,7 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			{
 				AnalysisMethodName -> resolvedAnalysisMethodName,
 				PreparedPlate -> resolvedPreparedPlate,
+				MaxNumberOfRetries->resolvedMaxNumberOfRetries,
 				AnalysisStrategy -> resolvedAnalysisStrategy,
 				CapillaryArrayLength -> resolvedCapillaryArrayLength,
 				SampleAnalyteType -> resolvedSampleAnalyteTypes,
@@ -6184,7 +6456,6 @@ resolveExperimentFragmentAnalysisOptions[mySamples:{ObjectP[Object[Sample]]...},
 			sampleDilutionMismatchTests,
 			sampleLoadingBufferVolumeMismatchTests,
 			blankPreparedPlateMismatchTests,
-			allOrNothingMarkerTests,
 			tooManySolutionsForInjectionTests,
 			notEnoughSolutionsForInjectionTests,
 			preparedPlateAliquotMismatchTests,
@@ -6230,6 +6501,8 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		simulation,
 		fastAssoc,
 		simulatedSamples,
+		sampleInformation,
+		ladderLoading,
 		updatedSimulation,
 		simulatedSampleContainers,
 		protocolPacket,
@@ -6242,8 +6515,11 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		optionsRule,
 		testsRule,
 		resultRule,
+		samplesWithReplicates,
+		optionsWithReplicates,
 		(*resolved Options*)
 		resolvedAnalysisMethodName,
+		resolvedMaxNumberOfRetries,
 		resolvedPreparedPlate,
 		resolvedCapillaryFlush,
 		resolvedNumberOfCapillaryFlushes,
@@ -6313,20 +6589,32 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		resolvedPreparedRunningBufferPlate,
 		resolvedPreparedMarkerPlate,
 		(*Resources*)
+		instrumentSetupAndTeardownTimeUsed,
+		instrumentSeparationTimeUsed,
+		instrumentCapillaryFlushTimeUsed,
+		instrumentRetryTimeUsed,
+		totalInstrumentTimeUsed,
 		instrumentResource,
 		primaryCapillaryFlushSolutionResource,
 		secondaryCapillaryFlushSolutionResource,
 		tertiaryCapillaryFlushSolutionResource,
+		primaryCapillaryFlushSolutionContainerRackResource,
+		secondaryCapillaryFlushSolutionContainerRackResource,
+		tertiaryCapillaryFlushSolutionContainerRackResource,
 		blankResource,
 		separationGelResource,
+		gelDyeContainerRackResource,
 		dyeResource,
 		conditioningSolutionResource,
+		conditioningSolutionContainerRackResource,
 		preMarkerRinseBufferResource,
 		preSampleRinseBufferResource,
 		blankRunningBufferResource,
 		blankMarkerResource,
 		ladderResource,
+		finalLadderVolumes,
 		ladderLoadingBufferResource,
+		finalLadderLoadingBufferVolumes,
 		ladderRunningBufferResource,
 		ladderMarkerResource,
 		mineralOilResource,
@@ -6362,12 +6650,20 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		mergedSampleLoadingBufferToVolumeRules,
 		sampleLoadingBufferResources,
 		sampleLoadingBufferResourceRules,
+		blankToVolumeRules,
+		mergedBlankToVolumeRules,
+		blankResources,
+		blankResourceRules,
 		resolvedSampleRunningBufferObjects,
 		resolvedLadderRunningBufferObjects,
 		resolvedBlankRunningBufferObjects,
+		resolvedSampleMarkerObjects,
+		resolvedLadderMarkerObjects,
+		resolvedBlankMarkerObjects,
 		sampleRunningBufferToVolumeRules,
 		ladderToVolumeRules,
 		mergedLadderToVolumeRules,
+		mergedMarkerToVolumeRules,
 		ladderResources,
 		ladderResourceRules,
 		ladderLoadingBufferToVolumeRules,
@@ -6375,11 +6671,12 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		ladderLoadingBufferResources,
 		ladderLoadingBufferResourceRules,
 		ladderRunningBufferToVolumeRules,
-		blankRunningBufferVolume,
 		blankRunningBufferToVolumeRules,
 		mergedRunningBufferToVolumeRules,
 		runningBufferResourceRules,
+		markerResourceRules,
 		runningBufferResources,
+		markerResources,
 		sampleMarkerToVolumeRules,
 		mergedSampleMarkerToVolumeRules,
 		sampleMarkerResources,
@@ -6388,6 +6685,10 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		mergedLadderMarkerToVolumeRules,
 		ladderMarkerResources,
 		ladderMarkerResourceRules,
+		blankMarkerToVolumeRules,
+		mergedBlankMarkerToVolumeRules,
+		blankMarkerResources,
+		blankMarkerResourceRules,
 		sampleDiluentToVolumeRules,
 		mergedSampleDiluentToVolumeRules,
 		sampleDiluentResources,
@@ -6399,6 +6700,9 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		numberOfBlanks,
 		numberOfSamples,
 		numberOfLadders,
+		expandedResolvedBlank,
+		expandedResolvedBlankRunningBuffer,
+		expandedResolvedBlankMarker,
 		sampleWells,
 		ladderWells,
 		blankWells,
@@ -6409,6 +6713,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		mySamplesResourceRules,
 		simulatedSampleContainerWells,
 		simulatedSampleVolumes,
+		simulatedSamplePositions,
 		wastePlateResource,
 		samplesInResource
 	},
@@ -6432,7 +6737,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	];
 
 	(* decide if we are gathering tests or throwing messages *)
-	gatherTests = MemberQ[Output, Tests];
+	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
 	(* Get the inherited cache and simulation *)
@@ -6441,29 +6746,18 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 
 	(* make the fast association *)
 	fastAssoc = makeFastAssocFromCache[cache];
-
+	
+	(* -- Expand inputs and index-matched options to take into account the NumberOfReplicates option -- *)
+	(* - Expand the index-matched inputs for the NumberOfReplicates - *)
+	{samplesWithReplicates,optionsWithReplicates}=expandNumberOfReplicates[ExperimentFragmentAnalysis,mySamples,expandedResolvedOptions];
+	
 	(* simulate the sample preparation stuff so we have the right containers if we are aliquoting*)
-	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentFragmentAnalysis, mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation];
-
-	(* this is the only real Download I need to do, which is to get the simulated sample containers *)
-	{
-		simulatedSampleContainers,
-		simulatedSampleContainerWells,
-		simulatedSampleVolumes
-	}=Transpose[Download[
-		simulatedSamples,
-		{
-			Container[Object],
-			Well,
-			Volume
-		},
-		Cache -> cache,
-		Simulation -> updatedSimulation
-	]];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentFragmentAnalysis, samplesWithReplicates, optionsWithReplicates, Cache -> cache, Simulation -> simulation];
 
 	(*Lookup Option Values*)
 	{
 		resolvedAnalysisMethodName,
+		resolvedMaxNumberOfRetries,
 		resolvedPreparedPlate,
 		resolvedCapillaryFlush,
 		resolvedNumberOfCapillaryFlushes,
@@ -6532,9 +6826,10 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		resolvedAliquotContainer,
 		resolvedPreparedRunningBufferPlate,
 		resolvedPreparedMarkerPlate
-	}=Lookup[expandedResolvedOptions,
+	}=Lookup[optionsWithReplicates,
 		{
 			AnalysisMethodName,
+			MaxNumberOfRetries,
 			PreparedPlate,
 			CapillaryFlush,
 			NumberOfCapillaryFlushes,
@@ -6605,11 +6900,45 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 			PreparedMarkerPlate
 		}
 	];
+	
+	(* additional Download - get simulated sample information and LadderLoading specified in method object *)
+	{
+		sampleInformation,
+		{
+			{ladderLoading}
+		}
+	}=Download[
+		{
+			simulatedSamples,
+			{resolvedAnalysisMethod}
+		},
+		{
+			{
+				Container[Object],
+				Well,
+				Volume,
+				Position
+			},
+			{
+				LadderLoading
+			}
+			
+		},
+		Cache -> cache,
+		Simulation -> updatedSimulation
+	];
+	
+	{
+		simulatedSampleContainers,
+		simulatedSampleContainerWells,
+		simulatedSampleVolumes,
+		simulatedSamplePositions
+	}=Transpose[sampleInformation];
 
 	(* pull out the container the sample is in*)
 	containersIn = Download[Map[
 		fastAssocLookup[fastAssoc, #, Container]&,
-		mySamples
+		samplesWithReplicates
 	], Object];
 
 	(*If resolvedPreparedPlate is True, identify all contents in the plate*)
@@ -6638,22 +6967,17 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	(*In the case of PreparedPlate is False, it counts the solutions (Model[Sample]/Object[Sample]) specified*)
 	numberOfLadders=Length[Cases[ToList[resolvedLadder],Except[Null]]];
 
-	numberOfBlanks=Which[
-		(*If suppliedBlank is a list of WellPositions which is only in the case of PreparedPlate is True, count the number of Wells*)
-		MatchQ[resolvedBlank,WellPositionP|{WellPositionP..}],
-		Length[ToList[resolvedBlank]],
-
-		(*If PreparedPlate is True and no WellPositions are supplied in the Blank field, then there are no Blanks*)
-		MatchQ[resolvedPreparedPlate,True],
+	numberOfBlanks=If[MatchQ[resolvedBlank,Null],
 		0,
+		96 - numberOfSamples - numberOfLadders
+	];
 
-		(*If PreparedPlate is False*)
-		(*numberOfBlanks is dependent on how many samples and ladders are specified*)
-		MatchQ[numberOfSamples+numberOfLadders,LessP[96]],
-		96-numberOfSamples-numberOfLadders,
-
-		True,
-		0
+	(* resolvedBlank and other related options can require expansion if resolvedValue is a singleton but numberOfBlanks is not 0*)
+	expandedResolvedBlank = If[MatchQ[resolvedBlank,ObjectP[]],
+		(* list of objects/models *)
+		ConstantArray[resolvedBlank,numberOfBlanks],
+		(* list of objects/models OR list of wells OR {}*)
+		DeleteCases[ToList[resolvedBlank],Null]
 	];
 
 	ladderWells=Which[
@@ -6670,22 +6994,16 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		Take[Flatten[AllWells[]],-numberOfLadders],
 
 		True,
-		Null
+		{}
 	];
 
 	blankWells=Which[
-
 		(*If suppliedBlank is a list of WellPositions, we count these - this is only valid if PreparedPlate is True*)
-		MatchQ[resolvedBlank,WellPositionP|{WellPositionP..}],
-		ToList[resolvedBlank],
-
-		(*If PreparedPlate is True and no WellPositions are not supplied in the Blank field, then there are no Blanks*)
-		MatchQ[resolvedPreparedPlate,True],
-		Null,
+		MatchQ[expandedResolvedBlank,{WellPositionP..}],
+		expandedResolvedBlank,
 
 		(*If PreparedPlate is False, blankWells are dependent on the positions of samples and ladders*)
-
-		(*If the numberOfBlanks and numberOfLadders is greater than 0, then the Blanks are assigned between samples and ladders*)
+		(*If the numberOfSamples and numberOfLadders is greater than 0, then the Blanks are assigned between samples and ladders*)
 		MatchQ[numberOfBlanks,GreaterP[0]]&&MatchQ[numberOfLadders,GreaterP[0]],
 		Drop[Drop[Flatten[AllWells[]],-numberOfLadders],numberOfSamples],
 
@@ -6694,7 +7012,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		Drop[Flatten[AllWells[]],numberOfSamples],
 
 		True,
-		Null
+		{}
 	];
 
 	sampleWells=If[MatchQ[resolvedPreparedPlate,True],
@@ -6705,20 +7023,20 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	(*Resources*)
 	(*ConditioningSolution and CapillaryFlushSolution Resources*)
 	(*get the amounts required for each solution*)
-	conditioningSolutionAmount = 45 Milliliter;
+	conditioningSolutionAmount = 50 Milliliter;
 
-	(*For the CapillaryFlushSolution, if FlowRate or FlushTime is Null, set Amount to Null. Otherwise, set to 40 Milliliter - the range of values required to run a single flush is always between 31 mL to 37 mL, 40 mL when we add line priming, but there is no way to estimate based on options available according to Agilent so were setting it to the max required to ensure we always provide enough volume*)
+	(*For the CapillaryFlushSolution, if FlowRate or FlushTime is Null, set Amount to Null. Otherwise, set to 50 Milliliter - the range of values required to run a single flush is always between 31 mL to 37 mL, 50 mL when we add line priming, but there is no way to estimate based on options available according to Agilent so were setting it to the max required to ensure we always provide enough volume*)
 	primaryCapillaryFlushSolutionAmount = If[NullQ[resolvedPrimaryCapillaryFlushFlowRate]||NullQ[resolvedPrimaryCapillaryFlushTime],
 		Null,
-		40 Milliliter
+		50 Milliliter
 	];
 	secondaryCapillaryFlushSolutionAmount = If[NullQ[resolvedSecondaryCapillaryFlushFlowRate]||NullQ[resolvedSecondaryCapillaryFlushTime],
 		Null,
-		40 Milliliter
+		50 Milliliter
 	];
 	tertiaryCapillaryFlushSolutionAmount = If[NullQ[resolvedTertiaryCapillaryFlushFlowRate]||NullQ[resolvedTertiaryCapillaryFlushTime],
 		Null,
-		40 Milliliter
+		50 Milliliter
 	];
 
 	(*FlushSolution Containers*)
@@ -6745,8 +7063,13 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	(*ConditioningSolution Resource*)
 	conditioningSolutionResource = Resource[
 		Sample->resolvedConditioningSolution,
-		Amount->45 Milliliter,
+		Amount->50 Milliliter, (* 40 mL required for the separation to run, 10 mL min volume for the container for the liquid to be picked-up properly *)
 		Container->isolatedConditioningSolutionContainer
+	];
+	
+	conditioningSolutionContainerRackResource = Resource[
+		Sample->Model[Container, Rack, "id:01G6nvwXDYBr"],(*250/500 mL CrossFlowContainer Rack*)
+		Rent->True
 	];
 
 	(*PrimaryCapillaryFlushSolution Resource*)
@@ -6755,6 +7078,14 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 			Sample->resolvedPrimaryCapillaryFlushSolution,
 			Amount->primaryCapillaryFlushSolutionAmount,
 			Container->isolatedPrimaryCapillaryFlushSolutionContainer
+		],
+		Null
+	];
+	
+	primaryCapillaryFlushSolutionContainerRackResource=If[MatchQ[resolvedCapillaryFlush,True],
+		Resource[
+			Sample->Model[Container, Rack, "id:01G6nvwXDYBr"],(*250/500 mL CrossFlowContainer Rack*)
+			Rent->True
 		],
 		Null
 	];
@@ -6768,6 +7099,14 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		],
 		Null
 	];
+	
+	secondaryCapillaryFlushSolutionContainerRackResource = If[MatchQ[resolvedNumberOfCapillaryFlushes,GreaterP[1]],
+		Resource[
+			Sample->Model[Container, Rack, "id:01G6nvwXDYBr"],(*250/500 mL CrossFlowContainer Rack*)
+			Rent->True
+		],
+		Null
+	];
 
 	(*TertiaryCapillaryFlushSolution Resource*)
 	tertiaryCapillaryFlushSolutionResource = If[MatchQ[resolvedNumberOfCapillaryFlushes,3],
@@ -6778,12 +7117,25 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		],
 		Null
 	];
+	
+	tertiaryCapillaryFlushSolutionContainerRackResource = If[MatchQ[resolvedNumberOfCapillaryFlushes,3],
+		Resource[
+			Sample->Model[Container, Rack, "id:01G6nvwXDYBr"],(*250/500 mL CrossFlowContainer Rack*)
+			Rent->True
+		],
+		Null
+	];
 
 	(*SeparationGel Resource*)
 	separationGelResource = Resource[
 			Sample->resolvedSeparationGel,
-			Amount->45 Milliliter,
+			Amount->50 Milliliter, (* 40 mL required for the separation to run, 10 mL min volume for the container for the liquid to be picked-up properly *)
 			Container->Model[Container, Vessel, "id:dORYzZRqJrzR"](*Model[Container, Vessel, "250mL Centrifuge Tube For ExperimentFragmentAnalysis"]*)
+	];
+	
+	gelDyeContainerRackResource = Resource[
+		Sample->Model[Container, Rack, "id:01G6nvwXDYBr"],(*250/500 mL CrossFlowContainer Rack*)
+		Rent->True
 	];
 
 	(*Dye Resource*)
@@ -6855,7 +7207,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 				#1->2 Microliter
 			]&,
 			{
-				mySamples,
+				samplesWithReplicates,
 				resolvedSampleVolume,
 				resolvedAliquotAmount
 			}
@@ -6884,8 +7236,8 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	];
 
 	samplesInResource=If[MatchQ[resolvedPreparedPlate,True],
-		Link[mySamples,Protocols],
-		mySamples/.mySamplesResourceRules
+		Link[samplesWithReplicates,Protocols],
+		samplesWithReplicates/.mySamplesResourceRules
 	];
 
 
@@ -6950,65 +7302,88 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		24 Microliter
 	];
 	
-	blankResource=Which[
-		(*For PreparedPlate is True, the content of each well specified to be a blank is now summarized in a list of Link[Object[Sample]] pertaining to those wells*)
-		MatchQ[resolvedPreparedPlate,True],
-		Link[resolvedBlank/.wellToContentRules],
+	(*Set-up Rules for Solution->Amount while also removing Nulls*)
+	blankToVolumeRules = If[MatchQ[resolvedPreparedPlate,True],
+		{},
+		Map[
+			# -> targetBlankVolume&,
+			expandedResolvedBlank
+		]
+	];
 
-		(*If PreparedPlate is False, the Blank solution specified will be turned into a list of Resources repeated numberOfBlanks times*)
-		MatchQ[numberOfBlanks,GreaterP[0]],
-		ConstantArray[Resource[Sample->resolvedBlank,Amount->SafeRound[targetBlankVolume*numberOfBlanks*1.1,10^-1 Microliter],Container->PreferredContainer[SafeRound[targetBlankVolume*numberOfBlanks*1.1,10^-1 Microliter],LiquidHandlerCompatible->True],Name->"blank"],numberOfBlanks],
+	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
+	mergedBlankToVolumeRules = Merge[blankToVolumeRules, Total];
 
-		True,
-		resolvedBlank
+	blankResources=KeyValueMap[
+		Resource[Sample -> #1, Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],Container->PreferredContainer[SafeRound[#2*1.1,10^-1 Microliter],LiquidHandlerCompatible->True],Name->CreateUniqueLabel["blank"]]&,
+		mergedBlankToVolumeRules
+	];
+
+	(*Set-up rules for ID of unique solution to corresponding Resource*)
+	blankResourceRules = AssociationThread[Keys[mergedBlankToVolumeRules], blankResources];
+
+	blankResource=If[MatchQ[resolvedPreparedPlate,True],
+		Link[expandedResolvedBlank/.wellToContentRules],
+		(expandedResolvedBlank/.blankResourceRules)
 	];
 
 	(*Ladder Resource*)
 	(*Set-up Rules for Solution->Amount while also removing Nulls*)
+	(* Wrap resolvedLadder and resolvedLadderVolume in lists since resolved values can be the singleton inputs *)
 	ladderToVolumeRules = If[MatchQ[resolvedPreparedPlate,True],
 		{},
 		MapThread[
 			#1 -> #2&,
 			{
-				DeleteCases[resolvedLadder,Null],
-				DeleteCases[resolvedLadderVolume,Null]
+				DeleteCases[ToList[resolvedLadder],Null],
+				DeleteCases[ToList[resolvedLadderVolume],Null]
 			}
 		]
 	];
 
 	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
-	mergedLadderToVolumeRules = If[MatchQ[resolvedPreparedPlate,True],
-		{},
-		Merge[ladderToVolumeRules, Total]
-	];
+	mergedLadderToVolumeRules = Merge[ladderToVolumeRules, Total];
 	
-	ladderResources=If[MatchQ[resolvedPreparedPlate,True],
-		{},
-		KeyValueMap[
-			Resource[
-				Sample -> #1,
-				Amount -> If[MatchQ[#2*1.1, GreaterP[800 Microliter]],
+	ladderResources= KeyValueMap[
+		Resource[
+			Sample -> #1,
+			Amount -> If[MatchQ[#2*1.1, GreaterP[800 Microliter]],
+				SafeRound[#2*1.1 + 100 Microliter,1 Microliter],
+				SafeRound[#2*1.1 + 5 Microliter,10^-1 Microliter]
+			],
+			Container -> If[MatchQ[#2*1.1, GreaterP[800 Microliter]],
+				PreferredContainer[
 					SafeRound[#2*1.1 + 100 Microliter,1 Microliter],
-					SafeRound[#2*1.1 + 5 Microliter,10^-1 Microliter]
+					LiquidHandlerCompatible -> If[MatchQ[ladderLoading,Robotic],
+						True,
+						False
+					]
 				],
-				Container -> If[MatchQ[#2*1.1, GreaterP[800 Microliter]],
-					PreferredContainer[SafeRound[#2*1.1 + 100 Microliter,1 Microliter], LiquidHandlerCompatible -> True],
-					PreferredContainer[SafeRound[#2*1.1 + 5 Microliter,10^-1 Microliter], LiquidHandlerCompatible -> True]
+				PreferredContainer[
+					SafeRound[#2*1.1 + 5 Microliter,10^-1 Microliter],
+					LiquidHandlerCompatible -> If[MatchQ[ladderLoading,Robotic],
+						True,
+						Automatic
+					]
 				]
-			]&,
-			mergedLadderToVolumeRules
-		]
+			]
+		]&,
+		mergedLadderToVolumeRules
 	];
 
 	(*Set-up rules for ID of unique solution to corresponding Resource*)
-	ladderResourceRules = If[MatchQ[resolvedPreparedPlate,True],
-		{},
-		AssociationThread[Keys[mergedLadderToVolumeRules], ladderResources]
+	ladderResourceRules = AssociationThread[Keys[mergedLadderToVolumeRules], ladderResources];
+
+	(* final field value is a list *)
+	ladderResource=If[MatchQ[resolvedPreparedPlate,True],
+		Link[DeleteCases[ToList[resolvedLadder],Null]/.wellToContentRules],
+		DeleteCases[ToList[resolvedLadder],Null]/.ladderResourceRules
 	];
 
-	ladderResource=If[MatchQ[resolvedPreparedPlate,True],
-		Link[resolvedLadder/.wellToContentRules],
-		resolvedLadder/.ladderResourceRules
+	(* LadderVolume *)
+	finalLadderVolumes = If[MatchQ[ladderResource,{}],
+		{},
+		ToList[resolvedLadderVolume]
 	];
 
 	(*LadderLoadingBuffer Resource*)
@@ -7016,8 +7391,8 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	ladderLoadingBufferToVolumeRules = MapThread[
 		#1 -> #2&,
 		{
-			DeleteCases[resolvedLadderLoadingBuffer,Null],
-			DeleteCases[resolvedLadderLoadingBufferVolume,Null]
+			DeleteCases[ToList[resolvedLadderLoadingBuffer],Null],
+			DeleteCases[ToList[resolvedLadderLoadingBufferVolume],Null]
 		}
 	];
 
@@ -7033,17 +7408,43 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	(*Set-up rules for ID of unique solution to corresponding Resource*)
 	ladderLoadingBufferResourceRules = AssociationThread[Keys[mergedLadderLoadingBufferToVolumeRules], ladderLoadingBufferResources];
 
-	ladderLoadingBufferResource=resolvedLadderLoadingBuffer/.ladderLoadingBufferResourceRules;
+	(* final field value is a list *)
+	ladderLoadingBufferResource=If[MatchQ[ladderResource,{}],
+		{},
+		ToList[resolvedLadderLoadingBuffer]/.ladderLoadingBufferResourceRules
+	];
 
-	(*SampleRunningBuffer Resource*)
+	(* LadderLoadingBufferVolume *)
+	finalLadderLoadingBufferVolumes = Which[
+		(* if ladderResource is {}, related options are also {} - this covers cases where these options can have a direct input/resolved value of Null but we cannot do a direct Null->{} replacement since there are cases of non-empty ladder but with actual Null value for options *)
+		MatchQ[ladderResource,{}],
+		{},
+
+		(* If ladderResource is not {}, create an index-matched list for Null or ObjectP[] resolvedValue *)
+		MatchQ[resolvedLadderLoadingBufferVolume,(Null|ObjectP[])],
+		ConstantArray[resolvedLadderLoadingBufferVolume,Length[ladderResource]],
+
+		True,
+		resolvedLadderLoadingBufferVolume
+	];
+
+	(*RunningBuffer Resources*)
 	(*Set-up Rules for Solution->Amount while also removing Nulls*)
 	(*the resolvedRunningBuffer can potentially be links since they are fields of the analysis method (SampleRunningBuffer,LadderRunningBuffer, BlankRunningBuffer). In order to be able to successfully merge resource for similar models for these three, Links are removed.*)
+
+	expandedResolvedBlankRunningBuffer = If[MatchQ[resolvedBlankRunningBuffer,ObjectP[]],
+		(* list of objects/models *)
+		ConstantArray[resolvedBlankRunningBuffer,numberOfBlanks],
+		(* list of objects/models OR {} *)
+		DeleteCases[ToList[resolvedBlankRunningBuffer],Null]
+	];
+
 	resolvedSampleRunningBufferObjects=Download[ToList[resolvedSampleRunningBuffer],Object];
 	resolvedLadderRunningBufferObjects=Download[ToList[resolvedLadderRunningBuffer],Object];
-	resolvedBlankRunningBufferObjects=Download[ToList[resolvedBlankRunningBuffer],Object];
+	resolvedBlankRunningBufferObjects=Download[expandedResolvedBlankRunningBuffer,Object];
 	
 	sampleRunningBufferToVolumeRules = If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Null,
+		{},
 		Map[
 			#1 -> 1 Milliliter&,
 			resolvedSampleRunningBufferObjects
@@ -7051,82 +7452,60 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	];
 	
 	ladderRunningBufferToVolumeRules = If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Null,
+		{},
 		Map[
 			# -> 1 Milliliter&,
 			DeleteCases[resolvedLadderRunningBufferObjects,Null]
 		]
 	];
 	
-	blankRunningBufferVolume=numberOfBlanks*1 Milliliter;
-	
-	blankRunningBufferToVolumeRules=Which[
-		MatchQ[resolvedBlankRunningBuffer,Null],
+	blankRunningBufferToVolumeRules = If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
 		{},
-		
-		MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		{},
-		
-		MatchQ[resolvedBlankRunningBuffer,ObjectP[]],
-		First[resolvedBlankRunningBufferObjects]->blankRunningBufferVolume
-	];
-
-	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
-	mergedRunningBufferToVolumeRules = If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		Merge[Flatten[{sampleRunningBufferToVolumeRules,ladderRunningBufferToVolumeRules,blankRunningBufferToVolumeRules}], Total]
-	];
-
-	(*Set-up Resources for the unique solutions*)
-	runningBufferResources=If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		KeyValueMap[
-			If[MatchQ[SafeRound[#2 * 1.1,10^-1 Microliter],GreaterP[50 Milliliter]],
-				Resource[
-					Sample -> #1,
-					Amount -> SafeRound[#2 + 25 Milliliter,10^-1 Microliter],
-					Container->Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
-					Name->CreateUniqueLabel["runningBuffer"]
-				],
-				Resource[
-					Sample -> #1,
-					Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],
-					Container->PreferredContainer[SafeRound[#2 * 1.1,10^-1 Microliter],LiquidHandlerCompatible->True],
-					Name->CreateUniqueLabel["runningBuffer"]
-				]
-			]&,
-			mergedRunningBufferToVolumeRules
+		Map[
+			# -> 1 Milliliter&,
+			resolvedBlankRunningBufferObjects
 		]
 	];
 
-	(*Set-up rules for ID of unique solution to corresponding Resource*)
-	runningBufferResourceRules = If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		AssociationThread[Keys[mergedRunningBufferToVolumeRules], runningBufferResources]
+	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
+	mergedRunningBufferToVolumeRules = Merge[Flatten[{sampleRunningBufferToVolumeRules,ladderRunningBufferToVolumeRules,blankRunningBufferToVolumeRules}], Total];
+
+	(*Set-up Resources for the unique solutions*)
+	runningBufferResources= KeyValueMap[
+		If[MatchQ[SafeRound[#2 * 1.1,10^-1 Microliter],GreaterP[50 Milliliter]],
+			Resource[
+				Sample -> #1,
+				Amount -> SafeRound[#2 + 25 Milliliter,10^-1 Microliter],
+				Container->Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
+				Name->CreateUniqueLabel["runningBuffer"]
+			],
+			Resource[
+				Sample -> #1,
+				Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],
+				Container->PreferredContainer[SafeRound[#2 * 1.1,10^-1 Microliter],LiquidHandlerCompatible->True],
+				Name->CreateUniqueLabel["runningBuffer"]
+			]
+		]&,
+		mergedRunningBufferToVolumeRules
 	];
+
+	(*Set-up rules for ID of unique solution to corresponding Resource*)
+	runningBufferResourceRules = AssociationThread[Keys[mergedRunningBufferToVolumeRules], runningBufferResources];
 	
 	(*SampleRunningBuffer Resource*)
-	sampleRunningBufferResource=If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Link[#]&/@resolvedSampleRunningBuffer,
-		resolvedSampleRunningBufferObjects/.runningBufferResourceRules
-	];
+	sampleRunningBufferResource= Link[#]&/@(resolvedSampleRunningBufferObjects/.runningBufferResourceRules);
 
 	(*BlankRunningBuffer Resource*)
-	blankRunningBufferResource=Which[
-		MatchQ[resolvedBlankRunningBuffer,Null],
-		Null,
-
-		MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Link[#]&/@resolvedBlankRunningBuffer,
-		
-		MatchQ[resolvedBlankRunningBuffer,ObjectP[]],
-		ConstantArray[First[resolvedBlankRunningBufferObjects/.runningBufferResourceRules],numberOfBlanks]
+	blankRunningBufferResource=If[MatchQ[blankResource, {}],
+		{},
+		Link[#]&/@resolvedBlankRunningBufferObjects/.runningBufferResourceRules
 	];
 
 	(*LadderRunningBuffer Resource*)
-	ladderRunningBufferResource=If[MatchQ[resolvedPreparedRunningBufferPlate,ObjectP[Object[Container,Plate]]],
-		Link[#]&/@resolvedLadderRunningBuffer,
-		resolvedLadderRunningBufferObjects/.runningBufferResourceRules
+	(* if ladderResource is {}, related options are also {} - this covers cases where these options can have a direct input/resolved value of Null but we cannot do a direct Null->{} replacement since there are cases of non-empty ladder but with actual Null value for options *)
+	ladderRunningBufferResource=If[MatchQ[ladderResource,{}],
+		{},
+		Link[#]&/@(resolvedLadderRunningBufferObjects/.runningBufferResourceRules)
 	];
 
 	(*RunningBufferPlate Resource*)
@@ -7142,102 +7521,82 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		Resource[Sample->Model[Item, PlateSeal, "MicroAmp PCR Plate Seal, Clear"]]
 	];
 
-	(*SampleMarker Resource*)
+	(*Marker Resources*)
 	(*Set-up Rules for Solution->Amount while also removing Nulls*)
+	(*the resolvedMarker can potentially be links since they are fields of the analysis method (SampleMarker,LadderMarker, BlankMarker). In order to be able to successfully merge resource for similar models for these three, Links are removed.*)
+
+	expandedResolvedBlankMarker = Which[
+		(* if there are no blanks, there are also no blank markers - this indirectly converts the Null option value to an empty list *)
+		MatchQ[blankResource,{}],
+		{},
+
+		(* if Blank and BlankMarker are already index-matched, keep as is *)
+		MatchQ[Length[blankResource],Length[resolvedBlankMarker]],
+		resolvedBlankMarker,
+
+		(* if there are blanks, we need to expand the resolvedBlankMarker (which can be a Null) to the length of the blanks *)
+		True,
+		ConstantArray[resolvedBlankMarker,numberOfBlanks]
+	];
+
+	resolvedSampleMarkerObjects=Download[ToList[resolvedSampleMarker],Object];
+	resolvedLadderMarkerObjects=Download[ToList[resolvedLadderMarker],Object];
+	resolvedBlankMarkerObjects=Download[expandedResolvedBlankMarker,Object];
+
 	sampleMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
+		{},
 		Map[
-			If[NullQ[#],
-				#->Null,
-				# -> 30 Microliter
-			]&,
-			DeleteCases[resolvedSampleMarker,Null]
+			# -> 30 Microliter&,
+			DeleteCases[resolvedSampleMarkerObjects,Null]
+		]
+	];
+
+	ladderMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
+		{},
+		Map[
+			# -> 30 Microliter&,
+			DeleteCases[resolvedLadderMarkerObjects,Null]
+		]
+	];
+
+	blankMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
+		{},
+		Map[
+			# -> 30 Microliter&,
+			DeleteCases[resolvedBlankMarkerObjects,Null]
 		]
 	];
 
 	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
-	mergedSampleMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		Merge[sampleMarkerToVolumeRules, Total]
-	];
+	mergedMarkerToVolumeRules = Merge[Flatten[{sampleMarkerToVolumeRules,ladderMarkerToVolumeRules,blankMarkerToVolumeRules}], Total];
 
 	(*Set-up Resources for the unique solutions*)
-	sampleMarkerResources=If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		KeyValueMap[
-			Resource[Sample -> #1, Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],Container->PreferredContainer[SafeRound[#2 * 1.1,10^-1 Microliter],LiquidHandlerCompatible->True],Name->CreateUniqueLabel["sampleMarker"]]&,
-			mergedSampleMarkerToVolumeRules
-		]
+	markerResources= KeyValueMap[
+		Resource[
+			Sample -> #1,
+			Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],
+			Container->PreferredContainer[SafeRound[#2 * 1.1,10^-1 Microliter],LiquidHandlerCompatible->True],
+			Name->CreateUniqueLabel["marker"]
+		]&,
+		mergedMarkerToVolumeRules
 	];
 
 	(*Set-up rules for ID of unique solution to corresponding Resource*)
-	sampleMarkerResourceRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		AssociationThread[Keys[mergedSampleMarkerToVolumeRules], sampleMarkerResources]
-	];
+	markerResourceRules = AssociationThread[Keys[mergedMarkerToVolumeRules], markerResources];
 
-	sampleMarkerResource=If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-			Link[#]&/@resolvedSampleMarker,
-			resolvedSampleMarker/.sampleMarkerResourceRules
-	];
+	(*SampleMarker Resource*)
+	sampleMarkerResource= Link[#]&/@(resolvedSampleMarkerObjects/.markerResourceRules);
 	
 	(*BlankMarker Resource*)
-	blankMarkerResource=Which[
-		MatchQ[resolvedBlankMarker,Null]||MatchQ[resolvedBlankMarker,{Null..}],
-		Null,
-
-		MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Link[#]&/@resolvedBlankMarker,
-
-		MatchQ[resolvedBlankMarker,Except[Null]]||MatchQ[resolvedBlankMarker,Except[{Null..}]],
-		ConstantArray[
-			Resource[
-				Sample->resolvedBlankMarker,
-				Amount->SafeRound[30 Microliter*numberOfBlanks*1.1,10^-1 Microliter],
-				Container->PreferredContainer[SafeRound[30 Microliter*numberOfBlanks*1.1,10^-1 Microliter],
-					LiquidHandlerCompatible->True],Name->"blankMarker"
-			],
-			numberOfBlanks
-		]
+	blankMarkerResource=If[MatchQ[blankResource, {}],
+		{},
+		(Link[#]&/@resolvedBlankMarkerObjects)/.markerResourceRules
 	];
 
 	(*LadderMarker Resource*)
-	(*Set-up Rules for Solution->Amount while also removing Nulls*)
-	ladderMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		Map[
-			If[NullQ[#],
-				#->Null,
-				# -> 30 Microliter
-			]&,
-			DeleteCases[resolvedLadderMarker,Null]
-		]
-	];
-	(*Transfer Primitive*)
-	(*merge Solutions that are identical (that's why conversion to Object ID is necessary here - Same Objects but identified as Link or Name will not be identified as identical) and Total the Amount to identify a single Resource for similar solutions*)
-	mergedLadderMarkerToVolumeRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		Merge[ladderMarkerToVolumeRules, Total]
-	];
-	
-	(*Set-up Resources for the unique solutions*)
-	ladderMarkerResources=If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		KeyValueMap[
-			Resource[Sample -> #1, Amount -> SafeRound[#2 * 1.1,10^-1 Microliter],Container->PreferredContainer[SafeRound[#2 * 1.1,10^-1 Microliter],LiquidHandlerCompatible->True],Name->CreateUUID[]]&,
-			mergedLadderMarkerToVolumeRules
-		]
-	];
-
-	(*Set-up rules for ID of unique solution to corresponding Resource*)
-	ladderMarkerResourceRules = If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Null,
-		AssociationThread[Keys[mergedLadderMarkerToVolumeRules], ladderMarkerResources]
-	];
-
-	ladderMarkerResource=If[MatchQ[resolvedPreparedMarkerPlate,ObjectP[Object[Container,Plate]]],
-		Link[#]&/@resolvedLadderMarker,
-		resolvedLadderMarker/.ladderMarkerResourceRules
+	ladderMarkerResource=If[MatchQ[ladderResource, {}],
+		{},
+		Link[#]&/@(resolvedLadderMarkerObjects/.markerResourceRules)
 	];
 	
 	(* MineralOil Resource *)
@@ -7252,8 +7611,8 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		True,
 		Resource[
 			Sample->Model[Sample, "id:XnlV5jlVzM0n"],
-			Amount->2.5 Milliliter, (*20 Microliter per well of 96-well plate + buffer amount*)
-			Container->PreferredContainer[2.5 Milliliter,LiquidHandlerCompatible->True]
+			Amount->10 Milliliter, (*20 Microliter per well of 96-well plate + buffer amount - need a huge excess to allow for proper dispensing*)
+			Container->PreferredContainer[10 Milliliter,LiquidHandlerCompatible->True]
 		]
 	];
 	
@@ -7337,22 +7696,30 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 	wastePlateResource=Resource[Sample->Model[Container, Plate, "id:Vrbp1jb6R1dx"]];
 
 	(*Instrument Resource*)
-	instrumentResource=If[MatchQ[resolvedCapillaryFlush,True],
-		Resource[
-			Instrument->resolvedInstrument,
-			Time->3 Hour,
-			Name->"FragmentAnalyzer"
-		],
-		Resource[
-			Instrument->resolvedInstrument,
-			Time->2 Hour,
-			Name->"FragmentAnalyzer"
-		]
+	instrumentSetupAndTeardownTimeUsed = 90 Minute;
+	instrumentSeparationTimeUsed = resolvedSeparationTime;
+	instrumentCapillaryFlushTimeUsed = If[MatchQ[resolvedCapillaryFlush,True],
+		30 Minute * resolvedNumberOfCapillaryFlushes,
+		0 Minute
 	];
+	instrumentRetryTimeUsed = If[MatchQ[resolvedMaxNumberOfRetries,GreaterEqualP[1]],
+		resolvedMaxNumberOfRetries * (instrumentSetupAndTeardownTimeUsed + instrumentSeparationTimeUsed),
+		0 Minute
+	];
+	
+	totalInstrumentTimeUsed = instrumentSetupAndTeardownTimeUsed + instrumentSeparationTimeUsed +instrumentCapillaryFlushTimeUsed + instrumentRetryTimeUsed;
+	
+	instrumentResource= Resource[
+			Instrument->resolvedInstrument,
+			Time-> totalInstrumentTimeUsed,
+			Name->"FragmentAnalyzer"
+	];
+	
 
 	(* create the FragmentAnalysis ID *)
 	fragmentAnalysisID=CreateID[Object[Protocol,FragmentAnalysis]];
 
+	(* Blank and Ladder related options become lists in the protocol object, resolvedBLAH values are turned into {} *)
 	protocolPacket=<|
 		Type->Object[Protocol,FragmentAnalysis],
 		Object->fragmentAnalysisID,
@@ -7361,17 +7728,22 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		(*SamplesIn*)
 		Replace[SamplesIn]->samplesInResource,
 		(*ContainersIn*)
-		Replace[ContainersIn]->(Link[#,Protocols]&)/@ToList[containersIn],
+		Replace[ContainersIn]->(Link[Resource[Sample -> #],Protocols]&)/@ToList[containersIn],
 		Instrument->instrumentResource,
 		CapillaryArray->Link[resolvedCapillaryArray],
 		ConditioningSolution->conditioningSolutionResource,
+		ConditioningSolutionContainerRack->Link[conditioningSolutionContainerRackResource],
 		PrimaryCapillaryFlushSolution->primaryCapillaryFlushSolutionResource,
 		SecondaryCapillaryFlushSolution->secondaryCapillaryFlushSolutionResource,
 		TertiaryCapillaryFlushSolution->tertiaryCapillaryFlushSolutionResource,
+		PrimaryCapillaryFlushSolutionContainerRack->Link[primaryCapillaryFlushSolutionContainerRackResource],
+		SecondaryCapillaryFlushSolutionContainerRack->Link[secondaryCapillaryFlushSolutionContainerRackResource],
+		TertiaryCapillaryFlushSolutionContainerRack->Link[tertiaryCapillaryFlushSolutionContainerRackResource],
 		ConditioningLinePlaceholderRack->Link[conditioningLinePlaceholderRackResource],
 		PrimaryGelLinePlaceholderRack->Link[primaryGelLinePlaceholderRackResource],
 		SecondaryGelLinePlaceholderRack->Link[secondaryGelLinePlaceholderRackResource],
 		SeparationGel->separationGelResource,
+		GelDyeContainerRack->Link[gelDyeContainerRackResource],
 		Dye->dyeResource,
 		PreMarkerRinseBuffer->preMarkerRinseBufferResource,
 		PreMarkerRinseBufferPlate->preMarkerRinseBufferPlateResource,
@@ -7414,7 +7786,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		EquilibrationVoltage->resolvedEquilibrationVoltage,
 		EquilibrationTime->resolvedEquilibrationTime,
 		CapillaryFlush->resolvedCapillaryFlush,
-		Replace[LadderLoadingBufferVolumes]->resolvedLadderLoadingBufferVolume,
+		Replace[LadderLoadingBufferVolumes]->finalLadderLoadingBufferVolumes,
 		MarkerInjection->resolvedMarkerInjection,
 		MarkerInjectionTime->resolvedMarkerInjectionTime,
 		MarkerInjectionVoltage->resolvedMarkerInjectionVoltage,
@@ -7426,6 +7798,7 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		NumberOfPreSampleRinses->resolvedNumberOfPreSampleRinses,
 		PreSampleRinse->resolvedPreSampleRinse,
 		PreMarkerRinse->resolvedPreMarkerRinse,
+		MaxNumberOfRetries->resolvedMaxNumberOfRetries,
 		PreparedPlate->resolvedPreparedPlate,
 		PrimaryCapillaryFlushFlowRate->resolvedPrimaryCapillaryFlushFlowRate,
 		PrimaryCapillaryFlushPressure->resolvedPrimaryCapillaryFlushPressure,
@@ -7443,29 +7816,29 @@ fragmentAnalysisResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnres
 		SampleInjectionVoltage->resolvedSampleInjectionVoltage,
 		Replace[SampleLoadingBufferVolumes]->resolvedSampleLoadingBufferVolume,
 		Replace[SampleVolumes]->resolvedSampleVolume,
-		Replace[LadderVolumes]->resolvedLadderVolume,
+		Replace[LadderVolumes]->finalLadderVolumes,
 		SeparationTime->resolvedSeparationTime,
 		SeparationVoltage->resolvedSeparationVoltage,
 		Replace[Checkpoints] -> {
-			{"Picking Resources",30 Minute, "Samples and Containers required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 30 Minute]]},
-			{"Preparing Samples", 15 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 15 Minute]]},
-			{"Preparing SeparationGel and Dye in GelDyeContainer", 15 Minute, "A mixture of SeparationGel and Dye are mixed and transferred in the GelDyeContainer.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 15 Minute]]},
-			{"Preparing Plates", 30 Minute, "RunningBufferPlate, MarkerPlate (if applicable), PreMarkerRinseBufferPlate (if applicable) and PreSampleRinseBufferPlate (if applicable) are prepared, if not already in PreparedPlate form.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 30 Minute]]},
-			{"Preparing SamplePlate", 15 Minute, "Samples, Ladders and Blanks, as well as SampleDiluents and LoadingBuffers  are loaded into the SamplePlate. SamplePlate is now ready to be placed in the Instrument.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 15 Minute]]},
-			{"Preparing Instrument",15 Minute,"Setting up the instrument and software in preparation for Capillary Flush (if applicable) and sample run.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]]},
-			{"Capillary Flush",1 Hour,"The instrument's physical components and software are prepared for a capillary flush run and a flush is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20 Minute]]},
-			{"Preparing Instrument for Sample Separation",20 Minute,"The instrument's physical components and software are prepared for a sample separation run.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20 Minute]]},
-			{"Sample Separation", (resolvedSeparationTime), "Separation Method is ran in the Instrument.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> (resolvedSeparationTime)]]},
-			{"Data Processing", 15 Minute, "Raw Data is copied, processed and stored in the appropriate folders.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 15 Minute]]},
-			{"Data Parsing", 15 Minute, "Processed data is uploaded into the database.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 15 Minute]]},
-			{"Instrument Teardown",20 Minute,"Containers and plates are removed from the instrument and instrument is reset to ground state.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20 Minute]]},
-			{"Sample Post-Processing", 30 Minute , "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"], Time -> 30 Minute]]},
-			{"Returning Materials", 30 Minute, "Storage Conditions are fulfilled for RunningBufferPlate, MarkerPlate, PreMarkerRinsePlate, PreSampleRinsePlate.", Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"]   , Time -> 30 Minute]]}
+			{"Picking Resources",30 Minute, "Samples and Containers required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Preparing Samples", 15 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Preparing SeparationGel and Dye in GelDyeContainer", 15 Minute, "A mixture of SeparationGel and Dye are mixed and transferred in the GelDyeContainer.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Preparing Plates", 30 Minute, "RunningBufferPlate, MarkerPlate (if applicable), PreMarkerRinseBufferPlate (if applicable) and PreSampleRinseBufferPlate (if applicable) are prepared, if not already in PreparedPlate form.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Preparing SamplePlate", 15 Minute, "Samples, Ladders and Blanks, as well as SampleDiluents and LoadingBuffers  are loaded into the SamplePlate. SamplePlate is now ready to be placed in the Instrument.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Preparing Instrument",15 Minute,"Setting up the instrument and software in preparation for Capillary Flush (if applicable) and sample run.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]},
+			{"Capillary Flush",1 Hour,"The instrument's physical components and software are prepared for a capillary flush run and a flush is performed.",Link[Resource[Operator->$BaselineOperator,Time->20 Minute]]},
+			{"Preparing Instrument for Sample Separation",20 Minute,"The instrument's physical components and software are prepared for a sample separation run.",Link[Resource[Operator->$BaselineOperator,Time->20 Minute]]},
+			{"Sample Separation", (resolvedSeparationTime), "Separation Method is ran in the Instrument.", Link[Resource[Operator -> $BaselineOperator, Time -> (resolvedSeparationTime)]]},
+			{"Data Processing", 15 Minute, "Raw Data is copied, processed and stored in the appropriate folders.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Data Parsing", 15 Minute, "Processed data is uploaded into the database.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Instrument Teardown",20 Minute,"Containers and plates are removed from the instrument and instrument is reset to ground state.",Link[Resource[Operator->$BaselineOperator,Time->20 Minute]]},
+			{"Sample Post-Processing", 30 Minute , "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Returning Materials", 30 Minute, "Storage Conditions are fulfilled for RunningBufferPlate, MarkerPlate, PreMarkerRinsePlate, PreSampleRinsePlate.", Link[Resource[Operator -> $BaselineOperator   , Time -> 30 Minute]]}
 		}
 	|>;
 
 	(* Generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache];
+	sharedFieldPacket=populateSamplePrepFields[samplesWithReplicates,myResolvedOptions,Cache->cache];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -8379,7 +8752,7 @@ DefineOptions[ExperimentFragmentAnalysisOptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentFragmentAnalysisOptions[
-	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],
+	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[{Object[Sample],Model[Sample]}]|_String)],
 	myOptions:OptionsPattern[ExperimentFragmentAnalysisOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -8412,7 +8785,7 @@ DefineOptions[ValidExperimentFragmentAnalysisQ,
 	SharedOptions:>{ExperimentFragmentAnalysis}
 ];
 
-ValidExperimentFragmentAnalysisQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFragmentAnalysisQ]]:=Module[
+ValidExperimentFragmentAnalysisQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFragmentAnalysisQ]]:=Module[
 	{listedOptions,preparedOptions,fragmentAnalysisTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)
@@ -8467,7 +8840,7 @@ DefineOptions[ExperimentFragmentAnalysisPreview,
 	SharedOptions:>{ExperimentFragmentAnalysis}
 ];
 
-ExperimentFragmentAnalysisPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFragmentAnalysisPreview]]:=Module[
+ExperimentFragmentAnalysisPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentFragmentAnalysisPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];

@@ -30,6 +30,26 @@ DefineUsage[PlotCoulterCount,
 						Pattern :> ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotCoulterCount[protocol]", "plot"},
+				Description -> "displays the ParticleCount vs ParticleSize 'plot' for the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing coulter count data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, CoulterCount]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the coulter count protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {

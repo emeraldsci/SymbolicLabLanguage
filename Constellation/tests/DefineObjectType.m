@@ -1147,7 +1147,7 @@ DefineTests[
 				]
 			}
 		],
-		Test["QA wihtout units fails:",
+		Test["QA without units fails:",
 			ValidTypeQ[Object[Example, Data]],
 			False,
 			Stubs :> {
@@ -1362,6 +1362,37 @@ DefineTests[
 								Description -> "Storing weird strand expressions.",
 								Abstract -> True,
 								Headers -> {"Header 1", "Header 2"}
+							}
+						}
+					}
+				]
+			}
+		],
+
+		Test["Returns False if a field is marked as both AdminViewOnly and AdminReadOnly:",
+			ValidTypeQ[Model[Example, Data]],
+			False,
+			Stubs :> {
+				registeredTypes=Association[
+					Model[Example, Data] -> {
+						Type -> Model[Example, Data],
+						Description -> "This is some sort of valid description.",
+						CreatePrivileges -> Developer,
+						Cache -> Download,
+						UniqueFields -> {},
+						Fields -> {
+							Strands -> {
+								Format -> Multiple,
+								Class -> {Integer, Expression},
+								Pattern :> {_Integer, _?NucleicAcids`StrandQ},
+								Units -> {None, None},
+								Category -> "Organizational Information",
+								Required -> False,
+								Description -> "Storing weird strand expressions.",
+								Abstract -> True,
+								Headers -> {"Header 1", "Header 2"},
+								AdminReadOnly -> True,
+								AdminWriteOnly -> True
 							}
 						}
 					}
@@ -1766,6 +1797,7 @@ DefineTests[
 	
 *)
 
+Authors[fieldUpValues]:={"brad"};
 DefineTests[fieldUpValues,{
 	(* 
 		These tests each return the list of symbols that are failing (as opposed to a single True) so that if the test ever fails,
@@ -1826,6 +1858,7 @@ DefineTests[fieldUpValues,{
 (*
     Check that 'fieldSymbols' populated.
 *)
+Authors[fieldSymbolsChecks]:={"brad"};
 DefineTests[fieldSymbolsChecks,{
     Test["ECL symbol: ",
         Lookup[Constellation`Private`fieldSymbols,"PeaksAnalyses"],

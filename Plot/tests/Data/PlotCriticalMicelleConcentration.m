@@ -17,11 +17,18 @@ DefineTests[PlotCriticalMicelleConcentration,
 				Warning::CriticalMicelleConcentrationAnalysisMissing
 			}
 		],
-		Example[{Basic, "Given an analyzed Object[Data,SurfaceTension], PlotCriticalMicelleConcentration returns an plot:"},
+		Example[{Basic, "Given an analyzed Object[Data,SurfaceTension], PlotCriticalMicelleConcentration returns a plot:"},
 			PlotCriticalMicelleConcentration[Object[Data, SurfaceTension,  "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"<>plotCritObject]],
 			ValidGraphicsP[]
 		],
-		Example[{Basic, "Given an Object[Analysis,CriticalMicelleConcentration], PlotCriticalMicelleConcentration returns an plot:"},
+		Example[{Basic, "Given an Object[Protocol, MeasureSurfaceTension] with unanalyzed surface tension data objects in the Data field, PlotCriticalMicelleConcentration returns a plot of each data object in slide view format:"},
+			PlotCriticalMicelleConcentration[Object[Protocol, MeasureSurfaceTension, "Test protocol object for analyzeCriticalMicelleConcentration tests"<>plotCritObject]],
+			SlideView[{ValidGraphicsP[]..}],
+			Messages:>{
+				Warning::CriticalMicelleConcentrationAnalysisMissing
+			}
+		],
+		Example[{Basic, "Given an Object[Analysis,CriticalMicelleConcentration], PlotCriticalMicelleConcentration returns a plot:"},
 			PlotCriticalMicelleConcentration[Object[Data, SurfaceTension,  "Test serial dilution sample data object for analyzeCriticalMicelleConcentration tests"<>plotCritObject][CriticalMicelleConcentrationAnalyses]],
 			ValidGraphicsP[]
 		],

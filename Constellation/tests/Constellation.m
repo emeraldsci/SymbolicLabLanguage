@@ -907,6 +907,27 @@ DefineTests[GetNumOwnedObjects,
 				Unset[$CreatedObjects];
 			}
 		],
+		Example[{Additional, "GetNumOwnedObjects test with input team in NamedObject form:"},
+			(GetNumOwnedObjects[{teamNamedForm}]),
+			{AssociationMatchP@Association["team_id" -> Download[team, ID], "num_objects" -> 1]},
+			SetUp :> {
+				$CreatedObjects={};
+				randomStr=ToString[RandomReal[]];
+				site=Upload[<|DeveloperObject -> True, Type -> Object[Container, Site],
+					Name -> "Test Site for GetNumOwnedObjects Basic "<>randomStr |>];
+				team=Upload[<|DeveloperObject -> True, Type -> Object[Team, Financing],
+					Name -> "Test Team for GetNumOwnedObjects Basic "<>randomStr, DefaultMailingAddress -> Link[site]|>];
+				teamNamedForm=Object[Team,Financing,"Test Team for GetNumOwnedObjects Basic "<>randomStr];
+				notebook=Upload[<|DeveloperObject -> True, Type -> Object[LaboratoryNotebook],
+					Name -> "Test Notebook for GetNumOwnedObjects Basic "<>randomStr,
+					Replace[Financers] -> {Link[team, NotebooksFinanced]},
+					Replace[Administrators] -> {Link[Object[User, Emerald, Developer, "id:lYq9jRxwZJll"]]}|>];
+			},
+			TearDown :> {
+				EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True, Verbose -> False];
+				Unset[$CreatedObjects];
+			}
+		],
 		Example[{Additional, "GetNumOwnedObjects test with transaction objects:"},
 			(GetNumOwnedObjects[{team}]),
 			{AssociationMatchP@Association["team_id" -> Download[team, ID], "num_objects" -> 4]},

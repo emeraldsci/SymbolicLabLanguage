@@ -30,6 +30,11 @@ DefineTests[PlotNMR2D,
 			{(ValidGraphicsP[]|DynamicModule[_, Column[{_Dynamic, _Slider, _Dynamic}, ___], ___])..},
 			TimeConstraint -> 120
 		],
+		Example[{Basic, "Plot the two-dimensional NMR spectrum of objects linked to a protocol object input:"},
+			PlotNMR2D[Object[Data, NMR2D, "id:4pO6dM5xGzkB"][Protocol]],
+			SlideView[{(ValidGraphicsP[]|DynamicModule[_, Column[{_Dynamic, _Slider, _Dynamic}, ___], ___])..}],
+			TimeConstraint -> 120
+		],
 		Example[{Options, SymmetryFilter, "By default, the symmetry filter is not used:"},
 			PlotNMR2D[Object[Data, NMR2D, "id:dORYzZJY0WOw"]],
 			ValidGraphicsP[]|DynamicModule[_, Column[{_Dynamic, _Slider, _Dynamic}, ___], ___],

@@ -227,6 +227,16 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Migration->SplitField
 			},
 
+			TargetAmount -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0*Milligram],
+				Units -> Milligram,
+				Description -> "The total weight of the sample and the weighing container container that should be achieved on the balance during a weight-based transfer. This target is calculated as the sum of the EmptyContainerWeight and the Amount.",
+				Category -> "General",
+				Developer -> True
+			},
+
 			DisplayedAmount -> {
 				Format -> Single,
 				Class -> String,
@@ -260,7 +270,51 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "General",
 				Developer -> True
 			},
-
+			PipetteDialImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the dial of the transfer pipette should be set to.",
+				Category -> "General",
+				Developer -> True
+			},
+			AspirationMixPipetteDialImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the dial of the transfer pipette should be set to during aspiration mix.",
+				Category -> "General",
+				Developer -> True
+			},
+			DispenseMixPipetteDialImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the dial of the transfer pipette should be set to during dispense mix.",
+				Category -> "General",
+				Developer -> True
+			},
+			GraduatedCylinderImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the graduated cylinder should look like when filled to the target volume.",
+				Category -> "General",
+				Developer -> True
+			},
+			SerologicalPipetteImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the serological pipette should look like when filled to the target volume.",
+				Category -> "General",
+				Developer -> True
+			},
 			SourceWell->{
 				Format -> Multiple,
 				Class -> String,
@@ -296,15 +350,44 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Model[Instrument, FumeHood],
 					Model[Instrument, GloveBox],
 					Model[Container, Bench],
-
+					Model[Container, Enclosure],
+					Model[Instrument, HandlingStation],
 					Object[Instrument, BiosafetyCabinet],
 					Object[Instrument, FumeHood],
 					Object[Instrument, GloveBox],
-					Object[Container, Bench]
+					Object[Container, Bench],
+					Object[Container, Enclosure],
+					Object[Instrument, HandlingStation]
 				],
-				Description -> "The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Bench). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC.",
+				Description -> "The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC.",
 				Category -> "General",
 				Abstract -> True
+			},
+
+			HandlingCondition -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[HandlingCondition],
+				Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
+				Category -> "General"
+			},
+
+			BiosafetyWasteBin -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Container,WasteBin],Object[Container,WasteBin]],
+				Description -> "The waste bin brought into the bio safety cabinet to hold the BiosafetyWasteBag that collect biohazardous waste generated while working in the BSC.",
+				Category -> "General"
+			},
+			BiosafetyWasteBag -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Item,Consumable],Object[Item,Consumable]],
+				Description -> "The waste bag brought into the biosafety cabinet and placed in the BiosafetyWasteBin to collect biohazardous waste generated while working in the BSC.",
+				Category -> "General"
 			},
 			InstrumentLink->{
 				Format -> Multiple,
@@ -391,13 +474,34 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "The pill crusher bag that will contain the crushed itemized sample after it has been in the pill crusher.",
 				Category -> "General"
 			},
+			(* Sachet handling *)
+			IncludeSachetPouch -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicate if the pouch is also transferred to the destination along with the filler. If IncludeSachetPouch -> False, the pouch is directly discarded after emptied.",
+				Category -> "General"
+			},
+			SachetIntermediateContainer -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Item, WeighBoat],
+					Object[Item, WeighBoat]
+				],
+				Description -> "The container that the filler is emptied into after cutting open the source sachet in order to transfer to the destination, if not transferring gravimetrically.",
+				Category->"General"
+			},
 			Tips->{
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
 				Relation -> Alternatives[
 					Model[Item, Tips],
-					Object[Item, Tips]
+					Object[Item, Tips],
+					Model[Item, Consumable],
+					Object[Item, Consumable]
 				],
 				Description -> "The pipette tips used to aspirate and dispense the requested volume.",
 				Category -> "General"
@@ -534,6 +638,19 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "General",
 				Migration->SplitField
 			},
+			ReplacedWeighingContainers->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Container],
+					Object[Container],
+					Model[Item],
+					Object[Item]
+				],
+				Description -> "The container that are originally used to weigh out the specified amount of the source that are to be transferred to the destination but replaced with new ones in event of spillage on balance.",
+				Category -> "General"
+			},
 			Magnetization->{
 				Format -> Multiple,
 				Class -> Boolean,
@@ -552,6 +669,16 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Item,MagnetizationRack]
 				],
 				Description -> "The magnetized rack that the source/intermediate container will be placed in before the transfer is performed.",
+				Category -> "General"
+			},
+			UnresolvedMagnetizationRackFromParentProtocol->{
+				Format -> Multiple,
+				Class -> Expression,
+				Relation->Null,
+				Pattern :>Automatic|ObjectP[{Model[Item,MagnetizationRack],
+				Object[Item,MagnetizationRack]}]|Null,
+				Description -> "The user input of the magnetized rack. This info is passed from parent experiment function eventually to the framework, in order to decide if an error should be thrown if Preparation->Robotic, and MagnetizationRack is set to the heavy one \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\" while also having a Filter unit operation.",
+				Developer -> True,
 				Category -> "General"
 			},
 			MagnetizationTime->{
@@ -636,17 +763,6 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "The allowed tolerance of the weighed source sample from the specified amount requested to be transferred.",
 				Category -> "General"
 			},
-			WaterPurifier->{
-				Format -> Multiple,
-				Class -> Link,
-				Pattern :> _Link,
-				Relation -> Alternatives[
-					Model[Instrument,WaterPurifier],
-					Object[Instrument,WaterPurifier]
-				],
-				Description -> "The water purifier used to gather the requested water model required for the transfer.",
-				Category -> "General"
-			},
 			HandPump->{
 				Format -> Multiple,
 				Class -> Link,
@@ -656,6 +772,17 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Part, HandPump]
 				],
 				Description -> "The hand pump used to get liquid out of the source container.",
+				Category -> "General"
+			},
+			HandPumpAdapter->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Part, HandPumpAdapter],
+					Object[Part, HandPumpAdapter]
+				],
+				Description -> "The part used to connect the handpump to the solvent container in order to transfer liquid out.",
 				Category -> "General"
 			},
 			HandPumpWasteContainer->{
@@ -676,7 +803,7 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "Indicates if additional QuantitativeTransferWashSolution will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 				Category -> "General"
 			},
-			QuantitativeTransferWashSolution->{
+			QuantitativeTransferWashSolutionLink->{
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
@@ -685,7 +812,17 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Sample]
 				],
 				Description -> "The solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-				Category -> "General"
+				Category -> "General",
+				Migration->SplitField
+			},
+			QuantitativeTransferWashSolutionString->{
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Relation -> Null,
+				Description -> "The solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+				Category -> "General",
+				Migration->SplitField
 			},
 			QuantitativeTransferWashVolume->{
 				Format -> Multiple,
@@ -724,6 +861,15 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Units -> None,
 				Description -> "Indicates the number of washes of the weight boat with QuantitativeTransferWashSolution that will occur, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 				Category -> "General"
+			},
+			NumberOfQuantitativeTransferWashesPerformed->{
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0],
+				Units -> None,
+				Description -> "Indicates the number of washes of the weight boat with QuantitativeTransferWashSolution that have been performed, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+				Category -> "General",
+				Developer -> True
 			},
 			UnsealHermeticSource->{
 				Format -> Multiple,
@@ -939,6 +1085,30 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "The funnel that is used to guide the source sample into the intermediate container when pouring.",
 				Category -> "General"
 			},
+			IntermediateDecantRecoup -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if any residual sample transferred into the intermediate container is transferred back to the source sample.",
+				Category -> "General"
+			},
+			DisplayedDecantAmountAsVolume -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The amount to transfer into intermediate container, converted to a Volume, as a string, as it will be displayed to the operator in the procedure.",
+				Category -> "General",
+				Developer -> True
+			},
+			IntermediateContainerImage -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "An image that imitates what the intermediate container should look like when filled to the target decant volume.",
+				Category -> "General",
+				Developer -> True
+			},
 
 			SourceTemperatureReal->{
 				Format -> Multiple,
@@ -952,7 +1122,7 @@ DefineObjectType[Object[UnitOperation,Transfer],
 			SourceTemperatureExpression->{
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> Ambient,
+				Pattern :> Alternatives[Ambient, Cold],
 				Description -> "Indicates the temperature at which the source was at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
 				Category -> "Temperature Equilibration",
 				Migration->SplitField
@@ -1000,7 +1170,7 @@ DefineObjectType[Object[UnitOperation,Transfer],
 			DestinationTemperatureExpression->{
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> Ambient,
+				Pattern :> Alternatives[Ambient, Cold],
 				Description -> "Indicates the temperature at which the source was at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
 				Category -> "Temperature Equilibration",
 				Migration->SplitField
@@ -1351,11 +1521,25 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "Indicates if the cover on the source container was replaced at the end of the transfer with a new type of cover. If set to False, the previous cover (or a new instance of the previous cover if the previous cover is not reusable) will be used to cover the container after the transfer occurs.",
 				Category -> "Container Covering"
 			},
+			AllowSourceContainerReCover -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the source container was not re-coverable once uncovered and therefore will not be in ContainersToCover at the end of a BatchedUnitOperations group.",
+				Category -> "Container Covering"
+			},
+			DiscardSourceContainerAndCover->{
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the source container and its cover are discarded after transferring the sample out during ths unit operation.",
+				Category -> "Container Covering"
+			},
 			SourceCover -> {
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives@@Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels],
+				Relation -> Alternatives@@Join[CoverObjectTypes, CoverModelTypes],
 				Description -> "The new cover that was placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover was used.",
 				Category -> "Container Covering"
 			},
@@ -1393,7 +1577,7 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives@@Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels],
+				Relation -> Alternatives@@Join[CoverObjectTypes, CoverModelTypes],
 				Description -> "The new cover that was placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover was used.",
 				Category -> "Container Covering"
 			},
@@ -1430,19 +1614,12 @@ DefineObjectType[Object[UnitOperation,Transfer],
 			},
 
 			(* This field is only populated for volumetric flask transfers *)
+			(* This is a single field because when called by FillToVolume, we only have one transfer in the UnitOperation (no multi-channel transfer) *)
 			TargetVolumeToleranceAchieved -> {
 				Format -> Single,
 				Class -> Boolean,
 				Pattern :> BooleanP,
-				Description -> "Indicates if the volumetric flask was properly filled to the marked line and did not over or undershoot it.",
-				Category -> "Fill to Volume"
-			},
-			SourceVolumeRemaining -> {
-				Format -> Single,
-				Class -> Real,
-				Pattern :> GreaterEqualP[0 Liter],
-				Units -> Milliliter,
-				Description -> "The amount of source sample remaining after this transfer is complete.",
+				Description -> "For Volumetric FillToVolume transfer, indicates whether the final sample volume reaches the graduation line of the volumetric flask without exceeding it. If the volume is below the line, additional solvent is added. A TargetVolumeToleranceAchieved value of False indicates that the liquid level has gone above the graduation line.",
 				Category -> "Fill to Volume"
 			},
 			LiquidLevelDetector -> {
@@ -1465,7 +1642,19 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Category -> "Fill to Volume"
 			},
 
-			(* NOTE: These two fields are used to minimize the amount of movements that we do to/from the TransferEnvironment. *)
+			(* NOTE: These three fields are used to minimize the amount of movements that we do to/from the TransferEnvironment. *)
+			CapRacks -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Container, Rack],
+					Object[Container, Rack]
+				],
+				Description -> "The cap racks that should be moved into the biosafety cabinet at the beginning of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
 			MovementObjects->{
 				Format -> Multiple,
 				Class -> Link,
@@ -1477,7 +1666,69 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Instrument],
 					Object[Part]
 				],
-				Description -> "The objects that was moved onto the TransferEnvironment's work surface at the beginning of this primitive.",
+				Description -> "The objects that was moved onto the TransferEnvironment's work surface at the beginning of this primitive. Note that this excludes everything that is going into a biosafety cabinet; those are handled separately since those need to use the placement task, not the movement task.",
+				Category -> "General",
+				Developer -> True
+			},
+			BiosafetyCabinetPlacements -> {
+				Format -> Multiple,
+				Class -> {Link, Link, String},
+				Pattern :> {_Link, _Link, LocationPositionP},
+				Relation -> {
+					Alternatives[
+						Object[Container],
+						Object[Item],
+						Object[Sample],
+						Object[Instrument],
+						Object[Part]
+					],
+					Alternatives[Object[Instrument, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]],
+					Null
+				},
+				Headers -> {"Objects to move", "BSC to move to", "Position to move to"},
+				Description -> "The specific positions into which objects should be moved into the transfer environment's biosafety cabinet at the beginning of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			BiosafetyWasteBinPlacements -> {
+				Format -> Multiple,
+				Class -> {Link, Link, String},
+				Pattern :> {_Link, _Link, LocationPositionP},
+				Relation -> {
+					Alternatives[
+						Object[Container,WasteBin],
+						Model[Container,WasteBin],
+						Object[Item,Consumable],
+						Model[Item,Consumable]
+					],
+					Alternatives[
+						Object[Instrument,BiosafetyCabinet],
+						Model[Instrument,BiosafetyCabinet],
+						Object[Instrument,HandlingStation,BiosafetyCabinet],
+						Model[Instrument,HandlingStation,BiosafetyCabinet],
+						Object[Container,WasteBin],
+						Model[Container,WasteBin]
+					],
+					Null
+				},
+				Headers -> {"Objects to move", "Object to move to", "Position to move to"},
+				Description -> "The specific positions into which waste bin objects should be moved into the biosafety cabinet at the beginning of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			BiosafetyWasteBinTeardowns -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Sample],
+					Model[Sample],
+					Object[Container],
+					Model[Container],
+					Object[Item,Consumable],
+					Model[Item,Consumable]
+				],
+				Description -> "The specific items that should be removed from the biosafety cabinet at the end of this unit operation.",
 				Category -> "General",
 				Developer -> True
 			},
@@ -1493,6 +1744,66 @@ DefineObjectType[Object[UnitOperation,Transfer],
 					Object[Part]
 				],
 				Description -> "The objects that was moved from the TransferEnvironment's work surface back onto the cart at the end of this primitive.",
+				Category -> "General",
+				Developer -> True
+			},
+			CollectionItems->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Part]
+				],
+				Description -> "The non-instrument objects that was moved from the TransferEnvironment's work surface back onto the cart at the end of this primitive.",
+				Category -> "General",
+				Developer -> True
+			},
+			CollectionInstruments->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Instrument],
+				Description -> "The instrument objects that was moved from the TransferEnvironment's work surface back onto the cart at the end of this primitive.",
+				Category -> "General",
+				Developer -> True
+			},
+			StoredObjects->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Part]
+				],
+				Description -> "Devices used to complete transfers in the current transfer environment that are stored at the end of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			DiscardedObjects->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample],
+					Object[Part]
+				],
+				Description -> "Devices used to complete transfers in the current transfer environment that are discarded at the end of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			ReleasedInstruments->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Instrument],
+				Description ->"Instruments used to complete transfers in the current transfer environment that are released at the end of this unit operation.",
 				Category -> "General",
 				Developer -> True
 			},
@@ -1517,6 +1828,14 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "The operator estimated percentage of mass/volume that was transferred from the source to the destination, in relation to the user specified Amount. The percent transferred will be less than 100% if there was not enough volume/mass in the source sample.",
 				Category -> "Experimental Results"
 			},
+			PercentTransferredString -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "The operator estimated percentage of mass/volume that was transferred from the source to the destination, in relation to the user specified Amount. The percent transferred will be less than 100% if there was not enough volume/mass in the source sample. This is string input due to operators inputting the value in a multiple choice task. The value is later converted to PercentTransferred which is a Real.",
+				Category -> "Experimental Results",
+				Developer -> True
+			},
 			HomogeneousSlurryTransfer -> {
 				Format -> Multiple,
 				Class -> Boolean,
@@ -1524,23 +1843,133 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "Indicates if the source sample was able to become fully homogeneous via aspiration mixing (mixing up to MaxNumberOfAspirationMixes times) before the slurry transfer occurred. This data is recorded by the operator if the transfer is set as a SlurryTransfer.",
 				Category -> "Experimental Results"
 			},
-			MeasuredTransferWeights -> {
+
+			(* NOTE: These need to be Multiple for UnitOperationType->Output which can be executed via multiple Batched UOs. *)
+			TareData -> {
 				Format -> Multiple,
-				Class->Distribution,
-				Pattern:>DistributionP[Milligram],
-				Units->Milligram,
-				Description -> "The weight of the weighing container when filled with the amount of sample needed to complete the transfer.",
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Weight],
+				Description -> "The weight measurement data recorded with nothing on the balance and after zeroing the reading. This data should always be 0 Gram.",
 				Category -> "Experimental Results"
 			},
-			(* NOTE: This needs to be Multiple for UnitOperationType->Output which can be executed via multiple Batched UOs. *)
+			TareWeights -> {
+				Format -> Multiple,
+				Class -> Distribution,
+				Pattern :> DistributionP[Milligram],
+				Units -> Milligram,
+				Description -> "The weight recorded with nothing on the balance and after zeroing the reading. This data should always be 0 Gram.",
+				Category -> "Experimental Results"
+			},
+			TareWeightAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Appearance],
+				Description -> "The side on image of the weighing surface of the balance, captured immediately following the weight measurement of TareData by the integrated camera.",
+				Category -> "Experimental Results"
+			},
+
+			EmptyContainerWeightData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Weight],
+				Description -> "The weight measurement data of the weigh container when empty and before any incoming sample transfer has commenced.",
+				Category -> "Experimental Results"
+			},
+			EmptyContainerWeights -> {
+				Format -> Multiple,
+				Class -> Distribution,
+				Pattern :> DistributionP[Milligram],
+				Units -> Milligram,
+				Description -> "The weight of the weigh container when empty and before any incoming sample transfer has commenced.",
+				Category -> "Experimental Results"
+			},
+			EmptyContainerWeightAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Appearance],
+				Description -> "The side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of EmptyContainerWeightData by the integrated camera.",
+				Category -> "Experimental Results"
+			},
+
 			MeasuredTransferWeightData -> {
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
 				Relation -> Object[Data, Weight],
+				Description -> "The weight measurement data of the weighing container when filled with the amount of sample needed to complete the transfer.",
+				Category -> "Experimental Results"
+			},
+			MeasuredTransferWeights -> {
+				Format -> Multiple,
+				Class -> Distribution,
+				Pattern :> DistributionP[Milligram],
+				Units -> Milligram,
 				Description -> "The weight of the weighing container when filled with the amount of sample needed to complete the transfer.",
 				Category -> "Experimental Results"
 			},
+			MeasuredTransferWeightAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Appearance],
+				Description -> "The side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of MeasuredTransferWeightData by the integrated camera.",
+				Category -> "Experimental Results"
+			},
+
+			MaterialLossWeightData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Weight],
+				Description -> "The weight measurement data recorded after the weighing container is removed from the balance. This measurement accounts for any material lost onto the balance pan during the transfer process.",
+				Category -> "Experimental Results"
+			},
+			MaterialLossWeights -> {
+				Format -> Multiple,
+				Class -> Distribution,
+				Pattern :> DistributionP[Milligram],
+				Units -> Milligram,
+				Description -> "The weight recorded after the weighing container is removed from the balance. This weight accounts for any material lost onto the balance pan during the transfer process.",
+				Category -> "Experimental Results"
+			},
+			MaterialLossWeightAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Appearance],
+				Description -> "The side on image of the weighing surface of the balance, captured immediately following the weight measurement of MaterialLossWeightData by the integrated camera.",
+				Category -> "Experimental Results"
+			},
+
+			ResidueWeightData -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Weight],
+				Description -> "The weight measurement data of the weighing container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container.",
+				Category -> "Experimental Results"
+			},
+			ResidueWeights -> {
+				Format -> Multiple,
+				Class -> Distribution,
+				Pattern :> DistributionP[Milligram],
+				Units -> Milligram,
+				Description -> "The weight of the weighing container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container.",
+				Category -> "Experimental Results"
+			},
+			ResidueWeightAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Data, Appearance],
+				Description -> "The side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of ResidueWeightData by the integrated camera.",
+				Category -> "Experimental Results"
+			},
+
 			DestinationSampleHandling -> {
 				Format -> Multiple,
 				Class -> Expression,
@@ -1689,7 +2118,7 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Format -> Multiple,
 				Class -> Boolean,
 				Pattern :> BooleanP,
-				Description -> "For each member of SourceLink, indicates if the typical rules for setting the Living field of the Destination will be followed, or if the Living field of the Destination will be set to False regardless of the state of the Living field of the source and destination initially. See the UploadSampleTranser helpfile for more information on the 'typical rules' for setting the Living field.",
+				Description -> "For each member of SourceLink, indicates if the typical rules for setting the Living field of the Destination will be followed, or if the Living field of the Destination will be set to False regardless of the state of the Living field of the source and destination initially. See the UploadSampleTransfer helpfile for more information on the 'typical rules' for setting the Living field.",
 				IndexMatching -> SourceLink,
 				Category -> "General",
 				Developer -> True
@@ -1732,6 +2161,44 @@ DefineObjectType[Object[UnitOperation,Transfer],
 				Description -> "For each member of AspirationPressure, the confidence (on a scale of 0-100%) of the machine learning model result that classified the success or failure of the aspiration step of the transfer. A higher confidence value means that the corresponding categorization in AspirationClassifications is more likely to be correct.",
 				Category -> "Simulation Results",
 				IndexMatching -> AspirationPressure
+			},
+			PipetteDialPicture -> {
+ 				Format -> Single,
+ 				Class -> Link,
+ 				Pattern :> _Link,
+ 				Relation -> Object[Data, Appearance],
+ 				Description -> "The image of the dial of the transfer pipette that was set to.",
+ 				Category -> "General"
+ 			},
+ 			AspirationMixPipetteDialPicture -> {
+ 				Format -> Single,
+ 				Class -> Link,
+ 				Pattern :> _Link,
+ 				Relation -> Object[Data, Appearance],
+ 				Description -> "The image of the dial of the transfer pipette that was set to during aspiration mix.",
+ 				Category -> "General"
+ 			},
+ 			DispenseMixPipetteDialPicture -> {
+ 				Format -> Single,
+ 				Class -> Link,
+ 				Pattern :> _Link,
+ 				Relation -> Object[Data, Appearance],
+ 				Description -> "The image of the dial of the transfer pipette that was set to during dispense mix.",
+ 				Category -> "General"
+			},
+			BalanceCleaningMethod ->{
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> Alternatives[Wet,Dry],
+				Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
+				Category -> "General"
+			},
+			BalancePreCleaningMethod ->{
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> Alternatives[Wet,Dry,None],
+				Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
+				Category -> "General"
 			}
 		}
 	}

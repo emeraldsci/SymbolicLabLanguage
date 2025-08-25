@@ -139,7 +139,7 @@ Error::ZStackImageCollectionNotAllowed="The ZStackImageCollection option at inde
 Error::ConflictingModeAndImagingChannel="The following Mode and ImagingChannel options at index `1` are conflicting: `2`. If fluorescent channel `3` is selected, only the following Mode can be used: `4`. If non-fluorescent channel `5` is selected, only the following Mode can be used: `6`. Please correct the ImagingChannel and Mode option value or leave either of the options to be set automatically.";
 Error::CustomChannelNotAllowed="The ImagingChannel at index `1` cannot be set to CustomChannel. Please change the option value to any of the following channels or leave the ImagingChannel option to be set automatically: `2`.";
 Error::ConflictingImagingChannelOptions="The following options at index `1` are conflicting with the ImagingChannel option: `2`. If the ImagingCannel option is specified, the following options must be Automatic: {ExcitationWavelength, EmissionWavelength, ExcitationPower, DichroicFilterWavelength, TransmittedLightPower}. Please correct the option values or leave the ImagingChannel option to be set automatically.";
-Error::UnsupportedImagingChannel="The following specified ImagingChannel option at index `1` is not supported by the instrument: `2`. The instrument `3` supports the following imaging channels: `4`. Please correct the option value, select a different insturment, or leave the ImagingChannel option to be set automatically.";
+Error::UnsupportedImagingChannel="The following specified ImagingChannel option at index `1` is not supported by the instrument: `2`. The instrument `3` supports the following imaging channels: `4`. Please correct the option value, select a different instrument, or leave the ImagingChannel option to be set automatically.";
 Error::UnresolvableModeWithChannel="The Mode option at index `1` cannot be determined because the instrument's supported Mode cannot be used to acquire images with the specified ImagingChannel. Please select a different Instrument or leave the ImagingChannel option to be set automtically.";
 
 
@@ -149,14 +149,14 @@ Error::UnresolvableModeWithChannel="The Mode option at index `1` cannot be deter
 
 resolveAcquireImagePrimitive[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,cache,outputSpecification,output,gatherTests,messages,listedSamples,safeOps,safeOpsTests,validLengths,
+		cache,outputSpecification,output,gatherTests,messages,listedSamples,safeOps,safeOpsTests,validLengths,
 		validLengthTests,expandedSafeOps,simulation,instrument,resolvedInstrument,cacheBall,resolvedOptions,resolvedAcquireImagePrimitives,
 		optionsToPackage,modelInstrumentFields,modelObjectiveFields,detectionLabelFields,instrumentDownloadPacket,objectiveDownloadPacket,
 		samplePackets,sampleDetectionLabelPackets,sampleIdentityModelDetectionLabelPackets,detectionLabelOptionPackets,instrumentModelPacket,
 		objectiveModelPackets,uniquePrimitiveDetectionLabels,resolvedOptionsTests,primitiveOption,acquireImagePrimitiveOptionNames,
 		conflictingPrimitiveOptions,conflictingPrimitiveOptionsTest,optionsFromPrimitives,updatedOptions,allSampleDetectionLabelPackets,
 		detectionLabelsSpecifiedQ,preResolvedDetectionLabels,optionsToExpand,resolvedAcquireImageAssociations,updatedAcquireImageAssociations,
-		timelapseOption,numOfTimepointsOption,missingNumOfTimepointsQ,missingNumOfTimepointsTest
+		timelapseOption,numOfTimepointsOption,missingNumOfTimepointsQ,missingNumOfTimepointsTest, safeOpsNamed
 	},
 
 	(* Determine the requested return value from the function *)
@@ -262,20 +262,14 @@ resolveAcquireImagePrimitive[mySamples:ListableP[ObjectP[Object[Sample]]],myOpti
 	(* update our specified options *)
 	updatedOptions=ReplaceRule[ToList[myOptions],optionsFromPrimitives];
 
-	(* make sure we're working with a list of options and samples, and remove all temporal links *)
-	{listedSamples,listedOptions}=sanitizeInputs[ToList[mySamples],ToList[updatedOptions]];
-
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOps,safeOpsTests}=If[gatherTests,
-		SafeOptions[resolveAcquireImagePrimitive,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[resolveAcquireImagePrimitive,listedOptions,AutoCorrect->False],{}}
+	{safeOpsNamed,safeOpsTests}=If[gatherTests,
+		SafeOptions[resolveAcquireImagePrimitive,updatedOptions,AutoCorrect->False,Output->{Result,Tests}],
+		{SafeOptions[resolveAcquireImagePrimitive,updatedOptions,AutoCorrect->False],{}}
 	];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[resolveAcquireImagePrimitive,{listedSamples},safeOps,Output->{Result,Tests}],
-		{ValidInputLengthsQ[resolveAcquireImagePrimitive,{listedSamples},safeOps],{}}
-	];
+	(* make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples,safeOps}=sanitizeInputs[ToList[mySamples],safeOpsNamed,Simulation->Lookup[safeOpsNamed,Simulation]];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -285,6 +279,13 @@ resolveAcquireImagePrimitive[mySamples:ListableP[ObjectP[Object[Sample]]],myOpti
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[resolveAcquireImagePrimitive,{listedSamples},safeOps,Output->{Result,Tests}],
+		{ValidInputLengthsQ[resolveAcquireImagePrimitive,{listedSamples},safeOps],{}}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -403,7 +404,7 @@ resolveAcquireImagePrimitive[mySamples:ListableP[ObjectP[Object[Sample]]],myOpti
 	(* 2. DetectionLabels option is not specified by the user *)
 
 	(* check if DetectionLabels option is specified *)
-	detectionLabelsSpecifiedQ=MemberQ[Keys@listedOptions,DetectionLabels];
+	detectionLabelsSpecifiedQ=MemberQ[Keys@updatedOptions,DetectionLabels];
 
 	(* pre-resolve our DetectionLabels option *)
 	preResolvedDetectionLabels=If[MatchQ[primitiveOption,{}]&&!detectionLabelsSpecifiedQ,

@@ -206,7 +206,7 @@ DefineOptionSet[TransferCoverOptions :> {
 		{
 			OptionName->KeepSourceCovered,
 			Default->Automatic,
-			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the source sample/container.",
+			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the source sample/container, or True if SterileTechnique is True.",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Enumeration,
@@ -233,7 +233,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels]],
+				Pattern :> ObjectP[Join[CoverObjectTypes, CoverModelTypes]],
 				PreparedSample -> False,
 				OpenPaths -> {
 					{
@@ -259,7 +259,15 @@ DefineOptionSet[TransferCoverOptions :> {
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Item, Septum], Object[Item, Septum]}],
-				PreparedSample -> False
+				PreparedSample -> False,
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers",
+						"Caps",
+						"Septa Caps"
+					}
+				}
 			],
 			Description -> "The new septum that will be placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous septum will be used (if there was previously a septum on the container). This option can only be set if a new SourceCover is to be used and that SourceCover is a Model[Item, Cap]/Object[Item, Cap] that has CoverType->Crimp and SeptumRequired->True.",
 			ResolutionDescription -> "Automatically set to a septum that is compatible with the source container if ReplaceSourceCover->True.",
@@ -281,7 +289,7 @@ DefineOptionSet[TransferCoverOptions :> {
 		{
 			OptionName->KeepDestinationCovered,
 			Default->Automatic,
-			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the destination sample/container.",
+			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the destination sample/container, or True if SterileTechnique is True.",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Enumeration,
@@ -308,7 +316,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels]],
+				Pattern :> ObjectP[Join[CoverObjectTypes, CoverModelTypes]],
 				PreparedSample -> False,
 				OpenPaths -> {
 					{
@@ -334,7 +342,15 @@ DefineOptionSet[TransferCoverOptions :> {
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Item, Septum], Object[Item, Septum]}],
-				PreparedSample -> False
+				PreparedSample -> False,
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers",
+						"Caps",
+						"Septa Caps"
+					}
+				}
 			],
 			Description -> "The new septum that will be placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous septum will be used (if there was previously a septum on the container). This option can only be set if a new DestinationCover is to be used and that DestinationCover is a Model[Item, Cap]/Object[Item, Cap] that has SeptumRequired->True.",
 			ResolutionDescription -> "Automatically set to a septum that is compatible with the destination container if ReplaceDestinationCover->True.",
@@ -352,6 +368,38 @@ DefineOptionSet[TransferCoverOptions :> {
 			Description -> "The new stopper that will be placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous stopper will be used (if there was previously a stopper on the container). This option can only be set if a new DestinationCover is to be used and that DestinationCover is a Model[Item, Cap]/Object[Item, Cap] that has CoverType->Crimp.",
 			ResolutionDescription -> "Automatically set to a stopper that is compatible with the destination container if ReplaceDestinationCover->True.",
 			Category->"Container Covering"
+		}
+	]
+}];
+
+
+(* ::Subsection:: *)
+(*HandlingConditionOption*)
+
+
+DefineOptionSet[HandlingConditionOption :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> HandlingCondition,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a condition that fulfills all safety requirements of the samples being transferred.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[HandlingCondition]
+				}],
+				PreparedContainer -> False(*,
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Handling Environments"
+					}
+				}*)
+			],
+			Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
+			Category -> "Hidden"
 		}
 	]
 }];
@@ -374,15 +422,24 @@ DefineOptionSet[TransferEnvironmentOption :> {
 					Model[Instrument, FumeHood],
 					Model[Instrument, GloveBox],
 					Model[Container, Bench],
-
+					Model[Container, Enclosure],
+					Model[Instrument, HandlingStation],
 					Object[Instrument, BiosafetyCabinet],
 					Object[Instrument, FumeHood],
 					Object[Instrument, GloveBox],
-					Object[Container, Bench]
+					Object[Container, Bench],
+					Object[Container, Enclosure],
+					Object[Instrument, HandlingStation]
 				}],
-				PreparedContainer->False
+				PreparedContainer->False,
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Transfer Environments"
+					}
+				}
 			],
-			Description->"The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Bench). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
+			Description->"The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
 			Category->"Instrument Specifications"
 		}
 	]
@@ -429,7 +486,7 @@ DefineOptionSet[TabletCrusherOption :> {
 		{
 			OptionName->TabletCrusher,
 			Default->Automatic,
-			ResolutionDescription -> "Automatically set to Model[Item, TabletCrusher, \"Silent Knight Pill Crusher\"] if an Itemized sample is being transferred by mass and not count.",
+			ResolutionDescription -> "Automatically set to Model[Item, TabletCrusher, \"Silent Knight Pill Crusher\"] if an Itemized sample with Tablet -> True is being transferred by mass and not count.",
 			AllowNull->True,
 			Widget->Widget[
 				Type->Object,
@@ -438,8 +495,44 @@ DefineOptionSet[TabletCrusherOption :> {
 					Object[Item, TabletCrusher]
 				}]
 			],
-			Description->"The pill crusher that will be used to crush any itemized source samples if they are being transferred by mass and not by count.",
+			Description->"The pill crusher that will be used to crush any itemized tablet source samples if they are being transferred by mass and not by count.",
 			Category->"Instrument Specifications"
+		}
+	]
+}];
+
+(* ::Subsection::Closed:: *)
+(* Sachet Option *)
+
+DefineOptionSet[SachetOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName->IncludeSachetPouch,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to False if the sample has Sachet -> True.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Enumeration,
+				Pattern:>BooleanP
+			],
+			Description->"Indicates if the pouch is also transferred to the destination along with the filler. If IncludeSachetPouch -> False, the pouch is directly discarded after emptied.",
+			Category->"Instrument Specifications"
+		},
+		{
+			OptionName->SachetIntermediateContainer,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a compatible weigh boat model if Sachet -> True and WeighingContainer is Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Item, WeighBoat],
+					Object[Item, WeighBoat]
+				}]
+			],
+			Description->"The weigh boat item that the filler is emptied into after cutting open the source sachet in order to transfer to the destination, if not transferring gravimetrically using a weigh boat already.",
+			Category->"General"
 		}
 	]
 }];
@@ -460,7 +553,9 @@ DefineOptionSet[TransferTipOptions :> {
 				Type->Object,
 				Pattern:>ObjectP[{
 					Model[Item, Tips],
-					Object[Item, Tips]
+					Object[Item, Tips],
+					Model[Item, Consumable],
+					Object[Item, Consumable]
 				}],
 				OpenPaths -> {
 					{
@@ -1030,40 +1125,6 @@ DefineOptionSet[TransferToleranceOption :> {
 
 
 
-(* ::Subsection::Closed:: *)
-(* WaterPurifierOption *)
-
-DefineOptionSet[WaterPurifierOption :> {
-	IndexMatching[
-		IndexMatchingInput -> "experiment samples",
-		{
-			OptionName->WaterPurifier,
-			Default->Automatic,
-			ResolutionDescription -> "Automatically set to the water purifier that can fulfill the requested water model. For example, automatically set to Model[Instrument, WaterPurifier, \"MilliQ Integral 3\"] if the source is Model[Sample, \"Milli-Q water\"]. Otherwise, set to Null if a water model is not requested.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
-					Model[Instrument,WaterPurifier],
-					Object[Instrument,WaterPurifier]
-				}],
-				OpenPaths -> {
-					{
-						Object[Catalog, "Root"],
-						"Instruments",
-						"Liquid Handling",
-						"Water Sources"
-					}
-				}
-			],
-			Description->"The water purifier used to gather the requested water model required for the transfer.",
-			Category->"Instrument Specifications"
-		}
-	]
-}];
-
-
-
 
 (* ::Subsection::Closed:: *)
 (* HandPumpOption *)
@@ -1222,7 +1283,13 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 				Pattern:>ObjectP[{
 					Model[Sample],
 					Object[Sample]
-				}]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
 			],
 			Description->"The solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 			Category->"Quantitative Transfers"
@@ -1230,7 +1297,7 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 		{
 			OptionName->QuantitativeTransferWashVolume,
 			Default->Automatic,
-			ResolutionDescription -> "Automatically set to 1/4 of the MaxVolume of the weigh boat that will be used if any of the other QuantitativeTransfer options are set. Otherwise, is set to Null.",
+			ResolutionDescription -> "Automatically set to 1/4 of the MaxVolume of the weigh boat that will be used if any of the other QuantitativeTransfer options are set, up to a maximum of 10 mL. Otherwise, is set to Null.",
 			AllowNull->True,
 			Widget->Widget[
 				Type->Quantity,
@@ -1250,7 +1317,15 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 				Pattern:>ObjectP[{
 					Model[Instrument,Pipette],
 					Object[Instrument,Pipette]
-				}]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Liquid Handling",
+						"Pipettes"
+					}
+				}
 			],
 			Description->"The pipette that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 			Category->"Quantitative Transfers"
@@ -1265,7 +1340,14 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 				Pattern:>ObjectP[{
 					Model[Item, Tips],
 					Object[Item, Tips]
-				}]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Labware",
+						"Pipette Tips"
+					}
+				}
 			],
 			Description->"The tips that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
 			Category->"Quantitative Transfers"
@@ -1314,7 +1396,13 @@ DefineOptionSet[TipRinseOptions :> {
 				Pattern:>ObjectP[{
 					Model[Sample],
 					Object[Sample]
-				}]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
 			],
 			Description->"The solution that the Tips will be rinsed before they are used to aspirate from the source sample.",
 			Category->"Tip Rinsing"
@@ -1469,7 +1557,13 @@ DefineOptionSet[IntermediateDecantOptions :> {
 				Pattern:>ObjectP[{
 					Model[Container],
 					Object[Container]
-				}]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
 			],
 			Description->"The container that the source will be decanted into in order to make the final transfer via pipette into the final destination.",
 			Category->"Intermediate Decanting"
@@ -1623,13 +1717,13 @@ DefineOptionSet[SterileTechniqueOption :> {
 		{
 			OptionName->SterileTechnique,
 			Default->Automatic,
-			ResolutionDescription -> "Automatically set to True if the samples being transferred contain tissue culture or microbial components.",
+			ResolutionDescription -> "Automatically set to True if the samples being transferred contain tissue culture or microbial components, or require aseptic techniques.",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if 70% ethanol will be sprayed on all surfaces/containers used during the transfer. This also indicates that sterile instruments and a sterile transfer environments must be used for the transfer. Please consult the ExperimentTransfer documentation for a full diagram of SterileTechnique that is employed by operators.",
+			Description->"Indicates if sterilized instruments and aseptic transfer environments must be used for the transfer. Aseptic transfer environments include biosafety cabinets as TransferEnvironment, or bioSTAR and microbioSTAR Hamilton enclosures as WorkCell. Please consult the ExperimentTransfer documentation for a full diagram of SterileTechnique that is employed by operators.",
 			Category->"Transfer Technique"
 		}
 	]
@@ -1715,10 +1809,35 @@ DefineOptionSet[MagnetizationOptions :> {
 					Model[Item,MagnetizationRack],
 					Object[Item,MagnetizationRack]
 				}],
-				PreparedContainer->False
+				PreparedContainer->False,
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Magnetic Bead Separation",
+						"Magnetization Racks"
+					}
+				}
 			],
 			Description->"The magnetized rack that the source/intermediate container will be placed in before the transfer is performed.",
 			Category->"Transfer Technique"
+		},
+		{
+			OptionName -> UnresolvedMagnetizationRackFromParentProtocol,
+			Default -> Null,
+			AllowNull->True,
+			Widget->Alternatives[
+				Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Item,MagnetizationRack],
+						Object[Item,MagnetizationRack]
+					}]
+				],
+				Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+			],
+			Description->"The user input of the magnetic rack used during magnetization passed from the higher level experiment function.",
+			Category->"Hidden"
 		}
 	]
 }];
@@ -1738,11 +1857,25 @@ DefineOptionSet[CollectionContainerOptions :> {
 				"Existing Container" -> Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Object[Container, Plate], Model[Container, Plate]}],
-					PreparedContainer->True
+					PreparedContainer->True,
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Plates"
+						}
+					}
 				],
 				"New Container" -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container, Plate]}]
+					Pattern :> ObjectP[{Model[Container, Plate]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Plates"
+						}
+					}
 				],
 				"New Container with Index"->{
 					"Index" -> Widget[
@@ -1751,7 +1884,14 @@ DefineOptionSet[CollectionContainerOptions :> {
 					],
 					"Container" -> Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Container]}]
+						Pattern :> ObjectP[{Model[Container]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers",
+								"Plates"
+							}
+						}
 					]
 				}
 			],

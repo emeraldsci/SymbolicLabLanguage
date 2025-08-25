@@ -192,6 +192,16 @@ DefineObjectType[Object[Company, Supplier], {
 			},
 			Description -> "A record of all transactions with this supplier.",
 			Category -> "Organizational Information"
+		},
+		(* Instrument maintenances *)
+		RepairLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link, Link},
+			Pattern :> {_?DateObjectQ, _Link, _Link},
+			Relation -> {Null, Object[Repair][Vendor], Object[Instrument][RepairLog, 3]},
+			Description -> "A record of any off-protocol maintenances performed on instruments to return them to full functionality.",
+			Headers -> {"Date", "Repair", "Instrument"},
+			Category -> "Qualifications & Maintenance"
 		}
 	}
 }];

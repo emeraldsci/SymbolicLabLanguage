@@ -21,6 +21,11 @@ DefineTests[PlotNMR,
 			_?ValidGraphicsQ
 		],
 		Example[
+			{Basic,"Plot an NMR data linked to a given protocol object:"},
+			PlotNMR[Object[Protocol, NMR, "NMR Protocol For PlotNMR Test " <> $SessionUUID]],
+			_?ValidGraphicsQ
+		],
+		Example[
 			{Additional,"Plot timed NMR spectra in a stacked waterfall:"},
 			PlotNMR[Object[Data, NMR, "id:7X104vnMY0PZ"]],
 			_?ValidGraphicsQ
@@ -224,7 +229,7 @@ DefineTests[PlotNMR,
 			_?ValidGraphicsQ
 		],
 		Test[
-			"Plot each spectra seperately when given NMR data info packets:",
+			"Plot each spectra separately when given NMR data info packets:",
 			PlotNMR[(Download[{Object[Data, NMR, "id:pZx9jonGr7RM"],Object[Data, NMR, "id:aXRlGnZm8OK9"],Object[Data, NMR, "id:Vrbp1jG8Zd9o"]},NMRSpectrum]),Map->True],
 			_List
 		],
@@ -483,5 +488,62 @@ DefineTests[PlotNMR,
 			TimeConstraint->120
 		]
 				
-	}
+	},
+	SymbolSetUp :> (
+
+		$CreatedObjects={};
+
+		(* Gather and erase all pre-existing objects created in SymbolSetUp *)
+		Module[
+			{
+				allObjects, existingObjects, protocol1, data1
+			},
+
+			(* All data objects generated for unit tests *)
+
+			allObjects=
+				{
+					Object[Protocol, NMR, "NMR Protocol For PlotNMR Test " <> $SessionUUID],
+					Object[Data, NMR, "NMR Data For PlotNMR Test " <> $SessionUUID]
+				};
+
+			(* Check whether the names we want to give below already exist in the database *)
+			existingObjects=PickList[allObjects,DatabaseMemberQ[allObjects]];
+
+			(* Erase any test objects and models that we failed to erase in the last unit test *)
+			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
+
+			{protocol1, data1} = CreateID[{Object[Protocol, NMR], Object[Data, NMR]}];
+
+			Upload[
+				<|
+					Name -> "NMR Data For PlotNMR Test " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, NMR],
+					NMRSpectrum -> QuantityArray[{#, RandomReal[50000]} & /@ Reverse[Range[-2, 14, 0.001]], {PPM, ArbitraryUnit}]
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "NMR Protocol For PlotNMR Test " <> $SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, NMR],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		];
+	),
+	SymbolTearDown :> Module[{objects},
+		objects = {
+			Object[Protocol, NMR, "NMR Protocol For PlotNMR Test " <> $SessionUUID],
+			Object[Data, NMR, "NMR Data For PlotNMR Test " <> $SessionUUID]
+		};
+
+		EraseObject[
+			PickList[objects,DatabaseMemberQ[objects],True],
+			Verbose->False,
+			Force->True
+		]
+	]
 ];

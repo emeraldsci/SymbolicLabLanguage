@@ -1,3 +1,1005 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2ee61729c3d78c3ccddc6baf4c2379a26508b9a9d07bf3e2b70e617f85b3b0f7
-size 39417
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     39217,        995]
+NotebookOptionsPosition[     29925,        834]
+NotebookOutlinePosition[     31978,        878]
+CellTagsIndexPosition[     31935,        875]
+WindowTitle->ConstellationUtilityFunctions
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "a8b1629a-9c11-4493-86bc-3a86f4ade62c"]
+        }],ExpressionUUID->"9634c59e-a47f-4b59-a533-b2f4f50e9d3e"],
+        StripOnInput->False], {"\<\"AbortComputation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Manifold/ref/AbortComputation"], "\<\"AddFavoriteObject\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/AddFavoriteObject"], \
+"\<\"AvailableComputationThreads\"\>":>Documentation`HelpLookup[
+       "paclet:Manifold/ref/AvailableComputationThreads"], \
+"\<\"BookmarkObject\"\>":>Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/BookmarkObject"], \
+"\<\"ClearDownload\"\>":>Documentation`HelpLookup[
+       "paclet:Constellation/ref/ClearDownload"], "\<\"Compute\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Manifold/ref/Compute"], "\<\"CreateID\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/CreateID"], "\<\"CreateLinkID\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/CreateLinkID"], "\<\"DatabaseMemberQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/DatabaseMemberQ"], \
+"\<\"EraseFavoriteFolder\"\>":>Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/EraseFavoriteFolder"], \
+"\<\"ExportBillingData\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/ExportBillingData"], "\<\"Field\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/Field"], "\<\"ImageFileQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/ImageFileQ"], "\<\"Login\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/Login"], "\<\"Logout\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/Logout"], "\<\"LookupLabeledObject\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/LookupLabeledObject"], "\<\"ObjectLog\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/ObjectLog"], "\<\"PacketP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/PacketP"], "\<\"PauseScript\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Scripts/ref/PauseScript"], "\<\"PlotFavoriteFolder\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/PlotFavoriteFolder"], \
+"\<\"PriceOperatorTime\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceOperatorTime"], "\<\"PriceStorage\
+\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceStorage"], "\<\"PriceTransactions\
+\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceTransactions"], "\<\"RemoveLinkID\
+\"\>":>Documentation`HelpLookup[
+       "paclet:Constellation/ref/RemoveLinkID"], \
+"\<\"RenameCloudFileOptions\"\>":>Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/RenameCloudFileOptions"], "\<\"RunComputation\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Manifold/ref/RunComputation"], "\<\"RunScript\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Scripts/ref/RunScript"], "\<\"SameObjectQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/SameObjectQ"], "\<\"StopComputation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Manifold/ref/StopComputation"], "\<\"StopScript\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Scripts/ref/StopScript"], "\<\"SyncBilling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/SyncBilling"], "\<\"TemporalLinkP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/TemporalLinkP"], "\<\"ToBarcode\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/ToBarcode"], "\<\"ToObject\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/ToObject"], "\<\"ValidObjectQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ValidObjectQ/ref/ValidObjectQ"], "\<\"ValidPacketFormatQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/ValidPacketFormatQ"], "\<\"ValidUploadQ\"\>":>
+       Documentation`HelpLookup["paclet:Constellation/ref/ValidUploadQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8b5d40db-7a69-46bc-bf41-f4101f689486"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "a2e99a11-3c79-4c3f-bc28-8f68de75436a"]
+        }],ExpressionUUID->"6f43a75c-7659-4a35-b151-c1ad09f05233"],
+        StripOnInput->False], {"\<\"EmeraldCloudFiles\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/EmeraldCloudFiles"], \
+"\<\"IncludingLiteratureReferences\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/IncludingLiteratureReferences"], \
+"\<\"ObjectOntology\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ObjectOntology"], \
+"\<\"WorkingWithConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/WorkingWithConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "2ced6410-31b5-483a-8f18-7312f2024fa3"]
+    }], "AnchorBar",ExpressionUUID->"25ed0c55-63a2-45c9-aee2-7d830f51e72c"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"34f9600f-b671-4436-bb07-54991d35ae51"],
+
+Cell["Constellation Utility Functions", "GuideTitle",
+ CellID->292355432,ExpressionUUID->"d33e71c6-13a7-4939-afd5-cba1e3a858eb"],
+
+Cell["\<\
+Collection of useful development functions for working with Constellation \
+objects.\
+\>", "GuideAbstract",
+ CellID->175161288,ExpressionUUID->"3effce02-4090-4bd4-8747-9ee2cc330f53"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1883171026,ExpressionUUID->"87c5daa1-5733-4f0c-aae6-2be0a75109bd"],
+
+Cell["Database Functions", "GuideFunctionsSubsection",
+ CellID->841444496,ExpressionUUID->"f6b4a366-89c8-4155-b9cb-02e394ec3ddf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ObjectLog"]], "paclet:ConstellationViewers/ref/ObjectLog"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5fff4aac-3e8e-4783-bd29-7b1b192c8bb6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Lists all the changes done to a specified sample in chronological order."
+}], "GuideText",
+ CellID->977828777,ExpressionUUID->"89ca590b-5ab2-4635-8a60-19ba3f8e23c7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Login"]], "paclet:Constellation/ref/Login"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3271edf6-51c5-4355-a287-74d365834c18"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Connects the kernel to Constellation using a provided use ID and \
+Password."
+}], "GuideText",
+ CellID->1823388195,ExpressionUUID->"b93dafb4-7d2d-4b5c-98b8-f7c8d9334a35"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Logout"]], "paclet:Constellation/ref/Logout"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e089dbea-da73-4a2a-98af-c3fdce60a159"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Disconnects the kernel from Constellation."
+}], "GuideText",
+ CellID->1093750675,ExpressionUUID->"78b62846-0a8c-47e1-9365-ee9fc37db671"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ClearDownload"]], "paclet:Constellation/ref/ClearDownload"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0e6168ec-7778-4882-bcdb-f80de3721ac5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Clears any cached object information accumulated from Constellation during \
+the kernel session."
+}], "GuideText",
+ CellID->207576405,ExpressionUUID->"7c904cc4-d179-4ba0-aa7e-efba4d4de7a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DatabaseMemberQ"]], "paclet:Constellation/ref/DatabaseMemberQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8caecc84-8b1d-485f-9598-f7f613541bf6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks to see if a provided Object ID can be found in Constellation."
+}], "GuideText",
+ CellID->1223196107,ExpressionUUID->"0cfb7f77-2ecb-4adc-8c5b-06ee5dd7377d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->396017618,ExpressionUUID->"d248c460-dd52-4eaf-996d-dbaef5436bcf"],
+
+Cell["Object Utilities", "GuideFunctionsSubsection",
+ CellID->816283673,ExpressionUUID->"d04dff71-79d2-4b3d-adfa-3ed35e6e7ef9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CreateID"]], "paclet:Constellation/ref/CreateID"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4fa6bf16-f344-43ed-b58c-6d8b5a1509ae"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a new Object ID for uploading new Constellation objects."
+}], "GuideText",
+ CellID->1154155075,ExpressionUUID->"aff75a0a-52e4-4ca5-bb32-deb13795a7ed"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CreateLinkID"]], "paclet:Constellation/ref/CreateLinkID"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c5b7db34-5c0c-427d-998b-c43630e0f28b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a new Link ID for uploading new links between Constellation \
+objects."
+}], "GuideText",
+ CellID->1812045821,ExpressionUUID->"cede2e7b-fcb2-44ed-aee9-b96223ba8ec3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RemoveLinkID"]], "paclet:Constellation/ref/RemoveLinkID"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "75c12ace-502e-4919-99b3-398e61a02618"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the object of the input linked object."
+}], "GuideText",
+ CellID->1588515440,ExpressionUUID->"30721a52-4a02-41e6-a06d-527df04a068d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LookupLabeledObject"]], 
+    "paclet:Experiment/ref/LookupLabeledObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f2eb31b8-6627-4546-ab93-9f24920e7b92"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Looks up the labeled object associated with a protocol object."
+}], "GuideText",
+ CellID->662300576,ExpressionUUID->"de096503-5f76-4e68-b8b2-e78d175326dd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidObjectQ"]], "paclet:ValidObjectQ/ref/ValidObjectQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "afa602b3-cf39-4776-904d-40a07d0a3125"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks the validity of a given Constellation object as defined by the \
+Fields it should contain and the relationship between the values in those \
+fields."
+}], "GuideText",
+ CellID->878038431,ExpressionUUID->"4f0b3f69-ded0-4c4f-b83b-30a1fac974d1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidUploadQ"]], "paclet:Constellation/ref/ValidUploadQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2e23f49d-f23b-409f-a07a-e4435aa2674c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks the validity of a given call to Upload to see if it will \
+successfully execute without actually executing the Upload."
+}], "GuideText",
+ CellID->1831771280,ExpressionUUID->"9d89e461-b7fc-44bc-b6bd-af5d234e2456"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SameObjectQ"]], "paclet:Constellation/ref/SameObjectQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "63625e08-4580-4944-922b-fe591f61b88c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks to see if two given Object or Link IDs or names represent the same \
+Constellation object."
+}], "GuideText",
+ CellID->254339568,ExpressionUUID->"7431ac24-0185-4663-b89a-08f2a6131cf7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PacketP"]], "paclet:Constellation/ref/PacketP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a9ca8391-7235-4019-be92-8091d7b38323"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that can be accepted to modify an object."
+}], "GuideText",
+ CellID->1192661846,ExpressionUUID->"21bb9b67-b17d-4f8a-9098-cd704945e838"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TemporalLinkP"]], "paclet:Constellation/ref/TemporalLinkP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "445d2027-6763-4ff3-ae85-71de889e493c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches a temporal link of an object."
+}], "GuideText",
+ CellID->455284624,ExpressionUUID->"caa408f8-6551-4150-b46c-2a476b2e32ec"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Field"]], "paclet:Constellation/ref/Field"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0dd32d72-fdf2-4d4f-902e-09d0264dfa14"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Represents a field in an object."
+}], "GuideText",
+ CellID->484441307,ExpressionUUID->"adc33e0c-606a-49c8-8cc9-2b040cd812c4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidPacketFormatQ"]], 
+    "paclet:Constellation/ref/ValidPacketFormatQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7e0c4b26-01b3-46bd-a9f6-c6fccb5c587f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks the validity of a given packet to see if values in it matches type \
+definitions."
+}], "GuideText",
+ CellID->894540972,ExpressionUUID->"43de30cc-9ed5-4454-bb35-947944f50adc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageFileQ"]], "paclet:Constellation/ref/ImageFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "edc353d0-e5f4-40a7-b916-e2f2fd8bec82"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks to see if the given EmeraldCloudFile is an image."
+}], "GuideText",
+ CellID->17103757,ExpressionUUID->"5b36f67e-f353-4e40-947d-fba8450da774"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RenameCloudFileOptions"]], 
+    "paclet:CloudFiles/ref/RenameCloudFileOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "61082771-6f39-4d00-b3e9-695cad8b4760"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for renaming the cloud file to have a specified \
+new name."
+}], "GuideText",
+ CellID->1847518848,ExpressionUUID->"9447ec53-fa78-42c4-a3b1-c6cdc8c1fab9"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->783226363,ExpressionUUID->"0d456418-4738-4b80-81e9-91ab8f1bbb52"],
+
+Cell["Favorites Utilities", "GuideFunctionsSubsection",
+ CellID->1758210478,ExpressionUUID->"a3ed2d89-6d14-4367-b22a-f084a284c579"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AddFavoriteObject"]], 
+    "paclet:ConstellationViewers/ref/AddFavoriteObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3153fa63-8375-4954-ad3a-a8fbbe11239b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a favorite object for the object or model specified by the user \
+inside the specified favorite folder."
+}], "GuideText",
+ CellID->868521026,ExpressionUUID->"4c93a808-a2e8-4cd2-be49-bd1829239250"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EraseFavoriteFolder"]], 
+    "paclet:ConstellationViewers/ref/EraseFavoriteFolder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ccab65b-6951-4706-b25c-8503a1eebf23"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Remove the favorite folder(s) and all the favorite objects within them."
+}], "GuideText",
+ CellID->786535323,ExpressionUUID->"6563a553-bdc7-4630-9df5-61c48439fd89"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotFavoriteFolder"]], 
+    "paclet:ConstellationViewers/ref/PlotFavoriteFolder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a653b482-7fbf-4672-a769-b092d3212aef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Displays information about a user's favorite folder."
+}], "GuideText",
+ CellID->1537326376,ExpressionUUID->"c633aee8-2af3-4b93-959a-ef97d460fb44"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["BookmarkObject"]], 
+    "paclet:ConstellationViewers/ref/BookmarkObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "476741f2-ae59-4085-b286-0ad484bcbe92"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a bookmark object for the object or model specified."
+}], "GuideText",
+ CellID->1468644375,ExpressionUUID->"24eca47c-3c71-4458-baa1-771b0f33a8bf"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->328972007,ExpressionUUID->"4d1cf8af-91f1-4e18-80a3-582577c70a02"],
+
+Cell["Barcoding", "GuideFunctionsSubsection",
+ CellID->1409614271,ExpressionUUID->"956c22c1-73fd-4029-a9fb-095313f3aa88"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToBarcode"]], "paclet:Locations/ref/ToBarcode"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "deb27bc1-6f04-4a98-ab2a-22e5b60216de"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts a provided Constellation Object's ID to a 2D data matrix barcode \
+used to label samples in the laboratory."
+}], "GuideText",
+ CellID->347458993,ExpressionUUID->"89d996ed-40fa-49e4-9cfb-95e75974541b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ToObject"]], "paclet:Locations/ref/ToObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d7334393-b9d3-4a60-bfca-20647932e698"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a scanned barcode, converts to the Constellation object that barcode \
+represents."
+}], "GuideText",
+ CellID->735259158,ExpressionUUID->"6f0f9e36-fbf8-4df8-8889-ba8aba8d0b26"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->879763668,ExpressionUUID->"2e63dff3-dbbc-4378-887e-58b04bdf9615"],
+
+Cell["Compute", "GuideFunctionsSubsection",
+ CellID->763058481,ExpressionUUID->"732de5e6-102e-414e-ab5b-8955bbd1dab4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Compute"]], "paclet:Manifold/ref/Compute"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3ead448c-7a80-458e-9471-7b81fea02480"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a manifold job notebook where the input make up the job's \
+template notebook."
+}], "GuideText",
+ CellID->2099033930,ExpressionUUID->"fcd8e805-0d60-4cca-8cfa-10d4ba843285"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AvailableComputationThreads"]], 
+    "paclet:Manifold/ref/AvailableComputationThreads"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "29ec9613-1098-46d7-9acc-682789c0b56a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the number of unused computation threads to indicate how many \
+simultaneous computations can be run at the current subscription level."
+}], "GuideText",
+ CellID->1749392241,ExpressionUUID->"5e33907e-e233-432a-8fce-5b72834f7285"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RunScript"]], "paclet:Scripts/ref/RunScript"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b741eef9-d17d-468f-b200-6892e3d5e956"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Executes the given script."
+}], "GuideText",
+ CellID->836783410,ExpressionUUID->"d899c4eb-47a1-4bcb-b5b3-c94f0650952f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PauseScript"]], "paclet:Scripts/ref/PauseScript"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8d404b28-410b-46d5-bf0f-d176bd527de3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Prevents the script from continuing after currently running protocols have \
+completed."
+}], "GuideText",
+ CellID->2095851314,ExpressionUUID->"9664fa07-1cfa-4670-a541-da0d0c24711e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StopScript"]], "paclet:Scripts/ref/StopScript"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a470dec8-0353-4efd-8529-4386ae1be80d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Stops the script from further execution and cancels any script protocols \
+which have not yet been run."
+}], "GuideText",
+ CellID->1946256304,ExpressionUUID->"9b7e9ab2-8e33-4a12-98fd-6d612154a22a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RunComputation"]], "paclet:Manifold/ref/RunComputation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "755af53e-ef6b-4052-be8a-a3fba6e5b4c1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Runs the input computation notebook and returns a boolean value to \
+indicate if  the run is successful."
+}], "GuideText",
+ CellID->258790224,ExpressionUUID->"b2a17b50-9ae9-4f20-b103-ae6ba1e598c7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbortComputation"]], "paclet:Manifold/ref/AbortComputation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "60d63631-e6cf-46db-ac0c-dc762122d602"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Sets the status of the input computation notebook to Aborting and stop the \
+execution."
+}], "GuideText",
+ CellID->832909593,ExpressionUUID->"b13c86cc-ad21-4b65-9278-c17f31810acb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StopComputation"]], "paclet:Manifold/ref/StopComputation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "816f64a2-ee92-4ec9-add7-87cd919cd059"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Sets the status of one or more computations to Stopping, which will stop \
+the computation(s) after the currently evaluating cell has completed."
+}], "GuideText",
+ CellID->1413118405,ExpressionUUID->"49fcdcdd-4908-47f5-bdbb-e477906c6e1d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1259380662,ExpressionUUID->"f20a5540-06fa-4b56-98e8-dc33f8420238"],
+
+Cell["Billing", "GuideFunctionsSubsection",
+ CellID->811961402,ExpressionUUID->"588c760b-512f-438d-9728-5fbfec36e498"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PriceOperatorTime"]], 
+    "paclet:ExperimentUtilities/ref/PriceOperatorTime"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8e21dcf6-13db-4e5d-ba93-c35bd46e536f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the pricing information for all operators who worked \
+on the given protocol."
+}], "GuideText",
+ CellID->1524190376,ExpressionUUID->"5caca484-66b4-41c7-9c0b-92a814893407"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PriceStorage"]], "paclet:ExperimentUtilities/ref/PriceStorage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6f29214a-03a2-428f-a26f-1d7fd8b16837"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the ongoing storage costs for storing all the samples \
+associated with a given notebook or all the notebook of a given team."
+}], "GuideText",
+ CellID->1882708016,ExpressionUUID->"9a3e107b-b61f-4edd-850a-b97c450538e7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PriceTransactions"]], 
+    "paclet:ExperimentUtilities/ref/PriceTransactions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a436513b-b37d-45e8-b8be-cf7ee2ae2ba4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the receiving charges associated with a given \
+transaction or all of the transactions in a given notebook."
+}], "GuideText",
+ CellID->1649570014,ExpressionUUID->"518ed0cd-fd45-4833-a3e9-179ee577a9bd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExportBillingData"]], 
+    "paclet:ExperimentUtilities/ref/ExportBillingData"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8630310d-eecb-473f-88d0-eaaac04c016a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Exports the billing data to a spreadsheet."
+}], "GuideText",
+ CellID->309342528,ExpressionUUID->"8cabf883-e1f1-423d-b2f2-d4111cbe632f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SyncBilling"]], "paclet:ExperimentUtilities/ref/SyncBilling"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "49ada0c6-5f2b-4702-8c49-f7b0c6c63d79"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a new billing object for a financing team with no bill but with a \
+pricing scheme."
+}], "GuideText",
+ CellID->61958709,ExpressionUUID->"4c0d2934-ae36-423a-9c44-1d36e620a225"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1957937015,ExpressionUUID->"a8e62f69-5189-4eec-b883-19581aeb57fa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"b5c259d4-17cf-4e03-95af-2db35f170a1c"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1155488124,ExpressionUUID->"d93a00d2-fb6b-4349-bb0d-ab01a1ac49b1"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->594280247,ExpressionUUID->"54cb3e08-94f1-4227-ba9c-5699766aecc0"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["WorkingWithConstellationObjects"]], 
+   "paclet:Docs/guide/WorkingWithConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->121669132,ExpressionUUID->"352964c7-2f8d-4449-bce1-c8979222ed94"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ObjectOntology"]], "paclet:Docs/guide/ObjectOntology"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->488669580,ExpressionUUID->"acda4875-bf7a-4019-a92f-4a655ba7e575"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["EmeraldCloudFiles"]], "paclet:Docs/guide/EmeraldCloudFiles"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1092164932,ExpressionUUID->"06ed58d7-7b49-4838-adc3-dcf8b5b55c48"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["IncludingLiteratureReferences"]], 
+   "paclet:Docs/guide/IncludingLiteratureReferences"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1473281215,ExpressionUUID->"d4f35c12-7427-40fc-8956-dcf89499c29d"],
+
+Cell["", "FooterCell",
+ CellID->950930595,ExpressionUUID->"9041b220-b4c9-4c01-a2c2-66f6a90bd410"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"ConstellationUtilityFunctions",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:03:42", "context" -> "Docs`", 
+    "keywords" -> {
+     "ObjectLog", "Login", "Logout", "ClearDownload", "DatabaseMemberQ", 
+      "CreateID", "CreateLinkID", "RemoveLinkID", "LookupLabeledObject", 
+      "ValidObjectQ", "ValidUploadQ", "SameObjectQ", "PacketP", 
+      "TemporalLinkP", "Field", "ValidPacketFormatQ", "ImageFileQ", 
+      "RenameCloudFileOptions", "AddFavoriteObject", "EraseFavoriteFolder", 
+      "PlotFavoriteFolder", "BookmarkObject", "ToBarcode", "ToObject", 
+      "Compute", "AvailableComputationThreads", "RunScript", "PauseScript", 
+      "StopScript", "RunComputation", "AbortComputation", "StopComputation", 
+      "PriceOperatorTime", "PriceStorage", "PriceTransactions", 
+      "ExportBillingData", "SyncBilling"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of useful development functions for working with \
+Constellation objects.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "ConstellationUtilityFunctions", "title" -> 
+    "ConstellationUtilityFunctions", "type" -> "Guide", "uri" -> 
+    "Docs/guide/ConstellationUtilityFunctions", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"a25f64aa-0d4c-4751-b3b6-295686f83c93"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[601, 21, 7265, 157, 58, "AnchorBarGrid",ExpressionUUID->"34f9600f-b671-4436-bb07-54991d35ae51",
+ CellID->1],
+Cell[7869, 180, 128, 1, 45, "GuideTitle",ExpressionUUID->"d33e71c6-13a7-4939-afd5-cba1e3a858eb",
+ CellID->292355432],
+Cell[8000, 183, 192, 4, 30, "GuideAbstract",ExpressionUUID->"3effce02-4090-4bd4-8747-9ee2cc330f53",
+ CellID->175161288],
+Cell[8195, 189, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"87c5daa1-5733-4f0c-aae6-2be0a75109bd",
+ CellID->1883171026],
+Cell[8312, 192, 129, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"f6b4a366-89c8-4155-b9cb-02e394ec3ddf",
+ CellID->841444496],
+Cell[8444, 195, 480, 12, 31, "GuideText",ExpressionUUID->"89ca590b-5ab2-4635-8a60-19ba3f8e23c7",
+ CellID->977828777],
+Cell[8927, 209, 470, 13, 37, "GuideText",ExpressionUUID->"b93dafb4-7d2d-4b5c-98b8-f7c8d9334a35",
+ CellID->1823388195],
+Cell[9400, 224, 438, 12, 37, "GuideText",ExpressionUUID->"78b62846-0a8c-47e1-9365-ee9fc37db671",
+ CellID->1093750675],
+Cell[9841, 238, 505, 13, 57, "GuideText",ExpressionUUID->"7c904cc4-d179-4ba0-aa7e-efba4d4de7a4",
+ CellID->207576405],
+Cell[10349, 253, 482, 12, 37, "GuideText",ExpressionUUID->"0cfb7f77-2ecb-4adc-8c5b-06ee5dd7377d",
+ CellID->1223196107],
+Cell[10834, 267, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"d248c460-dd52-4eaf-996d-dbaef5436bcf",
+ CellID->396017618],
+Cell[10950, 270, 127, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"d04dff71-79d2-4b3d-adfa-3ed35e6e7ef9",
+ CellID->816283673],
+Cell[11080, 273, 466, 12, 31, "GuideText",ExpressionUUID->"aff75a0a-52e4-4ca5-bb32-deb13795a7ed",
+ CellID->1154155075],
+Cell[11549, 287, 488, 13, 37, "GuideText",ExpressionUUID->"cede2e7b-fcb2-44ed-aee9-b96223ba8ec3",
+ CellID->1812045821],
+Cell[12040, 302, 454, 12, 37, "GuideText",ExpressionUUID->"30721a52-4a02-41e6-a06d-527df04a068d",
+ CellID->1588515440],
+Cell[12497, 316, 485, 13, 37, "GuideText",ExpressionUUID->"de096503-5f76-4e68-b8b2-e78d175326dd",
+ CellID->662300576],
+Cell[12985, 331, 561, 14, 57, "GuideText",ExpressionUUID->"4f0b3f69-ded0-4c4f-b83b-30a1fac974d1",
+ CellID->878038431],
+Cell[13549, 347, 533, 13, 57, "GuideText",ExpressionUUID->"9d89e461-b7fc-44bc-b6bd-af5d234e2456",
+ CellID->1831771280],
+Cell[14085, 362, 502, 13, 57, "GuideText",ExpressionUUID->"7431ac24-0185-4663-b89a-08f2a6131cf7",
+ CellID->254339568],
+Cell[14590, 377, 452, 12, 37, "GuideText",ExpressionUUID->"21bb9b67-b17d-4f8a-9098-cd704945e838",
+ CellID->1192661846],
+Cell[15045, 391, 464, 12, 37, "GuideText",ExpressionUUID->"caa408f8-6551-4150-b46c-2a476b2e32ec",
+ CellID->455284624],
+Cell[15512, 405, 425, 12, 37, "GuideText",ExpressionUUID->"adc33e0c-606a-49c8-8cc9-2b040cd812c4",
+ CellID->484441307],
+Cell[15940, 419, 512, 14, 37, "GuideText",ExpressionUUID->"43de30cc-9ed5-4454-bb35-947944f50adc",
+ CellID->894540972],
+Cell[16455, 435, 458, 12, 37, "GuideText",ExpressionUUID->"5b36f67e-f353-4e40-947d-fba8450da774",
+ CellID->17103757],
+Cell[16916, 449, 514, 14, 57, "GuideText",ExpressionUUID->"9447ec53-fa78-42c4-a3b1-c6cdc8c1fab9",
+ CellID->1847518848],
+Cell[17433, 465, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"0d456418-4738-4b80-81e9-91ab8f1bbb52",
+ CellID->783226363],
+Cell[17549, 468, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"a3ed2d89-6d14-4367-b22a-f084a284c579",
+ CellID->1758210478],
+Cell[17683, 471, 540, 14, 51, "GuideText",ExpressionUUID->"4c93a808-a2e8-4cd2-be49-bd1829239250",
+ CellID->868521026],
+Cell[18226, 487, 504, 13, 37, "GuideText",ExpressionUUID->"6563a553-bdc7-4630-9df5-61c48439fd89",
+ CellID->786535323],
+Cell[18733, 502, 484, 13, 37, "GuideText",ExpressionUUID->"c633aee8-2af3-4b93-959a-ef97d460fb44",
+ CellID->1537326376],
+Cell[19220, 517, 484, 13, 37, "GuideText",ExpressionUUID->"24eca47c-3c71-4458-baa1-771b0f33a8bf",
+ CellID->1468644375],
+Cell[19707, 532, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"4d1cf8af-91f1-4e18-80a3-582577c70a02",
+ CellID->328972007],
+Cell[19823, 535, 121, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"956c22c1-73fd-4029-a9fb-095313f3aa88",
+ CellID->1409614271],
+Cell[19947, 538, 513, 13, 51, "GuideText",ExpressionUUID->"89d996ed-40fa-49e4-9cfb-95e75974541b",
+ CellID->347458993],
+Cell[20463, 553, 483, 13, 37, "GuideText",ExpressionUUID->"6f0f9e36-fbf8-4df8-8889-ba8aba8d0b26",
+ CellID->735259158],
+Cell[20949, 568, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2e63dff3-dbbc-4378-887e-58b04bdf9615",
+ CellID->879763668],
+Cell[21065, 571, 118, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"732de5e6-102e-414e-ab5b-8955bbd1dab4",
+ CellID->763058481],
+Cell[21186, 574, 481, 13, 31, "GuideText",ExpressionUUID->"fcd8e805-0d60-4cca-8cfa-10d4ba843285",
+ CellID->2099033930],
+Cell[21670, 589, 581, 14, 57, "GuideText",ExpressionUUID->"5e33907e-e233-432a-8fce-5b72834f7285",
+ CellID->1749392241],
+Cell[22254, 605, 421, 12, 37, "GuideText",ExpressionUUID->"d899c4eb-47a1-4bcb-b5b3-c94f0650952f",
+ CellID->836783410],
+Cell[22678, 619, 487, 13, 37, "GuideText",ExpressionUUID->"9664fa07-1cfa-4670-a541-da0d0c24711e",
+ CellID->2095851314],
+Cell[23168, 634, 501, 13, 57, "GuideText",ExpressionUUID->"9b7e9ab2-8e33-4a12-98fd-6d612154a22a",
+ CellID->1946256304],
+Cell[23672, 649, 510, 13, 57, "GuideText",ExpressionUUID->"b2a17b50-9ae9-4f20-b103-ae6ba1e598c7",
+ CellID->258790224],
+Cell[24185, 664, 497, 13, 57, "GuideText",ExpressionUUID->"b13c86cc-ad21-4b65-9278-c17f31810acb",
+ CellID->832909593],
+Cell[24685, 679, 553, 13, 57, "GuideText",ExpressionUUID->"49fcdcdd-4908-47f5-bdbb-e477906c6e1d",
+ CellID->1413118405],
+Cell[25241, 694, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"f20a5540-06fa-4b56-98e8-dc33f8420238",
+ CellID->1259380662],
+Cell[25358, 697, 118, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"588c760b-512f-438d-9728-5fbfec36e498",
+ CellID->811961402],
+Cell[25479, 700, 527, 14, 51, "GuideText",ExpressionUUID->"5caca484-66b4-41c7-9c0b-92a814893407",
+ CellID->1524190376],
+Cell[26009, 716, 560, 13, 57, "GuideText",ExpressionUUID->"9a3e107b-b61f-4edd-850a-b97c450538e7",
+ CellID->1882708016],
+Cell[26572, 731, 557, 14, 57, "GuideText",ExpressionUUID->"518ed0cd-fd45-4833-a3e9-179ee577a9bd",
+ CellID->1649570014],
+Cell[27132, 747, 470, 13, 37, "GuideText",ExpressionUUID->"8cabf883-e1f1-423d-b2f2-d4111cbe632f",
+ CellID->309342528],
+Cell[27605, 762, 501, 13, 37, "GuideText",ExpressionUUID->"4c0d2934-ae36-423a-9c44-1d36e620a225",
+ CellID->61958709],
+Cell[28109, 777, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"a8e62f69-5189-4eec-b883-19581aeb57fa",
+ CellID->1957937015],
+Cell[28219, 780, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"d93a00d2-fb6b-4349-bb0d-ab01a1ac49b1",
+ CellID->1155488124],
+Cell[28615, 794, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"54cb3e08-94f1-4227-ba9c-5699766aecc0",
+ CellID->594280247],
+Cell[28724, 797, 290, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"352964c7-2f8d-4449-bce1-c8979222ed94",
+ CellID->121669132],
+Cell[29017, 806, 252, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"acda4875-bf7a-4019-a92f-4a655ba7e575",
+ CellID->488669580],
+Cell[29272, 814, 259, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"06ed58d7-7b49-4838-adc3-dcf8b5b55c48",
+ CellID->1092164932],
+Cell[29534, 822, 287, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"d4f35c12-7427-40fc-8956-dcf89499c29d",
+ CellID->1473281215],
+Cell[29824, 831, 97, 1, 40, "FooterCell",ExpressionUUID->"9041b220-b4c9-4c01-a2c2-66f6a90bd410",
+ CellID->950930595]
+}
+]
+*)
+
+(* End of internal cache information *)
+

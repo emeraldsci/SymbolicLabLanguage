@@ -47,6 +47,22 @@ DefineObjectType[Object[Protocol, MeasureConductivity], {
 			Category -> "General",
 			Developer -> True
 		},
+		InitialDataFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The file path of the data file exported prior to the experiment. This file includes any existing data from the instrument and will be used to verify data export after measurements are taken in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		InitialCalibrationFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The file path of the calibration file exported prior to the experiment. This file includes any existing calibration data from the instrument and will be used to verify calibration data export after calibration steps are performed in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
 		ProbeStorageContainerPlacements ->{
 			Format -> Multiple,
 			Class -> {Link, Expression},
@@ -195,6 +211,24 @@ DefineObjectType[Object[Protocol, MeasureConductivity], {
 			IndexMatching -> Probes,
 			Category->"Calibration"
 		},
+		SecondaryCalibrationStandard -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation->Object[Sample]|Model[Sample],
+			Description -> "For each member of Probes, a secondary calibration standard used to calibrate probes of the conductivity meter that require two-point calibration before we perform the measurements of ConductivityStandards.",
+			IndexMatching -> Probes,
+			Category -> "Calibration"
+		},
+		SecondaryCalibrationStandardConductivity->{
+			Format->Multiple,
+			Class->Real,
+			Pattern:> GreaterEqualP[0*Micro Siemens/Centimeter],
+			Units -> Micro Siemens/Centimeter,
+			Description->"For each member of Probes, the conductivity of the secondary calibration standard used to adjust the cell constant to match the standards expected conductivity.",
+			IndexMatching -> Probes,
+			Category->"Calibration"
+		},
 		VerificationStandard->{
 			Format->Multiple,
 			Class->Link,
@@ -259,19 +293,19 @@ DefineObjectType[Object[Protocol, MeasureConductivity], {
 		RinsePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SamplePreparationP|SamplePreparationP,
 			Relation->None,
 			Description->"For each member of RinseSamples, the instructions used to aliquot the requested amount of measured sample into the new container to rinse the probe before the measurement.",
 			Developer->True,
 			Category->"Sample Preparation"
 		},
-		RinseManipulation->{
-			Format->Single,
+		RinseManipulation -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description->"The subprotocol used to aliquot the requested amount of measured sample into the new container to rinse the probe before the measurement.",
-			Category->"Sample Preparation"
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "The subprotocol used to aliquot the requested amount of measured sample into the new container to rinse the probe before the measurement.",
+			Category -> "Sample Preparation"
 		},
 		(* --- Experimental Results --- *)	
 		Conductivity -> {
@@ -320,19 +354,19 @@ DefineObjectType[Object[Protocol, MeasureConductivity], {
 		RecoupPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SamplePreparationP|SamplePreparationP,
 			Relation->None,
 			Description->"The instructions used to put the aliquoted sample back into the original container.",
 			Developer->True,
 			Category->"Cleaning"
 		},
-		RecoupManipulation->{
-			Format->Single,
+		RecoupManipulation -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
-			Description->"The subprotocol used to put the aliquoted sample back into the original container.",
-			Category->"Cleaning"
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "The subprotocol used to put the aliquoted sample back into the original container.",
+			Category -> "Cleaning"
 		}
 	}
 }];

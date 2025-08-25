@@ -1,3 +1,308 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1807e099d104f29699299f2591f6da3f0882d815e23906476e858fc1e3810e45
-size 12020
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     11512,        298]
+NotebookOptionsPosition[      8225,        233]
+NotebookOutlinePosition[      9568,        267]
+CellTagsIndexPosition[      9525,        264]
+WindowTitle->EmeraldPlots
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "116d9f71-7f16-4137-a66c-94a753be80ab"]
+        }],ExpressionUUID->"59323729-8dca-40e8-8212-bb7887dc1c7d"],
+        StripOnInput->False], {"\<\"EmeraldBarChart\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldBarChart"], "\<\"EmeraldBoxWhiskerChart\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldBoxWhiskerChart"], \
+"\<\"EmeraldDateListPlot\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldDateListPlot"], "\<\"EmeraldHistogram\"\
+\>":>Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldHistogram"], "\<\"EmeraldListLinePlot\"\
+\>":>Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldListLinePlot"], \
+"\<\"EmeraldPieChart\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldPlot/ref/EmeraldPieChart"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "2daa3de1-81b3-4be6-b69b-779a1b4862c5"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "4ea97e3d-2419-4176-a68a-2c01a4fc3701"]
+        }],ExpressionUUID->"fca1e9bd-0fc4-4763-adea-c62f78121e37"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "b452d9cd-0ab3-4077-acdc-8854f0c0fe60"]
+    }], "AnchorBar",ExpressionUUID->"ba62230f-7172-4c00-a228-5d2e8ce77336"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"32bfb8ce-b285-4048-b7fe-89de82e6f8f7"],
+
+Cell["Emerald Plots", "GuideTitle",
+ CellID->648225906,ExpressionUUID->"384b6e85-ec1a-4265-9eb1-6d86f4db0ddb"],
+
+Cell["", "GuideAbstract",
+ CellID->927175752,ExpressionUUID->"f289687c-da1b-4964-b45b-5e72ed281b96"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->118950194,ExpressionUUID->"eb8c8144-68d6-4faa-92cd-aaa3da8aa438"],
+
+Cell["Coordinate Plotting", "GuideFunctionsSubsection",
+ CellID->63771356,ExpressionUUID->"498ddeb4-aadc-4b91-9c4a-f414d03e8873"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldListLinePlot"]],
+    "paclet:EmeraldPlot/ref/EmeraldListLinePlot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "96fab38e-f98c-4767-b9f7-65190bb2438d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plot coordinate pairs."
+}], "GuideText",
+ CellID->687475159,ExpressionUUID->"f4aed8ba-400b-427c-a5bb-1e0be1f7b5c0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldDateListPlot"]],
+    "paclet:EmeraldPlot/ref/EmeraldDateListPlot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ab4017fd-9c55-4d46-98a6-31b5b65c283f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plot coordinate pairs whose x-values are dates."
+}], "GuideText",
+ CellID->275980543,ExpressionUUID->"36266029-2045-446e-9ceb-c4df18ffdda9"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->169297798,ExpressionUUID->"8ea64bc1-5849-47ba-9fb2-b9fa6e61e70d"],
+
+Cell["Charting", "GuideFunctionsSubsection",
+ CellID->687416653,ExpressionUUID->"bd417ee0-c592-47ad-890b-552b9f35696d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldBarChart"]],"paclet:EmeraldPlot/ref/EmeraldBarChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "82a5f453-6b60-41f5-8888-6d5edbb4bfaa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Create a bar chart from data points."
+}], "GuideText",
+ CellID->187515989,ExpressionUUID->"1e6826dc-cc7c-49f0-afd6-d88c58e64d1d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldPieChart"]],"paclet:EmeraldPlot/ref/EmeraldPieChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cfcbb38a-3578-4d1a-97e4-fe40131bf0b0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Create a bar chart from data points."
+}], "GuideText",
+ CellID->628529430,ExpressionUUID->"a43021ce-7452-49bb-8848-e1b36be358e7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldHistogram"]],"paclet:EmeraldPlot/ref/EmeraldHistogram"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fcfbf205-873e-4d06-bd62-5c2db170a2a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Create a Histogram from data points."
+}], "GuideText",
+ CellID->12948773,ExpressionUUID->"91c4c515-16cd-4f2d-9102-162770aa4c12"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldBoxWhiskerChart"]],
+    "paclet:EmeraldPlot/ref/EmeraldBoxWhiskerChart"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e55c9aad-d7dd-4481-b9fc-0f0935c40369"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Create a box-whisker chart from data points."
+}], "GuideText",
+ CellID->104546155,ExpressionUUID->"55774461-7001-4ae1-af95-f71380b420bf"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->57139889,ExpressionUUID->"bc3ea8a8-0010-45e3-b455-e1431a97fb2e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"c31bb4c2-7d16-4c69-aeba-10cf63d2660f"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->403195512,ExpressionUUID->"517eb31a-e35f-469e-965c-ed14138aa596"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->45457741,ExpressionUUID->"a58e361d-ab33-4c7e-bccf-b513e05613d0"],
+
+Cell["", "FooterCell",
+ CellID->429648286,ExpressionUUID->"130eb4fe-452e-4288-b6f4-6feeb7073335"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"EmeraldPlots",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Wed 16 May 2018 22:00:16", "context" -> "Emerald`Plot`", 
+    "keywords" -> {
+     "EmeraldListLinePlot", "EmeraldDateListPlot", "EmeraldBarChart", 
+      "EmeraldPieChart", "EmeraldHistogram", "EmeraldBoxWhiskerChart"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "EmeraldPlot", 
+    "status" -> "None", "summary" -> "", "synonyms" -> {}, "titlemodifier" -> 
+    "", "Windowtitle" -> "EmeraldPlots", "title" -> "EmeraldPlots", "type" -> 
+    "Guide", "uri" -> "EmeraldPlot/guide/EmeraldPlots", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[584, 21, 3509, 88, 58, "AnchorBarGrid",ExpressionUUID->"32bfb8ce-b285-4048-b7fe-89de82e6f8f7",
+ CellID->1],
+Cell[4096, 111, 110, 1, 50, "GuideTitle",ExpressionUUID->"384b6e85-ec1a-4265-9eb1-6d86f4db0ddb",
+ CellID->648225906],
+Cell[4209, 114, 100, 1, 31, "GuideAbstract",ExpressionUUID->"f289687c-da1b-4964-b45b-5e72ed281b96",
+ CellID->927175752],
+Cell[4312, 117, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"eb8c8144-68d6-4faa-92cd-aaa3da8aa438",
+ CellID->118950194],
+Cell[4428, 120, 129, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"498ddeb4-aadc-4b91-9c4a-f414d03e8873",
+ CellID->63771356],
+Cell[4560, 123, 440, 12, 31, "GuideText",ExpressionUUID->"f4aed8ba-400b-427c-a5bb-1e0be1f7b5c0",
+ CellID->687475159],
+Cell[5003, 137, 465, 12, 35, "GuideText",ExpressionUUID->"36266029-2045-446e-9ceb-c4df18ffdda9",
+ CellID->275980543],
+Cell[5471, 151, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"8ea64bc1-5849-47ba-9fb2-b9fa6e61e70d",
+ CellID->169297798],
+Cell[5587, 154, 119, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"bd417ee0-c592-47ad-890b-552b9f35696d",
+ CellID->687416653],
+Cell[5709, 157, 441, 11, 31, "GuideText",ExpressionUUID->"1e6826dc-cc7c-49f0-afd6-d88c58e64d1d",
+ CellID->187515989],
+Cell[6153, 170, 441, 11, 35, "GuideText",ExpressionUUID->"a43021ce-7452-49bb-8848-e1b36be358e7",
+ CellID->628529430],
+Cell[6597, 183, 442, 11, 35, "GuideText",ExpressionUUID->"91c4c515-16cd-4f2d-9102-162770aa4c12",
+ CellID->12948773],
+Cell[7042, 196, 468, 12, 35, "GuideText",ExpressionUUID->"55774461-7001-4ae1-af95-f71380b420bf",
+ CellID->104546155],
+Cell[7513, 210, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"bc3ea8a8-0010-45e3-b455-e1431a97fb2e",
+ CellID->57139889],
+Cell[7621, 213, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"517eb31a-e35f-469e-965c-ed14138aa596",
+ CellID->403195512],
+Cell[8016, 227, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"a58e361d-ab33-4c7e-bccf-b513e05613d0",
+ CellID->45457741],
+Cell[8124, 230, 97, 1, 41, "FooterCell",ExpressionUUID->"130eb4fe-452e-4288-b6f4-6feeb7073335",
+ CellID->429648286]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -929,6 +929,36 @@ DefineTests[
 			testHead[4, 2]
 		],
 
+		Example[{Basic,"Returns the same list if there is only one list:"},
+			UnsortedIntersection[{1,2,3,4,5}],
+			{1,2,3,4,5}
+		],
+
+		Example[{Basic,"Returns the empty list if there is any empty list being intersected:"},
+			UnsortedIntersection[{1,2,3,4,5}, {}],
+			{}
+		],
+
+		Example[{Basic,"Works with any head, returns the empty format of that head if none is intersected:"},
+			UnsortedIntersection[testHead[1,2,3,4,5], testHead[]],
+			testHead[]
+		],
+
+		Test["Make sure OptionsPattern do not pick up the last {}:",
+			UnsortedIntersection[{1,2,3,4,5}, {3, 4, 5}, {}],
+			{}
+		],
+
+		Test["Make sure OptionsPattern do not pick up the last {}:",
+			UnsortedIntersection[{1,2,3,4,5}, {3, 4, 5}, {}, SameTest -> GreaterEqualQ],
+			{}
+		],
+
+		Example[{Basic,"Returns the same expression if there is only one in the argument, not just lists:"},
+			UnsortedIntersection[testHead[5,4,3,2,1]],
+			testHead[5,4,3,2,1]
+		],
+
 		Example[{Additional,"Duplicate elements are not removed by default:"},
 			UnsortedIntersection[{5,5,4,4,3,3,2,2,1,1},{2,4}],
 			{4,4,2,2}
@@ -1642,6 +1672,11 @@ DefineTests[ClearMemoization,
 				ClearMemoization[Experiment`Private`allRacksSearch];Length@DownValues[Experiment`Private`allRacksSearch]
 			},
 			{1, 3, 1}
+		],
+		Test["DownValues for functions where the input pattern extracts part of a more complex expression are preserved when memoization is cleared:",
+			ClearMemoization[clearMemoizationTestFunction];
+			Length[DownValues[clearMemoizationTestFunction]],
+			1
 		]
 	}
 ];

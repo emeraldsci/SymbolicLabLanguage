@@ -185,8 +185,9 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			IndexMatching -> SamplesIn,
-			Description -> "For each member of SamplesIn, indicates if the Solvent specified in the stock solution model is added to bring the stock solution model up to the TotalVolume based on the horizontal markings on the container indicating discrete volume levels, not necessarily in a volumetric flask."
+			IndexMatching -> SampleLink,
+			Description -> "For each member of SampleLink, indicates if the Solvent specified in the stock solution model is added to bring the stock solution model up to the TotalVolume based on the horizontal markings on the container indicating discrete volume levels, not necessarily in a volumetric flask.",
+			Category -> "Fill to Volume"
 		},
 		Tolerance -> {
 			Format -> Multiple,
@@ -256,11 +257,13 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Model[Instrument, FumeHood],
 				Model[Instrument, GloveBox],
 				Model[Container, Bench],
+				Model[Instrument, HandlingStation],
 
 				Object[Instrument, BiosafetyCabinet],
 				Object[Instrument, FumeHood],
 				Object[Instrument, GloveBox],
-				Object[Container, Bench]
+				Object[Container, Bench],
+				Object[Instrument, HandlingStation]
 			],
 			Description -> "For each member of SolventLink, the instrument in which the transfer will occur.",
 			Category -> "General",
@@ -273,7 +276,9 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Model[Item, Tips],
-				Object[Item, Tips]
+				Object[Item, Tips],
+				Model[Item, Consumable],
+				Object[Item, Consumable]
 			],
 			Description -> "For each member of SolventLink, the pipette tips used to aspirate and dispense the requested volume.",
 			Category -> "General",
@@ -409,18 +414,6 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Category -> "General",
 			IndexMatching -> SolventLink
 		},
-		WaterPurifier -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Model[Instrument, WaterPurifier],
-				Object[Instrument, WaterPurifier]
-			],
-			Description -> "For each member of SolventLink, the water purifier used to gather the Milli-Q water required for the transfer.",
-			Category -> "General",
-			IndexMatching -> SolventLink
-		},
 		HandPump -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -430,6 +423,18 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Object[Part, HandPump]
 			],
 			Description -> "For each member of SolventLink, the hand pump used to get liquid out of the source container.",
+			Category -> "General",
+			IndexMatching -> SolventLink
+		},
+		HandPumpAdapter -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part, HandPumpAdapter],
+				Object[Part, HandPumpAdapter]
+			],
+			Description -> "For each member of SolventLink, the part used to connect the handpump to the solvent container in order to transfer liquid out.",
 			Category -> "General",
 			IndexMatching -> SolventLink
 		},
@@ -766,8 +771,15 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the final volume measured falls within the TotalVolume \[PlusMinus] the Tolerance fields in the parent protocol object.",
+			Description -> "Indicates if the final measured volume of the sample falls within the specified TotalVolume +/- Tolerance range. If the sample volume is less than TotalVolume - Tolerance, additional solvent is transferred. At the end of the protocol, if TargetVolumeToleranceAchieved is False, it means that the final sample volume exceeds TotalVolume + Tolerance. In the case of a Volumetric FillToVolume operation, this corresponds to the liquid level in the volumetric flask being above the graduation line.",
 			Category -> "Fill to Volume"
+		},
+		MaxNumberOfOverfillingRepreparations -> {
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The maximum number of times the FillToVolume protocol can be repeated in the event of target volume overfilling. When a repreparation is triggered, the same inputs and options are used.",
+			Category->"General"
 		}
 	}
 }];

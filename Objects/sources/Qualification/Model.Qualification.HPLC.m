@@ -465,6 +465,14 @@ DefineObjectType[Model[Qualification,HPLC], {
 			Description -> "When testing detector linearity of the HPLC's additional detectors in a second HPLC run, the minimum acceptable correlation coefficient for the fit of peak area vs. dilution factor.",
 			Category -> "Detector Linearity Test"
 		},
+		FluorescenceGain -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0 Percent, 100 Percent],
+			Units -> Percent,
+			Description -> "The signal amplification of fluorescence measurement for the sample to be used on the Fluorescence detector.",
+			Category -> "Detector Linearity Test"
+		},
 
 		(* Gradient Proportioning *)
 		GradientProportioningTestSample -> {

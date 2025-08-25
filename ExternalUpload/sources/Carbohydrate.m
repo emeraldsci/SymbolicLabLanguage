@@ -36,7 +36,7 @@ DefineOptions[UploadCarbohydrate,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Paragraph],
-				Description -> "The Web3 Unique Representation of Carbohydate Structures notation for this carbohydrate.",
+				Description -> "The Web3 Unique Representation of Carbohydrate Structures notation for this carbohydrate.",
 				Category -> "Organizational Information"
 			},
 			{

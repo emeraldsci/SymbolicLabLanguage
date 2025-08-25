@@ -1207,7 +1207,7 @@ resolveSampleInput[inList_List]:= Module[
 	(* get the non-identity-models *)
 	nonIdentityModels = Cases[inList, ObjectP[{Object[Sample], Model[Sample]}]];
 
-	(* get the identity model of note from the nonIdnetityModels *)
+	(* get the identity model of note from the nonIdentityModels *)
 	identityModels = If[MatchQ[nonIdentityModels, {}],
 		{},
 		Quiet[Experiment`Private`selectAnalyteFromSample[nonIdentityModels], Warning::AmbiguousAnalyte]
@@ -1482,7 +1482,7 @@ ExtinctionCoefficient[cmplx_?StructureQ, ops:OptionsPattern[ExtinctionCoefficien
 	(* determine the extinction coefficent of each strand *)
 	strandExtinctions = ExtinctionCoefficient[strands, ops];
 
-	(* Add the extinction coefficents of all teh strands *)
+	(* Add the extinction coefficents of all the strands *)
 	Total[strandExtinctions]
 
 ];

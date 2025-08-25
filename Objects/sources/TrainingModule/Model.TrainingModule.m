@@ -72,6 +72,14 @@ DefineObjectType[Model[TrainingModule], {
 			Description->"A qualification that can be run in the lab that this training module uses to test an operator's ability to perform the skill.",
 			Category->"General"
 		},
+		RecertificationFrequency-> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Second],
+			Units -> Day,
+			Description -> "Indicates how often training modules with this model are re-enqueued in order to review training material and ensure the operator's certification remains up-to-date.",
+			Category -> "General"
+		},
 		TrainingMaterials->{
 			Format->Multiple,
 			Class->Link,

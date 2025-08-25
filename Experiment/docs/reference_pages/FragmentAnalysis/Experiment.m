@@ -45,7 +45,12 @@ DefineUsage[ExperimentFragmentAnalysis, {
                   Type -> Object,
                   Pattern :> ObjectP[{Object[Container]}]
                 ]
-              }
+              },
+              "Model Sample" -> Widget[
+                Type -> Object,
+                Pattern :> ObjectP[Model[Sample]],
+                ObjectTypes -> {Model[Sample]}
+              ]
             ],
             Expandable -> False
           },
@@ -94,12 +99,39 @@ DefineUsage[ExperimentFragmentAnalysisOptions,
             {
               InputName->"Samples",
               Description->"The samples to be analyzed using Fragment Analysis for the separation and analysis of nucleic acid samples by fragment size.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to H12" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -146,12 +178,39 @@ DefineUsage[ValidExperimentFragmentAnalysisQ,
             {
               InputName->"Samples",
               Description->"The samples to be analyzed using Fragment Analysis experiment for the separation and analysis of nucleic acid samples by fragment size.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to H12" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -191,12 +250,39 @@ DefineUsage[ExperimentFragmentAnalysisPreview,
             {
               InputName->"Samples",
               Description->"The samples to be analyzed using Fragment  Analysis experiment for the separation and analysis of nucleic acid samples by fragment size.",
-              Widget->Widget[
-                Type->Object,
-                Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  ObjectTypes -> {Object[Sample], Object[Container]},
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to H12" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to H12."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },

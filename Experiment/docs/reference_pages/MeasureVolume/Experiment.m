@@ -18,17 +18,39 @@ DefineUsage[ExperimentMeasureVolume,
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "Samples",
-							Description -> "The sample(s) for which volume measurements should be taken.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}],
-								ObjectTypes -> {Object[Sample]}
-							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							InputName -> "Objects",
+							Description-> "The objects for which volume measurements should be taken.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
 						IndexName -> "experiment samples"
 					]
@@ -50,13 +72,13 @@ DefineUsage[ExperimentMeasureVolume,
 		SeeAlso->{
 			"ExperimentMeasureDensity",
 			"ExperimentImageSample",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentMeasureWeight"
 		},
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"clayton.schwarz", "kstepurska", "wyatt"}
+		Author->{"daniel.shlian", "clayton.schwarz", "kstepurska", "wyatt"}
 	}
 ];
 
@@ -141,13 +163,13 @@ DefineUsage[VolumeMeasurementDevices,
 		SeeAlso->{
 			"ExperimentMeasureVolume",
 			"ExperimentMeasureDensity",
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentMeasureWeight"
 		},
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"clayton.schwarz", "kstepurska", "wyatt"}
+		Author->{"taylor.hochuli", "clayton.schwarz", "kstepurska", "wyatt"}
 	}
 ];
 
@@ -165,17 +187,39 @@ DefineUsage[ValidExperimentMeasureVolumeQ,
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "Samples",
-							Description -> "The sample(s) for which volume measurements should be taken.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}],
-								ObjectTypes -> Types[Object[Sample]]
-							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							InputName -> "Objects",
+							Description-> "The objects for which volume measurements should be taken.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
 						IndexName -> "experiment samples"
 					]
@@ -200,7 +244,7 @@ DefineUsage[ValidExperimentMeasureVolumeQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"clayton.schwarz", "kstepurska", "wyatt"}
+		Author -> {"daniel.shlian", "clayton.schwarz", "kstepurska", "wyatt"}
 	}
 ];
 
@@ -218,17 +262,39 @@ DefineUsage[ExperimentMeasureVolumeOptions,
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "Samples",
-							Description -> "The sample(s) for which volume measurements should be taken.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}],
-								ObjectTypes -> Types[Object[Sample]]
-							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							InputName -> "Objects",
+							Description-> "The objects for which volume measurements should be taken.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
 						IndexName -> "experiment samples"
 					]
@@ -253,7 +319,7 @@ DefineUsage[ExperimentMeasureVolumeOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"clayton.schwarz", "kstepurska", "wyatt"}
+		Author -> {"daniel.shlian", "clayton.schwarz", "kstepurska", "wyatt"}
 	}
 ];
 
@@ -270,17 +336,39 @@ DefineUsage[ExperimentMeasureVolumePreview,
 				Inputs :> {
 					IndexMatching[
 						{
-							InputName -> "Samples",
-							Description -> "The sample(s) for which volume measurements should be taken.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}],
-								ObjectTypes -> Types[Object[Sample]]
-							],
-							Expandable -> False,
-							Dereference -> {
-								Object[Container] -> Field[Contents[[All, 2]]]
-							}
+							InputName -> "Objects",
+							Description-> "The objects for which volume measurements should be taken.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
 						IndexName -> "experiment samples"
 					]
@@ -305,6 +393,6 @@ DefineUsage[ExperimentMeasureVolumePreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"clayton.schwarz", "kstepurska", "wyatt"}
+		Author -> {"daniel.shlian", "clayton.schwarz", "kstepurska", "wyatt"}
 	}
 ];

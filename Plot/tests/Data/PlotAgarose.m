@@ -54,6 +54,11 @@ DefineTests[PlotAgarose,
             )
         ],
 
+		Example[{Basic, "Plots data objects linked to a protocol when given an AgaroseGelElectrophoresis protocol object:"},
+			PlotAgarose[Object[Protocol, AgaroseGelElectrophoresis, "AgaroseGelElectrophoresis Protocol for PlotAgarose Test "<>$SessionUUID]],
+			_?ValidGraphicsQ
+		],
+
 		(* -- OPTIONS -- *)
 		Example[{Options, ImageSize, "Set the image size for the output plots:"},
 			PlotAgarose[
@@ -126,6 +131,57 @@ DefineTests[PlotAgarose,
 			PlotAgarose[{Object[Data, AgaroseGelElectrophoresis, "Data object for PlotAgarose testing"]},Legend->{"sample"}],
 			_?ValidGraphicsQ
 		]
-	}
+	},
+	SymbolSetUp :> (
+		Module[{allObjects},
+			allObjects={
+				Object[Data, AgaroseGelElectrophoresis, "AgaroseGelElectrophoresis Data for PlotAgarose test " <> $SessionUUID],
+				Object[Protocol, AgaroseGelElectrophoresis, "AgaroseGelElectrophoresis Protocol for PlotAgarose Test "<>$SessionUUID]
+			};
+
+			EraseObject[
+				PickList[allObjects, DatabaseMemberQ[allObjects]],
+				Force -> True,
+				Verbose -> False
+			]
+		];
+
+		$CreatedObjects={};
+
+		Module[{data1, protocol1},
+			{data1, protocol1} = CreateID[{Object[Data, AgaroseGelElectrophoresis], Object[Protocol, AgaroseGelElectrophoresis]}];
+
+			Upload[
+				<|
+					Name -> "AgaroseGelElectrophoresis Data for PlotAgarose test " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, AgaroseGelElectrophoresis],
+					SampleElectropherogram -> QuantityArray[{#, RandomReal[250]} & /@ Range[55, 1550], {BasePair, RFU}]
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "AgaroseGelElectrophoresis Protocol for PlotAgarose Test "<>$SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, AgaroseGelElectrophoresis],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		]
+	),
+	SymbolTearDown:>Module[{objsToErase},
+		objsToErase=Flatten[{
+			$CreatedObjects,
+			Object[Data, AgaroseGelElectrophoresis, "AgaroseGelElectrophoresis Data for PlotAgarose test " <> $SessionUUID],
+			Object[Protocol, AgaroseGelElectrophoresis, "AgaroseGelElectrophoresis Protocol for PlotAgarose Test "<>$SessionUUID]
+		}];
+
+		EraseObject[
+			PickList[objsToErase,DatabaseMemberQ[objsToErase]],
+			Force->True,
+			Verbose->False
+		];
+	]
 
 ];

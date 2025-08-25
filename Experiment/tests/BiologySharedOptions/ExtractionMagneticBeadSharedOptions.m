@@ -4,7 +4,7 @@ DefineTests[
     Example[
       {Basic,"Base case test pre-resolving magnetic bead separation shared options with no user input or specification:"},
       Module[{expandedInputs, expandedOptions, mapThreadOptions},
-        (* Get the default optinos to ExperimentExtractPlasmidDNA, which uses the lysis shared options. *)
+        (* Get the default options to ExperimentExtractPlasmidDNA, which uses the lysis shared options. *)
         {expandedInputs, expandedOptions} = ExpandIndexMatchedInputs[
           ExperimentExtractProtein,
           {

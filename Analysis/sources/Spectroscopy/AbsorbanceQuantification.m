@@ -122,7 +122,7 @@ AnalyzeAbsorbanceQuantification[myDataObjs : {ObjectP[{Object[Data, AbsorbanceSp
 		rawConcentrations, concentrations, groupedList, groupedDataObjects, groupedConc, groupedPathlength, groupedAbsorbance,
 		groupedDistConc, sampleUniqueList, sampleDilutions, absQuantPackets, analysisIDs,
 		inRangePos, minAbs, maxAbs, concentrationsUndiluted, concentrationUndilutedDistr, concSTDs, concDists, plMethod,
-		outputConcDiluted, dataUpdates, sampleConcentrations, sampleObjs, sampleUpdates,
+		outputConcDiluted, dataUpdates, sampleConcentrations, sampleObjs, sampleUpdates, aliquotToProtocolTimes,
 		aliquotSampleObjs, aliquotSampleUpdates, groupedAliquotAndConcs, groupedPackets, optionsRule, previewRule,
 		testsRule, resultRule, samplePackets, groupedOutputConcLog, instrumentModels, resolvedPathLengthMethod,
 		preResolvedPathLength, analytePackets, groupedAnalytes, sampleAnalytes, oldSampleCompositions, groupedCompositions,
@@ -191,7 +191,7 @@ AnalyzeAbsorbanceQuantification[myDataObjs : {ObjectP[{Object[Data, AbsorbanceSp
 		myDataObjs,
 		{
 			(* need the Absorbance field for AbsorbanceIntensity objects, and AbsorbanceSpectrum for AbsorbanceSpectroscopy objects *)
-			Packet[Protocol, SamplesIn, AbsorbanceSpectrum, AliquotSamples, Analyte, Absorbance],
+			Packet[Protocol, SamplesIn, AbsorbanceSpectrum, AliquotSamples, Analyte, Absorbance, DateCreated],
 			Packet[Analyte[{ExtinctionCoefficients, Molecule}]],
 			Packet[SamplesIn[{Data, Composition, Position}]],
 			Packet[AliquotSamples[{Data, Composition, Volume, Position}]],
@@ -474,17 +474,21 @@ AnalyzeAbsorbanceQuantification[myDataObjs : {ObjectP[{Object[Data, AbsorbanceSp
 
 	(* create replace rules converting the old composition field into the new one for each sample *)
 	newSampleCompositionReplaceRules = MapThread[
-		Function[{concs, analytes},
-			Append[
-				MapThread[
-					{_, ObjectP[#2]} -> {#1, Link[#2]}&,
-					{concs, analytes}
-				],
-				(* need this because otherwise we are accidentally keeping the old link ID which we won't be able to Upload *)
-				{x_, y:ObjectP[]} :> {x, Link[y]}
+		Function[{concs, analytes, absDataPacket},
+			Module[{dataObjects, dataCreateTime},
+				dataObjects = Download[Lookup[absDataPacket, Replace[AbsorbanceSpectra], {}], Object];
+				dataCreateTime = FirstOrDefault@Map[Lookup[Experiment`Private`fetchPacketFromCache[#, dataPackets], DateCreated, {}]&, dataObjects];
+				Append[
+					MapThread[
+						{_, ObjectP[#2], _} -> {#1, Link[#2], dataCreateTime}&,
+						{concs, analytes}
+					],
+					(* need this because otherwise we are accidentally keeping the old link ID which we won't be able to Upload *)
+					{x_, y:ObjectP[], z_} :> {x, Link[y], z}
+				]
 			]
 		],
-		{sampleConcsToUpdate, sampleAnalytesToUpdate}
+		{sampleConcsToUpdate, sampleAnalytesToUpdate, groupedAbsQuantPackets}
 	];
 
 	(* make new composition fields for each sample *)
@@ -518,6 +522,22 @@ AnalyzeAbsorbanceQuantification[myDataObjs : {ObjectP[{Object[Data, AbsorbanceSp
 	aliquotSampleObjs = Map[
 		Download[Lookup[#, AliquotSamples], Object]&,
 		groupedDataObjects
+	];
+
+	(* For each AliquotSample, map it to protocol DateCreated *)
+	aliquotToProtocolTimes = Association[
+		Flatten@Map[
+			Function[{groupedDataObject},
+				Map[
+					If[MatchQ[#, {ObjectP[]}],
+						(FirstOrDefault@# -> FirstOrDefault@Lookup[groupedDataObject, DateCreated, {}]),
+						Nothing
+					]&,
+					Download[Lookup[groupedDataObject, AliquotSamples], Object]
+				]
+			],
+			groupedDataObjects
+		]
 	];
 
 	(* group the aliquots to have duplicates *)
@@ -565,10 +585,15 @@ AnalyzeAbsorbanceQuantification[myDataObjs : {ObjectP[{Object[Data, AbsorbanceSp
 
 	(* get the new compositions of the analytes in the aliquot packets *)
 	newAliquotCompositionReplaceRules = MapThread[
-		With[{conc = If[ConcentrationQ[Lookup[#2, Concentration]], Lookup[#2, Concentration], Lookup[#2, MassConcentration]]},
+		Module[{conc, aliquotSample},
+			conc = If[ConcentrationQ[Lookup[#2, Concentration]],
+				Lookup[#2, Concentration],
+				Lookup[#2, MassConcentration]
+			];
+			aliquotSample = Lookup[#2, Object];
 			{
-				{_, ObjectP[#1]} :> {conc, Link[#1]},
-				({x_, y : ObjectP[]} :> {x, Link[y]})
+				{_, ObjectP[#1], _} :> {conc, Link[#1], Lookup[aliquotToProtocolTimes, aliquotSample]},
+				({x_, y : ObjectP[], z_} :> {x, Link[y], z})
 			}
 		]&,
 		{aliquotAnalytes, Flatten[aliquotSampleUpdates]}
@@ -799,7 +824,7 @@ AnalyzeAbsorbanceQuantificationOptions[in : ListableP[ObjectP[{Object[Data, Abso
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	options = AnalyzeAbsorbanceQuantification[in, Sequence @@ Append[noOutputOptions, Output -> Options]];

@@ -175,7 +175,7 @@ DefineOptions[ExperimentGrowCrystal,
 						Object[Catalog, "Root"],
 						"Instruments",
 						"X-Ray Crystallography",
-						"Crystal Imager"
+						"Crystal Imagers"
 					}
 				}
 			],
@@ -851,6 +851,20 @@ DefineOptions[ExperimentGrowCrystal,
 			Category -> "Imaging"
 		},
 		(*=== Shared Options ===*)
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 10 Microliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, Irregular, Crystallization, \"96 MRC Under Oil Plate\"]."
+			}
+		],
 		ProtocolOptions,
 		SamplesInStorageOptions,
 		SimulationOption,
@@ -917,7 +931,7 @@ Warning::RiskOfEvaporation = "The number of combinations of the input samples an
 
 
 (*---container objects as sample inputs---*)
-ExperimentGrowCrystal[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]|_String|{LocationPositionP, _String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentGrowCrystal]] := Module[
+ExperimentGrowCrystal[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]|_String|{LocationPositionP, _String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentGrowCrystal]] := Module[
 	{
 		outputSpecification, output, gatherTests, messages, listedInputs, listedOptions, validSamplePreparationResult,
 		myInputsWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation, containerToSampleResult,
@@ -933,7 +947,7 @@ ExperimentGrowCrystal[myInputs:ListableP[ObjectP[{Object[Sample], Object[Contain
 
 	(* Remove temporal links. *)
 	(* Make sure we're working with a list of options/inputs. *)
-	{listedInputs, listedOptions} = removeLinks[ToList[myInputs], ToList[myOptions]];
+	{listedInputs, listedOptions} = {ToList[myInputs], ToList[myOptions]};
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
@@ -941,17 +955,18 @@ ExperimentGrowCrystal[myInputs:ListableP[ObjectP[{Object[Sample], Object[Contain
 		{myInputsWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentGrowCrystal,
 			listedInputs,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 10 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, Irregular, Crystallization, "96 MRC Under Oil Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];
 		Return[$Failed]
 	];
 
@@ -1042,14 +1057,14 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew]; Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern. *)
@@ -1059,7 +1074,7 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 	];
 
 	(* Call sanitize-inputs to clean any named objects. *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed. *)
 	If[MatchQ[safeOps, $Failed],
@@ -1235,7 +1250,7 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 	objectContainerFields = Union[{Notebook}, SamplePreparationCacheFields[Object[Container]]];
 	modelContainerFields = Union[modelIrregularPlateFields, modelCrystallizationPlateFields, SamplePreparationCacheFields[Model[Container]]];
 	modelInstrumentFields = Union[{Name}, modelImagerFields, modelLiquidHandlerFields];
-	modelCoverFields = {CoverType, CoverFootprint, SealType, Opaque, MinTransparentWavelength, MaxTransparentWavelength, Dimensions, Reusability, EngineDefault, Name};
+	modelCoverFields = {CoverType, CoverFootprint, SealType, Opaque, MinTransparentWavelength, MaxTransparentWavelength, Dimensions, Reusable, EngineDefault, Name};
 
 	sampleObjects = Cases[allObjects, ObjectP[Object[Sample]]];
 	modelSampleObjects = Cases[allObjects, ObjectP[Model[Sample]]];
@@ -1399,7 +1414,6 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 		]
 	];
 
-
 	(* If we were asked for a simulation, also return a simulation. *)
 	(* Even if resourcePackets is $Failed, simulation for resources is robust. *)
 	{simulatedProtocol, simulation} = If[performSimulationQ,
@@ -1410,7 +1424,7 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 			Cache -> cacheBall,
 			Simulation -> samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1444,6 +1458,7 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 				resourcePackets,
 				Upload -> Lookup[safeOps, Upload],
 				Confirm -> Lookup[safeOps, Confirm],
+				CanaryBranch -> Lookup[safeOps, CanaryBranch],
 				ParentProtocol -> Lookup[safeOps, ParentProtocol],
 				Priority -> Lookup[safeOps, Priority],
 				StartDate -> Lookup[safeOps, StartDate],
@@ -1507,7 +1522,7 @@ DefineOptions[ExperimentGrowCrystalOptions,
 
 Authors[ExperimentGrowCrystalOptions] := {"lige.tonggu", "thomas"};
 
-ExperimentGrowCrystalOptions[myInputs: ListableP[ObjectP[{Object[Sample], Object[Container]}]], myOptions: OptionsPattern[]] := Module[
+ExperimentGrowCrystalOptions[myInputs: ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]], myOptions: OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -2048,7 +2063,7 @@ resolveExperimentGrowCrystalOptions[
 					MicrobatchUnderOil,
 				(* Otherwise, take the first non-SittingDropVaporDiffusion technique of the CompatibleCrystallizationTechniques of the plate model. *)
 				True,
-					FirstOrDefault[DeleteCases[Flatten@Lookup[sampleContainerModelPackets, CompatibleCrystallizationTechniques], SittingDropVaporDiffusion], MicrobatchWithoutOil]
+					FirstOrDefault[DeleteCases[Flatten@Lookup[sampleContainerModelPackets, CompatibleCrystallizationTechniques]/. $Failed -> Nothing, SittingDropVaporDiffusion], MicrobatchWithoutOil]
 			],
 		(* Are there any technique-specific options, such as ReservoirDispensingInstrument, ReservoirBufferVolume, Oil options specified by the user? *)
 		(* If user has specified ReservoirDispensingInstrument or ReservoirBufferVolume, resolve to SittingDropVaporDiffusion. *)
@@ -2072,8 +2087,8 @@ resolveExperimentGrowCrystalOptions[
 		(* Is CrystallizationPlate specified by the user? If so, use one of the CompatibleCrystallizationTechniques of the plate model. *)
 		MatchQ[suppliedCrystallizationPlate, ObjectP[]],
 			If[MatchQ[suppliedCrystallizationPlate, ObjectP[Object[Container, Plate]]],
-				FirstOrDefault[fastAssocLookup[fastAssoc, suppliedCrystallizationPlate, {Model, CompatibleCrystallizationTechniques}], MicrobatchWithoutOil],
-				FirstOrDefault[fastAssocLookup[fastAssoc, suppliedCrystallizationPlate, CompatibleCrystallizationTechniques], MicrobatchWithoutOil]
+				FirstOrDefault[fastAssocLookup[fastAssoc, suppliedCrystallizationPlate, {Model, CompatibleCrystallizationTechniques}]/. $Failed -> Nothing, MicrobatchWithoutOil],
+				FirstOrDefault[fastAssocLookup[fastAssoc, suppliedCrystallizationPlate, CompatibleCrystallizationTechniques]/. $Failed -> Nothing, MicrobatchWithoutOil]
 			],
 		(* If user has specified nothing to help us select technique, use vapor diffusion technique since it is the most popular technique for protein crystallography. *)
 		True,
@@ -2679,7 +2694,7 @@ resolveExperimentGrowCrystalOptions[
 
 	(* Error::ConflictingCrossPolarizedImaging *)
 	(* CrossPolarizedImaging & ImagingInstrument conflict. *)
-	(* Note: CMU RI1000 is the same model of instrument without polarizer module. We might update the instruemnt in the near future. Currently keeping them the same model. *)
+	(* Note: CMU RI1000 is the same model of instrument without polarizer module. We might update the instrument in the near future. Currently keeping them the same model. *)
 	conflictingCrossPolarizedImaging = If[
 		And[
 			MatchQ[resolvedCrossPolarizedImaging, True],
@@ -6935,15 +6950,10 @@ growCrystalResourcePackets[
 		updatedDilutionBuffers, updatedAdditives, updatedSeedingSolutions, updatedCoCrystallizationReagents, updatedOils,
 		updatedTransferTable, updatedBufferPreparationTable, crystallizationPlateResource, crystallizationCoverResource,
 		crystallizationCoverPaddleResource, uniqueAssayPlates, uniqueAssayPlateReplacements, uniqueAssayPlateResources, imagerResource,
-		runTime, updatedDropCompositionTable, fumeHood, fumeHoodResource, manualProtocolPacket, simulation, sharedFieldPacket,
-		finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, resultRule, testsRule
+		runTime, updatedDropCompositionTable, fumeHood, fumeHoodResource, samplesOutStorageCondition, manualProtocolPacket,
+		simulation, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule,
+		resultRule, testsRule
 	},
-
-	(* expand the resolved options if they weren't expanded already *)
-	{{expandedInputs}, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentGrowCrystal, {myListedSamples}, myResolvedOptions];
-
-	(* Get the collapsed unresolved index-matching options that don't include hidden options *)
-	unresolvedOptionsNoHidden = RemoveHiddenOptions[ExperimentGrowCrystal, myUnresolvedOptions];
 
 	(* Get the collapsed resolved index-matching options that don't include hidden options *)
 	(* Ignore to collapse those options that are set in expandedsafeoptions *)
@@ -6953,6 +6963,12 @@ growCrystalResourcePackets[
 		Ignore -> myUnresolvedOptions,
 		Messages -> False
 	];
+
+	(* expand the resolved non-Hidden options if they weren't expanded already *)
+	{{expandedInputs}, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentGrowCrystal, {myListedSamples}, resolvedOptionsNoHidden];
+
+	(* Get the collapsed unresolved index-matching options that don't include hidden options *)
+	unresolvedOptionsNoHidden = RemoveHiddenOptions[ExperimentGrowCrystal, myUnresolvedOptions];
 
 	(* Determine the requested output format of this function *)
 	outputSpecification = OptionValue[Output];
@@ -6972,9 +6988,10 @@ growCrystalResourcePackets[
 	(* Extract options. *)
 	preparedPlate = Lookup[expandedResolvedOptions, PreparedPlate];
 	dropDestinations = Cases[DeleteDuplicates@Flatten[Lookup[expandedResolvedOptions, DropDestination]], CrystallizationWellContentsP];
-	dropCompositionTable = Lookup[expandedResolvedOptions, DropCompositionTable];
-	transferTable = Lookup[expandedResolvedOptions, TransferTable];
-	bufferPreparationTable = Lookup[expandedResolvedOptions, BufferPreparationTable];
+	(* NOTE:DropCompositionTable,TransferTable,BufferPreparationTable are hidden developer options, extract from myResolvedOptions *)
+	dropCompositionTable = Lookup[myResolvedOptions, DropCompositionTable];
+	transferTable = Lookup[myResolvedOptions, TransferTable];
+	bufferPreparationTable = Lookup[myResolvedOptions, BufferPreparationTable];
 	reservoirBuffers = Lookup[expandedResolvedOptions, ReservoirBuffers];
 	dilutionBuffers = Lookup[expandedResolvedOptions, DilutionBuffer];
 	additives = Lookup[expandedResolvedOptions, Additives];
@@ -7262,6 +7279,16 @@ growCrystalResourcePackets[
 		]
 	];
 
+	(* Determine SampleOutStorageCondition *)
+	samplesOutStorageCondition = Module[{resolvedCrystallizationPlateStorageCondition},
+		(* Extract hidden non-index matching option CrystallizationPlateStorageCondition *)
+		resolvedCrystallizationPlateStorageCondition = Lookup[myResolvedOptions, CrystallizationPlateStorageCondition];
+		If[MatchQ[resolvedCrystallizationPlateStorageCondition, SampleStorageTypeP],
+			resolvedCrystallizationPlateStorageCondition,
+			Link[resolvedCrystallizationPlateStorageCondition]
+		]
+	];
+
 
 	(* NOTE: We don't generate resources for Instruments here. Instead, subprotocols will pick and generate instrument resources. *)
 	(*---Make all the packets for the experiment---*)
@@ -7283,11 +7310,11 @@ growCrystalResourcePackets[
 
 		(*=== Resources ===*)
 		Replace[Checkpoints] -> {
-			{"Preparing Samples", 45 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 45 Minute]]},
-			{"Picking Resources", 45 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 45 Minute]]},
-			{"Preparing CrystallizationPlate", runTime, "Loading CrystallizationPlate with samples and buffers.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> runTime]]},
-			{"Storing CrystallizationPlate to Crystal Incubator", 1 Hour, "The CrystallizationPlate is stored in Crystal incubator and imaging schedule is set", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Returning Materials", 1 Hour, "Extra samples and buffers are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]}
+			{"Preparing Samples", 45 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 45 Minute]]},
+			{"Picking Resources", 45 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 45 Minute]]},
+			{"Preparing CrystallizationPlate", runTime, "Loading CrystallizationPlate with samples and buffers.", Link[Resource[Operator -> $BaselineOperator, Time -> runTime]]},
+			{"Storing CrystallizationPlate to Crystal Incubator", 1 Hour, "The CrystallizationPlate is stored in Crystal incubator and imaging schedule is set", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Returning Materials", 1 Hour, "Extra samples and buffers are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]}
 		},
 
 		(*=== General ===*)
@@ -7323,10 +7350,7 @@ growCrystalResourcePackets[
 		DropDestinations -> dropDestinations,
 		(*=== Incubation Info ===*)
 		MaxCrystallizationTime -> Lookup[expandedResolvedOptions, MaxCrystallizationTime],
-		SamplesOutStorageCondition -> If[MatchQ[Lookup[expandedResolvedOptions, CrystallizationPlateStorageCondition], SampleStorageTypeP],
-			Lookup[expandedResolvedOptions, CrystallizationPlateStorageCondition],
-			Link[Lookup[expandedResolvedOptions, CrystallizationPlateStorageCondition]]
-			]
+		SamplesOutStorageCondition -> samplesOutStorageCondition
 	|>;
 
 	(*--Make a packet with the shared fields--*)
@@ -7566,7 +7590,7 @@ simulateExperimentGrowCrystal[
 					Replace[SamplesIn] -> (Resource[Sample -> #]&) /@ mySamples,
 					Replace[ReservoirBuffers] -> expandedRequiredReservoirResources,
 					CrystallizationPlate -> Resource[Sample -> resolvedCrystallizationPlate],
-					ResolvedOptions -> myResolvedOptions
+					ResolvedOptions -> RemoveHiddenOptions[ExperimentGrowCrystal, myResolvedOptions]
 				|>,
 				Cache -> cache,
 				Simulation -> inheritedSimulation
@@ -7844,7 +7868,7 @@ DefineOptions[ExperimentGrowCrystalPreview,
 Authors[ExperimentGrowCrystalPreview] := {"lige.tonggu", "thomas"};
 
 ExperimentGrowCrystalPreview[
-	myInputs : ListableP[ObjectP[{Object[Sample], Object[Container]}]], myOptions : OptionsPattern[]] := Module[
+	myInputs : ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* Get the options as a list*)
@@ -7873,7 +7897,7 @@ DefineOptions[ValidExperimentGrowCrystalQ,
 
 Authors[ValidExperimentGrowCrystalQ] := {"lige.tonggu", "thomas"};
 
-ValidExperimentGrowCrystalQ[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]], myOptions:OptionsPattern[]] := Module[
+ValidExperimentGrowCrystalQ[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]], myOptions:OptionsPattern[]] := Module[
 	{
 		listedOptions, preparedOptions, experimentGrowCrystalTests, initialTestDescription, allTests, verbose, outputFormat
 	},

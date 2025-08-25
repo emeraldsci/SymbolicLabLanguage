@@ -34,10 +34,7 @@ DefineUsage[PlotDynamicLightScatteringAnalysis,
             	"AnalyzeDynamicLightScatteringLoading",
 	        	"AnalyzeDynamicLightScattering"
 		},
-		Author -> {
-			"derek.machalek",
-			"tommy.harrelson"
-		},
+		Author -> {"taylor.hochuli", "derek.machalek", "tommy.harrelson"},
 		Sync->Automatic,
 		Preview->True
 	}

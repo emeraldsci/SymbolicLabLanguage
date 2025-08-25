@@ -88,33 +88,23 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables:>{options}
 		],
 		Example[
-			{Options,ReplaceCartridgeInsert,"Specify whether the cartridge insert should be replaced when needed:"},
-			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
-				ReplaceCartridgeInsert->True,
-				Output->Options
-			];
-			Lookup[options,ReplaceCartridgeInsert],
-			True,
-			Variables:>{options}
-		],
-		Example[
 			{Options,SampleTemperature,"Specify the sample tray temperature at which samples are maintained while awaiting injection:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				SampleTemperature->Ambient,
 				Output->Options
 			];
 			Lookup[options,SampleTemperature],
-			25Celsius,
+			Ambient,
 			Variables:>{options}
 		],
 		Example[
 			{Options,TotalVolume,"Specify the final volume in the assay tube prior to loading onto AssayContainer:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
-				TotalVolume->50 Microliter,
+				TotalVolume->70 Microliter,
 				Output->Options
 			];
 			Lookup[options,TotalVolume],
-			50 Microliter,
+			70 Microliter,
 			Variables:>{options}
 		],
 		Example[
@@ -1014,11 +1004,11 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 		Example[
 			{Options,LadderTotalVolume,"Ladders: Specify the final volume in the assay tube prior to loading onto AssayContainer:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
-				LadderTotalVolume->50Microliter,
+				LadderTotalVolume->70 Microliter,
 				Output->Options
 			];
 			Lookup[options,LadderTotalVolume],
-			50Microliter,
+			70 Microliter,
 			Variables:>{options}
 		],
 		Example[
@@ -1555,15 +1545,15 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 		Example[
 			{Options,StandardTotalVolume,"Standards: Specify the final volume in the assay tube prior to loading onto AssayContainer:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID], Standards->Object[Sample,"ExperimentCESDS IgG Standard "<>$SessionUUID],
-				StandardTotalVolume->50 Microliter,
+				StandardTotalVolume->70 Microliter,
 				Output->Options
 			];
 			Lookup[options,StandardTotalVolume],
-			50 Microliter,
+			70 Microliter,
 			Variables:>{options}
 		],
 		Example[
-			{Options,StandardFrequency,"Standards: Specify how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable:"},
+			{Options,StandardFrequency,"Standards: Specify how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				Standards->Object[Sample,"ExperimentCESDS IgG Standard "<>$SessionUUID],StandardFrequency->FirstAndLast,
 				Output->Options
@@ -2068,15 +2058,15 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 		Example[
 			{Options,BlankTotalVolume,"Blanks: Specify the final volume in the assay tube prior to loading onto AssayContainer:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID], Blanks->Model[Sample,"Milli-Q water"],
-				BlankTotalVolume->50 Microliter,
+				BlankTotalVolume->70 Microliter,
 				Output->Options
 			];
 			Lookup[options,BlankTotalVolume],
-			50 Microliter,
+			70 Microliter,
 			Variables:>{options}
 		],
 		Example[
-			{Options,BlankFrequency,"Blanks: Specify how many injections per blank should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable:"},
+			{Options,BlankFrequency,"Blanks: Specify how many injections per blank should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable:"},
 			options=ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				BlankVolume->25Microliter,BlankFrequency->FirstAndLast,
 				Output->Options
@@ -2577,6 +2567,80 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables:>{options}
 		],
 		(* --- Messages tests --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCapillaryGelElectrophoresisSDS[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCapillaryGelElectrophoresisSDS[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentCapillaryGelElectrophoresisSDS[sampleID, Simulation -> simulationToPassIn, Output -> Options],{Warning::MissingSampleComposition}]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentCapillaryGelElectrophoresisSDS[containerID, Simulation -> simulationToPassIn, Output -> Options],{Warning::MissingSampleComposition}]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"InputContainsTemporalLinks","Throw a message if given a temporal link:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Link[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				Now - 1 Minute], Output->Options],
@@ -2622,7 +2686,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "InjectionTableMismatch","If an injectionTable is set but is not copacetic with samples, ladders, blanks, and standards, raise an error:"},
+		Example[{Messages, "InjectionTableMismatch","If an injectionTable is set but is not compatible with samples, ladders, blanks, and standards, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],SampleVolume->5Microliter,
 				Ladders -> Model[Sample, "Unstained Protein Standard"],LadderVolume->3Microliter,
 				Blanks -> Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],BlankVolume->30Microliter,
@@ -2637,7 +2701,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "InjectionTableMismatch","If an injectionTable is set but is not copacetic with samples, ladders, blanks, and standards, raise an error but finishes simulation:"},
+		Example[{Messages, "InjectionTableMismatch","If an injectionTable is set but is not compatible with samples, ladders, blanks, and standards, raise an error but finishes simulation:"},
 			ExperimentCapillaryGelElectrophoresisSDS[{Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],Object[Sample, "ExperimentCESDS Test sample 2 (100 uL) "<>$SessionUUID]},
 				InjectionTable -> {
 					{Sample, Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],5Microliter},
@@ -2706,26 +2770,6 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "NotEnoughOptimalUsesLeftOnCartridge","If the cartridge object does not have enough optimal uses for the stated samples, blanks, standards, and ladders, raise an error:"},
-			ExperimentCapillaryGelElectrophoresisSDS[
-				{Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],Object[Sample, "ExperimentCESDS Test sample 2 (100 uL) "<>$SessionUUID]}, NumberOfReplicates->15,
-				Ladders -> Model[Sample, "Unstained Protein Standard"], LadderFrequency->FirstAndLast,
-				Blanks -> Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],BlankFrequency->FirstAndLast,
-				Cartridge-> Object[Container,ProteinCapillaryElectrophoresisCartridge, "CESDS-Plus Cartridge test Object 1 for ExperimentCESDS "<>$SessionUUID],
-				Output->Options
-				],
-				_List,
-				Messages:>{Warning::NotEnoughOptimalUsesLeftOnCartridge}
-		],
-		Example[{Messages, "NotReplacingInsert","If user specified ReplaceCartridgeInsert->False, warn that it might result in a cartridge with a faulty insert next time it is used:"},
-			ExperimentCapillaryGelElectrophoresisSDS[
-				{Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],Object[Sample, "ExperimentCESDS Test sample 2 (100 uL) "<>$SessionUUID]}, NumberOfReplicates->15,
-				ReplaceCartridgeInsert->False,
-				Output->Options
-			],
-			_List,
-			Messages:>{Warning::NotReplacingInsert}
-		],
 		Example[{Messages, "PreMadeMasterMixWithMakeOwnOptions","When options for both PremadeMasterMix and Make-Ones-Own mastermix are passed, raise warning and follow PremadeMaterMix:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				PremadeMasterMix -> True,PremadeMasterMixReagent ->	Object[Sample, "ExperimentCESDS Test reagent "<>$SessionUUID], Reduction -> True,
@@ -2775,7 +2819,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CentrifugationForceSpeedMismatch","If SedimentationCentrifugation force and speed aren't copacetic, raise an error:"},
+		Example[{Messages, "CentrifugationForceSpeedMismatch","If SedimentationCentrifugation force and speed aren't compatible, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[
 				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				PelletSedimentation -> True,
@@ -2841,7 +2885,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "PremadeMasterMixVolumeDilutionFactorMismatch","If both PremadeMasterMixVolume and PremadeMasterMixReagentDilutionFactor are informed but are not copacetic, raise an error:"},
+		Example[{Messages, "PremadeMasterMixVolumeDilutionFactorMismatch","If both PremadeMasterMixVolume and PremadeMasterMixReagentDilutionFactor are informed but are not compatible, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[
 				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				PremadeMasterMix -> True, PremadeMasterMixReagent->Object[Sample,"ExperimentCESDS Test reagent "<>$SessionUUID],
@@ -2854,7 +2898,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "PremadeMasterMixInvalidTotalVolume","If both PremadeMasterMixVolume and PremadeMasterMixReagentDilutionFactor are informed but are not copacetic, raise an error:"},
+		Example[{Messages, "PremadeMasterMixInvalidTotalVolume","If both PremadeMasterMixVolume and PremadeMasterMixReagentDilutionFactor are informed but are not compatible, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[
 				Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID], TotalVolume -> 100 Microliter, SampleVolume->50Microliter,
 				PremadeMasterMix -> True, PremadeMasterMixReagent->Object[Sample,"ExperimentCESDS Test reagent "<>$SessionUUID],
@@ -2991,7 +3035,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ReducingAgentVolumeConcentrationMismatch","If both ReducingAgentVolume and ReducingAgentTargetConcentration are specified and are not copacetic, raise an error:"},
+		Example[{Messages, "ReducingAgentVolumeConcentrationMismatch","If both ReducingAgentVolume and ReducingAgentTargetConcentration are specified and are not compatible, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				Reduction -> True, ReducingAgent->Model[Sample, "2-Mercaptoethanol"], ReducingAgentVolume -> 5 Microliter,ReducingAgentTargetConcentration -> 10VolumePercent,
 				Output -> Options],
@@ -3067,7 +3111,7 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "AlkylatingAgentVolumeConcentrationMismatch","If both AlkylatingAgentVolume and AlkylatingAgentTargetConcentration are specified and are not copacetic, raise an error:"},
+		Example[{Messages, "AlkylatingAgentVolumeConcentrationMismatch","If both AlkylatingAgentVolume and AlkylatingAgentTargetConcentration are specified and are not compatible, raise an error:"},
 			ExperimentCapillaryGelElectrophoresisSDS[Object[Sample, "ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				Alkylation -> True, AlkylatingAgent->Model[Sample,StockSolution,"250mM Iodoacetamide"], AlkylatingAgentVolume -> 5 Microliter,AlkylatingAgentTargetConcentration -> 50Millimolar,
 				Output -> Options],
@@ -3344,6 +3388,31 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			Variables :> {options}
 		],
 		(* --- Sample prep option tests --- *)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCapillaryGelElectrophoresisSDS[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"],
+				PreparedModelAmount -> 100 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"]]..},
+				{EqualP[100 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{Warning::MissingSampleComposition}
+		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			options = ExperimentCapillaryGelElectrophoresisSDS["MyProteinMix",
 				PreparatoryUnitOperations -> {
@@ -3355,19 +3424,6 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 			{SamplePreparationP..},
 			Variables :> {options},
 			Messages:>{Warning::MissingSampleComposition}
-		],
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			options = ExperimentCapillaryGelElectrophoresisSDS["MyProteinMix",
-				PreparatoryPrimitives -> {
-					Define[Name -> "MyProteinMix",Sample -> {Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"], "A1"}],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],Destination -> "MyProteinMix", Amount -> 90 Microliter],
-					Transfer[Source -> Model[Sample, "fake 10 mg/mL BSA Fraction V"],Destination -> "MyProteinMix", Amount -> 5 Microliter],
-					Transfer[Source -> Model[Sample, "fake 100 mg/mL bActin"],Destination -> "MyProteinMix", Amount -> 5 Microliter]},
-				Output -> Options
-			];
-			Lookup[options, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {options}
 		],
 		Example[{Options, Incubate, "Set the Incubate option:"},
 			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
@@ -3781,14 +3837,14 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				AliquotContainer -> Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"],
 				Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"]]},
+			{{1, ObjectP[Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID],
 				DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -4276,11 +4332,11 @@ DefineTests[ExperimentCapillaryGelElectrophoresisSDS,
 				Upload[<|Object->#,DeveloperObject->True,AwaitingStorageUpdate->Null|> &/@allObjects];
 				Upload[<|Object->cleanupCartridge,DeveloperObject->Null|>];
 				Upload[Cases[Flatten[{
-					<|Object->sample2, Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]]}}|>,
+					<|Object->sample2, Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]],Now}}|>,
 					<|Object->sample3,Status->Discarded,Model->Null|>,
 					<|Object->sampleModel,Deprecated->True,DeveloperObject->True|>,
 					<|Object->sample11,Model->Null,DeveloperObject->True|>,
-					<|Object->sample7,DeveloperObject->True,Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]]}}|>
+					<|Object->sample7,DeveloperObject->True,Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]],Now}}|>
 				}],PacketP[]]];
 				fakeProtocol1 = ExperimentCapillaryGelElectrophoresisSDS[Object[Sample,"ExperimentCESDS Test sample 1 (200 uL) "<>$SessionUUID], Name -> "CESDS Protocol 1 "<>$SessionUUID, Confirm -> True, Reduction->True, TotalVolume->200Microliter];
 				completeTheFakeProtocol = UploadProtocolStatus[fakeProtocol1, Completed, FastTrack -> True];
@@ -5030,7 +5086,7 @@ DefineTests[
 			ExperimentCapillaryGelElectrophoresisSDSPreview[Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]],
 			Null
 		],
-		Example[{Basic,"Return Null for mulitple samples:"},
+		Example[{Basic,"Return Null for multiple samples:"},
 			ExperimentCapillaryGelElectrophoresisSDSPreview[{Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID],Object[Sample,"ExperimentCESDSPreview Test sample 1 (100 uL)" <> $SessionUUID]}],
 			Null
 		],

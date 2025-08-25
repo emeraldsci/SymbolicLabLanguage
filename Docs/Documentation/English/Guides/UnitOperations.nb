@@ -1,3 +1,1071 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5d3ea06c8a6182a1ca25b8b0604ad314aa0f111355d5c2dfd6fdcaa0560f5d62
-size 42053
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     41853,       1061]
+NotebookOptionsPosition[     32427,        897]
+NotebookOutlinePosition[     34401,        940]
+CellTagsIndexPosition[     34358,        937]
+WindowTitle->UnitOperations
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "998f747d-7495-4d76-8507-0b63d5e4b42b"]
+        }],ExpressionUUID->"90392e8c-7417-4435-992c-c49d45c48b79"],
+        StripOnInput->False], {"\<\"AbsorbanceIntensity\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Patterns/ref/AbsorbanceIntensity"], \
+"\<\"AbsorbanceKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:Patterns/ref/AbsorbanceKinetics"], "\<\"AbsorbanceSpectroscopy\
+\"\>":>Documentation`HelpLookup[
+       "paclet:Patterns/ref/AbsorbanceSpectroscopy"], "\<\"Aliquot\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Aliquot"], "\<\"Capping\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Capping"], "\<\"Centrifuge\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Centrifuge"], "\<\"Cleaving\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Cleaving"], "\<\"Coupling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Coupling"], "\<\"Cover\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Patterns/ref/Cover"], "\<\"Deprotecting\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Deprotecting"], "\<\"Deprotonating\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Deprotonating"], \
+"\<\"ExperimentManualSamplePreparation\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ExperimentManualSamplePreparation"], \
+"\<\"ExperimentRoboticSamplePreparation\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ExperimentRoboticSamplePreparation"], \
+"\<\"ExperimentSamplePreparation\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ExperimentSamplePreparation"], \
+"\<\"FillToVolume\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/FillToVolume"], "\<\"Filter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Filter"], "\<\"ImportSampleManipulation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ImportSampleManipulation"], "\<\"Incubate\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Incubate"], "\<\"LabelContainer\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/LabelContainer"], "\<\"LabelSample\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/LabelSample"], "\<\"Mix\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Mix"], "\<\"MoveToMagnet\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/MoveToMagnet"], "\<\"OptimizePrimitives\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/OptimizePrimitives"], "\<\"Pellet\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Patterns/ref/Pellet"], "\<\"Placement\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/Placement"], "\<\"ReadPlate\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ReadPlate"], "\<\"RemoveFromMagnet\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/RemoveFromMagnet"], "\<\"Resuspend\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Resuspend"], "\<\"SerialDilute\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Objects/ref/SerialDilute"], "\<\"Swelling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Swelling"], "\<\"Transfer\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Transfer"], "\<\"Uncover\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Patterns/ref/Uncover"], "\<\"VisualInspection\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Objects/ref/VisualInspection"], "\<\"Wait\"\>":>
+       Documentation`HelpLookup["paclet:Experiment/ref/Wait"], "\<\"Wash\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Wash"], "\<\"Washing\"\>":>
+       Documentation`HelpLookup["paclet:Experiment/ref/Washing"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "c4935d64-0d91-4f3f-a7b8-ba43f661ff13"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "751455ca-87e4-403b-ba60-88066ae6de48"]
+        }],ExpressionUUID->"551b41f4-4b38-4d9f-954e-cf2fb67b80a5"],
+        StripOnInput->False], {"\<\"ExperimentTrackingAndManagement\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ExperimentTrackingAndManagement"], \
+"\<\"FacilitiesCapabilitiesAndLimitations\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"], \
+"\<\"PricingFunctions\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/PricingFunctions"], "\<\"Running Experiments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/RunningExperiments"], "\<\"Validating Experiments\"\
+\>":>Documentation`HelpLookup["paclet:Docs/guide/ValidatingExperiments"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "914d1ef3-187f-49d7-8bd8-6c8a3b647bc5"]
+    }], "AnchorBar",ExpressionUUID->"54ea1ffc-b574-458d-bf50-d634bc69b7c1"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"f4c3dc14-4008-4363-8401-9620121436b7"],
+
+Cell["Unit Operations", "GuideTitle",
+ CellID->3005867,ExpressionUUID->"85a68ec5-2e88-4643-a14c-afcec508ce44"],
+
+Cell["\<\
+Collection of functions for remotely conducting self-contained sample \
+manipulations in an ECL facility.\
+\>", "GuideAbstract",
+ CellID->1127482788,ExpressionUUID->"682f3118-caf9-4521-bb9f-8be030879dfb"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->207516788,ExpressionUUID->"40914b7d-7881-428f-b7de-b5a992868b62"],
+
+Cell["Sample Preparation", "GuideFunctionsSubsection",
+ CellID->221213188,ExpressionUUID->"48c74ff0-f838-480e-b87c-81ff487b2394"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExperimentSamplePreparation"]], 
+    "paclet:Experiment/ref/ExperimentSamplePreparation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4ab47d0b-f09b-4bfe-aa5e-9021316a709f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a protocol that executes the specified manual or robotic unit \
+operations of sample preparation."
+}], "GuideText",
+ CellID->635857759,ExpressionUUID->"e4e20f16-0bdf-4cc8-b352-34f40104beba"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExperimentManualSamplePreparation"]], 
+    "paclet:Experiment/ref/ExperimentManualSamplePreparation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "73ef9f70-ff5b-4831-8c87-849e17dce53b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a protocol that allows for the incubation, mixing, \
+centrifugation, filtration, volume and mass transfers as well as other manual \
+preparation of samples."
+}], "GuideText",
+ CellID->982728041,ExpressionUUID->"43059b69-1189-44db-8ce4-121a5d3329c8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExperimentRoboticSamplePreparation"]], 
+    "paclet:Experiment/ref/ExperimentRoboticSamplePreparation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "909e48db-9c2d-4b2c-972d-93fc83a4aa7c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a protocol that uses a robotically integrated liquid handler to \
+perform incubation, mixing, centrifugation, filtration, transfer of liquids \
+and other general preparation of samples."
+}], "GuideText",
+ CellID->413456010,ExpressionUUID->"fc4f0baf-6af0-43fc-8a66-126eae5f2b9e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImportSampleManipulation"]], 
+    "paclet:Experiment/ref/ImportSampleManipulation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "448bdcaf-048a-4b29-a26f-7e9945646838"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of sample preparation unit operation for loading samples \
+into a plate from an appropriately formatted Excel file inputted as a file \
+path or an EmeraldCloudFile."
+}], "GuideText",
+ CellID->1845562025,ExpressionUUID->"128de523-e68c-4cad-b4ec-aabe9ffb332b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Aliquot"]], "paclet:Experiment/ref/Aliquot"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4e771954-2c1b-4e08-8107-89c65d0e328b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes moving a single source to \
+multiple destinations."
+}], "GuideText",
+ CellID->107156907,ExpressionUUID->"2f9031e1-4244-4195-94cf-0edbe33fafdf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Cover"]], "paclet:Patterns/ref/Cover"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ab68491f-de9b-4860-bd1c-275d491262d6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes covering a sample container \
+with a lid of a specified type."
+}], "GuideText",
+ CellID->1394839763,ExpressionUUID->"cad30781-f76f-4f81-bdc2-5e77a56aeb60"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FillToVolume"]], "paclet:Experiment/ref/FillToVolume"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "510fe518-f153-4d7e-b433-c589036b9df0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe transferring a source into a \
+destination until a desired volume is reached."
+}], "GuideText",
+ CellID->1140406089,ExpressionUUID->"2d258c1e-0a47-4c2c-bf4d-7133659e3fe3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Filter"]], "paclet:Experiment/ref/Filter"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "37290c4a-aac9-4a76-86be-3db9061efd1d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes separating particles bigger \
+than a specific size from a solution via filtering."
+}], "GuideText",
+ CellID->513588348,ExpressionUUID->"e23c5817-e849-487e-8f08-dc351cf03d2e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Incubate"]], "paclet:Experiment/ref/Incubate"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "01439535-45c0-4ba1-a968-0c762e3935d7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes incubating and mixing a sample \
+at a specified temperature and shaking rate for a specified amount of time."
+}], "GuideText",
+ CellID->1142587543,ExpressionUUID->"7cfe051e-286c-439e-ad71-45c146393178"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LabelContainer"]], "paclet:Experiment/ref/LabelContainer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3079c33f-3a23-46c3-9499-2a5a9931e766"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that labels a container for use in other unit \
+operations."
+}], "GuideText",
+ CellID->670063727,ExpressionUUID->"77b1eb59-53ca-4761-ae64-5a98c56dc847"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LabelSample"]], "paclet:Experiment/ref/LabelSample"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7355dfce-29b6-46c3-9e88-2d91d6a41c71"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that labels a sample in a container for use \
+by other unit operations."
+}], "GuideText",
+ CellID->356814821,ExpressionUUID->"dae34aad-d8fa-43cd-a9f9-dd7d99a51a72"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Mix"]], "paclet:Experiment/ref/Mix"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0e83d6cd-ccfc-4e32-b371-f4f7892b12fb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes mixing a sample using \
+bench-top instrumentation or by pipetting on a micro liquid handling robot."
+}], "GuideText",
+ CellID->1212354123,ExpressionUUID->"2f6ae5ac-6c27-4bba-94b5-f2b689cf2b96"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MoveToMagnet"]], "paclet:Experiment/ref/MoveToMagnet"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b014f941-f5c4-4168-b725-72e2d5cee97a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe subjecting a sample to a \
+magnetic field."
+}], "GuideText",
+ CellID->710902525,ExpressionUUID->"cb0c5d83-bb7d-4f6c-bd1d-057d357cbd35"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Pellet"]], "paclet:Patterns/ref/Pellet"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8cfb8fe9-2e1c-4e10-b73b-b4ace404d05c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes precipitating a sample out of \
+solution by centrifugal spinning."
+}], "GuideText",
+ CellID->1687209414,ExpressionUUID->"49bb095b-8bb5-447f-a98d-897af5f9cf05"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Placement"]], "paclet:Locations/ref/Placement"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2673729d-cd57-4a13-9aca-21dd5e18b224"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe moving an item into a \
+destination."
+}], "GuideText",
+ CellID->1554546110,ExpressionUUID->"8bb08ccd-7bbc-4bd0-bd92-3efc43c0fed6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RemoveFromMagnet"]], "paclet:Experiment/ref/RemoveFromMagnet"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9b0ff7a4-a135-4da2-9e5c-9e6110a7cccc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes removing a sample from \
+magnetization."
+}], "GuideText",
+ CellID->970421368,ExpressionUUID->"8693b3bd-6ce1-48f3-9008-e979073b6d46"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Resuspend"]], "paclet:Experiment/ref/Resuspend"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bad3e161-d59e-49db-8877-ce17e3892a7b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes bringing a substance into \
+solution by pipetting liquid onto a solidified sample."
+}], "GuideText",
+ CellID->1881116658,ExpressionUUID->"f75207f0-5d88-412a-bb49-e978c2bcd016"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SerialDilute"]], "paclet:Objects/ref/SerialDilute"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8fcd1e3a-2d10-4516-a37f-17371c665969"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes repeatedly diluting an initial \
+sample with a given buffer to yield a series of samples with decreasing \
+concentration."
+}], "GuideText",
+ CellID->673419872,ExpressionUUID->"ab8ef910-9617-417e-9ee4-36f50d8c53d3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Transfer"]], "paclet:Experiment/ref/Transfer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a6969263-1b4d-4e6e-917c-10d42c58caaa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe transferring a source to a \
+destination."
+}], "GuideText",
+ CellID->928969014,ExpressionUUID->"11f6d27c-b6b5-4d42-83f4-f0ec295b008a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Wait"]], "paclet:Experiment/ref/Wait"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ead57fa5-7e26-4c89-950c-9f357ab04cc4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A unit operation that describes a pause in a protocol."
+}], "GuideText",
+ CellID->976104608,ExpressionUUID->"b5bbb08d-4969-43c6-aa72-cab38e981716"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["VisualInspection"]], "paclet:Objects/ref/VisualInspection"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e8194ded-89a7-444e-b466-c600851278f7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes how the sample should be \
+inspected visually during a protocol."
+}], "GuideText",
+ CellID->762567223,ExpressionUUID->"4590dda3-a41f-4891-bf68-1ce9582dbcb2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Uncover"]], "paclet:Patterns/ref/Uncover"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b584a23b-b31d-4942-9b4a-5a568c952e50"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A set of instructions that describes removing a lid from a plate."
+}], "GuideText",
+ CellID->284911665,ExpressionUUID->"67658f81-eb74-48f0-9557-1dcd48312885"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["OptimizePrimitives"]], 
+    "paclet:Experiment/ref/OptimizePrimitives"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f38971b2-0b7e-4887-83c8-3b3dcf794375"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Transforms a set of primitives into a a format that can be executed most \
+efficiently by a liquid handler."
+}], "GuideText",
+ CellID->1769304492,ExpressionUUID->"49ab0f1f-83d1-427c-8e6b-008a5eedfd7c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Centrifuge"]], "paclet:Experiment/ref/Centrifuge"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a27412ec-e54d-4100-9d5a-14f8ff02433c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of instructions that describes spinning the smaple in a \
+centrifuge at a specified intensity for a specified amount of time."
+}], "GuideText",
+ CellID->494537035,ExpressionUUID->"7ae3d29f-896b-41c2-a684-5dc2c236bcbe"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->922233355,ExpressionUUID->"3d018487-f37e-4d82-a06d-7804fa7236e7"],
+
+Cell["Synthesis", "GuideFunctionsSubsection",
+ CellID->1586517086,ExpressionUUID->"df6a614a-5bf6-49b0-9873-9d574f1ababa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Coupling"]], "paclet:Experiment/ref/Coupling"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "95d74f11-e3b4-402e-930a-aed0e914e204"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an solid phase synthesis primitive."
+}], "GuideText",
+ CellID->1435703250,ExpressionUUID->"f30401ec-2274-41b1-abdd-76bbb454ac4c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Deprotonating"]], "paclet:Experiment/ref/Deprotonating"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b3478109-94d1-4ec1-a6f7-aae588491abc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes how a proton is removed from a \
+strand during solid phase synthesis."
+}], "GuideText",
+ CellID->738265058,ExpressionUUID->"51bf9d79-49df-454a-9f20-608fe10a5be0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Swelling"]], "paclet:Experiment/ref/Swelling"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "08081ce8-9057-4c10-a3aa-d59d82f128a8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A unit operation that describes how resin chains will be solvated in order \
+to expose linker sites used as start points for solid phase synthesis."
+}], "GuideText",
+ CellID->2007801087,ExpressionUUID->"ae5dee1a-d911-4e46-b305-2c374f584277"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Cleaving"]], "paclet:Experiment/ref/Cleaving"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2d30f032-43f9-440c-ab39-5a76609c3eb0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe how the synthesized strand is \
+removed from its solid support at the end of solid phase synthesis."
+}], "GuideText",
+ CellID->1702323898,ExpressionUUID->"ff64f4fe-9902-46fb-b778-ca10ae00dbb4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Deprotecting"]], "paclet:Experiment/ref/Deprotecting"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "53977836-1be8-484c-be66-604173e4f4b8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe how a blocking group is \
+chemically eliminated from a strand during solid phase synthesis."
+}], "GuideText",
+ CellID->33124705,ExpressionUUID->"52655d26-46d7-4b6e-b537-dbf08b023f9e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Washing"]], "paclet:Experiment/ref/Washing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "59e01580-05ac-46af-a976-0301cc54423c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A set of instructions that describe how the previous step's chemicals will \
+be removed from the resin by flowing solvent through it into waste during \
+solid phase synthesis."
+}], "GuideText",
+ CellID->528652362,ExpressionUUID->"fee93b5e-1c9d-48ba-8051-f3d0573210a7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Capping"]], "paclet:Experiment/ref/Capping"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1eb94501-b04d-4257-ba3e-80d4cea32221"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A set of instructions that describe how a blocking group is chemically \
+copuled to a strand during solid phase synthesis."
+}], "GuideText",
+ CellID->920400495,ExpressionUUID->"3b66897e-f962-4363-bf01-53412ba7475e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->846410124,ExpressionUUID->"190ac6fb-08dd-48e2-9824-bc1949088b69"],
+
+Cell["Separation Techniques", "GuideFunctionsSubsection",
+ CellID->683276340,ExpressionUUID->"657d9972-fa21-4776-b149-80c8c2caa551"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Filter"]], "paclet:Experiment/ref/Filter"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1828f377-1924-4d3b-ab88-b7b5431d0fb1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes separating particles bigger \
+than a specific size from a solution via filtering."
+}], "GuideText",
+ CellID->1230385871,ExpressionUUID->"34cd35db-e71b-4f21-82a0-ab889bcfe13a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Pellet"]], "paclet:Patterns/ref/Pellet"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5b71ccbe-9bd8-4826-a00a-3d19112cff26"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes precipitating a sample out of \
+solution by centrifugal spinning."
+}], "GuideText",
+ CellID->975296934,ExpressionUUID->"c1f802f5-0cc8-4866-b67e-aaee5b400145"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MoveToMagnet"]], "paclet:Experiment/ref/MoveToMagnet"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4ed33e62-2f7b-4ff4-88bf-7b53c2214f9b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe subjecting a sample to a \
+magnetic field."
+}], "GuideText",
+ CellID->72892187,ExpressionUUID->"21a4e539-133c-42cc-84cc-eae13326dfbf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RemoveFromMagnet"]], "paclet:Experiment/ref/RemoveFromMagnet"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef4699ca-482f-46dc-9991-7872b87a1a9f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes removing a sample from \
+magnetization."
+}], "GuideText",
+ CellID->1033308119,ExpressionUUID->"ab00d944-c0ab-4e47-92e3-ee5c953d6a61"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->109302744,ExpressionUUID->"40ac4eed-de2c-45e5-b8e6-204e7f1b5a46"],
+
+Cell["Spectroscopy Experiments", "GuideFunctionsSubsection",
+ CellID->952700223,ExpressionUUID->"2052a962-4283-4e40-a8dc-990c5b1345a7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceIntensity"]], 
+    "paclet:Patterns/ref/AbsorbanceIntensity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c4319f40-2d84-457d-a18b-85f3a02edc31"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A unit operation that measures the absorbance intensity of the given \
+samples, subject to supplied options and configurations."
+}], "GuideText",
+ CellID->394575929,ExpressionUUID->"5ee47b5c-9ed8-48b7-8864-aeb7fcc82d38"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceKinetics"]], 
+    "paclet:Patterns/ref/AbsorbanceKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eaf38234-6415-48e2-b827-9193cd8ad229"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes measuring the absorbance of \
+the specified samples over a period of time."
+}], "GuideText",
+ CellID->208136767,ExpressionUUID->"d0530026-0b06-41cd-b32d-dd9cb513c85b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceSpectroscopy"]], 
+    "paclet:Patterns/ref/AbsorbanceSpectroscopy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c2c4fcf2-0ed7-4c0e-84cd-a165ca2dab40"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describes measuring the absorbance of \
+the specified samples at specified wavelength."
+}], "GuideText",
+ CellID->2051265653,ExpressionUUID->"ead47093-a7c6-40b9-a314-a60247a21a3c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReadPlate"]], "paclet:Experiment/ref/ReadPlate"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3784d71e-f4f3-42ab-a467-c441f412967c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A detailed set of parameters that describe placing a sample-containing \
+microwell plate into a plate-reader instrument for defined spectroscopic \
+measurements."
+}], "GuideText",
+ CellID->2066844680,ExpressionUUID->"a1c97cc0-cec6-455e-ad47-d51fb8a5f2d3"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1910546535,ExpressionUUID->"bc3be848-4ef1-4b42-aa20-c53c377505e3"],
+
+Cell["Bioassays", "GuideFunctionsSubsection",
+ CellID->1380123801,ExpressionUUID->"959df5ba-a6cd-478f-993f-e5cf7ca6ff50"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Wash"]], "paclet:Experiment/ref/Wash"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13728e74-63d6-4645-b88c-875e6df32053"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " A unit operation that describes how a part of the biolayer interferometry \
+experiment is carried out."
+}], "GuideText",
+ CellID->769852160,ExpressionUUID->"ef956f7f-8b0e-47ca-b376-27f54f90cfaa"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->316279945,ExpressionUUID->"a838ea87-37c9-48b5-ab8b-48fa56722727"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"edf18c38-f829-44c4-9c20-24065746a5e8"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->695009290,ExpressionUUID->"0ef21a64-acb9-4e86-aa09-ebecf6eafccf"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->857580997,ExpressionUUID->"a94fe1b0-fb59-4c9c-bc4c-f892b828ded3"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Running Experiments"]], "paclet:Docs/guide/RunningExperiments"},
+  
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1601061562,ExpressionUUID->"80fe251d-aac0-4c19-a26b-10e09d241cb5"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Validating Experiments"]], 
+   "paclet:Docs/guide/ValidatingExperiments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1071575624,ExpressionUUID->"56a52279-63a1-4591-990a-348854cced44"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ExperimentTrackingAndManagement"]], 
+   "paclet:Docs/guide/ExperimentTrackingAndManagement"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1173648826,ExpressionUUID->"dd8c153d-e48d-4c1e-8b49-25846fc45066"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["FacilitiesCapabilitiesAndLimitations"]], 
+   "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->878520887,ExpressionUUID->"8daca662-b1f8-4264-92fa-05dc7dd1fa76"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["PricingFunctions"]], "paclet:Docs/guide/PricingFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1350474684,ExpressionUUID->"37c7572f-ac7b-4800-9672-4bb9c55fcfb4"],
+
+Cell["", "FooterCell",
+ CellID->673348845,ExpressionUUID->"147f1208-0535-4e3f-aab6-625966c217f4"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"UnitOperations",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:09:43", "context" -> "Docs`", 
+    "keywords" -> {
+     "ExperimentSamplePreparation", "ExperimentManualSamplePreparation", 
+      "ExperimentRoboticSamplePreparation", "ImportSampleManipulation", 
+      "Aliquot", "Cover", "FillToVolume", "Filter", "Incubate", 
+      "LabelContainer", "LabelSample", "Mix", "MoveToMagnet", "Pellet", 
+      "Placement", "RemoveFromMagnet", "Resuspend", "SerialDilute", 
+      "Transfer", "Wait", "VisualInspection", "Uncover", "OptimizePrimitives",
+       "Centrifuge", "Coupling", "Deprotonating", "Swelling", "Cleaving", 
+      "Deprotecting", "Washing", "Capping", "AbsorbanceIntensity", 
+      "AbsorbanceKinetics", "AbsorbanceSpectroscopy", "ReadPlate", "Wash"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for remotely conducting self-contained sample \
+manipulations in an ECL facility.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "UnitOperations", "title" -> "UnitOperations", "type" -> 
+    "Guide", "uri" -> "Docs/guide/UnitOperations", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"3a20ac6b-2a77-4418-b785-3178c1fae37c"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[586, 21, 7140, 155, 58, "AnchorBarGrid",ExpressionUUID->"f4c3dc14-4008-4363-8401-9620121436b7",
+ CellID->1],
+Cell[7729, 178, 110, 1, 45, "GuideTitle",ExpressionUUID->"85a68ec5-2e88-4643-a14c-afcec508ce44",
+ CellID->3005867],
+Cell[7842, 181, 214, 4, 30, "GuideAbstract",ExpressionUUID->"682f3118-caf9-4521-bb9f-8be030879dfb",
+ CellID->1127482788],
+Cell[8059, 187, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"40914b7d-7881-428f-b7de-b5a992868b62",
+ CellID->207516788],
+Cell[8175, 190, 129, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"48c74ff0-f838-480e-b87c-81ff487b2394",
+ CellID->221213188],
+Cell[8307, 193, 546, 14, 51, "GuideText",ExpressionUUID->"e4e20f16-0bdf-4cc8-b352-34f40104beba",
+ CellID->635857759],
+Cell[8856, 209, 617, 15, 57, "GuideText",ExpressionUUID->"43059b69-1189-44db-8ce4-121a5d3329c8",
+ CellID->982728041],
+Cell[9476, 226, 648, 15, 77, "GuideText",ExpressionUUID->"fc4f0baf-6af0-43fc-8a66-126eae5f2b9e",
+ CellID->413456010],
+Cell[10127, 243, 613, 15, 57, "GuideText",ExpressionUUID->"128de523-e68c-4cad-b4ec-aabe9ffb332b",
+ CellID->1845562025],
+Cell[10743, 260, 488, 13, 37, "GuideText",ExpressionUUID->"2f9031e1-4244-4195-94cf-0edbe33fafdf",
+ CellID->107156907],
+Cell[11234, 275, 494, 13, 57, "GuideText",ExpressionUUID->"cad30781-f76f-4f81-bdc2-5e77a56aeb60",
+ CellID->1394839763],
+Cell[11731, 290, 525, 13, 57, "GuideText",ExpressionUUID->"2d258c1e-0a47-4c2c-bf4d-7133659e3fe3",
+ CellID->1140406089],
+Cell[12259, 305, 517, 13, 57, "GuideText",ExpressionUUID->"e23c5817-e849-487e-8f08-dc351cf03d2e",
+ CellID->513588348],
+Cell[12779, 320, 549, 13, 57, "GuideText",ExpressionUUID->"7cfe051e-286c-439e-ad71-45c146393178",
+ CellID->1142587543],
+Cell[13331, 335, 496, 13, 37, "GuideText",ExpressionUUID->"77b1eb59-53ca-4761-ae64-5a98c56dc847",
+ CellID->670063727],
+Cell[13830, 350, 502, 13, 57, "GuideText",ExpressionUUID->"dae34aad-d8fa-43cd-a9f9-dd7d99a51a72",
+ CellID->356814821],
+Cell[14335, 365, 530, 13, 57, "GuideText",ExpressionUUID->"2f6ae5ac-6c27-4bba-94b5-f2b689cf2b96",
+ CellID->1212354123],
+Cell[14868, 380, 489, 13, 37, "GuideText",ExpressionUUID->"cb0c5d83-bb7d-4f6c-bd1d-057d357cbd35",
+ CellID->710902525],
+Cell[15360, 395, 500, 13, 57, "GuideText",ExpressionUUID->"49bb095b-8bb5-447f-a98d-897af5f9cf05",
+ CellID->1687209414],
+Cell[15863, 410, 477, 13, 37, "GuideText",ExpressionUUID->"8bb08ccd-7bbc-4bd0-bd92-3efc43c0fed6",
+ CellID->1554546110],
+Cell[16343, 425, 499, 14, 57, "GuideText",ExpressionUUID->"8693b3bd-6ce1-48f3-9008-e979073b6d46",
+ CellID->970421368],
+Cell[16845, 441, 525, 13, 57, "GuideText",ExpressionUUID->"f75207f0-5d88-412a-bb49-e978c2bcd016",
+ CellID->1881116658],
+Cell[17373, 456, 566, 14, 57, "GuideText",ExpressionUUID->"ab8ef910-9617-417e-9ee4-36f50d8c53d3",
+ CellID->673419872],
+Cell[17942, 472, 480, 13, 37, "GuideText",ExpressionUUID->"11f6d27c-b6b5-4d42-83f4-f0ec295b008a",
+ CellID->928969014],
+Cell[18425, 487, 442, 12, 37, "GuideText",ExpressionUUID->"b5bbb08d-4969-43c6-aa72-cab38e981716",
+ CellID->976104608],
+Cell[18870, 501, 517, 13, 57, "GuideText",ExpressionUUID->"4590dda3-a41f-4891-bf68-1ce9582dbcb2",
+ CellID->762567223],
+Cell[19390, 516, 457, 12, 37, "GuideText",ExpressionUUID->"67658f81-eb74-48f0-9557-1dcd48312885",
+ CellID->284911665],
+Cell[19850, 530, 529, 14, 57, "GuideText",ExpressionUUID->"49ab0f1f-83d1-427c-8e6b-008a5eedfd7c",
+ CellID->1769304492],
+Cell[20382, 546, 540, 13, 57, "GuideText",ExpressionUUID->"7ae3d29f-896b-41c2-a684-5dc2c236bcbe",
+ CellID->494537035],
+Cell[20925, 561, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"3d018487-f37e-4d82-a06d-7804fa7236e7",
+ CellID->922233355],
+Cell[21041, 564, 121, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"df6a614a-5bf6-49b0-9873-9d574f1ababa",
+ CellID->1586517086],
+Cell[21165, 567, 442, 12, 31, "GuideText",ExpressionUUID->"f30401ec-2274-41b1-abdd-76bbb454ac4c",
+ CellID->1435703250],
+Cell[21610, 581, 519, 13, 57, "GuideText",ExpressionUUID->"51bf9d79-49df-454a-9f20-608fe10a5be0",
+ CellID->738265058],
+Cell[22132, 596, 544, 13, 57, "GuideText",ExpressionUUID->"ae5dee1a-d911-4e46-b305-2c374f584277",
+ CellID->2007801087],
+Cell[22679, 611, 539, 13, 57, "GuideText",ExpressionUUID->"ff64f4fe-9902-46fb-b778-ca10ae00dbb4",
+ CellID->1702323898],
+Cell[23221, 626, 537, 13, 57, "GuideText",ExpressionUUID->"52655d26-46d7-4b6e-b537-dbf08b023f9e",
+ CellID->33124705],
+Cell[23761, 641, 569, 14, 57, "GuideText",ExpressionUUID->"fee93b5e-1c9d-48ba-8051-f3d0573210a7",
+ CellID->528652362],
+Cell[24333, 657, 516, 13, 57, "GuideText",ExpressionUUID->"3b66897e-f962-4363-bf01-53412ba7475e",
+ CellID->920400495],
+Cell[24852, 672, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"190ac6fb-08dd-48e2-9824-bc1949088b69",
+ CellID->846410124],
+Cell[24968, 675, 132, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"657d9972-fa21-4776-b149-80c8c2caa551",
+ CellID->683276340],
+Cell[25103, 678, 518, 13, 51, "GuideText",ExpressionUUID->"34cd35db-e71b-4f21-82a0-ab889bcfe13a",
+ CellID->1230385871],
+Cell[25624, 693, 499, 13, 57, "GuideText",ExpressionUUID->"c1f802f5-0cc8-4866-b67e-aaee5b400145",
+ CellID->975296934],
+Cell[26126, 708, 488, 13, 37, "GuideText",ExpressionUUID->"21a4e539-133c-42cc-84cc-eae13326dfbf",
+ CellID->72892187],
+Cell[26617, 723, 500, 14, 57, "GuideText",ExpressionUUID->"ab00d944-c0ab-4e47-92e3-ee5c953d6a61",
+ CellID->1033308119],
+Cell[27120, 739, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"40ac4eed-de2c-45e5-b8e6-204e7f1b5a46",
+ CellID->109302744],
+Cell[27236, 742, 135, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"2052a962-4283-4e40-a8dc-990c5b1345a7",
+ CellID->952700223],
+Cell[27374, 745, 548, 14, 51, "GuideText",ExpressionUUID->"5ee47b5c-9ed8-48b7-8864-aeb7fcc82d38",
+ CellID->394575929],
+Cell[27925, 761, 537, 14, 57, "GuideText",ExpressionUUID->"d0530026-0b06-41cd-b32d-dd9cb513c85b",
+ CellID->208136767],
+Cell[28465, 777, 548, 14, 57, "GuideText",ExpressionUUID->"ead47093-a7c6-40b9-a314-a60247a21a3c",
+ CellID->2051265653],
+Cell[29016, 793, 560, 14, 57, "GuideText",ExpressionUUID->"a1c97cc0-cec6-455e-ad47-d51fb8a5f2d3",
+ CellID->2066844680],
+Cell[29579, 809, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"bc3be848-4ef1-4b42-aa20-c53c377505e3",
+ CellID->1910546535],
+Cell[29696, 812, 121, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"959df5ba-a6cd-478f-993f-e5cf7ca6ff50",
+ CellID->1380123801],
+Cell[29820, 815, 490, 13, 51, "GuideText",ExpressionUUID->"ef956f7f-8b0e-47ca-b376-27f54f90cfaa",
+ CellID->769852160],
+Cell[30313, 830, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"a838ea87-37c9-48b5-ab8b-48fa56722727",
+ CellID->316279945],
+Cell[30422, 833, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"0ef21a64-acb9-4e86-aa09-ebecf6eafccf",
+ CellID->695009290],
+Cell[30817, 847, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"a94fe1b0-fb59-4c9c-bc4c-f892b828ded3",
+ CellID->857580997],
+Cell[30926, 850, 265, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"80fe251d-aac0-4c19-a26b-10e09d241cb5",
+ CellID->1601061562],
+Cell[31194, 859, 272, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"56a52279-63a1-4591-990a-348854cced44",
+ CellID->1071575624],
+Cell[31469, 868, 291, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"dd8c153d-e48d-4c1e-8b49-25846fc45066",
+ CellID->1173648826],
+Cell[31763, 877, 300, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"8daca662-b1f8-4264-92fa-05dc7dd1fa76",
+ CellID->878520887],
+Cell[32066, 886, 257, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"37c7572f-ac7b-4800-9672-4bb9c55fcfb4",
+ CellID->1350474684],
+Cell[32326, 894, 97, 1, 40, "FooterCell",ExpressionUUID->"147f1208-0535-4e3f-aab6-625966c217f4",
+ CellID->673348845]
+}
+]
+*)
+
+(* End of internal cache information *)
+

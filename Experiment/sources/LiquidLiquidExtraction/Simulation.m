@@ -58,8 +58,8 @@ PredictSamplePhase[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}]],
   filteredCompositions = MapThread[
     Function[{samplePacket, solventPacket},
       If[MatchQ[Lookup[samplePacket, Solvent], ObjectP[]],
-        Cases[Lookup[solventPacket, Composition], {GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]]}],
-        Cases[Lookup[samplePacket, Composition], {GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]]}]
+        Cases[Lookup[solventPacket, Composition], {GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]]}|{GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]], _}][[All, {1, 2}]],
+        Cases[Lookup[samplePacket, Composition], {GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]]}|{GreaterEqualP[0 VolumePercent]|GreaterEqualP[0 MassPercent], ObjectP[Model[Molecule]], _}][[All, {1, 2}]]
       ]
     ],
     {samplePackets, solventPackets}

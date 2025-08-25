@@ -299,7 +299,7 @@ DefineOptionSet[MicrowaveDigestionOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample], Object[Sample]}]],
 			Description -> "The solution used to dilute the OutputAliquot of the digested sample.",
-			ResolutionDescription -> "When DiluteOutputAliquot -> True, the default diluent is automatically set to Model[Sample, \"Trace metal grade water\"].",
+			ResolutionDescription -> "When DiluteOutputAliquot -> True, the default diluent is automatically set to Model[Sample, \"Milli-Q water\"].",
 			Category -> "Digestion"
 		},
 		(*TODO: Ask thermofisher whether trace metal grade water should be used, or regular milliQ water is fine*)

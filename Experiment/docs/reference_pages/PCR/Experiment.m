@@ -46,7 +46,18 @@ DefineUsage[ExperimentPCR,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -96,18 +107,48 @@ DefineUsage[ExperimentPCR,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
 						{
-							InputName->"PrimerPairs",
-							Description->"The samples containing pairs of oligomer strands designed to bind to the templates and serve as anchors for the polymerase.",
-							Widget->Adder[{
-								"Forward Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]],
-								"Reverse Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]]
+							InputName -> "PrimerPairs",
+							Description -> "The samples containing pairs of oligomer strands designed to bind to the templates and serve as anchors for the polymerase.",
+							Widget -> Adder[{
+								"Forward Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								],
+								"Reverse Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								]
 							}],
-							Expandable->False
+							Expandable -> False
 						},
 						IndexName->"experiment samples"
 					]
@@ -176,7 +217,12 @@ DefineUsage[ExperimentPCROptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -226,16 +272,27 @@ DefineUsage[ExperimentPCROptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"PrimerPairs",
 							Description->"The samples containing pairs of oligomer strands designed to bind to the templates and serve as anchors for the polymerase.",
-							Widget->Adder[{
-								"Forward Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]],
-								"Reverse Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]]
+							Widget -> Adder[{
+								"Forward Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								],
+								"Reverse Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								]
 							}],
 							Expandable->False
 						},
@@ -303,7 +360,12 @@ DefineUsage[ExperimentPCRPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -353,16 +415,27 @@ DefineUsage[ExperimentPCRPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"PrimerPairs",
 							Description->"The samples containing pairs of oligomer strands designed to bind to the templates and serve as anchors for the polymerase.",
-							Widget->Adder[{
-								"Forward Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]],
-								"Reverse Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]]
+							Widget -> Adder[{
+								"Forward Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								],
+								"Reverse Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								]
 							}],
 							Expandable->False
 						},
@@ -430,7 +503,12 @@ DefineUsage[ValidExperimentPCRQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -480,16 +558,27 @@ DefineUsage[ValidExperimentPCRQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"PrimerPairs",
 							Description->"The samples containing pairs of oligomer strands designed to bind to the templates and serve as anchors for the polymerase.",
-							Widget->Adder[{
-								"Forward Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]],
-								"Reverse Primer"->Widget[Type->Object,Pattern:>ObjectP[Object[Sample]]]
+							Widget -> Adder[{
+								"Forward Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								],
+								"Reverse Primer" -> Alternatives[
+									Widget[Type -> Object, Pattern :> ObjectP[{Object[Sample], Model[Sample]}]],
+									Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+								]
 							}],
 							Expandable->False
 						},

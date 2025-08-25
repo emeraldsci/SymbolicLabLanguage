@@ -86,11 +86,6 @@ DefineUsage[PlotPeaks,
 		"EmeraldBarChart",
 		"EmeraldPieChart"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad",
-		"Catherine",
-		"Frezza"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad", "Catherine", "Frezza"},
 	Preview->True
 }];

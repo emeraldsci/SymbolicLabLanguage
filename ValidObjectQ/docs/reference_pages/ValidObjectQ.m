@@ -34,6 +34,7 @@ DefineUsage[AnyInformedTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -87,14 +88,13 @@ DefineUsage[FieldComparisonTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
 		"ResolvedAfterCheckpoint"
 	},
-	Author -> {
-		"ben, ryan.bisbey"
-	}
+	Author -> {"yanzhe.zhu", "ben, ryan.bisbey"}
 }];
 
 
@@ -125,6 +125,7 @@ DefineUsage[FieldSyncTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -163,6 +164,7 @@ DefineUsage[NotNullFieldTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -201,6 +203,7 @@ DefineUsage[NullFieldTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -252,6 +255,7 @@ DefineUsage[ObjectTypeTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -289,6 +293,7 @@ DefineUsage[URLFieldAccessibleTest,
 			"UniqueFieldTest",
 			"AnyInformedTest",
 			"UniquelyInformedTest",
+			"UniquelyInformedIndexTest",
 			"RequiredWhenCompleted",
 			"ResolvedWhenCompleted",
 			"RequiredAfterCheckpoint",
@@ -330,12 +335,13 @@ DefineUsage[RequiredAfterCheckpoint,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
 		"ResolvedAfterCheckpoint"
 	},
-	Author -> {"kelmen.low", "taylor.hochuli", "boris.brenerman", "paul", "ben"}
+	Author -> {"yanzhe.zhu", "kelmen.low", "taylor.hochuli", "boris.brenerman", "paul", "ben"}
 }];
 
 
@@ -366,6 +372,7 @@ DefineUsage[RequiredTogetherTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -405,6 +412,7 @@ DefineUsage[RequiredWhenCompleted,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -445,12 +453,13 @@ DefineUsage[ResolvedAfterCheckpoint,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
 		"ResolvedAfterCheckpoint"
 	},
-	Author -> {"kelmen.low", "taylor.hochuli", "boris.brenerman", "paul", "ben"}
+	Author -> {"yanzhe.zhu", "kelmen.low", "taylor.hochuli", "boris.brenerman", "paul", "ben"}
 }];
 
 
@@ -484,12 +493,13 @@ DefineUsage[ResolvedWhenCompleted,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
 		"ResolvedAfterCheckpoint"
 	},
-	Author -> {"kelmen.low", "taylor.hochuli", "josh.kenchel"}
+	Author -> {"yanzhe.zhu", "kelmen.low", "taylor.hochuli", "josh.kenchel"}
 }];
 
 
@@ -535,6 +545,7 @@ DefineUsage[UniqueFieldTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -550,14 +561,18 @@ DefineUsage[UniqueFieldTest,
 DefineUsage[UniquelyInformedTest,
 {
 	BasicDefinitions -> {
-		{"UniquelyInformedTest[packet,fields]", "test", "returns a test to be used in RunUnitTest for whether only one of `fields` is non-Null."}
+		{"UniquelyInformedTest[packet,fields]", "test", "returns a test to be used in RunUnitTest for whether exactly one of `fields` is non-Null."},
+		{"UniquelyInformedTest[packet,fields,parentField,pattern]", "test", "returns a test to be used in RunUnitTest for whether exactly one of `fields` is non-Null if a 'parentField' matches a given 'pattern'.."}
 	},
 	MoreInformation -> {
-		"The test uses NullQ to determine whether the fields are Null or not Null. Please see NullQ for details on what inputs pass or fail NullQ."
+		"The test uses NullQ to determine whether the fields are Null or not Null. Please see NullQ for details on what inputs pass or fail NullQ.",
+		"The parentField/pattern overload is useful for complex experiments that employ master switches or nested index matching."
 	},
 	Input :> {
 		{"packet", PacketP[], "The packet to be tested."},
-		{"fields", {FieldP[Output->Short]..}, "The fields that the test will check."}
+		{"fields", {FieldP[Output->Short]..}, "The fields that the test will check."},
+		{"parentField", FieldP[Output->Short], "A master switch field that also needs to be specified."},
+		{"pattern", _Alternatives, "Alternatives of symbols or patterns for the parentField to match, when the test is applicable."}
 	},
 	Output :> {
 		{"test", TestP, "A test for whether only one of the fields is non-Null."}
@@ -574,6 +589,7 @@ DefineUsage[UniquelyInformedTest,
 		"UniqueFieldTest",
 		"AnyInformedTest",
 		"UniquelyInformedTest",
+		"UniquelyInformedIndexTest",
 		"RequiredWhenCompleted",
 		"ResolvedWhenCompleted",
 		"RequiredAfterCheckpoint",
@@ -581,6 +597,44 @@ DefineUsage[UniquelyInformedTest,
 	},
 	Author -> {"pnafisi", "taylor.hochuli", "josh.kenchel"}
 }];
+
+(* ::Subsubsection::Closed:: *)
+(*UniquelyInformedTest*)
+
+DefineUsage[UniquelyInformedIndexTest,
+	{
+		BasicDefinitions -> {
+			{"UniquelyInformedIndexTest[packet, fields]", "test", "returns a test to be used in RunUnitTest for whether at every matching index within `fields` that only one is non-Null."}
+		},
+		MoreInformation -> {
+			"The test will return a failing test if the target fields are not the same length."
+		},
+		Input :> {
+			{"packet", PacketP[], "The packet to be tested."},
+			{"fields", {FieldP[Output->Short]..}, "The fields that the test will check."}
+		},
+		Output :> {
+			{"test", TestP, "A test for whether only one of the fields is non-Null."}
+		},
+		Sync -> Automatic,
+		SeeAlso -> {
+			"ValidObjectQ",
+			"NotNullFieldTest",
+			"NullFieldTest",
+			"RequiredTogetherTest",
+			"FieldSyncTest",
+			"ObjectTypeTest",
+			"FieldComparisonTest",
+			"UniqueFieldTest",
+			"AnyInformedTest",
+			"UniquelyInformedTest",
+			"RequiredWhenCompleted",
+			"ResolvedWhenCompleted",
+			"RequiredAfterCheckpoint",
+			"ResolvedAfterCheckpoint"
+		},
+		Author -> {"ryan.bisbey"}
+	}];
 
 (* ::Subsubsection::Closed:: *)
 (*registerValidQTestFunction*)

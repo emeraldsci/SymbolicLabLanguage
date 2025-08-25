@@ -58,6 +58,44 @@ DefineOptionSet[AlphaScreenOpticsOptions :> {
 		Category -> "Optics"
 	},
 	{
+		OptionName->TargetCarbonDioxideLevel,
+		Default->Automatic,
+		Description->"The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+		ResolutionDescription->"Automatically set to 5% for mammalian cells, and Null otherwise.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0.1Percent,20 Percent],
+			Units:>{Percent,{Percent}}
+		],
+		Category->"Optics"
+	},
+	{
+		OptionName->TargetOxygenLevel,
+		Default->Null,
+		Description->"The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0.1Percent,20 Percent],
+			Units:>{Percent,{Percent}}
+		],
+		Category->"Optics"
+	},
+	{
+		OptionName->AtmosphereEquilibrationTime,
+		Default->Automatic,
+		Description->"The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+		ResolutionDescription->"Automatically set to 5 Minute if TargetCarbonDioxideLevel or TargetOxygenLevel is specified. Otherwise, set to Null.",
+		AllowNull->True,
+		Widget->Widget[
+			Type->Quantity,
+			Pattern:>RangeP[0 Second, 24 Hour],
+			Units:>{1,{Minute,{Second,Minute,Hour}}}
+		],
+		Category->"Sample Handling"
+	},
+	{
 		OptionName -> PlateReaderMix,
 		Default -> Automatic,
 		Description -> "Indicates if samples should be mixed inside the plate reader chamber before the samples are read.",

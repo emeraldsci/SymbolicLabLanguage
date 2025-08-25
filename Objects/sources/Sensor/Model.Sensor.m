@@ -246,6 +246,15 @@ DefineObjectType[Model[Sensor], {
 			Category -> "Inventory"
 		},
 
+		(* --- Quality Assurance --- *)
+		ReceivingBatchInformation -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FieldP[Object[Report, Certificate, Calibration], Output->Short],
+			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+
 		(* --- Storage --- *)
 		Expires -> {
 			Format -> Single,

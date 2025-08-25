@@ -50,6 +50,7 @@ DefineUsage[
 			"GenerateAutomaticOrders"
 		},
 		Author -> {
+			"harrison.gronlund",
 			"ben",
 			"srikant",
 			"wyatt",

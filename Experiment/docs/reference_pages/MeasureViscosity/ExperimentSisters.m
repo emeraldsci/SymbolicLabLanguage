@@ -19,10 +19,20 @@ DefineUsage[ValidExperimentMeasureViscosityQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers that will be concentrated by evaporation.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False
@@ -47,7 +57,7 @@ DefineUsage[ValidExperimentMeasureViscosityQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
+		Author->{"daniel.shlian", "andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
 	}
 ];
 
@@ -68,10 +78,20 @@ DefineUsage[ExperimentMeasureViscosityPreview,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers containing samples that will have their viscosity measured.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False
@@ -96,7 +116,7 @@ DefineUsage[ExperimentMeasureViscosityPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
+		Author->{"daniel.shlian", "andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
 	}
 ];
 
@@ -116,10 +136,20 @@ DefineUsage[ExperimentMeasureViscosityOptions,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers containing the samples that will have their viscosity measured.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False
@@ -144,6 +174,6 @@ DefineUsage[ExperimentMeasureViscosityOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
+		Author->{"daniel.shlian", "andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
 	}
 ];

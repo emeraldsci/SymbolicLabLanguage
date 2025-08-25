@@ -153,7 +153,12 @@ DefineObjectType[Object[Protocol, Evaporate], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Alternatives[
+				Object[Protocol,SampleManipulation],
+				Object[Protocol, RoboticSamplePreparation],
+				Object[Protocol, ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description -> "The set of instructions specifying the transfer of balance solvent to the Counterbalances for balancing the vacuum centrifuge during evaporation.",
 			Category -> "Instrument Specifications",
 			Developer -> True
@@ -161,7 +166,7 @@ DefineObjectType[Object[Protocol, Evaporate], {
 		CounterbalancePrepPrimitives->{
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> Alternatives[SampleManipulationP, SamplePreparationP],
 			Description -> "The list of manipulations used to generated CounterbalancePrepManipulation.",
 			Category -> "Instrument Specifications",
 			Developer->True
@@ -340,29 +345,6 @@ DefineObjectType[Object[Protocol, Evaporate], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "For each member of PooledSamplesIn, determines whether any condensed solvent that has been evaporated from the pooled samples will be stored or disposed of at the end of the run.",
-			Category -> "Storage Information",
-			IndexMatching -> PooledSamplesIn
-		},
-		RinseSolutions -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Model[Sample],
-				Model[Sample,StockSolution],
-				Object[Sample],
-				Object[Sample]
-			],
-			Description -> "For each member of PooledSamplesIn, indicates which solution will be used to resuspend or dissolve any solid material that has accumulated in the EvaporationFlask.",
-			Category -> "Storage Information",
-			IndexMatching -> PooledSamplesIn
-		},
-		RinseVolumes -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0*Milliliter],
-			Units -> Milliliter,
-			Description -> "For each member of PooledSamplesIn, indicates how much RinseSolution will be used to resuspend or dissolve any solid material that has accumulated in the EvaporationFlask.",
 			Category -> "Storage Information",
 			IndexMatching -> PooledSamplesIn
 		},

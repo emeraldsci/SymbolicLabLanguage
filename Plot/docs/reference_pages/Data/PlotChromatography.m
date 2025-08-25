@@ -33,6 +33,31 @@ DefineUsage[PlotChromatography,
 			}
 		},
 		{
+			Definition -> {"PlotChromatography[protocol]", "plot"},
+			Description -> "creates an interactive 'plot' of the chromatography data found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing chromatography data objects.",
+					Widget -> Alternatives[
+						"FPLC protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FPLC]]],
+						"Gas chromatography protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, GasChromatography]]],
+						"HPLC protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, HPLC]]],
+						"Ion chromatography protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, IonChromatography]]],
+						"LCMS protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, LCMS]]],
+						"Supercritical fluid chromatography protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, SupercriticalFluidChromatography]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the chromatography protocol.",
+					Pattern :> ValidGraphicsP[]
+				}
+			}
+		},
+		{
 			Definition->{"PlotChromatography[chromatograph]", "plot"},
 			Description->"provides plots for chromatographic data.",
 			Inputs:>{
@@ -63,6 +88,6 @@ DefineUsage[PlotChromatography,
 		"PlotAbsorbanceSpectroscopy",
 		"PlotNMR"
 	},
-	Author -> {"eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson", "amir.saadat", "hayley", "thomas"},
+	Author -> {"dirk.schild", "eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson", "amir.saadat", "hayley", "thomas"},
 	Preview->True
 }];

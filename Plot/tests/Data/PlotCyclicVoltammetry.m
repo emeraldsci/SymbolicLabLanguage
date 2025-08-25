@@ -12,78 +12,64 @@ DefineTests[PlotCyclicVoltammetry,
 	{
 		(* -- BASIC -- *)
 		Example[{Basic,"Given a CyclicVoltammetry data object, creates a plot for the RawVoltammogram:"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Data, CyclicVoltammetry, "Example data 1 for PlotCyclicVoltammetry tests"]
-			];
-			MatchQ[output, ValidGraphicsP[]],
-			True,
-			Variables :> {output}
+			],
+			ValidGraphicsP[]
 		],
 
 		Example[{Basic,"Given a CyclicVoltammetry protocol object, creates plots for the ElectrodePretreatmentData (if any), CyclicVoltammetryData, PostMeasurementStandardAdditionData (if any):"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 1 for PlotCyclicVoltammetry tests"]
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 3},
-			Variables :> {output}
+			],
+			_TabView
 		],
 
 		Example[{Basic,"Given a CyclicVoltammetry protocol object, does not plot for the ElectrodePretreatmentData or PostMeasurementStandardAdditionData if there are no corresponding data:"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 2 for PlotCyclicVoltammetry tests"]
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 1},
-			Variables :> {output}
+			],
+			 _TabView
 		],
 
 		(* -- OPTIONS -- *)
 		Example[{Options, MeasurementType, "Given a CyclicVoltammetry protocol object, use MeasurementType -> All to create plots for the ElectrodePretreatmentData (if any), CyclicVoltammetryData, PostMeasurementStandardAdditionData (if any):"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 1 for PlotCyclicVoltammetry tests"],
 				MeasurementType -> All
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 3},
-			Variables :> {output}
+			],
+			_TabView
 		],
 		Example[{Options, MeasurementType, "Given a CyclicVoltammetry protocol object, use MeasurementType -> ElectrodePretreatment to only plot the ElectrodePretreatmentData:"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 1 for PlotCyclicVoltammetry tests"],
 				MeasurementType -> ElectrodePretreatment
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 1},
-			Variables :> {output}
+			],
+			_TabView
 		],
 		Example[{Options, MeasurementType, "Given a CyclicVoltammetry protocol object, use MeasurementType -> CyclicVoltammetryMeasurement to only plot the CyclicVoltammetryData:"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 1 for PlotCyclicVoltammetry tests"],
 				MeasurementType -> CyclicVoltammetryMeasurement
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 1},
-			Variables :> {output}
+			],
+			_TabView
 		],
 		Example[{Options, MeasurementType, "Given a CyclicVoltammetry protocol object, use MeasurementType -> PostMeasurementStandardAddition to only plot the PostMeasurementStandardAdditionData:"},
-			output = PlotCyclicVoltammetry[
+			PlotCyclicVoltammetry[
 				Object[Protocol, CyclicVoltammetry, "Example protocol 1 for PlotCyclicVoltammetry tests"],
 				MeasurementType -> PostMeasurementStandardAddition
-			];
-			{MatchQ[output, _TabView], Length[output[[1]]]},
-			{True, 1},
-			Variables :> {output}
+			],
+			_TabView
 		],
 		Example[{Options, MeasurementType, "Given a CyclicVoltammetry data object, MeasurementType option is ignored:"},
-			{output, plotOptions} = PlotCyclicVoltammetry[
+			plotOptions = PlotCyclicVoltammetry[
 				Object[Data, CyclicVoltammetry, "Example data 3 for PlotCyclicVoltammetry tests"],
 				MeasurementType -> All,
-				Output -> {Result, Options}
+				Output -> Options
 			];
-			{MatchQ[output, ValidGraphicsP[]], Lookup[plotOptions, MeasurementType]},
-			{True, CyclicVoltammetryMeasurement},
-			Variables :> {output, plotOptions}
+			Lookup[plotOptions, MeasurementType],
+			CyclicVoltammetryMeasurement,
+			Variables :> {plotOptions}
 		],
 
 		(* -- Messages -- *)
@@ -243,7 +229,8 @@ DefineTests[PlotCyclicVoltammetry,
 					Type -> Object[Protocol, CyclicVoltammetry],
 					Name -> "Example protocol 1 for PlotCyclicVoltammetry tests",
 					Replace[ElectrodePretreatmentData] -> {Link[dataObject1, Protocol], Null},
-					Replace[CyclicVoltammetryData] -> {Link[dataObject2, Protocol], Link[dataObject3, Protocol]},
+					Replace[CyclicVoltammetryData] -> {Link[dataObject2], Link[dataObject3]},
+    					Replace[Data] -> {Link[dataObject2, Protocol], Link[dataObject3, Protocol]},
 					Replace[PostMeasurementStandardAdditionData] -> {Link[dataObject5, Protocol], Null}
 				|>];
 
@@ -251,7 +238,8 @@ DefineTests[PlotCyclicVoltammetry,
 					Type -> Object[Protocol, CyclicVoltammetry],
 					Name -> "Example protocol 2 for PlotCyclicVoltammetry tests",
 					Replace[ElectrodePretreatmentData] -> {Null},
-					Replace[CyclicVoltammetryData] -> {Link[dataObject4, Protocol]},
+					Replace[CyclicVoltammetryData] -> {Link[dataObject4]},
+     					Replace[Data] -> {Link[dataObject4, Protocol]},
 					Replace[PostMeasurementStandardAdditionData] -> {Null}
 				|>]
 			]

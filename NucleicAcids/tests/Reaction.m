@@ -287,7 +287,7 @@ DefineTests[
 (*irreversibleImplicitReactionFormatP*)
 
 
-DefineTests["irreversibleReactionP",{
+DefineTests["Patterns`Private`irreversibleReactionP",{
 	Test["",MatchQ[{A+B->C,1.},irreversibleImplicitReactionFormatP],True],
 	Test["",MatchQ[{A+B->C,1.,2.},irreversibleImplicitReactionFormatP],False],
 	Test["",MatchQ[{A+B->C,var},irreversibleImplicitReactionFormatP],True],
@@ -305,7 +305,7 @@ DefineTests["irreversibleReactionP",{
 (*reversibleImplicitReactionFormatP*)
 
 
-DefineTests["reversibleReactionP",{
+DefineTests["Patterns`Private`reversibleReactionP",{
 	Test["",MatchQ[{A+B\[Equilibrium]C,1.,2.},reversibleImplicitReactionFormatP],True],
 	Test["",MatchQ[{A+B\[Equilibrium]C,1.},reversibleImplicitReactionFormatP],False],
 	Test["",MatchQ[{A+B\[Equilibrium]C,var,2.},reversibleImplicitReactionFormatP],True],

@@ -23,7 +23,7 @@ DefineOptions[ExperimentDilute,
 			{
 				OptionName -> Amount,
 				Default -> Automatic,
-				Description -> "The amount of a sample that should be diluted with a diluent.",
+				Description -> "The amount of a sample that should be diluted with a diluent. Note that if the Amount is set to less than All, the diluent is added to the source sample to attain the proper concentration for the entire sample, and the amount of mixture with the portion of original sample corresponding to Amount is transferred to the new container.",
 				ResolutionDescription -> "Automatically set to the current volume of the sample, or the value necessary to reach the specified TargetConcentration.",
 				AllowNull -> True,
 				Widget -> Alternatives[
@@ -73,7 +73,7 @@ DefineOptions[ExperimentDilute,
 			{
 				OptionName -> TotalVolume,
 				Default -> Automatic,
-				Description -> "The desired total volume of the sample plus diluent.",
+				Description -> "The desired total volume of the sample plus diluent. Note that if the Amount is set to less than All, the diluent is added to the source sample to attain the proper concentration for the entire sample, and TotalVolume mixture is transferred to the new container, and the portion of original sample corresponding in it equals to Amount.",
 				ResolutionDescription -> "Automatically determined based on the TargetConcentration option values. If not specified and TargetConcentration is also not specified, an error is thrown.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -106,7 +106,13 @@ DefineOptions[ExperimentDilute,
 						Pattern :> ObjectP[{Model[Container], Object[Container]}],
 						ObjectTypes -> {Model[Container], Object[Container]},
 						PreparedSample -> False,
-						PreparedContainer -> True
+						PreparedContainer -> True,
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
 					],
 					{
 						"Index" -> Alternatives[
@@ -125,7 +131,13 @@ DefineOptions[ExperimentDilute,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
 								ObjectTypes -> {Model[Container], Object[Container]},
 								PreparedSample -> False,
-								PreparedContainer -> True
+								PreparedContainer -> True,
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -158,7 +170,15 @@ DefineOptions[ExperimentDilute,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -168,7 +188,15 @@ DefineOptions[ExperimentDilute,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				]
 			},
 
@@ -191,7 +219,15 @@ DefineOptions[ExperimentDilute,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			(* mixing of the post-dilution samples *)
@@ -272,7 +308,14 @@ DefineOptions[ExperimentDilute,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description -> "The instrument that should be used to incubate the sample following addition of liquid.",
 				ResolutionDescription -> "Automatically set to an appropriate instrument based on container model and MixType, or Null if Mix is set to False.",
@@ -416,9 +459,16 @@ DefineOptions[ExperimentDilute,
 			Category -> "Hidden"
 		},
 		PreparationOption,
+		ModelInputOptions,
+		(* don't actually want this exposed to the customer, but do need it under the hood for ModelInputOptions to work *)
+		ModifyOptions[
+			PreparatoryUnitOperationsOption,
+			Category -> "Hidden"
+		],
 		SamplesOutStorageOption,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		ProtocolOptions,
+		WorkCellOption,
 		SubprotocolDescriptionOption,
 		PriorityOption,
 		StartDateOption,
@@ -454,23 +504,25 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	{
 		specifiedDiluent, specifiedContainerOut, inheritedCache,
 		allBufferModels, allBufferObjs, containerOutModels, containerOutObjs, allDownloadValues, newCache, listedOptions,
-		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, fastTrack,
+		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, canaryBranch, fastTrack,
 		parentProt, validLengthTests, combinedOptions, expandedCombinedOptions,
 		safeOptions, validLengths, unresolvedOptions, applyTemplateOptionTests, initialLiquidHandlers,
 		preferredVesselContainerModels, sampleFields, modelFields,
 		containerFields, containerModelFields, concentratedBuffer, bufferDiluent, resolveOptionsResult,
 		resolvedOptionsNoHidden, returnEarlyQ, resolvedOptions, resolutionTests, finalizedPackets, runTime, resourcePacketTests,
 		allTests, validQ, previewRule, optionsRule, testsRule, resultRule, safeOpsWithNames,
-		samplesWithoutTemporalLinks, optionsWithoutTemporalLinks,preparation,resolveMethod,simulation,
+		samplesWithoutTemporalLinks, optionsWithoutTemporalLinks,preparation,workCell,resolveMethod,
 		performSimulationQ,resultQ,resourcePacketsResult,updatedSimulation,simulationResult,simulatedProtocol, newSimulation,
-		resolvedOptionsWithHidden, simulationRule, runTimeRule
+		resolvedOptionsWithHidden, simulationRule, runTimeRule, validSamplePreparationResult,
+		samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, resourcePacketsSimulation,
+		constellationMessageRule, experimentFunction
 	},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 	resolveMethod = Lookup[ToList[myOptions], ResolveMethod, False];
 	messages = Not[gatherTests] && Not[resolveMethod];
@@ -478,24 +530,44 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	(* make sure we're working with a list of options and samples, and remove all temporal links *)
 	{samplesWithoutTemporalLinks, optionsWithoutTemporalLinks} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
-	(* call SafeOptions to make sure all options match pattern *)
-	{safeOpsWithNames, safeOptionTests} = If[gatherTests,
-		SafeOptions[ExperimentDilute, optionsWithoutTemporalLinks, Output -> {Result, Tests}, AutoCorrect -> False],
-		{SafeOptions[ExperimentDilute, optionsWithoutTemporalLinks, AutoCorrect -> False], Null}
+	(* Simulate our sample preparation. *)
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation. *)
+		{samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentDilute,
+			samplesWithoutTemporalLinks,
+			optionsWithoutTemporalLinks
+		],
+		$Failed,
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		Return[$Failed]
+	];
+
+	(* call SafeOptions to make sure all options match pattern *)
+	{safeOpsWithNames, safeOptionTests} = If[gatherTests,
+		SafeOptions[ExperimentDilute, optionsWithPreparedSamplesNamed, Output -> {Result, Tests}, AutoCorrect -> False],
+		{SafeOptions[ExperimentDilute, optionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
+	];
+
+	(* change all Names to objects *)
+	{listedSamples, safeOptions, listedOptions} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOpsWithNames, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
-	If[MatchQ[safeOpsWithNames, $Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[outputSpecification /. {
 			Result -> $Failed,
 			Tests -> safeOptionTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> updatedSimulation
 		}]
 	];
-
-	(* change all Names to objects *)
-	{listedSamples, safeOptions, listedOptions} = sanitizeInputs[samplesWithoutTemporalLinks, safeOpsWithNames, optionsWithoutTemporalLinks];
 
 	(* call ValidInputLengthsQ to make sure all the options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
@@ -509,12 +581,13 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 			Result -> $Failed,
 			Tests -> Flatten[{safeOptionTests, validLengthTests}],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> updatedSimulation
 		}]
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache,simulation} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache, Simulation}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 6 for samples at this point *)
@@ -552,7 +625,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	];
 
 	(* get the Object[Sample], Model[Sample], Object[Container], and Model[Container] fields I need *)
-	sampleFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], MassConcentration, Concentration, StorageCondition, ThawTime, ThawTemperature, TransportWarmed, TransportChilled, LightSensitive];
+	sampleFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], MassConcentration, Concentration, StorageCondition, ThawTime, ThawTemperature,TransportTemperature, LightSensitive];
 	modelFields = Packet[Model[{SamplePreparationCacheFields[Model[Sample], Format -> Sequence], UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock}]];
 	containerFields = Packet[Container[{SamplePreparationCacheFields[Object[Container], Format -> Sequence], Position}]];
 	containerModelFields = Packet[Container[Model][{SamplePreparationCacheFields[Model[Container], Format -> Sequence]}]];
@@ -576,7 +649,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 						modelFields,
 						containerFields,
 						containerModelFields,
-						Packet[Field[Composition[[All, 2]][MolecularWeight]]]
+						Packet[Field[Composition[[All, 2]][MolecularWeight,ExtinctionCoefficients]]]
 					},
 					{
 						Packet[SamplePreparationCacheFields[Model[Sample], Format -> Sequence], UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock]
@@ -600,7 +673,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 					}
 				}],
 				Cache -> inheritedCache,
-				Simulation -> simulation,
+				Simulation -> updatedSimulation,
 				Date -> Now
 			],
 			{Download::FieldDoesntExist}
@@ -620,11 +693,10 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	(* --- Resolve the options! --- *)
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
-	(* TODO add a message for if the TotalVolume is less than or equal to All/the volume of the sample *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveExperimentResuspendOrDiluteOptions[Dilute, listedSamples, expandedCombinedOptions, Output -> {Result, Tests},  Simulation -> simulation, Cache -> newCache],
-			{resolveExperimentResuspendOrDiluteOptions[Dilute, listedSamples, expandedCombinedOptions, Output -> Result,  Simulation -> simulation, Cache -> newCache], Null}
+			resolveExperimentResuspendOrDiluteOptions[Dilute, listedSamples, expandedCombinedOptions, Output -> {Result, Tests},  Simulation -> updatedSimulation, Cache -> newCache],
+			{resolveExperimentResuspendOrDiluteOptions[Dilute, listedSamples, expandedCombinedOptions, Output -> Result,  Simulation -> updatedSimulation, Cache -> newCache], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -636,7 +708,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	];
 
 	(* pull out the Preparation option *)
-	preparation = Lookup[resolvedOptions, Preparation];
+	{preparation, workCell} = Lookup[resolvedOptions, {Preparation, WorkCell}];
 
 	(* remove the hidden options and collapse the expanded options if necessary *)
 	(* need to do this at this level only because resolveExperimentResuspendOrDiluteOptions doesn't have access to listedOptions *)
@@ -654,7 +726,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
-	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
 	returnEarlyQ = Which[
 		MatchQ[resolveOptionsResult, $Failed], True,
@@ -683,13 +755,13 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	(* call the resuspendOrDiluteResourcePackets function to create the protocol packets with resources in them *)
 	(* if we're gathering tests, make sure the function spits out both the result and the tests; if we are not gathering tests, the result is enough, and the other can be Null *)
 	resourcePacketsResult = Check[
-		{{finalizedPackets,runTime}, updatedSimulation, resourcePacketTests} = Which[
+		{{finalizedPackets,runTime}, resourcePacketsSimulation, resourcePacketTests} = Which[
 			(* if we're inside the work cell resolver then don't bother with this *)
-			(MatchQ[preparation, Robotic] && Not[MemberQ[output, Result|Simulation]]) || MatchQ[resolveOptionsResult, $Failed] || returnEarlyQ, {{$Failed,$Failed}, simulation, {}},
-			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]] && gatherTests, shortcutResuspendResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> simulation],
-			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]], {shortcutResuspendResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache, Simulation -> simulation], simulation, Null},
-			gatherTests, resuspendOrDiluteResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> simulation],
-			True, {Sequence @@ resuspendOrDiluteResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation}], Cache -> newCache, Simulation -> simulation], Null}
+			(MatchQ[preparation, Robotic] && Not[MemberQ[output, Result|Simulation]]) || MatchQ[resolveOptionsResult, $Failed] || returnEarlyQ, {{$Failed,$Failed}, updatedSimulation, {}},
+			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]] && gatherTests, shortcutResuspendResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> updatedSimulation],
+			Not[MemberQ[output, Result]] && MemberQ[output, Options] && Not[MemberQ[output, Simulation]], {shortcutResuspendResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache, Simulation -> updatedSimulation], updatedSimulation, Null},
+			gatherTests, resuspendOrDiluteResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}], Cache -> newCache, Simulation -> updatedSimulation],
+			True, {Sequence @@ resuspendOrDiluteResourcePackets[Dilute,listedSamples, unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Simulation}], Cache -> newCache, Simulation -> updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -714,7 +786,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 				ToList /@ listedSamples,
 				resolvedOptions,
 				Cache -> newCache,
-				Simulation -> updatedSimulation
+				Simulation -> resourcePacketsSimulation
 			],
 			performSimulationQ&&resultQ,
 			Quiet[
@@ -732,11 +804,11 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 					ToList /@ listedSamples,
 					resolvedOptions,
 					Cache -> newCache,
-					Simulation -> updatedSimulation
+					Simulation -> resourcePacketsSimulation
 				]
 			],
 			True,
-			{Null, Null}
+			{Null, resourcePacketsSimulation}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -764,7 +836,7 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 	(* generate the options output rule *)
 	optionsRule = Options -> Which[
 		MemberQ[output, Options] && MatchQ[preparation, Robotic], resolvedOptionsWithHidden,
-		MemberQ[output, Options], resolvedOptionsNoHidden,
+		MemberQ[output, Options], resolvedOptionsWithHidden,
 		True, Null
 	];
 
@@ -782,97 +854,119 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 
 	runTimeRule=RunTime->runTime;
 
+	(* Set a rule for the ConstellationMessage since we can generate different protocol types. *)
+	constellationMessageRule = ConstellationMessage -> {
+		Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation],
+		Object[Protocol, RoboticCellPreparation], Object[Protocol, ManualCellPreparation]
+	};
+
 	(* note that we are NOT calling UploadProtocol here because the ExperimentSamplePreparation call already did that so no need to do it again *)
 	resultRule = Result -> Which[
 		Not[validQ], $Failed,
 		Not[MemberQ[output, Result]], $Failed,
 		(* if we're doing Preparation -> Robotic, return all our unit operation packets without RequireResources called if Upload -> False *)
 		MatchQ[preparation, Robotic] && MatchQ[upload, False],
-		Rest[finalizedPackets],
+			Rest[finalizedPackets],
 		(* if we are doing Preparation -> Robotic and Upload -> True, then call ExperimentRoboticSamplePreparation on the aliquot unit operations *)
 		MatchQ[preparation, Robotic],
-		Module[{unitOperation, nonHiddenOptions, unsortedPackets, samplesOutLabels, unsortedFutureLabeledObjects,
-			unsortedSampleOutFutureLabeledObjects, sortedSampleOutFutureLabeledObjects, sortedFutureLabeledObjects,
-			newProtocolPacket, allPackets},
-			unitOperation = Dilute @@ Join[
-				{
-					Sample -> samplesWithoutTemporalLinks
-				},
-				RemoveHiddenPrimitiveOptions[Dilute, ToList[myOptions]]
-			];
+			Module[{unitOperation, nonHiddenOptions, unsortedPackets, allPackets, samplesMaybeWithModels, experimentFunction},
 
-			(* Remove any hidden options before returning. *)
-			nonHiddenOptions = RemoveHiddenOptions[ExperimentDilute, resolvedOptionsNoHidden];
-
-			(* Memoize the value of ExperimentAliquot so the framework doesn't spend time resolving it again. *)
-			Internal`InheritedBlock[{ExperimentDilute, $PrimitiveFrameworkResolverOutputCache},
-				$PrimitiveFrameworkResolverOutputCache=<||>;
-
-				DownValues[ExperimentDilute]={};
-
-				ExperimentDilute[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
-					(* Lookup the output specification the framework is asking for. *)
-					frameworkOutputSpecification = Lookup[ToList[options], Output];
-
-					frameworkOutputSpecification /. {
-						Result -> Rest[finalizedPackets],
-						Options -> nonHiddenOptions,
-						Preview -> Null,
-						Simulation -> newSimulation,
-						RunTime -> runTime,
-						Tests -> allTests
-					}
+				(* convert the samples to models if we had model inputs originally *)
+				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+				(* NOTE: this is important: need to use the simulation from before the resource packets function to do this sample -> model conversion, because we had to do some label shenanigans in the resource packets function that made the label-deconvolution here _not_ work *)
+				(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+				samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+					samplesWithoutTemporalLinks,
+					simulatedSamplesToModels[
+						Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+						updatedSimulation,
+						samplesWithoutTemporalLinks
+					]
 				];
 
-				unsortedPackets = ExperimentRoboticSamplePreparation[
-					{unitOperation},
-					Name -> Lookup[safeOptions, Name],
-					Upload -> False,
-					Confirm -> False,
-					ParentProtocol -> Lookup[safeOptions, ParentProtocol],
-					Priority -> Lookup[safeOptions, Priority],
-					StartDate -> Lookup[safeOptions, StartDate],
-					HoldOrder -> Lookup[safeOptions, HoldOrder],
-					QueuePosition -> Lookup[safeOptions, QueuePosition],
-					ImageSample -> Lookup[resolvedOptions, ImageSample],
-					MeasureVolume -> Lookup[resolvedOptions, MeasureVolume],
-					MeasureWeight -> Lookup[resolvedOptions, MeasureWeight],
-					Cache -> newCache
+				unitOperation = Dilute @@ Join[
+					{
+						Sample -> samplesMaybeWithModels
+					},
+					RemoveHiddenPrimitiveOptions[Dilute, ToList[myOptions]]
 				];
 
-				(* get all the packets together *)
-				allPackets = Flatten[{
-					First[unsortedPackets],
-					Rest[unsortedPackets]
-				}];
+				(* Remove any hidden options before returning. *)
+				nonHiddenOptions = RemoveHiddenOptions[ExperimentDilute, resolvedOptionsNoHidden];
 
-				If[upload,
-					(
-						Upload[allPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
-						If[confirm, UploadProtocolStatus[Lookup[First[allPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
-						Lookup[First[allPackets], Object]
-					),
-					allPackets
+				(* Memoize the value of ExperimentDilute so the framework doesn't spend time resolving it again. *)
+				Internal`InheritedBlock[{ExperimentDilute, $PrimitiveFrameworkResolverOutputCache},
+					$PrimitiveFrameworkResolverOutputCache=<||>;
+
+					DownValues[ExperimentDilute]={};
+
+					ExperimentDilute[___, options : OptionsPattern[]] := Module[{frameworkOutputSpecification},
+						(* Lookup the output specification the framework is asking for. *)
+						frameworkOutputSpecification = Lookup[ToList[options], Output];
+
+						frameworkOutputSpecification /. {
+							Result -> Rest[finalizedPackets],
+							Options -> nonHiddenOptions,
+							Preview -> Null,
+							Simulation -> newSimulation,
+							RunTime -> runTime,
+							Tests -> allTests
+						}
+					];
+
+					(* pick the corresponding function from the association above *)
+					experimentFunction = Lookup[$WorkCellToExperimentFunction, workCell];
+
+					unsortedPackets = experimentFunction[
+						{unitOperation},
+						Name -> Lookup[safeOptions, Name],
+						Upload -> False,
+						Confirm -> False,
+						CanaryBranch -> Lookup[safeOptions, CanaryBranch],
+						ParentProtocol -> Lookup[safeOptions, ParentProtocol],
+						Priority -> Lookup[safeOptions, Priority],
+						StartDate -> Lookup[safeOptions, StartDate],
+						HoldOrder -> Lookup[safeOptions, HoldOrder],
+						QueuePosition -> Lookup[safeOptions, QueuePosition],
+						ImageSample -> Lookup[resolvedOptions, ImageSample],
+						MeasureVolume -> Lookup[resolvedOptions, MeasureVolume],
+						MeasureWeight -> Lookup[resolvedOptions, MeasureWeight],
+						Cache -> newCache
+					];
+
+					(* get all the packets together *)
+					allPackets = Flatten[{
+						First[unsortedPackets],
+						Rest[unsortedPackets]
+					}];
+
+					If[upload,
+						(
+							Upload[allPackets, constellationMessageRule];
+							If[confirm, UploadProtocolStatus[Lookup[First[allPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
+							Lookup[First[allPackets], Object]
+						),
+						allPackets
+					]
 				]
-			]
-		],
+			],
 		(* don't need to call ExperimentManualSamplePreparation here because we already called it in the resource packet sfunction*)
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload && StringQ[Lookup[resolvedOptions, Name]],
-		(
-			Upload[finalizedPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
-			If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
-			Append[Lookup[First[finalizedPackets], Type], Lookup[resolvedOptions, Name]]
-		),
+			(
+				Upload[finalizedPackets, constellationMessageRule];
+				If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
+				Append[Lookup[First[finalizedPackets], Type], Lookup[resolvedOptions, Name]]
+			),
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && upload,
-		(
-			Upload[finalizedPackets, ConstellationMessage -> {Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
-			If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
-			Lookup[First[finalizedPackets], Object]
-		),
+			(
+				Upload[finalizedPackets, constellationMessageRule];
+				If[confirm, UploadProtocolStatus[Lookup[First[finalizedPackets], Object], OperatorStart, Upload -> True, FastTrack -> True, UpdatedBy -> If[NullQ[parentProt], $PersonID, parentProt]]];
+				Lookup[First[finalizedPackets], Object]
+			),
 		MatchQ[preparation, Manual] && MemberQ[output, Result] && Not[upload],
-		finalizedPackets,
+			finalizedPackets,
 		True,
-		$Failed
+			$Failed
 	];
 
 	(* return the output as we desire it *)
@@ -886,14 +980,14 @@ ExperimentDilute[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPat
 		- Takes a single container and passes it to the core container overload
 *)
 
-ExperimentDilute[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentDilute]] := ExperimentDilute[{myContainer}, myOptions];
+ExperimentDilute[myContainer : ObjectP[{Object[Container], Model[Sample]}], myOptions : OptionsPattern[ExperimentDilute]] := ExperimentDilute[{myContainer}, myOptions];
 
 (*
 	Multiple containers with no second input:
 		- expands the Containers into their contents and passes to the core function
 *)
 
-ExperimentDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
 		containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,listedContainers,cache,containerToSampleSimulation,
 		samplePreparationSimulation},
@@ -907,9 +1001,9 @@ ExperimentDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
-	(* Fetch teh cache from listedOptions *)
+	(* Fetch the cache from listedOptions *)
 	cache=ToList[Lookup[listedOptions, Cache, {}]];
 
 	(* First, simulate our sample preparation. *)
@@ -921,7 +1015,7 @@ ExperimentDilute[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1004,13 +1098,13 @@ DefineOptions[ExperimentDiluteOptions,
 ];
 
 
-ExperimentDiluteOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentDiluteOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentDilute *)
@@ -1024,7 +1118,7 @@ ExperimentDiluteOptions[myInput : ListableP[ObjectP[{Object[Container], Object[S
 ];
 
 
-ExperimentDilutePreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentDilute]] :=
+ExperimentDilutePreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentDilute]] :=
 	ExperimentDilute[myInput, Append[ToList[myOptions], Output -> Preview]];
 
 
@@ -1034,14 +1128,14 @@ DefineOptions[ValidExperimentDiluteQ,
 ];
 
 
-ValidExperimentDiluteQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentDiluteQ]] := Module[
+ValidExperimentDiluteQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentDiluteQ]] := Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDilute *)

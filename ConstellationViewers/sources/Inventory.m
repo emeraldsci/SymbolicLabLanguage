@@ -364,3 +364,7 @@ namedObjectReferenceToObject[objectRef_Association]:=Module[
 	(* if the name exists, use that - if not, use the id *)
 	If[!MatchQ[name, ""], ToString[Append[type, name]], ToString[Append[type, idString]]]
 ];
+
+(* Authors definition for ConstellationViewers`Private`inventoryDashboardJSON *)
+Authors[ConstellationViewers`Private`inventoryDashboardJSON]:={"xu.yi"};
+

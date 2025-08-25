@@ -23,6 +23,11 @@ DefineTests[PlotFluorescenceKinetics,
 			ValidGraphicsP[]
 		],
 		Example[
+			{Basic, "Plot the fluorescence trajectory for data objects linked to a given protocol object:"},
+			PlotFluorescenceKinetics[Object[Data, FluorescenceKinetics, "id:XnlV5jK76e4B"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
+		Example[
 			{Basic,"Plot the fluorescence trajectory and temperature trace of the data of interest:"},
 			PlotFluorescenceKinetics[Object[Data, FluorescenceKinetics, "id:lYq9jRzX38AY"],SecondaryData->{Temperature}],
 			ValidGraphicsP[]

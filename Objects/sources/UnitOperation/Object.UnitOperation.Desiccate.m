@@ -130,6 +130,13 @@ DefineObjectType[Object[UnitOperation, Desiccate], {
 			Description -> "The mass of a solid or the volume of a liquid hygroscopic chemical that is used in the desiccator to dry the exposed sample by absorbing water molecules from the sample through the shared atmosphere around the sample.",
 			Category -> "Desiccant"
 		},
+		CheckDesiccant -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the status of the desiccant is checked before starting the experiment.",
+			Category -> "Desiccant"
+		},
 		SampleContainer -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -155,6 +162,17 @@ DefineObjectType[Object[UnitOperation, Desiccate], {
 			Description -> "A link to image files from the desiccant and samples in the desiccator before and after desiccation.",
 			Category -> "General"
 		},
+		SamplesOut -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "For each member of SampleLink, the output sample after being desiccated by this unit operation.",
+			Category -> "General"
+		},
 		(* output object *)
 		ContainerOut -> {
 			Format -> Multiple,
@@ -167,6 +185,14 @@ DefineObjectType[Object[UnitOperation, Desiccate], {
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the container that the sample Amount is transferred into prior to desiccating in a bell jar. The container's lid is off during desiccation.",
 			Category -> "General"
+		},
+		Pressure -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Data]],
+			Description -> "The pressure data during desiccation process. Pressure data is recorded if the Method is Vacuum or DesiccantUnderVacuum.",
+			Category -> "Sensor Information"
 		},
 
 		(* label for simulation *)
@@ -200,6 +226,14 @@ DefineObjectType[Object[UnitOperation, Desiccate], {
 			Description -> "For each member of SampleLink, the label of the ContainerOut container that contains the output sample, which is used for identification elsewhere in sample preparation.",
 			Category -> "General"
 		},
+		DesiccantStorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container], Model[Container]],
+			Description -> "The container that the desiccant is transferred into after desiccation for storage.",
+			Category -> "Storage Information"
+		},
 		SamplesOutStorageConditionExpression -> {
 			Format -> Multiple,
 			Class -> Expression,
@@ -218,6 +252,23 @@ DefineObjectType[Object[UnitOperation, Desiccate], {
 			Description -> "For each member of SampleLink, the non-default condition under which the desiccated sample is stored after the protocol is completed.",
 			Category -> "Storage Information",
 			Migration->SplitField
+		},
+		DesiccantStorageConditionLink -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[StorageCondition]],
+			Description -> "Indicates the condition that the desiccant will be stored in when it is put away after desiccation.",
+			Category -> "Storage Information",
+			Migration -> SplitField
+		},
+		DesiccantStorageConditionExpression -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[SampleStorageTypeP, Desiccated, VacuumDesiccated, RefrigeratorDesiccated, Disposal],
+			Description -> "Indicates the condition that the desiccant will be stored in when it is put away after desiccation.",
+			Category -> "Storage Information",
+			Migration -> SplitField
 		}
 	}
 }]

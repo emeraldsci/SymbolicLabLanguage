@@ -174,7 +174,7 @@ DefineTests[
 			"Dichloromethane"
 		],
 		
-		Example[{Options,StructureImageFile,"Specify the International Union of Pure and Applied Chemistry (IUPAC) name for the resin:"},
+		Example[{Options,StructureImageFile,"Specify the StructureImageFile for the resin:"},
 			UploadResin[
 				"Test Resin 1 for UploadResin Unit Test",
 				State->Solid,
@@ -183,7 +183,7 @@ DefineTests[
 				MSDSRequired->False,
 				IncompatibleMaterials->{None},
 				Loading->5 Mole/Gram,
-				StructureImageFile->"https://www.sigmaaldrich.com/deepweb/content/dam/sigma-aldrich/structure5/190/mfcd00003284.eps/_jcr_content/renditions/mfcd00003284-large.png"
+				StructureImageFile->Object[EmeraldCloudFile, "id:aXRlGn6D0KJm"]
 			];
 			Model[Resin,"Test Resin 1 for UploadResin Unit Test"][StructureImageFile],
 			ObjectP[Object[EmeraldCloudFile]]
@@ -469,8 +469,7 @@ DefineTests[
 				Flammable->False,
 				MSDSRequired->False,
 				IncompatibleMaterials->{None},
-				Loading->5 Mole/Gram,
-				StructureImageFile->"https://www.sigmaaldrich.com/deepweb/content/dam/sigma-aldrich/structure5/190/mfcd00003284.eps/_jcr_content/renditions/mfcd00003284-large.png"
+				Loading->5 Mole/Gram
 			],
 			_Grid
 		],
@@ -747,8 +746,7 @@ DefineTests[
 				Flammable->False,
 				MSDSRequired->False,
 				IncompatibleMaterials->{None},
-				Loading->5 Mole/Gram,
-				StructureImageFile->"https://www.sigmaaldrich.com/deepweb/content/dam/sigma-aldrich/structure5/190/mfcd00003284.eps/_jcr_content/renditions/mfcd00003284-large.png"
+				Loading->5 Mole/Gram
 			],
 			BooleanP
 		],

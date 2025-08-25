@@ -38,7 +38,7 @@ DefineObjectType[Object[Data, FluorescenceIntensity], {
 		FocalHeight -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0*Meter*Milli],
+			Pattern :> DistanceP,
 			Units -> Meter Milli,
 			Description -> "Focal height of the objective lens when the sample is measured.",
 			Category -> "General"
@@ -108,6 +108,24 @@ DefineObjectType[Object[Data, FluorescenceIntensity], {
 			Description -> "Target temperature setting for the experiment.",
 			Category -> "General"
 		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
 		Well -> {
 			Format -> Single,
 			Class -> Expression,
@@ -142,6 +160,22 @@ DefineObjectType[Object[Data, FluorescenceIntensity], {
 			Pattern :> GreaterP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "Temperature inside the sample chamber at the time of acquisition.",
+			Category -> "Experimental Results"
+		},
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "Oxygen level inside the sample chamber at the time of acquisition.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "Carbon dioxide level inside the sample chamber at the time of acquisition.",
 			Category -> "Experimental Results"
 		},
 		DetectorRangeExceeded -> {

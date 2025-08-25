@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 (* ::Section::Closed:: *)
 (*PickColonies*)
@@ -38,7 +38,7 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+        Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
       ],
       Category -> "Sanitization"
     },
@@ -50,7 +50,7 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Number,
-        Pattern :> GreaterP[0,1]
+        Pattern :> GreaterP[0, 1]
       ],
       Category -> "Sanitization"
     },
@@ -87,7 +87,7 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+        Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
       ],
       Category -> "Sanitization"
     },
@@ -99,7 +99,7 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Number,
-        Pattern :> GreaterP[0,1]
+        Pattern :> GreaterP[0, 1]
       ],
       Category -> "Sanitization"
     },
@@ -148,7 +148,7 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Number,
-        Pattern :> GreaterP[0,1]
+        Pattern :> GreaterP[0, 1]
       ],
       Category -> "Sanitization"
     },
@@ -185,26 +185,26 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
       AllowNull -> True,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+        Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
       ],
       Category -> "Sanitization"
     },
     {
       OptionName -> NumberOfQuaternaryWashes,
       Default -> Automatic,
-      Description -> "For each sample, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the QuaternaryWashSolution to clean any material off the head",
+      Description -> "For each sample, the number of times the ColonyHandlerHeadCassette moves in a circular motion in the QuaternaryWashSolution to clean any material off the head.",
       ResolutionDescription -> "Automatically set to 5 if QuaternaryWash is True.",
       AllowNull -> True,
       Widget -> Widget[
         Type -> Number,
-        Pattern :> GreaterP[0,1]
+        Pattern :> GreaterP[0, 1]
       ],
       Category -> "Sanitization"
     },
     {
       OptionName -> QuaternaryDryTime,
       Default -> Automatic,
-      Description -> "For each sample, the length of time the ColonyHandlerHeadCassette is dried over the halogen fan after the cassette is washed in QuaternaryWashSolution",
+      Description -> "For each sample, the length of time the ColonyHandlerHeadCassette is dried over the halogen fan after the cassette is washed in QuaternaryWashSolution.",
       ResolutionDescription -> "Automatically set to 10 seconds if QuaternaryWash is True.",
       AllowNull -> True,
       Widget -> Widget[
@@ -225,7 +225,6 @@ DefineOptionSet[QPixSanitizationSharedOptions :> {
 (* ::Code::Initialization:: *)
 (* Define Options *)
 DefineOptions[ExperimentPickColonies,
-
   Options :>  {
     (* Non-IndexMatching InstrumentOptions *)
     {
@@ -235,7 +234,15 @@ DefineOptions[ExperimentPickColonies,
       AllowNull -> False,
       Widget -> Widget[
         Type -> Object,
-        Pattern :> ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}]
+        Pattern :> ObjectP[{Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler]}],
+        OpenPaths -> {
+          {
+            Object[Catalog, "Root"],
+            "Instruments",
+            "Cell Culture",
+            "Colony Handlers"
+          }
+        }
       ],
       Category -> "General"
     },
@@ -245,38 +252,38 @@ DefineOptions[ExperimentPickColonies,
       ModifyOptions[AnalyzeColonies,
         OptionName -> Populations,
         Default -> Automatic,
-        Description->"For each sample, the criteria used to group colonies together into a population to pick. Criteria are based on the ordering of colonies by the desired feature(s): diameter, regularity, circularity, isolation, fluorescence, and absorbance. For more information see documentation on colony selection Unit Operations: Diameter, Isolation, Regularity, Circularity, Fluorescence, Absorbance, MultiFeatured, and AllColonies.",
-        ResolutionDescription -> "If the Model[Cell] information in the sample object matches one of the fluorescent excitation and emission pairs of the colony picking instrument, Populations will group the fluorescent colonies into a population. Otherwise, Populations will be set to All.",
-        Widget->Alternatives[
+        Description -> "For each sample, the criteria used to group colonies together into a population to pick. Criteria are based on the ordering of colonies by the desired feature(s): Diameter, Regularity, Circularity, Isolation, Fluorescence, and BlueWhiteScreen. Additionally, CustomCoordinates can be specified, which work in conjunction with the PickCoordinates option to select colonies based on pre-determined locations. For more information see documentation on colony population Unit Operations: Diameter, Isolation, Regularity, Circularity, Fluorescence, BlueWhiteScreen, MultiFeatured, and AllColonies under Experiment Principles section.",
+        ResolutionDescription -> "If the Model[Cell] information in the sample object matches one of the fluorescent excitation and emission pairs of the colony picking instrument, Populations is set to Fluorescence. Otherwise, Populations is set to All.",
+        Widget -> Alternatives[
           Widget[
             Type -> Enumeration,
-            Pattern :> Alternatives[Fluorescence, Absorbance, Diameter, Isolation, Circularity, Regularity, All]
+            Pattern :> Alternatives[Fluorescence, BlueWhiteScreen, Diameter, Isolation, Circularity, Regularity, All]
           ],
-          "Fluorescence"->Widget[
+          "Fluorescence" -> Widget[
             Type -> UnitOperation,
             Pattern :> FluorescencePrimitiveP
           ],
-          "Absorbance"-> Widget[
+          "BlueWhiteScreen" -> Widget[
             Type -> UnitOperation,
-            Pattern :> AbsorbancePrimitiveP
+            Pattern :> BlueWhiteScreenPrimitiveP
           ],
           "Diameter" -> Widget[
             Type -> UnitOperation,
             Pattern :> DiameterPrimitiveP
           ],
-          "Isolation"-> Widget[
+          "Isolation" -> Widget[
             Type -> UnitOperation,
             Pattern :> IsolationPrimitiveP
           ],
-          "Circularity"->Widget[
+          "Circularity" -> Widget[
             Type -> UnitOperation,
             Pattern :> CircularityPrimitiveP
           ],
-          "Regularity"->Widget[
+          "Regularity" -> Widget[
             Type -> UnitOperation,
             Pattern :> RegularityPrimitiveP
           ],
-          "AllColonies"->Widget[
+          "AllColonies" -> Widget[
             Type -> UnitOperation,
             Pattern :> AllColoniesPrimitiveP
           ],
@@ -285,8 +292,8 @@ DefineOptions[ExperimentPickColonies,
             Pattern :> MultiFeaturedPrimitiveP
           ],
           "Known Coordinates" -> Widget[
-            Type->Enumeration,
-            Pattern:>Alternatives[CustomCoordinates]
+            Type -> Enumeration,
+            Pattern :> Alternatives[CustomCoordinates]
           ]
         ],
         NestedIndexMatching -> True
@@ -331,7 +338,7 @@ DefineOptions[ExperimentPickColonies,
         OptionName -> ColonyPickingTool,
         Default -> Automatic,
         Description -> "For each sample, the tool used to stab the source colonies plates from SamplesIn and either deposit any material stuck to the picking head onto the destination plate or into a destination well.",
-        ResolutionDescription -> "If the DestinationContainer has 24 wells, set to Model[Part,ColonyHandlerHeadCassette, \"Qpix 24 pin picking head - E. coli\" ]. If the DestinationContainer has 96 or 384 wells, or is an OmniTray, will use the PreferredColonyHanderHeadCassette of the first Model[Cell] in the composition of the input sample. If the Composition field is not filled or there are not Model[Cell]'s in the composition, this option is automatically set to Model[Part,ColonyHandlerHeadCassette, \" Qpix 96 pin picking head, deepwell - E. coli\"] if the destination is a deep well plate and Model[Part,ColonyHandlerHeadCassette, \" Qpix 96 pin picking head, deepwell - E. coli\"] otherwise.",
+        ResolutionDescription -> "If the DestinationContainer has 24 wells, set to Model[Part,ColonyHandlerHeadCassette, \"24-pin picking head for E. coli\" ]. If the DestinationContainer has 96 or 384 wells, or is an OmniTray, will use the PreferredColonyHandlerHeadCassette of the first Model[Cell] in the composition of the input sample. If the Composition field is not filled or there are not Model[Cell]'s in the composition, this option is automatically set to Model[Part,ColonyHandlerHeadCassette, \"96-pin picking head for E. coli - Deep well\"] if the destination is a deep well plate and Model[Part,ColonyHandlerHeadCassette, \"96-pin picking head for E. coli\"] otherwise.",
         AllowNull -> False,
         Widget -> Widget[
           Type -> Object,
@@ -382,14 +389,14 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> False,
         Widget -> Widget[
           Type -> Number,
-          Pattern :> GreaterP[0,1]
+          Pattern :> GreaterP[0, 1]
         ],
         Category -> "Picking"
       },
       {
         OptionName -> ColonyHandlerHeadCassetteApplication,
         Default -> Automatic,
-        Description -> "For each sample, the designed use of the ColonyPickingTool used to stab the source colonies and deposit any material stuck to the probe onto the destination plate or into a destination well..",
+        Description -> "For each sample, the designed use of the ColonyPickingTool used to stab the source colonies and deposit any material stuck to the probe onto the destination plate or into a destination well.",
         ResolutionDescription -> "Resolves from the ColonyPickingTool[Application].",
         AllowNull -> False,
         Widget -> Widget[
@@ -426,54 +433,18 @@ DefineOptions[ExperimentPickColonies,
         Category -> "Picking"
       },
       (* --- Imaging Options --- *)
-      {
-        OptionName -> ImagingChannels,
+      ModifyOptions[ExperimentImageColonies,
+        OptionName -> ImagingChannels
+      ],
+      ModifyOptions[ExperimentImageColonies,
+        OptionName -> ImagingStrategies,
         Default -> Automatic,
-        Description -> "For each Sample, how to expose the colonies to light/and measure light from the colonies when capturing images of the colonies.",
-        ResolutionDescription -> "Automatically set to the imaging channels specified in ColonySelections along with Brightfield as a Brightfield image is always taken.",
-        AllowNull -> False,
-        Widget -> Alternatives[
-          "Multiple Imaging Channels" -> Adder[
-            Widget[
-              Type -> Enumeration,
-              Pattern :> QPixImagingChannelsP
-            ]
-          ],
-          "Single Imaging Channel" -> Widget[
-            Type -> Enumeration,
-            Pattern :> QPixImagingChannelsP
-          ]
-        ],
-        Category -> "Imaging"
-      },
-      {
+        ResolutionDescription -> "Automatically set to include the BlueWhiteScreen along with BrightField if option Populations is set to include BlueWhiteScreen, set to include fluorescence along with BrightField if the Model[Cell] information in the sample matches one of the fluorescent excitation and emission pairs of the imaging instrument. Otherwise, set to BrightField as a BrightField image is always taken."
+      ],
+      ModifyOptions[ExperimentImageColonies,
         OptionName -> ExposureTimes,
-        Default -> Automatic,
-        Description -> "For each Sample, and for each ImagingChannel, the length of time to allow the camera to capture an image. An increased ExposureTime leads to brighter images based on a linear scale.",
-        ResolutionDescription -> "Automatically resolved to AutoExpose. This means ___", (* This will become a brief description of sci comps algorithm *)
-        AllowNull -> False,
-        Widget -> Alternatives[
-          "Multiple Exposure Times" -> Adder[
-            Alternatives[
-              "Specified Exposures"->Widget[
-                Type -> Quantity,
-                Pattern :>  RangeP[1 Millisecond,2000 Millisecond], (* This range is from the QPix *)
-                Units -> Millisecond
-              ],
-              "Auto Exposure" -> Widget[Type -> Enumeration, Pattern :> Alternatives[AutoExpose]]
-            ]
-          ],
-          "Single Exposure Time" -> Alternatives[
-            "Specified Exposures"->Widget[
-              Type -> Quantity,
-              Pattern :>  RangeP[1 Millisecond,2000 Millisecond], (* This range is from the QPix *)
-              Units -> Millisecond
-            ],
-            "Auto Exposure" -> Widget[Type -> Enumeration, Pattern :> Alternatives[AutoExpose]]
-          ]
-        ],
-        Category -> "Imaging"
-      },
+        Description -> "For each Sample, and for each imaging strategy, a single length of time to allow the camera to capture an image. An increased exposure time leads to brighter images based on a linear scale. When set as Automatic, optimal exposure time is automatically determined during experiment. This is done by running AnalyzeImageExposure on images taken with suggested initial exposure times. The process adjusts the exposure time for subsequent image acquisitions until the optimal exposure time is found."
+      ],
       (* --- Placing Options --- *)
       {
         OptionName -> DestinationMediaType,
@@ -496,7 +467,15 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> False,
         Widget -> Widget[
           Type -> Object,
-          Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+          Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Materials",
+              "Cell Culture",
+              "Media"
+            }
+          }
         ],
         NestedIndexMatching -> True, (* Matches to Populations *)
         Category -> "Placing"
@@ -504,13 +483,21 @@ DefineOptions[ExperimentPickColonies,
       {
         OptionName -> DestinationMediaContainer,
         Default -> Automatic,
-        Description -> "For each Sample, the desired container to have picked colonies deposited in.",
-        ResolutionDescription -> "Automatically set based on the DestinationMediaType and DestinationMedia options. Will default to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] if DestinationMediaType is LiquidMedia and will default to Model[Container, Plate, \"Omni Tray Sterile Media Plate\"] if DestinationMediaType is SolidMedia.",
+        Description -> "For each Sample, the desired container to have picked colonies deposited in. The DestinationMediaContainer must be a SBS-format plate, either non-deepwelll type with 1, 24, or 96 wells, or deepwell plate type if it has 96 wells.",
+        ResolutionDescription -> "Automatically set based on the DestinationMediaType and DestinationMedia options. Will default to Model[Container, Plate, \"96-well 2mL Deep Well Plate, Sterile\"] if DestinationMediaType is LiquidMedia and will default to Model[Container, Plate, \"Omni Tray Sterile Media Plate\"] if DestinationMediaType is SolidMedia.",
         AllowNull -> False,
         Widget -> Alternatives[
           "A single model of container" -> Widget[
             Type -> Object,
-            Pattern :> ObjectP[Model[Container]]
+            Pattern :> ObjectP[Model[Container]],
+            OpenPaths -> {
+              {
+                Object[Catalog, "Root"],
+                "Containers",
+                "Plates",
+                "Colony Handling Plates"
+              }
+            }
           ],
           "A single container" -> Widget[
             Type -> Object,
@@ -543,12 +530,12 @@ DefineOptions[ExperimentPickColonies,
       {
         OptionName -> MaxDestinationNumberOfColumns,
         Default -> Automatic,
-        Description -> "For each sample, the maximum number of columns of colonies to deposit in the destination container. ",
+        Description -> "For each sample, the maximum number of columns of colonies to deposit in the destination container.",
         ResolutionDescription -> "Automatically set based on the below table after the number of colonies to pick has been determined.",
         AllowNull -> True,
         Widget -> Widget[
           Type -> Number,
-          Pattern :> GreaterP[0,1]
+          Pattern :> GreaterP[0, 1]
         ],
         NestedIndexMatching -> True, (* Matches to Populations *)
         Category -> "Placing"
@@ -561,7 +548,7 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Number,
-          Pattern :> GreaterP[0,1]
+          Pattern :> GreaterP[0, 1]
         ],
         NestedIndexMatching -> True, (* Matches to Populations *)
         Category -> "Placing"
@@ -573,8 +560,8 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> True,
         Widget -> Adder[
           {
-            "XCoordinate" -> Widget[Type -> Quantity,Pattern :> RangeP[-60 Millimeter,60 Millimeter],Units -> Millimeter],
-            "YCoordinate" -> Widget[Type -> Quantity,Pattern :> RangeP[-40 Millimeter,40 Millimeter],Units -> Millimeter]
+            "XCoordinate" -> Widget[Type -> Quantity, Pattern :> RangeP[-60 Millimeter, 60 Millimeter], Units -> Millimeter],
+            "YCoordinate" -> Widget[Type -> Quantity, Pattern :> RangeP[-40 Millimeter, 40 Millimeter], Units -> Millimeter]
           }
         ],
         NestedIndexMatching -> True,
@@ -588,8 +575,8 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Quantity,
-          Pattern :> GreaterP[0 Microliter],
-          Units -> Microliter
+          Pattern :> RangeP[1 Microliter, $MaxTransferVolume],
+          Units -> {1, {Microliter, {Microliter, Milliliter}}}
         ],
         NestedIndexMatching -> True, (* Matches to Populations *)
         Category -> "Placing"
@@ -615,7 +602,7 @@ DefineOptions[ExperimentPickColonies,
         AllowNull -> True,
         Widget -> Widget[
           Type -> Number,
-          Pattern :> RangeP[0,$MaxNumberOfMixes,1]
+          Pattern :> RangeP[0, $MaxNumberOfMixes, 1]
         ],
         NestedIndexMatching -> True, (* Matches to Populations *)
         Category -> "Placing"
@@ -625,7 +612,7 @@ DefineOptions[ExperimentPickColonies,
         OptionName -> SampleOutLabel,
         Default -> Automatic,
         AllowNull -> True,
-        Widget -> Adder[Widget[Type -> String,Pattern :> _String,Size -> Line]],
+        Widget -> Adder[Widget[Type -> String, Pattern :> _String,Size -> Line]],
         Description -> "For each sample, the label of the sample(s) that will be created in this experiment, which is used for identification elsewhere in sample preparation.",
         Category -> "General",
         NestedIndexMatching -> True, (* Matches to Populations *)
@@ -647,13 +634,13 @@ DefineOptions[ExperimentPickColonies,
       (* --- Storage Options --- *)
       {
         OptionName -> SamplesInStorageCondition,
-        Default -> Disposal,
+        Default -> Refrigerator,
         Description -> "The non-default conditions under which the SamplesIn of this experiment should be stored after the protocol is completed. If left unset, SamplesIn will be disposed.",
         AllowNull -> False,
         Category -> "Post Experiment",
         (* Null indicates the storage conditions will be inherited from the model *)
         Widget -> Alternatives[
-          Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]
+          Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP|Disposal]
         ]
       },
       {
@@ -664,18 +651,18 @@ DefineOptions[ExperimentPickColonies,
         Category -> "Post Experiment",
         (* Null indicates the storage conditions will be inherited from the model *)
         Widget -> Alternatives[
-          Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]
+          Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP|Disposal]
         ],
         NestedIndexMatching -> True (* Matches to Populations *)
       }
     ],
     {
-      OptionName->NumberOfReplicates,
-      Default->Null,
-      Description->"The number of times a colony selection should be picked from the input and placed in or on liquid or solid media.",
-      AllowNull->True,
-      Category->"General",
-      Widget->Widget[Type->Number,Pattern:>GreaterEqualP[2,1]]
+      OptionName -> NumberOfReplicates,
+      Default -> Null,
+      Description -> "The number of times a colony selection should be picked from the input and placed in or on liquid or solid media.",
+      AllowNull -> True,
+      Category -> "General",
+      Widget -> Widget[Type -> Number, Pattern :> GreaterEqualP[2, 1]]
     },
     (* Redefine Preparation and WorkCell options because PickColonies can only occur robotically on the qpix *)
     {
@@ -684,14 +671,14 @@ DefineOptions[ExperimentPickColonies,
       Description -> "Indicates if this unit operation is carried out primarily robotically or manually. Manual unit operations are executed by a laboratory operator and robotic unit operations are executed by a liquid handling work cell.",
       AllowNull -> False,
       Category -> "General",
-      Widget->Widget[
-        Type->Enumeration,
-        Pattern:>Alternatives[Robotic]
+      Widget -> Widget[
+        Type -> Enumeration,
+        Pattern :> Alternatives[Robotic]
       ]
     },
     {
       OptionName -> WorkCell,
-      Widget -> Widget[Type -> Enumeration,Pattern :> Alternatives[qPix]],
+      Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[qPix]],
       AllowNull -> False,
       Default -> qPix,
       Description -> "Indicates the work cell that this primitive will be run on if Preparation->Robotic.",
@@ -700,13 +687,9 @@ DefineOptions[ExperimentPickColonies,
 
     (* Shared Options *)
     QPixSanitizationSharedOptions,
-    UploadOption,
-    CacheOption,
-    ParentProtocolOption,
     SimulationOption,
-    PostProcessingOptions,
-    ExperimentOutputOption,
-    NameOption
+    BiologyPostProcessingOptions,
+    ProtocolOptions
   }
 ];
 
@@ -719,7 +702,6 @@ DefineOptions[ExperimentPickColonies,
 (* TODO: Rewrite error checking to all be after mapthread so that we can include indices/other information in the error messages *)
 (* Input Errors *)
 Error::NonSolidSamples="The following input samples, `1`, do not have a solid state.";
-Error::NonOmniTrayContainer="The input samples, `1`, are not in a Model[Container,Plate] that only has 1 well, or an omnitray. Please transfer the samples to an omnitray before picking colonies.";
 Error::TooManyInputContainers="Among the input samples, `1`, there are more than four unique input containers. In order to prevent colony death from being outside of an incubator for an extended period of time. Please split this protocol into multiple protocols.";
 
 (* Sanitization Errors *)
@@ -734,24 +716,17 @@ Error::OutOfOrderWashStages="The following samples, `1`, have the following wash
 (* TODO: Clean up error names *)
 Error::PickCoordinatesMissing="The following samples, `1`, are designated for CustomCoordinate colony selection, bypassing plate imaging and analysis. However, PickCoordinates are not specified. Please specify PickCoordinates or allow these options to be resolved automatically."; (* Populations -> CustomCoordinates but PickCoordinates are missing *)
 Error::MultiplePopulationMethods="The following samples, `1`, have PickCoordinates specified but are also specifying a population primitive through the Populations option. Please align these options to either specify PickCoordinates or specify a ColonySelection."; (* Populations -> !CustomCoordinates and PickCoordinates are specified *)
-Error::AnalysisOptionsMismatch="The samples, `1`, have Populations set to CustomCoordinates, but the option(s), `2`, are set. Please do not set these options or set the Populations option to Automatic, a ColonySelection, or Unknown.";
-Error::PopulationMismatch="The samples, `1`, have Populations set to a mixmatched list of inputs. If Populations is being set to a list, please only specify a list of Population Primitives (Fluorescence, Absorbance, Diameter, Isolation, Circularity, Regularity, AllColonies, Multifeatured). Please adjust this option, or allow it to be resolved automatically.";
-
-(* Imaging Errors *)
-Error::ImagingOptionMismatch="The following samples, `1`, have ImagingChannels and ExposureTimes set to values of conflicting lengths. Please set both of these options as a list, neither of them as a list, or allow them to be resolved automatically.";
-Error::MissingImagingChannels="The following samples, `1`, have imaging channels specified in a ColonySelection that are not listed in the ImagingChannels option, `2`. Please include all imaging channels in the ColonySelection(s) for the sample, including the BrightField channel.";
-Warning::DuplicateImagingChannels="The following samples, `1`, have the same imaging channel specified multiple times. The ExposureTime corresponding to the first instance of the channel will be used.";
 
 (* Destination Errors *)
-Error::InvalidDestinationMediaState="For the following samples, `1`, the DestinationMedia has a non Liquid or Solid State. Please specify a different DestinationMedia or allow this option to be resolved automatically.";
+Error::InvalidDestinationMediaState="For the following samples, `1`, the DestinationMedia has a non `2` State. Please specify a different DestinationMedia or allow this option to be set automatically.";
 Error::DestinationMediaTypeMismatch="For the following samples, `1`, the DestinationMediaType is not the same as the state of DestinationMedia. Please specify a different DestinationMedia or allow these options to be resolved automatically.";
 Error::InvalidDestinationMediaContainer="The following samples, `1`, have an invalid DestinationMediaContainer. The DestinationMediaContainer must be a plate, either have 1, 24, or 96 wells, and can only be a deepwell plate if it has 96 wells. Please specify a different DestinationMediaContainer or allow this option to be resolved Automatically.";
 Error::TooManyDestinationMediaContainers="The following samples, `1`, have more than 6 unique DestinationMediaContainers specified. In order to preserve deck space and to prevent colony death from being outside of an incubator, please specify fewer DestinationMediaContainers, split the protocol into multiple batches, split the protocol into multiple protocols, or allow this option to be resolved automatically.";
 Error::DestinationFillDirectionMismatch="The following samples, `1`, have DestinationFillDirection set to CustomCoordinates and have either MaxDestinationNumberOfRows or MaxDestinationNumberOfColumns not set to Null. Please set MaxDestinationNumberOfRows and MaxDestinationNumberOfColumns to Null or allow these options to be resolved automatically.";
 Error::MissingDestinationCoordinates="The following samples, `1`, have DestinationFillDirection set to CustomCoordinates but do not have DestinationCoordinates specified. Please specify DestinationCoordinates or allow these options to be resolved automatically.";
 Warning::TooManyDestinationCoordinates="The following samples, `1`, have more than 384 specified destination coordinates. There are only 384 possible deposit locations on an omnitray so multiple colonies will be deposited at the same location. If this is not the intended behavior, please specify less than 384 DestinationCoordinates.";
-Error::DestinationMixMismatch="The following samples, `1`, have DestinationMix->True, but have DestinationNumberOfMixes->Null. Please specify a non null DestinationNumberOfMixes or allow these options to be resolved automatically.";
-Error::InvalidMixOption="The following samples, `1`, have DestinationMediaType->SolidMedia and have Mix options (DestinationMix, DestinationNumberOfMixes) specified. Mixing cannot occur on a solid media destination. Please do not specify DestinationMix or DestinationNumberOfMixes when DestinationMedaiType->SolidMedia or allow these options to be resolved automatically.";
+Error::DestinationMixMismatch="When DestinationMix is set to True, option `2` should also be set to a non-Null value. When DestinationMix is False, option `2` should also be set as Null. The following samples, `1`, have DestinationMix and `2` option misaligned. Please adjust these options or allow these options to be set automatically.";
+Error::InvalidMixOption="The following samples, `1`, have DestinationMediaType->SolidMedia and have Mix options (DestinationMix, DestinationNumberOfMixes) specified. Mixing cannot occur on a solid media destination. Please do not specify DestinationMix or DestinationNumberOfMixes when DestinationMediaType->SolidMedia or allow these options to be resolved automatically.";
 
 (* Picking Errors *)
 Error::PickingToolIncompatibleWithDestinationMediaContainer="The following samples, `1`, have a picking tool that is incompatible with the DestinationMediaContainer. Please select a tool that has the same NumberOfHeads as there are Wells in the DestinationMediaContainer, the PinLength aligns with the WellDepth of the Wells in the DestinationMediaContainer, and the Application of the ColonyPickingTool is Pick. Or allow these options to be resolved automatically.";
@@ -768,6 +743,7 @@ Error::TooManyPickCoordinates="The following samples, `1`, have more PickCoordin
 (* Label Errors *)
 Error::InvalidSampleOutLabelLength = "The following samples `1`, at index, `2`, have a list of SampleOutLabels that is of invalid length for the populations `3`. The number of expected labels is `4`, while the number of provided labels is `5`. Please set this option to a list of the correct length or allow it to be resolved automatically.";
 Error::InvalidContainerOutLabelLength = "The following samples `1`, at index, `2`, have a list of ContainerOutLabels that is of invalid length for the populations `3`. The number of expected labels is `4`, while the number of provided labels is `5`. Please set this option to a list of the correct length or allow it to be resolved automatically.";
+Error::QPixWashSolutionInsufficientVolume = "For the sample(s), `1`, at indices, `5`, the given Object[Sample], `2`, specified as, `3`, only has volume of `4`. The wash solution needs to have at least 150mL. Please specify a valid Object[Sample] or use a Model[Sample].";
 
 
 (* ::Subsection::Closed:: *)
@@ -776,36 +752,38 @@ Error::InvalidContainerOutLabelLength = "The following samples `1`, at index, `2
 
 (* ::Code::Initialization:: *)
 (* CORE Overload *)
-ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
+ExperimentPickColonies[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: OptionsPattern[]] := Module[
   {
-    outputSpecification,output,gatherTests,listedSamplesNamed,listedOptionsNamed,safeOpsNamed,safeOpsTests,
-    listedSamples,safeOps,validLengths,validLengthTests,returnEarlyQ,performSimulationQ,
-    templatedOptions,templateTests,simulation,currentSimulation,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,updatedSimulation,
-    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,fullyCollapsedResolvedOptions,protocolObject,unitOperationPacket,
-    batchedUnitOperationPackets,runTime, resourcePacketTests,uploadQ
+    outputSpecification, output, gatherTests, listedSamplesNamed, listedOptionsNamed, safeOpsNamed, safeOpsTests,
+    listedSamples, safeOps, validLengths, validLengthTests, returnEarlyQ, performSimulationQ, templatedOptions,
+    templateTests, simulation, currentSimulation, inheritedOptions, preExpandedImagingStrategies, preExpandedImagingChannels,
+    preExpandedExposureTimes, manuallyExpandedImagingStrategies, manuallyExpandedImagingChannels, manuallyExpandedExposureTimes,
+    expandedSafeOps, cacheBall, resolvedOptionsResult, updatedSimulation, resolvedOptions, resolvedOptionsTests,
+    preCollapsedResolvedOptions, collapsedResolvedOptions, protocolObject, unitOperationPacket, batchedUnitOperationPackets,
+    runTime, resourcePacketTests, uploadQ, allUnitOperationPackets
   },
 
   (* Determine the requested return value from the function *)
-  outputSpecification=Quiet[OptionValue[Output]];
-  output=ToList[outputSpecification];
+  outputSpecification = Quiet[OptionValue[Output]];
+  output = ToList[outputSpecification];
 
   (* Determine if we should keep a running list of tests *)
-  gatherTests=MemberQ[output,Tests];
+  gatherTests = MemberQ[output,Tests];
 
   (* Remove temporal links. *)
-  {listedSamplesNamed, listedOptionsNamed}=removeLinks[ToList[mySamples], ToList[myOptions]];
+  {listedSamplesNamed, listedOptionsNamed} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
   (* Call SafeOptions to make sure all options match pattern *)
-  {safeOpsNamed,safeOpsTests}=If[gatherTests,
-    SafeOptions[ExperimentPickColonies,listedOptionsNamed,AutoCorrect->False,Output->{Result,Tests}],
-    {SafeOptions[ExperimentPickColonies,listedOptionsNamed,AutoCorrect->False],{}}
+  {safeOpsNamed, safeOpsTests} = If[gatherTests,
+    SafeOptions[ExperimentPickColonies, listedOptionsNamed, AutoCorrect -> False, Output -> {Result, Tests}],
+    {SafeOptions[ExperimentPickColonies, listedOptionsNamed, AutoCorrect -> False],{}}
   ];
 
-  (* replace all objects referenced by Name to ID *)
-  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed];
+  (* Replace all objects referenced by Name to ID *)
+  {listedSamples, safeOps} = sanitizeInputs[listedSamplesNamed, safeOpsNamed, Simulation -> Lookup[safeOpsNamed, Simulation, Null]];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-  If[MatchQ[safeOps,$Failed],
+  If[MatchQ[safeOps, $Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
       Tests -> safeOpsTests,
@@ -815,9 +793,9 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   ];
 
   (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentPickColonies,{listedSamples},safeOps,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentPickColonies,{listedSamples},safeOps],Null}
+  {validLengths, validLengthTests} = If[gatherTests,
+    ValidInputLengthsQ[ExperimentPickColonies, {listedSamples}, safeOps, Output -> {Result, Tests}],
+    {ValidInputLengthsQ[ExperimentPickColonies, {listedSamples}, safeOps], Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -831,23 +809,23 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   ];
 
   (* Use any template options to get values for options not specified in myOptions *)
-  {templatedOptions,templateTests}=If[gatherTests,
-    ApplyTemplateOptions[ExperimentPickColonies,{ToList[listedSamples]},safeOps,Output->{Result,Tests}],
-    {ApplyTemplateOptions[ExperimentPickColonies,{ToList[listedSamples]},safeOps],Null}
+  {templatedOptions, templateTests} = If[gatherTests,
+    ApplyTemplateOptions[ExperimentPickColonies, {ToList[listedSamples]}, safeOps, Output -> {Result, Tests}],
+    {ApplyTemplateOptions[ExperimentPickColonies, {ToList[listedSamples]}, safeOps], Null}
   ];
 
   (* Return early if the template cannot be used - will only occur if the template object does not exist. *)
-  If[MatchQ[templatedOptions,$Failed],
+  If[MatchQ[templatedOptions, $Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests -> Join[safeOpsTests,validLengthTests,templateTests],
+      Tests -> Join[safeOpsTests, validLengthTests, templateTests],
       Options -> $Failed,
       Preview -> Null
     }]
   ];
 
   (* Lookup simulation if it exists *)
-  simulation = Lookup[safeOps,Simulation];
+  simulation = Lookup[safeOps, Simulation];
 
   (* Initialize the simulation if it doesn't exist *)
   currentSimulation = If[MatchQ[simulation, SimulationP],
@@ -856,10 +834,145 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   ];
 
   (* Replace our safe options with our inherited options from our template. *)
-  inheritedOptions=ReplaceRule[safeOps,templatedOptions];
+  inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
   (* Expand index-matching options *)
-  expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentPickColonies,{ToList[listedSamples]},inheritedOptions,SingletonClassificationPreferred-> {Populations,DestinationMediaContainer}]];
+  (* Normally, SingletonClassificationPreferred or ExpandedClassificationPreferred is used to expand nested index *)
+  (* But only 1 set of nested indexmatching is allowed, which is Populations *)
+  (* Here the only value allowed for singleton for ImagingStrategies is BrightField *)
+  (* And ImagingChannels and ExposureTimes are index matched to ImagingStrategies *)
+  {
+    preExpandedImagingStrategies,
+    preExpandedImagingChannels,
+    preExpandedExposureTimes
+  } = Lookup[inheritedOptions,
+    {
+      ImagingStrategies,
+      ImagingChannels,
+      ExposureTimes
+    }
+  ];
+
+  {
+    manuallyExpandedImagingStrategies,
+    manuallyExpandedImagingChannels,
+    manuallyExpandedExposureTimes
+  } = Which[
+    MatchQ[preExpandedImagingStrategies, BrightField|Automatic],
+      (* If a singleton value is given and collapsed *)
+      (* Example: samples:{s1,s2}, ImagingChannels:{BrightField(for s1),BrightField(for s2)}, ExposureTimes:{Automatic|10ms(for s1),Automatic|10ms(for s2)}*)
+      {
+        ConstantArray[preExpandedImagingStrategies, Length[ToList[listedSamples]]],
+        If[!MatchQ[preExpandedImagingChannels, _List],
+          ConstantArray[preExpandedImagingChannels, Length[ToList[listedSamples]]],
+          preExpandedImagingChannels
+        ],
+        If[!MatchQ[preExpandedExposureTimes, _List],
+          ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          preExpandedExposureTimes
+        ]
+      },
+    MatchQ[preExpandedImagingStrategies, {(BrightField|Automatic)..}] && EqualQ[Length[preExpandedImagingStrategies], Length@ToList[listedSamples]],
+      (* If a singleton value is given and not collapsed *)
+      (* Example: samples:{s1,s2}, ImagingChannels:{BrightField(for s1),BrightField(for s2)}, ExposureTimes:{Automatic|10ms(for s1),Automatic|10ms(for s2)}*)
+      {
+        preExpandedImagingStrategies,
+        If[!MatchQ[preExpandedImagingChannels, _List],
+          ConstantArray[preExpandedImagingChannels, Length[ToList[listedSamples]]],
+          preExpandedImagingChannels
+        ],
+        If[!MatchQ[preExpandedExposureTimes, _List],
+          ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          preExpandedExposureTimes
+        ]
+      },
+    MatchQ[preExpandedImagingStrategies, _List] && !MemberQ[preExpandedImagingStrategies, _List],
+      (* If it is a list and collapsed *)
+      (* Example1: samples:{s1,s2}, ImagingChannels:{{BrightField,400nm}(for s1),{BrightField,400nm}(for s2)}, ExposureTimes:{Automatic|{10ms, 10ms}(for s1),Automatic|{10ms, 10ms}(for s2)}*)
+      (* Example2: samples:{s1,s2}, ImagingChannels:{{BrightField(for s1)},{BrightField(for s2)}}, ExposureTimes:{Automatic(for s1),Automatic(for s2)}*)
+      {
+        ConstantArray[preExpandedImagingStrategies, Length[ToList[listedSamples]]],
+        If[!MatchQ[preExpandedImagingChannels, {_List..}],
+          ConstantArray[preExpandedImagingChannels, Length[ToList[listedSamples]]],
+          preExpandedImagingChannels
+        ],
+        If[!MatchQ[preExpandedExposureTimes, {_List..}],
+          ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          preExpandedExposureTimes
+        ]
+      },
+    MatchQ[preExpandedImagingStrategies, {_List..}],
+      (* If a list of values are given and not collapsed *)
+      (* Example: samples:{s1,s2}, ImagingChannels:{{BrightField(for s1)},{BrightField, 400nm(for s2)}}, ExposureTimes:{Automatic(for s1),Automatic(for s2)}*)
+      {
+        preExpandedImagingStrategies,
+        Which[
+          MatchQ[preExpandedExposureTimes, Automatic],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          And[
+            !MatchQ[preExpandedImagingChannels, {_List..}],
+            MatchQ[preExpandedImagingChannels, _List] && !MemberQ[preExpandedImagingChannels, _List] && !SameQ @@ preExpandedImagingChannels
+          ],
+            ConstantArray[preExpandedImagingChannels, Length[ToList[listedSamples]]],
+          True,
+            preExpandedImagingChannels
+        ],
+        Which[
+          MatchQ[preExpandedExposureTimes, Automatic],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          And[
+            !MatchQ[preExpandedExposureTimes, {_List..}],
+            MatchQ[preExpandedExposureTimes, _List] && !MemberQ[preExpandedExposureTimes, _List] && !SameQ @@ preExpandedExposureTimes
+          ],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          True,
+            preExpandedExposureTimes
+        ]
+      },
+    True,
+      (* If a mixture of singleton and list of values are given and not collapsed *)
+      (* Example: samples:{s1,s2}, ImagingChannels:{BrightField(for s1),{BrightField, 400nm(for s2)}}, ExposureTimes:{Automatic(for s1),Automatic(for s2)}*)
+      {
+        preExpandedImagingStrategies,
+        Which[
+          MatchQ[preExpandedExposureTimes, Automatic],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          And[
+            !MatchQ[preExpandedImagingChannels, {_List..}],
+            MatchQ[preExpandedImagingChannels, _List] && !MemberQ[preExpandedImagingChannels, _List] && !SameQ @@ preExpandedImagingChannels
+          ],
+            ConstantArray[preExpandedImagingChannels, Length[ToList[listedSamples]]],
+          True,
+            preExpandedImagingChannels
+        ],
+        Which[
+          MatchQ[preExpandedExposureTimes, Automatic],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          And[
+            !MatchQ[preExpandedExposureTimes, {_List..}],
+            MatchQ[preExpandedExposureTimes, _List] && !MemberQ[preExpandedExposureTimes, _List] && !SameQ @@ preExpandedExposureTimes
+          ],
+            ConstantArray[preExpandedExposureTimes, Length[ToList[listedSamples]]],
+          True,
+            preExpandedExposureTimes
+        ]
+      }
+  ];
+  (* Updating imaging options with the manually expanded values *)
+  expandedSafeOps = Join[
+    Last[
+      ExpandIndexMatchedInputs[
+        ExperimentPickColonies,
+        {ToList[listedSamples]},
+        Normal@KeyDrop[inheritedOptions, {ImagingStrategies, ImagingChannels, ExposureTimes}]
+      ]
+    ],
+    {
+      ImagingStrategies -> manuallyExpandedImagingStrategies,
+      ImagingChannels -> manuallyExpandedImagingChannels,
+      ExposureTimes -> manuallyExpandedExposureTimes
+    }
+  ];
 
   (*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
   (* TODO: FILL THIS IN ONCE THE RESOLVE<TYPE>OPTIONS AND <TYPE>RESOURCE PACKETS ARE FINISHED *)
@@ -868,70 +981,95 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   cacheBall={}; (* Quiet[Flatten[{samplePreparationCache,Download[..., Cache\[Rule]Lookup[expandedSafeOps, Cache, {}], Simulation\[Rule]updatedSimulation]}],Download::FieldDoesntExist] *)
 
   (* Build the resolved options *)
-  resolvedOptionsResult=If[gatherTests,
+  resolvedOptionsResult = If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {resolvedOptions,resolvedOptionsTests}=resolveExperimentPickColoniesOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Simulation->currentSimulation,Output->{Result,Tests}];
+    {resolvedOptions, resolvedOptionsTests} = resolveExperimentPickColoniesOptions[
+      ToList[mySamples],
+      expandedSafeOps,
+      Cache -> cacheBall,
+      Simulation -> currentSimulation,
+      Output -> {Result, Tests}
+    ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
-    If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-      {resolvedOptions,resolvedOptionsTests},
+    If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+      {resolvedOptions, resolvedOptionsTests},
       $Failed
     ],
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      {resolvedOptions,resolvedOptionsTests}={resolveExperimentPickColoniesOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Simulation->currentSimulation],{}},
+      {resolvedOptions, resolvedOptionsTests} = {
+        resolveExperimentPickColoniesOptions[
+          ToList[mySamples],
+          expandedSafeOps,
+          Cache -> cacheBall,
+          Simulation -> currentSimulation],
+        {}
+      },
       $Failed,
-      {Error::InvalidInput,Error::InvalidOption}
+      {Error::InvalidInput, Error::InvalidOption}
     ]
   ];
 
-
-  (* Collapse the resolved options *)
-  collapsedResolvedOptions = CollapseIndexMatchedOptions[
-    ExperimentPickColonies,
-    resolvedOptions,
-    Ignore->ToList[myOptions],
-    Messages->False
-  ];
-
-  (* Manually collapse ExposureTimes and ImagingChannels. They are NestedIndexMatched to each other but that information is not *)
+  (* Manually collapse ImagingStrategies, ImagingChannels, ExposureTimes. They are NestedIndexMatched to each other but that information is not *)
   (* in their OptionDefinition because there can only be one NestedIndexMatching block per IndexMatching block *)
   (* NOTE: This collapsing logic is mirrored from CollapseIndexMatchedOptions. We know that both options are IndexMatching *)
   (* are currently in an expanded form and are nested index matching *)
-  fullyCollapsedResolvedOptions = Map[
-    Function[{resolvedOptionRule},
-      (* Is the resolved option ExposureTimes or ImagingChannels? *)
-      If[MatchQ[resolvedOptionRule[[1]], Alternatives[ExposureTimes, ImagingChannels]],
-        (* Yes, try and collapse *)
+  preCollapsedResolvedOptions = Map[
+    Function[{option},
+      Module[{resolvedOptionRule, inheritedOptionRule},
+        resolvedOptionRule = Lookup[resolvedOptions, option];
+        inheritedOptionRule = Lookup[inheritedOptions, option];
         Which[
           (* If the option was specified by the user, ignore it *)
-          MemberQ[ToList[myOptions][[All,1]], resolvedOptionRule[[1]]], resolvedOptionRule,
-
-          (* If there is the same singleton pattern across all nested lists, collapse it *)
-          SameQ @@ Flatten[ToList[resolvedOptionRule[[2]]], 1], resolvedOptionRule[[1]] -> First[Flatten[resolvedOptionRule[[2]], 1]],
-
+          MatchQ[resolvedOptionRule, inheritedOptionRule],
+            option -> resolvedOptionRule,
+          (* If there is the same singleton pattern across all samples, collapse it to a single singleton value *)
+          And[
+            MatchQ[resolvedOptionRule, _List],
+            !MemberQ[resolvedOptionRule, _List],
+            SameQ @@ Flatten[ToList[resolvedOptionRule], 1]
+          ],
+            option -> First[ToList[resolvedOptionRule]],
+          (* If there is the same list pattern across all nested lists, collapse it to a list value *)
+          MatchQ[resolvedOptionRule, {_List..}] && SameQ @@ resolvedOptionRule,
+            option -> First[resolvedOptionRule],
           (* Otherwise, this means the option is not the same across all nested lists, so leave it alone *)
-          True, resolvedOptionRule
-        ],
-        (* Otherwise keep the option as is *)
-        resolvedOptionRule
+          True,
+            option -> resolvedOptionRule
+        ]
       ]
     ],
-    collapsedResolvedOptions
+    {ImagingStrategies, ImagingChannels, ExposureTimes}
+  ];
+
+  (* Collapse the resolved options *)
+  collapsedResolvedOptions = Join[
+    CollapseIndexMatchedOptions[
+      ExperimentPickColonies,
+      Normal@KeyDrop[resolvedOptions, {ImagingStrategies, ImagingChannels, ExposureTimes}],
+      Ignore -> ToList[myOptions],
+      Messages -> False
+    ],
+    {
+      ImagingStrategies -> Lookup[preCollapsedResolvedOptions, ImagingStrategies],
+      ImagingChannels -> Lookup[preCollapsedResolvedOptions, ImagingChannels],
+      ExposureTimes -> Lookup[preCollapsedResolvedOptions, ExposureTimes]
+    }
   ];
 
   (* If option resolution failed, return early. *)
-  If[MatchQ[resolvedOptionsResult,$Failed],
+  If[MatchQ[resolvedOptionsResult, $Failed],
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-      Options->RemoveHiddenOptions[ExperimentPickColonies,collapsedResolvedOptions],
-      Preview->Null
+      Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests],
+      Options -> RemoveHiddenOptions[ExperimentPickColonies, collapsedResolvedOptions],
+      Preview -> Null
     }]
   ];
 
-  (* run all the tests from the resolution; if any of them were False, then we should return early here *)
+  (* Run all the tests from the resolution; if any of them were False, then we should return early here *)
   (* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
   (* basically, if _not_ all the tests are passing, then we do need to return early *)
   returnEarlyQ = Which[
@@ -946,87 +1084,90 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   (* Figure out if we need to perform our simulation. *)
   (* NOTE: We need to perform simulation if Result is asked for in Pick since it's part of the CellPreparation experiments. *)
   (* This is because we pass down our simulation to ExperimentRCP. *)
-  performSimulationQ=MemberQ[output, Result|Simulation];
+  performSimulationQ = MemberQ[output, Result|Simulation];
 
   (* If option resolution failed and we aren't asked for the simulation or output, return early. *)
   If[returnEarlyQ && !performSimulationQ,
     Return[outputSpecification/.{
       Result -> $Failed,
-      Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-      Options->RemoveHiddenOptions[ExperimentPickColonies,collapsedResolvedOptions],
-      Preview->Null,
-      Simulation->Simulation[]
+      Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests],
+      Options -> RemoveHiddenOptions[ExperimentPickColonies, collapsedResolvedOptions],
+      Preview -> Null,
+      Simulation -> currentSimulation
     }]
   ];
 
   (* Build packets with resources *)
   (* NOTE: Don't actually run our resource packets function if there was a problem with our option resolving. *)
   (* NOTE: Because PickColonies can currently only happen robotically, resourcePackets only contains UnitOperationPackets *)
-  {{unitOperationPacket, batchedUnitOperationPackets, runTime},resourcePacketTests}=If[returnEarlyQ,
-    {{$Failed, $Failed}, {}},
+  {{unitOperationPacket, batchedUnitOperationPackets, runTime}, resourcePacketTests} = If[returnEarlyQ,
+    {{$Failed, $Failed, $Failed}, {}},
     If[gatherTests,
-      pickColoniesResourcePackets[listedSamples,expandedSafeOps,resolvedOptions,ExperimentPickColonies,Cache->cacheBall,Simulation->currentSimulation,Output->{Result,Tests}],
-      {pickColoniesResourcePackets[listedSamples,expandedSafeOps,resolvedOptions,ExperimentPickColonies,Cache->cacheBall,Simulation->currentSimulation],{}}
+      pickColoniesResourcePackets[listedSamples, expandedSafeOps, resolvedOptions, ExperimentPickColonies, Cache -> cacheBall, Simulation -> currentSimulation, Output -> {Result, Tests}],
+      {pickColoniesResourcePackets[listedSamples, expandedSafeOps, resolvedOptions, ExperimentPickColonies, Cache -> cacheBall, Simulation -> currentSimulation], {}}
     ]
   ];
 
   (* If we were asked for a simulation, also return a simulation. *)
   updatedSimulation = If[performSimulationQ,
-    simulateExperimentPickColonies[unitOperationPacket,listedSamples,resolvedOptions,ExperimentPickColonies,Cache->cacheBall,Simulation->currentSimulation],
-    Null
+    simulateExperimentPickColonies[unitOperationPacket, listedSamples, resolvedOptions, ExperimentPickColonies, Cache -> cacheBall, Simulation -> currentSimulation],
+    currentSimulation
   ];
 
   (* If Result does not exist in the output, return everything without uploading *)
-  If[!MemberQ[output,Result],
+  If[!MemberQ[output, Result],
     Return[outputSpecification/.{
       Result -> Null,
-      Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
-      Options -> RemoveHiddenOptions[ExperimentPickColonies,collapsedResolvedOptions],
+      Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
+      Options -> RemoveHiddenOptions[ExperimentPickColonies, collapsedResolvedOptions],
       Preview -> Null,
       Simulation->updatedSimulation
     }]
   ];
 
   (* Lookup if we are supposed to upload *)
-  uploadQ = Lookup[safeOps,Upload];
+  uploadQ = Lookup[safeOps, Upload];
+
+  (* Gather all the unit operation packets *)
+  allUnitOperationPackets = Flatten[{unitOperationPacket, batchedUnitOperationPackets}];
 
   (* We have to return our result. Either return a protocol with a simulated procedure if SimulateProcedure\[Rule]True or return a real protocol that's ready to be run. *)
   protocolObject = Which[
     (* If there was a problem with our resource packets function or option resolver, we can't return a protocol. *)
-    MatchQ[unitOperationPacket,$Failed] || MatchQ[resolvedOptionsResult,$Failed],
+    MatchQ[unitOperationPacket, $Failed] || MatchQ[resolvedOptionsResult, $Failed],
       $Failed,
 
     (* If Upload->False, return the unit operation packets without RequireResources called*)
     !uploadQ,
-      unitOperationPacket,
+      allUnitOperationPackets,
 
     (* Otherwise, upload an ExperimentRoboticCellPreparation *)
     True,
       Module[
         {
-          primitive,nonHiddenOptions
+          primitive, nonHiddenOptions
         },
         (* Create the PickColonies primitive to feed into RoboticCellPreparation *)
-        primitive=PickColonies@@Join[
+        primitive = PickColonies@@Join[
           {
-            Sample->Download[ToList[mySamples],Object]
+            Sample -> Download[ToList[mySamples], Object]
           },
-          RemoveHiddenPrimitiveOptions[PickColonies,ToList[myOptions]]
+          RemoveHiddenPrimitiveOptions[PickColonies, ToList[myOptions]]
         ];
 
         (* Remove any hidden options before returning *)
-        nonHiddenOptions=RemoveHiddenOptions[ExperimentPickColonies,collapsedResolvedOptions];
+        nonHiddenOptions = RemoveHiddenOptions[ExperimentPickColonies, collapsedResolvedOptions];
 
         (* Memoize the value of ExperimentPickColonies so the framework doesn't spend time resolving it again. *)
-        Block[{ExperimentPickColonies,$PrimitiveFrameworkResolverOutputCache},
-          $PrimitiveFrameworkResolverOutputCache=<||>;
+        Block[{ExperimentPickColonies, $PrimitiveFrameworkResolverOutputCache},
+          $PrimitiveFrameworkResolverOutputCache = <||>;
 
-          ExperimentPickColonies[___, options:OptionsPattern[]]:=Module[{frameworkOutputSpecification},
+          ExperimentPickColonies[___, options: OptionsPattern[]] := Module[{frameworkOutputSpecification},
             (* Lookup the output specification the framework is asking for *)
-            frameworkOutputSpecification=Lookup[ToList[options],Output];
+            frameworkOutputSpecification = Lookup[ToList[options], Output];
 
             frameworkOutputSpecification/.{
-              Result -> Flatten[{unitOperationPacket,batchedUnitOperationPackets}],
+              Result -> allUnitOperationPackets,
               Options -> nonHiddenOptions,
               Preview -> Null,
               Simulation -> updatedSimulation,
@@ -1036,16 +1177,17 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
           ExperimentRoboticCellPreparation[
             {primitive},
-            Name->Lookup[safeOps,Name],
-            Instrument->Lookup[collapsedResolvedOptions,Instrument],
-            Upload->Lookup[safeOps,Upload],
-            Confirm->Lookup[safeOps,Confirm],
-            ParentProtocol->Lookup[safeOps,ParentProtocol],
-            Priority->Lookup[safeOps,Priority],
-            StartDate->Lookup[safeOps,StartDate],
-            HoldOrder->Lookup[safeOps,HoldOrder],
-            QueuePosition->Lookup[safeOps,QueuePosition],
-            Cache->cacheBall
+            Name -> Lookup[safeOps, Name],
+            Instrument -> Lookup[collapsedResolvedOptions, Instrument],
+            Upload -> Lookup[safeOps, Upload],
+            Confirm -> Lookup[safeOps, Confirm],
+            CanaryBranch -> Lookup[safeOps, CanaryBranch],
+            ParentProtocol -> Lookup[safeOps, ParentProtocol],
+            Priority -> Lookup[safeOps, Priority],
+            StartDate -> Lookup[safeOps, StartDate],
+            HoldOrder -> Lookup[safeOps, HoldOrder],
+            QueuePosition -> Lookup[safeOps, QueuePosition],
+            Cache -> cacheBall
           ]
         ]
       ]
@@ -1054,8 +1196,8 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
   (* Return requested output *)
   outputSpecification/.{
     Result -> protocolObject,
-    Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
-    Options -> RemoveHiddenOptions[ExperimentPickColonies,collapsedResolvedOptions],
+    Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
+    Options -> RemoveHiddenOptions[ExperimentPickColonies, collapsedResolvedOptions],
     Preview -> Null,
     Simulation -> updatedSimulation,
     RunTime -> runTime
@@ -1063,70 +1205,73 @@ ExperimentPickColonies[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 ];
 
 (* Container Overload *)
-ExperimentPickColonies[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentPickColonies[myContainers: ListableP[ObjectP[{Object[Container], Object[Sample]}]|_String], myOptions: OptionsPattern[]] := Module[
   {
-    outputSpecification,output,gatherTests,listedContainers,listedOptions,simulation,
-    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests
+    outputSpecification, output, gatherTests, listedContainers, listedOptions, simulation, containerToSampleResult,
+    containerToSampleOutput, containerToSampleSimulation, samples, sampleOptions, containerToSampleTests
   },
 
   (* Determine the requested return value from the function *)
-  outputSpecification=Quiet[OptionValue[Output]];
-  output=ToList[outputSpecification];
+  outputSpecification = Quiet[OptionValue[Output]];
+  output = ToList[outputSpecification];
 
   (* Determine if we should keep a running list of tests *)
-  gatherTests=MemberQ[output,Tests];
+  gatherTests = MemberQ[output, Tests];
 
   (* Remove temporal links. *)
-  {listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
   (* Lookup simulation option if it exists *)
-  simulation = Lookup[listedOptions,Simulation,Null];
+  simulation = Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
-  containerToSampleResult=If[gatherTests,
+  containerToSampleResult = If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+    {containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
       ExperimentPickColonies,
       listedContainers,
       listedOptions,
-      Output->{Result,Tests},
-      Simulation->simulation
+      Output -> {Result, Tests, Simulation},
+      Simulation -> simulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
-    If[RunUnitTest[<|"Tests"->containerToSampleTests|>,OutputFormat->SingleBoolean,Verbose->False],
+    If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
       Null,
       $Failed
     ],
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput=containerToSampleOptions[
+      {containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
         ExperimentPickColonies,
         listedContainers,
         listedOptions,
-        Output->Result,
-        Simulation->simulation
+        Output -> {Result, Simulation},
+        Simulation -> simulation
       ],
       $Failed,
-      {Error::EmptyContainer}
+      {Download::ObjectDoesNotExist, Error::EmptyContainer}
     ]
   ];
 
   (* If we were given an empty container, return early. *)
-  If[MatchQ[containerToSampleResult,$Failed],
+  If[MatchQ[containerToSampleResult, $Failed],
     (* containerToSampleOptions failed - return $Failed *)
     outputSpecification/.{
       Result -> $Failed,
       Tests -> containerToSampleTests,
       Options -> $Failed,
-      Preview -> Null
+      Preview -> Null,
+      Simulation -> simulation,
+      InvalidInputs -> {},
+      InvalidOptions -> {}
     },
     (* Split up our containerToSample result into the samples and sampleOptions. *)
-    {samples,sampleOptions}=containerToSampleOutput;
+    {samples, sampleOptions} = containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentPickColonies[samples,ReplaceRule[sampleOptions,Simulation->simulation]]
+    ExperimentPickColonies[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
   ]
 ];
 
@@ -1147,56 +1292,44 @@ DefineOptions[resolveQPixSanitizationOptions,
 ];
 
 resolveQPixSanitizationOptions[
-  mySamples:{ObjectP[Object[Sample]]...},
-  unresolvedSanitizationOptions:{_Rule..},
-  resolvedInstrument:ObjectP[{Model[Instrument],Object[Instrument]}],
-  myResolutionOptions:OptionsPattern[resolveQPixSanitizationOptions]
+  mySamples: {ObjectP[Object[Sample]]...},
+  unresolvedSanitizationOptions: {_Rule..},
+  resolvedInstrument: ObjectP[{Model[Instrument], Object[Instrument]}],
+  myResolutionOptions: OptionsPattern[resolveQPixSanitizationOptions]
 ] := Module[
   {
     (* Set up variables *)
-    outputSpecification,output,gatherTests,messages,cache,simulation,
-    mapThreadFriendlySanitizationOptions,
-
+    outputSpecification, output, gatherTests, messages, cache, simulation, mapThreadFriendlySanitizationOptions,
     (* Error checking vars *)
-    primaryWashMismatches, secondaryWashMismatches, tertiaryWashMismatches,
-    quaternaryWashMismatches, tooManyWashSolutions, outOfOrderWashStages,
-
+    primaryWashMismatches, secondaryWashMismatches, tertiaryWashMismatches, quaternaryWashMismatches, tooManyWashSolutions,
+    outOfOrderWashStages, washSolutionInsufficientVolumeErrors,
     (* Resolved Options *)
-    resolvedPrimaryWashes, resolvedPrimaryWashSolutions, resolvedNumberOfPrimaryWashes,
-    resolvedPrimaryDryTimes, resolvedSecondaryWashes, resolvedSecondaryWashSolutions,
-    resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTimes, resolvedTertiaryWashes,
-    resolvedTertiaryWashSolutions, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTimes,
-    resolvedQuaternaryWashes, resolvedQuaternaryWashSolutions, resolvedNumberOfQuaternaryWashes,
-    resolvedQuaternaryDryTimes,
-
+    resolvedPrimaryWashes, resolvedPrimaryWashSolutions, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTimes,
+    resolvedSecondaryWashes, resolvedSecondaryWashSolutions, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTimes,
+    resolvedTertiaryWashes, resolvedTertiaryWashSolutions, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTimes,
+    resolvedQuaternaryWashes, resolvedQuaternaryWashSolutions, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTimes,
     (* InvalidOptions and Tests *)
-    primaryWashMismatchOptions,primaryWashMismatchTests,
-    secondaryWashMismatchOptions,secondaryWashMismatchTests,
-    tertiaryWashMismatchOptions,tertiaryWashMismatchTests,
-    quaternaryWashMismatchOptions,quaternaryWashMismatchTests,
-    tooManyWashSolutionsOptions,tooManyWashSolutionsTests,
-    outOfOrderWashStagesOptions,outOfOrderWashStagesTests,
-
-    uniqueWashSolutions,compatibleMaterialsBool,compatibleMaterialsTests,
-
-    resolvedSanitizationOptions
+    primaryWashMismatchOptions, primaryWashMismatchTests, secondaryWashMismatchOptions, secondaryWashMismatchTests,
+    tertiaryWashMismatchOptions, tertiaryWashMismatchTests, quaternaryWashMismatchOptions, quaternaryWashMismatchTests,
+    tooManyWashSolutionsOptions, tooManyWashSolutionsTests, outOfOrderWashStagesOptions, outOfOrderWashStagesTests,
+    washSolutionInsufficientVolumeOptions, washSolutionInsufficientVolumeTests, uniqueWashSolutions, compatibleMaterialsBool,
+    compatibleMaterialsTests, resolvedSanitizationOptions
   },
 
   (* Determine the requested output format of this function. *)
-  outputSpecification=OptionValue[Output];
-  output=ToList[outputSpecification];
+  outputSpecification = OptionValue[Output];
+  output = ToList[outputSpecification];
 
   (* Determine if we should keep a running list of tests to return to the user. *)
-  gatherTests = MemberQ[output,Tests];
+  gatherTests = MemberQ[output, Tests];
   messages = Not[gatherTests];
 
   (* Fetch our cache from the parent function. *)
   cache = Lookup[ToList[myResolutionOptions], Cache, {}];
-  simulation=Lookup[ToList[myResolutionOptions],Simulation,Null];
+  simulation = Lookup[ToList[myResolutionOptions], Simulation, Null];
 
   (* Get the options in a mapthread friendly form *)
-  mapThreadFriendlySanitizationOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies,unresolvedSanitizationOptions];
-
+  mapThreadFriendlySanitizationOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies, unresolvedSanitizationOptions];
 
   (* Mapthread over the options and samples  *)
   {
@@ -1207,7 +1340,6 @@ resolveQPixSanitizationOptions[
     quaternaryWashMismatches,
     tooManyWashSolutions,
     outOfOrderWashStages,
-
     (* Resolved Options *)
     resolvedPrimaryWashes,
     resolvedPrimaryWashSolutions,
@@ -1225,556 +1357,661 @@ resolveQPixSanitizationOptions[
     resolvedQuaternaryWashSolutions,
     resolvedNumberOfQuaternaryWashes,
     resolvedQuaternaryDryTimes
-  } = Transpose[MapThread[Function[{samples,options},
-    Module[
-      {
-        (* error tracking vars *)
-        primaryWashMismatch, secondaryWashMismatch,
-        tertiaryWashMismatch, quaternaryWashMismatch, 
-        tooManyWashSolutions, outOfOrderWashStages,
-
-        (* unresolvedOptions *)
-        primaryWash, primaryWashSolution, numberOfPrimaryWashes, primaryDryTime,
-        secondaryWash, secondaryWashSolution, numberOfSecondaryWashes, secondaryDryTime,
-        tertiaryWash, tertiaryWashSolution, numberOfTertiaryWashes, tertiaryDryTime,
-        quaternaryWash, quaternaryWashSolution, numberOfQuaternaryWashes, quaternaryDryTime,
-
-        (* resolved options *)
-        resolvedPrimaryWash, resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime,
-        resolvedSecondaryWash, resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime,
-        resolvedTertiaryWash, resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime,
-        resolvedQuaternaryWash, resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime
-      },
-
-      (* Initialize error tracking variables *)
-      {
-        primaryWashMismatch, secondaryWashMismatch,
-        tertiaryWashMismatch, quaternaryWashMismatch, 
-        tooManyWashSolutions, outOfOrderWashStages
-      } = ConstantArray[False,6];
-
-      (* Lookup the unresolved options *)
-      {
-        primaryWash,
-        primaryWashSolution,
-        numberOfPrimaryWashes,
-        primaryDryTime,
-        secondaryWash,
-        secondaryWashSolution,
-        numberOfSecondaryWashes,
-        secondaryDryTime,
-        tertiaryWash,
-        tertiaryWashSolution,
-        numberOfTertiaryWashes,
-        tertiaryDryTime,
-        quaternaryWash,
-        quaternaryWashSolution,
-        numberOfQuaternaryWashes,
-        quaternaryDryTime
-      } = Lookup[options,
+  } = Transpose@MapThread[
+    Function[{samples, options},
+      Module[
         {
-          PrimaryWash,
-          PrimaryWashSolution,
-          NumberOfPrimaryWashes,
-          PrimaryDryTime,
-          SecondaryWash,
-          SecondaryWashSolution,
-          NumberOfSecondaryWashes,
-          SecondaryDryTime,
-          TertiaryWash,
-          TertiaryWashSolution,
-          NumberOfTertiaryWashes,
-          TertiaryDryTime,
-          QuaternaryWash,
-          QuaternaryWashSolution,
-          NumberOfQuaternaryWashes,
-          QuaternaryDryTime
-        }
-      ];
-      
-      (* Resolve Primary Wash Options *)
-      resolvedPrimaryWash = primaryWash;
-
-      resolvedPrimaryWashSolution = If[MatchQ[primaryWashSolution,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedPrimaryWash],
-          (* If PrimaryWash is True, set to ethanol *)
-          Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"], (* Model[Sample,StockSolution,"70% Ethanol"] *)
-          (* If PrimaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)        
-        primaryWashSolution
-      ];
-      
-      resolvedNumberOfPrimaryWashes = If[MatchQ[numberOfPrimaryWashes,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedPrimaryWash],
-          (* If PrimaryWash is True, set to 5 *)
-          5,
-          (* If PrimaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave is as is *)
-        numberOfPrimaryWashes
-      ];
-      
-      resolvedPrimaryDryTime = If[MatchQ[primaryDryTime,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedPrimaryWash],
-          (* If PrimaryWash is True, set to 10 seconds *)
-          10 Second,
-          (* If PrimaryWash is False, set to Null *)
-          Null
-        ],        
-        (* Otherwise leave it as is *)
-        primaryDryTime
-      ];
-
-      (* Check for primary wash mismatch *)
-      (* There is a mismatch if PrimaryWash -> True and an option is Null, or if PrimaryWash -> False and an option is not Null *)
-      primaryWashMismatch = Or[
-        TrueQ[resolvedPrimaryWash]&&MemberQ[{resolvedPrimaryWashSolution,resolvedNumberOfPrimaryWashes,resolvedPrimaryDryTime},Null],
-        !TrueQ[resolvedPrimaryWash]&&MemberQ[{resolvedPrimaryWashSolution,resolvedNumberOfPrimaryWashes,resolvedPrimaryDryTime},Except[Null]]
-      ];
-
-      (* Resolve Secondary Wash Options *)
-      resolvedSecondaryWash = If[MatchQ[secondaryWash,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedPrimaryWash],
-          (* If PrimaryWash is True, resolve to True *)
-          True,
-          (* Otherwise set to False *)
-          False
-        ],
-        (* Otherwise leave it as is *)
-        secondaryWash
-      ];
-
-      resolvedSecondaryWashSolution = If[MatchQ[secondaryWashSolution,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedSecondaryWash],
-          (* If SecondaryWash is True, set to water *)
-          Model[Sample, "id:8qZ1VWNmdLBD"], (* Model[Sample, "Milli-Q water"] *)
-          (* If SecondaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        secondaryWashSolution
-      ];
-
-      resolvedNumberOfSecondaryWashes = If[MatchQ[numberOfSecondaryWashes,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedSecondaryWash],
-          (* If SecondaryWash is True, set to 5 *)
-          5,
-          (* If SecondaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave is as is *)
-        numberOfSecondaryWashes
-      ];
-
-      resolvedSecondaryDryTime = If[MatchQ[secondaryDryTime,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedSecondaryWash],
-          (* If SecondaryWash is True, set to 10 seconds *)
-          10 Second,
-          (* If SecondaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        secondaryDryTime
-      ];
-
-      (* Check for secondary wash mismatch *)
-      (* There is a mismatch if SecondaryWash -> True and an option is Null, or if SecondaryWash -> False and an option is not Null *)
-      secondaryWashMismatch = Or[
-        TrueQ[resolvedSecondaryWash]&&MemberQ[{resolvedSecondaryWashSolution,resolvedNumberOfSecondaryWashes,resolvedSecondaryDryTime},Null],
-        !TrueQ[resolvedSecondaryWash]&&MemberQ[{resolvedSecondaryWashSolution,resolvedNumberOfSecondaryWashes,resolvedSecondaryDryTime},Except[Null]]
-      ];
-
-      (* Resolve Tertiary Wash Options *)
-      resolvedTertiaryWash = If[MatchQ[tertiaryWash,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedSecondaryWash],
-          (* If SecondaryWash is True, resolve to True *)
-          True,
-          (* Otherwise set to False *)
-          False
-        ],
-        (* Otherwise leave it as is *)
-        tertiaryWash
-      ];
-
-      resolvedTertiaryWashSolution = If[MatchQ[tertiaryWashSolution,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedTertiaryWash],
-          (* If TertiaryWash is True, set to bleach *)
-          Model[Sample, StockSolution, "id:qdkmxzq7lWRp"], (* Model[Sample, StockSolution, "10% Bleach"] *)
-          (* If TertiaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        tertiaryWashSolution
-      ];
-
-      resolvedNumberOfTertiaryWashes = If[MatchQ[numberOfTertiaryWashes,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedTertiaryWash],
-          (* If TertiaryWash is True, set to 5 *)
-          5,
-          (* If TertiaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave is as is *)
-        numberOfTertiaryWashes
-      ];
-
-      resolvedTertiaryDryTime = If[MatchQ[tertiaryDryTime,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedTertiaryWash],
-          (* If TertiaryWash is True, set to 10 seconds *)
-          10 Second,
-          (* If TertiaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        tertiaryDryTime
-      ];
-
-      (* Check for tertiary wash mismatch *)
-      (* There is a mismatch if TertiaryWash -> True and an option is Null, or if TertiaryWash -> False and an option is not Null *)
-      tertiaryWashMismatch = Or[
-        TrueQ[resolvedTertiaryWash]&&MemberQ[{resolvedTertiaryWashSolution,resolvedNumberOfTertiaryWashes,resolvedTertiaryDryTime},Null],
-        !TrueQ[resolvedTertiaryWash]&&MemberQ[{resolvedTertiaryWashSolution,resolvedNumberOfTertiaryWashes,resolvedTertiaryDryTime},Except[Null]]
-      ];
-
-      (* Resolve Quaternary Wash Options *)
-      resolvedQuaternaryWash = If[MatchQ[quaternaryWash,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[
-          Or[
-            MatchQ[quaternaryWashSolution,Except[Null|Automatic]],
-            MatchQ[numberOfQuaternaryWashes,Except[Null|Automatic]],
-            MatchQ[quaternaryDryTime,Except[Null|Automatic]]
-          ],
-          (* If any of the other Quaternary wash options are set, set to True *)
-          True,
-          (* Otherwise set to False *)
-          False
-        ],
-        (* Otherwise leave as is *)
-        quaternaryWash
-      ];
-
-      resolvedQuaternaryWashSolution = If[MatchQ[quaternaryWashSolution,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedQuaternaryWash],
-          (* If QuaternaryWash is True, set to ethanol *)
-          Model[Sample,StockSolution,"70% Ethanol"],
-          (* If QuaternaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        quaternaryWashSolution
-      ];
-
-      resolvedNumberOfQuaternaryWashes = If[MatchQ[numberOfQuaternaryWashes,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedQuaternaryWash],
-          (* If QuaternaryWash is True, set to 5 *)
-          5,
-          (* If QuaternaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave is as is *)
-        numberOfQuaternaryWashes
-      ];
-
-      resolvedQuaternaryDryTime = If[MatchQ[quaternaryDryTime,Automatic],
-        (* If the option is Automatic, resolve it *)
-        If[TrueQ[resolvedQuaternaryWash],
-          (* If QuaternaryWash is True, set to 10 seconds *)
-          10 Second,
-          (* If QuaternaryWash is False, set to Null *)
-          Null
-        ],
-        (* Otherwise leave it as is *)
-        quaternaryDryTime
-      ];
-
-      (* Check for quaternary wash mismatch *)
-      (* There is a mismatch if QuaternaryWash -> True and an option is Null, or if QuaternaryWash -> False and an option is not Null *)
-      quaternaryWashMismatch = Or[
-        TrueQ[resolvedQuaternaryWash]&&MemberQ[{resolvedQuaternaryWashSolution,resolvedNumberOfQuaternaryWashes,resolvedQuaternaryDryTime},Null],
-        !TrueQ[resolvedQuaternaryWash]&&MemberQ[{resolvedQuaternaryWashSolution,resolvedNumberOfQuaternaryWashes,resolvedQuaternaryDryTime},Except[Null]]
-      ];
-
-      (* There are only 3 available wash baths, check to make sure there are no more than 3 unique wash solutions specified *)
-      tooManyWashSolutions = Length[DeleteDuplicates[{resolvedPrimaryWashSolution,resolvedSecondaryWashSolution,resolvedTertiaryWashSolution,resolvedQuaternaryWashSolution}/.Null->Nothing,MatchQ[#1,ObjectP[#2]]&]] > 3;
-
-
-      (* Determine if any prerequisite stages are not fulfilled for each stage - PrimaryWash has no prerequistes so it is always ok *)
-      outOfOrderWashStages = Module[
-        {
-          secondaryWashMissingPrerequisites,tertiaryWashMissingPrerequisites,quaternaryWashMissingPrerequisites,
-          allMissingPrerequisites,allTurnedOnWashStages
+          (* error tracking vars *)
+          primaryWashMismatch, secondaryWashMismatch, tertiaryWashMismatch, quaternaryWashMismatch, tooManyWashSolutions,
+          outOfOrderWashStages,
+          (* unresolvedOptions *)
+          primaryWash, primaryWashSolution, numberOfPrimaryWashes, primaryDryTime, secondaryWash, secondaryWashSolution,
+          numberOfSecondaryWashes, secondaryDryTime, tertiaryWash, tertiaryWashSolution, numberOfTertiaryWashes, tertiaryDryTime,
+          quaternaryWash, quaternaryWashSolution, numberOfQuaternaryWashes, quaternaryDryTime,
+          (* resolved options *)
+          resolvedPrimaryWash, resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime,
+          resolvedSecondaryWash, resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime,
+          resolvedTertiaryWash, resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime,
+          resolvedQuaternaryWash, resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime
         },
-        (* If the secondary stage is turned on, make sure PrimaryWash is also turned on *)
-        secondaryWashMissingPrerequisites = If[TrueQ[resolvedSecondaryWash],
-          If[TrueQ[resolvedPrimaryWash],
-            {},
-            {PrimaryWash}
-          ],
-          {}
+
+        (* Initialize error tracking variables *)
+        {
+          primaryWashMismatch,
+          secondaryWashMismatch,
+          tertiaryWashMismatch,
+          quaternaryWashMismatch,
+          tooManyWashSolutions,
+          outOfOrderWashStages
+        } = ConstantArray[False, 6];
+
+        (* Lookup the unresolved options *)
+        {
+          primaryWash,
+          primaryWashSolution,
+          numberOfPrimaryWashes,
+          primaryDryTime,
+          secondaryWash,
+          secondaryWashSolution,
+          numberOfSecondaryWashes,
+          secondaryDryTime,
+          tertiaryWash,
+          tertiaryWashSolution,
+          numberOfTertiaryWashes,
+          tertiaryDryTime,
+          quaternaryWash,
+          quaternaryWashSolution,
+          numberOfQuaternaryWashes,
+          quaternaryDryTime
+        } = Lookup[options,
+          {
+            PrimaryWash,
+            PrimaryWashSolution,
+            NumberOfPrimaryWashes,
+            PrimaryDryTime,
+            SecondaryWash,
+            SecondaryWashSolution,
+            NumberOfSecondaryWashes,
+            SecondaryDryTime,
+            TertiaryWash,
+            TertiaryWashSolution,
+            NumberOfTertiaryWashes,
+            TertiaryDryTime,
+            QuaternaryWash,
+            QuaternaryWashSolution,
+            NumberOfQuaternaryWashes,
+            QuaternaryDryTime
+          }
         ];
 
-        (* If the tertiary stage is turned on, make sure PrimaryWash and SecondaryWash are also turned on *)
-        tertiaryWashMissingPrerequisites = If[TrueQ[resolvedTertiaryWash],
-          Module[{missingStages},
-            missingStages = {};
-            If[!TrueQ[resolvedPrimaryWash],
-              missingStages = Append[missingStages,PrimaryWash]
-            ];
-            If[!TrueQ[resolvedSecondaryWash],
-              missingStages = Append[missingStages,SecondaryWash]
-            ];
-            missingStages
-          ],
-          {}
+        (* Resolve Primary Wash Options *)
+        resolvedPrimaryWash = primaryWash;
+
+        resolvedPrimaryWashSolution = Which[
+          !MatchQ[primaryWashSolution, Automatic],
+            primaryWashSolution,
+          (* If the option is Automatic, resolve it *)
+          TrueQ[resolvedPrimaryWash],
+            (* If PrimaryWash is True, set to ethanol *)
+            Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"], (* Model[Sample,StockSolution,"70% Ethanol"] *)
+          True,
+          (* If PrimaryWash is False, set to Null *)
+            Null
         ];
 
-        (* If the quaternary stage is turned on, make sure PrimaryWash, SecondaryWash, and TertiaryWash are also turned on *)
-        quaternaryWashMissingPrerequisites = If[TrueQ[resolvedQuaternaryWash],
-          Module[{missingStages},
-            missingStages = {};
-            If[!TrueQ[resolvedPrimaryWash],
-              missingStages = Append[missingStages,PrimaryWash]
-            ];
-            If[!TrueQ[resolvedSecondaryWash],
-              missingStages = Append[missingStages,SecondaryWash]
-            ];
-            If[!TrueQ[resolvedTertiaryWash],
-              missingStages = Append[missingStages,TertiaryWash]
-            ];
-            missingStages
-          ],
-          {}
+        resolvedNumberOfPrimaryWashes = Which[
+          !MatchQ[numberOfPrimaryWashes, Automatic],
+            numberOfPrimaryWashes,
+          (* If the option is Automatic, resolve it *)
+          TrueQ[resolvedPrimaryWash],
+            (* If PrimaryWash is True, set to 5 *)
+            5,
+          True,
+            (* If PrimaryWash is False, set to Null *)
+            Null
         ];
 
-        (* Get the unique missing stages *)
-        allMissingPrerequisites = DeleteDuplicates[Join[secondaryWashMissingPrerequisites,tertiaryWashMissingPrerequisites,quaternaryWashMissingPrerequisites]];
+        resolvedPrimaryDryTime = Which[
+          !MatchQ[primaryDryTime, Automatic],
+            primaryDryTime,
+          (* If the option is Automatic, resolve it *)
+          TrueQ[resolvedPrimaryWash],
+            (* If PrimaryWash is True, set to 10 seconds *)
+            10 Second,
+          True,
+            (* If PrimaryWash is False, set to Null *)
+            Null
+        ];
 
-        (* Get all the turned on stages *)
-        allTurnedOnWashStages = {
-          If[TrueQ[resolvedPrimaryWash],PrimaryWash,Nothing],
-          If[TrueQ[resolvedSecondaryWash],SecondaryWash,Nothing],
-          If[TrueQ[resolvedTertiaryWash],TertiaryWash,Nothing],
-          If[TrueQ[resolvedQuaternaryWash],QuaternaryWash,Nothing]
-        };
+        (* Check for primary wash mismatch *)
+        (* There is a mismatch if PrimaryWash -> True and an option is Null, or if PrimaryWash -> False and an option is not Null *)
+        primaryWashMismatch = Or[
+          TrueQ[resolvedPrimaryWash] && MemberQ[{resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime}, Null],
+          !TrueQ[resolvedPrimaryWash] && MemberQ[{resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime}, Except[Null]]
+        ];
 
-        (* Return in correct bool *)
-        {Length[allMissingPrerequisites]>0,allTurnedOnWashStages,allMissingPrerequisites}
-      ];
+        (* Resolve Secondary Wash Options *)
+        resolvedSecondaryWash = If[MatchQ[secondaryWash, Automatic],
+          (* If the option is Automatic, resolve it *)
+          Which[
+            (* If PrimaryWash is True, resolve to True *)
+            TrueQ[resolvedPrimaryWash],
+              True,
+            (* If any of the other Secondary wash options are set, set to True *)
+            Or[
+              MatchQ[secondaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfSecondaryWashes, Except[Null|Automatic]],
+              MatchQ[secondaryDryTime, Except[Null|Automatic]]
+            ],
+              True,
+            (* If any of the tertiary wash options are set, set to True *)
+            Or[
+              MatchQ[tertiaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfTertiaryWashes, Except[Null|Automatic]],
+              MatchQ[tertiaryDryTime, Except[Null|Automatic]],
+              TrueQ[tertiaryWash]
+            ],
+              True,
+            (* If any of the Quaternary wash options are set, set to True *)
+            Or[
+              TrueQ[quaternaryWash],
+              MatchQ[quaternaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfQuaternaryWashes, Except[Null|Automatic]],
+              MatchQ[quaternaryDryTime, Except[Null|Automatic]]
+            ],
+             True,
+            (* Otherwise set to False *)
+            True,
+              False
+          ],
+          (* Otherwise leave it as is *)
+          secondaryWash
+        ];
+
+        resolvedSecondaryWashSolution = If[MatchQ[secondaryWashSolution, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedSecondaryWash],
+            (* If SecondaryWash is True, set to water *)
+            Model[Sample, "id:8qZ1VWNmdLBD"], (* Model[Sample, "Milli-Q water"] *)
+            (* If SecondaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          secondaryWashSolution
+        ];
+
+        resolvedNumberOfSecondaryWashes = If[MatchQ[numberOfSecondaryWashes, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedSecondaryWash],
+            (* If SecondaryWash is True, set to 5 *)
+            5,
+            (* If SecondaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave is as is *)
+          numberOfSecondaryWashes
+        ];
+
+        resolvedSecondaryDryTime = If[MatchQ[secondaryDryTime, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedSecondaryWash],
+            (* If SecondaryWash is True, set to 10 seconds *)
+            10 Second,
+            (* If SecondaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          secondaryDryTime
+        ];
+
+        (* Check for secondary wash mismatch *)
+        (* There is a mismatch if SecondaryWash -> True and an option is Null, or if SecondaryWash -> False and an option is not Null *)
+        secondaryWashMismatch = Or[
+          TrueQ[resolvedSecondaryWash] && MemberQ[{resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime}, Null],
+          !TrueQ[resolvedSecondaryWash] && MemberQ[{resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime}, Except[Null]]
+        ];
+
+        (* Resolve Tertiary Wash Options *)
+        resolvedTertiaryWash = If[MatchQ[tertiaryWash, Automatic],
+          (* If the option is Automatic, resolve it *)
+          Which[
+            (* If any of the other Tertiary wash options are set, set to True *)
+            Or[
+              MatchQ[tertiaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfTertiaryWashes, Except[Null|Automatic]],
+              MatchQ[tertiaryDryTime, Except[Null|Automatic]]
+            ],
+              True,
+            (* If any of the Quaternary wash options are set, set to True *)
+            Or[
+              TrueQ[quaternaryWash],
+              MatchQ[quaternaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfQuaternaryWashes, Except[Null|Automatic]],
+              MatchQ[quaternaryDryTime, Except[Null|Automatic]]
+            ],
+              True,
+            (* Otherwise set to False *)
+            True,
+              False
+          ],
+          (* Otherwise leave it as is *)
+          tertiaryWash
+        ];
+
+        resolvedTertiaryWashSolution = If[MatchQ[tertiaryWashSolution, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedTertiaryWash],
+            (* If TertiaryWash is True, set to bleach *)
+            Model[Sample, StockSolution, "id:qdkmxzq7lWRp"], (* Model[Sample, StockSolution, "10% Bleach"] *)
+            (* If TertiaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          tertiaryWashSolution
+        ];
+
+        resolvedNumberOfTertiaryWashes = If[MatchQ[numberOfTertiaryWashes, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedTertiaryWash],
+            (* If TertiaryWash is True, set to 5 *)
+            5,
+            (* If TertiaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave is as is *)
+          numberOfTertiaryWashes
+        ];
+
+        resolvedTertiaryDryTime = If[MatchQ[tertiaryDryTime, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedTertiaryWash],
+            (* If TertiaryWash is True, set to 10 seconds *)
+            10 Second,
+            (* If TertiaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          tertiaryDryTime
+        ];
+
+        (* Check for tertiary wash mismatch *)
+        (* There is a mismatch if TertiaryWash -> True and an option is Null, or if TertiaryWash -> False and an option is not Null *)
+        tertiaryWashMismatch = Or[
+          TrueQ[resolvedTertiaryWash] && MemberQ[{resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime}, Null],
+          !TrueQ[resolvedTertiaryWash] && MemberQ[{resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime}, Except[Null]]
+        ];
+
+        (* Resolve Quaternary Wash Options *)
+        resolvedQuaternaryWash = If[MatchQ[quaternaryWash, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[
+            Or[
+              MatchQ[quaternaryWashSolution, Except[Null|Automatic]],
+              MatchQ[numberOfQuaternaryWashes, Except[Null|Automatic]],
+              MatchQ[quaternaryDryTime, Except[Null|Automatic]]
+            ],
+            (* If any of the other Quaternary wash options are set, set to True *)
+            True,
+            (* Otherwise set to False *)
+            False
+          ],
+          (* Otherwise leave as is *)
+          quaternaryWash
+        ];
+
+        resolvedQuaternaryWashSolution = If[MatchQ[quaternaryWashSolution, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedQuaternaryWash],
+            (* If QuaternaryWash is True, set to ethanol *)
+            Model[Sample, StockSolution, "70% Ethanol"],
+            (* If QuaternaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          quaternaryWashSolution
+        ];
+
+        resolvedNumberOfQuaternaryWashes = If[MatchQ[numberOfQuaternaryWashes, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedQuaternaryWash],
+            (* If QuaternaryWash is True, set to 5 *)
+            5,
+            (* If QuaternaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave is as is *)
+          numberOfQuaternaryWashes
+        ];
+
+        resolvedQuaternaryDryTime = If[MatchQ[quaternaryDryTime, Automatic],
+          (* If the option is Automatic, resolve it *)
+          If[TrueQ[resolvedQuaternaryWash],
+            (* If QuaternaryWash is True, set to 10 seconds *)
+            10 Second,
+            (* If QuaternaryWash is False, set to Null *)
+            Null
+          ],
+          (* Otherwise leave it as is *)
+          quaternaryDryTime
+        ];
+
+        (* Check for quaternary wash mismatch *)
+        (* There is a mismatch if QuaternaryWash -> True and an option is Null, or if QuaternaryWash -> False and an option is not Null *)
+        quaternaryWashMismatch = Or[
+          TrueQ[resolvedQuaternaryWash] && MemberQ[{resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime}, Null],
+          !TrueQ[resolvedQuaternaryWash] && MemberQ[{resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime}, Except[Null]]
+        ];
+
+        (* There are only 3 available wash baths, check to make sure there are no more than 3 unique wash solutions specified *)
+        tooManyWashSolutions = Length[DeleteDuplicates[{resolvedPrimaryWashSolution, resolvedSecondaryWashSolution, resolvedTertiaryWashSolution, resolvedQuaternaryWashSolution}/.Null->Nothing,MatchQ[#1,ObjectP[#2]]&]] > 3;
 
 
-      (* Return the error tracking vars and the resolved options *)
-      {
-        (* Error tracking vars *)
-        primaryWashMismatch, secondaryWashMismatch,
-        tertiaryWashMismatch, quaternaryWashMismatch,
-        tooManyWashSolutions, outOfOrderWashStages,
+        (* Determine if any prerequisite stages are not fulfilled for each stage - PrimaryWash has no prerequisites so it is always ok *)
+        outOfOrderWashStages = Module[
+          {
+            secondaryWashMissingPrerequisites, tertiaryWashMissingPrerequisites, quaternaryWashMissingPrerequisites,
+            allMissingPrerequisites, allTurnedOnWashStages
+          },
+          (* If the secondary stage is turned on, make sure PrimaryWash is also turned on *)
+          secondaryWashMissingPrerequisites = If[TrueQ[resolvedSecondaryWash],
+            If[TrueQ[resolvedPrimaryWash],
+              {},
+              {PrimaryWash}
+            ],
+            {}
+          ];
 
-        (* Resolved options *)
-        resolvedPrimaryWash, resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime,
-        resolvedSecondaryWash, resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime,
-        resolvedTertiaryWash, resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime,
-        resolvedQuaternaryWash, resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime
-      }
-    ]
-  ],
+          (* If the tertiary stage is turned on, make sure PrimaryWash and SecondaryWash are also turned on *)
+          tertiaryWashMissingPrerequisites = If[TrueQ[resolvedTertiaryWash],
+            Module[{missingStages},
+              missingStages = {};
+              If[!TrueQ[resolvedPrimaryWash],
+                missingStages = Append[missingStages, PrimaryWash]
+              ];
+              If[!TrueQ[resolvedSecondaryWash],
+                missingStages = Append[missingStages, SecondaryWash]
+              ];
+              missingStages
+            ],
+            {}
+          ];
+
+          (* If the quaternary stage is turned on, make sure PrimaryWash, SecondaryWash, and TertiaryWash are also turned on *)
+          quaternaryWashMissingPrerequisites = If[TrueQ[resolvedQuaternaryWash],
+            Module[{missingStages},
+              missingStages = {};
+              If[!TrueQ[resolvedPrimaryWash],
+                missingStages = Append[missingStages, PrimaryWash]
+              ];
+              If[!TrueQ[resolvedSecondaryWash],
+                missingStages = Append[missingStages, SecondaryWash]
+              ];
+              If[!TrueQ[resolvedTertiaryWash],
+                missingStages = Append[missingStages, TertiaryWash]
+              ];
+              missingStages
+            ],
+            {}
+          ];
+
+          (* Get the unique missing stages *)
+          allMissingPrerequisites = DeleteDuplicates[Join[secondaryWashMissingPrerequisites, tertiaryWashMissingPrerequisites, quaternaryWashMissingPrerequisites]];
+
+          (* Get all the turned on stages *)
+          allTurnedOnWashStages = {
+            If[TrueQ[resolvedPrimaryWash], PrimaryWash, Nothing],
+            If[TrueQ[resolvedSecondaryWash], SecondaryWash, Nothing],
+            If[TrueQ[resolvedTertiaryWash], TertiaryWash, Nothing],
+            If[TrueQ[resolvedQuaternaryWash], QuaternaryWash, Nothing]
+          };
+
+          (* Return in correct bool *)
+          {Length[allMissingPrerequisites]>0, allTurnedOnWashStages, allMissingPrerequisites}
+        ];
+
+
+        (* Return the error tracking vars and the resolved options *)
+        {
+          (* Error tracking vars *)
+          primaryWashMismatch, secondaryWashMismatch,
+          tertiaryWashMismatch, quaternaryWashMismatch,
+          tooManyWashSolutions, outOfOrderWashStages,
+
+          (* Resolved options *)
+          resolvedPrimaryWash, resolvedPrimaryWashSolution, resolvedNumberOfPrimaryWashes, resolvedPrimaryDryTime,
+          resolvedSecondaryWash, resolvedSecondaryWashSolution, resolvedNumberOfSecondaryWashes, resolvedSecondaryDryTime,
+          resolvedTertiaryWash, resolvedTertiaryWashSolution, resolvedNumberOfTertiaryWashes, resolvedTertiaryDryTime,
+          resolvedQuaternaryWash, resolvedQuaternaryWashSolution, resolvedNumberOfQuaternaryWashes, resolvedQuaternaryDryTime
+        }
+      ]
+    ],
     {
       mySamples,
       mapThreadFriendlySanitizationOptions
     }
-  ]];
+  ];
 
   (* Throw any errors found during the option resolution *)
   (* PrimaryWash mismatch *)
-  primaryWashMismatchOptions = If[MemberQ[primaryWashMismatches,True]&&messages,
-    Message[Error::PrimaryWashMismatch, PickList[mySamples,primaryWashMismatches]];
-    {PrimaryWash,PrimaryWashSolution,NumberOfPrimaryWashes,PrimaryWashDryTime},
+  primaryWashMismatchOptions = If[MemberQ[primaryWashMismatches, True] && messages,
+    Message[Error::PrimaryWashMismatch, PickList[mySamples, primaryWashMismatches]];
+    {PrimaryWash, PrimaryWashSolution, NumberOfPrimaryWashes, PrimaryDryTime},
     {}
   ];
   
-  primaryWashMismatchTests = If[MemberQ[primaryWashMismatches,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  primaryWashMismatchTests = If[MemberQ[primaryWashMismatches, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,primaryWashMismatches];
+      failingInputs = PickList[mySamples, primaryWashMismatches];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have conflicting PrimaryWash options:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have conflicting PrimaryWash options:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have conflicting PrimaryWash options:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " do not have conflicting PrimaryWash options:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* SecondaryWash mismatch *)
-  secondaryWashMismatchOptions = If[MemberQ[secondaryWashMismatches,True]&&messages,
-    Message[Error::SecondaryWashMismatch, PickList[mySamples,secondaryWashMismatches]];
-    {SecondaryWash,SecondaryWashSolution,NumberOfSecondaryWashes,SecondaryWashDryTime},
+  secondaryWashMismatchOptions = If[MemberQ[secondaryWashMismatches, True] && messages,
+    Message[Error::SecondaryWashMismatch, PickList[mySamples, secondaryWashMismatches]];
+    {SecondaryWash, SecondaryWashSolution, NumberOfSecondaryWashes, SecondaryDryTime},
     {}
   ];
 
-  secondaryWashMismatchTests = If[MemberQ[secondaryWashMismatches,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  secondaryWashMismatchTests = If[MemberQ[secondaryWashMismatches, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,secondaryWashMismatches];
+      failingInputs = PickList[mySamples, secondaryWashMismatches];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have conflicting SecondaryWash options:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have conflicting SecondaryWash options:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have conflicting SecondaryWash options:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " do not have conflicting SecondaryWash options:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* TertiaryWash mismatch *)
-  tertiaryWashMismatchOptions = If[MemberQ[tertiaryWashMismatches,True]&&messages,
-    Message[Error::TertiaryWashMismatch, PickList[mySamples,tertiaryWashMismatches]];
-    {TertiaryWash,TertiaryWashSolution,NumberOfTertiaryWashes,TertiaryWashDryTime},
+  tertiaryWashMismatchOptions = If[MemberQ[tertiaryWashMismatches, True] && messages,
+    Message[Error::TertiaryWashMismatch, PickList[mySamples, tertiaryWashMismatches]];
+    {TertiaryWash, TertiaryWashSolution, NumberOfTertiaryWashes, TertiaryDryTime},
     {}
   ];
 
-  tertiaryWashMismatchTests = If[MemberQ[tertiaryWashMismatches,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  tertiaryWashMismatchTests = If[MemberQ[tertiaryWashMismatches, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,tertiaryWashMismatches];
+      failingInputs = PickList[mySamples, tertiaryWashMismatches];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have conflicting TertiaryWash options:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have conflicting TertiaryWash options:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have conflicting TertiaryWash options:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " do not have conflicting TertiaryWash options:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* QuaternaryWash mismatch *)
-  quaternaryWashMismatchOptions = If[MemberQ[quaternaryWashMismatches,True]&&messages,
-    Message[Error::QuaternaryWashMismatch, PickList[mySamples,quaternaryWashMismatches]];
-    {QuaternaryWash,QuaternaryWashSolution,NumberOfQuaternaryWashes,QuaternaryWashDryTime},
+  quaternaryWashMismatchOptions = If[MemberQ[quaternaryWashMismatches, True] && messages,
+    Message[Error::QuaternaryWashMismatch, PickList[mySamples, quaternaryWashMismatches]];
+    {QuaternaryWash, QuaternaryWashSolution, NumberOfQuaternaryWashes, QuaternaryDryTime},
     {}
   ];
 
-  quaternaryWashMismatchTests = If[MemberQ[quaternaryWashMismatches,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  quaternaryWashMismatchTests = If[MemberQ[quaternaryWashMismatches, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,quaternaryWashMismatches];
+      failingInputs = PickList[mySamples, quaternaryWashMismatches];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have conflicting QuaternaryWash options:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have conflicting QuaternaryWash options:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have conflicting QuaternaryWash options:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " do not have conflicting QuaternaryWash options:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* Too many wash solutions *)
-  tooManyWashSolutionsOptions = If[MemberQ[tooManyWashSolutions,True]&&messages,
-    Message[Error::TooManyWashSolutions,PickList[mySamples, tooManyWashSolutions]];
-    {PrimaryWashSolution,SecondaryWashSolution,TertiaryWashSolution,QuaternaryWashSolution},
+  tooManyWashSolutionsOptions = If[MemberQ[tooManyWashSolutions, True] && messages,
+    Message[Error::TooManyWashSolutions, PickList[mySamples, tooManyWashSolutions]];
+    {PrimaryWashSolution, SecondaryWashSolution, TertiaryWashSolution, QuaternaryWashSolution},
     {}
   ];
 
-  tooManyWashSolutionsTests = If[MemberQ[tooManyWashSolutions,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  tooManyWashSolutionsTests = If[MemberQ[tooManyWashSolutions, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,tooManyWashSolutions];
+      failingInputs = PickList[mySamples, tooManyWashSolutions];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have no more than 3 unique wash solutions specified:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have no more than 3 unique wash solutions specified:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" have no more than 3 unique wash solutions specified:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " have no more than 3 unique wash solutions specified:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* Out of order wash solutions *)
-  outOfOrderWashStagesOptions = If[MemberQ[outOfOrderWashStages[[All,1]],True]&&messages,
-    Message[Error::OutOfOrderWashStages,PickList[mySamples,outOfOrderWashStages[[All,1]]],outOfOrderWashStages[[All,2]],outOfOrderWashStages[[All,3]]];
-    DeleteDuplicates@Flatten[outOfOrderWashStages[[All,3]]],
+  outOfOrderWashStagesOptions = If[MemberQ[outOfOrderWashStages[[All, 1]], True] && messages,
+    Message[Error::OutOfOrderWashStages, PickList[mySamples, outOfOrderWashStages[[All, 1]]], outOfOrderWashStages[[All, 2]], outOfOrderWashStages[[All, 3]]];
+    DeleteDuplicates@Flatten[outOfOrderWashStages[[All, 3]]],
     {}
   ];
 
-  outOfOrderWashStagesTests = If[MemberQ[outOfOrderWashStages[[All,1]],True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  outOfOrderWashStagesTests = If[MemberQ[outOfOrderWashStages[[All, 1]], True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,outOfOrderWashStages[[All,1]]];
+      failingInputs = PickList[mySamples, outOfOrderWashStages[[All, 1]]];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have wash stages specified in a valid order:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have wash stages specified in a valid order:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" have wash stages specified in a valid order:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " have wash stages specified in a valid order:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
+    ],
+    Nothing
+  ];
+
+  (*Error::QPixWashSolutionInsufficientVolume*)
+  washSolutionInsufficientVolumeErrors = MapThread[
+    Function[{sample, primaryWashSolution, secondaryWashSolution, tertiaryWashSolution, quaternaryWashSolution, index},
+      Module[{washSolutionVolumeTuples, errorBools, invalidWashSolutionOptions, invalidWashSolutionObjects, insufficientVolumes},
+        (*Look up the volumes if an Object[Sample] is given*)
+        washSolutionVolumeTuples = If[MatchQ[#, ObjectP[Object[Sample]]],
+          {#, Lookup[fetchPacketFromCache[#, cache], Volume]},
+          {#, Null}
+        ]& /@ {primaryWashSolution,secondaryWashSolution, tertiaryWashSolution, quaternaryWashSolution};
+        (*Determine the boolean list that corresponds to the wash solution list to indicate if this is an error-throwing condition, i.e. it is an Object[Sample], and the volume is either Null or less thann 150 mL*)
+        errorBools = MatchQ[#, {ObjectP[Object[Sample]], Null|LessP[150 Milliliter]}]& /@ washSolutionVolumeTuples;
+
+        (*Get list of insufficient volumes to return*)
+        insufficientVolumes = PickList[washSolutionVolumeTuples, errorBools][[All, 2]];
+
+        (*Get list of invalid options to return*)
+        invalidWashSolutionOptions = PickList[{PrimaryWashSolution, SecondaryWashSolution, TertiaryWashSolution, QuaternaryWashSolution},
+          errorBools
+        ];
+        (*Get list of solution objects to return*)
+        invalidWashSolutionObjects = PickList[{primaryWashSolution, secondaryWashSolution, tertiaryWashSolution, quaternaryWashSolution},
+          errorBools
+        ];
+
+        (*Gather the list to return*)
+        If[Length[insufficientVolumes] > 0,
+          {sample, invalidWashSolutionObjects, invalidWashSolutionOptions, insufficientVolumes, index},
+          Nothing
+        ]
+      ]
+    ],
+    {mySamples, resolvedPrimaryWashSolutions, resolvedSecondaryWashSolutions, resolvedTertiaryWashSolutions, resolvedQuaternaryWashSolutions, Range[Length[mySamples]]}
+  ];
+
+  washSolutionInsufficientVolumeOptions = If[Length[washSolutionInsufficientVolumeErrors] > 0 && messages,
+    Message[
+      Error::QPixWashSolutionInsufficientVolume,
+      ObjectToString[washSolutionInsufficientVolumeErrors[[All, 1]], Cache -> cache],
+      ObjectToString[washSolutionInsufficientVolumeErrors[[All, 2]], Cache -> cache],
+      washSolutionInsufficientVolumeErrors[[All, 3]],
+      washSolutionInsufficientVolumeErrors[[All, 4]],
+      washSolutionInsufficientVolumeErrors[[All, 5]]
+    ];
+    DeleteDuplicates[Flatten[washSolutionInsufficientVolumeErrors[[All, 3]]]],
+    {}
+  ];
+
+  washSolutionInsufficientVolumeTests = If[Length[washSolutionInsufficientVolumeErrors] > 0 && gatherTests,
+    Module[{affectedSamples, failingTest, passingTest},
+      affectedSamples = washSolutionInsufficientVolumeErrors[[All, 1]];
+
+      failingTest = If[Length[affectedSamples] == 0,
+        Nothing,
+        Test["The sample(s) " <> ObjectToString[affectedSamples, Cache -> cache] <> " have at least 150mL of wash solution if an Object[Sample] is specified.", True, False]
+      ];
+
+      passingTest = If[Length[affectedSamples] == Length[mySamples],
+        Nothing,
+        Test["The sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cache] <> " have at least 150mL of wash solution if an Object[Sample] is specified.", True, True]
+      ];
+
+      {failingTest, passingTest}
     ],
     Nothing
   ];
 
   (* Check if any of the wash solutions are incompatible materials with the instrument *)
-  uniqueWashSolutions = DeleteDuplicates[Flatten[{resolvedPrimaryWashSolutions,resolvedSecondaryWashSolutions,resolvedTertiaryWashSolutions,resolvedQuaternaryWashSolutions}/.Null->Nothing]];
+  uniqueWashSolutions = DeleteDuplicates[Flatten[{resolvedPrimaryWashSolutions, resolvedSecondaryWashSolutions, resolvedTertiaryWashSolutions, resolvedQuaternaryWashSolutions}/.Null -> Nothing]];
 
   {compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-    CompatibleMaterialsQ[resolvedInstrument, uniqueWashSolutions, Output -> {Result, Tests}, Cache -> cache, Simulation->simulation],
-    {CompatibleMaterialsQ[resolvedInstrument, uniqueWashSolutions, Messages -> messages, Cache -> cache,Simulation->simulation], {}}
+    CompatibleMaterialsQ[resolvedInstrument, uniqueWashSolutions, Output -> {Result, Tests}, Cache -> cache, Simulation -> simulation],
+    {CompatibleMaterialsQ[resolvedInstrument, uniqueWashSolutions, Messages -> messages, Cache -> cache,Simulation -> simulation], {}}
   ];
 
   (* resolvedOptions *)
@@ -1801,12 +2038,17 @@ resolveQPixSanitizationOptions[
   {
     (* Invalid Options *)
     Join[
+      If[!MatchQ[compatibleMaterialsBool, True],
+        {Instrument},
+        {}
+      ],
       primaryWashMismatchOptions,
       secondaryWashMismatchOptions,
       tertiaryWashMismatchOptions,
       quaternaryWashMismatchOptions,
       tooManyWashSolutionsOptions,
-      outOfOrderWashStagesOptions
+      outOfOrderWashStagesOptions,
+      washSolutionInsufficientVolumeOptions
     ],
     (* Tests *)
     {
@@ -1816,7 +2058,8 @@ resolveQPixSanitizationOptions[
       tertiaryWashMismatchTests,
       quaternaryWashMismatchTests,
       tooManyWashSolutionsTests,
-      outOfOrderWashStagesTests
+      outOfOrderWashStagesTests,
+      washSolutionInsufficientVolumeTests
     },
     (* InvalidInputs *)
     {},
@@ -1833,141 +2076,80 @@ resolveQPixSanitizationOptions[
 (* ::Code::Initialization:: *)
 DefineOptions[
   resolveExperimentPickColoniesOptions,
-  Options:>{HelperOutputOption,CacheOption,SimulationOption}
+  Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
-resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentPickColoniesOptions]]:=Module[
+resolveExperimentPickColoniesOptions[mySamples: {ObjectP[Object[Sample]]...}, myOptions: {_Rule...}, myResolutionOptions: OptionsPattern[resolveExperimentPickColoniesOptions]] := Module[
   {
     (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
-    outputSpecification,output,gatherTests,messages,cache,simulation,currentSimulation,pickColoniesOptionsAssociation,pickingColonyHandlerHeadCassettes,
-    colonyPickingTools,destinationMedias,destinationContainers,primaryWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,quaternaryWashSolutions,
-    allDestinationContainersNoLink,uniqueDestinationContainerObjects,uniqueDestinationContainerModels,defaultWashSolutions,
-    allWashSolutionsNoLink,uniqueWashSolutionObjects,uniqueWashSolutionModels,allDestinationMediaNoLink,uniqueDestinationMediaObjects,uniqueDestinationMediaModels,
-    allColonyPickingToolsNoLink,uniqueColonyPickingToolObjects,uniqueColonyPickingToolModels,
-    sampleObjectDownloadPacket,sampleModelDownloadPacket,sampleContainerObjectDownloadPacket,sampleContainerModelDownloadPacket,
-    containerDownloadPacket,containerModelDownloadPacket,colonyHandlerHeadCassetteObjectDownloadPacket,
-    colonyHandlerHeadCassetteModelDownloadPacket,samplePackets,
-    washSolutionObjectPackets,washSolutionModelPackets,destinationMediaObjectPackets,destinationMediaModelPackets,
-    destinationContainerObjectPackets,destinationContainerModelPackets,colonyPickingToolObjectPackets,colonyPickingToolModelPackets,
-    pickingColonyHandlerHeadCassettesPackets,flattenedCachePackets,combinedCache,combinedFastAssoc,
-
+    outputSpecification, output, gatherTests, messages, cache, simulation, currentSimulation, pickColoniesOptionsAssociation,
+    pickingColonyHandlerHeadCassettes, colonyPickingTools, destinationMedias, destinationContainers, primaryWashSolutions, 
+    secondaryWashSolutions, tertiaryWashSolutions, quaternaryWashSolutions,allDestinationContainersNoLink,
+    uniqueDestinationContainerObjects, uniqueDestinationContainerModels, defaultWashSolutions, allWashSolutionsNoLink,
+    uniqueWashSolutionObjects, uniqueWashSolutionModels, allDestinationMediaNoLink, uniqueDestinationMediaObjects,
+    uniqueDestinationMediaModels, allColonyPickingToolsNoLink, uniqueColonyPickingToolObjects, uniqueColonyPickingToolModels,
+    sampleObjectDownloadPacket, sampleModelDownloadPacket, sampleContainerObjectDownloadPacket, sampleContainerModelDownloadPacket,
+    containerDownloadPacket, containerModelDownloadPacket, colonyHandlerHeadCassetteObjectDownloadPacket,
+    colonyHandlerHeadCassetteModelDownloadPacket, samplePackets, washSolutionObjectPackets, washSolutionModelPackets,
+    destinationMediaObjectPackets, destinationMediaModelPackets, destinationContainerObjectPackets, destinationContainerModelPackets,
+    colonyPickingToolObjectPackets, colonyPickingToolModelPackets, pickingColonyHandlerHeadCassettesPackets, flattenedCachePackets,
+    combinedCache, combinedFastAssoc,
     (*-- INPUT VALIDATION CHECKS --*)
-    discardedSamplePackets,discardedInvalidInputs,discardedTest,
-    nonSolidSamplePackets,nonSolidInvalidInputs,nonSolidTest,
-    nonOmniTrayInvalidInputs,nonOmniTrayTest,
-    inputContainers,tooManyContainersInvalidInputs,tooManyInputContainersTest,
-    compatibleMaterialsBools,compatibleMaterialsTests,
-
+    discardedSamplePackets, discardedInvalidInputs, discardedTest, nonSolidSamplePackets, nonSolidInvalidInputs, nonSolidTest,
+    nonOmniTrayInvalidInputs, nonOmniTrayTest, inputContainers, tooManyContainersInvalidInputs, tooManyInputContainersTest,
+    compatibleMaterialsBools, compatibleMaterialsTests, duplicatedInvalidInputs, duplicatesTest,
     (*-- OPTION PRECISION CHECKS --*)
-    optionPrecisions,roundedPickColoniesOptions,optionPrecisionTests,
-
+    optionPrecisions, roundedPickColoniesOptions, optionPrecisionTests,
     (*-- RESOLVE INDEPENDENT OPTIONS --*)
-    instrument,destinationFillDirection,preparation,workCell,samplesInStorageCondition,samplesOutStorageCondition,
-    resolvedInstrument,resolvedDestinationFillDirection,resolvedPreparation,resolvedWorkCell,
-    resolvedSamplesInStorageCondition,resolvedSamplesOutStorageCondition,
-
+    instrument, destinationFillDirection, preparation, workCell, samplesInStorageCondition, samplesOutStorageCondition, mediaVolumes,
+    resolvedInstrument, resolvedDestinationFillDirection, resolvedPreparation, resolvedWorkCell, resolvedSamplesInStorageCondition, 
+    resolvedSamplesOutStorageCondition,
     (*-- RESOLVE SANITIZATION AND ANALYSIS OPTIONS --*)
-    sanitizationOptionInvalidOptions,sanitizationOptionTests,sanitizationOptionInvalidInputs,resolvedSanitizationOptions,
-    partiallyResolvedPickColoniesOptionsWithSanitization,
-
-    analysisOptionInvalidOptions,analysisOptionTests,resolvedAnalysisOptions,resolvedPickCoordinates,
-    partiallyResolvedPickColoniesOptionsWithAnalysis,
-
+    sanitizationOptionInvalidOptions, sanitizationOptionTests, sanitizationOptionInvalidInputs, resolvedSanitizationOptions,
+    partiallyResolvedPickColoniesOptionsWithSanitization, analysisOptionInvalidOptions, analysisOptionTests, resolvedAnalysisOptions,
+    resolvedPickCoordinates, partiallyResolvedPickColoniesOptionsWithAnalysis,
     (*-- RESOLVE MAPTHREAD EXPERIMENT OPTIONS --*)
-    mapThreadFriendlyOptions,
-
+    mapThreadFriendlyOptions, strategiesMappingToChannels,
     (* Error Tracking *)
-    imagingOptionMismatchErrors,
-    missingImagingChannelsErrors,
-    duplicateImagingChannelsWarnings,
-    imagingOptionSameLengthErrors,
-    pickCoordinatesMismatchErrors,
-    destinationMediaStateErrors,
-    destinationMediaTypeMismatchErrors,
-    invalidDestinationMediaContainerErrors,
-    tooManyDestinationMediaContainersErrors,
-    tooManyPickCoordinatesErrors,
-    destinationFillDirectionMismatchErrors,
-    missingDestinationCoordinatesErrors,
-    tooManyDestinationCoordinatesWarnings,
-    destinationMixMismatchErrors,
-    invalidMixOptionErrors,
-    pickingToolIncompatibleWithDestinationMediaContainerErrors,
-    noAvailablePickingToolErrors,
-    notPreferredColonyHandlerHeadWarnings,
-    headDiameterMismatchErrors,
-    headLengthMismatchErrors,
-    numberOfHeadsMismatchErrors,
-    colonyHandlerHeadCassetteApplicationMismatchErrors,
-    invalidColonyPickingDepthErrors,
-    
-    (* Error Tracking extra info *)
-    missingImagingChannels,
-
+    missingImagingStrategiesInfos, imagingOptionSameLengthErrors, pickCoordinatesMismatchErrors, destinationMediaStateErrors,
+    destinationMediaTypeMismatchErrors, invalidDestinationMediaContainerErrors, tooManyDestinationMediaContainersErrors,
+    tooManyPickCoordinatesErrors, destinationFillDirectionMismatchErrors, missingDestinationCoordinatesErrors, tooManyDestinationCoordinatesWarnings,
+    destinationMixMismatchErrors, invalidMixOptionErrors, pickingToolIncompatibleWithDestinationMediaContainerErrors,
+    noAvailablePickingToolErrors, notPreferredColonyHandlerHeadWarnings, headDiameterMismatchErrors, headLengthMismatchErrors,
+    numberOfHeadsMismatchErrors, colonyHandlerHeadCassetteApplicationMismatchErrors, invalidColonyPickingDepthErrors,
     (* Imaging *)
-    resolvedImagingChannels,
-    resolvedExposureTimes,
-
+    resolvedImagingChannels, resolvedImagingStrategies, resolvedExposureTimes,
     (* Picking *)
-    resolvedColonyPickingTools,
-    resolvedHeadDiameters,
-    resolvedHeadLengths,
-    resolvedNumberOfHeads,
+    resolvedColonyPickingTools, resolvedHeadDiameters, resolvedHeadLengths, resolvedNumberOfHeads, resolvedColonyPickingDepths,
     resolvedColonyHandlerHeadCassetteApplications,
-    resolvedColonyPickingDepths,
-
     (* Destination *)
-    resolvedDestinationMediaTypes,
-    resolvedDestinationMedia,
-    resolvedDestinationMediaContainers,
-    resolvedMaxDestinationNumberOfColumns,
-    resolvedMaxDestinationNumberOfRows,
-    resolvedDestinationCoordinates,
-    resolvedMediaVolumes,
-    resolvedDestinationMixes,
-    resolvedDestinationNumberOfMixes,
-    sampleOutLabelLengthErrors,
-    containerOutLabelLengthErrors,
-    resolvedSampleOutLabels,
+    resolvedDestinationMediaTypes, resolvedDestinationMedia, resolvedDestinationMediaContainers, resolvedMaxDestinationNumberOfColumns,
+    resolvedMaxDestinationNumberOfRows, resolvedDestinationCoordinates, resolvedMediaVolumes, resolvedDestinationMixes,
+    resolvedDestinationNumberOfMixes, sampleOutLabelLengthErrors, containerOutLabelLengthErrors, resolvedSampleOutLabels,
     resolvedContainerOutLabels,
-
     (* -- MAPTHREAD ERROR THROWING -- *)
-    invalidSampleOutLabelLengthErrors,invalidSampleOutLabelLengthOptions,invalidSampleOutLabelLengthTests,
-    invalidContainerOutLabelLengthErrors,invalidContainerOutLabelLengthOptions,invalidContainerOutLabelLengthTests,
-    imagingOptionMismatchOptions,imagingOptionMismatchTests,
-    missingImagingChannelsOptions,missingImagingChannelsTests,
-    duplicateImagingChannelsTests,
-    imagingOptionSameLengthOptions,imagingOptionSameLengthTests,
-    destinationMediaStateOptions,destinationMediaStateTests,
-    destinationMediaTypeMismatchOptions,destinationMediaTypeMismatchTests,
-    invalidDestinationMediaContainerOptions,invalidDestinationMediaContainerTests,
-    tooManyDestinationMediaContainersOptions,tooManyDestinationMediaContainersTests,
-    tooManyPickCoordinatesOptions,tooManyPickCoordinatesTests,
-    destinationFillDirectionMismatchOptions,destinationFillDirectionMismatchTests,
-    missingDestinationCoordinatesOptions,missingDestinationCoordinatesTests,
-    tooManyDestinationCoordinatesTests,
-    destinationMixMismatchOptions,destinationMixMismatchTests,
-    invalidMixOptionOptions,invalidMixOptionTests,
-    pickingToolIncompatibleWithDestinationMediaContainerOptions,pickingToolIncompatibleWithDestinationMediaContainerTests,
-    noAvailablePickingToolOptions,noAvailablePickingToolTests,
-    notPreferredColonyHandlerHeadTests,
-    headDiameterMismatchOptions,headDiameterMismatchTests,
-    headLengthMismatchOptions,headLengthMismatchTests,
-    numberOfHeadsMismatchOptions,numberOfHeadsMismatchTests,
-    colonyHandlerHeadCassetteApplicationMismatchOptions,colonyHandlerHeadCassetteApplicationMismatchTests,
-    invalidColonyPickingDepthOptions,invalidColonyPickingDepthTests,
-
-
+    invalidSampleOutLabelLengthErrors, invalidSampleOutLabelLengthOptions, invalidSampleOutLabelLengthTests,
+    invalidContainerOutLabelLengthErrors, invalidContainerOutLabelLengthOptions, invalidContainerOutLabelLengthTests,
+    missingImagingStrategiesOptions, missingImagingStrategiesTests, imagingOptionSameLengthOptions, imagingOptionSameLengthTests,
+    destinationMediaStateOptions, destinationMediaStateTests, destinationMediaTypeMismatchOptions, destinationMediaTypeMismatchTests,
+    invalidDestinationMediaContainerOptions, invalidDestinationMediaContainerTests, tooManyDestinationMediaContainersOptions,
+    tooManyDestinationMediaContainersTests, tooManyPickCoordinatesOptions, tooManyPickCoordinatesTests, destinationFillDirectionMismatchOptions,
+    destinationFillDirectionMismatchTests, missingDestinationCoordinatesOptions, missingDestinationCoordinatesTests,
+    tooManyDestinationCoordinatesTests, destinationMixMismatchOptions, destinationMixMismatchTests, invalidMixOptionOptions,
+    invalidMixOptionTests, pickingToolIncompatibleWithDestinationMediaContainerOptions, pickingToolIncompatibleWithDestinationMediaContainerTests,
+    noAvailablePickingToolOptions, noAvailablePickingToolTests, notPreferredColonyHandlerHeadTests,
+    headDiameterMismatchOptions, headDiameterMismatchTests, headLengthMismatchOptions, headLengthMismatchTests,
+    numberOfHeadsMismatchOptions, numberOfHeadsMismatchTests, colonyHandlerHeadCassetteApplicationMismatchOptions,
+    colonyHandlerHeadCassetteApplicationMismatchTests, invalidColonyPickingDepthOptions, invalidColonyPickingDepthTests,
     (*-- UNRESOLVABLE OPTION CHECKS --*)
-
-    invalidInputs,invalidOptions,resolvedPostProcessingOptions,resolvedOptions
+    invalidInputs, invalidOptions, resolvedPostProcessingOptions, resolvedOptions
   },
 
   (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
   (* Determine the requested output format of this function. *)
-  outputSpecification=OptionValue[Output];
-  output=ToList[outputSpecification];
+  outputSpecification = OptionValue[Output];
+  output = ToList[outputSpecification];
 
   (* Determine if we should keep a running list of tests to return to the user. *)
   gatherTests = MemberQ[output,Tests];
@@ -1975,10 +2157,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
   (* Fetch our cache from the parent function. *)
   cache = Lookup[ToList[myResolutionOptions], Cache, {}];
-  simulation=Lookup[ToList[myResolutionOptions],Simulation];
+  simulation = Lookup[ToList[myResolutionOptions], Simulation];
 
   (* Initialize the simulation if none exists *)
-  currentSimulation = If[MatchQ[simulation,SimulationP],
+  currentSimulation = If[MatchQ[simulation, SimulationP],
     simulation,
     Simulation[]
   ];
@@ -1999,7 +2181,7 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     secondaryWashSolutions,
     tertiaryWashSolutions,
     quaternaryWashSolutions
-  }=Lookup[
+  } = Lookup[
     pickColoniesOptionsAssociation,
     {
       ColonyPickingTool,
@@ -2013,35 +2195,35 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
   ];
 
   (* Get the unique DestinationContainers *)
-  allDestinationContainersNoLink = DeleteDuplicates[Download[Cases[Flatten@ToList[destinationContainers],ObjectP[]],Object]];
-  uniqueDestinationContainerObjects = Cases[allDestinationContainersNoLink,ObjectReferenceP[Object[Container]]];
-  uniqueDestinationContainerModels = Join[Cases[allDestinationContainersNoLink,ObjectReferenceP[Model[Container]]],{Model[Container, Plate, "id:L8kPEjkmLbvW"],Model[Container, Plate, "id:O81aEBZjRXvx"],Model[Container, Plate, "id:n0k9mGzRaaBn"]}]; (* Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Plate, "Omni Tray Sterile Media Plate"], Model[Container, Plate, "96-well UV-Star Plate"] *)
+  allDestinationContainersNoLink = DeleteDuplicates[Download[Cases[Flatten@ToList[destinationContainers], ObjectP[]], Object]];
+  uniqueDestinationContainerObjects = Cases[allDestinationContainersNoLink, ObjectReferenceP[Object[Container]]];
+  uniqueDestinationContainerModels = Join[Cases[allDestinationContainersNoLink, ObjectReferenceP[Model[Container]]], {Model[Container, Plate, "id:n0k9mGkwbvG4"], Model[Container, Plate, "id:O81aEBZjRXvx"], Model[Container, Plate, "id:n0k9mGzRaaBn"]}]; (* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"], Model[Container, Plate, "Omni Tray Sterile Media Plate"], Model[Container, Plate, "96-well UV-Star Plate"] *)
 
   (* Get the unique wash solutions *)
   defaultWashSolutions = {Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"],Model[Sample, "id:8qZ1VWNmdLBD"],Model[Sample, StockSolution, "id:qdkmxzq7lWRp"]}; (* Model[Sample, StockSolution, "70% Ethanol"], Model[Sample, "Milli-Q water"], Model[Sample, StockSolution, "10% Bleach"]  *)
-  allWashSolutionsNoLink = DeleteDuplicates[Download[Cases[Flatten[{primaryWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,quaternaryWashSolutions,defaultWashSolutions}],ObjectP[]],Object]];
-  uniqueWashSolutionObjects = Cases[allWashSolutionsNoLink,ObjectReferenceP[Object[Sample]]];
-  uniqueWashSolutionModels = Cases[allWashSolutionsNoLink,ObjectReferenceP[Model[Sample]]];
+  allWashSolutionsNoLink = DeleteDuplicates[Download[Cases[Flatten[{primaryWashSolutions, secondaryWashSolutions, tertiaryWashSolutions, quaternaryWashSolutions, defaultWashSolutions}], ObjectP[]], Object]];
+  uniqueWashSolutionObjects = Cases[allWashSolutionsNoLink, ObjectReferenceP[Object[Sample]]];
+  uniqueWashSolutionModels = Cases[allWashSolutionsNoLink, ObjectReferenceP[Model[Sample]]];
 
   (* Get the unique destination media *)
-  allDestinationMediaNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[destinationMedias]],ObjectP[]],Object]];
-  uniqueDestinationMediaObjects = Cases[allDestinationMediaNoLink,ObjectReferenceP[Object[Sample]]];
-  uniqueDestinationMediaModels = Cases[allDestinationMediaNoLink,ObjectReferenceP[Model[Sample]]];
+  allDestinationMediaNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[destinationMedias]], ObjectP[]], Object]];
+  uniqueDestinationMediaObjects = Cases[allDestinationMediaNoLink, ObjectReferenceP[Object[Sample]]];
+  uniqueDestinationMediaModels = Cases[allDestinationMediaNoLink, ObjectReferenceP[Model[Sample]]];
 
   (* Get the unique colony picking tools *)
-  allColonyPickingToolsNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[colonyPickingTools]],ObjectP[]],Object]];
-  uniqueColonyPickingToolObjects = Cases[allColonyPickingToolsNoLink,ObjectReferenceP[Object[Part]]];
-  uniqueColonyPickingToolModels = Cases[allColonyPickingToolsNoLink,ObjectReferenceP[Model[Part]]];
+  allColonyPickingToolsNoLink = DeleteDuplicates[Download[Cases[Flatten[ToList[colonyPickingTools]], ObjectP[]], Object]];
+  uniqueColonyPickingToolObjects = Cases[allColonyPickingToolsNoLink, ObjectReferenceP[Object[Part]]];
+  uniqueColonyPickingToolModels = Cases[allColonyPickingToolsNoLink, ObjectReferenceP[Model[Part]]];
 
   (* Define the packets we need to extract from the downloaded cache. *)
-  sampleObjectDownloadPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence]];
-  sampleModelDownloadPacket=Packet[SamplePreparationCacheFields[Model[Sample],Format->Sequence]];
-  sampleContainerObjectDownloadPacket=Packet[Container[SamplePreparationCacheFields[Object[Container],Format->List]]];
-  sampleContainerModelDownloadPacket=Packet[Container[Model[SamplePreparationCacheFields[Model[Container],Format->List]]]];
-  containerDownloadPacket=Packet[Model[SamplePreparationCacheFields[Model[Container],Format->List]]];
-  containerModelDownloadPacket=Packet[SamplePreparationCacheFields[Model[Container],Format->Sequence]];
-  colonyHandlerHeadCassetteObjectDownloadPacket=Packet[Model[{HeadDiameter,HeadLength,NumberOfHeads,Rows,Columns,Application,PreferredCellLines}]];
-  colonyHandlerHeadCassetteModelDownloadPacket=Packet[HeadDiameter,HeadLength,NumberOfHeads,Rows,Columns,Application,PreferredCellLines];
+  sampleObjectDownloadPacket = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence]];
+  sampleModelDownloadPacket = Packet[SamplePreparationCacheFields[Model[Sample], Format -> Sequence]];
+  sampleContainerObjectDownloadPacket = Packet[Container[SamplePreparationCacheFields[Object[Container], Format -> List]]];
+  sampleContainerModelDownloadPacket = Packet[Container[Model[SamplePreparationCacheFields[Model[Container], Format -> List]]]];
+  containerDownloadPacket = Packet[Model[SamplePreparationCacheFields[Model[Container], Format -> List]]];
+  containerModelDownloadPacket = Packet[SamplePreparationCacheFields[Model[Container], Format -> Sequence]];
+  colonyHandlerHeadCassetteObjectDownloadPacket = Packet[Model[{HeadDiameter, HeadLength, NumberOfHeads, Rows, Columns, Application, PreferredCellLines}]];
+  colonyHandlerHeadCassetteModelDownloadPacket = Packet[HeadDiameter, HeadLength, NumberOfHeads, Rows, Columns, Application, PreferredCellLines];
 
   (* Download from cache and simulation *)
   {
@@ -2055,7 +2237,7 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     colonyPickingToolObjectPackets,
     colonyPickingToolModelPackets,
     pickingColonyHandlerHeadCassettesPackets
-  }=Quiet[
+  } = Quiet[
     Download[
       {
         mySamples,
@@ -2072,42 +2254,28 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       {
         {
           sampleObjectDownloadPacket,
-          Packet[Composition[[All,2]][{PreferredLiquidMedia,PreferredSolidMedia,PreferredColonyHandlerHeadCassettes}]],
+          Packet[Composition[[All, 2]][{PreferredLiquidMedia, PreferredSolidMedia, PreferredColonyHandlerHeadCassettes}]],
           sampleContainerObjectDownloadPacket,
           sampleContainerModelDownloadPacket
         },
-        {
-          sampleObjectDownloadPacket
-        },
-        {
-          sampleModelDownloadPacket
-        },
-        {
-          sampleObjectDownloadPacket
-        },
-        {
-          sampleModelDownloadPacket
-        },
+        {sampleObjectDownloadPacket},
+        {sampleModelDownloadPacket},
+        {sampleObjectDownloadPacket},
+        {sampleModelDownloadPacket},
         {
           containerDownloadPacket,
-          Packet[Contents,Model]
+          Packet[Contents, Model]
         },
-        {
-          containerModelDownloadPacket
-        },
+        {containerModelDownloadPacket},
         {
           colonyHandlerHeadCassetteObjectDownloadPacket,
           Packet[Model]
         },
-        {
-          colonyHandlerHeadCassetteModelDownloadPacket
-        },
-        {
-          colonyHandlerHeadCassetteModelDownloadPacket
-        }
+        {colonyHandlerHeadCassetteModelDownloadPacket},
+        {colonyHandlerHeadCassetteModelDownloadPacket}
       },
-      Cache->cache,
-      Simulation->currentSimulation
+      Cache -> cache,
+      Simulation -> currentSimulation
     ],
     {
       Download::FieldDoesntExist,
@@ -2132,133 +2300,124 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
   ];
 
   (* Create combined fast assoc *)
-  combinedCache=FlattenCachePackets[{flattenedCachePackets,cache}];
-  combinedFastAssoc=Experiment`Private`makeFastAssocFromCache[combinedCache];
+  combinedCache = FlattenCachePackets[{flattenedCachePackets, cache}];
+  combinedFastAssoc = Experiment`Private`makeFastAssocFromCache[combinedCache];
 
   (*-- INPUT VALIDATION CHECKS --*)
   (* Get the samples from mySamples that are discarded. *)
-  discardedSamplePackets=Cases[Flatten[samplePackets],KeyValuePattern[Status->Discarded]];
+  discardedSamplePackets = Cases[Flatten[samplePackets], KeyValuePattern[Status -> Discarded]];
 
   (* Set discardedInvalidInputs to the input objects whose statuses are Discarded *)
-  discardedInvalidInputs=If[MatchQ[discardedSamplePackets,{}],
+  discardedInvalidInputs = If[MatchQ[discardedSamplePackets, {}],
     {},
-    Lookup[discardedSamplePackets,Object]
+    Lookup[discardedSamplePackets, Object]
   ];
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-  If[Length[discardedInvalidInputs]>0&&!gatherTests,
-    Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->combinedCache]];
+  If[Length[discardedInvalidInputs] > 0 && !gatherTests,
+    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> combinedCache]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-  discardedTest=If[gatherTests,
-    Module[{failingTest,passingTest},
-      failingTest=If[Length[discardedInvalidInputs]==0,
+  discardedTest = If[gatherTests,
+    Module[{failingTest, passingTest},
+      failingTest = If[Length[discardedInvalidInputs] == 0,
         Nothing,
-        Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->combinedCache]<>" are not discarded:",True,False]
+        Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> combinedCache] <> " are not discarded:", True, False]
       ];
 
-      passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
+      passingTest = If[Length[discardedInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->combinedCache]<>" are not discarded:",True,True]
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Cache -> combinedCache] <> " are not discarded:", True, True]
       ];
 
-      {failingTest,passingTest}
+      {failingTest, passingTest}
     ],
     Nothing
   ];
   
   (* Get the samples from mySamples that do not have Solid state *)
-  nonSolidSamplePackets = Cases[Flatten[samplePackets],KeyValuePattern[State->Except[Solid]]];
+  nonSolidSamplePackets = Cases[Flatten[samplePackets], KeyValuePattern[State -> Except[Solid]]];
 
   (* Set nonSolidInvalidInputs to the input objects whose state is not Solid *)
-  nonSolidInvalidInputs = Lookup[nonSolidSamplePackets,Object,{}];
+  nonSolidInvalidInputs = Lookup[nonSolidSamplePackets, Object, {}];
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-  If[Length[nonSolidInvalidInputs]>0&&!gatherTests,
-    Message[Error::NonSolidSamples,ObjectToString[nonSolidInvalidInputs,Cache->combinedCache]];
+  If[Length[nonSolidInvalidInputs] >0 && !gatherTests,
+    Message[Error::NonSolidSamples, ObjectToString[nonSolidInvalidInputs, Cache -> combinedCache]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-  nonSolidTest=If[gatherTests,
-    Module[{failingTest,passingTest},
-      failingTest=If[Length[nonSolidInvalidInputs]==0,
+  nonSolidTest = If[gatherTests,
+    Module[{failingTest, passingTest},
+      failingTest = If[Length[nonSolidInvalidInputs] == 0,
         Nothing,
-        Test["Our input samples "<>ObjectToString[nonSolidInvalidInputs,Cache->combinedCache]<>" are Solid State:",True,False]
+        Test["Our input samples " <> ObjectToString[nonSolidInvalidInputs, Cache -> combinedCache] <> " are Solid State:", True, False]
       ];
 
-      passingTest=If[Length[nonSolidInvalidInputs]==Length[mySamples],
+      passingTest = If[Length[nonSolidInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,nonSolidInvalidInputs],Cache->combinedCache]<>" are Solid State:",True,True]
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, nonSolidInvalidInputs], Cache -> combinedCache] <> " are Solid State:", True, True]
       ];
 
-      {failingTest,passingTest}
+      {failingTest, passingTest}
     ],
     Nothing
   ];
   
   (* Make sure all input containers are omnitrays *)
-  nonOmniTrayInvalidInputs = Module[{container},
-
-    (* Get the input container model *)
-    container = fastAssocLookup[combinedFastAssoc,#,{Container,Model}];
-
-    (* Get the NumberOfWells if we can *)
-    If[MatchQ[container,ObjectP[Model[Container,Plate]]],
-      If[!MatchQ[fastAssocLookup[combinedFastAssoc,container,NumberOfWells],1],
-        #,
-        Nothing
-      ],
-      #
-    ]
-
-  ]&/@mySamples;
+  nonOmniTrayInvalidInputs = Module[{sampleContainerModelPackets, validContainerSampleQ},
+    sampleContainerModelPackets = fastAssocPacketLookup[combinedFastAssoc, #, {Container, Model}]& /@ mySamples;
+    (* Make sure all input containers are SBS plates and only has 1 well *)
+    validContainerSampleQ = validqPixContainer[sampleContainerModelPackets];
+    PickList[mySamples, validContainerSampleQ, False]
+  ];
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-  If[Length[nonOmniTrayInvalidInputs]>0&&!gatherTests,
-    Message[Error::NonOmniTrayContainer,ObjectToString[nonOmniTrayInvalidInputs,Cache->combinedCache]];
+  If[Length[nonOmniTrayInvalidInputs] > 0 && !gatherTests,
+    Message[Error::NonOmniTrayContainer, ObjectToString[nonOmniTrayInvalidInputs, Cache -> combinedCache, Simulation -> currentSimulation]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-  nonOmniTrayTest=If[gatherTests,
-    Module[{failingTest,passingTest},
-      failingTest=If[Length[nonOmniTrayInvalidInputs]==0,
+  nonOmniTrayTest = If[gatherTests,
+    Module[{failingTest, passingTest},
+      failingTest = If[Length[nonOmniTrayInvalidInputs] == 0,
         Nothing,
-        Test["Our input samples "<>ObjectToString[nonOmniTrayInvalidInputs,Cache->combinedCache]<>" in an omnitray:",True,False]
+        Test["Our input samples " <> ObjectToString[nonOmniTrayInvalidInputs, Cache -> combinedCache] <> " in an omnitray:", True, False]
       ];
 
-      passingTest=If[Length[nonOmniTrayInvalidInputs]==Length[mySamples],
+      passingTest = If[Length[nonOmniTrayInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,nonOmniTrayInvalidInputs],Cache->combinedCache]<>" in an omnitray:",True,True]
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, nonOmniTrayInvalidInputs], Cache -> combinedCache] <> " in an omnitray:", True, True]
       ];
 
-      {failingTest,passingTest}
+      {failingTest, passingTest}
     ],
     Nothing
   ];
 
   (* Check to see if we have more than 4 input containers *)
   (* Get all the input containers *)
-  inputContainers = DeleteDuplicates[fastAssocLookup[combinedFastAssoc,mySamples,{Container}]];
+  inputContainers = DeleteDuplicates[fastAssocLookup[combinedFastAssoc, mySamples, {Container}]];
 
   tooManyContainersInvalidInputs = If[Length[inputContainers] > 4, mySamples, {}];
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-  If[Length[tooManyContainersInvalidInputs]>0&&!gatherTests,
-    Message[Error::TooManyInputContainers,ObjectToString[mySamples,Cache->combinedCache]];
+  If[Length[tooManyContainersInvalidInputs] > 0 && !gatherTests,
+    Message[Error::TooManyInputContainers, ObjectToString[mySamples, Cache -> combinedCache]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-  tooManyInputContainersTest=If[gatherTests,
-    Module[{failingTest,passingTest},
-      failingTest=If[Length[tooManyContainersInvalidInputs]==0,
+  tooManyInputContainersTest = If[gatherTests,
+    Module[{failingTest, passingTest},
+      failingTest = If[Length[tooManyContainersInvalidInputs] == 0,
         Nothing,
-        Test["Our input samples "<>ObjectToString[mySamples,Cache->combinedCache]<>" have more than 4 unique containers:",True,False]
+        Test["Our input samples " <> ObjectToString[mySamples, Cache -> combinedCache] <> " have more than 4 unique containers:", True, False]
       ];
 
-      passingTest=If[Length[tooManyContainersInvalidInputs]==Length[mySamples],
+      passingTest = If[Length[tooManyContainersInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["Our input samples "<>ObjectToString[mySamples,Cache->combinedCache]<>" have more than 4 unique containers:",True,True]
+        Test["Our input samples " <> ObjectToString[mySamples, Cache -> combinedCache] <>" have more than 4 unique containers:", True, True]
       ];
 
       {failingTest,passingTest}
@@ -2266,23 +2425,60 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     Nothing
   ];
 
+  (*--Duplicated Input check--*)
+  (* - Check if samples are duplicated (QuantifyColonies does not handle replicates.) - *)
+  (* Get the samples that are duplicated. *)
+  duplicatedInvalidInputs = Cases[Tally[mySamples], {_, Except[1]}][[All, 1]];
+
+  (* If there are invalid inputs and we are throwing messages, throw an error message .*)
+  If[Length[duplicatedInvalidInputs] > 0 && !gatherTests,
+    Message[Error::DuplicatedSamples, ObjectToString[duplicatedInvalidInputs, Cache -> combinedCache], "ExperimentPickColonies"]
+  ];
+
+  (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+  duplicatesTest = If[gatherTests,
+    Module[{failingTest, passingTest},
+      failingTest = If[Length[duplicatedInvalidInputs] == 0,
+        Nothing,
+        Test["Our input samples " <> ObjectToString[duplicatedInvalidInputs, Cache -> combinedCache]<>" are not listed more than once:", True, False]
+      ];
+
+      passingTest = If[Length[duplicatedInvalidInputs] == Length[mySamples],
+        Nothing,
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, duplicatedInvalidInputs], Cache -> combinedCache] <> " are not listed more than once:", True, True]
+      ];
+
+      {failingTest, passingTest}
+    ],
+    Nothing
+  ];
+
+
   (*-- OPTION PRECISION CHECKS --*)
   (* First, define the option precisions that need to be checked for PickColonies *)
-  optionPrecisions={
-    {ColonyPickingDepth,10^-2*Millimeter},
-    {ExposureTimes,10^0*Millisecond},
-    {PrimaryDryTime,10^0*Second},
-    {SecondaryDryTime,10^0*Second},
-    {TertiaryDryTime,10^0*Second},
-    {QuaternaryDryTime,10^0*Second}
+  optionPrecisions = {
+    {ColonyPickingDepth, 10^-2*Millimeter},
+    {HeadDiameter, 10^-2*Millimeter},
+    {HeadLength, 10^-1*Millimeter},
+    {PickCoordinates, 10^-1*Millimeter},
+    {DestinationCoordinates, 10^-1*Millimeter},
+    {MediaVolume, 10^0*Microliter},
+    {ExposureTimes, 10^0*Millisecond},
+    {MinDiameter, 10^-2*Millimeter},
+    {MaxDiameter, 10^-2*Millimeter},
+    {MinColonySeparation, 10^-2*Millimeter},
+    {PrimaryDryTime, 10^0*Second},
+    {SecondaryDryTime, 10^0*Second},
+    {TertiaryDryTime, 10^0*Second},
+    {QuaternaryDryTime, 10^0*Second}
   };
 
   (* Check the precisions of these options. *)
-  {roundedPickColoniesOptions,optionPrecisionTests}=If[gatherTests,
+  {roundedPickColoniesOptions, optionPrecisionTests} = If[gatherTests,
     (*If we are gathering tests *)
-    RoundOptionPrecision[pickColoniesOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]],Output->{Result,Tests}],
+    RoundOptionPrecision[pickColoniesOptionsAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], Output -> {Result, Tests}],
     (* Otherwise *)
-    {RoundOptionPrecision[pickColoniesOptionsAssociation,optionPrecisions[[All,1]],optionPrecisions[[All,2]]],{}}
+    {RoundOptionPrecision[pickColoniesOptionsAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]]], {}}
   ];
 
 
@@ -2294,7 +2490,8 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     preparation,
     workCell,
     samplesInStorageCondition,
-    samplesOutStorageCondition
+    samplesOutStorageCondition,
+    mediaVolumes
   } = Lookup[roundedPickColoniesOptions,
     {
       Instrument,
@@ -2302,30 +2499,30 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       Preparation,
       WorkCell,
       SamplesInStorageCondition,
-      SamplesOutStorageCondition
-    }];
+      SamplesOutStorageCondition,
+      MediaVolume
+    }
+  ];
 
   (* Resolve the Instrument Option *)
-  resolvedInstrument=If[MatchQ[instrument,Automatic],
-
+  resolvedInstrument = If[MatchQ[instrument, Automatic],
     (* If instrument is Automatic, resolve it to the Qpix *)
     Model[Instrument, ColonyHandler, "id:mnk9jORxz0El"], (* Model[Instrument, ColonyHandler, "QPix 420 HT"] *)
-
     (* Otherwise, keep it *)
     instrument
   ];
 
   (* Check that the input samples are compatible with the wetted materials of the resolved instrument *)
   {compatibleMaterialsBools, compatibleMaterialsTests} = If[gatherTests,
-    CompatibleMaterialsQ[resolvedInstrument, mySamples, OutputFormat -> Boolean, Output -> {Result, Tests}, Cache -> cache, Simulation->simulation],
-    {CompatibleMaterialsQ[resolvedInstrument, mySamples, OutputFormat -> Boolean, Messages -> messages, Cache -> cache,Simulation->simulation], {}}
+    CompatibleMaterialsQ[resolvedInstrument, mySamples, OutputFormat -> Boolean, Output -> {Result, Tests}, Cache -> cache, Simulation -> simulation],
+    {CompatibleMaterialsQ[resolvedInstrument, mySamples, OutputFormat -> Boolean, Messages -> messages, Cache -> cache, Simulation -> simulation], {}}
   ];
 
   (* Resolve the DestinationFillDirection - no resolution necessary here. Check for CustomCoordinate mismatch later *)
   resolvedDestinationFillDirection = destinationFillDirection;
 
   (* Resolve Preparation and WorkCell - currently this function is only robotic on the qpix so no resolution is necessary here *)
-  {resolvedPreparation,resolvedWorkCell} = {preparation,workCell};
+  {resolvedPreparation, resolvedWorkCell} = {preparation, workCell};
 
   (* No resolution necessary for SamplesInStorageCondition *)
   (* NOTE: The default here is Disposal so resolution is handled by the default *)
@@ -2333,7 +2530,11 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
   (* No resolution necessary for SamplesOutStorageCondition *)
   (* If the value is still set to Null, the sample will just be stored the same as its model *)
-  resolvedSamplesOutStorageCondition = samplesOutStorageCondition;
+  (* SamplesOutStorageCondition is nested indexmatching as well. Expand the value if necessary *)
+  resolvedSamplesOutStorageCondition = If[ListQ[samplesOutStorageCondition] && ListQ[mediaVolumes] && Length[samplesOutStorageCondition] == Length[mediaVolumes],
+    samplesOutStorageCondition,
+    (mediaVolumes /. {VolumeP -> samplesOutStorageCondition})
+  ];
 
   (*-- RESOLVE SANITIZATION AND ANALYSIS OPTIONS --*)
 
@@ -2344,7 +2545,7 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     sanitizationOptionTests,
     sanitizationOptionInvalidInputs,
     resolvedSanitizationOptions
-  }=Module[{sanitizationOptionSymbols,unresolvedSanitizationOptions},
+  }= Module[{sanitizationOptionSymbols, unresolvedSanitizationOptions},
 
     (* Define list of options resolved though resolveQPixSanitizationOptions *)
     sanitizationOptionSymbols = {
@@ -2367,15 +2568,15 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     };
 
     (* Separate the sanitization options from roundedPickColoniesOptions *)
-    unresolvedSanitizationOptions=KeyTake[roundedPickColoniesOptions,sanitizationOptionSymbols];
+    unresolvedSanitizationOptions = KeyTake[roundedPickColoniesOptions, sanitizationOptionSymbols];
 
     (* Resolve the options *)
-    resolveQPixSanitizationOptions[mySamples,Normal@unresolvedSanitizationOptions, resolvedInstrument, Cache->combinedCache, Output->output, Simulation -> currentSimulation]
+    resolveQPixSanitizationOptions[mySamples, Normal@unresolvedSanitizationOptions, resolvedInstrument, Cache -> combinedCache, Output -> output, Simulation -> currentSimulation]
 
   ];
 
   (* Merge the resolved sanitization options in with our main list of options *)
-  partiallyResolvedPickColoniesOptionsWithSanitization = Merge[{roundedPickColoniesOptions,resolvedSanitizationOptions},Last];
+  partiallyResolvedPickColoniesOptionsWithSanitization = Merge[{roundedPickColoniesOptions, resolvedSanitizationOptions}, Last];
 
   (* Use AnalyzeColonies to resolve the analysis options and the PickCoordinates Option *)
   {
@@ -2383,15 +2584,16 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     analysisOptionTests,
     resolvedAnalysisOptions,
     resolvedPickCoordinates
-  }=Module[
+  } = Module[
     {
-      analysisOptionSymbols,unresolvedAnalysisOptions,mapThreadFriendlyUnresolvedOptions,pickCoordinatesMissingErrors,multiplePopulationMethodErrors,populationsMismatchErrors,
-      resolvedPickCoordinates,partiallyResolvedPopulations,partiallyResolvedAnalysisOptions,pickCoordinatesMissingOptions,pickCoordinatesMissingTests,
-      multiplePopulationMethodOptions,multiplePopulationMethodTests,populationMismatchOptions,populationsMismatchTests,resolveThroughAnalyzeColoniesBools,mapThreadFriendlyPartiallyResolvedOptions,
-      optionDefinition,incorrectlySetOptions,analysisMismatchOptions,analysisMismatchTests,analyzeColonySamples,analyzeColonyOptions,nonAnalyzeColonyOptions,
-      nonAnalyzeColonyPopulationsWithBlobs,sanitizedNonAnalyzeColonyOptions,dataAppearanceColoniesPackets, resolvedAnalysisOptions,resolvedAnalysisTests,
-      invalidAnalysisOptions,resolvedAnalysisOptionsCleaned,optionsToRemove,fullyCollapsedResolvedAnalysisOptions,correctedLengthCollapsedOptions,
-      expandedResolvedAnalysisOptions,falseBooleanPositions,positionValuesMap,threadedOptions
+      analysisOptionSymbols, unresolvedAnalysisOptions, mapThreadFriendlyUnresolvedOptions, pickCoordinatesMissingErrors,
+      multiplePopulationMethodErrors, overlappingPopulationErrors, resolvedPickCoordinates, partiallyResolvedPopulations,
+      partiallyResolvedAnalysisOptions, pickCoordinatesMissingOptions, pickCoordinatesMissingTests, multiplePopulationMethodOptions,
+      multiplePopulationMethodTests, overlappingPopulationsOptions, overlappingPopulationsTests, resolveThroughAnalyzeColoniesBools,
+      mapThreadFriendlyPartiallyResolvedOptions, analyzeColonySamples, analyzeColonyOptions, nonAnalyzeColonyOptions, nonAnalyzeColonyPopulationsWithBlobs,
+      sanitizedNonAnalyzeColonyOptions, dataAppearanceColoniesPackets, resolvedAnalysisOptions, resolvedAnalysisTests,
+      invalidAnalysisOptions, resolvedAnalysisOptionsCleaned, optionsToRemove, fullyCollapsedResolvedAnalysisOptions,
+      correctedLengthCollapsedOptions, expandedResolvedAnalysisOptions, falseBooleanPositions, positionValuesMap, threadedOptions
     },
 
     (* Define list of options resolved though AnalyzeColonies *)
@@ -2408,73 +2610,74 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     };
 
     (* Lookup the analysis options *)
-    unresolvedAnalysisOptions=KeyTake[partiallyResolvedPickColoniesOptionsWithSanitization,analysisOptionSymbols];
+    unresolvedAnalysisOptions = KeyTake[partiallyResolvedPickColoniesOptionsWithSanitization, analysisOptionSymbols];
 
     (* -- FIGURE OUT WHICH SAMPLES ARE BEING MANIPULATED -- *)
     (* Get a MapThread friendly version of options. *)
-    mapThreadFriendlyUnresolvedOptions=OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies,unresolvedAnalysisOptions,AmbiguousNestedResolution->IndexMatchingOptionPreferred];
+    mapThreadFriendlyUnresolvedOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies, unresolvedAnalysisOptions, AmbiguousNestedResolution -> IndexMatchingOptionPreferred];
 
     (* Do a quick mapthread to check for errors and resolve PickCoordinates and partially resolve Populations *)
-    {pickCoordinatesMissingErrors,multiplePopulationMethodErrors,populationsMismatchErrors,resolvedPickCoordinates,partiallyResolvedPopulations}=Transpose@Map[
+    {
+      pickCoordinatesMissingErrors,
+      multiplePopulationMethodErrors,
+      overlappingPopulationErrors,
+      resolvedPickCoordinates,
+      partiallyResolvedPopulations
+    } = Transpose@Map[
       Function[{options},
         Module[
           {
-            populations,pickCoordinates,multiplePopulationMethodError,pickCoordinatesMissingError,populationsMismatchError,
-            partiallyResolvedPopulations,resolvedPickCoordinates
+            populations, pickCoordinates, multiplePopulationMethodError, pickCoordinatesMissingError, overlappingPopulationError,
+            partiallyResolvedPopulations, partiallyResolvedPickCoordinates
           },
 
           (* Lookup the populations and PickCoordinates options *)
-          {populations,pickCoordinates}=Lookup[options,{Populations,PickCoordinates}];
+          {populations, pickCoordinates} = Lookup[options, {Populations, PickCoordinates}];
 
           (* initialize error tracking bools *)
           pickCoordinatesMissingError = False;
           multiplePopulationMethodError = False;
-          populationsMismatchError = False;
+          overlappingPopulationError = False;
 
-          (* Check for a Populations mismatch *)
-          (* Populations is mismatched if it is a List of length > 1 and contains CustomCoordinates *)
-          populationsMismatchError = And[
-            MatchQ[populations,_List],
-            Length[populations]>1,
-            MemberQ[populations,CustomCoordinates]
+          (* Check for a Populations Overlapping *)
+          (* Populations is mismatched/duplicated if it is a List of length > 1 and contains nonexclusive population grouping criteria *)
+          overlappingPopulationError = If[!MatchQ[populations, {Automatic}],
+            !exclusivePopulationsQ[populations],
+            False
           ];
 
           (* Resolve the pick coordinates option *)
-          {partiallyResolvedPopulations,resolvedPickCoordinates} = Switch[{populations,pickCoordinates,Length[Cases[populations,Except[CustomCoordinates]]]>0},
+          {partiallyResolvedPopulations, partiallyResolvedPickCoordinates} = Switch[{populations, pickCoordinates, !MatchQ[DeleteCases[populations, CustomCoordinates], {}]},
 
             (* If the options are aligned, leave them *)
             (* PickCoordinates being set and Populations->CustomCoordinates signals to not call AnalyzeColonies *)
             (* PickCoordinates -> Null and Populations -> anything else signals to call AnalyzeColonies *)
-            {{CustomCoordinates},{_List..},_},
-              {populations,pickCoordinates},
-            {{Automatic},{_List..},_},
-              {{CustomCoordinates},pickCoordinates},
-            {{Automatic},Automatic|Null,_},
-              {{Automatic},Null},
-
+            {{CustomCoordinates}, {_List..}, _},
+              {populations, pickCoordinates},
+            {{Automatic}, {_List..}, _},
+              {{CustomCoordinates}, pickCoordinates},
+            {{Automatic}, Automatic|Null, _},
+              {{Automatic}, Null},
             (* Mark if there is a mismatch *)
-            {{CustomCoordinates},Null|Automatic,_},
-              Module[{},
-                pickCoordinatesMissingError = True;
-                {populations,Null}
-              ],
-            {_,{_List..},True},
+            {{CustomCoordinates}, Null|Automatic, _},
+              pickCoordinatesMissingError = True;
+              {populations, Null},
+            {_, {_List..}, True},
               Module[{},
                 multiplePopulationMethodError = True;
-                {populations,Null}
+                {populations, Null}
               ],
-
             (* Catch all *)
-            {_,_,_},
-              {populations,Null}
+            {_, _, _},
+              {populations, Null}
           ];
 
           (* Return necessary values *)
           {
             pickCoordinatesMissingError,
             multiplePopulationMethodError,
-            populationsMismatchError,
-            PickCoordinates -> resolvedPickCoordinates,
+            overlappingPopulationError,
+            PickCoordinates -> partiallyResolvedPickCoordinates,
             partiallyResolvedPopulations
           }
         ]
@@ -2483,14 +2686,12 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     ];
 
     (* Re-insert the partially resolved Populations, and drop PickCoordinates as PickCoordinates is not resolved through AnalyzeColonies *)
-    partiallyResolvedAnalysisOptions = KeyDrop[Merge[{unresolvedAnalysisOptions,Populations->partiallyResolvedPopulations},Last],PickCoordinates];
+    partiallyResolvedAnalysisOptions = KeyDrop[Merge[{unresolvedAnalysisOptions, Populations -> partiallyResolvedPopulations}, Last], PickCoordinates];
 
     (* Throw the appropriate messages or create the appropriate tests for the possible PickCoordinate errors *)
-    pickCoordinatesMissingOptions = If[MemberQ[pickCoordinatesMissingErrors,True] && messages,
-      (
-        Message[Error::PickCoordinatesMissing,PickList[mySamples,pickCoordinatesMissingErrors]];
-        {Populations,PickCoordinates}
-      ),
+    pickCoordinatesMissingOptions = If[MemberQ[pickCoordinatesMissingErrors, True] && messages,
+      Message[Error::PickCoordinatesMissing, PickList[mySamples, pickCoordinatesMissingErrors]];
+      {Populations, PickCoordinates},
       {}
     ];
 
@@ -2498,33 +2699,33 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       (* We are gathering tests, create the appropriate tests *)
       Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
         (* Get the inputs that pass the test *)
-        passingInputs = PickList[mySamples,pickCoordinatesMissingErrors,False];
+        passingInputs = PickList[mySamples, pickCoordinatesMissingErrors,False];
 
         (* Get the non passing inputs *)
-        nonPassingInputs = Complement[mySamples,passingInputs];
+        nonPassingInputs = Complement[mySamples, passingInputs];
 
         (* Create a test for the passing inputs *)
         passingInputsTest=If[Length[passingInputs] > 0,
-          Test["If Populations -> CustomCoordinates, PickCoordinates are also specified for the inputs " <> ObjectToString[passingInputs, Cache->combinedCache] <> ":",True,True],
+          Test["If Populations -> CustomCoordinates, PickCoordinates are also specified for the inputs " <> ObjectToString[passingInputs, Cache -> combinedCache] <> ":", True, True],
           Nothing
         ];
 
         (* Create a test for the non passing inputs *)
         nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-          Test["If Populations -> CustomCoordinates, PickCoordinates are also specified for the inputs " <> ObjectToString[nonPassingInputs, Cache->combinedCache] <> ":",True,False],
+          Test["If Populations -> CustomCoordinates, PickCoordinates are also specified for the inputs " <> ObjectToString[nonPassingInputs, Cache -> combinedCache] <> ":", True, False],
           Nothing
         ];
 
         (* Return the created tests *)
-        {passingInputsTest,nonPassingInputsTest}
+        {passingInputsTest, nonPassingInputsTest}
       ],
       Nothing
     ];
 
-    multiplePopulationMethodOptions = If[MemberQ[multiplePopulationMethodErrors,True] && messages,
+    multiplePopulationMethodOptions = If[MemberQ[multiplePopulationMethodErrors ,True] && messages,
       (
-        Message[Error::MultiplePopulationMethods,PickList[mySamples,multiplePopulationMethodErrors]];
-        {Populations,PickCoordinates}
+        Message[Error::MultiplePopulationMethods, PickList[mySamples, multiplePopulationMethodErrors]];
+        {Populations, PickCoordinates}
       ),
       {}
     ];
@@ -2533,60 +2734,60 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       (* We are gathering tests, create the appropriate tests *)
       Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
         (* Get the inputs that pass the test *)
-        passingInputs = PickList[mySamples,pickCoordinatesMissingErrors,False];
+        passingInputs = PickList[mySamples, multiplePopulationMethodErrors, False];
 
         (* Get the non passing inputs *)
-        nonPassingInputs = Complement[mySamples,passingInputs];
+        nonPassingInputs = Complement[mySamples, passingInputs];
 
         (* Create a test for the passing inputs *)
-        passingInputsTest=If[Length[passingInputs] > 0,
-          Test["Either a Population Primitive or CustomCoordinates, not both, are specified for the inputs " <> ObjectToString[passingInputs, Cache->combinedCache] <> ":",True,True],
+        passingInputsTest = If[Length[passingInputs] > 0,
+          Test["Either a Population Primitive or CustomCoordinates, not both, are specified for the inputs " <> ObjectToString[passingInputs, Cache -> combinedCache] <> ":", True, True],
           Nothing
         ];
 
         (* Create a test for the non passing inputs *)
         nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-          Test["Either a Population Primitive or CustomCoordinates, not both, are specified for the inputs " <> ObjectToString[nonPassingInputs, Cache->combinedCache] <> ":",True,False],
+          Test["Either a Population Primitive or CustomCoordinates, not both, are specified for the inputs " <> ObjectToString[nonPassingInputs, Cache -> combinedCache] <> ":", True, False],
           Nothing
         ];
 
         (* Return the created tests *)
-        {passingInputsTest,nonPassingInputsTest}
+        {passingInputsTest, nonPassingInputsTest}
       ],
       Nothing
     ];
 
-    populationMismatchOptions = If[MemberQ[populationsMismatchErrors,True] && messages,
-      (
-        Message[Error::PopulationMismatch,PickList[mySamples,populationsMismatchErrors]];
-        {Populations}
-      ),
+    overlappingPopulationsOptions = If[MemberQ[overlappingPopulationErrors, True] && messages,
+      Message[Error::OverlappingPopulations, 
+        PickList[mySamples, overlappingPopulationErrors]
+      ];
+      {Populations},
       {}
     ];
 
-    populationsMismatchTests = If[gatherTests,
+    overlappingPopulationsTests = If[gatherTests,
       (* We are gathering tests, create the appropriate tests *)
       Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
         (* Get the inputs that pass the test *)
-        passingInputs = PickList[mySamples,populationsMismatchErrors,False];
+        passingInputs = PickList[mySamples, overlappingPopulationErrors, False];
 
         (* Get the non passing inputs *)
-        nonPassingInputs = Complement[mySamples,passingInputs];
+        nonPassingInputs = Complement[mySamples, passingInputs];
 
         (* Create a test for the passing inputs *)
-        passingInputsTest=If[Length[passingInputs] > 0,
-          Test["The inputs" <> ObjectToString[passingInputs, Cache->combinedCache] <> "have a mismatched Populations list:",True,True],
+        passingInputsTest = If[Length[passingInputs] > 0,
+          Test["The inputs" <> ObjectToString[passingInputs, Cache -> combinedCache] <> "have mutually exclusive Populations:", True, True],
           Nothing
         ];
 
         (* Create a test for the non passing inputs *)
         nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-          Test["The inputs" <> ObjectToString[passingInputs, Cache->combinedCache] <> "have a mismatched Populations list:",True,False],
+          Test["The inputs" <> ObjectToString[passingInputs, Cache -> combinedCache] <> "have non mutually exclusive Populations:", True, False],
           Nothing
         ];
 
         (* Return the created tests *)
-        {passingInputsTest,nonPassingInputsTest}
+        {passingInputsTest, nonPassingInputsTest}
       ],
       Nothing
     ];
@@ -2594,211 +2795,162 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     (* Figure out if the options for each sample should be resolved through AnalyzeColonies. *)
     (* A samples options should be resolved through AnalyzeColonies if Populations -> {Automatic} | {PopulationPrimitive|PopulationSymbol..} *)
     resolveThroughAnalyzeColoniesBools = MapThread[
-      Function[{populationsOption,populationsMismatchError},
+      Function[{populationsOption, overlappingPopulationError},
         Not[
           Or[
-            MatchQ[populationsOption,{CustomCoordinates}],
-            populationsMismatchError
+            MatchQ[populationsOption, {CustomCoordinates}],
+            overlappingPopulationError
           ]
         ]
       ],
-      {partiallyResolvedPopulations,populationsMismatchErrors}
+      {partiallyResolvedPopulations, overlappingPopulationErrors}
     ];
 
     (* Get the partially resolved options in a mapThreadFriendly state *)
-    mapThreadFriendlyPartiallyResolvedOptions=OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies,partiallyResolvedAnalysisOptions,IndexMatchingOptionPreferred -> {Populations}];
-
-    (* Get the full option definition *)
-    optionDefinition = OptionDefinition[ExperimentPickColonies];
-
-    (* Check to see if there are any analysis option mismatches *)
-    incorrectlySetOptions = Flatten[MapThread[
-      Function[{boolean,analysisOptions,sample},
-        (If[!TrueQ[boolean]&&!MatchQ[Last[#],First[ReleaseHold[Lookup[Cases[optionDefinition,KeyValuePattern["OptionSymbol"->First[#]]],"Default"]]]],
-          {sample,First[#]},
-          Nothing
-        ])&/@Normal[analysisOptions,Association]
-      ],
-      (* Drop Populations because it is already partially resolved *)
-      {resolveThroughAnalyzeColoniesBools,KeyDrop[mapThreadFriendlyPartiallyResolvedOptions,Populations],mySamples}
-    ],1];
-
-    (* If there are incorrectly set options, throw a message *)
-    analysisMismatchOptions = If[Length[incorrectlySetOptions] > 0 && messages,
-      (
-        Message[Error::AnalysisOptionsMismatch,ObjectToString[incorrectlySetOptions[[All,1]]],ObjectToString[DeleteDuplicates[incorrectlySetOptions[[All,2]]]]];
-        {Populations}
-      ),
-      {incorrectlySetOptions[[All,2]]}
-    ];
-
-
-    analysisMismatchTests = If[gatherTests,
-      (* We are gathering tests, create the appropriate tests *)
-      Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
-
-        (* Get the non passing inputs *)
-        nonPassingInputs = incorrectlySetOptions[[All,1]];
-
-        (* Get the inputs that pass the test *)
-        passingInputs = Complement[mySamples,nonPassingInputs];
-
-        (* Create a test for the passing inputs *)
-        passingInputsTest=If[Length[passingInputs] > 0,
-          Test["The inputs" <> ObjectToString[passingInputs, Cache->combinedCache] <> "do not have analysis options set if Populations->CustomCoordinates:",True,True],
-          Nothing
-        ];
-
-        (* Create a test for the non passing inputs *)
-        nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-          Test["The inputs" <> ObjectToString[passingInputs, Cache->combinedCache] <> "do not have analysis options set if Populations->CustomCoordinates:",True,False],
-          Nothing
-        ];
-
-        (* Return the created tests *)
-        {passingInputsTest,nonPassingInputsTest}
-      ],
-      Nothing
-    ];
+    mapThreadFriendlyPartiallyResolvedOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies, partiallyResolvedAnalysisOptions, IndexMatchingOptionPreferred -> {Populations}];
 
     (* Filter out the samples we are not calling AnalyzeColonies on *)
-    analyzeColonySamples = PickList[mySamples,resolveThroughAnalyzeColoniesBools];
+    analyzeColonySamples = PickList[mySamples, resolveThroughAnalyzeColoniesBools];
     
     (* Only use the select option for the samples we are calling AnalyzeColonies on *)
-    analyzeColonyOptions = PickList[#,resolveThroughAnalyzeColoniesBools]&/@partiallyResolvedAnalysisOptions;
+    analyzeColonyOptions = PickList[#, resolveThroughAnalyzeColoniesBools]& /@ partiallyResolvedAnalysisOptions;
 
     (* Create a temporary Object[Data,Appearance,Colonies] packets for each input sample to pass to AnalyzeColonies *)
-    dataAppearanceColoniesPackets = Map[Function[{sample},
-      Module[{composition,cellModel},
-        (* Get the composition of the sample *)
-        composition = fastAssocLookup[combinedFastAssoc,sample,Composition];
-
-        (* Get the first Model[Cell] in the composition of the sample (if one exists) *)
-        cellModel = FirstCase[composition[[All,2]],ObjectP[Model[Cell]],Null];
-
-        (* Return the data packet *)
-        <|Object -> CreateID[Object[Data,Appearance,Colonies]], CellTypes -> {Link[cellModel]}|>
-      ]
-    ],
+    dataAppearanceColoniesPackets = Map[
+      Function[{sample},
+        Module[{cellModel},
+          (* Get the main Model[Cell] in the composition of the sample (if one exists) *)
+          cellModel = selectMainCellFromSample[sample, Cache -> combinedCache, Simulation -> currentSimulation];
+          (* Return the data packet *)
+          (* Note: here we are using the main cell identity model of the sample, should be able to specify/create cell identity model instead *)
+          <|Object -> CreateID[Object[Data, Appearance, Colonies]], CellTypes -> Link[cellModel]|>
+        ]
+      ],
       analyzeColonySamples
     ];
 
-    (* Create a variable to keep track if we need to include Populations in InvalidOptions *)
-    invalidAnalysisOptions = False;
+    (*Initialize the invalid-option-tracking variable*)
+    invalidAnalysisOptions = {};
 
     (* -- Resolve the options -- *)
     (* Use AnalyzeColonies to get the resolved analysis options *)
     {
       resolvedAnalysisOptions,
       resolvedAnalysisTests
-    }=Which[
+    } = Which[
       (* If we are not doing any analysis option resolving, skip calling analyze colonies (Automatics go to Null) *)
       MatchQ[Length[dataAppearanceColoniesPackets], 0],
-      {
-        {},
-        {}
-      },
-      (* If we are gathering tests, call AnalyzeCololnies *)
+        {
+          {},
+          {}
+        },
+      (* If we are gathering tests, call AnalyzeColonies *)
       gatherTests,
-      AnalyzeColonies[dataAppearanceColoniesPackets, Sequence@@Normal[analyzeColonyOptions,Association], ImageRequirement -> False, Output->{Options,Tests}],
-      
+        AnalyzeColonies[dataAppearanceColoniesPackets, Sequence@@Normal[analyzeColonyOptions, Association], AnalysisType -> Pick, ImageRequirement -> False, Output -> {Options, Tests}],
       (* If we require messages, call AnalyzeColonies through ModifyFunctionMessages *)
       True,
-      {
-        Module[{invalidOptionsBool,resolvedOptions},
-
-          (* Run the analysis function to get the resolved options *)
-          {resolvedOptions,invalidOptionsBool} = ModifyFunctionMessages[
-            AnalyzeColonies,
-            {dataAppearanceColoniesPackets},
-            "",
-            {},
-            {Sequence@@Normal[analyzeColonyOptions],ImageRequirement -> False, Output -> Options},
-            ExperimentFunction -> False,
-            Output -> {Result, Boolean}
-          ];
-
-          (* Set the invalid analysis option boolean if appropriate *)
-          If[invalidOptionsBool,
-            invalidAnalysisOptions = True
-          ];
-
-          (* Return the options *)
-          resolvedOptions
-        ],
-        {}
-      }
+        {
+          Module[{invalidOptionsBool, resolvedPopulationOptions},
+  
+            (* Run the analysis function to get the resolved options *)
+            {resolvedPopulationOptions, invalidOptionsBool, invalidAnalysisOptions} = ModifyFunctionMessages[
+              AnalyzeColonies,
+              {dataAppearanceColoniesPackets},
+              "",
+              {},
+              {Sequence@@Normal[analyzeColonyOptions], AnalysisType -> Pick, ImageRequirement -> False, Output -> Options},
+              ExperimentFunction -> False,
+              Output -> {Result, Boolean, InvalidOptions}
+            ];
+  
+            (* Return the options *)
+            resolvedPopulationOptions
+          ],
+          {}
+        }
     ];
 
     (* Remove the options Batch, IncludedColonies, ManualPickTargets, and AnalysisType from the list of returned fields *)
-    optionsToRemove = {Batch, IncludedColonies, ManualPickTargets, AnalysisType};
-    resolvedAnalysisOptionsCleaned = resolvedAnalysisOptions/.{Verbatim[Rule][Alternatives@@optionsToRemove,_]:> Nothing,$Aborted -> Normal[analyzeColonyOptions,Association]};
+    optionsToRemove = {Batch, IncludedColonies, ManualPickTargets, AnalysisType, Margin};
+    resolvedAnalysisOptionsCleaned = resolvedAnalysisOptions/.{Verbatim[Rule][Alternatives@@optionsToRemove, _]:> Nothing, $Aborted -> Normal[analyzeColonyOptions, Association]};
 
-    (* Collapse the resolved analysis options again. The Sci-Comp Framework has no concept of NestedIndexMatching so the Populations option does not get *)
-    (* fully collapsed. *)
-    fullyCollapsedResolvedAnalysisOptions = Quiet[CollapseIndexMatchedOptions[ExperimentPickColonies, resolvedAnalysisOptionsCleaned],Warning::CannotCollapse];
+    (* Collapse the resolved analysis options again. The Sci-Comp Framework has no concept of NestedIndexMatching so the Populations option does not get fully collapsed. *)
+    fullyCollapsedResolvedAnalysisOptions = Quiet[CollapseIndexMatchedOptions[ExperimentPickColonies, resolvedAnalysisOptionsCleaned], Warning::CannotCollapse];
 
     (* There are still some cases where Populations does not get collapsed properly (for a single input sample) *)
     (* Use ValidInputLengthsQ to check if the options are of an ok length, if not, we know populations is wrong and can add an extra list around it *)
     (* We also need to add the extra list, if Populations is a flat list that is the same length as mySamples *)
     correctedLengthCollapsedOptions = Which[
       MatchQ[analyzeColonySamples, {}],
-      {},
+        {},
       Or[
-      !ValidInputLengthsQ[ExperimentPickColonies,{ToList[analyzeColonySamples]}, fullyCollapsedResolvedAnalysisOptions,Messages->False],
-      And[
-        MatchQ[Length[Lookup[fullyCollapsedResolvedAnalysisOptions,Populations]],Length[mySamples]],
-        MatchQ[Lookup[fullyCollapsedResolvedAnalysisOptions,Populations],{ReleaseHold[Lookup[FirstCase[OptionDefinition[ExperimentPickColonies],KeyValuePattern["OptionName"->"Populations"]],"SingletonPattern"]]..}]
-      ]
-    ],
-      Module[{resolvedPopulations,resolvedAnalysisOptionsNoPopulations},
-        (* Get the populations option *)
-        resolvedPopulations = Lookup[fullyCollapsedResolvedAnalysisOptions,Populations];
-
-        (* Drop the population option *)
-        resolvedAnalysisOptionsNoPopulations = DeleteCases[fullyCollapsedResolvedAnalysisOptions, Populations -> _];
-
-        (* Add the corrected populations back in  *)
-        Append[resolvedAnalysisOptionsNoPopulations, Populations -> ConstantArray[resolvedPopulations,Length[mySamples]]]
+        !ValidInputLengthsQ[ExperimentPickColonies, {ToList[analyzeColonySamples]}, fullyCollapsedResolvedAnalysisOptions, Messages -> False],
+        And[
+          MatchQ[Length[Lookup[fullyCollapsedResolvedAnalysisOptions, Populations]], Length[mySamples]],
+          MatchQ[Lookup[fullyCollapsedResolvedAnalysisOptions, Populations], {ReleaseHold[Lookup[FirstCase[OptionDefinition[ExperimentPickColonies], KeyValuePattern["OptionName"->"Populations"]], "SingletonPattern"]]..}]
+        ]
       ],
+        Module[{resolvedPopulations,resolvedAnalysisOptionsNoPopulations},
+          (* Get the populations option *)
+          resolvedPopulations = Lookup[fullyCollapsedResolvedAnalysisOptions, Populations];
+  
+          (* Drop the population option *)
+          resolvedAnalysisOptionsNoPopulations = DeleteCases[fullyCollapsedResolvedAnalysisOptions, Populations -> _];
+  
+          (* Add the corrected populations back in  *)
+          Append[resolvedAnalysisOptionsNoPopulations, Populations -> ConstantArray[resolvedPopulations, Length[mySamples]]]
+        ],
       True,
-      fullyCollapsedResolvedAnalysisOptions
+        fullyCollapsedResolvedAnalysisOptions
     ];
 
     (* Re-expand the analysis options so we can thread them back together and continue working with them *)
-    expandedResolvedAnalysisOptions = Quiet[Last[ExpandIndexMatchedInputs[ExperimentPickColonies, {ToList[analyzeColonySamples]}, correctedLengthCollapsedOptions,SingletonClassificationPreferred->Populations]],Warning::UnableToExpandInputs];
+    expandedResolvedAnalysisOptions = If[MatchQ[correctedLengthCollapsedOptions,{}],
+      {},
+      Quiet[
+        Last[
+          ExpandIndexMatchedInputs[
+            ExperimentPickColonies,
+            {ToList[analyzeColonySamples]},
+            correctedLengthCollapsedOptions,
+            SingletonClassificationPreferred -> Populations]
+        ],
+        Warning::UnableToExpandInputs
+      ]
+    ];
 
     (* -- Thread the options back to the correct format -- *)
     (* Get the positions of the False booleans in masterSwitchBooleans. *)
-    falseBooleanPositions=Position[resolveThroughAnalyzeColoniesBools,False];
+    falseBooleanPositions = Position[resolveThroughAnalyzeColoniesBools, False];
 
     (* Get the options that were not used in AnalyzeColonies *)
-    nonAnalyzeColonyOptions = PickList[#,resolveThroughAnalyzeColoniesBools,False]&/@partiallyResolvedAnalysisOptions;
+    nonAnalyzeColonyOptions = PickList[#, resolveThroughAnalyzeColoniesBools, False]& /@ partiallyResolvedAnalysisOptions;
 
     (* Make sure that we turn all of the population symbols into blobs *)
     (* Default to 10 so we don't crash later on *)
-    nonAnalyzeColonyPopulationsWithBlobs = Map[Function[{populationList},
-      Map[Function[{populationValue},
-        Switch[populationValue,
-          Fluorescence, Fluorescence[NumberOfColonies -> 10],
-          Absorbance, Absorbance[NumberOfColonies -> 10],
-          Diameter, Diameter[NumberOfColonies -> 10],
-          Circularity, Circularity[NumberOfColonies -> 10],
-          Regularity, Regularity[NumberOfColonies -> 10],
-          Isolation, Isolation[NumberOfColonies -> 10],
-          AllColonies, AllColonies[NumberOfColonies -> 10],
-          MultiFeatured, MultiFeatured[NumberOfColonies -> 10],
-          _, populationValue
+    nonAnalyzeColonyPopulationsWithBlobs = Map[
+      Function[{populationList},
+        Map[Function[{populationValue},
+          Switch[populationValue,
+            Fluorescence, Fluorescence[NumberOfColonies -> 10],
+            BlueWhiteScreen, BlueWhiteScreen[NumberOfColonies -> 10],
+            Diameter, Diameter[NumberOfColonies -> 10],
+            Circularity, Circularity[NumberOfColonies -> 10],
+            Regularity, Regularity[NumberOfColonies -> 10],
+            Isolation, Isolation[NumberOfColonies -> 10],
+            AllColonies, AllColonies[NumberOfColonies -> 10],
+            MultiFeatured, MultiFeatured[NumberOfColonies -> 10],
+            _, populationValue
+          ]
+        ],
+          populationList
         ]
       ],
-        populationList
-      ]
-    ],
-      Lookup[nonAnalyzeColonyOptions,Populations,{{}}]
+      Lookup[nonAnalyzeColonyOptions, Populations, {{}}]
     ];
 
     (* Add the sanitized populations back in to the non analyzecolony options *)
-    sanitizedNonAnalyzeColonyOptions = If[KeyExistsQ[nonAnalyzeColonyOptions,Populations],
+    sanitizedNonAnalyzeColonyOptions = If[KeyExistsQ[nonAnalyzeColonyOptions, Populations],
       Module[{},
         nonAnalyzeColonyOptions[Populations] = nonAnalyzeColonyPopulationsWithBlobs;
         nonAnalyzeColonyOptions
@@ -2813,40 +2965,40 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       Function[{falseBoolOriginalPosition, positionInSeparatedList},
         falseBoolOriginalPosition -> Association@Map[
           First[#] -> Last[#][[positionInSeparatedList]][[1]]&,
-          Normal[nonAnalyzeColonyOptions,Association]
+          Normal[nonAnalyzeColonyOptions, Association]
         ]
       ],
       falseBooleanPositions
     ];
 
     (* If a sample is not being resolved, insert a Null for the option. *)
-    threadedOptions=If[!MatchQ[expandedResolvedAnalysisOptions,_List] || MatchQ[expandedResolvedAnalysisOptions,{}],
-      Normal[sanitizedNonAnalyzeColonyOptions,Association],
+    threadedOptions = If[!MatchQ[expandedResolvedAnalysisOptions, _List] || MatchQ[expandedResolvedAnalysisOptions, {}],
+      Normal[sanitizedNonAnalyzeColonyOptions, Association],
       Map[Function[{option},
-        Module[{optionSymbol,optionStartingList,optionDefault},
+        Module[{optionSymbol, optionStartingList, optionDefault},
 
           (* Expand the option into its parts *)
           optionSymbol = First[option];
           optionStartingList = Last[option];
 
           (* Get the default value for the option *)
-          optionDefault=First[Lookup[Cases[OptionDefinition[ExperimentPickColonies],KeyValuePattern["OptionSymbol"->optionSymbol]],"Default"]];
+          optionDefault = First[Lookup[Cases[OptionDefinition[ExperimentPickColonies], KeyValuePattern["OptionSymbol" -> optionSymbol]], "Default"]];
 
           (* Insert Nulls where ever samples are not being resolved.  *)
-          optionSymbol->Fold[Function[{currentList,insertRule},
+          optionSymbol -> Fold[Function[{currentList, insertRule},
 
-            Module[{positionToInsert,potentialValueToInsert},
+            Module[{positionToInsert, potentialValueToInsert},
 
               (* The position to insert is the first part of the insertRule *)
               positionToInsert = First[insertRule];
 
               (* The potential values to insert is the second part of the rule (Association mapping option to value at this index) *)
-              potentialValueToInsert = Lookup[Last[insertRule],optionSymbol];
+              potentialValueToInsert = Lookup[Last[insertRule], optionSymbol];
 
               (* Insert a value into the current list at 'positionToInsert'. *)
               Insert[currentList,
                 (* If the value of the current option matches the default: *)
-                If[MatchQ[potentialValueToInsert,ReleaseHold[optionDefault]],
+                If[MatchQ[potentialValueToInsert, ReleaseHold[optionDefault]],
                   (* replace it with Null instead *)
                   Null,
                   (* If it is a user specified input, leave it as is *)
@@ -2870,8 +3022,8 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
     (* Return the mismatch errors and the resolved analysis options *)
     {
-      Join[pickCoordinatesMissingOptions,multiplePopulationMethodOptions,populationMismatchOptions,analysisMismatchOptions,If[invalidAnalysisOptions,{Populations},{}]],
-      Join[pickCoordinatesMissingTests,multiplePopulationMethodTests,populationsMismatchTests,analysisMismatchTests,resolvedAnalysisTests],
+      Join[pickCoordinatesMissingOptions, multiplePopulationMethodOptions, overlappingPopulationsOptions, invalidAnalysisOptions],
+      Join[pickCoordinatesMissingTests, multiplePopulationMethodTests, overlappingPopulationsTests, resolvedAnalysisTests],
       threadedOptions,
       resolvedPickCoordinates
     }
@@ -2882,1263 +3034,1126 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
   (*-- RESOLVE MAPTHREAD EXPERIMENT OPTIONS --*)
   (* Convert our options into a MapThread friendly version. *)
-  mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies,partiallyResolvedPickColoniesOptionsWithAnalysis,AmbiguousNestedResolution->IndexMatchingOptionPreferred,SingletonOptionPreferred->{PickCoordinates,Populations}];
+  mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPickColonies, partiallyResolvedPickColoniesOptionsWithAnalysis, AmbiguousNestedResolution -> IndexMatchingOptionPreferred, SingletonOptionPreferred -> {PickCoordinates, Populations}];
 
+  (* Lookup table for each imaging strategy what imaging channel it is corresponding to *)
+  strategiesMappingToChannels = {
+    BlueWhiteScreen -> 400 Nanometer,
+    VioletFluorescence -> {377 Nanometer, 447 Nanometer},
+    GreenFluorescence -> {457 Nanometer, 536 Nanometer},
+    OrangeFluorescence -> {531 Nanometer, 593 Nanometer},
+    RedFluorescence -> {531 Nanometer, 624 Nanometer},
+    DarkRedFluorescence -> {628 Nanometer, 692 Nanometer}
+  };
+  
   (* MapThread over each of our samples *)
   {
     (* Error tracking variables *)
-    imagingOptionMismatchErrors,
-    missingImagingChannelsErrors,
-    duplicateImagingChannelsWarnings,
-    imagingOptionSameLengthErrors,
-    pickCoordinatesMismatchErrors,
-    destinationMediaStateErrors,
-    destinationMediaTypeMismatchErrors,
-    invalidDestinationMediaContainerErrors,
-    tooManyDestinationMediaContainersErrors,
-    tooManyPickCoordinatesErrors,
-    destinationFillDirectionMismatchErrors,
-    missingDestinationCoordinatesErrors,
-    tooManyDestinationCoordinatesWarnings,
-    destinationMixMismatchErrors,
-    invalidMixOptionErrors,
-    pickingToolIncompatibleWithDestinationMediaContainerErrors,
-    noAvailablePickingToolErrors,
-    notPreferredColonyHandlerHeadWarnings,
-    headDiameterMismatchErrors,
-    headLengthMismatchErrors,
-    numberOfHeadsMismatchErrors,
-    colonyHandlerHeadCassetteApplicationMismatchErrors,
-    invalidColonyPickingDepthErrors,
-
-    (* Error tracking extra info *)
-    missingImagingChannels,
-
+    missingImagingStrategiesInfos,(*1*)
+    imagingOptionSameLengthErrors,(*3*)
+    pickCoordinatesMismatchErrors,(*4*)
+    destinationMediaStateErrors,(*5*)
+    destinationMediaTypeMismatchErrors,(*6*)
+    invalidDestinationMediaContainerErrors,(*7*)
+    tooManyDestinationMediaContainersErrors,(*8*)
+    tooManyPickCoordinatesErrors,(*9*)
+    destinationFillDirectionMismatchErrors,(*10*)
+    missingDestinationCoordinatesErrors,(*11*)
+    tooManyDestinationCoordinatesWarnings,(*12*)
+    destinationMixMismatchErrors,(*13*)
+    invalidMixOptionErrors,(*14*)
+    pickingToolIncompatibleWithDestinationMediaContainerErrors,(*15*)
+    noAvailablePickingToolErrors,(*16*)
+    notPreferredColonyHandlerHeadWarnings,(*17*)
+    headDiameterMismatchErrors,(*18*)
+    headLengthMismatchErrors,(*19*)
+    numberOfHeadsMismatchErrors,(*20*)
+    colonyHandlerHeadCassetteApplicationMismatchErrors,(*21*)
+    invalidColonyPickingDepthErrors,(*22*)
     (* Imaging *)
-    resolvedImagingChannels,
-    resolvedExposureTimes,
-
+    resolvedImagingChannels,(*23*)
+    resolvedImagingStrategies,(*24*)
+    resolvedExposureTimes,(*25*)
     (* Picking *)
-    resolvedColonyPickingTools,
-    resolvedHeadDiameters,
-    resolvedHeadLengths,
-    resolvedNumberOfHeads,
-    resolvedColonyHandlerHeadCassetteApplications,
-    resolvedColonyPickingDepths,
-
+    resolvedColonyPickingTools,(*26*)
+    resolvedHeadDiameters,(*27*)
+    resolvedHeadLengths,(*28*)
+    resolvedNumberOfHeads,(*29*)
+    resolvedColonyHandlerHeadCassetteApplications,(*30*)
+    resolvedColonyPickingDepths,(*31*)
     (* Destination *)
-    resolvedDestinationMediaTypes,
-    resolvedDestinationMedia,
-    resolvedDestinationMediaContainers,
-    resolvedMaxDestinationNumberOfColumns,
-    resolvedMaxDestinationNumberOfRows,
-    resolvedDestinationCoordinates,
-    resolvedMediaVolumes,
-    resolvedDestinationMixes,
-    resolvedDestinationNumberOfMixes
-
-  }=Transpose[MapThread[Function[{mySample,myMapThreadOptions},
-    Module[
-      {
-        (* -- ERROR TRACKING VARIABLES -- *)
-        imagingOptionMismatchError,missingImagingChannelsError,duplicateImagingChannelsWarning,imagingOptionSameLengthError,
-        pickCoordinatesMismatchError,destinationMediaStateError,destinationMediaTypeMismatchError,
-        invalidDestinationMediaContainerError,tooManyDestinationMediaContainersError,tooManyPickCoordinatesError,mediaVolumeMismatchError,destinationFillDirectionMismatchError,
-        missingDestinationCoordinatesError,tooManyDestinationCoordinatesWarning,destinationMixMismatchError,invalidMixOptionError,
-        pickingToolIncompatibleWithDestinationMediaContainerError,noAvailablePickingToolError,notPreferredColonyHandlerHeadWarning,
-        headDiameterMismatchError,headLengthMismatchError,numberOfHeadsMismatchError,colonyHandlerHeadCassetteApplicationMismatchError,
-        invalidColonyPickingDepthError,
-
-        (* -- ERROR TRACKING MORE INFO *)
-        missingImagingChannels,
-
-        (* -- UNRESOLVED OPTIONS -- *)
-        (* Analysis *)
-        resolvedPopulations,
-
-        (* Imaging *)
-        specifiedImagingChannels, specifiedExposureTimes,
-
-        (* Picking *)
-        specifiedColonyPickingTool, specifiedHeadDiameter, specifiedHeadLength, specifiedNumberOfHeads,
-        specifiedColonyHandlerHeadCassetteApplication, specifiedColonyPickingDepth, resolvedPickCoordinates,
-
-        (* Destination *)
-        specifiedDestinationMediaType, specifiedDestinationMedia, specifiedDestinationMediaContainer,
-        specifiedMaxDestinationNumberOfColumns, specifiedMaxDestinationNumberOfRows, specifiedDestinationCoordinates,
-        specifiedMediaVolume, specifiedDestinationMix, specifiedDestinationNumberOfMixes,
-
-        (* -- RESOLVED OPTIONS -- *)
-        (* Imaging *)
-        resolvedImagingChannels,resolvedExposureTimes,
-
-        (* Picking *)
-        resolvedColonyPickingTool,resolvedHeadDiameter,resolvedHeadLength,resolvedNumberOfHeads,
-        resolvedColonyHandlerHeadCassetteApplication,resolvedColonyPickingDepth,
-
-        (* Destination *)
-        resolvedDestinationMediaType,resolvedDestinationMedia,resolvedDestinationMediaContainer,totalNumberUniqueDestinationMediaContainers,
-        resolvedMaxDestinationNumberOfColumns,resolvedMaxDestinationNumberOfRows,resolvedDestinationCoordinates,
-        resolvedMediaVolume,resolvedDestinationMix,resolvedDestinationNumberOfMixes
-      },
-
-      (* Setup our error tracking variables *)
-      {
-        imagingOptionMismatchError,
-        missingImagingChannelsError,
-        duplicateImagingChannelsWarning,
-        imagingOptionSameLengthError,
-        pickCoordinatesMismatchError,
-        destinationMediaStateError,
-        destinationMediaTypeMismatchError,
-        invalidDestinationMediaContainerError,
-        tooManyDestinationMediaContainersError,
-        tooManyPickCoordinatesError,
-        mediaVolumeMismatchError,
-        destinationFillDirectionMismatchError,
-        missingDestinationCoordinatesError,
-        tooManyDestinationCoordinatesWarning,
-        destinationMixMismatchError,
-        invalidMixOptionError,
-        pickingToolIncompatibleWithDestinationMediaContainerError,
-        noAvailablePickingToolError,
-        notPreferredColonyHandlerHeadWarning,
-        headDiameterMismatchError,
-        headLengthMismatchError,
-        numberOfHeadsMismatchError,
-        colonyHandlerHeadCassetteApplicationMismatchError,
-        invalidColonyPickingDepthError
-      }=ConstantArray[False,24];
-
-      (* Look up the option values *)
-      {
-        (* Analysis *)
-        resolvedPopulations,
-
-        (* Imaging *)
-        specifiedImagingChannels,
-        specifiedExposureTimes,
-
-        (* Picking *)
-        specifiedColonyPickingTool,
-        specifiedHeadDiameter,
-        specifiedHeadLength,
-        specifiedNumberOfHeads,
-        specifiedColonyHandlerHeadCassetteApplication,
-        specifiedColonyPickingDepth,
-        resolvedPickCoordinates,
-
-        (* Destination *)
-        specifiedDestinationMediaType,
-        specifiedDestinationMedia,
-        specifiedDestinationMediaContainer,
-        specifiedMaxDestinationNumberOfColumns,
-        specifiedMaxDestinationNumberOfRows,
-        specifiedDestinationCoordinates,
-        specifiedMediaVolume,
-        specifiedDestinationMix,
-        specifiedDestinationNumberOfMixes
-      }=Lookup[
-        myMapThreadOptions,
+    resolvedDestinationMediaTypes,(*32*)
+    resolvedDestinationMedia,(*33*)
+    resolvedDestinationMediaContainers,(*34*)
+    resolvedMaxDestinationNumberOfColumns,(*35*)
+    resolvedMaxDestinationNumberOfRows,(*36*)
+    resolvedDestinationCoordinates,(*37*)
+    resolvedMediaVolumes,(*38*)
+    resolvedDestinationMixes,(*39*)
+    resolvedDestinationNumberOfMixes,(*40*)
+    resolvedSamplesOutStorageCondition(*41*)
+  } = Transpose@MapThread[
+    Function[{mySample, myMapThreadOptions},
+      Module[
+        {
+          (* -- ERROR TRACKING VARIABLES -- *)
+          imagingOptionSameLengthError, missingImagingStrategyInfo, pickCoordinatesMismatchError, destinationMediaStateError,
+          destinationMediaTypeMismatchError, invalidDestinationMediaContainerError, tooManyDestinationMediaContainersError,
+          tooManyPickCoordinatesError, mediaVolumeMismatchError, destinationFillDirectionMismatchError, missingDestinationCoordinatesError,
+          tooManyDestinationCoordinatesWarning, destinationMixMismatchError, invalidMixOptionError,
+          pickingToolIncompatibleWithDestinationMediaContainerError, noAvailablePickingToolError, notPreferredColonyHandlerHeadWarning,
+          headDiameterMismatchError, headLengthMismatchError, numberOfHeadsMismatchError, colonyHandlerHeadCassetteApplicationMismatchError,
+          invalidColonyPickingDepthError,
+          (* -- UNRESOLVED OPTIONS -- *)
+          (* Analysis *)
+          resolvedPopulations,
+          (* Imaging *)
+          specifiedImagingStrategies, specifiedExposureTimes,
+          (* Picking *)
+          specifiedColonyPickingTool, specifiedHeadDiameter, specifiedHeadLength, specifiedNumberOfHeads,
+          specifiedColonyHandlerHeadCassetteApplication, specifiedColonyPickingDepth, resolvedPickCoordinates,
+          (* Destination *)
+          specifiedDestinationMediaType, specifiedDestinationMedia, specifiedDestinationMediaContainer,
+          specifiedMaxDestinationNumberOfColumns, specifiedMaxDestinationNumberOfRows, specifiedDestinationCoordinates,
+          specifiedMediaVolume, specifiedDestinationMix, specifiedDestinationNumberOfMixes, samplesOutStorageConditionsPossiblyCollapsed,
+          (* -- RESOLVED OPTIONS -- *)
+          (* Imaging *)
+          updatedImagingChannels, updatedImagingStrategies, updatedExposureTimes,
+          (* Picking *)
+          updatedColonyPickingTool, updatedHeadDiameter, updatedHeadLength, updatedNumberOfHeads,
+          updatedColonyHandlerHeadCassetteApplication, updatedColonyPickingDepth,
+          (* Destination *)
+          updatedDestinationMediaType, updatedDestinationMedia, updatedDestinationMediaContainer, totalNumberUniqueDestinationMediaContainers,
+          updatedMaxDestinationNumberOfColumns, updatedMaxDestinationNumberOfRows, updatedDestinationCoordinates,
+          updatedMediaVolume, updatedDestinationMix, updatedDestinationNumberOfMixes, updatedSamplesOutStorageCondition
+        },
+  
+        (* Setup our error tracking variables *)
+        {
+          pickCoordinatesMismatchError,
+          destinationMediaStateError,
+          destinationMediaTypeMismatchError,
+          invalidDestinationMediaContainerError,
+          tooManyDestinationMediaContainersError,
+          tooManyPickCoordinatesError,
+          mediaVolumeMismatchError,
+          destinationFillDirectionMismatchError,
+          missingDestinationCoordinatesError,
+          tooManyDestinationCoordinatesWarning,
+          destinationMixMismatchError,
+          invalidMixOptionError,
+          pickingToolIncompatibleWithDestinationMediaContainerError,
+          noAvailablePickingToolError,
+          notPreferredColonyHandlerHeadWarning,
+          headDiameterMismatchError,
+          headLengthMismatchError,
+          numberOfHeadsMismatchError,
+          colonyHandlerHeadCassetteApplicationMismatchError,
+          invalidColonyPickingDepthError
+        } = ConstantArray[False, 20];
+  
+        (* Look up the option values *)
         {
           (* Analysis *)
-          Populations,
-
+          resolvedPopulations,
           (* Imaging *)
-          ImagingChannels,
-          ExposureTimes,
-
+          specifiedImagingStrategies,
+          specifiedExposureTimes,
           (* Picking *)
-          ColonyPickingTool,
-          HeadDiameter,
-          HeadLength,
-          NumberOfHeads,
-          ColonyHandlerHeadCassetteApplication,
-          ColonyPickingDepth,
-          PickCoordinates,
-
+          specifiedColonyPickingTool,
+          specifiedHeadDiameter,
+          specifiedHeadLength,
+          specifiedNumberOfHeads,
+          specifiedColonyHandlerHeadCassetteApplication,
+          specifiedColonyPickingDepth,
+          resolvedPickCoordinates,
           (* Destination *)
-          DestinationMediaType,
-          DestinationMedia,
-          DestinationMediaContainer,
-          MaxDestinationNumberOfColumns,
-          MaxDestinationNumberOfRows,
-          DestinationCoordinates,
-          MediaVolume,
-          DestinationMix,
-          DestinationNumberOfMixes
-        }
-      ];
+          specifiedDestinationMediaType,
+          specifiedDestinationMedia,
+          specifiedDestinationMediaContainer,
+          specifiedMaxDestinationNumberOfColumns,
+          specifiedMaxDestinationNumberOfRows,
+          specifiedDestinationCoordinates,
+          specifiedMediaVolume,
+          specifiedDestinationMix,
+          specifiedDestinationNumberOfMixes,
+          samplesOutStorageConditionsPossiblyCollapsed
+        } = Lookup[
+          myMapThreadOptions,
+          {
+            (* Analysis *)
+            Populations,
+            (* Imaging *)
+            ImagingStrategies,
+            ExposureTimes,
+            (* Picking *)
+            ColonyPickingTool,
+            HeadDiameter,
+            HeadLength,
+            NumberOfHeads,
+            ColonyHandlerHeadCassetteApplication,
+            ColonyPickingDepth,
+            PickCoordinates,
+            (* Destination *)
+            DestinationMediaType,
+            DestinationMedia,
+            DestinationMediaContainer,
+            MaxDestinationNumberOfColumns,
+            MaxDestinationNumberOfRows,
+            DestinationCoordinates,
+            MediaVolume,
+            DestinationMix,
+            DestinationNumberOfMixes,
+            SamplesOutStorageCondition
+          }
+        ];
+  
+  
+        (* -- Resolve Imaging options -- *)
 
-
-      (* -- Resolve Imaging options -- *)
-      
-      (* You cannot currently have multiple nested index matching groups within the same option set. We have to do *)
-      (* some manual checking of option lengths *)
-      (* There is an imagingOption mismatch error if ImagingChannels -> single channel and ExposureTimes -> list of times or *)
-      (* ImagingChannels -> list of channels and ExposureTimes -> single time *)
-      (* NOTE: We cannot use the singleton patterns for ImagingChannels/ExposureTimes (Have to copy them down manually) *)
-      (* because there cannot be multiple nested index matching groups. (Singleton pattern must include an actual ) *)
-      (* singleton as well as an Adder[singleton] because that is the only way to get a nested listed structure  *)
-      (* outside of nested index matching *)
-      Switch[{specifiedImagingChannels,specifiedExposureTimes},
-        {QPixImagingChannelsP, _List},
-          imagingOptionMismatchError = True,
-        {{QPixImagingChannelsP..},(RangeP[1 Millisecond, 2000 Millisecond] | AutoExpose)},
-          imagingOptionMismatchError = True
-      ];
-
-
-      (* Resolve imaging channels *)
-      {resolvedImagingChannels,missingImagingChannels} = Module[{},
-
-        (* If there is a mismatch error, leave the option as is (we know it is not Automatic so this is ok) *)
-        If[imagingOptionMismatchError,
-          {specifiedImagingChannels,{}},
-
-          (* Proceed if there is no mismatch error *)
-          Module[{uniqueImagingChannelsFromPopulations},
-
-            (* Extract any imaging channels from the population primitives *)
-            uniqueImagingChannelsFromPopulations = DeleteDuplicates[Flatten[Map[Function[{populationsValue},
-              If[MatchQ[populationsValue,Except[CustomCoordinates]],
-                Module[{populationPrimitiveAssociation,imagingChannelsFromPopulations},
-
-                  (* Convert from Blob form to association form *)
-                  populationPrimitiveAssociation = populationsValue[[1]];
-
-                  (* Switch based on the type of population primitive we have *)
-                  imagingChannelsFromPopulations = Switch[Head[populationsValue],
-
-                    (* For a FluorescencePrimitive *)
-                    Fluorescence,
-                    Module[{excitationWavelength,emissionWavelength},
-
-                      (* Lookup the Excitation and Emission wavelength *)
-                      {excitationWavelength,emissionWavelength} = Lookup[populationPrimitiveAssociation, {ExcitationWavelength,EmissionWavelength}];
-
-                      (* Pair them up and return *)
-                      {{excitationWavelength, emissionWavelength}}
-                    ],
-
-                    (* For an AbsorbancePrimitive *)
-                    Absorbance,
-                    (* Return the Absorbance wavelength *)
-                    {Lookup[populationPrimitiveAssociation,FilterWavelength]},
-
-                    (* For a MultiFeatured Primitive *)
-                    MultiFeatured,
-                    Module[
-                      {
-                        features,excitationWavelengths,emissionWavelengths,absorbanceWavelengths,
-                        imagingFeaturePickList,imagingChannelsFromFluorescenceFeatures,imagingChannelsFromAbsorbanceFeatures
-                      },
-                      (* Lookup the Features and Wavelengths *)
-                      {
-                        features,
-                        excitationWavelengths,
-                        emissionWavelengths,
-                        absorbanceWavelengths
-                      } = Lookup[populationPrimitiveAssociation,
-                        {
-                          Features,
-                          ExcitationWavelength,
-                          EmissionWavelength,
-                          FilterWavelength
-                        }
-                      ];
-
-                      (* Generate a pick list of features that are imaging channels *)
-                      imagingFeaturePickList = (MatchQ[#,Fluorescence|Absorbance|BrightField])&/@features;
-
-                      (* use the pick list to extract the fluorescent channels to image on *)
-                      imagingChannelsFromFluorescenceFeatures = If[MatchQ[excitationWavelengths,_List] && MatchQ[emissionWavelengths, _List] && SameLengthQ[excitationWavelengths,imagingFeaturePickList]||!SameLengthQ[emissionWavelengths,imagingFeaturePickList],
-                        Transpose[{
-                          PickList[excitationWavelengths,imagingFeaturePickList],
-                          PickList[emissionWavelengths,imagingFeaturePickList]
-                        }],
-                        {}
-
-                      ];
-
-                      (* use the pick list to extract the absorbance channels to image on *)
-                      imagingChannelsFromAbsorbanceFeatures = If[MatchQ[absorbanceWavelengths,_List] && SameLengthQ[absorbanceWavelengths,imagingFeaturePickList],
-                        PickList[absorbanceWavelengths,imagingFeaturePickList],
-                        {}
-                      ];
-
-                      (* Join the lists and return *)
-                      DeleteCases[Join[imagingChannelsFromFluorescenceFeatures,imagingChannelsFromAbsorbanceFeatures],Null]
-                    ],
-
-                    (* For any other primitive - no extra images *)
-                    _,
-                    {}
-                  ];
-
-                  (* Prepend Brightfield to the detected images as the Brightfield image is always taken *)
-                  Prepend[imagingChannelsFromPopulations,BrightField]
-                ],
-                {BrightField}
-              ]
-            ],
-              resolvedPopulations
-            ],1]];
-
-            (* Resolve the option *)
-            If[MatchQ[specifiedImagingChannels,Automatic],
-
-              (* If the option is automatic, resolve to the channels detected in the Population Primitives *)
-              {uniqueImagingChannelsFromPopulations,{}},
-
-              (* If the option is specified, detect any missing channels *)
-              Module[{missingImagingChannels},
-                missingImagingChannels = Complement[uniqueImagingChannelsFromPopulations,ToList[specifiedImagingChannels]];
-
-                (* If there are missing channels, mark them *)
-                If[Length[missingImagingChannels] != 0,
-                  missingImagingChannelsError = True
-                ];
-
-                (* If there are any duplicate imaging channels specified, mark the warning *)
-                If[Length[ToList[specifiedImagingChannels]] != Length[DeleteDuplicates[ToList[specifiedImagingChannels]]],
-                  duplicateImagingChannelsWarning = True
-                ];
-
-                (* return the specified channels *)
-                {specifiedImagingChannels,missingImagingChannels}
-              ]
+        (* Resolve imaging options *)
+        updatedImagingStrategies = If[!MatchQ[specifiedImagingStrategies, Automatic],
+          (* Is ImagingStrategies specified by the user? *)
+          specifiedImagingStrategies,
+          (* Otherwise, resolve all the required strategies from Populations *)
+          (* Note: when ImagingStrategies is not specified, we prefer singleton form *)
+          Module[{resolvedStrategiesFromPopulations},
+            resolvedStrategiesFromPopulations = imagingStrategiesFromPopulations[ToList@resolvedPopulations];
+            If[Length[resolvedStrategiesFromPopulations] > 1,
+              resolvedStrategiesFromPopulations,
+              First[resolvedStrategiesFromPopulations]
             ]
           ]
-        ]
-      ];
+        ];
 
-      (* Resolve Exposure Time *)
-      resolvedExposureTimes = If[MatchQ[specifiedExposureTimes,Automatic],
-        ConstantArray[AutoExpose,Length[resolvedImagingChannels]],
-        ToList[specifiedExposureTimes]
-      ];
+        updatedImagingChannels = updatedImagingStrategies/.strategiesMappingToChannels;
 
-      (* Check that ImagingChannels and ExposureTimes are the same length manually because you currently *)
-      (* cannot have different nested index matching groups in the same index matching group *)
-      If[MatchQ[resolvedImagingChannels,{QPixImagingChannelsP..}]&&MatchQ[resolvedExposureTimes,_List]&&!MatchQ[Length[resolvedImagingChannels],Length[resolvedExposureTimes]],
-        imagingOptionSameLengthError = True
-      ];
+        updatedExposureTimes = Which[
+          !MatchQ[specifiedExposureTimes, Automatic],
+            specifiedExposureTimes,
+          MatchQ[updatedImagingStrategies, QPixImagingStrategiesP],
+           (* If ImagingStrategies is a single value, ExposureTime should also be a single value *)
+            Automatic,
+          True,
+            (* If ImagingStrategies is a list, ExposureTime should also be a list *)
+            ConstantArray[Automatic, Length[updatedImagingStrategies]]
+        ];
 
-      (* -- Resolve Destination Options -- *)
+        (* Check errors *)
 
-      (* Resolve DestinationMediaType *)
-      resolvedDestinationMediaType = MapThread[Function[{destinationMediaType,destinationMedia},
-        Module[{destinationMediaState,destMediaTypeLookup},
-          
-          (* Get information about the destination media state *)
-          (* Get the state of DestinationMedia if it is specified *)
-          destinationMediaState = If[!MatchQ[destinationMedia,Automatic],
-            fastAssocLookup[combinedFastAssoc,destinationMedia,State],
-            Null
-          ];
+        (* Check that ImagingStrategies and ExposureTimes are the same length manually *)
+        (* There is an imagingOption mismatch error if ImagingStrategies -> single channel and ExposureTimes -> list of times or *)
+        (* ImagingStrategies -> list of channels and ExposureTimes -> single time *)
+        imagingOptionSameLengthError = Or[
+          MatchQ[updatedImagingStrategies, QPixImagingStrategiesP] && MatchQ[updatedExposureTimes, _List],
+          MatchQ[updatedImagingStrategies, {QPixImagingStrategiesP..}] && MatchQ[updatedExposureTimes, _Real],
+          !EqualQ[Length[ToList[updatedImagingStrategies]], Length[ToList[updatedExposureTimes]]]
+        ];
 
-          (* Check that the state of the DestinationMedia is either Liquid or Solid if it is specified *)
-          If[!MatchQ[destinationMediaState,Liquid|Solid|Null],
-            destinationMediaStateError = True
-          ];
+        (* Check that ImagingStrategies are all present with required Populations *)
+        missingImagingStrategyInfo = If[!MatchQ[specifiedImagingStrategies, Automatic],
+          Complement[imagingStrategiesFromPopulations[ToList@resolvedPopulations], ToList@updatedImagingStrategies],
+          {}
+        ];
 
-          (* Create Lookup from State -> DestinationMediaType *)
-          destMediaTypeLookup = {Liquid->LiquidMedia,Solid->SolidMedia};
-          
-          (* Use the state information to help resolve if necessary *)
-          If[MatchQ[destinationMediaType,Automatic],
-            (* Resolution of Automatic *)
-            Which[
+        (* -- Resolve Destination Options -- *)
+  
+        (* Resolve DestinationMediaType *)
+        updatedDestinationMediaType = MapThread[
+          Function[{destinationMediaType, destinationMedia},
+            Module[{destinationMediaState, destMediaTypeLookup},
+              
+              (* Get information about the destination media state *)
+              (* Get the state of DestinationMedia if it is specified *)
+              destinationMediaState = If[!MatchQ[destinationMedia, Automatic],
+                fastAssocLookup[combinedFastAssoc, destinationMedia, State],
+                Null
+              ];
+    
+              (* Check that the state of the DestinationMedia is either Liquid or Solid if it is specified *)
+              If[!MatchQ[destinationMediaState, Liquid|Solid|Null],
+                destinationMediaStateError = True
+              ];
+    
+              (* Create Lookup from State -> DestinationMediaType *)
+              destMediaTypeLookup = {Liquid -> LiquidMedia, Solid -> SolidMedia};
+              
+              (* Use the state information to help resolve if necessary *)
+              If[MatchQ[destinationMediaType, Automatic],
+                (* Resolution of Automatic *)
+                Which[
+                  (* If the DestinationMedia is specified and has a valid state -> use it*)
+                  !NullQ[destinationMediaState] && !destinationMediaStateError,
+                    destinationMediaState /. destMediaTypeLookup,
+                  (* If the DestinationMedia is specified and does not have a valid state -> Default to LiquidMedia so further resolution does not error *)
+                  !NullQ[destinationMediaState] && destinationMediaStateError,
+                    LiquidMedia,
+                  (* If the DestinationMedia is not specified, use the PreferredLiquidMedia of the first Model[Cell] in the composition of the input sample *)
+                  (* if it exists. Otherwise use the PreferredSolidMedia. If neither PreferredLiquidMedia, or PreferredSolidMedia exist, default to LiquidMedia *)
+                  (* TODO: This needs to take into account the DestiantionMediaContainer -> Same with DestiantionMedia resolution*)
+                  NullQ[destinationMediaState],
+                    Module[
+                      {cellModel, preferredLiquidMedia, preferredSolidMedia},
+    
+                      (* Get the first Model[Cell] from the composition *)
+                      cellModel = FirstOrDefault@selectMainCellFromSample[mySample, Cache -> combinedCache, Simulation -> currentSimulation];
+    
+                      (* Lookup the PreferredMedias from the cellModel if they exist *)
+                      preferredLiquidMedia = fastAssocLookup[combinedFastAssoc, cellModel, PreferredLiquidMedia];
+                      preferredSolidMedia = fastAssocLookup[combinedFastAssoc, cellModel, PreferredSolidMedia];
+    
+                      (* Resolve accordingly *)
+                      Switch[{preferredLiquidMedia, preferredSolidMedia},
+                        {ObjectP[], _}, LiquidMedia,
+                        {Null, ObjectP[]}, SolidMedia,
+                        {_, _}, LiquidMedia
+                      ]
+                    ]
+                ],
+    
+                (* Resolution if destinationMediaType is not Automatic *)
+                (* If the specified DestinationMediaType does not agree with the state of the DestinationMedia, mark an error *)
+                If[!NullQ[destinationMediaState] && !destinationMediaStateError && !MatchQ[(destinationMediaState /. destMediaTypeLookup), destinationMediaType],
+                  destinationMediaTypeMismatchError = True;
+                  destinationMediaType,
+                  (* Otherwise all options are happy *)
+                  destinationMediaType
+                ]
+              ]
+            ]
+          ],
+          {specifiedDestinationMediaType, specifiedDestinationMedia}
+        ];
+  
+        (* Resolve DestinationMedia *)
+        updatedDestinationMedia = MapThread[
+          Function[{destinationMedia, destMediaType},
+            If[MatchQ[destinationMedia, Automatic],
+              (* If the option is Automatic, get the PreferredBLAHMedia from the first Model[Cell] in the composition of the sample if it exists *)
+              Module[{cellModel, preferredMedia},
+                (* Get the first Model[Cell] from the composition *)
+                cellModel = FirstOrDefault@selectMainCellFromSample[mySample, Cache -> combinedCache, Simulation -> currentSimulation];
+    
+                (* Extract the preferred Media from the Model[Cell] *)
+                preferredMedia = If[MatchQ[destMediaType, LiquidMedia],
+                  Download[fastAssocLookup[combinedFastAssoc, cellModel, PreferredLiquidMedia], Object],
+                  Download[fastAssocLookup[combinedFastAssoc, cellModel, PreferredSolidMedia], Object]
+                ];
+    
+                (* If preferredMedia is Null, default to either LB Broth or LB Agar *)
+                If[NullQ[preferredMedia],
+                  If[MatchQ[destMediaType, LiquidMedia],
+                    Model[Sample, Media, "id:XnlV5jlXbNx8"], (* Model[Sample, Media, "LB Broth, Miller"] *)
+                    Model[Sample, Media, "id:9RdZXvdwAEo6"] (* Model[Sample, Media, "LB (Solid Agar)"] *)
+                  ],
+                  (* If the media was already found, use it *)
+                  preferredMedia
+                ]
+              ],
+              (* If the option is not automatic, keep it *)
+              destinationMedia
+            ]
+          ],
+          {specifiedDestinationMedia, updatedDestinationMediaType}
+        ];
+  
+        (* Resolve DestinationMediaContainer *)
+        (* If there are no PickCoordinates specified, resolve for each PopulationPrimitive in Populations *)
+        updatedDestinationMediaContainer = MapThread[
+          Function[{destinationMediaContainer, individualResolvedDestinationMediaType},
+            If[MatchQ[destinationMediaContainer, Automatic],
+              (* If the option is Automatic, set based on the DestinationMediaType and the ColonyPickingTool and HeadLength *)
+              Module[{colonyPickingToolModel, colonyPickingToolDeepWellQ},
+    
+                (* Get the model of the specified colony picking tool (if it exists) *)
+                colonyPickingToolModel = Which[
+                  MatchQ[specifiedColonyPickingTool, ObjectP[Model[Part, ColonyHandlerHeadCassette]]],
+                    specifiedColonyPickingTool,
+                  MatchQ[specifiedColonyPickingTool, ObjectP[Object[Part, ColonyHandlerHeadCassette]]],
+                    fastAssocLookup[combinedFastAssoc, specifiedColonyPickingTool, Model],
+                  True,
+                    Automatic
+                ];
+    
+                colonyPickingToolDeepWellQ = EqualQ[fastAssocLookup[combinedFastAssoc, colonyPickingToolModel, HeadLength], 19.4 Millimeter];
+    
+                Which[
+    
+                  (* Resolve to an omni tray if destinationMediaType is SolidMedia *)
+                  MatchQ[individualResolvedDestinationMediaType, SolidMedia],
+                    Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
+    
+                  (* If we did not go into the case above we know destinationMediaType is LiquidMedia *)
+                  (* If a colony picking tool was specified, use its depth to determine the type of plate to use *)
+                  !MatchQ[colonyPickingToolModel, Automatic] && colonyPickingToolDeepWellQ,
+                    Model[Container, Plate, "id:n0k9mGkwbvG4"], (* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"] *)
+    
+                  (* If the colony picking tool is not deep well *)
+                  !MatchQ[colonyPickingToolModel, Automatic] && !colonyPickingToolDeepWellQ,
+                    Model[Container, Plate, "id:n0k9mGzRaaBn"], (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+    
+                  (* If head length specifies deep well *)
+                  GreaterEqualQ[specifiedHeadLength, 19.4 Millimeter],
+                    Model[Container, Plate, "id:n0k9mGkwbvG4"], (* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"] *)
+    
+                  (* If head length specified at all *)
+                  MatchQ[QuantityMagnitude[specifiedHeadLength], _Real],
+                    Model[Container, Plate, "id:n0k9mGzRaaBn"], (* Model[Container, Plate, "96-well UV-Star Plate"] *)
+    
+                  (* Catchall - default to deep well plate *)
+                  True,
+                    Model[Container, Plate, "id:n0k9mGkwbvG4"] (* Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"] *)
+                ]
+              ],
+    
+              (* Otherwise keep it *)
+              destinationMediaContainer
+            ]
+          ],
+          {specifiedDestinationMediaContainer, updatedDestinationMediaType}
+        ];
+  
+        (* Check if the DestinationMediaContainer is invalid *)
+        (* The plate is invalid if it does not have 1, 24, or 96 wells, or if it is a 24 well deep well plate *)
+        Map[
+          Function[{destMediaContainer},
+            Module[{},
+    
+              (* Define a helper function to determine if a container is a valid destination media container *)
+              invalidDestMediaContainerQ[container_, combinedAssoc_] := Module[
+                {destContainerModel, destContainerNumberOfWells, destContainerWellDepthQ},
+    
+                (* Get the destination container model *)
+                destContainerModel = Switch[container,
+                  (* If container is an object look up the model *)
+                  ObjectP[Object[Container, Plate]],
+                    fastAssocLookup[combinedAssoc, container, Model],
+                  (* Otherwise container is already a model *)
+                  ObjectP[Model[Container, Plate]],
+                    container,
+                  (* In this case, the container is not a Plate, which means it is invalid *)
+                  _,
+                    Null
+                ];
 
-              (* If the DestinationMedia is specified and has a valid state -> use it*)
-              !NullQ[destinationMediaState]&&!destinationMediaStateError,
-                destinationMediaState /. destMediaTypeLookup,
+                (* If destContainerModel is Null, the container is not valid so return True *)
+                If[NullQ[destContainerModel],
+                  Return[True]
+                ];
 
-              (* If the DestinationMedia is specified and does not have a valid state -> Default to LiquidMedia so further resolution does not error *)
-              !NullQ[destinationMediaState]&&destinationMediaStateError,
-                LiquidMedia,
+                (* Get the number of wells and whether the plate is deep well *)
+                destContainerNumberOfWells = fastAssocLookup[combinedAssoc, destContainerModel, NumberOfWells];
+                destContainerWellDepthQ = GreaterEqualQ[fastAssocLookup[combinedAssoc, destContainerModel, WellDepth], 37 Millimeter];
+    
+                (* Check if invalid *)
+                Or[
+                  !MatchQ[destContainerNumberOfWells, 1|24|96],
+                  MatchQ[destContainerNumberOfWells, 1|24] && destContainerWellDepthQ
+                ]
+    
+              ];
+    
+              (* If we are given a single object or a single model, see if it is valid. If we are given a list of objects *)
+              (* map over the list to make sure they are all valid *)
+              If[MatchQ[destMediaContainer, {ObjectP[Object[Container, Plate]]..}],
+    
+                invalidDestinationMediaContainerError = Or @@ (invalidDestMediaContainerQ[#, combinedFastAssoc]&/@destMediaContainer),
 
-              (* If the DestinationMedia is not specified, use the PreferredLiquidMedia of the first Model[Cell] in the composition of the input sample *)
-              (* if it exists. Otherwise use the PreferredSolidMedia. If neither PreferredLiquidMedia, or PreferredSolidMedia exist, default to LiquidMedia *)
-              (* TODO: This needs to take into account the DestiantionMediaContainer -> Same with DestiantionMedia resolution*)
-              NullQ[destinationMediaState],
-                Module[
-                  {
-                    cellModel,preferredLiquidMedia,preferredSolidMedia
-                  },
-
-                  (* Get the first Model[Cell] from the composition *)
-                  cellModel = FirstCase[fastAssocLookup[combinedFastAssoc,mySample,Composition][[All,2]],ObjectP[Model[Cell]],Null];
-
-                  (* Lookup the PreferredMedias from the cellModel if they exist *)
-                  preferredLiquidMedia = fastAssocLookup[combinedFastAssoc,cellModel,PreferredLiquidMedia];
-                  preferredSolidMedia = fastAssocLookup[combinedFastAssoc,cellModel,PreferredSolidMedia];
-
-                  (* Resolve accordingly *)
-                  Switch[{preferredLiquidMedia,preferredSolidMedia},
-                    {ObjectP[],_},
-                      LiquidMedia,
-                    {Null,ObjectP[]},
-                      SolidMedia,
-                    {_,_},
-                      LiquidMedia
+                invalidDestinationMediaContainerError = invalidDestMediaContainerQ[destMediaContainer, combinedFastAssoc]
+              ]
+            ]
+          ],
+          updatedDestinationMediaContainer
+        ];
+  
+        (* Get the total number of unique destination media containers *)
+        totalNumberUniqueDestinationMediaContainers = Module[
+          {flattenedContainers, uniqueObjectContainers, uniqueModelContainers},
+  
+          (* Flatten the containers list *)
+          flattenedContainers = Flatten@updatedDestinationMediaContainer;
+  
+          (* Get the objects that are specified as Object[Container]'s *)
+          uniqueObjectContainers = DeleteDuplicates[Cases[flattenedContainers, ObjectP[Object[Container]]]];
+  
+          (* Get the objects that are specified as Model[Container]'s *)
+          uniqueModelContainers = Cases[flattenedContainers, ObjectP[Model[Container]]];
+  
+          Length[uniqueObjectContainers] + Length[uniqueModelContainers]
+  
+        ];
+        
+        (* Check to see if there are more than 6 unique destination containers for this sample *)
+        If[totalNumberUniqueDestinationMediaContainers > 6,
+          tooManyDestinationMediaContainersError = True
+        ];
+        
+  
+        (* If PickCoordinates are set, check to see if there are more PickCoordinates than spots in the destination containers *)
+        tooManyPickCoordinatesError = If[!MatchQ[resolvedPickCoordinates, Null],
+          Module[
+            {
+              markedPositionsToExpand, numContAvailableToExpand, markedListPositionLookup,
+              numContainersToAdd, expandedDestinationContainers, possibleDepositLocationsPerContainer
+            },
+  
+            (* Expand the destination containers up to 6 if we do not exceed that already *)
+            (* The expansion happens by continuously looping over the container list. If there is a model, add one of that model *)
+            (* If there is an object/list of objects, leave them as they are *)
+  
+            (* Mark the positions that are able to be expanded *)
+            markedPositionsToExpand = ({#, MatchQ[#, ObjectP[Model[Container]]]}& /@ ToList[updatedDestinationMediaContainer]);
+  
+            (* Calculate the number of containers we can expand *)
+            numContAvailableToExpand = Length[Cases[markedPositionsToExpand, {_, True}]];
+  
+            (* Create a lookup from Object->position in the marked list (this ignores all Objects/Lists of objects) *)
+            markedListPositionLookup = MapThread[
+              Function[{markedPosition, position},
+                First[markedPosition] -> position
+              ],
+              {Cases[markedPositionsToExpand, {_, True}], Range[numContAvailableToExpand]}
+            ];
+  
+            (* Get the number of containers we can add (number of open positions on deck) *)
+            numContainersToAdd = Max[6-totalNumberUniqueDestinationMediaContainers, 0];
+  
+            (* Do the transformation *)
+            expandedDestinationContainers = Map[
+              Function[{container},
+                Module[{posInMarkedList},
+    
+                  (* Lookup the position in the marked list. Default to Null for Object[Container,Plate]/{Object[Container,Plate]..} *)
+                  posInMarkedList = Lookup[markedListPositionLookup, container, Null];
+    
+                  (* Use the position, number of containers to add, and number of open spots to calculate how many containers to add at this position *)
+                  Which[
+                    (* If the container is an object or list of objects, skip it *)
+                    MatchQ[posInMarkedList, ListableP[Null]],
+                      container,
+                    (* If the position==1, add the ceiling of containersToAdd/numberOfOpenSpots *)
+                    MatchQ[posInMarkedList, 1],
+                      ConstantArray[container, Ceiling[numContainersToAdd/numContAvailableToExpand]+1],
+                    (* If the position > numContainersToAdd we will not add any containers here *)
+                    GreaterQ[posInMarkedList, numContainersToAdd],
+                      container,
+                    (* If the position == numContainersToAdd, one container will be added *)
+                    MatchQ[posInMarkedList, numContainersToAdd],
+                      ConstantArray[container, 2],
+                    (* Otherwise we will add the floor of containersToAdd/numberOfOpenSpots *)
+                    True,
+                      ConstantArray[container, Floor[numContainersToAdd/numContAvailableToExpand]+1]
                   ]
                 ]
-            ],
-
-            (* Resolution if destinationMediaType is not Automatic *)
-            (* If the specified DestinationMediaType does not agree with the state of the DestinationMedia, mark an error *)
-            If[!NullQ[destinationMediaState]&&!destinationMediaStateError&&!MatchQ[(destinationMediaState /. destMediaTypeLookup),destinationMediaType],
-              destinationMediaTypeMismatchError = True;
-              destinationMediaType,
-              (* Otherwise all options are happy *)
-              destinationMediaType
-            ]
-          ]
-        ]
-      ],
-        {specifiedDestinationMediaType,specifiedDestinationMedia}
-      ];
-
-      (* Resolve DestinationMedia *)
-      resolvedDestinationMedia = MapThread[Function[{destinationMedia,destMediaType},
-        If[MatchQ[destinationMedia,Automatic],
-          (* If the option is Automatic, get the PreferredBLAHMedia from the first Model[Cell] in the composition of the sample if it exists *)
-          Module[{cellModel,preferredMedia},
-            (* Get the first Model[Cell] from the composition *)
-            cellModel = FirstCase[fastAssocLookup[combinedFastAssoc,mySample,Composition][[All,2]],ObjectP[Model[Cell]],Null];
-
-            (* Extract the preferred Media from the Model[Cell] *)
-            preferredMedia = If[MatchQ[destMediaType,LiquidMedia],
-              Download[fastAssocLookup[combinedFastAssoc,cellModel,PreferredLiquidMedia],Object],
-              Download[fastAssocLookup[combinedFastAssoc,cellModel,PreferredSolidMedia],Object]
-            ];
-
-            (* If preferredMedia is Null, default to either LB Broth or LB Agar *)
-            If[NullQ[preferredMedia],
-              If[MatchQ[destMediaType,LiquidMedia],
-                Model[Sample, Media, "id:XnlV5jlXbNx8"], (* Model[Sample, Media, "LB Broth, Miller"] *)
-                Model[Sample, Media, "id:9RdZXvdwAEo6"] (* Model[Sample, Media, "LB (Solid Agar)"] *)
               ],
-              (* If the media was already found, use it *)
-              preferredMedia
-            ]
-          ],
-
-          (* If the option is not automatic, keep it *)
-          destinationMedia
-        ]
-      ],
-        {
-          specifiedDestinationMedia,
-          resolvedDestinationMediaType
-        }
-      ];
-
-      (* Resolve DestinationMediaContainer *)
-      (* If there are no PickCoordinates specified, resolve for each PopulationPrimitive in Populations *)
-      resolvedDestinationMediaContainer = MapThread[Function[{destinationMediaContainer,individualResolvedDestinationMediaType},
-        If[MatchQ[destinationMediaContainer,Automatic],
-          (* If the option is Automatic, set based on the DestinationMediaType and the ColonyPickingTool and HeadLength *)
-          Module[{colonyPickingToolModel,colonyPickingToolDeepWellQ},
-
-            (* Get the model of the specified colony picking tool (if it exists) *)
-            colonyPickingToolModel = Which[
-              MatchQ[colonyPickingTool,ObjectP[Model[Part,ColonyHandlerHeadCassette]]],
-                colonyPickingTool,
-              MatchQ[colonyPickingTool,ObjectP[Object[Part,ColonyHandlerHeadCassette]]],
-                fastAssocLookup[combinedFastAssoc,colonyPickingTool,Model],
-              True,
-                Automatic
+              ToList[updatedDestinationMediaContainer]
             ];
-
-            colonyPickingToolDeepWellQ = EqualQ[fastAssocLookup[combinedFastAssoc,colonyPickingToolModel,HeadLength], 19.4 Millimeter];
-
-            Which[
-
-              (* Resolve to an omni tray if destinationMediaType is SolidMedia *)
-              MatchQ[individualResolvedDestinationMediaType,SolidMedia],
-                Model[Container, Plate, "id:O81aEBZjRXvx"], (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
-
-              (* If we did not go into the case above we know destinationMediaType is LiquidMedia *)
-              (* If a colony picking tool was specified, use its depth to determine the type of plate to use *)
-              !MatchQ[colonyPickingToolModel,Automatic] && colonyPickingToolDeepWellQ,
-                Model[Container, Plate, "id:L8kPEjkmLbvW"], (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
-
-              (* If the colony picking tool is not deep well *)
-              !MatchQ[colonyPickingToolModel,Automatic] && !colonyPickingToolDeepWellQ,
-                Model[Container, Plate, "id:n0k9mGzRaaBn"], (* Model[Container, Plate, "96-well UV-Star Plate"] *)
-
-              (* If head length specifies deep well *)
-              GreaterEqualQ[specifiedHeadLength,19.4 Millimeter],
-                Model[Container, Plate, "id:L8kPEjkmLbvW"], (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
-
-              (* If head length specified at all *)
-              MatchQ[QuantityMagnitude[specifiedHeadLength],_Real],
-                Model[Container, Plate, "id:n0k9mGzRaaBn"], (* Model[Container, Plate, "96-well UV-Star Plate"] *)
-
-              (* Catchall - default to deep well plate *)
-              True,
-                Model[Container, Plate, "id:L8kPEjkmLbvW"] (* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
-            ]
-          ],
-
-          (* Otherwise keep it *)
-          destinationMediaContainer
-        ]
-      ],
-        {specifiedDestinationMediaContainer,resolvedDestinationMediaType}
-      ];
-
-      (* Check if the DestinationMediaContainer is invalid *)
-      (* The plate is invalid if it does not have 1, 24, or 96 wells, or if it is a 24 well deep well plate *)
-      Map[Function[{destMediaContainer},
-        Module[{},
-
-          (* Define a helper function to determine if a container is a valid destination media container *)
-          invalidDestMediaContainerQ[container_]:=Module[{destContainerModel,destContainerNumberOfWells,destContainerWellDepthQ},
-
-            (* Get the destination container model *)
-            destContainerModel = Switch[container,
-              (* If container is an object look up the model *)
-              ObjectP[Object[Container,Plate]],
-                fastAssocLookup[combinedFastAssoc,container,Model],
-
-              (* Otherwise container is already a model *)
-              ObjectP[Model[Container,Plate]],
-                container,
-
-              (* In this case, the container is not a Plate, which means it is invalid *)
-              _,
-                Null
-            ];
-
-            (* If destContainerModel is Null, the container is not valid so return False *)
-            If[NullQ[destContainerModel],
-              Return[False]
-            ];
-
-            (* Get the number of wells and whether the plate is deep well *)
-            destContainerNumberOfWells = fastAssocLookup[combinedFastAssoc,destContainerModel,NumberOfWells];
-            destContainerWellDepthQ = GreaterEqualQ[fastAssocLookup[combinedFastAssoc,destContainerModel,WellDepth],37 Millimeter];
-
-            (* Check if invalid *)
-            Or[
-              !MatchQ[destContainerNumberOfWells,1|24|96],
-              MatchQ[destContainerNumberOfWells,24] && destContainerWellDepthQ
-            ]
-
-          ];
-
-          (* If we are given a single object or a single model, see if it is valid. If we are given a list of objects *)
-          (* map over the list to make sure they are all valid *)
-          If[MatchQ[destMediaContainer,{ObjectP[Object[Container,Plate]]..}],
-
-            invalidDestinationMediaContainerError = Or@@(invalidDestMediaContainerQ/@destMediaContainer),
-
-            invalidDestinationMediaContainerError = invalidDestMediaContainerQ[destMediaContainer]
-          ]
-        ]
-      ],
-        resolvedDestinationMediaContainer
-      ];
-
-      (* Get the total number of unique destination media containers *)
-      totalNumberUniqueDestinationMediaContainers = Module[{flattenedContainers,uniqueObjectContainers,uniqueModelContainers},
-
-        (* Flatten the containers list *)
-        flattenedContainers = Flatten@resolvedDestinationMediaContainer;
-
-        (* Get the objects that are specified as Object[Container]'s *)
-        uniqueObjectContainers = DeleteDuplicates[Cases[flattenedContainers,ObjectP[Object[Container,Plate]]]];
-
-        (* Get the objects that are specified as Model[Container]'s *)
-        uniqueModelContainers = Cases[flattenedContainers,ObjectP[Model[Container,Plate]]];
-
-        Length[uniqueObjectContainers] + Length[uniqueModelContainers]
-
-      ];
-      
-      (* Check to see if there are more than 6 unique destination containers for this sample *)
-      If[totalNumberUniqueDestinationMediaContainers > 6,
-        tooManyDestinationMediaContainersError = True
-      ];
-      
-
-      (* If PickCoordinates are set, check to see if there are more PickCoordinates than spots in the destination containers *)
-      tooManyPickCoordinatesError = If[!MatchQ[resolvedPickCoordinates,Null],
-        Module[
-          {
-            markedPositionsToExpand,numContAvailableToExpand,markedListPositionLookup,
-            numContainersToAdd,expandedDestinationContainers,possibleDepositLocationsPerContainer
-          },
-
-          (* Expand the destination containers up to 6 if we do not exceed that already *)
-          (* The expansion happens by continuously looping over the container list. If there is a model, add one of that model *)
-          (* If there is an object/list of objects, leave them as they are *)
-
-          (* Mark the positions that are able to be expanded *)
-          markedPositionsToExpand = ({#,MatchQ[#,ObjectP[Model[Container,Plate]]]}&/@ToList[resolvedDestinationMediaContainer]);
-
-          (* Calculate the number of containers we can expand *)
-          numContAvailableToExpand = Length[Cases[markedPositionsToExpand,{_,True}]];
-
-          (* Create a lookup from Object->position in the marked list (this ignores all Objects/Lists of objects) *)
-          markedListPositionLookup=MapThread[Function[{markedPosition,position},First[markedPosition]->position],{Cases[markedPositionsToExpand,{_,True}],Range[numContAvailableToExpand]}];
-
-          (* Get the number of containers we can add (number of open positions on deck) *)
-          numContainersToAdd = Max[6-totalNumberUniqueDestinationMediaContainers,0];
-
-          (* Do the transformation *)
-          expandedDestinationContainers = Map[Function[{container},
-            Module[{posInMarkedList},
-
-              (* Lookup the position in the marked list. Default to Null for Object[Container,Plate]/{Object[Container,Plate]..} *)
-              posInMarkedList = Lookup[markedListPositionLookup,container,Null];
-
-              (* Use the position, number of containers to add, and number of open spots to calculate how many containers to add at this position *)
-              Which[
-
-                (* If the container is an object or list of objects, skip it *)
-                MatchQ[posInMarkedList,ListableP[Null]],
-                container,
-
-                (* If the position==1, add the ceiling of containersToAdd/numberOfOpenSpots *)
-                MatchQ[posInMarkedList,1],
-                  ConstantArray[container,Ceiling[numContainersToAdd/numContAvailableToExpand]+1],
-
-                (* If the position > numContainersToAdd we will not add any containers here *)
-                GreaterQ[posInMarkedList,numContainersToAdd],
-                  container,
-
-                (* If the position == numContainersToAdd, one container will be added *)
-                MatchQ[posInMarkedList,numContainersToAdd],
-                  ConstantArray[container,2],
-
-                (* Otherwise we will add the floor of containersToAdd/numberOfOpenSpots *)
-                True,
-                  ConstantArray[container,Floor[numContainersToAdd/numContAvailableToExpand]+1]
-              ]
-            ]
-          ],
-            ToList[resolvedDestinationMediaContainer]
-          ];
-
-          (* Get the possible deposit locations *)
-          possibleDepositLocationsPerContainer = Flatten@Map[Function[{container},
-            Module[{destContainerModel,destContainerNumberOfWells},
-
-              (* Get the destination container Model *)
-              destContainerModel = Switch[#,
-                (* If container is an object look up the model *)
-                ObjectP[Object[Container,Plate]],
-                fastAssocLookup[combinedFastAssoc,#,Model],
-
-                (* If container is {Number,Model} get the second element *)
-                _List,
-                Last[#],
-
-                (* Otherwise container is already a model *)
-                _,
-                #
-              ];
-
-              (* Get the number of wells in the container *)
-              destContainerNumberOfWells = fastAssocLookup[combinedFastAssoc,destContainerModel,NumberOfWells];
-
-              (* An omnitray has 384 spots *)
-              If[MatchQ[destContainerNumberOfWells,1],
-                384,
-                destContainerNumberOfWells
-              ]
-            ]&/@ToList[container]
-          ],
-            expandedDestinationContainers
-          ];
-
-          (* Do the check *)
-          GreaterQ[Length[resolvedPickCoordinates],Total[possibleDepositLocationsPerContainer]]
-
-        ],
-
-        (* Do nothing if pick coordinates are not set *)
-        False
-      ];
-
-      (* Resolve the MediaVolume *)
-      resolvedMediaVolume = MapThread[Function[{mediaVolume,individualResolvedDestinationMediaContainer,individualResolvedDestinationMediaType},
-        If[MatchQ[mediaVolume,Automatic],
-          (* If the option is Automatic, resolve based on the DestinationMediaType *)
-          If[MatchQ[individualResolvedDestinationMediaType,LiquidMedia],
-            (* If the option is liquid media, lookup the recommendedFillVolume and MaxVolume of the DestinationMediaContainer *)
-            Module[{destContainerModel,recommendedFillVolume,maxVolume},
-
-              (* Get the destination container model *)
-              destContainerModel = Switch[individualResolvedDestinationMediaContainer,
-                (* If container is an object look up the model *)
-                ObjectP[Object[Container,Plate]],
-                  fastAssocLookup[combinedFastAssoc,individualResolvedDestinationMediaContainer,Model],
-
-                (* If container is list,  *)
-                {ObjectP[Object[Container,Plate]]..},
-                  fastAssocLookup[combinedFastAssoc,individualResolvedDestinationMediaContainer,Model],
-
-                (* Otherwise container is already a model *)
-                _,
-                  individualResolvedDestinationMediaContainer
-              ];
-
-              (* Lookup the necessary values *)
-              recommendedFillVolume = Min[fastAssocLookup[combinedFastAssoc,destContainerModel,RecommendedFillVolume]];
-              maxVolume = Min[fastAssocLookup[combinedFastAssoc,destContainerModel,MaxVolume]];
-
-              (* Use the recommended fill volume if it exists and is less than the max we can do with one transfer, or the max transfer volume, or otherwise use 40% of the max volume *)
-              If[!NullQ[recommendedFillVolume],
-                Min[recommendedFillVolume, $MaxRoboticSingleTransferVolume],
-                Min[maxVolume * 40 Percent, $MaxRoboticSingleTransferVolume]
-              ]
-
-            ],
-            (* If DestinationMediaType is not LiquidMedia, return Null *)
-            Null
-          ],
-          (* If the option is not automatic, mark an error if DestinationMediaType is SolidMedia *)
-          If[MatchQ[individualResolvedDestinationMediaType,SolidMedia],
-            mediaVolumeMismatchError = True
-          ];
-
-          (* return the option as is *)
-          mediaVolume
-        ]
-      ],
-        {specifiedMediaVolume,resolvedDestinationMediaContainer,resolvedDestinationMediaType}
-      ];
-
-      (* Resolve the maxDestinationNumberOfRows and maxDestinationNumberOfColumns *)
-      resolvedMaxDestinationNumberOfRows = MapThread[Function[{maxDestinationNumberOfRows},
-        If[MatchQ[maxDestinationNumberOfRows,Automatic],
-          (* If the option is automatic, set to Null if destination fill direction is custom coordinates *)
-          If[MatchQ[resolvedDestinationFillDirection,CustomCoordinates],
-            Null,
-            (* Otherwise leave as is (this is a long automatic as we don't know how many colonies we are picking yet) *)
-            maxDestinationNumberOfRows
-          ],
-
-          (* If the option is not automatic (or Null), mark an error if destination fill direction is custom coordinates *)
-          If[MatchQ[resolvedDestinationFillDirection,CustomCoordinates]&&!NullQ[maxDestinationNumberOfRows],
-            destinationFillDirectionMismatchError = True
-          ];
-
-          (* Return the option as is *)
-          maxDestinationNumberOfRows
-        ]
-      ],
-        {specifiedMaxDestinationNumberOfRows}
-      ];
-
-      (* Resolve the maxDestinationNumberOfColumns and maxDestinationNumberOfColumns *)
-      resolvedMaxDestinationNumberOfColumns = MapThread[Function[{maxDestinationNumberOfColumns},
-        If[MatchQ[maxDestinationNumberOfColumns,Automatic],
-          (* If the option is automatic, set to Null if destination fill direction is custom coordinates *)
-          If[MatchQ[resolvedDestinationFillDirection,CustomCoordinates],
-            Null,
-            (* Otherwise leave as is (this is a long automatic as we don't know how many colonies we are picking yet) *)
-            maxDestinationNumberOfColumns
-          ],
-
-          (* If the option is not automatic (or Null), mark an error if destination fill direction is custom coordinates *)
-          If[MatchQ[resolvedDestinationFillDirection,CustomCoordinates]&&!NullQ[maxDestinationNumberOfColumns],
-            destinationFillDirectionMismatchError = True
-          ];
-
-          (* Return the option as is *)
-          maxDestinationNumberOfColumns
-        ]
-      ],
-        {specifiedMaxDestinationNumberOfColumns}
-      ];
-
-      (* Resolve DestinationCoordinates *)
-      resolvedDestinationCoordinates = MapThread[Function[{destinationCoordinates},
-        If[MatchQ[destinationCoordinates,Null],
-          (* Check for missing destination coordinates *)
-          If[MatchQ[resolvedDestinationFillDirection,CustomCoordinates],
-            missingDestinationCoordinatesError = True
-          ];
-
-          (* Return destinationCoordinates *)
-          destinationCoordinates,
-
-          (* If there are coordinates, check their length, but keep them *)
-          If[Length[destinationCoordinates] > 384,
-            tooManyDestinationCoordinatesWarning = True
-          ];
-          destinationCoordinates
-        ]
-      ],
-        {specifiedDestinationCoordinates}
-      ];
-
-      (* Resolve DestinationMix *)
-      resolvedDestinationMix = MapThread[Function[{destinationMix,individualDestinationMediaType,destinationNumberOfMixes},
-        If[MatchQ[destinationMix,Automatic],
-          (* If the option is Automatic, set to True if DestinationMediaType is LiquidMedia or if DestinationNumberOfMixes is set *)
-          If[MatchQ[individualDestinationMediaType,LiquidMedia]||IntegerQ[destinationNumberOfMixes],
-            True,
-            False
-          ],
-
-          (* Otherwise return the option as is *)
-          destinationMix
-        ]
-      ],
-        {specifiedDestinationMix,resolvedDestinationMediaType,specifiedDestinationNumberOfMixes}
-      ];
-
-      resolvedDestinationNumberOfMixes = MapThread[Function[{destinationNumberOfMixes,individualResolvedDestinationMix},
-        If[MatchQ[destinationNumberOfMixes,Automatic],
-          (* If the option is Automatic, set to 5 if destination mixing is turned on, otherwise resolve to Null *)
-          If[TrueQ[individualResolvedDestinationMix],
-            5,
-            Null
-          ],
-
-          (* Otherwise keep the option as is *)
-          destinationNumberOfMixes
-        ]
-      ],
-        {specifiedDestinationNumberOfMixes,resolvedDestinationMix}
-      ];
-
-      (* Check for mix option mismatch *)
-      (* This occurs if one mix option is Null and the other is not, or if DestinationMix -> False but Number of mixes is still set *)
-      MapThread[If[
-        Or[
-          NullQ[#1] && !NullQ[#2],
-          NullQ[#2] && TrueQ[#1],
-          MatchQ[#1,False] && IntegerQ[#2]
-        ],
-        destinationMixMismatchError = True
-      ]&,
-        {
-          resolvedDestinationMix,resolvedDestinationNumberOfMixes
-        }
-      ];
-
-      (* Check to see if Mixing can be turned on at all *)
-      MapThread[
-        Module[{mixOptionSetQ},
-          mixOptionSetQ = TrueQ[#1] || IntegerQ[#2];
-
-          If[mixOptionSetQ && MatchQ[#3,SolidMedia],
-            invalidMixOptionError = True
-          ]
-        ]&,
-        {
-          resolvedDestinationMix,resolvedDestinationNumberOfMixes,resolvedDestinationMediaType
-        }
-      ];
-
-      (* -- Picking -- *)
-      (* First resolve the ColonyPickingTool *)
-      resolvedColonyPickingTool = If[!MatchQ[specifiedColonyPickingTool,Automatic],
-
-        (* If the tool is not Automatic, check if it is compatible with the DestinationMediaContainer *)
-        Module[
-          {
-            destPlateModel,colonyPickingToolModel,destContainerNumberOfWells,destContainerDeepWellQ,
-            colonyPickingToolNumberOfHeads,colonyPickingToolDeepWellQ,colonyPickingToolApplication
-          },
-
-          Map[Function[{destContainer},
-            (* The tool can be invalid if: *)
-            (* Deep well tool and not deep well plate (and vice versa) *)
-            (* 24 pin tool in 96 well plate (and vice versa) *)
-            (* *96 pins are ok on 1 well plates *)
-            (* Its application is not picking *)
-
-            (* Get the dest plate model *)
-            destPlateModel = Switch[destContainer,
-              (* If container is an object look up the model *)
-              ObjectP[Object[Container,Plate]],
-                fastAssocLookup[combinedFastAssoc,destContainer,Model],
-
-              (* Otherwise container is already a model *)
-              _,
-                destContainer
-            ];
-
-            (* Get the colony picking tool model *)
-            colonyPickingToolModel = Switch[specifiedColonyPickingTool,
-
-              (* If an Object, look up the Model *)
-              ObjectP[Object[Part,ColonyHandlerHeadCassette]],
-                Download[fastAssocLookup[combinedFastAssoc,specifiedColonyPickingTool,Model],Object],
-
-              (* Otherwise already a Model *)
-              _,
-                specifiedColonyPickingTool
-
-            ];
-
-            (* Extract the necessary information *)
-            destContainerNumberOfWells = fastAssocLookup[combinedFastAssoc,destPlateModel,NumberOfWells];
-            destContainerDeepWellQ = GreaterEqualQ[fastAssocLookup[combinedFastAssoc,destPlateModel,WellDepth],37 Millimeter];
-
-            colonyPickingToolNumberOfHeads = fastAssocLookup[combinedFastAssoc,colonyPickingToolModel,NumberOfHeads];
-            colonyPickingToolDeepWellQ = EqualQ[fastAssocLookup[combinedFastAssoc,colonyPickingToolModel,HeadLength], 19.4 Millimeter];
-            colonyPickingToolApplication = fastAssocLookup[combinedFastAssoc,colonyPickingToolModel,Application];
-
-            (* Check if they are compatible *)
-            If[
-              Or[
-                !Or[
-                  MatchQ[destContainerNumberOfWells,colonyPickingToolNumberOfHeads],
-                  And[MatchQ[destContainerNumberOfWells,1], MatchQ[colonyPickingToolNumberOfHeads,96]]
-                ],
-                !MatchQ[destContainerDeepWellQ,colonyPickingToolDeepWellQ],
-                !MatchQ[colonyPickingToolApplication,Pick]
+  
+            (* Get the possible deposit locations *)
+            possibleDepositLocationsPerContainer = Flatten@Map[
+              Function[{container},
+                Module[{destContainerModel, destContainerNumberOfWells},
+    
+                  (* Get the destination container Model *)
+                  destContainerModel = Switch[#,
+                    (* If container is an object look up the model *)
+                    ObjectP[Object[Container]], fastAssocLookup[combinedFastAssoc, #, Model],
+                    (* If container is {Number,Model} get the second element *)
+                    _List, Last[#],
+                    (* Otherwise container is already a model *)
+                    _, #
+                  ];
+    
+                  (* Get the number of wells in the container *)
+                  destContainerNumberOfWells = If[MatchQ[fastAssocLookup[combinedFastAssoc, destContainerModel, NumberOfWells], $Failed],
+                    (* Model[Container, Vessel] does not have field NumberOfWells *)
+                    1,
+                    fastAssocLookup[combinedFastAssoc, destContainerModel, NumberOfWells]
+                  ];
+
+                  (* An omnitray has 384 spots *)
+                  If[MatchQ[destContainerNumberOfWells, 1],
+                    384,
+                    destContainerNumberOfWells
+                  ]
+                ]& /@ ToList[container]
               ],
-              pickingToolIncompatibleWithDestinationMediaContainerError = True
-            ]
+              expandedDestinationContainers
+            ];
+            (* Do the check *)
+            GreaterQ[Length[resolvedPickCoordinates], Total[possibleDepositLocationsPerContainer]]
           ],
-            Flatten@resolvedDestinationMediaContainer
-          ];
-
-          specifiedColonyPickingTool
-
-        ],
-
-        (* Otherwise, use the specified parameters to choose the tool *)
-        Module[
-          {
-            headDiameterPattern,headLengthPattern,numberOfHeadsPattern,colonyHandlerHeadCassetteApplicationPattern,
-            filterPattern,filteredPartPackets
-          },
-
-          (* Create a pattern to filter our parts based on the given options *)
-          (* Create a pattern for HeadDiameter *)
-          headDiameterPattern = If[MatchQ[specifiedHeadDiameter,Except[Automatic]],
-            KeyValuePattern[{
-              HeadDiameter -> RangeP[specifiedHeadDiameter]
-            }],
-            _
-          ];
-
-          (* Create a pattern for HeadLength *)
-          headLengthPattern = If[MatchQ[specifiedHeadLength,Except[Automatic]],
-            KeyValuePattern[{
-              HeadLength -> RangeP[specifiedHeadLength]
-            }],
-            _
-          ];
-
-          (* Create a pattern for NumberOfHeads *)
-          numberOfHeadsPattern = If[IntegerQ[specifiedNumberOfHeads],
-            KeyValuePattern[{
-              NumberOfHeads -> specifiedNumberOfHeads
-            }],
-            _
-          ];
-
-          (* Create a pattern for Application *)
-          colonyHandlerHeadCassetteApplicationPattern = If[IntegerQ[specifiedColonyHandlerHeadCassetteApplication],
-            KeyValuePattern[{
-              ColonyHandlerHeadCassetteApplication -> specifiedColonyHandlerHeadCassetteApplication
-            }],
-            _
-          ];
-
-          (* Combine the patterns *)
-          filterPattern = PatternUnion[
-            headDiameterPattern,
-            headLengthPattern,
-            numberOfHeadsPattern,
-            colonyHandlerHeadCassetteApplicationPattern
-          ];
-
-          (* Filter the part packets to see if we can support the user requests *)
-          filteredPartPackets = Cases[First/@pickingColonyHandlerHeadCassettesPackets,filterPattern];
-
-          (* Do we have any valid parts? *)
-          Which[
-            Length[filteredPartPackets]==0,
-              (* If we do not mark an error *)
-              noAvailablePickingToolError = True;
-              (* Return Null *)
-              Null,
-            
-            (* If the destination media container is not valid *)
-            invalidDestinationMediaContainerError,
-              (* Just return Null *)
-              Null,
-
-            (* There are available parts - do additional checks to see if they match the destination media container *)
-            (* or if they filtered out all heads compatible with the destination media container *)
-            True,
-              Module[
-                {
-                  resolvedDestinationMediaContainerModels,destContainerNumWells,validNumberOfWellsParts,destContainerDeepwellQ,validDeepWellParts,
-                  sampleComposition,modelCellToUse,preferredColonyHandlerHeads,validPreferredColonyHandlerHeads
-                },
-
-                resolvedDestinationMediaContainerModels = Switch[#,
-
-                  (* If the plate is an object, look up the Model *)
-                  ObjectP[Object[Container,Plate]],
-                    Download[fastAssocLookup[combinedFastAssoc,#,Model],Object],
-
-                  (* If the plate is a list of Objects[flatten and get the models] *)
-                  {ObjectP[Object[Container,Plate]]..},
-                    Sequence@@(Download[fastAssocLookup[combinedFastAssoc,#,Model],Object]),
-
-                  (* If the plate is a Model, keep it *)
-                  _,
-                    #
-                ]&/@resolvedDestinationMediaContainer;
-                
-                (* Get the number of wells in the destination media container *)
-                destContainerNumWells = fastAssocLookup[combinedFastAssoc,resolvedDestinationMediaContainerModels,NumberOfWells];
-
-                (* Filter based on number of wells of the destination media container *)
-                validNumberOfWellsParts = Which[
-
-                  (* MemberQ[destContainerNumWells,24]No head can support both 24 well plates and 96 well plates *)
-                  MemberQ[destContainerNumWells,24]&&(MemberQ[destContainerNumWells,96]||MemberQ[destContainerNumWells,1]),
-                    {},
-
-                  (* 24 well plates support the 24 head cassettes *)
-                  MemberQ[destContainerNumWells,24],
-                    Cases[filteredPartPackets,KeyValuePattern[NumberOfHeads->24]],
-
-                  (* Omnitrays and 96 well plates use the 96 head cassettes *)
-                  (MemberQ[destContainerNumWells,96]||MemberQ[destContainerNumWells,1]),
-                    Cases[filteredPartPackets,KeyValuePattern[NumberOfHeads->96]],
-
-                  (* Catch all *)
-                  True,
-                    {}
-                ];
-
-                (* Get whether the destination media container is a deep well plate *)
-                destContainerDeepwellQ = GreaterEqualQ[#,37 Millimeter]&/@fastAssocLookup[combinedFastAssoc,resolvedDestinationMediaContainerModels,WellDepth];
-
-                (* Filter based on whether the destination media container is deep well *)
-                validDeepWellParts = Which[
-                  (* No head supports both deep well and non deep well depositing *)
-                  !SameQ[destContainerDeepwellQ],
-                      {},
-                  (* If only Deep well plates are detected *)
-                  MemberQ[destContainerDeepwellQ,True],
-                    Cases[validNumberOfWellsParts,KeyValuePattern[HeadLength->RangeP[19.4 Millimeter]]],
-
-                  (* If only non deep well plates are detected *)
-                  MemberQ[destContainerDeepwellQ,False],
-                    Cases[validNumberOfWellsParts,KeyValuePattern[HeadLength->RangeP[9.4 Millimeter]]],
-
-                  (* Catch all *)
-                  True,
-                    {}
-                ];
-
-                (* Lookup the sample composition *)
-                sampleComposition = fastAssocLookup[combinedFastAssoc,mySample,Composition];
-
-                (* Get the first Model[Cell] in the composition if it exists *)
-                modelCellToUse = If[!MatchQ[sampleComposition,Null|{}],
-                  FirstCase[fastAssocLookup[combinedFastAssoc,mySample,Composition][[All,2]],ObjectP[Model[Cell]],Null],
-                  Null
-                ];
-
-                (* If there is a model cell, lookup the PreferredColonyHandlerHeadCassettes *)
-                preferredColonyHandlerHeads = Download[If[!NullQ[modelCellToUse],
-                  fastAssocLookup[combinedFastAssoc,modelCellToUse,PreferredColonyHandlerHeadCassettes],
-                  {}
-                ],Object];
-
-                (* Get any preferred colony handler heads that also match our filters *)
-                validPreferredColonyHandlerHeads = Intersection[Lookup[validDeepWellParts,Object,{}],preferredColonyHandlerHeads];
-
-                (* Use a preferred head if one exists, if one does not exist, use a filtered part, if there are no more valid parts, return Null *)
-                Which[
-
-                  (* There is a valid preferred head *)
-                  Length[validPreferredColonyHandlerHeads] > 0,
-                    First[validPreferredColonyHandlerHeads],
-
-                  (* There is a valid head but it is not preferred *)
-                  Length[validDeepWellParts] > 0,
-                    Lookup[First[validDeepWellParts],Object],
-
-                  (* There are no valid heads *)
-                  True,
-                    noAvailablePickingToolError = True;
+          (* Do nothing if pick coordinates are not set *)
+          False
+        ];
+  
+        (* Resolve the MediaVolume *)
+        updatedMediaVolume = MapThread[
+          Function[{mediaVolume, individualResolvedDestinationMediaContainer, individualResolvedDestinationMediaType},
+            If[MatchQ[mediaVolume, Automatic],
+              (* If the option is Automatic, resolve based on the DestinationMediaType *)
+              If[MatchQ[individualResolvedDestinationMediaType, LiquidMedia],
+                (* If the option is liquid media, lookup the recommendedFillVolume and MaxVolume of the DestinationMediaContainer *)
+                Module[{destContainerModel, recommendedFillVolume, maxVolume},
+    
+                  (* Get the destination container model *)
+                  destContainerModel = If[MatchQ[individualResolvedDestinationMediaContainer, ListableP[ObjectP[Object[Container]]]],
+                    (* If container is an object look up the model *)
+                    fastAssocLookup[combinedFastAssoc, individualResolvedDestinationMediaContainer, Model],
+                    (* Otherwise container is already a model *)
+                    individualResolvedDestinationMediaContainer
+                  ];
+    
+                  (* Lookup the necessary values *)
+                  recommendedFillVolume = If[MatchQ[fastAssocLookup[combinedFastAssoc, destContainerModel, RecommendedFillVolume], VolumeP],
+                    Min[fastAssocLookup[combinedFastAssoc, destContainerModel, RecommendedFillVolume]],
                     Null
-                ]
-              ]
+                  ];
+                  maxVolume = Min[fastAssocLookup[combinedFastAssoc, destContainerModel, MaxVolume]];
+    
+                  (* Use the recommended fill volume if it exists and is less than the max we can do with one transfer, or the max transfer volume, or otherwise use 40% of the max volume *)
+                  If[!NullQ[recommendedFillVolume],
+                    Min[recommendedFillVolume, $MaxRoboticSingleTransferVolume],
+                    Min[maxVolume * 0.4, $MaxRoboticSingleTransferVolume]
+                  ]
+    
+                ],
+                (* If DestinationMediaType is not LiquidMedia, return Null *)
+                Null
+              ],
+            (* If the option is not automatic, mark an error if DestinationMediaType is SolidMedia *)
+            If[MatchQ[individualResolvedDestinationMediaType, SolidMedia],
+              mediaVolumeMismatchError = True
+            ];
+  
+            (* return the option as is *)
+            mediaVolume
           ]
-        ]
-      ];
-
-      (* Check if the resolved colony picking tool is preferred for the sample *)
-      (* Don't throw additional errors if a tool was not found *)
-      If[!NullQ[resolvedColonyPickingTool],
-        Module[{colonyPickingToolModel,cellModel,preferredColonyHandlerHeads},
-
-          (* Get the resolved tool model *)
-          colonyPickingToolModel = If[MatchQ[resolvedColonyPickingTool,ObjectP[Object[Part,ColonyHandlerHeadCassette]]],
-            Download[fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,Model],Object],
-            resolvedColonyPickingTool
+        ],
+          {specifiedMediaVolume, updatedDestinationMediaContainer, updatedDestinationMediaType}
+        ];
+  
+        (* Resolve the maxDestinationNumberOfRows and maxDestinationNumberOfColumns *)
+        updatedMaxDestinationNumberOfRows = Map[
+          Function[{maxDestinationNumberOfRows},
+            If[MatchQ[maxDestinationNumberOfRows, Automatic],
+              (* If the option is automatic, set to Null if destination fill direction is custom coordinates *)
+              If[MatchQ[resolvedDestinationFillDirection, CustomCoordinates],
+                Null,
+                (* Otherwise leave as is (this is a long automatic as we don't know how many colonies we are picking yet) *)
+                maxDestinationNumberOfRows
+              ],
+    
+              (* If the option is not automatic (or Null), mark an error if destination fill direction is custom coordinates *)
+              If[MatchQ[resolvedDestinationFillDirection, CustomCoordinates] && !NullQ[maxDestinationNumberOfRows],
+                destinationFillDirectionMismatchError = True
+              ];
+    
+              (* Return the option as is *)
+              maxDestinationNumberOfRows
+            ]
+          ],
+          specifiedMaxDestinationNumberOfRows
+        ];
+  
+        (* Resolve the maxDestinationNumberOfColumns and maxDestinationNumberOfColumns *)
+        updatedMaxDestinationNumberOfColumns = Map[
+          Function[{maxDestinationNumberOfColumns},
+            If[MatchQ[maxDestinationNumberOfColumns, Automatic],
+              (* If the option is automatic, set to Null if destination fill direction is custom coordinates *)
+              If[MatchQ[resolvedDestinationFillDirection, CustomCoordinates],
+                Null,
+                (* Otherwise leave as is (this is a long automatic as we don't know how many colonies we are picking yet) *)
+                maxDestinationNumberOfColumns
+              ],
+    
+              (* If the option is not automatic (or Null), mark an error if destination fill direction is custom coordinates *)
+              If[MatchQ[resolvedDestinationFillDirection, CustomCoordinates] && !NullQ[maxDestinationNumberOfColumns],
+                destinationFillDirectionMismatchError = True
+              ];
+    
+              (* Return the option as is *)
+              maxDestinationNumberOfColumns
+            ]
+          ],
+          specifiedMaxDestinationNumberOfColumns
+        ];
+  
+        (* Resolve DestinationCoordinates *)
+        updatedDestinationCoordinates = Map[
+          Function[{destinationCoordinates},
+            If[MatchQ[destinationCoordinates, Null],
+              (* Check for missing destination coordinates *)
+              If[MatchQ[resolvedDestinationFillDirection, CustomCoordinates],
+                missingDestinationCoordinatesError = True
+              ];
+    
+              (* Return destinationCoordinates *)
+              destinationCoordinates,
+    
+              (* If there are coordinates, check their length, but keep them *)
+              If[Length[destinationCoordinates] > 384,
+                tooManyDestinationCoordinatesWarning = True
+              ];
+              destinationCoordinates
+            ]
+          ],
+          specifiedDestinationCoordinates
+        ];
+  
+        (* Resolve DestinationMix *)
+        updatedDestinationMix = MapThread[
+          Function[{destinationMix, individualDestinationMediaType, destinationNumberOfMixes},
+            If[MatchQ[destinationMix, Automatic],
+              (* If the option is Automatic, set to True if DestinationMediaType is LiquidMedia or if DestinationNumberOfMixes is set *)
+              If[MatchQ[individualDestinationMediaType, LiquidMedia] || IntegerQ[destinationNumberOfMixes],
+                True,
+                False
+              ],
+    
+              (* Otherwise return the option as is *)
+              destinationMix
+            ]
+          ],
+          {specifiedDestinationMix, updatedDestinationMediaType, specifiedDestinationNumberOfMixes}
+        ];
+  
+        updatedDestinationNumberOfMixes = MapThread[
+          Function[{destinationNumberOfMixes, individualResolvedDestinationMix},
+            If[MatchQ[destinationNumberOfMixes, Automatic],
+              (* If the option is Automatic, set to 5 if destination mixing is turned on, otherwise resolve to Null *)
+              If[TrueQ[individualResolvedDestinationMix],
+                5,
+                Null
+              ],
+    
+              (* Otherwise keep the option as is *)
+              destinationNumberOfMixes
+            ]
+          ],
+          {specifiedDestinationNumberOfMixes, updatedDestinationMix}
+        ];
+  
+        (* Check for mix option mismatch *)
+        (* This occurs if one mix option is Null and the other is not, or if DestinationMix -> False but Number of mixes is still set *)
+        MapThread[
+          If[Or[
+            NullQ[#1] && !NullQ[#2],
+            NullQ[#2] && TrueQ[#1],
+            MatchQ[#1,False] && IntegerQ[#2]
+            ],
+            destinationMixMismatchError = True
+          ]&,
+          {updatedDestinationMix, updatedDestinationNumberOfMixes}
+        ];
+  
+        (* Check to see if Mixing can be turned on at all *)
+        MapThread[
+          Module[{mixOptionSetQ},
+            mixOptionSetQ = TrueQ[#1] || IntegerQ[#2];
+  
+            If[mixOptionSetQ && MatchQ[#3, SolidMedia],
+              invalidMixOptionError = True
+            ]
+          ]&,
+          {updatedDestinationMix, updatedDestinationNumberOfMixes, updatedDestinationMediaType}
+        ];
+  
+        (* -- Picking -- *)
+        (* First resolve the ColonyPickingTool *)
+        updatedColonyPickingTool = If[!MatchQ[specifiedColonyPickingTool, Automatic],
+  
+          (* If the tool is not Automatic, check if it is compatible with the DestinationMediaContainer *)
+          Module[
+            {
+              destPlateModel, colonyPickingToolModel, destContainerNumberOfWells, destContainerDeepWellQ,
+              colonyPickingToolNumberOfHeads, colonyPickingToolDeepWellQ, colonyPickingToolApplication
+            },
+  
+            Map[
+              Function[{destContainer},
+              (* The tool can be invalid if: *)
+              (* Deep well tool and not deep well plate (and vice versa) *)
+              (* 24 pin tool in 96 well plate (and vice versa) *)
+              (* *96 pins are ok on 1 well plates *)
+              (* Its application is not picking *)
+  
+                (* Get the dest plate model *)
+                destPlateModel = Switch[destContainer,
+                  (* If container is an object look up the model *)
+                  ObjectP[Object[Container]],
+                    fastAssocLookup[combinedFastAssoc, destContainer, Model],
+                  (* Otherwise container is already a model *)
+                  _,
+                    destContainer
+                ];
+    
+                (* Get the colony picking tool model *)
+                colonyPickingToolModel = Switch[specifiedColonyPickingTool,
+                  (* If an Object, look up the Model *)
+                  ObjectP[Object[Part, ColonyHandlerHeadCassette]],
+                    Download[fastAssocLookup[combinedFastAssoc, specifiedColonyPickingTool, Model], Object],
+                  (* Otherwise already a Model *)
+                  _,
+                    specifiedColonyPickingTool
+    
+                ];
+    
+                (* Extract the necessary information *)
+                destContainerNumberOfWells = fastAssocLookup[combinedFastAssoc, destPlateModel, NumberOfWells]/.$Failed->1;
+                destContainerDeepWellQ = GreaterEqualQ[fastAssocLookup[combinedFastAssoc, destPlateModel, WellDepth], 37 Millimeter];
+    
+                colonyPickingToolNumberOfHeads = fastAssocLookup[combinedFastAssoc, colonyPickingToolModel, NumberOfHeads];
+                colonyPickingToolDeepWellQ = EqualQ[fastAssocLookup[combinedFastAssoc, colonyPickingToolModel, HeadLength], 19.4 Millimeter];
+                colonyPickingToolApplication = fastAssocLookup[combinedFastAssoc, colonyPickingToolModel, Application];
+    
+                (* Check if they are compatible *)
+                If[
+                  Or[
+                    !Or[
+                      MatchQ[destContainerNumberOfWells, colonyPickingToolNumberOfHeads],
+                      And[MatchQ[destContainerNumberOfWells, 1], MatchQ[colonyPickingToolNumberOfHeads, 96]]
+                    ],
+                    !MatchQ[destContainerDeepWellQ, colonyPickingToolDeepWellQ],
+                    !MatchQ[colonyPickingToolApplication, Pick]
+                  ],
+                  pickingToolIncompatibleWithDestinationMediaContainerError = True
+                ]
+              ],
+              Flatten@updatedDestinationMediaContainer
+            ];
+  
+            specifiedColonyPickingTool
+  
+          ],
+  
+          (* Otherwise, use the specified parameters to choose the tool *)
+          Module[
+            {
+              headDiameterPattern, headLengthPattern, numberOfHeadsPattern, colonyHandlerHeadCassetteApplicationPattern,
+              filterPattern, filteredPartPackets
+            },
+  
+            (* Create a pattern to filter our parts based on the given options *)
+            (* Create a pattern for HeadDiameter *)
+            headDiameterPattern = If[MatchQ[specifiedHeadDiameter, Except[Automatic]],
+              KeyValuePattern[{
+                HeadDiameter -> RangeP[specifiedHeadDiameter]
+              }],
+              _
+            ];
+  
+            (* Create a pattern for HeadLength *)
+            headLengthPattern = If[MatchQ[specifiedHeadLength, Except[Automatic]],
+              KeyValuePattern[{
+                HeadLength -> RangeP[specifiedHeadLength]
+              }],
+              _
+            ];
+  
+            (* Create a pattern for NumberOfHeads *)
+            numberOfHeadsPattern = If[IntegerQ[specifiedNumberOfHeads],
+              KeyValuePattern[{
+                NumberOfHeads -> specifiedNumberOfHeads
+              }],
+              _
+            ];
+  
+            (* Create a pattern for Application *)
+            colonyHandlerHeadCassetteApplicationPattern = If[IntegerQ[specifiedColonyHandlerHeadCassetteApplication],
+              KeyValuePattern[{
+                ColonyHandlerHeadCassetteApplication -> specifiedColonyHandlerHeadCassetteApplication
+              }],
+              _
+            ];
+  
+            (* Combine the patterns *)
+            filterPattern = PatternUnion[
+              headDiameterPattern,
+              headLengthPattern,
+              numberOfHeadsPattern,
+              colonyHandlerHeadCassetteApplicationPattern
+            ];
+  
+            (* Filter the part packets to see if we can support the user requests *)
+            filteredPartPackets = Cases[First /@ pickingColonyHandlerHeadCassettesPackets, filterPattern];
+  
+            (* Do we have any valid parts? *)
+            Which[
+              Length[filteredPartPackets] == 0,
+                (* If we do not mark an error *)
+                (* Return 96-pin as we cannot resolve Null for the picking tool and track noAvailablePickingToolError separately *)
+                  noAvailablePickingToolError = True; Model[Part, ColonyHandlerHeadCassette, "id:vXl9j5l87OzZ"],
+              (* If the destination media container is not valid *)
+              (* Just default to 96 pin when destination media container is not valid *)
+              invalidDestinationMediaContainerError,
+                Model[Part, ColonyHandlerHeadCassette, "id:vXl9j5l87OzZ"],
+              (* There are available parts - do additional checks to see if they match the destination media container *)
+              (* or if they filtered out all heads compatible with the destination media container *)
+              True,
+                Module[
+                  {
+                    resolvedDestinationMediaContainerModels, destContainerNumWells, validNumberOfWellsParts, destContainerDeepwellQ,
+                    validDeepWellParts, sampleComposition, modelCellToUse, preferredColonyHandlerHeads, validPreferredColonyHandlerHeads
+                  },
+  
+                  resolvedDestinationMediaContainerModels = Switch[#,
+  
+                    (* If the plate is an object, look up the Model *)
+                    ObjectP[Object[Container]],
+                      Download[fastAssocLookup[combinedFastAssoc, #, Model], Object],
+  
+                    (* If the plate is a list of Objects[flatten and get the models] *)
+                    {ObjectP[Object[Container]]..},
+                      Sequence@@(Download[fastAssocLookup[combinedFastAssoc, #, Model], Object]),
+  
+                    (* If the plate is a Model, keep it *)
+                    _,
+                      #
+                  ]& /@ updatedDestinationMediaContainer;
+                  
+                  (* Get the number of wells in the destination media container *)
+                  destContainerNumWells = fastAssocLookup[combinedFastAssoc, resolvedDestinationMediaContainerModels, NumberOfWells]/.$Failed->1;
+  
+                  (* Filter based on number of wells of the destination media container *)
+                  validNumberOfWellsParts = Which[
+                    (* MemberQ[destContainerNumWells,24]No head can support both 24 well plates and 96 well plates *)
+                    MemberQ[destContainerNumWells, 24]&&(MemberQ[destContainerNumWells, 96] || MemberQ[destContainerNumWells, 1]),
+                      {},
+                    (* 24 well plates support the 24 head cassettes *)
+                    MemberQ[destContainerNumWells, 24],
+                      Cases[filteredPartPackets, KeyValuePattern[NumberOfHeads -> 24]],
+                    (* Omnitrays and 96 well plates use the 96 head cassettes *)
+                    (MemberQ[destContainerNumWells, 96] || MemberQ[destContainerNumWells, 1]),
+                      Cases[filteredPartPackets, KeyValuePattern[NumberOfHeads -> 96]],
+                    (* Catch all *)
+                    True,
+                      {}
+                  ];
+  
+                  (* Get whether the destination media container is a deep well plate *)
+                  destContainerDeepwellQ = GreaterEqualQ[#, 37 Millimeter]& /@ fastAssocLookup[combinedFastAssoc, resolvedDestinationMediaContainerModels, WellDepth];
+  
+                  (* Filter based on whether the destination media container is deep well *)
+                  validDeepWellParts = Which[
+                    (* No head supports both deep well and non deep well depositing *)
+                    !SameQ[destContainerDeepwellQ],
+                        {},
+                    (* If only Deep well plates are detected *)
+                    MemberQ[destContainerDeepwellQ, True],
+                      Cases[validNumberOfWellsParts, KeyValuePattern[HeadLength -> RangeP[19.4 Millimeter]]],
+                    (* If only non deep well plates are detected *)
+                    MemberQ[destContainerDeepwellQ, False],
+                      Cases[validNumberOfWellsParts, KeyValuePattern[HeadLength -> RangeP[9.4 Millimeter]]],
+                    (* Catch all *)
+                    True,
+                      {}
+                  ];
+  
+                  (* Lookup the sample composition *)
+                  sampleComposition = fastAssocLookup[combinedFastAssoc, mySample, Composition];
+  
+                  (* Get the first Model[Cell] in the composition if it exists *)
+                  modelCellToUse = FirstOrDefault@selectMainCellFromSample[mySample, Cache -> combinedCache, Simulation -> currentSimulation];
+  
+                  (* If there is a model cell, lookup the PreferredColonyHandlerHeadCassettes *)
+                  preferredColonyHandlerHeads = Download[If[!NullQ[modelCellToUse],
+                    fastAssocLookup[combinedFastAssoc, modelCellToUse, PreferredColonyHandlerHeadCassettes],
+                    {}
+                  ], Object];
+  
+                  (* Get any preferred colony handler heads that also match our filters *)
+                  validPreferredColonyHandlerHeads = Intersection[Lookup[validDeepWellParts, Object, {}], preferredColonyHandlerHeads];
+  
+                  (* Use a preferred head if one exists, if one does not exist, use a filtered part, if there are no more valid parts, return Null *)
+                  Which[
+                    (* There is a valid preferred head *)
+                    Length[validPreferredColonyHandlerHeads] > 0,
+                      First[validPreferredColonyHandlerHeads],
+                    (* There is a valid head but it is not preferred *)
+                    Length[validDeepWellParts] > 0,
+                      Lookup[First[validDeepWellParts], Object],
+                    (* There are no valid heads just default to 96 pin *)
+                    True,
+                      noAvailablePickingToolError = True;
+                      Model[Part, ColonyHandlerHeadCassette, "id:vXl9j5l87OzZ"]
+                  ]
+                ]
+            ]
+          ]
+        ];
+  
+        (* Check if the resolved colony picking tool is preferred for the sample *)
+        (* Don't throw additional errors if a tool was not found *)
+        If[!NullQ[updatedColonyPickingTool],
+          Module[{colonyPickingToolModel, cellModel, preferredColonyHandlerHeads},
+  
+            (* Get the resolved tool model *)
+            colonyPickingToolModel = If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part, ColonyHandlerHeadCassette]]],
+              Download[fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, Model], Object],
+              updatedColonyPickingTool
+            ];
+  
+            (* Get the composition *)
+            (* Get the first Model[Cell] from the composition *)
+            cellModel = FirstOrDefault@selectMainCellFromSample[mySample, Cache -> combinedCache, Simulation -> currentSimulation];
+  
+            (* Get any PreferredColonyHandlerHeads *)
+            preferredColonyHandlerHeads = Download[fastAssocLookup[combinedFastAssoc, cellModel, PreferredColonyHandlerHeadCassettes], Object];
+  
+            (* See if the chosen tool model is preferred for the cell *)
+            notPreferredColonyHandlerHeadWarning = !MemberQ[preferredColonyHandlerHeads, colonyPickingToolModel]
+          ]
+        ];
+        
+        (* Resolve the ColonyHandler head parameter options *)
+        (* HeadDiameter *)
+        updatedHeadDiameter = If[MatchQ[specifiedHeadDiameter, Automatic],
+          (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
+          If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, HeadDiameter}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, HeadDiameter]
+          ],
+          (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
+          If[!MatchQ[specifiedHeadDiameter, RangeP[If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, HeadDiameter}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, HeadDiameter]
+          ]]],
+            headDiameterMismatchError = True
           ];
-
-          (* Get the composition *)
-          (* Get the first Model[Cell] from the composition *)
-          cellModel = FirstCase[fastAssocLookup[combinedFastAssoc,mySample,Composition][[All,2]],ObjectP[Model[Cell]],Null];
-
-          (* Get any PreferredColonyHandlerHeads *)
-          preferredColonyHandlerHeads = Download[fastAssocLookup[combinedFastAssoc,cellModel,PreferredColonyHandlerHeadCassettes],Object];
-
-          (* See if the chosen tool model is preferred for the cell *)
-          notPreferredColonyHandlerHeadWarning = !MemberQ[preferredColonyHandlerHeads,colonyPickingToolModel]
-        ]
-      ];
-      
-      (* Resolve the ColonyHandler head parameter options *)
-      (* HeadDiameter *)
-      resolvedHeadDiameter = If[MatchQ[specifiedHeadDiameter,Automatic],
-        (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
-        (* If the resolvedColonyPickingTool is Null, set to Null *)
-        Which[
-          NullQ[resolvedColonyPickingTool],
-            Null,
-          MatchQ[resolvedColonyPickingTool,ObjectP[Object[Part]]],
-            fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,HeadDiameter}],
-          True,
-            fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,HeadDiameter]
-        ],
-        (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
-        If[!MatchQ[specifiedHeadDiameter,RangeP[If[MatchQ[resolvedColonyPickingTool, ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,HeadDiameter}],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,HeadDiameter]
-        ]]],
-          headDiameterMismatchError = True
+          specifiedHeadDiameter
         ];
-        specifiedHeadDiameter
-      ];
-      
-      (* HeadLength *)
-      resolvedHeadLength = If[MatchQ[specifiedHeadLength,Automatic],
-        (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
-        (* If the resolvedColonyPickingTool is Null, set to Null *)
-        Which[
-          NullQ[resolvedColonyPickingTool],
-          Null,
-          MatchQ[resolvedColonyPickingTool,ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,HeadLength}],
-          True,
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,HeadLength]
-        ],
-        (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
-        If[!MatchQ[specifiedHeadLength,RangeP[If[MatchQ[resolvedColonyPickingTool, ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,HeadLength}],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,HeadLength]
-        ]]],
-          headLengthMismatchError = True
-        ];
-        specifiedHeadLength
-      ];
-      
-      (* NumberOfHeads *)
-      resolvedNumberOfHeads = If[MatchQ[specifiedNumberOfHeads,Automatic],
-        (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
-        (* If the resolvedColonyPickingTool is Null, set to Null *)
-        Which[
-          NullQ[resolvedColonyPickingTool],
-          Null,
-          MatchQ[resolvedColonyPickingTool,ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,NumberOfHeads}],
-          True,
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,NumberOfHeads]
-        ],
-        (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
-        If[!MatchQ[specifiedNumberOfHeads,RangeP[If[MatchQ[resolvedColonyPickingTool, ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,NumberOfHeads}],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,NumberOfHeads]
-        ]]],
-          numberOfHeadsMismatchError = True
-        ];
-        specifiedNumberOfHeads
-      ];
-      
-      (* ColonyHandlerHeadCassetteApplication *)
-      resolvedColonyHandlerHeadCassetteApplication = If[MatchQ[specifiedColonyHandlerHeadCassetteApplication,Automatic],
-        (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
-        (* If the resolvedColonyPickingTool is Null, set to Null *)
-        Which[
-          NullQ[resolvedColonyPickingTool],
-            Null,
-          MatchQ[resolvedColonyPickingTool,ObjectP[Object[Part]]],
-            fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,Application}],
-          True,
-            fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,Application]
-        ],
-        (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
-        If[!MatchQ[specifiedColonyHandlerHeadCassetteApplication,If[MatchQ[resolvedColonyPickingTool, ObjectP[Object[Part]]],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,{Model,Application}],
-          fastAssocLookup[combinedFastAssoc,resolvedColonyPickingTool,Application]
-        ]],
-          colonyHandlerHeadCassetteApplicationMismatchError = True
-        ];
-        specifiedColonyHandlerHeadCassetteApplication
-      ];
-
-      (* Resolve ColonyPickingDepth - check to see if it is too high *)
-      resolvedColonyPickingDepth = MapThread[Function[{colonyPickingDepth},
-        Module[{sourceWellDepth},
-
-          (* Lookup the depth of the source well *)
-          sourceWellDepth = fastAssocLookup[combinedFastAssoc,mySample,{Container,Model,WellDepth}];
-
-          If[sourceWellDepth < colonyPickingDepth,
-            invalidColonyPickingDepthError = True;
+        
+        (* HeadLength *)
+        updatedHeadLength = If[MatchQ[specifiedHeadLength, Automatic],
+          (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
+          If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model,HeadLength}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, HeadLength]
+          ],
+          (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
+          If[!MatchQ[specifiedHeadLength, RangeP[If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, HeadLength}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, HeadLength]
+          ]]],
+            headLengthMismatchError = True
           ];
+          specifiedHeadLength
+        ];
+        
+        (* NumberOfHeads *)
+        updatedNumberOfHeads = If[MatchQ[specifiedNumberOfHeads, Automatic],
+          (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
+          (* If the resolvedColonyPickingTool is Null, set to Null *)
+          If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, NumberOfHeads}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, NumberOfHeads]
+          ],
+          (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
+          If[!MatchQ[specifiedNumberOfHeads, RangeP[If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, NumberOfHeads}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, NumberOfHeads]
+          ]]],
+            numberOfHeadsMismatchError = True
+          ];
+          specifiedNumberOfHeads
+        ];
+        
+        (* ColonyHandlerHeadCassetteApplication *)
+        updatedColonyHandlerHeadCassetteApplication = If[MatchQ[specifiedColonyHandlerHeadCassetteApplication, Automatic],
+          (* If the option is Automatic, resolve it to the value of the resolvedColonyPickingTool *)
+          (* If the resolvedColonyPickingTool is Null, set to Null *)
+          If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, Application}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, Application]
+          ],
+          (* If the option is not Automatic, make sure it matches the value of the resolvedColonyPickingTool *)
+          If[!MatchQ[specifiedColonyHandlerHeadCassetteApplication, If[MatchQ[updatedColonyPickingTool, ObjectP[Object[Part]]],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, {Model, Application}],
+            fastAssocLookup[combinedFastAssoc, updatedColonyPickingTool, Application]
+          ]],
+            colonyHandlerHeadCassetteApplicationMismatchError = True
+          ];
+          specifiedColonyHandlerHeadCassetteApplication
+        ];
+  
+        (* Resolve ColonyPickingDepth - check to see if it is too high *)
+        updatedColonyPickingDepth = Map[
+          Function[{colonyPickingDepth},
+            Module[{sourceWellDepth},
+    
+              (* Lookup the depth of the source well *)
+              sourceWellDepth = fastAssocLookup[combinedFastAssoc, mySample, {Container, Model, WellDepth}];
+    
+              If[sourceWellDepth < colonyPickingDepth,
+                invalidColonyPickingDepthError = True;
+              ];
+    
+              (* Return the picking depth *)
+              colonyPickingDepth
+            ]
+          ],
+          specifiedColonyPickingDepth
+        ];
 
-          (* Return the picking depth *)
-          colonyPickingDepth
-        ]
-      ],
-        {specifiedColonyPickingDepth}
-      ];
-      
-      (* Gather MapThread results *)
-      {
-        (* -- ERROR TRACKING VARIABLES -- *)
-        imagingOptionMismatchError, missingImagingChannelsError,duplicateImagingChannelsWarning,
-        imagingOptionSameLengthError,pickCoordinatesMismatchError,
-        destinationMediaStateError,destinationMediaTypeMismatchError,invalidDestinationMediaContainerError,tooManyDestinationMediaContainersError,tooManyPickCoordinatesError,destinationFillDirectionMismatchError,
-        missingDestinationCoordinatesError,tooManyDestinationCoordinatesWarning,destinationMixMismatchError,invalidMixOptionError,pickingToolIncompatibleWithDestinationMediaContainerError,
-        noAvailablePickingToolError,notPreferredColonyHandlerHeadWarning,headDiameterMismatchError,headLengthMismatchError,numberOfHeadsMismatchError,
-        colonyHandlerHeadCassetteApplicationMismatchError,invalidColonyPickingDepthError,
+        (* Expand and resolve SamplesOutStorageConditon *)
+        updatedSamplesOutStorageCondition = If[ListQ[samplesOutStorageConditionsPossiblyCollapsed] && ListQ[updatedMediaVolume] && Length[samplesOutStorageConditionsPossiblyCollapsed] == Length[updatedMediaVolume],
+          samplesOutStorageConditionsPossiblyCollapsed,
+          (updatedMediaVolume /. {VolumeP -> samplesOutStorageConditionsPossiblyCollapsed})
+        ];
 
-        (* -- ERROR EXTRA INFORMATION -- *)
-        missingImagingChannels,
-
-        (* -- RESOLVED OPTIONS -- *)
-        (* Imaging *)
-        resolvedImagingChannels,resolvedExposureTimes,
-
-        (* Picking *)
-        resolvedColonyPickingTool,resolvedHeadDiameter,resolvedHeadLength,resolvedNumberOfHeads,
-        resolvedColonyHandlerHeadCassetteApplication,resolvedColonyPickingDepth,
-
-        (* Destination *)
-        resolvedDestinationMediaType,resolvedDestinationMedia,resolvedDestinationMediaContainer,
-        resolvedMaxDestinationNumberOfColumns,resolvedMaxDestinationNumberOfRows,resolvedDestinationCoordinates,
-        resolvedMediaVolume,resolvedDestinationMix,resolvedDestinationNumberOfMixes
-      }
-    ]
-  ],{mySamples,mapThreadFriendlyOptions}]];
+        (* Gather MapThread results *)
+        {
+          (* -- ERROR TRACKING VARIABLES -- *)
+          missingImagingStrategyInfo,(*1*)
+          imagingOptionSameLengthError,(*3*)
+          pickCoordinatesMismatchError,(*4*)
+          destinationMediaStateError,(*5*)
+          destinationMediaTypeMismatchError,(*6*)
+          invalidDestinationMediaContainerError,(*7*)
+          tooManyDestinationMediaContainersError,(*8*)
+          tooManyPickCoordinatesError,(*9*)
+          destinationFillDirectionMismatchError,(*10*)
+          missingDestinationCoordinatesError,(*11*)
+          tooManyDestinationCoordinatesWarning,(*12*)
+          destinationMixMismatchError,(*13*)
+          invalidMixOptionError,(*14*)
+          pickingToolIncompatibleWithDestinationMediaContainerError,(*15*)
+          noAvailablePickingToolError,(*16*)
+          notPreferredColonyHandlerHeadWarning,(*17*)
+          headDiameterMismatchError,(*18*)
+          headLengthMismatchError,(*19*)
+          numberOfHeadsMismatchError,(*20*)
+          colonyHandlerHeadCassetteApplicationMismatchError,(*21*)
+          invalidColonyPickingDepthError,(*22*)
+          (* -- RESOLVED OPTIONS -- *)
+          (* Imaging *)
+          updatedImagingChannels,(*23*)
+          updatedImagingStrategies,(*24*)
+          updatedExposureTimes,(*25*)
+          (* Picking *)
+          updatedColonyPickingTool,(*26*)
+          updatedHeadDiameter,(*27*)
+          updatedHeadLength,(*28*)
+          updatedNumberOfHeads,(*29*)
+          updatedColonyHandlerHeadCassetteApplication,(*30*)
+          updatedColonyPickingDepth,(*31*)
+          (* Destination *)
+          updatedDestinationMediaType,(*32*)
+          updatedDestinationMedia,(*33*)
+          updatedDestinationMediaContainer,(*34*)
+          updatedMaxDestinationNumberOfColumns,(*35*)
+          updatedMaxDestinationNumberOfRows,(*36*)
+          updatedDestinationCoordinates,(*37*)
+          updatedMediaVolume,(*38*)
+          updatedDestinationMix,(*39*)
+          updatedDestinationNumberOfMixes,(*40*)
+          updatedSamplesOutStorageCondition(*41*)
+        }
+      ]
+    ],
+    {mySamples, mapThreadFriendlyOptions}
+  ];
 
   (* Variables to keep track of specified label errors *)
   (* NOTE: These contain lists of the form {sample, sample index, population head, number of labels provided, expected number of labels} *)
@@ -4146,6 +4161,9 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
   containerOutLabelLengthErrors = {};
 
   (* Resolve the label options *)
+  (* Currently when there is a Population error, ExperimentPickColonies skip resolving SampleOutLabel/ContainerOutLabel and return {{{}}}. *)
+  (* Since ExpandIndexMatchedInputs check the option pattern, expansion will fail with Error::ValueDoesNotMatchPattern. *)
+  (* If we change this in the future, redo ExperimentInoculateLM resolver where we drop those 2 label options to avoid Error::ValueDoesNotMatchPattern *)
   {resolvedSampleOutLabels,resolvedContainerOutLabels} = Module[
     {
       objectContainerNumAvailablePositionsLookup, objectContainerToReservationsLookup, updatedObjectContainerReservations,
@@ -4461,8 +4479,11 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
                 Ceiling[N[numColonies / Min[96, maxRows * maxCols]]],
 
               (* Otherwise, if destinationMediaType is LiquidMedia, then each plate can hold numberOfWells colonies (restricted by maxNumRows/Cols) *)
+              MatchQ[fastAssocLookup[combinedFastAssoc,container,NumberOfWells], _Integer],
+                Ceiling[N[numColonies / Min[fastAssocLookup[combinedFastAssoc,container,NumberOfWells], maxRows * maxCols]]],
+              (* If there is no NumberOfWells fields, use 1. This is the case when a non-plate DestinationMediaContainer is wrongly specified *)
               True,
-                Ceiling[N[numColonies / Min[fastAssocLookup[combinedFastAssoc,container,NumberOfWells], maxRows * maxCols]]]
+                Ceiling[N[numColonies / Min[1, maxRows * maxCols]]]
             ]
           ],
             {
@@ -4509,7 +4530,7 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
           ];
 
           (* 6. Split the remaining available containers among any tuples with numberOfContainers = All *)
-          allTuplesToPopulate = Take[Flatten[ConstantArray[Cases[tuplesThatNeedToBeAddedStill,{_,_,_,All}],4],1],UpTo[numAvailableContainers]];
+          allTuplesToPopulate = Take[Flatten[ConstantArray[Cases[tuplesThatNeedToBeAddedStill,{_,_,_,All}],2],1],UpTo[numAvailableContainers]];
 
           (* 7. Update the lookup with any tuples with numberOfContainers = All that got assigned spots *)
           Map[
@@ -4777,7 +4798,7 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
                         (* Get the number of colonies to pick from the population (All means 96) or the pick coordinates *)
                         numberOfColoniesToPick = If[MatchQ[population,CustomCoordinates],
                           Length[pickCoordinates],
-                          Module[{populationAssociation,populationHead},
+                          Module[{populationAssociation,populationHead,containerNumberOfWell},
 
                             (* Get the population primitive in association form *)
                             populationAssociation = population[[1]];
@@ -4785,10 +4806,16 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
                             (* Get the head of the population *)
                             populationHead = Head[population];
 
+                            (* If there is no NumberOfWells fields, use 1. This is the case when a non-plate DestinationMediaContainer is wrongly specified *)
+                            containerNumberOfWell = If[MatchQ[fastAssocLookup[combinedFastAssoc,destinationContainers,NumberOfWells], $Failed],
+                              1,
+                              fastAssocLookup[combinedFastAssoc,destinationContainers,NumberOfWells]
+                            ];
+
                             If[MatchQ[populationHead,AllColonies],
                               All,
                               Total[ToList[Lookup[populationAssociation,NumberOfColonies,Automatic] /. Automatic -> 10]]
-                            ] /. {All -> (fastAssocLookup[combinedFastAssoc,destinationContainers,NumberOfWells] * numContainersReserved)}
+                            ] /. {All -> (containerNumberOfWell * numContainersReserved)}
                           ]
                         ];
 
@@ -5321,10 +5348,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have valid length SamplesOutLabels:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have valid length SamplesOutLabels:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" have valid length SamplesOutLabels:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " have valid length SamplesOutLabels:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5361,10 +5388,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have valid length ContainersOutLabels:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have valid length ContainersOutLabels:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" have valid length ContainersOutLabels:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> cache] <> " have valid length ContainersOutLabels:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5373,119 +5400,86 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
   ];
 
   (* Imaging *)
-  (* ImagingOption mismatch *)
-  imagingOptionMismatchOptions = If[MemberQ[imagingOptionMismatchErrors,True]&&messages,
-    Message[Error::ImagingOptionMismatch, PickList[mySamples,imagingOptionMismatchErrors]];
-    {ImagingChannels,ExposureTimes},
+  (* Imaging Option Same Length *)
+  imagingOptionSameLengthOptions = If[MemberQ[imagingOptionSameLengthErrors, True] && messages,
+    Message[Error::ImagingOptionMismatch, PickList[mySamples, imagingOptionSameLengthErrors]];
+    {ImagingChannels, ExposureTimes},
     {}
   ];
 
-  imagingOptionMismatchTests = If[MemberQ[imagingOptionMismatchErrors,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  imagingOptionSameLengthTests = If[MemberQ[imagingOptionSameLengthErrors, True] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,imagingOptionMismatchErrors];
+      failingInputs = PickList[mySamples, imagingOptionSameLengthErrors];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have conflicting Imaging options:",True,True];
+      passingTest = Test["The imaging options for the input samples " <> ObjectToString[passingInputs, Cache -> combinedCache] <> " have the same length:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have conflicting Imaging options:",True,False];
+      failingTest = Test["The imaging options for the input samples " <> ObjectToString[passingInputs, Cache -> combinedCache] <> " have the same length:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* Missing imaging channels *)
-  missingImagingChannelsOptions = If[MemberQ[missingImagingChannelsErrors,True]&&messages,
-    Message[Error::MissingImagingChannels, PickList[mySamples,missingImagingChannelsErrors],PickList[missingImagingChannels,missingImagingChannelsErrors]];
-    {ImagingChannels},
+  missingImagingStrategiesOptions = If[MemberQ[missingImagingStrategiesInfos, Except[{}]] && messages,
+    Message[Error::MissingImagingStrategies,
+      ObjectToString[PickList[mySamples, missingImagingStrategiesInfos, Except[{}]], Cache -> combinedCache],
+      Cases[missingImagingStrategiesInfos, Except[{}]],
+      Which[
+        (* If it contains both, we include both clauses *)
+        MemberQ[Flatten[missingImagingStrategiesInfos], BlueWhiteScreen] && MemberQ[Flatten[missingImagingStrategiesInfos], VioletFluorescence|GreenFluorescence|OrangeFluorescence|RedFluorescence|DarkRedFluorescence],
+        "ImagingStrategies must include the BlueWhiteScreen along with BrightField because Populations is set to include BlueWhiteScreen. Additionally, because Populations is set to include fluorescent excitation and emission pairs, their corresponding fluorescence strategies must be included",
+        MemberQ[Flatten[missingImagingStrategiesInfos], BlueWhiteScreen],
+        "ImagingStrategies must include the BlueWhiteScreen along with BrightField because Populations is set to include BlueWhiteScreen",
+        (* missingImagingStrategyInfos includes a fluroescence one *)
+        True,
+        "The fluorescence strategy must be included along with BrightField because Populations is set to include the corresponding fluorescent excitation and emission pairs"
+      ]
+    ];
+    {ImagingStrategies},
     {}
   ];
 
-  missingImagingChannelsTests = If[MemberQ[missingImagingChannelsErrors,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
+  missingImagingStrategiesTests = If[MemberQ[missingImagingStrategiesInfos, Except[{}]] && gatherTests,
+    Module[{passingInputs, failingInputs, passingTest, failingTest},
 
       (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,missingImagingChannelsErrors];
+      failingInputs = PickList[mySamples, missingImagingStrategiesInfos, Except[{}]];
 
       (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
+      passingInputs = Complement[mySamples, failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have imaging channels specified in a ColonySelection that are not listed in ImagingChannels:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> combinedCache] <> " do not have imaging strategies required in Populations that are not listed in ImagingStrategies:", True, True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have imaging channels specified in a ColonySelection that are not listed in ImagingChannels:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[failingInputs, Cache -> combinedCache] <> " do not have imaging strategies required in Populations that are not listed in ImagingStrategies:", True, False];
 
       (* Return the tests *)
-      {passingTest,failingTest}
-    ],
-    Nothing
-  ];
-
-  (* Duplicate Imaging Channels *)
-  If[MemberQ[duplicateImagingChannelsWarnings,True]&&messages,
-    Message[Warning::DuplicateImagingChannels, PickList[mySamples,duplicateImagingChannelsWarnings]]
-  ];
-
-  duplicateImagingChannelsTests = If[MemberQ[duplicateImagingChannelsWarnings,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
-
-      (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,duplicateImagingChannelsWarnings];
-
-      (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
-
-      (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have repeat imaging channels specified in ImagingChannels:",True,True];
-
-      (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[failingInputs, Cache->cache]<>" do not have repeat imaging channels specified in ImagingChannels:",True,False];
-
-      (* Return the tests *)
-      {passingTest,failingTest}
-    ],
-    Nothing
-  ];
-
-  (* Imaging Option Same Length *)
-  imagingOptionSameLengthOptions = If[MemberQ[imagingOptionSameLengthErrors,True]&&messages,
-    Message[Error::ImagingOptionMismatch, PickList[mySamples,imagingOptionSameLengthErrors]];
-    {ImagingChannels,ExposureTimes},
-    {}
-  ];
-
-  imagingOptionSameLengthTests = If[MemberQ[imagingOptionSameLengthErrors,True]&&gatherTests,
-    Module[{passingInputs,failingInputs,passingTest,failingTest},
-
-      (* Get the failing inputs *)
-      failingInputs = PickList[mySamples,imagingOptionSameLengthErrors];
-
-      (* Get the passing inputs *)
-      passingInputs = Complement[mySamples,failingInputs];
-
-      (* Create the passing test *)
-      passingTest = Test["The ImagingChannels and ExposureTimes options for the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have the same length:",True,True];
-
-      (* Create the failing test *)
-      failingTest = Test["The ImagingChannels and ExposureTimes options for the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have the same length:",True,False];
-
-      (* Return the tests *)
-      {passingTest,failingTest}
+      {passingTest, failingTest}
     ],
     Nothing
   ];
 
   (* Invalid DestinationMedia State *)
   destinationMediaStateOptions = If[MemberQ[destinationMediaStateErrors,True]&&messages,
-    Message[Error::InvalidDestinationMediaState, PickList[mySamples,destinationMediaStateErrors]];
+    Message[
+      Error::InvalidDestinationMediaState,
+      ObjectToString[PickList[mySamples,destinationMediaStateErrors],Cache->cache,Simulation->simulation],
+      Which[
+        MatchQ[Flatten@PickList[resolvedDestinationMediaTypes,destinationMediaStateErrors],{LiquidMedia..}],"Liquid",
+        MatchQ[Flatten@PickList[resolvedDestinationMediaTypes,destinationMediaStateErrors],{SolidMedia..}],"Solid",
+        True,"Liquid or Solid"
+      ]
+    ];
     {DestinationMedia},
     {}
   ];
@@ -5500,10 +5494,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a specified DestinationMedia that has a state of Solid or Liquid:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a specified DestinationMedia that has a state of Solid or Liquid:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a specified DestinationMedia that has a state of Solid or Liquid:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a specified DestinationMedia that has a state of Solid or Liquid:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5528,10 +5522,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" DestinationMedia State matches DestinationMediaType:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " DestinationMedia State matches DestinationMediaType:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" DestinationMedia State matches DestinationMediaType:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " DestinationMedia State matches DestinationMediaType:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5556,10 +5550,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a valid DestinationMediaContainer:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a valid DestinationMediaContainer:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a valid DestinationMediaContainer:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a valid DestinationMediaContainer:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5584,10 +5578,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have less than 6 unique DestinationMediaContainers specified:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have less than 6 unique DestinationMediaContainers specified:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have less than 6 unique DestinationMediaContainers specified:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have less than 6 unique DestinationMediaContainers specified:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5612,10 +5606,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have more specified PickCoordinates than there are deposit locations in DestinationMediaContainer:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have more specified PickCoordinates than there are deposit locations in DestinationMediaContainer:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have more specified PickCoordinates than there are deposit locations in DestinationMediaContainer:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have more specified PickCoordinates than there are deposit locations in DestinationMediaContainer:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5640,10 +5634,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have Null MaxDestinationNumberOfRows and MaxDestinationNumberOfColumns if DestinationFillDirection is CustomCoordinates:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have Null MaxDestinationNumberOfRows and MaxDestinationNumberOfColumns if DestinationFillDirection is CustomCoordinates:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have Null MaxDestinationNumberOfRows and MaxDestinationNumberOfColumns if DestinationFillDirection is CustomCoordinates:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have Null MaxDestinationNumberOfRows and MaxDestinationNumberOfColumns if DestinationFillDirection is CustomCoordinates:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5668,10 +5662,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have DestinationCoordinates specified if DestinationFillDirection->CustomCoordinates:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have DestinationCoordinates specified if DestinationFillDirection->CustomCoordinates:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have DestinationCoordinates specified if DestinationFillDirection->CustomCoordinates:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have DestinationCoordinates specified if DestinationFillDirection->CustomCoordinates:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5696,10 +5690,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have specified less than 384 DestinationCoordinates:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have specified less than 384 DestinationCoordinates:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have specified less than 384 DestinationCoordinates:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have specified less than 384 DestinationCoordinates:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5709,7 +5703,11 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
   (* destinationMixMismatch *)
   destinationMixMismatchOptions = If[MemberQ[destinationMixMismatchErrors,True]&&messages,
-    Message[Error::DestinationMixMismatch, PickList[mySamples,destinationMixMismatchErrors]];
+    Message[
+      Error::DestinationMixMismatch,
+      ObjectToString[PickList[mySamples, destinationMixMismatchErrors], Cache -> cache, Simulation -> simulation],
+      "DestinationNumberOfMixes"
+    ];
     {DestinationMix,DestinationNumberOfMixes},
     {}
   ];
@@ -5724,10 +5722,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have both or neither destination mix options specified:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have both or neither destination mix options specified:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have both or neither destination mix options specified:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have both or neither destination mix options specified:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5752,10 +5750,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have destination mix options set if DestinationMediaType->SolidMedia:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have destination mix options set if DestinationMediaType->SolidMedia:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" do not have destination mix options set if DestinationMediaType->SolidMedia:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " do not have destination mix options set if DestinationMediaType->SolidMedia:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5780,10 +5778,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingTool that is compatible with the DestinationMediaContainers:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingTool that is compatible with the DestinationMediaContainers:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingTool that is compatible with the DestinationMediaContainers:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingTool that is compatible with the DestinationMediaContainers:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5808,10 +5806,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a valid picking tool:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a valid picking tool:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a valid picking tool:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a valid picking tool:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5834,10 +5832,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingTool that is preferred for their contained colonies:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingTool that is preferred for their contained colonies:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingTool that is preferred for their contained colonies:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingTool that is preferred for their contained colonies:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5862,10 +5860,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the HeadDiameter matches the HeadDiameter field of the ColonyPickingTool:",True,True];
+      passingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the HeadDiameter matches the HeadDiameter field of the ColonyPickingTool:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the HeadDiameter matches the HeadDiameter field of the ColonyPickingTool:",True,False];
+      failingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the HeadDiameter matches the HeadDiameter field of the ColonyPickingTool:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5890,10 +5888,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the HeadLength matches the HeadLength field of the ColonyPickingTool:",True,True];
+      passingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the HeadLength matches the HeadLength field of the ColonyPickingTool:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the HeadLength matches the HeadLength field of the ColonyPickingTool:",True,False];
+      failingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the HeadLength matches the HeadLength field of the ColonyPickingTool:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5918,10 +5916,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the NumberOfHeads matches the NumberOfHeads field of the ColonyPickingTool:",True,True];
+      passingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the NumberOfHeads matches the NumberOfHeads field of the ColonyPickingTool:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the NumberOfHeads matches the NumberOfHeads field of the ColonyPickingTool:",True,False];
+      failingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the NumberOfHeads matches the NumberOfHeads field of the ColonyPickingTool:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5946,10 +5944,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the ColonyHandlerHeadCassetteApplication matches the Application field of the ColonyPickingTool:",True,True];
+      passingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the ColonyHandlerHeadCassetteApplication matches the Application field of the ColonyPickingTool:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["For the input samples "<>ObjectToString[passingInputs, Cache->cache]<>" the ColonyHandlerHeadCassetteApplication matches the Application field of the ColonyPickingTool:",True,False];
+      failingTest = Test["For the input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " the ColonyHandlerHeadCassetteApplication matches the Application field of the ColonyPickingTool:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5974,10 +5972,10 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       passingInputs = Complement[mySamples,failingInputs];
 
       (* Create the passing test *)
-      passingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingDepth that is valid for the DestinationMediaContainer:",True,True];
+      passingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingDepth that is valid for the DestinationMediaContainer:",True,True];
 
       (* Create the failing test *)
-      failingTest = Test["The input samples "<>ObjectToString[passingInputs, Cache->cache]<>" have a ColonyPickingDepth that is valid for the DestinationMediaContainer:",True,False];
+      failingTest = Test["The input samples " <> ObjectToString[passingInputs, Cache -> cache] <> " have a ColonyPickingDepth that is valid for the DestinationMediaContainer:",True, False];
 
       (* Return the tests *)
       {passingTest,failingTest}
@@ -5985,29 +5983,38 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
     Nothing
   ];
 
+
+  (* Resolve Post Processing Options *)
+  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions, Living -> True];
+
   (* TODO: Add error checking for sampleOutLabel and ContainerOutLabel *)
 
   (*-- UNRESOLVABLE OPTION CHECKS --*)
 
   (* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-  invalidInputs=DeleteDuplicates[Flatten[
+  invalidInputs = DeleteDuplicates[Flatten[
     {
+      compatibleMaterialsTests,
       discardedInvalidInputs,
       nonSolidInvalidInputs,
       nonOmniTrayInvalidInputs,
       tooManyContainersInvalidInputs,
+      duplicatedInvalidInputs,
       sanitizationOptionInvalidInputs
     }
   ]];
 
-  invalidOptions=DeleteDuplicates[Flatten[
+  invalidOptions = DeleteDuplicates[Flatten[
     {
+      If[!MemberQ[compatibleMaterialsBools, True],
+        {Instrument},
+        {}
+      ],
       sanitizationOptionInvalidOptions,
       analysisOptionInvalidOptions,
-      imagingOptionMismatchOptions,
       invalidContainerOutLabelLengthOptions,
       invalidSampleOutLabelLengthOptions,
-      missingImagingChannelsOptions,
+      missingImagingStrategiesOptions,
       imagingOptionSameLengthOptions,
       destinationMediaStateOptions,
       destinationMediaTypeMismatchOptions,
@@ -6024,53 +6031,54 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       headLengthMismatchOptions,
       numberOfHeadsMismatchOptions,
       colonyHandlerHeadCassetteApplicationMismatchOptions,
-      invalidColonyPickingDepthOptions
+      invalidColonyPickingDepthOptions,
+      (* For experiments that the developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
+      If[MemberQ[Values[resolvedPostProcessingOptions], $Failed],
+        PickList[Keys[resolvedPostProcessingOptions], Values[resolvedPostProcessingOptions], $Failed],
+        Nothing]
     }
   ]];
 
   (* Throw Error::InvalidInput if there are invalid inputs. *)
-  If[Length[invalidInputs]>0&&!gatherTests,
-    Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->cache]]
+  If[Length[invalidInputs] >0 && !gatherTests,
+    Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> combinedCache]]
   ];
 
   (* Throw Error::InvalidOption if there are invalid options. *)
-  If[Length[invalidOptions]>0&&!gatherTests,
-    Message[Error::InvalidOption,invalidOptions]
+  If[Length[invalidOptions]>0 &&! gatherTests,
+    Message[Error::InvalidOption, invalidOptions]
   ];
 
-  (* Resolve Post Processing Options *)
-  resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
 
   (* Put options in returnable form *)
   resolvedOptions = {
-    Instrument->resolvedInstrument,
-    ColonyPickingTool->resolvedColonyPickingTools,
-    HeadDiameter->resolvedHeadDiameters,
-    HeadLength->resolvedHeadLengths,
-    NumberOfHeads->resolvedNumberOfHeads,
-    ColonyHandlerHeadCassetteApplication->resolvedColonyHandlerHeadCassetteApplications,
-    ColonyPickingDepth->resolvedColonyPickingDepths,
-    PickCoordinates->resolvedPickCoordinates[[All,2]],
-    ImagingChannels->resolvedImagingChannels,
-    ExposureTimes->resolvedExposureTimes,
-    DestinationMediaType->resolvedDestinationMediaTypes,
-    DestinationMedia->resolvedDestinationMedia,
-    DestinationMediaContainer->resolvedDestinationMediaContainers,
-    DestinationFillDirection->resolvedDestinationFillDirection,
-    MaxDestinationNumberOfColumns->resolvedMaxDestinationNumberOfColumns,
-    MaxDestinationNumberOfRows->resolvedMaxDestinationNumberOfRows,
-    DestinationCoordinates->resolvedDestinationCoordinates,
-    MediaVolume->resolvedMediaVolumes,
-    DestinationMix->resolvedDestinationMixes,
-    DestinationNumberOfMixes->resolvedDestinationNumberOfMixes,
-    Preparation->resolvedPreparation,
-    WorkCell->resolvedWorkCell,
-
+    Instrument -> resolvedInstrument,
+    ColonyPickingTool -> resolvedColonyPickingTools,
+    HeadDiameter -> resolvedHeadDiameters,
+    HeadLength -> resolvedHeadLengths,
+    NumberOfHeads -> resolvedNumberOfHeads,
+    ColonyHandlerHeadCassetteApplication -> resolvedColonyHandlerHeadCassetteApplications,
+    ColonyPickingDepth -> resolvedColonyPickingDepths,
+    PickCoordinates -> resolvedPickCoordinates[[All, 2]],
+    ImagingStrategies -> resolvedImagingStrategies,
+    ImagingChannels -> resolvedImagingChannels,
+    ExposureTimes -> resolvedExposureTimes,
+    DestinationMediaType -> resolvedDestinationMediaTypes,
+    DestinationMedia -> resolvedDestinationMedia,
+    DestinationMediaContainer -> resolvedDestinationMediaContainers,
+    DestinationFillDirection -> resolvedDestinationFillDirection,
+    MaxDestinationNumberOfColumns -> resolvedMaxDestinationNumberOfColumns,
+    MaxDestinationNumberOfRows -> resolvedMaxDestinationNumberOfRows,
+    DestinationCoordinates -> resolvedDestinationCoordinates,
+    MediaVolume -> resolvedMediaVolumes,
+    DestinationMix -> resolvedDestinationMixes,
+    DestinationNumberOfMixes -> resolvedDestinationNumberOfMixes,
+    Preparation -> resolvedPreparation,
+    WorkCell -> resolvedWorkCell,
     SamplesInStorageCondition -> resolvedSamplesInStorageCondition,
     SamplesOutStorageCondition -> resolvedSamplesOutStorageCondition,
-
-    SampleOutLabel->resolvedSampleOutLabels,
-    ContainerOutLabel->resolvedContainerOutLabels
+    SampleOutLabel -> resolvedSampleOutLabels,
+    ContainerOutLabel -> resolvedContainerOutLabels
   };
 
   (* Return our resolved options and/or tests. *)
@@ -6086,15 +6094,14 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       discardedTest,
       nonSolidTest,
       nonOmniTrayTest,
+      duplicatesTest,
       tooManyInputContainersTest,
       optionPrecisionTests,
       sanitizationOptionTests,
       analysisOptionTests,
-      imagingOptionMismatchTests,
       invalidContainerOutLabelLengthTests,
       invalidSampleOutLabelLengthTests,
-      missingImagingChannelsTests,
-      duplicateImagingChannelsTests,
+      missingImagingStrategiesTests,
       imagingOptionSameLengthTests,
       destinationMediaStateTests,
       destinationMediaTypeMismatchTests,
@@ -6114,7 +6121,11 @@ resolveExperimentPickColoniesOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
       numberOfHeadsMismatchTests,
       colonyHandlerHeadCassetteApplicationMismatchTests,
       invalidColonyPickingDepthTests,
-      compatibleMaterialsTests
+      compatibleMaterialsTests,
+      If[gatherTests,
+        postProcessingTests[resolvedPostProcessingOptions],
+        Nothing
+      ]
     }]
   }
 ];
@@ -6138,58 +6149,61 @@ pickColoniesResourcePackets[
   ops:OptionsPattern[pickColoniesResourcePackets]
 ] := Module[
   {
-    unresolvedOptionsNoHidden,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,
-    messages,inheritedCache,simulation,resolvedPreparation,instrument,populations, colonyPickingTools,pickCoordinates,
-    destinationMediaTypes, destinationMedia, destinationMediaContainers, destinationFillDirection, maxDestinationNumberOfRows,
-    maxDestinationNumberOfColumns, mediaVolumes, primaryWashSolutions, secondaryWashSolutions,
-    tertiaryWashSolutions, quaternaryWashSolutions,samplesOutStorageConditions, runTime, instrumentResource, samplesInResources,
-    colonyPickingToolResources,uniqueWashSolutions,uniqueWashSolutionVolumes,washSolutionsAndVolumes,
-    washSolutionResourceLookup,primaryWashSolutionResources,secondaryWashSolutionResources,
-    tertiaryWashSolutionResources,quaternaryWashSolutionResources,flatAllPopulations,opticalFilterResource,objectContainerNumAvailablePositionsLookup,
-    objectContainerToReservationsLookup, updatedObjectContainerReservations,modelContainerReservations,destinationMediaContainersObjectPackets,
-    destinationMediaContainersModelPackets,fastAssoc,filledObjectContainers,modelContainerLabelMapping,wellsToPopulatePerSample,labelContainerPrimitive,
-    transferTuples, transferTuplesFlattened, transferPrimitive,allDestinationContainersFlat,modelContainerPositionLabelMap, splitOptionPackets,samplePackets,
+    unresolvedOptionsNoHidden, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, inheritedCache,
+    simulation, resolvedPreparation, instrument, populations, colonyPickingTools, pickCoordinates, destinationMediaTypes,
+    destinationMedia, destinationMediaContainers, destinationFillDirection, maxDestinationNumberOfRows,
+    maxDestinationNumberOfColumns, mediaVolumes, primaryWashSolutions, secondaryWashSolutions, tertiaryWashSolutions,
+    quaternaryWashSolutions, samplesOutStorageConditions, resolvedImagingStrategies,
+    resolvedImagingChannels, resolvedExposureTimes, destinationMediaContainersObjectPackets, destinationMediaContainersModelPackets,
+    fastAssoc, runTime, instrumentResource, samplesInResourceReplaceRules, samplesInResources, colonyPickingToolObjectPackets,
+    colonyPickingToolResources, uniqueWashSolutions, uniqueWashSolutionVolumes, washSolutionsAndVolumes,
+    washSolutionResourceLookup, primaryWashSolutionResources, secondaryWashSolutionResources, tertiaryWashSolutionResources,
+    quaternaryWashSolutionResources, flatAllPopulations, opticalFilterResource, objectContainerNumAvailablePositionsLookup,
+    objectContainerToReservationsLookup, updatedObjectContainerReservations, modelContainerReservations, filledObjectContainers,
+    modelContainerLabelMapping, wellsToPopulatePerSample, labelContainerPrimitive, transferTuples, transferTuplesFlattened,
+    transferPrimitive, allDestinationContainersFlat, modelContainerPositionLabelMap, uniqueImagingStrategies, uniqueImagingChannels,
+    uniqueExposureTimes, updatedResolvedOptions, splitOptionPackets, sampleInfoPackets,
     unitOpGroupedByColonyHandlerHeadCassette,finalPhysicalGroups,carrierDeckPlateLocations,riserPlacements,carrierPlacements,
-    riserReturns,carrierReturns,initialCarrierAndRiserResourcesToPick,colonyHandlerHeadCassetteAdds,colonyHandlerHeadCassetteRemovals,
-    flatLightTableContainersPerPhysicalBatch, flatLightTableContainerPlacementsPerPhysicalBatch,lightTableContainerLengthsPerPhysicalBatch,carrierContainerDeckPlacements,
-    batchedUnitOperationPackets,batchedUnitOperationPacketsWithID,outputUnitOperationPacket,
+    riserReturns,carrierReturns,initialCarrierAndRiserResourcesToPick,colonyHandlerHeadCassettePlacements,colonyHandlerHeadCassetteRemovals,
+    flatLightTableContainersPerPhysicalBatch, flatLightTableContainerPlacementsPerPhysicalBatch,lightTableContainerLengthsPerPhysicalBatch,
+    carrierContainerDeckPlacements, batchedUnitOperationPackets, batchedUnitOperationPacketsWithID, outputUnitOperationPacket,
     allModelsAndLabels,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,allResourceBlobs,fulfillable,frqTests,
-    previewRule,optionsRule,resultRule,testsRule,currentSimulation, samplesOutStorageConditionsPossiblyCollapsed,
-    samplesInResourceReplaceRules,colonyPickingToolResourceReplaceRules
+    previewRule,optionsRule,resultRule,testsRule,currentSimulation,
+    colonyPickingToolResourceReplaceRules
   },
 
   (* Get the collapsed unresolved index-matching options that don't include hidden options *)
-  unresolvedOptionsNoHidden=RemoveHiddenOptions[experimentFunction,myUnresolvedOptions];
+  unresolvedOptionsNoHidden = RemoveHiddenOptions[experimentFunction, myUnresolvedOptions];
 
   (* Get the collapsed resolved index-matching options that don't include hidden options *)
   (* Ignore to collapse those options that are set in expandedsafeoptions *)
-  resolvedOptionsNoHidden=CollapseIndexMatchedOptions[
+  resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
     experimentFunction,
-    RemoveHiddenOptions[experimentFunction,myResolvedOptions],
-    Ignore->myUnresolvedOptions,
-    Messages->False
+    RemoveHiddenOptions[experimentFunction, myResolvedOptions],
+    Ignore -> myUnresolvedOptions,
+    Messages -> False
   ];
 
   (* Determine the requested output format of this function *)
-  outputSpecification=OptionValue[Output];
-  output=ToList[outputSpecification];
+  outputSpecification = OptionValue[Output];
+  output = ToList[outputSpecification];
 
   (* Determine if we should keep a running list of tests to return to the user *)
-  gatherTests=MemberQ[output,Tests];
-  messages=!gatherTests;
+  gatherTests = MemberQ[output, Tests];
+  messages = !gatherTests;
 
   (* Get the inherited cache *)
-  inheritedCache=Lookup[ToList[ops],Cache,{}];
-  simulation=Lookup[ToList[ops],Simulation,{}];
+  inheritedCache = Lookup[ToList[ops], Cache, {}];
+  simulation = Lookup[ToList[ops], Simulation, {}];
 
   (* Initialize the simulation if it does not exist *)
-  currentSimulation = If[MatchQ[simulation,SimulationP],
+  currentSimulation = If[MatchQ[simulation, SimulationP],
     simulation,
     Simulation[]
   ];
 
   (* Get the resolved preparation scale *)
-  resolvedPreparation=Lookup[myResolvedOptions,Preparation];
+  resolvedPreparation = Lookup[myResolvedOptions, Preparation];
 
   (* Extract necessary resolved options *)
   {
@@ -6208,7 +6222,10 @@ pickColoniesResourcePackets[
     secondaryWashSolutions,
     tertiaryWashSolutions,
     quaternaryWashSolutions,
-    samplesOutStorageConditionsPossiblyCollapsed
+    samplesOutStorageConditions,
+    resolvedImagingStrategies,
+    resolvedImagingChannels,
+    resolvedExposureTimes
   } = Lookup[myResolvedOptions,
     {
       Instrument,
@@ -6226,16 +6243,17 @@ pickColoniesResourcePackets[
       SecondaryWashSolution,
       TertiaryWashSolution,
       QuaternaryWashSolution,
-      SamplesOutStorageCondition
+      SamplesOutStorageCondition,
+      ImagingStrategies,
+      ImagingChannels,
+      ExposureTimes
     }
   ];
 
-  (* need to make sure samplesOutStorageConditions is the same shape as Populations, whatever it is *)
-  (* because of shenaingans in how InoculateLiquidMedia calls this function, it might be collapsed when it gets in here when we really need it expanded *)
-  samplesOutStorageConditions = If[ListQ[samplesOutStorageConditionsPossiblyCollapsed] && ListQ[mediaVolumes] && Length[samplesOutStorageConditionsPossiblyCollapsed] == Length[mediaVolumes],
-    samplesOutStorageConditionsPossiblyCollapsed,
-    (mediaVolumes /. {VolumeP -> samplesOutStorageConditionsPossiblyCollapsed})
-
+  (* Note:We are replacing index-matching Instrument from InoculateLiquidMedia to non-index matching instrument here *)
+  instrument = If[MatchQ[experimentFunction, ExperimentInoculateLiquidMedia],
+    FirstCase[instrument, ObjectP[{Model[Instrument], Object[Instrument]}]],
+    instrument
   ];
 
   (* If the experiment type is Inoculate, we need to define destinationMediaTypes on our own as it is not an option of that experiment *)
@@ -6248,57 +6266,77 @@ pickColoniesResourcePackets[
   (* Split the destination media containers into models and objects *)
   {
     destinationMediaContainersObjectPackets,
-    destinationMediaContainersModelPackets
-  } = Download[
+    destinationMediaContainersModelPackets,
+    colonyPickingToolObjectPackets(*if its a model, it does not have holder info and we dont need it*)
+  } = Quiet[Download[
     {
-      Cases[Flatten@destinationMediaContainers,ListableP[ObjectP[Object[Container]]]],
-      Cases[Flatten@destinationMediaContainers,ObjectP[Model[Container]]]
+      Cases[Flatten@destinationMediaContainers, ListableP[ObjectP[Object[Container]]]],
+      Cases[Flatten@destinationMediaContainers, ObjectP[Model[Container]]],
+      Cases[colonyPickingTools, ObjectP[Object[Part]]]
     },
     {
       {
-        Packet[Model,Contents],
-        Packet[Model[Positions,MaxVolume,NumberOfWells]]
+        Packet[Model, Contents],
+        Packet[Model[Positions, MaxVolume, NumberOfWells, WellDepth]]
       },
       {
-        Packet[Positions, MaxVolume, NumberOfWells]
+        Packet[Positions, MaxVolume, NumberOfWells, WellDepth]
+      },
+      {
+        Packet[ColonyHandlerHeadCassetteHolder]
       }
     }
-  ];
+  ], {Download::FieldDoesntExist}];
 
   (* Make a fast assoc from the packets *)
   fastAssoc = Experiment`Private`makeFastAssocFromCache[Experiment`Private`FlattenCachePackets[{
     destinationMediaContainersObjectPackets,
-    destinationMediaContainersModelPackets
+    destinationMediaContainersModelPackets,
+    colonyPickingToolObjectPackets
   }]];
 
   (* -- Generate the Instrument Resource -- *)
   (* Calculate the runTime of the experiment *)
-  (* TODO: Actually estimate RunTime based on number of input samples *)
-  runTime = 30 Minute;
-  instrumentResource = Resource[Instrument -> instrument,Time -> 30 Minute];
+  runTime = 30 Minute*Length[mySamples];
+  instrumentResource = Resource[Instrument -> instrument, Time -> runTime];
 
   (*--Generate the samples in resources--*)
 
   (* Our input samples are Solid (Guaranteed by the resolver) - just create a unique resource for each unique object *)
-  samplesInResourceReplaceRules = (#->Resource[Sample -> #, Name -> CreateUUID[]])&/@DeleteDuplicates[Download[mySamples,Object]];
+  samplesInResourceReplaceRules = (# -> Resource[Sample -> #, Name -> CreateUUID[]])& /@ DeleteDuplicates[Download[mySamples, Object]];
   samplesInResources = mySamples /. samplesInResourceReplaceRules;
 
   (* Create a resource for the ColonyPickingTool *)
-  colonyPickingToolResourceReplaceRules = (# -> Resource[Sample -> #, Name -> CreateUUID[]])&/@DeleteDuplicates[Download[colonyPickingTools,Object]];
+  colonyPickingToolResourceReplaceRules = (# -> Resource[Sample -> #, Rent -> True, Name -> CreateUUID[]])&/@DeleteDuplicates[Download[colonyPickingTools,Object]];
   colonyPickingToolResources = colonyPickingTools /. colonyPickingToolResourceReplaceRules;
 
   (* -- Create a resource for each unique wash solution -- *)
   (* Get the unique wash solutions *)
-  uniqueWashSolutions = Download[DeleteDuplicates[Join[primaryWashSolutions,secondaryWashSolutions,tertiaryWashSolutions,quaternaryWashSolutions]]/.Null->Nothing,Object];
+  uniqueWashSolutions = Download[DeleteDuplicates[Join[primaryWashSolutions, secondaryWashSolutions, tertiaryWashSolutions, quaternaryWashSolutions]]/.Null -> Nothing, Object];
 
   (* For each wash solution, we need 150 mLs *)
-  uniqueWashSolutionVolumes = ConstantArray[150 Milliliter,Length[uniqueWashSolutions]];
+  uniqueWashSolutionVolumes = ConstantArray[150 Milliliter, Length[uniqueWashSolutions]];
 
   (* Combine the wash solutions and volumes *)
-  washSolutionsAndVolumes = MapThread[Rule,{uniqueWashSolutions,uniqueWashSolutionVolumes}];
-  
+  washSolutionsAndVolumes = MapThread[Rule, {uniqueWashSolutions, uniqueWashSolutionVolumes}];
+
   (* Create a lookup of Sample -> Resource *)
-  washSolutionResourceLookup = (#[[1]] -> Resource[Sample -> #[[1]], Amount -> #[[2]], Container -> First[ToList@PreferredContainer[#[[1]], #[[2]]]], Name -> CreateUUID[]])&/@washSolutionsAndVolumes;
+  washSolutionResourceLookup = Map[
+    Function[{solutionVolumeRule},
+      Module[{sample, volume},
+        (* Split the tuple into sample and volume *)
+        sample = First[solutionVolumeRule];
+        volume = Last[solutionVolumeRule];
+
+        (* Create the proper resource based on whether we have an object or a model *)
+        If[MatchQ[sample, ObjectP[Object[Sample]]],
+          sample -> Resource[Sample -> sample, Name -> CreateUUID[]],
+          sample -> Resource[Sample -> sample, Amount -> volume, Container -> First[ToList@PreferredContainer[sample, volume]], RentContainer -> True, Name -> CreateUUID[]]
+        ]
+      ]
+    ],
+    washSolutionsAndVolumes
+  ];
   
   (* Use the lookup to assign resources  *)
   primaryWashSolutionResources = primaryWashSolutions /. washSolutionResourceLookup;
@@ -6311,21 +6349,9 @@ pickColoniesResourcePackets[
   (* First, get a flat list of all of the populations *)
   flatAllPopulations = Flatten[populations];
 
-  (* If we have an absorbance feature, create the resource. *)
-  opticalFilterResource = Module[{multiFeaturedPrimitives},
-
-    (* Get the MultiFeatured primitives *)
-    multiFeaturedPrimitives = Cases[flatAllPopulations, MultiFeaturedPrimitiveP][[All,1]];
-
-    (* Create the resource if necessary *)
-    If[
-      Or[
-        MemberQ[flatAllPopulations, _Absorbance],
-        Or@@(MemberQ[#,Absorbance]&/@Lookup[multiFeaturedPrimitives,Features])
-      ],
-      Resource[Sample -> Model[Part, OpticalFilter, "QPix Chroma Filter"]],
-      Null
-    ]
+  (* If we need to do blue-white screening(Absorbance), create the filter resource. *)
+  opticalFilterResource = If[MemberQ[Flatten@resolvedImagingChannels, 400 Nanometer],
+    Resource[Sample -> Model[Part, OpticalFilter, "id:aXRlGnRvl8K9"], Rent -> True](*"QPix Chroma Filter"*)
   ];
 
   (* We need to make sure there is media in all of the destination locations *)
@@ -6721,7 +6747,7 @@ pickColoniesResourcePackets[
         ];
 
         (* 6. Split the remaining available containers among any tuples with numberOfContainers = All *)
-        allTuplesToPopulate = Take[Flatten[ConstantArray[Cases[tuplesThatNeedToBeAddedStill, {_, _, _, All}], 4], 1], UpTo[numAvailableContainers]];
+        allTuplesToPopulate = Take[Flatten[ConstantArray[Cases[tuplesThatNeedToBeAddedStill, {_, _, _, All}], 2], 1], UpTo[numAvailableContainers]];
 
         (* 7. Update the lookup with any tuples with numberOfContainers = All that got assigned spots *)
         Map[
@@ -7100,27 +7126,37 @@ pickColoniesResourcePackets[
   (* Get the model container label mapping into a different form *)
   modelContainerPositionLabelMap = Rule@@@Transpose@{Key/@(Keys@modelContainerLabelMapping)[[All, 1, 1]], Values@modelContainerLabelMapping};
 
+  (* NOTE: We use Long Automatic for exposure times in option resolver, but records it as AutoExpose in batchedUO for clarity *)
+  (* We convert BrightField to {BrightField} here so they can be grouped together for batch unit operations *)
+  {uniqueImagingStrategies, uniqueImagingChannels, uniqueExposureTimes} = Transpose@MapThread[
+    Function[{imageStrategies, imageChannels, exposureTimes},
+      {ToList@imageStrategies, ToList@imageChannels, ToList[exposureTimes]/.Automatic -> AutoExpose}
+    ],
+    {resolvedImagingStrategies, resolvedImagingChannels, resolvedExposureTimes}
+  ];
+
+  (* Update the resolved options with unique imaging options *)
+  updatedResolvedOptions = ReplaceRule[myResolvedOptions, {ImagingStrategies -> uniqueImagingStrategies, ImagingChannels -> uniqueImagingChannels, ExposureTimes -> uniqueExposureTimes}];
+
   (* Next, we need to batch our input samples to create batched unit operations *)
   (* In order to batch the samples we need to gather the information for each sample into packets we can move around *)
   (* Do this by mapthreading the resolved options and then adding sample keys for each packet *)
-  splitOptionPackets = OptionsHandling`Private`mapThreadOptions[experimentFunction, myResolvedOptions, AmbiguousNestedResolution->IndexMatchingOptionPreferred,SingletonOptionPreferred->{PickCoordinates,Populations}];
+  splitOptionPackets = OptionsHandling`Private`mapThreadOptions[experimentFunction, updatedResolvedOptions, AmbiguousNestedResolution -> IndexMatchingOptionPreferred, SingletonOptionPreferred -> {PickCoordinates, Populations}];
 
   (* Add the sample keys and keep track of the original index of each sample *)
-  samplePackets = MapThread[
-    Function[{sample,options,index},
-      Merge[{options,<|Sample -> sample, OriginalIndex -> index|>}, First]
+  (* Remove Cache from the options *)
+  sampleInfoPackets = MapThread[
+    Function[{sample, options, index},
+      Merge[{KeyDrop[options, Cache], <|Sample -> sample, OriginalIndex -> index|>}, First]
     ],
-    {
-      mySamples,
-      splitOptionPackets,
-      Range[Length[mySamples]]
-    }
+    {mySamples, splitOptionPackets, Range[Length[mySamples]]}
   ];
 
   (* First, group by ColonyHandlerHeadCassette *)
-  unitOpGroupedByColonyHandlerHeadCassette = Values@GroupBy[samplePackets, Lookup[#, ColonyPickingTool]&];
+  unitOpGroupedByColonyHandlerHeadCassette = Values@GroupBy[sampleInfoPackets, Lookup[#, ColonyPickingTool]&];
 
-  {finalPhysicalGroups,carrierDeckPlateLocations} = Module[{physicalBatchCarrierConstraints,samplePacketsBatchedByDestinationContainerConstraints,batchedSamplePacketsSortedByImagingParameters},
+  {finalPhysicalGroups, carrierDeckPlateLocations} = Module[
+    {physicalBatchCarrierConstraints, samplePacketsBatchedByDestinationContainerConstraints, batchedSamplePacketsSortedByImagingParameters},
     (* For Pick UnitOperations, we have to batch based on the amount of destination containers we can fit on deck *)
     (* Currently we have 12 spots *)
     (* There are also riser restrictions. On the deck of the qpix in the pick configuration, *)
@@ -7132,176 +7168,175 @@ pickColoniesResourcePackets[
       physicalBatchCarrierConstraints,
       samplePacketsBatchedByDestinationContainerConstraints
     } = Module[{groupedResult},
-      groupedResult = Map[Function[{groupPackets},
-        Module[{currentGroupBatches,currentGroupContainers},
-          (* This is a list of rules structured in the following way: *)
-          (* Key: The key is a symbolization of the 3 available destination tracks and what type of/how many positions they have remaining (trackInformation) *)
-          (* Value: A list of the samples that are in this batch *)
-          (*{{{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft},{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft},{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft}} -> {samplePackets in this batch}}*)
-          currentGroupBatches = {};
+      groupedResult = Map[
+        Function[{groupPackets},
+          Module[{currentGroupBatches,currentGroupContainers},
+            (* This is a list of rules structured in the following way: *)
+            (* Key: The key is a symbolization of the 3 available destination tracks and what type of/how many positions they have remaining (trackInformation) *)
+            (* Value: A list of the samples that are in this batch *)
+            (*{{{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft},{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft},{numNonDeepWellPositionsLeft, numDeepWellPositionsLeft}} -> {samplePackets in this batch}}*)
+            currentGroupBatches = {};
 
-          (* Keep track of the object containers that are already on deck in this batch. We don't need to reserve a spot for a container if it is already on the deck from a previous sample *)
-          (* This is a nested list that corresponds to currentGroupBatches. Each inner list is a list of container objects that are "on the deck" for that batch *)
-          currentGroupContainers = {};
+            (* Keep track of the object containers that are already on deck in this batch. We don't need to reserve a spot for a container if it is already on the deck from a previous sample *)
+            (* This is a nested list that corresponds to currentGroupBatches. Each inner list is a list of container objects that are "on the deck" for that batch *)
+            currentGroupContainers = {};
 
-          (* Map over the sample packets in this group and split them into their final batches *)
-          Map[
-            Function[{samplePacket},
-              Module[{destinationMediaContainers,containerInfoPerBatch,potentialBatchPosition},
+            (* Map over the sample packets in this group and split them into their final batches *)
+            Map[
+              Function[{samplePacket},
+                Module[{destinationMediaContainers,containerInfoPerBatch,potentialBatchPosition},
 
-                (* 1. Categorize the containers by how many are needed and if they are deep well or not *)
-                (* Get the destination containers, but delete duplicate Object[Container]'s *)
-                destinationMediaContainers = DeleteDuplicates[Lookup[samplePacket,DestinationMediaContainer]];
+                  (* 1. Categorize the containers by how many are needed and if they are deep well or not *)
+                  (* Get the destination containers, but delete duplicate Object[Container]'s *)
+                  destinationMediaContainers = DeleteDuplicates[Lookup[samplePacket, DestinationMediaContainer]];
 
-                (* Replace each container with a tuple of a bool indicating if the container is deep well or not and a list of the new containers to add to the deck *)
-                containerInfoPerBatch = If[MatchQ[Length[currentGroupContainers],0],
-                  MapThread[
-                    Function[{container,populationIndex},
-                      Which[
-                        MatchQ[container,ObjectP[Model[Container]]],
-                        {
-                          deepWellQ[container,fastAssoc],
-                          Key[{Lookup[samplePacket,OriginalIndex], populationIndex}] /. modelContainerPositionLabelMap
-                        },
-                        MatchQ[container,ObjectP[Object[Container]]],
-                        {
-                          deepWellQ[container,fastAssoc],
-                          {container}
-                        },
-                        True,
-                        {
-                          deepWellQ[container,fastAssoc],
-                          container
-                        }
-                      ]
+                  (* Replace each container with a tuple of a bool indicating if the container is deep well or not and a list of the new containers to add to the deck *)
+                  containerInfoPerBatch = If[MatchQ[Length[currentGroupContainers], 0],
+                    MapThread[
+                      Function[{container, populationIndex},
+                        Which[
+                          MatchQ[container, ObjectP[Model[Container]]],
+                          {
+                            deepWellQ[container, fastAssoc],
+                            Key[{Lookup[samplePacket, OriginalIndex], populationIndex}] /. modelContainerPositionLabelMap
+                          },
+                          MatchQ[container, ObjectP[Object[Container]]],
+                          {
+                            deepWellQ[container, fastAssoc],
+                            {container}
+                          },
+                          True,
+                          {
+                            deepWellQ[container, fastAssoc],
+                            container
+                          }
+                        ]
+                      ],
+                      {destinationMediaContainers, Range[Length[destinationMediaContainers]]}
                     ],
-                    {
-                      destinationMediaContainers,
-                      Range[Length[destinationMediaContainers]]
-                    }
-                  ],
-                  Map[
-                    Function[{containersOnDeckInThisGroup},
-                      MapThread[
-                        Function[{container,populationIndex},
-                          Which[
-                            MemberQ[container,containersOnDeckInThisGroup],
-                            {
-                              deepWellQ[container,fastAssoc],
-                              {}
-                            },
+                    Map[
+                      Function[{containersOnDeckInThisGroup},
+                        MapThread[
+                          Function[{container, populationIndex},
+                            Which[
+                              MemberQ[container, containersOnDeckInThisGroup],
+                              {
+                                deepWellQ[container, fastAssoc],
+                                {}
+                              },
 
-                            MatchQ[container,ObjectP[Model[Container]]],
-                            {
-                              deepWellQ[container,fastAssoc],
-                              Key[{Lookup[samplePacket,OriginalIndex], populationIndex}] /. modelContainerPositionLabelMap
-                            },
-                            MatchQ[container,ObjectP[Object[Container]]],
-                            {
-                              deepWellQ[container,fastAssoc],
-                              {container}
-                            },
-                            True,
-                            {
-                              deepWellQ[container,fastAssoc],
-                              If[MemberQ[#,containersOnDeckInThisGroup],Nothing,#]&/@container
-                            }
-                          ]
-                        ],
-                        {
-                          destinationMediaContainers,
-                          Range[Length[destinationMediaContainers]]
-                        }
-                      ]
-                    ],
-                    currentGroupContainers
-                  ]
-                ];
-
-                (* 2. Determine if there is a current batch these containers could be added to *)
-                (* Can this sample fit into any of the current groups? *)
-                potentialBatchPosition = If[MatchQ[Length[currentGroupBatches],0],
-                  Null,
-                  FirstOrDefault[FirstPosition[MapThread[
-                    batchHasRoomQ[#1,Flatten[Cases[#2, {True,_}][[All,2]]],Flatten[Cases[#2, {False,_}][[All,2]]], 3]&,
-                    {
-                      currentGroupBatches,
-                      containerInfoPerBatch
-                    }
-                  ],True,Null],Null]
-                ];
-
-                Which[
-                  (* If we are on the first potential group *)
-                  MatchQ[Length[currentGroupBatches],0],
-                    Module[{deepWellPlates,nonDeepWellPlates,updatedBatch,updatedGroupContainers},
-                      (* Extract the plates of each type to add *)
-                      deepWellPlates = Flatten[Cases[containerInfoPerBatch,{True,_}][[All,2]]];
-                      nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch,{False,_}][[All,2]]];
-
-                      (* Get the updated batch *)
-                      updatedBatch = addSampleToBatch[newBatch[3], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
-
-                      (* Get the updated containers *)
-                      updatedGroupContainers = DeleteDuplicates@Cases[destinationMediaContainers,ObjectP[Object[Container]]];
-
-                      AppendTo[currentGroupBatches, updatedBatch];
-                      AppendTo[currentGroupContainers, updatedGroupContainers]
-                    ],
-
-                  (* If we are starting a new batch *)
-                  NullQ[potentialBatchPosition],
-                    Module[{deepWellPlates,nonDeepWellPlates,updatedBatch,updatedGroupContainers},
-                      (* Extract the plates of each type to add *)
-                      deepWellPlates = Flatten[Cases[containerInfoPerBatch[[1]],{True,_}][[All,2]]];
-                      nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch[[1]],{False,_}][[All,2]]];
-
-                      (* Get the updated batch *)
-                      updatedBatch = addSampleToBatch[newBatch[3], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
-
-                      (* Get the updated contaienrs *)
-                      updatedGroupContainers = DeleteDuplicates@Cases[destinationMediaContainers,ObjectP[Object[Container]]];
-
-                      (* Update our looping parameters *)
-                      AppendTo[currentGroupBatches, updatedBatch];
-                      AppendTo[currentGroupContainers, updatedGroupContainers]
-                    ],
-
-                  (* Finally, if we are adding to a batch *)
-                  True,
-                    Module[{deepWellPlates,nonDeepWellPlates,updatedBatch,updatedGroupContainers},
-                      (* Extract the plates of each type to add *)
-                      deepWellPlates = Flatten[Cases[containerInfoPerBatch[[potentialBatchPosition]],{True,_}][[All,2]]];
-                      nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch[[potentialBatchPosition]],{False,_}][[All,2]]];
-
-                      (* Get the updated batch *)
-                      updatedBatch = addSampleToBatch[currentGroupBatches[[potentialBatchPosition]], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
-
-                      (* Get the updated containers *)
-                      updatedGroupContainers = DeleteDuplicates@Join[currentGroupContainers[[potentialBatchPosition]], Cases[Download[Flatten@destinationMediaContainers,Object], ObjectP[Object[Container]]]];
-
-                      (* Update the current group batches *)
-                      currentGroupBatches = ReplacePart[currentGroupBatches, potentialBatchPosition -> updatedBatch];
-
-                      (* Update the current group containers *)
-                      currentGroupContainers = ReplacePart[currentGroupContainers, potentialBatchPosition -> updatedGroupContainers];
+                              MatchQ[container,ObjectP[Model[Container]]],
+                              {
+                                deepWellQ[container, fastAssoc],
+                                Key[{Lookup[samplePacket, OriginalIndex], populationIndex}] /. modelContainerPositionLabelMap
+                              },
+                              MatchQ[container, ObjectP[Object[Container]]],
+                              {
+                                deepWellQ[container, fastAssoc],
+                                {container}
+                              },
+                              True,
+                              {
+                                deepWellQ[container, fastAssoc],
+                                If[MemberQ[#, containersOnDeckInThisGroup], Nothing, #]& /@ container
+                              }
+                            ]
+                          ],
+                          {destinationMediaContainers, Range[Length[destinationMediaContainers]]}
+                        ]
+                      ],
+                      currentGroupContainers
                     ]
-                ];
-              ]
-            ],
-            groupPackets
-          ];
+                  ];
 
-          currentGroupBatches
-        ]
-      ],
+                  (* 2. Determine if there is a current batch these containers could be added to *)
+                  (* Can this sample fit into any of the current groups? *)
+                  potentialBatchPosition = If[MatchQ[Length[currentGroupBatches], 0],
+                    Null,
+                    FirstOrDefault[
+                      FirstPosition[
+                        MapThread[
+                          batchHasRoomQ[#1, Flatten[Cases[#2, {True, _}][[All, 2]]],Flatten[Cases[#2, {False,_}][[All, 2]]], 3]&,
+                          {currentGroupBatches, containerInfoPerBatch}
+                        ],
+                        True,
+                        Null
+                      ],
+                      Null
+                    ]
+                  ];
+
+                  Which[
+                    (* If we are on the first potential group *)
+                    MatchQ[Length[currentGroupBatches], 0],
+                      Module[{deepWellPlates, nonDeepWellPlates, updatedBatch, updatedGroupContainers},
+                        (* Extract the plates of each type to add *)
+                        deepWellPlates = Flatten[Cases[containerInfoPerBatch, {True,_}][[All, 2]]];
+                        nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch, {False,_}][[All, 2]]];
+
+                        (* Get the updated batch *)
+                        updatedBatch = addSampleToBatch[newBatch[3], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
+
+                        (* Get the updated containers *)
+                        updatedGroupContainers = DeleteDuplicates@Cases[destinationMediaContainers, ObjectP[Object[Container]]];
+
+                        AppendTo[currentGroupBatches, updatedBatch];
+                        AppendTo[currentGroupContainers, updatedGroupContainers]
+                      ],
+
+                    (* If we are starting a new batch *)
+                    NullQ[potentialBatchPosition],
+                      Module[{deepWellPlates, nonDeepWellPlates, updatedBatch, updatedGroupContainers},
+                        (* Extract the plates of each type to add *)
+                        deepWellPlates = Flatten[Cases[containerInfoPerBatch[[1]], {True, _}][[All, 2]]];
+                        nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch[[1]], {False,_}][[All, 2]]];
+
+                        (* Get the updated batch *)
+                        updatedBatch = addSampleToBatch[newBatch[3], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
+
+                        (* Get the updated contaienrs *)
+                        updatedGroupContainers = DeleteDuplicates@Cases[destinationMediaContainers, ObjectP[Object[Container]]];
+
+                        (* Update our looping parameters *)
+                        AppendTo[currentGroupBatches, updatedBatch];
+                        AppendTo[currentGroupContainers, updatedGroupContainers]
+                      ],
+
+                    (* Finally, if we are adding to a batch *)
+                    True,
+                      Module[{deepWellPlates, nonDeepWellPlates, updatedBatch, updatedGroupContainers},
+                        (* Extract the plates of each type to add *)
+                        deepWellPlates = Flatten[Cases[containerInfoPerBatch[[potentialBatchPosition]], {True, _}][[All, 2]]];
+                        nonDeepWellPlates = Flatten[Cases[containerInfoPerBatch[[potentialBatchPosition]],{False, _}][[All, 2]]];
+
+                        (* Get the updated batch *)
+                        updatedBatch = addSampleToBatch[currentGroupBatches[[potentialBatchPosition]], samplePacket, deepWellPlates, nonDeepWellPlates, 3];
+
+                        (* Get the updated containers *)
+                        updatedGroupContainers = DeleteDuplicates@Join[currentGroupContainers[[potentialBatchPosition]], Cases[Download[Flatten@destinationMediaContainers,Object], ObjectP[Object[Container]]]];
+
+                        (* Update the current group batches *)
+                        currentGroupBatches = ReplacePart[currentGroupBatches, potentialBatchPosition -> updatedBatch];
+
+                        (* Update the current group containers *)
+                        currentGroupContainers = ReplacePart[currentGroupContainers, potentialBatchPosition -> updatedGroupContainers];
+                      ]
+                  ];
+                ]
+              ],
+              groupPackets
+            ];
+
+            currentGroupBatches
+          ]
+        ],
         unitOpGroupedByColonyHandlerHeadCassette
       ];
 
       (* Extract the data in a usable form *)
       {
-        Flatten[groupedResult[[All,All,1]],1],
-        Flatten[groupedResult[[All,All,2]],1]
+        Flatten[groupedResult[[All, All, 1]], 1],
+        Flatten[groupedResult[[All, All, 2]], 1]
       }
     ];
 
@@ -7309,12 +7344,18 @@ pickColoniesResourcePackets[
     (* The ExposureFinding routine only works for up to 2 plates at a time and in order to minimize operator interactions with  *)
     (* the instrument, we want to do the imaging and picking for 2 source plates without having to remove them from the deck *)
     (* In order to achieve this we sort by imaging parameters and then partition upto groups of 2. *)
-    batchedSamplePacketsSortedByImagingParameters = Function[{groupByDestinationContainerConstraints},SortBy[groupByDestinationContainerConstraints, {OrderlessPatternSequence@@Transpose@Lookup[#, {ImagingChannels,ExposureTimes}]}&]]/@samplePacketsBatchedByDestinationContainerConstraints;
+    batchedSamplePacketsSortedByImagingParameters = Map[
+      Function[{groupByDestinationContainerConstraints},
+        SortBy[groupByDestinationContainerConstraints, {OrderlessPatternSequence@@Transpose@Lookup[#, {ImagingChannels,ExposureTimes}]}&]
+      ],
+      samplePacketsBatchedByDestinationContainerConstraints
+    ];
 
     {
       (* Next, for each imaging parameter group, we need to partition them by up to 2, this will give us the final pairs of input samples *)
       (* that will be put on the deck at the same time *)
-      Partition[#,UpTo[2]]&/@batchedSamplePacketsSortedByImagingParameters,
+      (* For example, in {{{a,b},{c}},{{d,e}}}, abc are from the same physical batch, de are from the same physical batch, ab and c are from different source group. *)
+      Partition[#, UpTo[2]]& /@ batchedSamplePacketsSortedByImagingParameters,
 
       (* For each batch also return how the carriers need to be structured for that group (High position or low position) *)
       physicalBatchCarrierConstraints
@@ -7342,7 +7383,15 @@ pickColoniesResourcePackets[
   (* Go through each physical group and determine the ColonyHandlerHeadCassette that group requires. *)
   (* Then create a second list that keeps track of whether a ColonyHandlerHeadCassette needs to be removed first *)
   (* at the beginning of the physical batch *)
-  {colonyHandlerHeadCassetteAdds, colonyHandlerHeadCassetteRemovals} = getColonyHandlerHeadCassetteBatchingFields[finalPhysicalGroups /. colonyPickingToolResourceReplaceRules, ColonyPickingTool];
+  {
+    colonyHandlerHeadCassettePlacements,
+    colonyHandlerHeadCassetteRemovals
+  } = getColonyHandlerHeadCassetteBatchingFields[
+    finalPhysicalGroups,
+    colonyPickingToolResourceReplaceRules,
+    instrumentResource,
+    ColonyPickingTool
+  ];
 
   (* Stage 1.6: LightTable Containers and Placements *)
   (* For each physical batch, create a list of the source containers that are a part of the physical batch *)
@@ -7381,7 +7430,7 @@ pickColoniesResourcePackets[
     Function[
       {
         physicalBatchSamplePackets, physicalBatchRiserReturns, physicalBatchCarrierReturns, physicalBatchRiserPlacements,
-        physicalBatchCarrierPlacements, colonyHandlerHeadCassetteToAdd, colonyHandlerHeadCassetteToRemove,
+        physicalBatchCarrierPlacements, colonyHandlerHeadCassettePlacement, colonyHandlerHeadCassetteToRemove,
         flatLightTableContainers, flatLightTableContainerPlacements, lightTableContainerLengths,physicalBatchCarrierContainerDeckPlacements
       },
       Module[{unitOperationType},
@@ -7401,7 +7450,8 @@ pickColoniesResourcePackets[
           Replace[CarrierDeckPlacements] -> physicalBatchCarrierPlacements,
           Replace[RiserReturns] -> physicalBatchRiserReturns,
           Replace[CarrierReturns] -> physicalBatchCarrierReturns,
-          ColonyHandlerHeadCassette -> colonyHandlerHeadCassetteToAdd,
+          ColonyHandlerHeadCassette -> First[colonyHandlerHeadCassettePlacement],
+          ColonyHandlerHeadCassettePlacement -> colonyHandlerHeadCassettePlacement,
           ColonyHandlerHeadCassetteReturn -> colonyHandlerHeadCassetteToRemove,
           Replace[IntermediateDestinationContainerDeckPlacements] -> physicalBatchCarrierContainerDeckPlacements,
           Replace[FlatBatchedPickCoordinates] -> Lookup[Flatten[physicalBatchSamplePackets],PickCoordinates],
@@ -7425,7 +7475,7 @@ pickColoniesResourcePackets[
       carrierReturns,
       riserPlacements,
       carrierPlacements,
-      colonyHandlerHeadCassetteAdds,
+      colonyHandlerHeadCassettePlacements,
       colonyHandlerHeadCassetteRemovals,
       flatLightTableContainersPerPhysicalBatch,
       flatLightTableContainerPlacementsPerPhysicalBatch,
@@ -7485,7 +7535,7 @@ pickColoniesResourcePackets[
           ModelContainerPositionLabelMap -> Rule@@@Transpose@{Key/@(Keys@modelContainerLabelMapping)[[All, 1, 1]], Values@modelContainerLabelMapping},
           BatchedUnitOperations -> (Link/@Lookup[batchedUnitOperationPacketsWithID, Object]),
           PhysicalBatchingGroups -> finalPhysicalGroups,
-          CarrierAndRiserInitialResources -> First[initialCarrierAndRiserResourcesToPick],
+          CarrierAndRiserInitialResources -> Link/@initialCarrierAndRiserResourcesToPick,
           AbsorbanceFilter -> Link[opticalFilterResource]
         },
 
@@ -7498,7 +7548,8 @@ pickColoniesResourcePackets[
             PrimaryWashSolution -> primaryWashSolutionResources,
             SecondaryWashSolution -> secondaryWashSolutionResources,
             TertiaryWashSolution -> tertiaryWashSolutionResources,
-            QuaternaryWashSolution -> quaternaryWashSolutionResources
+            QuaternaryWashSolution -> quaternaryWashSolutionResources,
+            ExposureTimes -> (Lookup[myResolvedOptions, ExposureTimes]/. Automatic -> Null)
           }
         ]
       ]
@@ -7929,7 +7980,7 @@ resolvePickColoniesMethod[
 ]:=Module[
   {method},
 
-  method=Lookup[myOptions,Method,Automatic];
+  method=Lookup[myOptions,Preparation,Automatic];
 
   (* Determine the Method that can be used *)
   If[MatchQ[method,Except[Automatic]],
@@ -8155,7 +8206,8 @@ getCarrierAndRiserBatchingFields[
 ]:=Module[
   {
     currentTracks,carrier1Resource, carrier2Resource, carrier3Resource, riser1Resource,
-    riser2Resource, riser3Resource, riser4Resource, riser5Resource, riser6Resource
+    riser2Resource, riser3Resource, riser4Resource, riser5Resource, riser6Resource,
+    riserPlacements, carrierPlacements, riserReturns, carrierReturns, uniqueCarriersAndRisers
   },
 
   (* First we need to make the resources *)
@@ -8173,38 +8225,43 @@ getCarrierAndRiserBatchingFields[
     riser6Resource
   } = If[MatchQ[experimentFunction,Alternatives[ExperimentPickColonies,ExperimentInoculateLiquidMedia]],
     {
-      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
-      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
-      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]]  (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
+      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
+      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]]  (* Model[Container, Rack, "QPix Riser"] *)
     },
     {
       Null,
-      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
-      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
+      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
+      Resource[Sample -> Model[Container, Rack, "id:wqW9BPWNxGeA"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Plate Carrier"] *)
       Null,
       Null,
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
-      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Name -> CreateUUID[]] (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]], (* Model[Container, Rack, "QPix Riser"] *)
+      Resource[Sample -> Model[Container, Rack, "id:pZx9joxwWpE4"], Rent -> True, Name -> CreateUUID[]] (* Model[Container, Rack, "QPix Riser"] *)
     }
   ];
 
   (* Set a tracking variable to keep track of which tracks are high and which are low *)
   currentTracks = {None,None,None};
 
-  Transpose[MapIndexed[Function[{trackInformationWithContainers,index},
+  (* Get our placements and returns *)
+  {
+    riserPlacements,
+    carrierPlacements,
+    riserReturns,
+    carrierReturns
+  } = Transpose[MapIndexed[Function[{trackInformationWithContainers,index},
     Module[
       {
         nextBatchTracks,carriers,risers,frontRiserIndices,backRiserIndices,
-        allRiserDeckPlacements,allCarrierDeckPlacements,allRiserReturns,allCarrierReturns,
-        initialCarriersAndRisers
+        allRiserDeckPlacements,allCarrierDeckPlacements,allRiserReturns,allCarrierReturns
       },
 
       (* Create a tuple of the structure we need for this batch *)
@@ -8370,63 +8427,73 @@ getCarrierAndRiserBatchingFields[
       (* Update the current tracks *)
       currentTracks = nextBatchTracks;
 
-      (* If we are on the first iteration we need to pick the initial resources to the cart *)
-      initialCarriersAndRisers = If[MatchQ[First[index],1],
-        If[MatchQ[experimentFunction,Alternatives[ExperimentPickColonies, ExperimentInoculateLiquidMedia]],
-          Link/@{carrier1Resource,carrier2Resource,carrier3Resource,riser1Resource, riser2Resource, riser3Resource, riser4Resource, riser5Resource, riser6Resource},
-          Link/@{carrier2Resource,carrier3Resource,riser3Resource, riser4Resource, riser5Resource, riser6Resource}
-        ],
-        Null
-      ];
-
       (* Return the placement and resource picking lists *)
       {
         Join@@allRiserDeckPlacements /. {{Null,Null} -> Nothing},
         Join@@allCarrierDeckPlacements /. {{Null,Null} -> Nothing},
         Join@@allRiserReturns /. {Null -> Nothing},
-        Join@@allCarrierReturns /. {Null -> Nothing},
-        initialCarriersAndRisers
+        Join@@allCarrierReturns /. {Null -> Nothing}
       }
     ]
   ],
     carrierDeckPlateLocations
-  ]]
+  ]];
+
+  (* Get all of the unique carriers and risers we will need *)
+  uniqueCarriersAndRisers = Cases[{riserPlacements,carrierPlacements},_Resource,Infinity];
+
+  (* Return the placements, returns, and unique resources *)
+  {
+    riserPlacements,
+    carrierPlacements,
+    riserReturns,
+    carrierReturns,
+    uniqueCarriersAndRisers
+  }
 ];
 (* ::Subsubsection:: *)
 (* getColonyHandlerHeadCassetteBatchingFields *)
 getColonyHandlerHeadCassetteBatchingFields[
   finalPhysicalGroups_List,
+  toolResourceRules:{_Rule...},
+  colonyHandlerResource: _Resource,
   colonyHandlerHeadCassetteField_Symbol
 ] := Module[{currentColonyHandlerHeadCassette},
   (* Keep track of the current colony handler head cassette in the instrument *)
   currentColonyHandlerHeadCassette = Null;
 
   (* Loop over the physical batches and create our lists *)
-  Transpose[Function[{physicalGroup},
-    Module[{nextGroupColonyHandlerHeadCassette,toolToAdd,toolToRemove},
-      (* Lookup the ColonyHandlerHeadCassette from the physical group *)
-      nextGroupColonyHandlerHeadCassette = Lookup[First[First[physicalGroup]],colonyHandlerHeadCassetteField];
+  Transpose@Map[
+    Function[{physicalGroup},
+      Module[{nextGroupColonyHandlerHeadCassette,toolToAdd,toolToRemove},
+        (* Lookup the ColonyHandlerHeadCassette from the physical group *)
+        nextGroupColonyHandlerHeadCassette = Lookup[First[First[physicalGroup]],colonyHandlerHeadCassetteField];
 
-      (* Determine if we need to remove the current colony handler head cassette *)
-      (* If the tools don't match we have to remove - otherwise don't remove *)
-      {
-        toolToAdd,
-        toolToRemove
-      } = If[!MatchQ[currentColonyHandlerHeadCassette,ObjectP[nextGroupColonyHandlerHeadCassette]],
-        {Link[nextGroupColonyHandlerHeadCassette],Link[currentColonyHandlerHeadCassette]},
-        {Null,Null}
-      ];
+        (* Determine if we need to remove the current colony handler head cassette *)
+        (* If the tools don't match we have to remove - otherwise don't remove *)
+        {
+          toolToAdd,
+          toolToRemove
+        } = If[!MatchQ[currentColonyHandlerHeadCassette,ObjectP[nextGroupColonyHandlerHeadCassette]],
+          {
+            {Link[nextGroupColonyHandlerHeadCassette/.toolResourceRules],Link[colonyHandlerResource],"QPix ColonyHandlerHeadCassette Slot"},
+            Link[currentColonyHandlerHeadCassette]
+          },
+          {{Null,Null,Null},Null}
+        ];
 
-      (* Update the current tool *)
-      currentColonyHandlerHeadCassette = nextGroupColonyHandlerHeadCassette;
+        (* Update the current tool *)
+        currentColonyHandlerHeadCassette = nextGroupColonyHandlerHeadCassette;
 
-      (* Return the tool to remove and the placement of the tool to add *)
-      {
-        toolToAdd,
-        toolToRemove
-      }
-    ]
-  ]/@finalPhysicalGroups]
+        (* Return the tool to remove and the placement of the tool to add *)
+        {
+          toolToAdd,
+          toolToRemove
+        }
+      ]
+    ],
+    finalPhysicalGroups
+  ]
 ]
 (* ::Subsubsection:: *)
 (* getCarrierContainerDeckPlacements *)
@@ -8557,4 +8624,21 @@ ValidExperimentPickColoniesQ[
   (*Run the tests as requested*)
   Lookup[RunUnitTest[<|"ValidExperimentPickColoniesQ"->allTests|>,Verbose->verbose,
     OutputFormat->outputFormat],"ValidExperimentPickColoniesQ"]
+];
+(* ::ExperimentPickColoniesPreview *)
+DefineOptions[ExperimentPickColoniesPreview,
+  SharedOptions :> {ExperimentPickColonies}
+];
+
+ExperimentPickColoniesPreview[myInputs : ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions : OptionsPattern[ExperimentPickColoniesPreview]] := Module[
+  {listedOptions, noOutputOptions},
+
+  (* get the options as a list *)
+  listedOptions = ToList[myOptions];
+
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
+  noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+  (* return only the options for ExperimentGrind *)
+  ExperimentPickColonies[myInputs, Append[noOutputOptions, Output -> Preview]]
 ];

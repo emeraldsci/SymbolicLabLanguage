@@ -15,10 +15,22 @@ DefineUsage[ExperimentSolidPhaseExtraction,
 						{
 							InputName -> "Samples",
 							Description-> "The samples on which the experiment should act.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Model[Sample]}],
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -61,10 +73,16 @@ DefineUsage[ExperimentSolidPhaseExtractionOptions,
 						{
 							InputName -> "Samples",
 							Description-> "The samples on which the experiment should act.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Model[Sample]}]
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -110,10 +128,16 @@ DefineUsage[ExperimentSolidPhaseExtractionPreview,
 						{
 							InputName -> "Samples",
 							Description-> "The samples on which the experiment should act.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Model[Sample]}]
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -157,10 +181,16 @@ DefineUsage[ValidExperimentSolidPhaseExtractionQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples on which the experiment should act.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample" -> Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Model[Sample]}]
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True

@@ -76,14 +76,6 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 			Description -> "For each member of SampleLink, a word or phrase defined by the user to identify the the prepared sample (by desiccation and/or grinding) for use in downstream unit operations.",
 			Category -> "General"
 		},
-		PreparedSampleContainerLabel -> {
-			Format -> Multiple,
-			Class -> String,
-			Pattern :> _String,
-			Description -> "For each member of SampleLink, the label of the container of the prepared sample (by grinding and/or desiccation) used for identification in downstream unit operations.",
-			Category -> "General",
-			IndexMatching -> SampleLink
-		},
 		(* This is either Sample or the corresponding WorkingSamples after aliquoting etc. *)
 		WorkingSample -> {
 			Format -> Multiple,
@@ -302,6 +294,7 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, the duration of time that the grinder is switched off between after each grinding step to cool down the sample and prevent overheating.",
 			Category -> "Grinding"
@@ -309,18 +302,12 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 		GrindingProfile -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {{Alternatives[Grinding, Cooling], Alternatives[GreaterEqualP[0 RPM], GreaterEqualP[0 Hertz]], GreaterEqualP[0 Minute]}..},
+			Pattern :> Alternatives[
+				{{Alternatives[Grinding, Cooling], Alternatives[GreaterEqualP[0 RPM], GreaterEqualP[0 Hertz]], GreaterEqualP[0 Minute]}..},
+				{Alternatives[{GreaterEqualP[0 RPM] | GreaterEqualP[0 Hertz], GreaterEqualP[0 Minute]}, {GreaterEqualP[0 Minute]}]..}
+			],
 			IndexMatching -> SampleLink,
 			Description -> "For each member of SampleLink, determines the grinding activity (Grinding/GrindingRate or Cooling) over the course of time, in the form of {{Grinding, GrindingRate, Time}..}.",
-			Category -> "Grinding"
-		},
-		GrindingVideo -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[EmeraldCloudFile]],
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, a link to a video file that displays the process of grinding the sample if Instrument is set to MortarGrinder.",
 			Category -> "Grinding"
 		},
 
@@ -362,13 +349,20 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 			Description -> "The physical state of the desiccant in the desiccator which dries the exposed sample by absorbing water molecules from the sample through the shared atmosphere around the sample.",
 			Category -> "Desiccation"
 		},
-		Desiccant -> { (*TODO change desiccant to Object/Model[Sample] (from consumable), then correct pattern here*)
+		Desiccant -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Sample], Model[Sample], Object[Item, Consumable], Model[Item, Consumable]],
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
 			Description -> "A hygroscopic chemical that is used in the desiccator to dry the exposed sample by absorbing water molecules from the sample through the shared atmosphere around the sample.",
 			Category -> "Desiccation"
+		},
+		CheckDesiccant -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the status of the desiccant is checked before starting the experiment.",
+			Category -> "Desiccant"
 		},
 		DesiccantContainer -> {
 			Format -> Single,
@@ -553,23 +547,6 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 		},
 
 		(*Storage Information*)
-		RecoupSample -> {
-			Format -> Multiple,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, indicates if the PreparedSample from Desiccation and/or grinding is retained after it is used to pack the melting point capillary.",
-			Category -> "Storage Information"
-		},
-		PreparedSampleContainer -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[Container], Model[Container]],
-			IndexMatching -> SampleLink,
-			Description -> "For each member of SampleLink, determines the container that the PreparedSample from Desiccation and/or grinding is transferred into for storage after the experiment.",
-			Category -> "Storage Information"
-		},
 		PreparedSampleStorageConditionLink -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -607,6 +584,31 @@ DefineObjectType[Object[UnitOperation, MeasureMeltingPoint], {
 			Description -> "For each member of SampleLink, determines the condition under which the capillary containing the sample is stored after the protocol is completed.",
 			Category -> "Storage Information",
 			Migration -> SplitField
+		},
+		DesiccantStorageConditionLink -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[StorageCondition]],
+			Description -> "Indicates the condition that the desiccant will be stored in when it is put away after desiccation.",
+			Category -> "Storage Information",
+			Migration -> SplitField
+		},
+		DesiccantStorageConditionExpression -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[SampleStorageTypeP, Desiccated, VacuumDesiccated, RefrigeratorDesiccated, Disposal],
+			Description -> "Indicates the condition that the desiccant will be stored in when it is put away after desiccation.",
+			Category -> "Storage Information",
+			Migration -> SplitField
+		},
+		DesiccantStorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container], Model[Container]],
+			Description -> "The container that the desiccant is transferred into after desiccation for storage.",
+			Category -> "Storage Information"
 		}
 	}
 }]

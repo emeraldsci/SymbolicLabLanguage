@@ -508,7 +508,7 @@ DefineUsage[UploadMolecule,
 							Widget -> Widget[
 								Type -> String,
 								Pattern :> ThermoFisherURLP,
-								Size -> Line,
+								Size -> Paragraph,
 								PatternTooltip -> "The URL of the ThermoFisher product page of this chemical."
 							]
 						},
@@ -534,7 +534,7 @@ DefineUsage[UploadMolecule,
 							Widget -> Widget[
 								Type -> String,
 								Pattern :> MilliporeSigmaURLP,
-								Size -> Line,
+								Size -> Paragraph,
 								PatternTooltip -> "The URL of the MilliporeSigma product page of this chemical."
 							]
 						},
@@ -625,13 +625,13 @@ DefineUsage[UploadMolecule,
 								Widget[
 									Type -> String,
 									Pattern :> ThermoFisherURLP,
-									Size -> Line,
+									Size -> Paragraph,
 									PatternTooltip -> "The URL of the ThermoFisher product page of this chemical."
 								],
 								Widget[
 									Type -> String,
 									Pattern :> MilliporeSigmaURLP,
-									Size -> Line,
+									Size -> Paragraph,
 									PatternTooltip -> "The URL of the MilliporeSigma product page of this chemical."
 								],
 								Widget[
@@ -667,7 +667,9 @@ DefineUsage[UploadMolecule,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"david.ascough",
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -777,7 +779,7 @@ DefineUsage[ValidUploadMoleculeQ,
 						Widget -> Widget[
 							Type -> String,
 							Pattern :> ThermoFisherURLP,
-							Size -> Line,
+							Size -> Paragraph,
 							PatternTooltip -> "The URL of the ThermoFisher product page of this chemical."
 						]
 					}
@@ -800,7 +802,7 @@ DefineUsage[ValidUploadMoleculeQ,
 						Widget -> Widget[
 							Type -> String,
 							Pattern :> MilliporeSigmaURLP,
-							Size -> Line,
+							Size -> Paragraph,
 							PatternTooltip -> "The URL of the MilliporeSigma product page of this chemical."
 						]
 					}
@@ -835,7 +837,9 @@ DefineUsage[ValidUploadMoleculeQ,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"david.ascough",
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -945,7 +949,7 @@ DefineUsage[UploadMoleculeOptions,
 						Widget -> Widget[
 							Type -> String,
 							Pattern :> ThermoFisherURLP,
-							Size -> Line,
+							Size -> Paragraph,
 							PatternTooltip -> "The URL of the ThermoFisher product page of this chemical."
 						]
 					}
@@ -968,7 +972,7 @@ DefineUsage[UploadMoleculeOptions,
 						Widget -> Widget[
 							Type -> String,
 							Pattern :> MilliporeSigmaURLP,
-							Size -> Line,
+							Size -> Paragraph,
 							PatternTooltip -> "The URL of the MilliporeSigma product page of this chemical."
 						]
 					}
@@ -1002,7 +1006,9 @@ DefineUsage[UploadMoleculeOptions,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"david.ascough",
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -1945,7 +1951,7 @@ DefineUsage[UploadPipettingMethod,
 			"UploadPipettingMethodModelOptions",
 			"UploadPipettingMethodModelPreview",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -1995,7 +2001,7 @@ DefineUsage[UploadPipettingMethodModelOptions,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelPreview",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2049,7 +2055,7 @@ DefineUsage[UploadPipettingMethodModelPreview,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelOptions",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2103,7 +2109,7 @@ DefineUsage[ValidUploadPipettingMethodModelQ,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelOptions",
 			"UploadPipettingMethodModelPreview",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2160,7 +2166,7 @@ DefineUsage[UploadGradientMethod,
 			"Download",
 			"Inspect"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim"}
 	}
 ];
 
@@ -2264,7 +2270,7 @@ DefineUsage[UploadGradientMethodOptions,
 			"Download",
 			"Inspect"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim"}
 	}
 ];
 

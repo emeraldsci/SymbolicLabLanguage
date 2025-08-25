@@ -370,10 +370,25 @@ DefineOptions[ExperimentCircularDichroism,
 				Pattern :> ObjectP[{Model[Container], Object[Container]}],
 				ObjectTypes -> {Model[Container], Object[Container]}
 			],
-			ResolutionDescription -> "Is automatically set to Null if the SamplesOutStorageCondition is set to Disposal. If the SamplesOutStorageCondition is not Disposal, this option resolves based on the reusability of the ReadPlate: if the ReadPlate is reusable (Reusability->True for its Model), this option resolved to be Null, otherwise is resolved to Model[Container,Plate,\"96-well 1mL Deep Well Plate\"].",
+			ResolutionDescription -> "Is automatically set to Null if the SamplesOutStorageCondition is set to Disposal. If the SamplesOutStorageCondition is not Disposal, this option resolves based on the reusability of the ReadPlate: if the ReadPlate is reusable (Reusable->True for its Model), this option resolved to be Null, otherwise is resolved to Model[Container,Plate,\"96-well 1mL Deep Well Plate\"].",
 			Category -> "Post Experiment"
 		},
-		FuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 200 Microliter."
+			}
+
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"Hellma Black Quartz Microplate\"]."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
 		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions
@@ -411,15 +426,17 @@ Warning::CircularDichroismInconsistentAnalyteConcentration = "For samples `1`, t
 (* --- Core Function --- *)
 ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: OptionsPattern[ExperimentCircularDichroism]] := Module[
 	{
-		listedOptions, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests, upload,
-		updatedSimulation, protocolObject, confirm, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests,
-		combinedOptions, resolveOptionsResult, simulatedProtocol, simulation,	resolvedOptionsNoHidden, resourcePacket,
-		frqTests, allTests, validQ, previewRule, optionsRule, testsRule, performSimulationQ, resolvedOptions, resolutionTests,
-		returnEarlyQ, validLengths, validLengthTests, expandedCombinedOptions, cache, cacheBall, allPackets, listedSamples,
-		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, simulatedSamplesFields,
-		simulatedSampleModelFields, simulatedSampleIdentityModelFields, uniqueBlankSamples, possibleAliquotContainers,
-		allInstrumentModels, allSampleObjects, allSampleModels, allContainerObjects, allContainerModels,
-		simulatedContainerFields, simulatedContainerModelFields
+		outputSpecification, output, gatherTests, messages, listedSamples, listedOptions,
+		validSamplePreparationResult, samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,updatedSimulation,
+		safeOptionsNamed, safeOptionTests, samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples,
+		validLengths, validLengthTests, templatedOptions, templateTests, combinedOptions,
+		upload, confirm, canaryBranch, fastTrack, parentProt, cache, expandedCombinedOptions,
+		simulatedSamplesFields, simulatedSampleModelFields, simulatedSampleIdentityModelFields,simulatedContainerFields, simulatedContainerModelFields,
+		uniqueBlankSamples, possibleAliquotContainers,
+		allSampleObjects, allSampleModels, allContainerObjects, allContainerModels,allInstrumentModels,allPackets,
+		cacheBall, resolveOptionsResult, resolvedOptions, resolutionTests, resolvedOptionsNoHidden,
+		returnEarlyQ, performSimulationQ, resourcePacket, frqTests, simulatedProtocol, simulation,
+		allTests, validQ, previewRule, optionsRule, testsRule, protocolObject
 	},
 
 	(* determine the requested return value from the function *)
@@ -430,20 +447,19 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
-	(* make sure we're working with a list of options and samples, and remove all temporal links *)
-	{listedSamples, listedOptions} = sanitizeInputs[ToList[mySamples], ToList[myOptions]];
-
+	(* Make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
+		{samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentCircularDichroism,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -454,25 +470,29 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	];
 
 	(* call SafeOptions to make sure all options match pattern *)
-	{safeOptions, safeOptionTests} = If[gatherTests,
-		SafeOptions[ExperimentCircularDichroism, myOptionsWithPreparedSamples, Output -> {Result, Tests}, AutoCorrect -> False],
-		{SafeOptions[ExperimentCircularDichroism, myOptionsWithPreparedSamples, AutoCorrect -> False], Null}
+	{safeOptionsNamed, safeOptionTests} = If[gatherTests,
+		SafeOptions[ExperimentCircularDichroism, optionsWithPreparedSamplesNamed, Output -> {Result, Tests}, AutoCorrect -> False],
+		{SafeOptions[ExperimentCircularDichroism, optionsWithPreparedSamplesNamed, AutoCorrect -> False], {}}
 	];
 
+	(* make sure we're working with a list of options and samples, and remove all temporal links *)
+	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
-	If[MatchQ[safeOptions, $Failed],
+	If[MatchQ[safeOps, $Failed],
 		Return[outputSpecification /. {
 			Result -> $Failed,
 			Tests -> safeOptionTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
 	(* call ValidInputLengthsQ to make sure all the options are the right length *)
 	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentCircularDichroism, {listedSamples}, listedOptions, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentCircularDichroism, {listedSamples}, listedOptions], Null}
+		ValidInputLengthsQ[ExperimentCircularDichroism, {samplesWithPreparedSamples}, optionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentCircularDichroism, {samplesWithPreparedSamples}, optionsWithPreparedSamples], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -481,35 +501,37 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 			Result -> $Failed,
 			Tests -> Flatten[{safeOptionTests, validLengthTests}],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
-	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
-
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
-	{unresolvedOptions, unresolvedOptionsTests} = If[gatherTests,
-		ApplyTemplateOptions[ExperimentCircularDichroism, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, 1, Output -> {Result, Tests}],
-		{ApplyTemplateOptions[ExperimentCircularDichroism, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, 1, Output -> Result], Null}
+	{templatedOptions, templateTests} = If[gatherTests,
+		ApplyTemplateOptions[ExperimentCircularDichroism, {ToList[samplesWithPreparedSamples]}, optionsWithPreparedSamples, 1, Output -> {Result, Tests}],
+		{ApplyTemplateOptions[ExperimentCircularDichroism, {ToList[samplesWithPreparedSamples]}, optionsWithPreparedSamples, 1, Output -> Result], {}}
 	];
 
 	(* If couldn't apply the template, return $Failed (or the tests up to this point) *)
-	If[MatchQ[unresolvedOptions, $Failed],
+	If[MatchQ[templatedOptions, $Failed],
 		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Flatten[{safeOptionTests, validLengthTests, unresolvedOptionsTests}],
+			Tests -> Flatten[{safeOptionTests, validLengthTests, templateTests}],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
 	(* combine the safe options with what we got from the template options *)
-	combinedOptions = ReplaceRule[safeOptions, unresolvedOptions];
+	combinedOptions = ReplaceRule[safeOps, templatedOptions];
+
+	(* get assorted hidden options *)
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[combinedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* expand the combined options *)
-	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentCircularDichroism, {mySamplesWithPreparedSamples}, combinedOptions]];
+	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentCircularDichroism, {ToList[samplesWithPreparedSamples]}, combinedOptions]];
 	
 	(* --- Get any options that will need to be used in the download call --- *)
 	(* --- For now the only plate reader we can use is Model[Instrument, PlateReader, "Ekko"],"id:mnk9jORmGjEw" *)
@@ -528,7 +550,7 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	simulatedSamplesFields = Packet@@Flatten[{OpticalComposition, SamplePreparationCacheFields[Object[Sample]]}];
 	simulatedSampleModelFields = Flatten[{StandardComponents, Acid, Base, Structure, PolymerType, Composition, OpticalComposition, SamplePreparationCacheFields[Model[Sample]]}];
 	simulatedContainerFields = Flatten[{SamplePreparationCacheFields[Object[Container]]}];
-	simulatedContainerModelFields = Flatten[{Reusability, SamplePreparationCacheFields[Model[Container]]}];
+	simulatedContainerModelFields = Flatten[{Reusable, SamplePreparationCacheFields[Model[Container]]}];
 	simulatedSampleIdentityModelFields = {Molecule, MolecularWeight, StandardComponents, PolymerType, ExtinctionCoefficients, Chiral, Racemic, EnantiomerForms, RacemicForm, EnantiomerPair};
 	
 	(*Unique Blanks*)
@@ -549,8 +571,8 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 		(*1*)listedSamples,
 		(*2*)$AllCDInstrumentModels,
 		(*3*)$AllCDPlateModels,
-		(*4*)ToList[Lookup[safeOptions, Instrument]/.Automatic -> {}],
-		(*5*)ToList[Lookup[safeOptions, ReadPlate]/.Automatic -> {}],
+		(*4*)ToList[Lookup[safeOps, Instrument]/.Automatic -> {}],
+		(*5*)ToList[Lookup[safeOps, ReadPlate]/.Automatic -> {}],
 		(*6*)uniqueBlankSamples,
 		(*7*)possibleAliquotContainers
 	}]], #]& /@ {
@@ -586,7 +608,7 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 					},
 					(*3*){Packet[Object, Model, WettedMaterials, PlateReaderMode, Objects]},
 					(*4*){Evaluate[Packet@@Flatten[{SamplePreparationCacheFields[Object[Container]]}]]},
-					(*5*){Evaluate[Packet@@Flatten[{Reusability, SamplePreparationCacheFields[Model[Container]]}]]}
+					(*5*){Evaluate[Packet@@Flatten[{Reusable, SamplePreparationCacheFields[Model[Container]]}]]}
 				},
 				Date -> Now,
 				Cache -> cache,
@@ -610,8 +632,8 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveCircularDichroismOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests},Simulation -> updatedSimulation, Cache -> cacheBall],
-			{resolveCircularDichroismOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Simulation -> updatedSimulation, Cache -> cacheBall], Null}
+			resolveCircularDichroismOptions[samplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests},Simulation -> updatedSimulation, Cache -> cacheBall],
+			{resolveCircularDichroismOptions[samplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Simulation -> updatedSimulation, Cache -> cacheBall], Null}
 		],
 		$Failed,
 		{Error::IncompatibleReadPlateForCircularDichroism, Error::InvalidInput, Error::InvalidOption}
@@ -644,7 +666,7 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	If[returnEarlyQ && !performSimulationQ,
 		Return[outputSpecification/.{
 			Result -> $Failed,
-			Tests -> Join[safeOptionTests, validLengthTests, unresolvedOptionsTests, resolutionTests],
+			Tests -> Join[safeOptionTests, validLengthTests, templateTests, resolutionTests],
 			Options -> RemoveHiddenOptions[ExperimentCircularDichroism, resolvedOptionsNoHidden],
 			Preview -> Null,
 			Simulation -> Simulation[]
@@ -656,22 +678,22 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 	{resourcePacket, frqTests} = If[returnEarlyQ,
 		{$Failed, {}},
 		If[gatherTests,
-			circularDichroismResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, {Output -> {Result, Tests}, Simulation -> updatedSimulation}], Cache -> cacheBall],
-			{circularDichroismResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, {Output -> Result, Simulation -> updatedSimulation}], Cache -> cacheBall], Null}
+			circularDichroismResourcePackets[Download[samplesWithPreparedSamples, Object], templatedOptions, ReplaceRule[resolvedOptions, {Output -> {Result, Tests}, Simulation -> updatedSimulation}], Cache -> cacheBall],
+			{circularDichroismResourcePackets[Download[samplesWithPreparedSamples, Object], templatedOptions, ReplaceRule[resolvedOptions, {Output -> Result, Simulation -> updatedSimulation}], Cache -> cacheBall], Null}
 		]
 	];
 
 	(* If we were asked for a simulation, also return a simulation. *)
 	(* should we use resolvedOptions or expandedCombinedOptions *)
 	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentCircularDichroism[resourcePacket, ToList[mySamplesWithPreparedSamples], resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation],
-		{Null, Null}
+		simulateExperimentCircularDichroism[resourcePacket, ToList[samplesWithPreparedSamples], resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation],
+		{Null, updatedSimulation}
 	];
 
 	(* --- Packaging the return value --- *)
 
 	(* get all the tests together *)
-	allTests = Cases[Flatten[{safeOptionTests, validLengthTests, unresolvedOptionsTests, resolutionTests, frqTests}], _EmeraldTest];
+	allTests = Cases[Flatten[{safeOptionTests, validLengthTests, templateTests, resolutionTests, frqTests}], _EmeraldTest];
 
 	(* figure out if we are returning $Failed for the Result option *)
 	(* the tricky part is that if the Output option includes Tests _and_ Result, messages will be suppressed.
@@ -716,27 +738,28 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 		$Failed,
 
 		(* Were we asked to simulate the procedure? *)
-		MatchQ[Lookup[safeOptions, SimulateProcedure], True],
+		MatchQ[Lookup[safeOps, SimulateProcedure], True],
 		circularDichroismResourcePackets[
 			resourcePacket,
-			Upload -> Lookup[safeOptions, Upload],
+			Upload -> Lookup[safeOps, Upload],
 			Cache -> cacheBall,
-			Simulation -> updatedSimulation
+			Simulation -> simulation
 		],
 
 		(* Otherwise, upload a real protocol that's ready to be run. *)
 		True,
 		UploadProtocol[
 			resourcePacket,
-			Upload -> Lookup[safeOptions, Upload],
-			Confirm -> Lookup[safeOptions, Confirm],
-			ParentProtocol -> Lookup[safeOptions, ParentProtocol],
+			Upload -> Lookup[safeOps, Upload],
+			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
+			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 			ConstellationMessage -> Object[Protocol, CircularDichroism],
-			Priority -> Lookup[safeOptions, Priority],
-			StartDate -> Lookup[safeOptions, StartDate],
-			HoldOrder -> Lookup[safeOptions, HoldOrder],
-			QueuePosition -> Lookup[safeOptions, QueuePosition],
-			Simulation -> updatedSimulation
+			Priority -> Lookup[safeOps, Priority],
+			StartDate -> Lookup[safeOps, StartDate],
+			HoldOrder -> Lookup[safeOps, HoldOrder],
+			QueuePosition -> Lookup[safeOps, QueuePosition],
+			Simulation -> simulation
 		]
 	];
 	(* Return requested output *)
@@ -744,7 +767,8 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 		Result -> protocolObject,
 		Tests -> allTests,
 		Options -> RemoveHiddenOptions[ExperimentCircularDichroism,resolvedOptionsNoHidden],
-		Preview -> Null
+		Preview -> Null,
+		Simulation -> simulation
 	}
 ];
 
@@ -754,7 +778,7 @@ ExperimentCircularDichroism[mySamples: ListableP[ObjectP[Object[Sample]]], myOpt
 (* ExperimentCircularDichroism (container input) *)
 
 
-ExperimentCircularDichroism[myContainers: ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String|{LocationPositionP, _String|ObjectP[Object[Container]]}], myOptions: OptionsPattern[ExperimentCircularDichroism]] := Module[
+ExperimentCircularDichroism[myContainers: ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP, _String|ObjectP[Object[Container]]}], myOptions: OptionsPattern[ExperimentCircularDichroism]] := Module[
 	{
 		listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, updatedSimulation, containerToSampleSimulation,
 		containerToSampleTests, messages, listedContainers, validSamplePreparationResult, mySamplesWithPreparedSamples,
@@ -769,7 +793,7 @@ ExperimentCircularDichroism[myContainers: ListableP[ObjectP[{Object[Container], 
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 	
@@ -780,10 +804,12 @@ ExperimentCircularDichroism[myContainers: ListableP[ObjectP[{Object[Container], 
 		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentCircularDichroism,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 200 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "Hellma Black Quartz Microplate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1105,7 +1131,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 	readPlateDownloadField = If[MatchQ[suppliedReadPlate, ObjectP[Model[Container, Plate]]], Object, Model[Object]];
 
 	(*Generate download field for all allowed plate*)
-	allAllowedPlateDownloadFields = {Object, ContainerMaterials, MinVolume ,MaxVolume, RecommendedFillVolume, NumberOfWells, AspectRatio, Reusability};
+	allAllowedPlateDownloadFields = {Object, ContainerMaterials, MinVolume ,MaxVolume, RecommendedFillVolume, NumberOfWells, AspectRatio, Reusable};
 
 	(*Unique Blanks*)
 	uniqueBlankSamples = DeleteDuplicates[Download[Cases[Lookup[roundCircularDichroismOptions, Blanks], ObjectP[Object]] ,Object]];
@@ -1143,7 +1169,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 					Composition[[All, 1]]
 				},
 				(*2*){Packet[PlateReaderMode,Objects]},
-				(*3*){Packet[Object, ContainerMaterials, MinVolume, MaxVolume, RecommendedFillVolume, NumberOfWells, AspectRatio, Reusability]},
+				(*3*){Packet[Object, ContainerMaterials, MinVolume, MaxVolume, RecommendedFillVolume, NumberOfWells, AspectRatio, Reusable]},
 				(*4*){Packet[Object, Model]},
 				(*5*){Packet[Object, Model]},
 				(*6*){Packet[Container], Packet[Container[{Model}]], Packet[Container[Model][{MaxVolume}]]},
@@ -1236,7 +1262,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 		Test["The Instrument is compatible for measureing circular dichroism :",validInstrumentQ,True]
 	];
 
-	(*Collect intrument packetet*)
+	(*Collect instrument packetet*)
 	instrumentPacket = fetchPacketFromCache[instrumentModel,Flatten[allAllowedInstrumentModelPackets]];
 
 	(* --- Check to make sure there are no input samples in the Blanks field *)
@@ -1290,7 +1316,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 		MemberQ[suppliedAliquotBooleans, True] && MemberQ[suppliedAliquotBooleans, False],
 
 		(* If we have more than one container in play then somethings are set to be aliquoted or there are multiple sources *)
-		(* In either case these then means everything must be aliquotted *)
+		(* In either case these then means everything must be aliquoted *)
 		MemberQ[suppliedAliquotBooleans, False] && Length[uniqueContainers] > 1
 	];
 
@@ -1383,7 +1409,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 
 	(* Retrieved the information (MaxVolume, MinVolume, ContainerMaterials for use in the option resolver) *)
 	{readPlateMaterial, readPlateMinVolume, readPlateMaxVolume, readPlateRecommendedFillVolume, readplateReusability} = If[validReadPlateQ,
-		 Lookup[fetchPacketFromCache[resolvedReadPlateModel, allAllowedPlatePackets], {ContainerMaterials, MinVolume, MaxVolume, RecommendedFillVolume, Reusability}],
+		 Lookup[fetchPacketFromCache[resolvedReadPlateModel, allAllowedPlatePackets], {ContainerMaterials, MinVolume, MaxVolume, RecommendedFillVolume, Reusable}],
 		 {{}, {}, {}, {}, True}
 	 ];
 
@@ -1538,7 +1564,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 					(*--- Check user specified Analyte has a conflict ---*)
 					invalidAnalytBool = If[MatchQ[eachAnalyte, ObjectP[Model[Molecule]]] && Length[allAnalyteList] > 0,
 						(* Check if user specified molecules and total analytes we can fine in Object[Sample] and Compositions *)
-						!MemberQ[allAnalyteList, eachAnalyte],
+						!MemberQ[allAnalyteList, ObjectP[eachAnalyte]],
 						False
 					];
 
@@ -1567,7 +1593,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 						eachAnalyteConcentrations,
 						(*Resolve Automatic:Check if we could find the concentration from the compositions, if not, return Null *)
 						If[MatchQ[eachSuppliedTargetConcentrations, ConcentrationP],
-							SafeRound[suppliedTargetConcentrations, 0.1 Micromolar, AvoidZero -> True],
+							SafeRound[eachSuppliedTargetConcentrations, 0.1 Micromolar, AvoidZero -> True],
 							SafeRound[analyteKnownCleanedConcentration, 0.1 Micromolar, AvoidZero -> True]
 						]
 					];
@@ -1644,7 +1670,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 						_,185Nanometer
 					];
 
-					(*If user specified a non-quartz plate and specify a detection wavelenght < 400 nm. throw a warning*)
+					(*If user specified a non-quartz plate and specify a detection wavelength < 400 nm. throw a warning*)
 					detectionWavelengthReadPlateIncompatibleBool=And[minDetectionWavelength<400 Nanometer,notQuratzReadPlateQ,validReadPlateQ];
 
 					rangedWavelengthQ=MatchQ[resolvedDetectionWavelength,_Span];
@@ -2046,7 +2072,7 @@ resolveCircularDichroismOptions[mySamples: {ObjectP[Object[Sample]]...}, myExper
 	(* also we want to resolve everything to the same plate *)
 	requiredAliquotContainers=If[preparedPlate,Null,ConstantArray[{1,Download[resolvedReadPlate,Object]},Length[simulatedSamples]]];
 
-	(* Since we won't do any further manipulations for these samples, we will use the sample volumes as teh aliquot volue directly*)
+	(* Since we won't do any further manipulations for these samples, we will use the sample volumes as the aliquot volue directly*)
 	(* Round this down following the same rounding rule of Aliquot *)
 	requiredAliquotAmounts=RoundOptionPrecision[resolvedSampleVolumes,10^-1*Microliter,Round->Down];
 
@@ -3260,13 +3286,13 @@ circularDichroismResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnres
 
 	(* generate check point*)
 	checkpoints = {
-		{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-		{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-		{"Preparing Read Plate", If[preparedPlate, 1 Minute,20 Minute], "Transfer all samples to read plate, which will be inserted into the instrument.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 * Minute]]},
-		{"Measuring Circular Dichroism", estimatedReadingTime, "Samples' circular dichroism and absorbance are measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 * Minute]]},
-		{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 * Minute]]},
-		{"Pre-Washing ReadPlate",If[handWashReadPlateQ,30 Minute,0 Minute], "Pre-wash the quartz read plate in a fume hood.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 * Minute]]},
-		{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
+		{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+		{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+		{"Preparing Read Plate", If[preparedPlate, 1 Minute,20 Minute], "Transfer all samples to read plate, which will be inserted into the instrument.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 * Minute]]},
+		{"Measuring Circular Dichroism", estimatedReadingTime, "Samples' circular dichroism and absorbance are measured.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 * Minute]]},
+		{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 * Minute]]},
+		{"Pre-Washing ReadPlate",If[handWashReadPlateQ,30 Minute,0 Minute], "Pre-wash the quartz read plate in a fume hood.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 * Minute]]},
+		{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
 	};
 
 	(* --- Generate our protocol packet --- *)

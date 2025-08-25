@@ -22,6 +22,10 @@ DefineTests[ExperimentDynamicLightScattering,
       ExperimentDynamicLightScattering[Object[Container, Vessel, "Container 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]],
       ObjectP[Object[Protocol, DynamicLightScattering]]
     ],
+    Example[{Basic, "Accepts a sample model:"},
+      ExperimentDynamicLightScattering[Model[Sample,"Milli-Q water"], CollectStaticLightScattering -> False],
+      ObjectP[Object[Protocol, DynamicLightScattering]]
+    ],
     Example[{Basic, "Accepts a mixture of sample objects and non-empty container objects:"},
       ExperimentDynamicLightScattering[
         {
@@ -40,6 +44,7 @@ DefineTests[ExperimentDynamicLightScattering,
     ],
     Example[{Additional, "The experiment accepts an input sample without a Model:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test Model-less protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        CollectStaticLightScattering -> False,
         Output -> Options
       ];
       Lookup[options, AssayType],
@@ -47,13 +52,79 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     (* - Messages - *)
-    Example[{Messages, "ObjectDoesNotExist", "Any specified input samples or options which are Objects must exist in the database:"},
-      ExperimentDynamicLightScattering[Object[Sample, "Fake nonexistent sample for ExperimentDynamicLightScattering tests"]],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentDynamicLightScattering[Object[Sample, "Nonexistent sample"]],
       $Failed,
-      Messages :> {
-        Error::ObjectDoesNotExist,
-        Error::InvalidInput
-      }
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentDynamicLightScattering[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentDynamicLightScattering[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentDynamicLightScattering[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample, "Milli-Q water"],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 25 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentFilter[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample, "Milli-Q water"],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 25 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentFilter[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
     ],
     Example[{Messages, "DiscardedSamples", "If any provided input sample is discarded, an error will be thrown:"},
       ExperimentDynamicLightScattering[Object[Sample, "Discarded test sample for ExperimentDynamicLightScattering" <> $SessionUUID]],
@@ -201,7 +272,7 @@ DefineTests[ExperimentDynamicLightScattering,
       ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, "Milli-Q water"],
-        DilutionMixVolume -> 10 * Microliter,
+        DilutionMixRate -> 100 Microliter/Second,
         DilutionNumberOfMixes -> Null
       ],
       $Failed,
@@ -232,7 +303,9 @@ DefineTests[ExperimentDynamicLightScattering,
       ColloidalStability,
       Messages :> {
         Warning::DLSBufferNotSpecified
-      }
+      },
+      SetUp:>(On[Warning::DLSBufferNotSpecified]),
+      TearDown:>(Off[Warning::DLSBufferNotSpecified])
     ],
     Example[{Messages, "ConflictingDLSDilutionCurves", "When AssayType is ColloidalStability, for each input sample, the corresponding StandardDilutionCurve and SerialDilutionCurve options cannot both be Null or both be specified as non-Null values:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
@@ -276,25 +349,6 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
-    Example[{Messages, "DLSDilutionCurveMixVolumeMismatch", "The smallest volume in a well of the SampleLoadingPlate after sample dilution cannot be smaller than the DilutionMixVolume:"},
-      ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, "Milli-Q water"],
-        StandardDilutionCurve -> {
-          {40 * Microliter, 40 * Microliter},
-          {40 * Microliter, 50 * Microliter},
-          {13 * Microliter, 26 * Microliter},
-          {7 * Microliter, 14 * Microliter}
-        },
-        ReplicateDilutionCurve -> True,
-        DilutionMixVolume -> 15 * Microliter
-      ],
-      $Failed,
-      Messages :> {
-        Error::DLSDilutionCurveMixVolumeMismatch,
-        Error::InvalidOption
-      }
-    ],
     Example[{Messages, "DLSNotEnoughDilutionCurveVolume", "The smallest volume in a well of the SampleLoadingPlate after sample dilution must be large enough for the volume required for the assay:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
@@ -326,6 +380,7 @@ DefineTests[ExperimentDynamicLightScattering,
     ],
     Example[{Messages, "NonDefaultDLSSampleLoadingPlate", "Using a non-default SampleLoadingPlate Model may result in poor experimental results:"},
       Lookup[ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
         SampleLoadingPlate -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
         Output -> Options
       ], SampleLoadingPlate],
@@ -406,6 +461,18 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
+    Example[{Messages, "DLSInputSampleNoAnalyte", "When CollectStaticLightScattering in a Plate format, each input sample must have a Model[Molecule,Protein] or Model[Molecule,Polymer] in its Composition, or have the Analyte option specified:"},
+      ExperimentDynamicLightScattering[Object[Sample, "Test 1 mL water for ExperimentDynamicLightScattering" <> $SessionUUID],
+        CollectStaticLightScattering -> True,
+        AssayFormFactor -> Plate,
+        Buffer -> Model[Sample, "Milli-Q water"]
+      ],
+      $Failed,
+      Messages :> {
+        Error::DLSInputSampleNoAnalyte,
+        Error::InvalidOption
+      }
+    ],
     Example[{Messages, "DLSInputSampleNoAnalyteMassConcentration", "For ColloidalStability assays, the Analyte must have an associated amount in the Composition field, or have the AnalyteMassConcentration option specified:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test unknown concentration protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
@@ -414,6 +481,41 @@ DefineTests[ExperimentDynamicLightScattering,
       $Failed,
       Messages :> {
         Error::DLSInputSampleNoAnalyteMassConcentration,
+        Error::InvalidOption
+      }
+    ],
+    Example[{Messages, "DLSInputSampleNoAnalyteMassConcentration", "When CollectStaticLightScattering in a Plate format, the Analyte must have an associated amount in the Composition field, or have the AnalyteMassConcentration option specified:"},
+      ExperimentDynamicLightScattering[Object[Sample, "Test unknown concentration protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        CollectStaticLightScattering -> True,
+        AssayFormFactor -> Plate,
+        Buffer -> Model[Sample, "Milli-Q water"]
+      ],
+      $Failed,
+      Messages :> {
+        Error::DLSInputSampleNoAnalyteMassConcentration,
+        Error::InvalidOption
+      }
+    ],
+    Example[{Messages, "DLSInputSampleNoAnalyteMolecularWeight", "For ColloidalStability assays, the Analyte must have an associated molecular weight in the MolecularWeight field:"},
+      ExperimentDynamicLightScattering[Object[Sample,"Test no MW Protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+        AssayType -> ColloidalStability,
+        Buffer -> Model[Sample, "Milli-Q water"]
+      ],
+      $Failed,
+      Messages :> {
+        Error::DLSInputSampleNoAnalyteMolecularWeight,
+        Error::InvalidOption
+      }
+    ],
+    Example[{Messages, "DLSInputSampleNoAnalyteMolecularWeight", "When CollectStaticLightScattering in a Plate format, the Analyte must have an associated molecular weight in the MolecularWeight field:"},
+      ExperimentDynamicLightScattering[Object[Sample,"Test no MW Protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+        CollectStaticLightScattering -> True,
+        AssayFormFactor -> Plate,
+        Buffer -> Model[Sample, "Milli-Q water"]
+      ],
+      $Failed,
+      Messages :> {
+        Error::DLSInputSampleNoAnalyteMolecularWeight,
         Error::InvalidOption
       }
     ],
@@ -450,6 +552,21 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
+    Example[{Messages, "ConflictingDLSFormFactorReplicateDilutionCurve", "Raise error when AssayFormFactor, ColloidalStability, and ReplicateDilutionCurve are in conflict:"},
+      ExperimentDynamicLightScattering[Object[Sample,"Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        AssayType -> ColloidalStability,
+        ReplicateDilutionCurve -> False
+      ],
+      $Failed,
+      Messages :> {
+        Warning::DLSBufferNotSpecified,
+        Error::ConflictingDLSFormFactorReplicateDilutionCurve,
+        Error::InvalidOption
+      },
+      SetUp:>(On[Warning::DLSBufferNotSpecified]),
+      TearDown:>(Off[Warning::DLSBufferNotSpecified])
+    ],
     Example[{Messages, "ConflictingDLSFormFactorInstrument", "Raise error when AssayFormFactor and Instrument are in conflict:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Plate,
@@ -463,8 +580,8 @@ DefineTests[ExperimentDynamicLightScattering,
     ],
     Example[{Messages, "ConflictingDLSFormFactorLoadingPlate", "Raise error when AssayFormFactor and SampleLoadingPlate are in conflict:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayFormFactor -> Plate,
-        SampleLoadingPlate -> Model[Container, Plate, "96-well PCR Plate"]
+        AssayFormFactor -> Capillary,
+        SampleLoadingPlate -> Null
       ],
       $Failed,
       Messages :> {
@@ -516,6 +633,29 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
+    Example[{Messages, "Preplated", "Raise error when the DLS assay samples are already in their assay containers:"},
+      options = ExperimentDynamicLightScattering[Object[Container, Plate, "Container 24 (preplated plate) for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+        CollectStaticLightScattering -> False,
+        Output -> Options
+      ];
+      Lookup[options, WellCover],
+      ObjectP[Model[Sample, "Silicone Oil"]],
+      Messages :> {
+        Warning::Preplated
+      }
+    ],
+    Example[{Messages, "NoWellCover", "Raise error when the DLS assay samples are not preplated and WellCover is set to None:"},
+      ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        CollectStaticLightScattering -> False,
+        WellCover -> None
+      ],
+      $Failed,
+      Messages :> {
+        Error::NoWellCover,
+        Error::InvalidOption
+      }
+    ],
     Example[{Messages, "TooLowSampleVolume", "Raise error when the SampleVolume is too low for the given AssayFormFactor:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Plate,
@@ -538,11 +678,11 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
-    Example[{Messages, "ConflictingDLSDilutionMixTypeOptions", "Raise error when the DilutionMixType is in conflict with one or more of DilutionMixVolume, DilutionMixRate, and DilutionNumberOfMixes:"},
+    Example[{Messages, "ConflictingDLSDilutionMixTypeOptions", "Raise error when the DilutionMixType is in conflict with one or more of DilutionMixRate and DilutionNumberOfMixes:"},
       ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
         DilutionMixType -> Vortex,
-        DilutionMixVolume -> (10*Microliter)
+        DilutionNumberOfMixes -> 5
       ],
       $Failed,
       Messages :> {
@@ -563,7 +703,131 @@ DefineTests[ExperimentDynamicLightScattering,
         Error::InvalidOption
       }
     ],
+    Example[{Messages, "ConflictingFormFactorCalibratePlate", "Raise error when the AssayFormFactor is in conflict with CalibratePlate:"},
+      ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        CalibratePlate -> True
+      ],
+      $Failed,
+      Messages :> {
+        Error::ConflictingFormFactorCalibratePlate,
+        Error::InvalidOption
+      }
+    ],
+    Example[{Messages,"ConflictingFormFactorAssayContainers","Raise an error if we were given more a plate model assay container when AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        AssayContainers -> {
+          Object[Container,Plate,"Empty Plate AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        }
+      ],
+      $Failed,
+      Messages :> {Error::ConflictingFormFactorAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"ConflictingFormFactorAssayContainers","Raise an error if we were given more a plate model assay container when AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        AssayContainers -> {
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        }
+      ],
+      $Failed,
+      Messages :> {Error::ConflictingFormFactorAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"InvalidAssayContainers","Raise an error if we were given more than one plate type assay container:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        AssayContainers -> {
+          Object[Container,Plate,"Empty Plate AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Container,Plate,"Empty Plate AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        }
+      ],
+      $Failed,
+      Messages :> {Error::InvalidAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"InvalidAssayContainers","Raise an error if we were given more than three capillary type assay containers:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        AssayContainers -> {
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 3 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 4 for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        }
+      ],
+      $Failed,
+      Messages :> {Error::InvalidAssayContainers,Warning::SpecifiedCapillaryAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"InvalidAssayContainers","Raise an error if we were given a mix of plate type and capillary type assay containers:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayContainers -> {
+          Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Container,Plate,"Empty Plate AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        }
+      ],
+      $Failed,
+      Messages :> {Error::InvalidAssayContainers,Error::ConflictingFormFactorAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"InvalidAssayContainers","Raise an error if we were given an invalid dls assay container model:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayContainers -> {
+          Model[Container, Plate, "id:L8kPEjkmLbvW"] (* "96-well 2mL Deep Well Plate" *)
+        }
+      ],
+      $Failed,
+      Messages :> {Error::InvalidAssayContainers,Error::InvalidOption}
+    ],
+    Example[{Messages,"SpecifiedCapillaryAssayContainers","Raise an error if AssayFormFactor is Capillary and AssayContainer is specified as an Object[Container]:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        AssayContainers -> {Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]},
+        Output -> Options
+      ];
+      Lookup[options,AssayContainers],
+      {ObjectP[Object[Container,Plate,CapillaryStrip,"Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID]]},
+      Messages :> {Warning::SpecifiedCapillaryAssayContainers}
+    ],
 
+    Example[{Messages,"SolventNameMismatch","Raise error when there is a conflict with the given SolventName, SolventViscosity, and/or SolventRefractiveIndex:"},
+      options = ExperimentDynamicLightScattering[
+        {
+          Object[Sample, "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+          Object[Sample, "Test cDNA sample for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        },
+        AssayFormFactor -> Plate,
+        CalibratePlate -> True,
+        Buffer -> Model[Sample, "id:Vrbp1jG80zno"], (* Acetone, Reagent Grade *)
+        SolventName -> "Acetone 100%",
+        SolventViscosity -> {0.321369 Centipoise, 0.36 Centipoise},
+        SolventRefractiveIndex -> {1.02, 1.361},
+        Output->Options
+      ];
+      Lookup[options,{SolventViscosity,SolventRefractiveIndex}],
+      {
+        {EqualP[0.321369 Centipoise],EqualP[0.321369 Centipoise]},
+        {EqualP[1.361],EqualP[1.361]}
+      },
+        Messages :> {Warning::SolventNameMismatch}
+    ],
+    Example[{Messages,"InvalidCapillaryAssayContainerContents","Raise error when AssayFormFactor is Capillary and any supplied AssayContainers already have Contents:"},
+      ExperimentDynamicLightScattering[
+        Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayContainers -> {Object[Container, Plate, CapillaryStrip, "Filled Capillary AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID]}
+      ],
+      $Failed,
+      Messages :> {Warning::SpecifiedCapillaryAssayContainers,Error::InvalidCapillaryAssayContainerContents,Error::InvalidOption}
+    ],
+    Example[{Messages,"NotEnoughAssayContainerSpace","Raise error when AssayFormFactor is Plate and the supplied AssayContainers do not have enough empty wells for the assay:"},
+      ExperimentDynamicLightScattering[
+        Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayContainers -> {Object[Container, Plate, "Partially Filled Plate AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID]},
+        NumberOfReplicates -> 8,
+        SerialDilutionCurve -> {40*Microliter, {1.0, 1.25, 1.333, 1.5, 2.0, 2.5, 2.0, 3.333, 2., 3.333}, 1}
+      ],
+      $Failed,
+      Messages :> {Error::NotEnoughAssayContainerSpace,Error::InvalidOption}
+    ],
+    
     (* - Options - *)
     (* Option Precision *)
     Example[{Options, SampleVolume, "Rounds specified SampleVolume to the nearest 0.1 uL:"},
@@ -648,17 +912,6 @@ DefineTests[ExperimentDynamicLightScattering,
         IsothermalRunTime -> 6000.3 * Second, Output -> Options];
       Lookup[options, IsothermalRunTime],
       6000 * Second,
-      EquivalenceFunction -> Equal,
-      Variables :> {options},
-      Messages :> {
-        Warning::InstrumentPrecision
-      }
-    ],
-    Example[{Options, DilutionMixVolume, "Rounds specified DilutionMixVolume to the nearest 0.1 uL:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        DilutionMixVolume -> 5.13 * Microliter, Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"], Output -> Options];
-      Lookup[options, DilutionMixVolume],
-      5.1 * Microliter,
       EquivalenceFunction -> Equal,
       Variables :> {options},
       Messages :> {
@@ -837,13 +1090,26 @@ DefineTests[ExperimentDynamicLightScattering,
       ObjectP[Model[Container, Plate, "96-well PCR Plate"]],
       Variables :> {options}
     ],
-    Example[{Options, SampleLoadingPlate, "The SampleLoadingPlate option defaults to Null when AssayFormFactor is Plate:"},
+    Example[{Options, SampleLoadingPlate, "The SampleLoadingPlate option defaults to Null when AssayFormFactor is Plate and there is no large dilution:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Plate,
+        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
         Output -> Options
       ];
       Lookup[options, SampleLoadingPlate],
       Null,
+      Variables :> {options}
+    ],
+    Example[{Options, SampleLoadingPlate, "The SampleLoadingPlate option defaults to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] when AssayFormFactor is Plate and there is a large dilution:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType -> ColloidalStability,
+        StandardDilutionCurve -> {{90*Microliter, 250*Microliter}, {80*Microliter, 250*Microliter}, {70*Microliter, 250*Microliter}, {60*Microliter, 250*Microliter}},
+        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
+        AssayFormFactor -> Plate,
+        Output -> Options
+      ];
+      Lookup[options, SampleLoadingPlate],
+      ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
       Variables :> {options}
     ],
     Example[{Options, Temperature, "The Temperature option defaults to 25 Celsius:"},
@@ -894,6 +1160,232 @@ DefineTests[ExperimentDynamicLightScattering,
       Lookup[options, NumberOfReplicates],
       5,
       Variables :> {options}
+    ],
+    (* AssayContainers *)
+    Example[{Options,AssayContainers,"The AssayContainers option defaults to the uncle 16-capillary strip if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        Output -> Options
+      ];
+      Lookup[options, AssayContainers],
+      {
+        ObjectP[Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"]] (*"Uncle 16-capillary strip"*)
+      }
+    ],
+    Example[{Options,AssayContainers,"The AssayContainers option defaults to 384-well Aurora Flat Bottom DLS Plate if we are expecting 384 wells:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        NumberOfReplicates->30,
+        AssayType->ColloidalStability,
+        Output -> Options
+      ];
+      Lookup[options, AssayContainers],
+      {
+        ObjectP[Model[Container, Plate, "id:4pO6dMOlqJLw"]] (*"384-well Aurora Flat Bottom DLS Plate"*)
+      }
+    ],
+    Example[{Options,AssayContainers,"The AssayContainers option defaults to 96 well Flat Bottom DLS Plate:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Output -> Options
+      ];
+      Lookup[options, AssayContainers],
+      {
+        ObjectP[Model[Container, Plate, "id:rea9jlaPWNGx"]] (*"96 well Flat Bottom DLS Plate"*)
+      }
+    ],
+    (* SolventName *)
+    Example[{Options,SolventName,"SolventName is set to \"Water\" if buffer defaults to water and AssayFormFactor is Plate:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Output -> Options
+      ];
+      Lookup[options, SolventName],
+      "Water"
+    ],
+    Example[{Options,SolventName,"SolventName is set to Null if AssayType is not ColloidalStability and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType->SizingPolydispersity,
+        CollectStaticLightScattering->False,
+        Output -> Options
+      ];
+      Lookup[options, SolventName],
+      Null
+    ],
+    Example[{Options,SolventName,"SolventName is set to Null if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Capillary,
+        Output -> Options
+      ];
+      Lookup[options, SolventName],
+      Null
+    ],
+    Example[{Options,SolventName,"SolventName is set to \"Acetone 100%\" if SolventViscosity and SolventRefractiveIndex are a match in our lookup:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Buffer -> Model[Sample, "Acetone, Reagent Grade"],
+        SolventViscosity -> 0.321369 Centipoise,
+        SolventRefractiveIndex -> 1.361,
+        Output -> Options
+      ];
+      Lookup[options, SolventName],
+      "Acetone 100%"
+    ],
+    Example[{Options,SolventName,"SolventName is set to \"New\" if SolventRefractiveIndex is 1.361 and Viscosity is 0.321369 cP:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        SolventViscosity -> 10 Centipoise,
+        SolventRefractiveIndex -> 3,
+        Output -> Options
+      ];
+      Lookup[options, SolventName],
+      "New"
+    ],
+    (* SolventViscosity *)
+    Example[{Options,SolventViscosity,"SolventViscosity is set to Null if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Capillary,
+        Output -> Options
+      ];
+      Lookup[options, SolventViscosity],
+      Null
+    ],
+    Example[{Options,SolventViscosity,"SolventViscosity is set to Null if AssayType is not ColloidalStability and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType->SizingPolydispersity,
+        CollectStaticLightScattering->False,
+        Output -> Options
+      ];
+      Lookup[options, SolventViscosity],
+      Null
+    ],
+    Example[{Options,SolventViscosity,"SolventViscosity is set to the value in the dynapro lookup if a SolventName is specified:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:Vrbp1jG80zno"],
+        SolventName -> "Acetone 100%",
+        Output -> Options
+      ];
+      Lookup[options, SolventViscosity],
+      0.321369 Centipoise,
+      EquivalenceFunction -> EqualQ
+    ],
+    Example[{Options,SolventViscosity,"SolventViscosity can be downloaded from the supplied buffer:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:Vrbp1jG80zno"], (* Model[Sample, "Acetone, Reagent Grade"] *)
+        Output -> Options
+      ];
+      Lookup[options, SolventViscosity],
+      0.295 Centipoise,
+      EquivalenceFunction -> EqualQ
+    ],
+    (* SolventRefractiveIndex *)
+    Example[{Options,SolventRefractiveIndex,"SolventRefractiveIndex is set to Null if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Capillary,
+        Output -> Options
+      ];
+      Lookup[options, SolventRefractiveIndex],
+      Null
+    ],
+    Example[{Options,SolventRefractiveIndex,"SolventRefractiveIndex is set to Null if AssayType is not ColloidalStability and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType->SizingPolydispersity,
+        CollectStaticLightScattering->False,
+        Output -> Options
+      ];
+      Lookup[options, SolventRefractiveIndex],
+      Null
+    ],
+    Example[{Options,SolventRefractiveIndex,"SolventRefractiveIndex is set to the value in the dynapro lookup if a SolventName is specified:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:Vrbp1jG80zno"],
+        SolventName -> "Acetone 100%",
+        Output -> Options
+      ];
+      Lookup[options, SolventRefractiveIndex],
+      1.361,
+      EquivalenceFunction -> EqualQ
+    ],
+    Example[{Options,SolventRefractiveIndex,"SolventRefractiveIndex can be downloaded from the supplied buffer:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:Vrbp1jG80zno"], (* Model[Sample, "Acetone, Reagent Grade"] *)
+        Output -> Options
+      ];
+      Lookup[options, SolventRefractiveIndex],
+      1.323,
+      EquivalenceFunction -> EqualQ,
+      SetUp :> {
+        Upload[<|Object->Model[Sample, "id:Vrbp1jG80zno"],RefractiveIndex->1.323|>]
+      },
+      TearDown :> {
+        Upload[<|Object->Model[Sample, "id:Vrbp1jG80zno"],RefractiveIndex->Null|>]
+      }
+    ],
+    (* AnalyteRefractiveIndexIncrement *)
+    Example[{Options,AnalyteRefractiveIndexIncrement,"AnalyteRefractiveIndexIncrement is set to Null if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Capillary,
+        Output -> Options
+      ];
+      Lookup[options, AnalyteRefractiveIndexIncrement],
+      Null
+    ],
+    Example[{Options,AnalyteRefractiveIndexIncrement,"AnalyteRefractiveIndexIncrement is set to Null if AssayType is not ColloidalStability and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType->SizingPolydispersity,
+        CollectStaticLightScattering->False,
+        Output -> Options
+      ];
+      Lookup[options, AnalyteRefractiveIndexIncrement],
+      Null
+    ],
+    Example[{Options,AnalyteRefractiveIndexIncrement,"AnalyteRefractiveIndexIncrement is set to 0.185 Milliliter/Gram if our analyte is a protein or cDNA:"},
+      options = ExperimentDynamicLightScattering[
+        {
+          Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+          Object[Sample,"Test cDNA sample for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        },
+        AssayType->ColloidalStability,
+        Output -> Options
+      ];
+      Lookup[options, AnalyteRefractiveIndexIncrement],
+      0.185 Milliliter/Gram,
+      EquivalenceFunction -> EqualQ
+    ],
+    Example[{Options,AnalyteRefractiveIndexIncrement,"AnalyteRefractiveIndexIncrement is set to 0.15 Milliliter/Gram if our analyte is a polymer or oligomer:"},
+      options = ExperimentDynamicLightScattering[
+        {
+          Object[Sample,"Test Oligomer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+          Object[Sample,"Test Polymer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+        },
+        AssayType->ColloidalStability,
+        Output -> Options
+      ];
+      Lookup[options, AnalyteRefractiveIndexIncrement],
+      0.15 Milliliter/Gram,
+      EquivalenceFunction -> EqualQ
+    ],
+    (* CalibratePlate *)
+    Example[{Options,CalibratePlate,"CalibratePlate is set to False if AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Capillary,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      False
+    ],
+    Example[{Options,CalibratePlate,"CalibratePlate is set to False if AssayType is not ColloidalStability and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayType->SizingPolydispersity,
+        CollectStaticLightScattering->False,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      False
+    ],
+    Example[{Options,CalibratePlate,"CalibratePlate is set to True if AssayFormFactor is Plate and CollectStaticLightScattering is True:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor->Plate,
+        CollectStaticLightScattering->True,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      True
     ],
     (* AssayContainerFillDirection *)
     Example[{Options, AssayContainerFillDirection, "The AssayContainerFillDirection option defaults to Column, which indicates that all 16 wells of one capillary strip will be filled before starting to fill a second capillary strip:"},
@@ -1120,13 +1612,24 @@ DefineTests[ExperimentDynamicLightScattering,
       Null,
       Variables :> {options}
     ],
-    Example[{Options, DiodeAttenuation, "The DiodeAttenuation option defaults to 100% if AutomaticLaserSettings is False:"},
+    Example[{Options, DiodeAttenuation, "The DiodeAttenuation option defaults to 100% if AutomaticLaserSettings is False and AssayFormFactor is Capillary:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AutomaticLaserSettings -> False,
+        AssayFormFactor->Capillary,
         Output -> Options
       ];
       Lookup[options, DiodeAttenuation],
       100 * Percent,
+      Variables :> {options}
+    ],
+    Example[{Options, DiodeAttenuation, "The DiodeAttenuation option defaults to 0% if AutomaticLaserSettings is False and AssayFormFactor is Plate:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AutomaticLaserSettings -> False,
+        AssayFormFactor->Plate,
+        Output -> Options
+      ];
+      Lookup[options, DiodeAttenuation],
+      0 * Percent,
       Variables :> {options}
     ],
     Example[{Options, CapillaryLoading, "The CapillaryLoading option defaults to Manual when AssayFormFactor is Capillary:"},
@@ -1568,6 +2071,35 @@ DefineTests[ExperimentDynamicLightScattering,
       2,
       Variables :> {options}
     ],
+    Example[{Options, CalibratePlate, "The CalibratePlate option defaults to True if the AssayFormFactor is Plate and CollectStaticLightScattering is True:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        CollectStaticLightScattering -> True,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      True,
+      Variables :> {options}
+    ],
+    Example[{Options, CalibratePlate, "The CalibratePlate option defaults to False if the AssayFormFactor is Plate and CollectStaticLightScattering is False:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        CollectStaticLightScattering -> False,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      False,
+      Variables :> {options}
+    ],
+    Example[{Options, CalibratePlate, "The CalibratePlate option defaults to False if the AssayFormFactor is Capillary:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
+        Output -> Options
+      ];
+      Lookup[options, CalibratePlate],
+      False,
+      Variables :> {options}
+    ],
     Example[{Options, ReplicateDilutionCurve, "The ReplicateDilutionCurve option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> IsothermalStability,
@@ -1577,14 +2109,26 @@ DefineTests[ExperimentDynamicLightScattering,
       Null,
       Variables :> {options}
     ],
-    Example[{Options, ReplicateDilutionCurve, "The ReplicateDilutionCurve option defaults to False if the AssayType is ColloidalStability:"},
+    Example[{Options, ReplicateDilutionCurve, "The ReplicateDilutionCurve option defaults to False if the AssayType is ColloidalStability and the AssayFormFactor is Capillary:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Capillary,
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
         Output -> Options
       ];
       Lookup[options, ReplicateDilutionCurve],
       False,
+      Variables :> {options}
+    ],
+    Example[{Options, ReplicateDilutionCurve, "The ReplicateDilutionCurve option defaults to True if the AssayType is ColloidalStability and the AssayFormFactor is Plate:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
+        AssayFormFactor -> Plate,
+        AssayType -> ColloidalStability,
+        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
+        Output -> Options
+      ];
+      Lookup[options, ReplicateDilutionCurve],
+      True,
       Variables :> {options}
     ],
     Example[{Options, StandardDilutionCurve, "The StandardDilutionCurve option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability:"},
@@ -1630,25 +2174,6 @@ DefineTests[ExperimentDynamicLightScattering,
       },
       Variables :> {options}
     ],
-    Example[{Options, StandardDilutionCurve, "When the AssayFormFactor is Plate, the AssayType is ColloidalStability, the SerialDilutionCurve is not specified, and the ReplicateDilutionCurve option is False, the StandardDilutionCurve option defaults to a curve with a \"Sample Volume\" of (30 uL times the NumberOfReplicates) and \"DilutionFactors\" of {1, 0.8, 0.6, 0.4, 0.2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayFormFactor -> Plate,
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        ReplicateDilutionCurve -> False,
-        NumberOfReplicates -> 3,
-        Output -> Options
-      ];
-      Lookup[options, StandardDilutionCurve],
-      {
-        {90 * Microliter, 10.*(Milligram/Milliliter)},
-        {90 * Microliter, 8.*(Milligram/Milliliter)},
-        {90 * Microliter, 6.*(Milligram/Milliliter)},
-        {90 * Microliter, 4.*(Milligram/Milliliter)},
-        {90 * Microliter, 2.*(Milligram/Milliliter)}
-      },
-      Variables :> {options}
-    ],
     Example[{Options, StandardDilutionCurve, "When the AssayFormFactor is Capillary, the AssayType is ColloidalStability, the SerialDilutionCurve is Null, and the ReplicateDilutionCurve option is True, the StandardDilutionCurve option defaults to a curve with a \"Sample Volume\" of 15 uL and \"DilutionFactors\" of {1, 0.8, 0.6, 0.4, 0.2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Capillary,
@@ -1667,7 +2192,7 @@ DefineTests[ExperimentDynamicLightScattering,
       },
       Variables :> {options}
     ],
-    Example[{Options, StandardDilutionCurve, "When the AssayFormFactor is Plate, the AssayType is ColloidalStability, the SerialDilutionCurve is Null, and the ReplicateDilutionCurve option is True, the StandardDilutionCurve option defaults to a curve with a \"Sample Volume\" of 30 uL and \"DilutionFactors\" of {1, 0.8, 0.6, 0.4, 0.2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
+    Example[{Options, StandardDilutionCurve, "When the AssayFormFactor is Plate, the AssayType is ColloidalStability, the SerialDilutionCurve is Null, and the ReplicateDilutionCurve option is True, the StandardDilutionCurve option defaults to a curve with a \"Sample Volume\" of 90 uL and \"DilutionFactors\" of {1, 0.8, 0.6, 0.4, 0.2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Plate,
         AssayType -> ColloidalStability,
@@ -1677,17 +2202,18 @@ DefineTests[ExperimentDynamicLightScattering,
       ];
       Lookup[options, StandardDilutionCurve],
       {
-        {30 * Microliter, 10.*(Milligram/Milliliter)},
-        {30 * Microliter, 8.*(Milligram/Milliliter)},
-        {30 * Microliter, 6.*(Milligram/Milliliter)},
-        {30 * Microliter, 4.*(Milligram/Milliliter)},
-        {30 * Microliter, 2.*(Milligram/Milliliter)}
+        {90 * Microliter, 10.*(Milligram/Milliliter)},
+        {72 * Microliter, 8.*(Milligram/Milliliter)},
+        {54 * Microliter, 6.*(Milligram/Milliliter)},
+        {36 * Microliter, 4.*(Milligram/Milliliter)},
+        {18 * Microliter, 2.*(Milligram/Milliliter)}
       },
       Variables :> {options}
     ],
-    Example[{Options, Analyte, "The Analyte option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability:"},
+    Example[{Options, Analyte, "The Analyte option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability and CollectStaticLightScattering is False:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> IsothermalStability,
+        CollectStaticLightScattering -> False,
         Output -> Options
       ];
       Lookup[options, Analyte],
@@ -1704,9 +2230,10 @@ DefineTests[ExperimentDynamicLightScattering,
       ObjectP[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]],
       Variables :> {options}
     ],
-    Example[{Options, AnalyteMassConcentration, "The AnalyteMassConcentration option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability:"},
+    Example[{Options, AnalyteMassConcentration, "The AnalyteMassConcentration option defaults to Null if the AssayType is SizingPolydispersity or IsothermalStability and CollectStaticLightScattering is False:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> IsothermalStability,
+        CollectStaticLightScattering -> False,
         Output -> Options
       ];
       Lookup[options, AnalyteMassConcentration],
@@ -1768,24 +2295,6 @@ DefineTests[ExperimentDynamicLightScattering,
       },
       Variables :> {options}
     ],
-    Example[{Options, SerialDilutionCurve, "When the AssayFormFactor is Plate, the AssayType is ColloidalStability, the StandardDilutionCurve is Null, and the ReplicateDilutionCurve option is False, the SerialDilutionCurve option defaults to a curve with a \"Sample Volume\" of (30 uL times the NumberOfReplicates) and a \"Variable Dilution Factor\" of {1, 1.25, 1.333, 1.5, 2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayFormFactor -> Plate,
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        ReplicateDilutionCurve -> False,
-        StandardDilutionCurve -> Null,
-        NumberOfReplicates -> 3,
-        Output -> Options
-      ];
-      Lookup[options, SerialDilutionCurve],
-      {
-        90 * Microliter,
-        {1, 1.25, 1.333, 1.5, 2},
-        1
-      },
-      Variables :> {options}
-    ],
     Example[{Options, SerialDilutionCurve, "When the AssayFormFactor is Capillary, the AssayType is ColloidalStability, the StandardDilutionCurve is Null, and the ReplicateDilutionCurve option is True, the SerialDilutionCurve option defaults to a curve with a \"Sample Volume\" of 15 uL and a \"Variable Dilution Factor\" of {1, 1.25, 1.333, 1.5, 2}, giving five concentrations which span a 5-fold dilution. If the input sample has a mass concentration of 10 mg/mL, the five dilution concentrations will be 10, 8, 6, 4, and 2 mg/mL:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayFormFactor -> Capillary,
@@ -1814,53 +2323,10 @@ DefineTests[ExperimentDynamicLightScattering,
       ];
       Lookup[options, SerialDilutionCurve],
       {
-        30 * Microliter,
+        90 * Microliter,
         {1, 1.25, 1.333, 1.5, 2},
         1
       },
-      Variables :> {options}
-    ],
-    Example[{Options, DilutionMixVolume, "The DilutionMixVolume defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayType -> SizingPolydispersity,
-        Output -> Options
-      ];
-      Lookup[options, DilutionMixVolume],
-      Null,
-      Variables :> {options}
-    ],
-    Example[{Options, DilutionMixVolume, "The DilutionMixVolume defaults to Null if both the DilutionNumberOfMixes and DilutionMixRate are specified as Null:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        DilutionNumberOfMixes -> Null,
-        DilutionMixRate -> Null,
-        Output -> Options
-      ];
-      Lookup[options, DilutionMixVolume],
-      Null,
-      Variables :> {options}
-    ],
-    Example[{Options, DilutionMixVolume, "The DilutionMixVolume defaults to 7 uL if the AssayType is ColloidalStability and ReplicateDilutionCurve is True:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        ReplicateDilutionCurve -> True,
-        Output -> Options
-      ];
-      Lookup[options, DilutionMixVolume],
-      7 * Microliter,
-      Variables :> {options}
-    ],
-    Example[{Options, DilutionMixVolume, "The DilutionMixVolume defaults to 15 uL if the AssayType is ColloidalStability and ReplicateDilutionCurve is False:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-        AssayType -> ColloidalStability,
-        Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        ReplicateDilutionCurve -> False,
-        Output -> Options
-      ];
-      Lookup[options, DilutionMixVolume],
-      15 * Microliter,
       Variables :> {options}
     ],
     Example[{Options, DilutionNumberOfMixes, "The DilutionNumberOfMixes defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability:"},
@@ -1872,11 +2338,11 @@ DefineTests[ExperimentDynamicLightScattering,
       Null,
       Variables :> {options}
     ],
-    Example[{Options, DilutionNumberOfMixes, "The DilutionNumberOfMixes defaults to Null if the DilutionMixVolume is Null:"},
+    Example[{Options, DilutionNumberOfMixes, "The DilutionNumberOfMixes defaults to Null if the DilutionMixType is set to :"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        DilutionMixVolume -> Null,
+        DilutionMixType -> Null,
         Output -> Options
       ];
       Lookup[options, DilutionNumberOfMixes],
@@ -1887,7 +2353,6 @@ DefineTests[ExperimentDynamicLightScattering,
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        DilutionMixVolume -> 12 * Microliter,
         Output -> Options
       ];
       Lookup[options, DilutionNumberOfMixes],
@@ -1898,7 +2363,6 @@ DefineTests[ExperimentDynamicLightScattering,
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        DilutionMixVolume -> 12 * Microliter,
         Output -> Options
       ];
       Lookup[options, DilutionMixRate],
@@ -1914,20 +2378,21 @@ DefineTests[ExperimentDynamicLightScattering,
       Null,
       Variables :> {options}
     ],
-    Example[{Options, DilutionMixRate, "The DilutionMixRate defaults to Null if the DilutionMixVolume is Null:"},
+    Example[{Options, DilutionMixRate, "The DilutionMixRate defaults to Null if the DilutionMixType is not Pipette:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> ColloidalStability,
         Buffer -> Model[Sample, StockSolution, "1x PBS from 10X stock"],
-        DilutionMixVolume -> Null,
+        DilutionMixType -> Vortex,
         Output -> Options
       ];
       Lookup[options, DilutionMixRate],
       Null,
       Variables :> {options}
     ],
-    Example[{Options, Buffer, "The Buffer defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability:"},
+    Example[{Options, Buffer, "The Buffer defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability and CollectStaticLightScattering is False:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> SizingPolydispersity,
+        CollectStaticLightScattering -> False,
         Output -> Options
       ];
       Lookup[options, Buffer],
@@ -1944,7 +2409,9 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options},
       Messages :> {
         Warning::DLSBufferNotSpecified
-      }
+      },
+      SetUp:>(On[Warning::DLSBufferNotSpecified]),
+      TearDown:>(Off[Warning::DLSBufferNotSpecified])
     ],
     Example[{Options, Buffer, "The Buffer defaults to the Model[Sample] with the largest VolumePercentage of the input sample's Solvent field if the AssayType is ColloidalStability and the sample's Solvent field is populated:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test protein sample with populated Solvent Field for ExperimentDynamicLightScattering" <> $SessionUUID],
@@ -1956,9 +2423,10 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
 
-    Example[{Options, BlankBuffer, "The BlankBuffer defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability:"},
+    Example[{Options, BlankBuffer, "The BlankBuffer defaults to Null if the AssayType is either SizingPolydispersity or IsothermalStability and CollectStaticLightScattering is False:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
         AssayType -> SizingPolydispersity,
+        CollectStaticLightScattering -> False,
         Output -> Options
       ];
       Lookup[options, BlankBuffer],
@@ -2020,30 +2488,6 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     (* - Sample Prep unit tests - *)
-    Example[{Options, PreparatoryPrimitives, "Specify prepared samples to be run in a dynamic light scattering experiment:"},
-      options = ExperimentDynamicLightScattering["Protein Container",
-        PreparatoryPrimitives -> {
-          Define[
-            Name -> "Protein Container",
-            Container -> Model[Container, Vessel, "id:3em6Zv9NjjN8"]
-          ],
-          Transfer[
-            Source -> Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-            Amount -> 100 * Microliter,
-            Destination -> {"Protein Container", "A1"}
-          ],
-          Transfer[
-            Source -> Model[Sample, "Milli-Q water"],
-            Amount -> 100 * Microliter,
-            Destination -> {"Protein Container", "A1"}
-          ]
-        },
-        Output -> Options
-      ];
-      Lookup[options, AssayType],
-      SizingPolydispersity,
-      Variables :> {options}
-    ],
     Example[{Options, PreparatoryUnitOperations, "Specify prepared samples to be run in a dynamic light scattering experiment:"},
       options = ExperimentDynamicLightScattering["Protein Container",
         PreparatoryUnitOperations -> {
@@ -2236,7 +2680,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterMaterial -> GxF, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterMaterial -> GxF, CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, PrefilterMaterial],
       GxF,
       Variables :> {options}
@@ -2248,7 +2692,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, PrefilterPoreSize],
       1. * Micrometer,
       Variables :> {options}
@@ -2260,7 +2704,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, FilterHousing],
       ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
       Variables :> {options}
@@ -2426,7 +2870,7 @@ DefineTests[ExperimentDynamicLightScattering,
     Example[{Options, DestinationWell, "Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
       Lookup[options, DestinationWell],
-      "A1",
+      {"A1","A1"},
       Variables :> {options}
     ]
   },
@@ -2438,8 +2882,8 @@ DefineTests[ExperimentDynamicLightScattering,
     $PersonID = Object[User, Emerald, Developer, "id:Y0lXejMmX69l"]
   },
 
-  (* un comment this out when Variables works the way we would expect it to *)
-  (* Variables :> {$SessionUUID},*)
+  (* Turn this off, as default behavior for DLS is to do CollectStaticLightScattering on a Plate and it does want Buffer specified at that point *)
+  SetUp:>(Off[Warning::DLSBufferNotSpecified]),
 
   SymbolSetUp:>(
 
@@ -2456,8 +2900,12 @@ DefineTests[ExperimentDynamicLightScattering,
           fakeBench,
 
           container1,container2,container3,container4,container5,container6,container7,container8,container9,container10,container11,
+          container12,container13,container14,container15,container16,container17,container18,container19,container20,container21,
+          container22,container23, container24,
 
-          sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11
+          sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11,sample12,sample13,sample14,sample15,
+          sample16, sample17, sample18,
+          numSamplesInAssayPlate
         },
 
         (* Upload a test bench to put containers onto *)
@@ -2475,7 +2923,20 @@ DefineTests[ExperimentDynamicLightScattering,
           container8,
           container9,
           container10,
-          container11
+          container11,
+          container12,
+          container13,
+          container14,
+          container15,
+          container16,
+          container17,
+          container18,
+          container19,
+          container20,
+          container21,
+          container22,
+          container23,
+          container24
         }=UploadSample[
           {
             Model[Container, Vessel, "2mL Tube"],
@@ -2488,21 +2949,22 @@ DefineTests[ExperimentDynamicLightScattering,
             Model[Container, Vessel, "2mL Tube"],
             Model[Container, Vessel, "2mL Tube"],
             Model[Container, Vessel, "2mL Tube"],
-            Model[Container, Vessel, "2mL Tube"]
+            Model[Container, Vessel, "2mL Tube"],
+            Model[Container, Vessel, "2mL Tube"],
+            Model[Container, Vessel, "2mL Tube"],
+            Model[Container, Vessel, "2mL Tube"],
+            Model[Container, Plate, CapillaryStrip, "Uncle 16-capillary strip"],
+            Model[Container, Plate, CapillaryStrip, "Uncle 16-capillary strip"],
+            Model[Container, Plate, "96 well Flat Bottom DLS Plate"],
+            Model[Container, Plate, "96 well Flat Bottom DLS Plate"],
+            Model[Container, Plate, "96 well Flat Bottom DLS Plate"],
+            Model[Container, Plate, CapillaryStrip, "Uncle 16-capillary strip"],
+            Model[Container, Plate, CapillaryStrip, "Uncle 16-capillary strip"],
+            Model[Container, Plate, CapillaryStrip, "Uncle 16-capillary strip"],
+            Model[Container, Vessel, "2mL Tube"],
+            Model[Container, Plate, "96 well Flat Bottom DLS Plate"]
           },
-          {
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench},
-            {"Work Surface", fakeBench}
-          },
+          ConstantArray[{"Work Surface", fakeBench},24],
           Status -> Available,
           Name->{
             "Container 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
@@ -2515,7 +2977,20 @@ DefineTests[ExperimentDynamicLightScattering,
             "Container 8 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
             "Container 9 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
             "Container 10 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
-            "Container 11 for ExperimentDynamicLightScattering tests" <> $SessionUUID
+            "Container 11 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Container 12 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Container 13 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Container 14 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Filled Capillary AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Partially Filled Plate AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Plate AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Plate AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Capillary AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Capillary AssayContainer 3 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Empty Capillary AssayContainer 4 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Container 23 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Container 24 (preplated plate) for ExperimentDynamicLightScattering tests" <> $SessionUUID
           }
         ];
 
@@ -2532,6 +3007,24 @@ DefineTests[ExperimentDynamicLightScattering,
               Type->Model[Molecule,Protein],
               Name->"Test 100 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID,
               MolecularWeight->100*(Kilogram/Mole),
+              DeveloperObject->True
+            |>,
+            <|
+              Type->Model[Molecule,cDNA],
+              Name->"Test Model[Molecule,cDNA] for ExperimentDynamicLightScattering Tests" <> $SessionUUID,
+              MolecularWeight->20*(Kilogram/Mole),
+              DeveloperObject->True
+            |>,
+            <|
+              Type->Model[Molecule,Polymer],
+              Name->"Test Model[Molecule,Polymer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID,
+              MolecularWeight->1000*(Kilogram/Mole),
+              DeveloperObject->True
+            |>,
+            <|
+              Type->Model[Molecule,Oligomer],
+              Name->"Test Model[Molecule,Oligomer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID,
+              MolecularWeight->800*(Kilogram/Mole),
               DeveloperObject->True
             |>,
             <|
@@ -2607,8 +3100,51 @@ DefineTests[ExperimentDynamicLightScattering,
                 {20*Micromolar,Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
               }
+            |>,
+            <|
+              Type->Model[Sample],
+              Name->"20 kDa test cDNA Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID,
+              Replace[Authors]->{Link[Object[User,Emerald,Developer,"daniel.shlian"]]},
+              DeveloperObject->True,
+              DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
+              Replace[Composition]->{
+                {10*(Milligram/Milliliter),Link[Model[Molecule, cDNA, "Test Model[Molecule,cDNA] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
+                {100*VolumePercent,Link[Model[Molecule, "Water"]]}
+              }
+            |>,
+            <|
+              Type->Model[Sample],
+              Name->"800 kDa test Oligomer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID,
+              Replace[Authors]->{Link[Object[User,Emerald,Developer,"daniel.shlian"]]},
+              DeveloperObject->True,
+              DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
+              Replace[Composition]->{
+                {10*(Milligram/Milliliter),Link[Model[Molecule, Oligomer, "Test Model[Molecule,Oligomer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
+                {100*VolumePercent,Link[Model[Molecule, "Water"]]}
+              }
+            |>,
+            <|
+              Type->Model[Sample],
+              Name->"1000 kDa test Polymer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID,
+              Replace[Authors]->{Link[Object[User,Emerald,Developer,"daniel.shlian"]]},
+              DeveloperObject->True,
+              DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
+              Replace[Composition]->{
+                {10*(Milligram/Milliliter),Link[Model[Molecule, Polymer, "Test Model[Molecule,Polymer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
+                {100*VolumePercent,Link[Model[Molecule, "Water"]]}
+              }
+            |>,
+            <|
+              Type->Model[Sample],
+              Name->"Test no MW protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID,
+              Replace[Authors]->{Link[Object[User,Emerald,Developer,"daniel.shlian"]]},
+              DeveloperObject->True,
+              DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
+              Replace[Composition]->{
+                {10*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test Model[Molecule,Protein] with no MolecularWeight for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
+                {100*VolumePercent,Link[Model[Molecule, "Water"]]}
+              }
             |>
-
           }
         ];
 
@@ -2624,7 +3160,14 @@ DefineTests[ExperimentDynamicLightScattering,
           sample8,
           sample9,
           sample10,
-          sample11
+          sample11,
+          sample12,
+          sample13,
+          sample14,
+          sample15,
+          sample16,
+          sample17,
+          sample18
         }=UploadSample[
           {
             Model[Sample,"40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
@@ -2637,7 +3180,14 @@ DefineTests[ExperimentDynamicLightScattering,
             Model[Sample,"40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
             Model[Sample,"Test mixture of proteins Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
             Model[Sample,"50 mg/mL 40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
-            Model[Sample,"40 kDa test protein Model[Sample] with Concentration in uM for ExperimentTotalProteinDetection" <> $SessionUUID]
+            Model[Sample,"40 kDa test protein Model[Sample] with Concentration in uM for ExperimentTotalProteinDetection" <> $SessionUUID],
+            Model[Sample,"20 kDa test cDNA Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+            Model[Sample,"800 kDa test Oligomer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+            Model[Sample,"1000 kDa test Polymer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+            Model[Sample, "Milli-Q water"],
+            Model[Sample,"Test no MW protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+            Model[Sample,"40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+            Model[Sample,"40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID]
           },
           {
             {"A1", container1},
@@ -2650,20 +3200,34 @@ DefineTests[ExperimentDynamicLightScattering,
             {"A1", container8},
             {"A1", container9},
             {"A1", container10},
-            {"A1", container11}
+            {"A1", container11},
+            {"A1", container12},
+            {"A1", container13},
+            {"A1", container14},
+            {"A1", container16},
+            {"A1", container23},
+            {"A1", container24},
+            {"B1", container24}
           },
           InitialAmount->{
             25*Milliliter,
             1.5*Milliliter,
-            1.5*Milliliter,
+            1.7*Milliliter,
             1.5*Milliliter,
             1.5*Milliliter,
             1.5*Milliliter,
             25*Milliliter,
             1.5*Milliliter,
+            1.7*Milliliter,
             1.5*Milliliter,
             1.5*Milliliter,
-            1.5*Milliliter
+            1.5*Milliliter,
+            1.5*Milliliter,
+            1.5*Milliliter,
+            5 Microliter,
+            1.5Milliliter,
+            100*Microliter,
+            100*Microliter
           },
           Name->{
             "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
@@ -2676,8 +3240,26 @@ DefineTests[ExperimentDynamicLightScattering,
             "Test Model-less protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Mixture of proteins sample for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
-            "Test 20 uM 40 kDa protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID
+            "Test 20 uM 40 kDa protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test cDNA sample for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test Oligomer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test Polymer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test Water sample in capillary for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test no MW Protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test preplated sample 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "Test preplated sample 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID
           }
+        ];
+
+        (* Upload Samples into our test Plate AssayContainer *)
+        numSamplesInAssayPlate = 10;
+        Block[{$DeveloperUpload=True},
+          UploadSample[
+            ConstantArray[Model[Sample, "Milli-Q water"],numSamplesInAssayPlate],
+            MapThread[{#1,#2}&,{Flatten[AllWells[]][[1 ;; numSamplesInAssayPlate]],ConstantArray[container17,numSamplesInAssayPlate]}],
+            InitialAmount->ConstantArray[0.5 Milliliter,numSamplesInAssayPlate],
+            Name -> (("Test Water sample " <> ToString[#] <>" in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID)&/@Range[numSamplesInAssayPlate])
+          ]
         ];
 
         (* Make the Objects DeveloperObjects and set the statuses *)
@@ -2689,8 +3271,11 @@ DefineTests[ExperimentDynamicLightScattering,
                 Cases[
                   Flatten[
                     {
-                      container1,container2,container3,container4,container5,container6,container7,container8,container9,container10,container11,
-                      sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11
+                      container1,container2,container3,container4,container5,container6,container7,container8,container9,
+                      container10,container11,container12,container13,container14,container15,container16,container17,container18,
+                      container19,container20,container21,container22,container23,container24,
+                      sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10,sample11,sample12,
+                      sample13,sample14,sample15,sample16,sample17,sample18
                     }
                   ],
                   ObjectP[]]
@@ -2703,12 +3288,18 @@ DefineTests[ExperimentDynamicLightScattering,
                     <|Object -> sample3, Status -> Available,Solvent->Link[Model[Sample, StockSolution, "1x PBS from 10X stock"]]|>,
                     <|Object -> sample4, Status -> Available|>,
                     <|Object -> sample5, Status -> Available|>,
-                    <|Object -> sample6, Status -> Available,Replace[Composition]->{{Null,Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]}, {100*VolumePercent,Link[Model[Molecule, "Water"]]}}|>,
+                    <|Object -> sample6, Status -> Available,Replace[Composition]->{{Null,Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]], Now}, {100*VolumePercent,Link[Model[Molecule, "Water"]], Now}}|>,
                     <|Object -> sample7, Status -> Available|>,
                     <|Object -> sample8, Status -> Available,Model->Null|>,
                     <|Object -> sample9, Status -> Available|>,
                     <|Object -> sample10, Status -> Available|>,
-                    <|Object -> sample11, Status -> Available|>
+                    <|Object -> sample11, Status -> Available|>,
+                    <|Object -> sample12, Status -> Available|>,
+                    <|Object -> sample13, Status -> Available|>,
+                    <|Object -> sample14, Status -> Available|>,
+                    <|Object -> sample15, Status -> Available|>,
+                    <|Object -> sample17, Status -> Available|>,
+                    <|Object -> sample18, Status -> Available|>
                   }
                 ],
                 PacketP[]
@@ -2743,6 +3334,19 @@ dlsUnitTestCleanUp[]:=Module[{objects,existingObjects},
       Object[Container,Vessel,"Container 9 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
       Object[Container,Vessel,"Container 10 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
       Object[Container,Vessel,"Container 11 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Vessel,"Container 12 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Vessel,"Container 13 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Vessel,"Container 14 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, CapillaryStrip, "Empty Capillary AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, CapillaryStrip, "Filled Capillary AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Plate,"Partially Filled Plate AssayContainer for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Plate,"Empty Plate AssayContainer 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Plate,"Empty Plate AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, CapillaryStrip, "Empty Capillary AssayContainer 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, CapillaryStrip, "Empty Capillary AssayContainer 3 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, CapillaryStrip, "Empty Capillary AssayContainer 4 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container,Vessel,"Container 23 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Container, Plate, "Container 24 (preplated plate) for ExperimentDynamicLightScattering tests" <> $SessionUUID],
 
       Model[Instrument,MultimodeSpectrophotometer,"Unsupported instrument Model for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
       Object[Instrument,MultimodeSpectrophotometer,"Uncle Instrument for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
@@ -2752,11 +3356,18 @@ dlsUnitTestCleanUp[]:=Module[{objects,existingObjects},
       Model[Molecule,Protein,"Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
       Model[Molecule,Protein,"Test 100 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
       Model[Molecule,Protein,"Test Model[Molecule,Protein] with no MolecularWeight for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
+      Model[Molecule,cDNA,"Test Model[Molecule,cDNA] for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
+      Model[Molecule,Oligomer,"Test Model[Molecule,Oligomer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
+      Model[Molecule,Polymer,"Test Model[Molecule,Polymer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID],
 
       Model[Sample,"40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
       Model[Sample,"Test mixture of proteins Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
       Model[Sample,"50 mg/mL 40 kDa test protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
       Model[Sample,"40 kDa test protein Model[Sample] with Concentration in uM for ExperimentTotalProteinDetection" <> $SessionUUID],
+      Model[Sample,"1000 kDa test Polymer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+      Model[Sample,"800 kDa test Oligomer Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+      Model[Sample,"20 kDa test cDNA Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
+      Model[Sample,"Test no MW protein Model[Sample] for ExperimentDynamicLightScattering" <> $SessionUUID],
 
       Object[Sample,"Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Discarded test sample for ExperimentDynamicLightScattering" <> $SessionUUID],
@@ -2768,7 +3379,24 @@ dlsUnitTestCleanUp[]:=Module[{objects,existingObjects},
       Object[Sample,"Test Model-less protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Mixture of proteins sample for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-      Object[Sample,"Test 20 uM 40 kDa protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID]
+      Object[Sample,"Test 20 uM 40 kDa protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test cDNA sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Oligomer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Polymer sample for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample in capillary for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample, "Test preplated sample 1 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample, "Test preplated sample 2 for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 1 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 2 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 3 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 4 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 5 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 6 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 7 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 8 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 9 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test Water sample 10 in plate assay plate for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"Test no MW Protein sample for ExperimentDynamicLightScattering tests" <> $SessionUUID]
     }],
     ObjectP[]
   ]];

@@ -94,10 +94,7 @@ DefineUsageWithCompanions[AnalyzeKinetics,
 		"FindMinimum"
 	},
 	Author -> {
-		"david.hattery",
-		"qian",
-		"brad",
-		"alice"
+		"scicomp"
 	},
 	Guides -> {
 		"AnalysisCategories",

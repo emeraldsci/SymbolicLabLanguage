@@ -21,6 +21,11 @@ DefineTests[PlotFluorescenceSpectroscopy,
 			_?ValidGraphicsQ
 		],
 		Example[
+			{Basic,"Plot the emission spectrum for data objects linked to a given protocol object:"},
+			PlotFluorescenceSpectroscopy[Object[Protocol, FluorescenceSpectroscopy, "FluorescenceSpectroscopy Test Protocol 2"]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
+		Example[
 			{Options,PrimaryData,"Overlay the emission and excitation spectra:"},
 			PlotFluorescenceSpectroscopy[Object[Data,FluorescenceSpectroscopy,"FluorescenceSpectroscopy Test Data 1"],PrimaryData->{ExcitationSpectrum,EmissionSpectrum}],
 			_?ValidGraphicsQ,
@@ -127,14 +132,15 @@ DefineTests[PlotFluorescenceSpectroscopy,
 			{}
 		]
 	},
-	SymbolSetUp:>Module[{data1,data2},
+	SymbolSetUp:>Module[{data1,data2, protocol1},
 		Module[{allObjects,existingObjects},
 
 			(* Gather all the objects created in SymbolSetup *)
 			allObjects=Cases[Flatten[{
 				Object[Data,FluorescenceSpectroscopy,"FluorescenceSpectroscopy Test Data 1"],
 				Object[Data,FluorescenceSpectroscopy,"FluorescenceSpectroscopy Test Data 2"],
-				Object[Analysis,Peaks,"FluorescenceSpectroscopy Test Peaks"]
+				Object[Analysis,Peaks,"FluorescenceSpectroscopy Test Peaks"],
+				Object[Protocol, FluorescenceSpectroscopy, "FluorescenceSpectroscopy Test Protocol 2"]
 			}],ObjectP[]];
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -146,7 +152,7 @@ DefineTests[PlotFluorescenceSpectroscopy,
 
 		$CreatedObjects={};
 
-		{data1,data2}=CreateID[{Object[Data,FluorescenceSpectroscopy],Object[Data,FluorescenceSpectroscopy]}];
+		{data1, data2, protocol1} = CreateID[{Object[Data,FluorescenceSpectroscopy], Object[Data,FluorescenceSpectroscopy], Object[Protocol,FluorescenceSpectroscopy]}];
 		Upload[{
 			<|
 				Object->data1,
@@ -164,7 +170,12 @@ DefineTests[PlotFluorescenceSpectroscopy,
 				Replace[Replicates]->{Link[data1,Replicates]}
 			|>
 		}];
-		AnalyzePeaks[data2,Name->"FluorescenceSpectroscopy Test Peaks"]
+		AnalyzePeaks[data2,Name->"FluorescenceSpectroscopy Test Peaks"];
+		Upload[<|
+			Object->protocol1,
+			Name->"FluorescenceSpectroscopy Test Protocol 2",
+			Replace[Data] -> {Link[data1, Protocol], Link[data2, Protocol]}
+		|>];
 	],
 	SymbolTearDown:>(
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];

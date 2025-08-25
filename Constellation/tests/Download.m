@@ -2518,46 +2518,6 @@ DefineTests[Download,
       ],
       {True, False}
     ],
-    Test["TemporalLinks download objects at the specified time:",
-      Module[{objs, t, packets, tlinkold, tlinknew},
-        {objs, t}={timeObjs, timestampOfTimeObjChanges};
-        tlinkold=Link[objs[[1]], timestampOfTimeObjChanges];
-        tlinknew=Link[objs[[1]], Now];
-        packets=Download[{tlinknew, tlinkold, objs[[1]], Link[objs[[1]]]}]; (* Two tlinks and a regular object, and a regular link*)
-        Lookup[#, ShelfLife] == 1 Day & /@ packets
-      ],
-      {False, True, False, False}
-    ],
-    Test["TemporalLinks download fields at the specified time:",
-      Module[{objs, t, shelfLives, tlinkold, tlinknew},
-        {objs, t}={timeObjs, timestampOfTimeObjChanges};
-        tlinkold=Link[objs[[1]], timestampOfTimeObjChanges];
-        tlinknew=Link[objs[[1]], Now];
-        shelfLives=Download[{tlinknew, tlinkold, objs[[1]], Link[objs[[1]]]}, ShelfLife]; (* Two tlinks and a regular object, and a regular link*)
-        # == 1 Day & /@ shelfLives
-      ],
-      {False, True, False, False}
-    ],
-    Test["Date option overrides a temporal link:",
-      Module[{objs, t, shelfLives, tlinkold, packet, field},
-        {objs, t}={timeObjs, timestampOfTimeObjChanges};
-        tlinkold=Link[objs[[1]], timestampOfTimeObjChanges];
-        packet=Download[tlinkold, Date -> DateObject[]];
-        field=Download[tlinkold, ShelfLife, Date -> DateObject[]];
-        {Lookup[packet, ShelfLife] == 1 Day, field == 1 Day}
-      ],
-      {False, False}
-    ],
-    Test["Date option in a list overrides temporal link:",
-      Module[{objs, t, tlinkold, packets, fields},
-        {objs, t}={timeObjs, timestampOfTimeObjChanges};
-        tlinkold=Link[objs[[1]], timestampOfTimeObjChanges];
-        packets=Download[{tlinkold, tlinkold}, Date -> {None, Now}];
-        fields=Download[{tlinkold, tlinkold}, ShelfLife, Date -> {None, Now}];
-        {Lookup[#, ShelfLife] == 1 Day & /@ packets, # == 1 Day & /@ fields}
-      ],
-      {{True, False}, {True, False}}
-    ],
     Test["Download Through Links works when a Date is specified:",
       Quiet[Download[Object[Notebook, Script, "id:L8kPEjnEKep4"], CurrentProtocols[Status], Date -> DateObject[{2020, 8, 18, 4, 47, 1.7767529487609863`},
         "Instant", "Gregorian", -7.`]],Download::SomeMetaDataUnavailable],
@@ -2623,7 +2583,7 @@ DefineTests[Download,
         Upload[<|Object -> analysis2, StringData -> "10"|>];
       )
     ],
-    Test["Temporal Packets dont match on non-temporal downloads:",
+    Test["Temporal Packets don't match on non-temporal downloads:",
       With[{
         packet=<|Name -> "Made up name on Download Test Sample With Time",
           Object -> Object[Sample, "id:7X104vneXJ09"], ID -> "id:7X104vneXJ09",
@@ -2644,16 +2604,6 @@ DefineTests[Download,
         }
       ],
       {LinkP[], LinkP[]}
-    ],
-    Test["Lookup Repeated works with Temporal Objects:",
-      Download[
-        {Object[Container, Vessel, "id:dORYzZJWk1kb"], Object[Container, Vessel, "id:AEqRl9KAXEmw"]},
-        Container..,
-        Date -> DateObject[{2020, 8, 31, 15, 26, 54}, "Instant", "Gregorian", "GMT-5"]
-      ],
-
-      {{TemporalLinkP[Object[Container, OperatorCart, "id:6V0npvK6GGp8"]], TemporalLinkP[Object[Container, Room, "id:pZx9jonGkPKj"]]},
-        {TemporalLinkP[Object[Container, OperatorCart, "id:6V0npvK6GGp8"]], TemporalLinkP[Object[Container, Room, "id:pZx9jonGkPKj"]]}}
     ],
     Example[{Additional, "Download with Time respects Timeless Objects. (Historical value was 1 degree):"},
       Download[timelessObj, Temperature, Date -> historicalTime],

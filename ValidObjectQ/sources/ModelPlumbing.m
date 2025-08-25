@@ -79,7 +79,40 @@ validModelPlumbingQTests[packet:PacketP[Model[Plumbing]]] := {
 	],
 
 	FieldComparisonTest[packet,{MinPressure,MaxPressure},Less],
-	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},Less]
+	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},Less],
+
+	(* The name for each non-Null ConnectorGrip entry matches the name of the index-matched Connector. *)
+	Test["The name of each non-Null ConnectorGrip matches that the name of the index-matched Connector",
+		Module[{connectors, connectorGrips},
+			{connectors, connectorGrips} = Lookup[packet, {Connectors, ConnectorGrips}, {}];
+
+			If[MatchQ[connectorGrips, {}],
+				True,
+				(* Name is the first index of both Connectors and ConnectorGrips *)
+				And @@ (MatchQ[#[[1,1]], #[[2,1]]]& /@ PickList[Transpose[{connectors, connectorGrips}], connectorGrips, Except[Null]])
+			]
+		],
+		True
+	],
+
+	(* Min is less than Max for ConnectorGrip torque. *)
+	Test["Each ConnectorGrip Min Torque is less than or equal to its Max Torque:",
+		Module[{connectorGrips, minTorques, maxTorques},
+			connectorGrips = Cases[Lookup[packet, ConnectorGrips], {_, _, _, Except[Null], Except[Null]}];
+
+			If[MatchQ[connectorGrips, {}],
+				True,
+
+				(* Pull out the min and max torques for the field. *)
+				minTorques = connectorGrips[[All, 4]];
+				maxTorques = connectorGrips[[All, 5]];
+
+				(* Name is the first index of both Connectors and ConnectorGrips *)
+				And @@ MapThread[LessEqualQ[#1, #2]&, {minTorques, maxTorques}]
+			]
+		],
+		True
+	]
 	
 };
 

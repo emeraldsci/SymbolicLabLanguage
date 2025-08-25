@@ -22,7 +22,7 @@ DefineUsage[ExperimentUVMelting,
 						Description-> "The samples or containers on which the experiment should act.",
 						Widget->Widget[
 							Type->Object,
-							Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+							Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 							Dereference->{
 								Object[Container]->Field[Contents[[All,2]]]
 							}
@@ -102,7 +102,7 @@ DefineUsage[ExperimentUVMeltingOptions,
 							Description-> "The samples or containers on which the experiment should act.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{
 									Object[Container]->Field[Contents[[All,2]]]
 								}
@@ -153,7 +153,7 @@ DefineUsage[ExperimentUVMeltingPreview,
 							Description-> "The samples or containers on which the experiment should act.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{
 									Object[Container]->Field[Contents[[All,2]]]
 								}
@@ -207,7 +207,7 @@ DefineUsage[ValidExperimentUVMeltingQ,
 							Description-> "The samples or containers on which the experiment should act.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{
 									Object[Container]->Field[Contents[[All,2]]]
 								}

@@ -32,19 +32,6 @@ validSupportTicketQTests[packet:PacketP[Object[SupportTicket]]]:={
 			True
 		],
 		True
-	],
-
-	Test[
-		"If ErrorSource is Operator, ReportedOperatorError has to be populated:",
-		Or[
-			And[
-				MatchQ[Lookup[packet, ErrorSource],"Operator"],
-				MatchQ[Lookup[packet, ReportedOperatorError], True|False]],
-			And[
-				MatchQ[Lookup[packet, ErrorSource],Except["Operator"]],
-				MatchQ[Lookup[packet, ReportedOperatorError], Null]]
-		],
-		True
 	]
 };
 

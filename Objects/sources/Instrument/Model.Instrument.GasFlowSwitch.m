@@ -41,6 +41,13 @@ DefineObjectType[Model[Instrument, GasFlowSwitch], {
 			Units -> PSI,
 			Description->"Pressure that the alternate cylinder drops to before the Gas Flow Switch changes back to the active cylinder unless the active cylinder is empty.",
 			Category-> "Instrument Specifications"
+		},
+		TurnsToOpen->{
+			Format->Single,
+			Class->Real,
+			Pattern:>RangeP[1/4,5,1/4],
+			Description->"The number of turns (in 1/4 turn increments) that the pressure builder valves of tanks connected to this model of gas flow switch should be opened.",
+			Category->"Instrument Specifications"
 		}
 	}
 }];

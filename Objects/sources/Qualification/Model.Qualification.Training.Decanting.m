@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Model[Qualification,Training,Decanting], {
-	Description->"Definition of a set of parameters for a qualification protocol that verifies an operator's ability to seperate liquid from solid by pouring.",
+	Description->"Definition of a set of parameters for a qualification protocol that verifies an operator's ability to separate liquid from solid by pouring.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {

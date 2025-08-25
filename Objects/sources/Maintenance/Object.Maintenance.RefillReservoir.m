@@ -51,14 +51,14 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Protocol, ManualSamplePreparation]|Object[Protocol, RoboticSamplePreparation],
-			Description -> "The sample manipulation protocol executed to transfer FillLiquid to the FillLiquidContainer.",
+			Description -> "The sample preparation protocol executed to transfer FillLiquid to the FillLiquidContainer.",
 			Category -> "Refilling"
 		},
 		AdditivesTransferUnitOperations -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> SamplePreparationP,
-			Description -> "A list of manipulations to transfer FillLiquidAdditives into the container holding fill liquid in the order they are performed.",
+			Description -> "A list of unit operations to transfer FillLiquidAdditives into the container holding fill liquid in the order they are performed.",
 			Category -> "Refilling",
 			Developer -> True
 		},
@@ -81,6 +81,13 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Description -> "The container deck that holds reservoir container.",
 			Category -> "Refilling"
 		},
+		ReservoirDeckSlotName -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], ReservoirDeckSlotName]],
+			Pattern :> LocationPositionP,
+			Description -> "The position within the reservoir deck where the reservoir resides.",
+			Category -> "Refilling"
+		},
 		FillLiquidLevel -> {
 			Format -> Single,
 			Class -> Expression,
@@ -88,6 +95,23 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Description -> "Indicates if the fill liquid level in the reservoir meets the FillVolume criteria.",
 			Category -> "Refilling",
 			Developer -> True
+		},
+		ReservoirCover -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Lid],
+				Object[Item, Lid],
+				Model[Item, Cap],
+				Object[Item, Cap],
+				Model[Item, Consumable],
+				Object[Item, Consumable],
+				Model[Item, PlateSeal],
+				Object[Item, PlateSeal]
+			],
+			Description -> "The closure for the reservoir.",
+			Category -> "Refilling"
 		},
 		Decontaminate -> {
 			Format -> Single,
@@ -146,7 +170,7 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
-			Relation -> {Object[Container], Object[Container], Null},
+			Relation -> {Alternatives[Model[Container], Model[Sample], Object[Container], Object[Sample]], Object[Container], Null},
 			Description -> "Placements for buffer containers.",
 			Category -> "Placements",
 			Headers -> {"Buffer to Place", "Destination Container","Destination Position"},
@@ -197,38 +221,20 @@ DefineObjectType[Object[Maintenance, RefillReservoir], {
 			Category -> "General",
 			Developer -> True
 		},
-		SampleContainer -> {
+		ReservoirInlet -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Container] | Object[Container],
-			Description -> "Container used to hold the sample from the reservoir if it is not disposed.",
-			Category -> "General",
-			Developer -> True
-		},
-		StorageContainer -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Container] | Object[Container],
-			Description -> "Container used to store the sample from the reservoir if it is not disposed.",
+			Relation -> Alternatives[Object[Plumbing, Tubing]],
+			Description -> "The tubing with a port that connects to this reservoir.",
 			Category -> "General"
 		},
-		Funnel -> {
-			Format -> Single,
+		Images -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Part, Funnel] | Object[Part, Funnel],
-			Description -> "The funnel used to transfer a sample from one container to another.",
-			Category -> "General",
-			Developer -> True
-		},
-		Spatula -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Item, Spatula] | Object[Item, Spatula],
-			Description -> "The type(s) of spatula(s) used to transfer a solid sample from the reservoir to the SampleContainer.",
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "Images that are relevant for tracking of instrument status such as that of sample levels in reservoirs.",
 			Category -> "General",
 			Developer -> True
 		}

@@ -61,12 +61,7 @@ DefineUsage[PlotThermodynamics,
     "PlotFit",
 		"PlotMeltingPoint"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad",
-		"jonathan",
-		"catherine"
-	},
+	Author -> {"dirk.schild", "amir.saadat", "brad", "jonathan", "catherine"},
 	Sync->Automatic,
 	Preview->True
 }];

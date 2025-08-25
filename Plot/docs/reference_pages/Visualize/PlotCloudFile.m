@@ -63,11 +63,7 @@ DefineUsage[PlotCloudFile,
 			"ImportCloudFile",
 			"DownloadCloudFile"
 		},
-		Author -> {
-			"amir.saadat",
-			"brad",
-			"thomas"
-		},
+		Author -> {"dirk.schild", "amir.saadat", "brad", "thomas"},
 		Preview->True
 	}
 ];

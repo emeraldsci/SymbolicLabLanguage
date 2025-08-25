@@ -25,8 +25,14 @@ DefineUsage[ExperimentDegas,
 							Description->"The samples or containers whose contents are to be degassed during the protocol.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
+								Dereference->{Object[Container]->Field[Contents[[All,2]]]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
 							],
 							Expandable->False
 						},
@@ -54,6 +60,6 @@ DefineUsage[ExperimentDegas,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
+		Author->{"lige.tonggu", "eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
 	}
 ];

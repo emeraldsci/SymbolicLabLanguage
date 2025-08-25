@@ -95,7 +95,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 		AssayPlatePrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the loading of a qPCR plate with samples, primers, probes, dyes, master mix and buffer.",
 			Category->"Sample Loading"
 		},
@@ -103,7 +103,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation],
 			Description->"The sample manipulation protocol used to load the qPCR plate generated as a result of execution of AssayPlatePrimitives.",
 			Category->"Sample Loading"
 		},
@@ -138,17 +138,17 @@ DefineObjectType[Object[Protocol,qPCR],{
 		ArrayCardPreparatoryPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The set of instructions specifying the preparation of reaction mixtures consisting of samples, master mix, and buffer.",
 			Category->"Sample Loading"
 		},
-		ArrayCardPreparatoryManipulation->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
-			Description->"The robotic sample manipulation protocol generated as a result of the execution of ArrayCardPreparatoryPrimitives.",
-			Category->"Sample Loading"
+		ArrayCardPreparatoryManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "The robotic sample manipulation protocol generated as a result of the execution of ArrayCardPreparatoryPrimitives.",
+			Category -> "Sample Loading"
 		},
 		ArrayCard->{
 			Format->Single,

@@ -130,6 +130,9 @@ DefineOptions[PlotCircularDichroism,
 	}
 ];
 
+Error::NoCircularDichroismDataToPlot = "The protocol object does not contain any associated circular dichroism data.";
+Error::CircularDichroismProtocolDataNotPlotted = "`1` not able to be plotted. `2`.";
+
 
 (* ::Subsubsection:: *)
 (*PlotCircularDichroism Main Function*)
@@ -150,11 +153,82 @@ PlotCircularDichroism[primaryData:rawPlotInputP,inputOptions:OptionsPattern[Plot
 	processELLPOutput[plotOutputs,SafeOptions[PlotCircularDichroism,ToList@inputOptions]]
 ];
 
+(* Protocol Overload *)
+PlotCircularDichroism[
+	obj: ObjectP[Object[Protocol, CircularDichroism]],
+	ops: OptionsPattern[PlotCircularDichroism]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotCircularDichroism, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, CircularDichroism]]..}],
+		Message[Error::NoCircularDichroismDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotCircularDichroism[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotCircularDichroism[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::CircularDichroismProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
+
 
 (* Packet Definition *)
 (* PlotCircularDichroism[infs:plotInputP,inputOptions:OptionsPattern[PlotCircularDichroism]]:= *)
 PlotCircularDichroism[infs:ListableP[ObjectP[Object[Data, CircularDichroism]],2],inputOptions:OptionsPattern[PlotCircularDichroism]]:=Module[
-	{resolvedMap, listedOps, plotOutputs, output},
+	{resolvedMap, listedOps, output, plotOutputs, invalidDataObjects},
 
 	(* Determine if the Map option needs to be passed *)
 	resolvedMap = If[!TrueQ[OptionValue[Overlay]]&&MatchQ[infs,_List],
@@ -167,9 +241,52 @@ PlotCircularDichroism[infs:ListableP[ObjectP[Object[Data, CircularDichroism]],2]
 		ReplaceRule[{SecondaryData->{}, resolvedMap}, ToList[inputOptions]],
 		ReplaceRule[{resolvedMap}, ToList[inputOptions]]
 	];
+	output = Lookup[SafeOptions[PlotCircularDichroism, ToList[inputOptions]], Output];
 
 	(* Handle case where we do or do not want to overlay data *)
-	plotOutputs=packetToELLP[ToList[infs], PlotCircularDichroism, listedOps];
+	plotOutputs = Quiet[
+		packetToELLP[ToList[infs], PlotCircularDichroism, listedOps],
+		{Warning::MappedNullPrimaryData, Error::NullPrimaryData}
+	];
+
+	(* The invalid data will return Null for result/preview from packetToELLP output *)
+	invalidDataObjects = Which[
+		TrueQ[Lookup[resolvedMap, Map]] && MemberQ[ToList@plotOutputs, Null],
+			Module[{plotPosition},
+				plotPosition = Which[
+					!MatchQ[output, _List], ToList@plotOutputs,
+					MemberQ[output, Preview|Result], plotOutputs[[All, FirstPosition[output, Result|Preview][[1]]]],
+					True, ToList@plotOutputs
+				];
+				PickList[ToList@infs, ToList@plotOutputs, Null]
+			],
+		MemberQ[ToList@plotOutputs, Null],
+			ToList@infs,
+		True,
+			{}
+	];
+	If[!MatchQ[invalidDataObjects, {}],
+		Message[Error::CircularDichroismProtocolDataNotPlotted,
+			Which[
+				Length[invalidDataObjects] == Length[ToList@infs] && EqualQ[Length[invalidDataObjects], 1],
+					"The data object is",
+				Length[invalidDataObjects] == Length[ToList@infs],
+					"All data objects are",
+				EqualQ[Length[invalidDataObjects], 1],
+					Capitalize@Experiment`Private`samplesForMessages[invalidDataObjects, CollapseForDisplay -> False] <> " is",
+				TrueQ[Lookup[resolvedMap, Map]],
+					Capitalize@Experiment`Private`samplesForMessages[invalidDataObjects, CollapseForDisplay -> False] <> " are",
+				True,
+					"At least one of the data objects is"
+			],
+			If[TrueQ[Lookup[resolvedMap, Map]] || EqualQ[Length[invalidDataObjects], 1],
+				"Please check the field CircularDichroismAbsorbanceSpectrum which is required for plotting",
+				"Please call PlotCircularDichroism or PlotObject on an individual data object or set the option Overlay to False to identify which data file(s) are missing a value for the field CircularDichroismAbsorbanceSpectrum"
+			]
+		];
+		Return[$Failed],
+		Nothing
+	];
 
 	(* Return packetToELLP output, adding any missing options *)
 	processELLPOutput[plotOutputs, SafeOptions[PlotCircularDichroism, listedOps]]

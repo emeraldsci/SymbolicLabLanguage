@@ -19,8 +19,8 @@ DefineTests[
 			DefineComposition[
 				mySample,
 				Composition -> {
-					{100 VolumePercent, Model[Molecule, "Water"]},
-					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}
+					{100 VolumePercent, Model[Molecule, "Water"], Now},
+					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"], Now}
 				}
 			],
 			ObjectP[Object[Sample]],
@@ -35,7 +35,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for DefineComposition)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySample=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for DefineComposition)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for DefineComposition)"];
+				mySample = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for DefineComposition)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for DefineComposition)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for DefineComposition)"]],
@@ -52,7 +52,7 @@ DefineTests[
 			DefineComposition[
 				mySampleToAppend,
 				Composition -> {
-					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"]}
+					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"], Now}
 				},
 				Append -> True
 			],
@@ -68,7 +68,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for Append DefineComposition)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySampleToAppend=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append DefineComposition)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append DefineComposition)"];
+				mySampleToAppend = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append DefineComposition)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append DefineComposition)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for Append DefineComposition)"]],
@@ -91,8 +91,8 @@ DefineTests[
 			DefineCompositionOptions[
 				mySample,
 				Composition -> {
-					{100 VolumePercent, Model[Molecule, "Water"]},
-					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}
+					{100 VolumePercent, Model[Molecule, "Water"], Now},
+					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"], Now}
 				}
 			],
 			_Grid,
@@ -107,7 +107,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for DefineCompositionOptions)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySample=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for DefineCompositionOptions)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for DefineCompositionOptions)"];
+				mySample = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for DefineCompositionOptions)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for DefineCompositionOptions)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for DefineCompositionOptions)"]],
@@ -124,7 +124,7 @@ DefineTests[
 			DefineCompositionOptions[
 				mySampleToAppend,
 				Composition -> {
-					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"]}
+					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"], Now}
 				},
 				Append -> True
 			],
@@ -140,7 +140,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for Append DefineCompositionOptions)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySampleToAppend=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append DefineCompositionOptions)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append DefineCompositionOptions)"];
+				mySampleToAppend = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append DefineCompositionOptions)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append DefineCompositionOptions)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for Append DefineCompositionOptions)"]],
@@ -163,8 +163,8 @@ DefineTests[
 			ValidDefineCompositionQ[
 				mySample,
 				Composition -> {
-					{100 VolumePercent, Model[Molecule, "Water"]},
-					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}
+					{100 VolumePercent, Model[Molecule, "Water"], Now},
+					{5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"], Now}
 				}
 			],
 			BooleanP,
@@ -179,7 +179,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for ValidDefineCompositionQ)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySample=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for ValidDefineCompositionQ)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for ValidDefineCompositionQ)"];
+				mySample = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for ValidDefineCompositionQ)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for ValidDefineCompositionQ)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for ValidDefineCompositionQ)"]],
@@ -196,7 +196,7 @@ DefineTests[
 			ValidDefineCompositionQ[
 				mySampleToAppend,
 				Composition -> {
-					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"]}
+					{100 Micromolar, Model[Molecule, "id:BYDOjvG676mq"], Now}
 				},
 				Append -> True
 			],
@@ -212,7 +212,7 @@ DefineTests[
 
 				Upload[<|Type -> Object[Container, Vessel], Name -> "Empty 50mL Tube (Test for Append ValidDefineCompositionQ)", Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects]|>];
 
-				mySampleToAppend=ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append ValidDefineCompositionQ)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append ValidDefineCompositionQ)"];
+				mySampleToAppend = ECL`InternalUpload`UploadSample[{{100 VolumePercent, Model[Molecule, "Water"]}, {5 Micromolar, Model[Molecule, Oligomer, "id:zGj91a70vjAj"]}}, {"A1", Object[Container, Vessel, "Empty 50mL Tube (Test for Append ValidDefineCompositionQ)"]}, InitialAmount -> 1 Milliliter, Name -> "Oligomer in Water (Test for Append ValidDefineCompositionQ)"];
 			},
 			TearDown :> {
 				If[DatabaseMemberQ[Object[Sample, "Oligomer in Water (Test for Append ValidDefineCompositionQ)"]],

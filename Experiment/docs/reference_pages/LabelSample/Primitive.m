@@ -77,6 +77,6 @@ DefineUsage[resolveLabelSamplePrimitive,
       "ExperimentRoboticSamplePreparation",
       "Experiment"
     },
-    Author -> {"waseem.vali", "malav.desai", "thomas"}
+    Author -> {"taylor.hochuli", "waseem.vali", "malav.desai", "thomas"}
   }
 ];

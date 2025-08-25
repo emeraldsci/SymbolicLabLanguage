@@ -23,7 +23,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 		{
 			OptionName->Cartridge,
 			Default->Model[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF"],
-			Description->"The capillary electrophoresis cartridge loaded on the instrument for Capillary IsoElectric Focusing (cIEF) experiments. The cartridge holds a single capillary and electrolyte buffers (sources of hydronium and hydroxyl ions). The cIEF cartridge can run 100 injections in up to 20 batches under optimal conditions, and up to 200 injections in total.",
+			Description->"The capillary electrophoresis cartridge loaded on the instrument for Capillary IsoElectric Focusing (cIEF) experiments. The cartridge holds a single capillary and electrolyte buffers (sources of hydronium and hydroxyl ions). The cIEF cartridge can run 100 injections in up to 20 batches.",
 			AllowNull->False,
 			Widget->Widget[
 				Type->Object,
@@ -38,7 +38,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 			AllowNull->False,
 			Widget->Widget[
 				Type->Enumeration,
-				Pattern:>Alternatives[Ambient,4*Celsius,10*Celsius,15*Celsius]
+				Pattern:>Alternatives[Ambient,4*Celsius,10*Celsius,15*Celsius, 25*Celsius]
 			],
 			Category->"General"
 		},
@@ -162,7 +162,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 		},
 		{
 			OptionName->WashSolution,
-			Default-> Model[Sample, "LCMS Grade Water"],
+			Default-> Model[Sample, "id:8qZ1VWNmdLBD"], (* Model[Sample, "Milli-Q water"] *)
 			Description->"The WashSolution is used to rinse the capillary after use. WashSolution is loaded on the instrument in two separate with 2 mL each. One vial is used to wash the capillary and the other to wash the capillary tip.",
 			AllowNull->False,
 			Widget->Widget[
@@ -345,7 +345,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->PremadeMasterMixDiluent,
 				Default->Automatic,
 				Description->"The solution used to dilute the premade master mix used to its working concentration.",
-				ResolutionDescription->"When PremadeMasterMix is set to True and PremadeMasterMixDiluent is set to Automatic, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When PremadeMasterMix is set to True and PremadeMasterMixDiluent is set to Automatic, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -382,7 +382,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->Diluent,
 				Default->Automatic,
 				Description->"The solution used to top volume in assay tube to total volume and dilute components to working concentration.",
-				ResolutionDescription->"When PremadeMasterMix is set to False and Diluent is set to Automatic, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When PremadeMasterMix is set to False and Diluent is set to Automatic, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -400,10 +400,15 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 					Widget[
 						Type->Object,
 						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-					Adder[Widget[
-						Type->Object,
-						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
-					]
+					Adder[Alternatives[
+						Widget[
+							Type->Object,
+							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+						],
+						Widget[
+							Type-> Enumeration,
+							Pattern:>Alternatives[Automatic|Null]]
+					]]
 				],
 				Category->"Sample Preparation"
 			},
@@ -469,9 +474,10 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 							Type->Object,
 							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
 					],
-					Widget[
+					Adder[Widget[
 						Type-> Enumeration,
-						Pattern:>Alternatives[Automatic|Null]]
+						Pattern:>Alternatives[Automatic|Null]
+					]]
 				],
 				Category->"Sample Preparation"
 			},
@@ -624,7 +630,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				Default->Automatic,
 				Description->"Indicates if an anodic spacer should be added to the master mix. Both acidic and alkaline carrier ampholytes may be lost in the electrolyte reservoirs due to diffusion and isotachophoresis, decreasing the resolution and detection of proteins at the extremes of the pH gradient. To reduce the loss of ampholytes, Spacers (ampholytes with very low or very high pIs) can be added to buffer the loss of analytes of interest. Traditionally, Iminodiacetic acid (pI 2.2) and Arginine (pI 10.7) are added as Spacers.",
 				ResolutionDescription->"When AnodicSpacer is set to Automatic and PremadeMasterMix is False, Spacers will be set to False.",
-				AllowNull->False,
+				AllowNull->True,
 				Widget->Widget[
 					Type->Enumeration,
 					Pattern:>BooleanP
@@ -676,7 +682,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				Default->Automatic,
 				Description->"Indicates if a cathodic spacer should be added to the master mix. Both acidic and alkaline carrier ampholytes may be lost in the electrolyte reservoirs due to diffusion and isotachophoresis, decreasing the resolution and detection of proteins at the extremes of the pH gradient. To reduce the loss of ampholytes, Spacers (ampholytes with very low or very high pIs) can be added to buffer the loss of analytes of interest. Traditionally, Iminodiacetic acid (pI 2.2) and Arginine (pI 10.7) are added as Spacers.",
 				ResolutionDescription->"When AnodicSpacer is set to Automatic and PremadeMasterMix is False, Spacers will be set to False.",
-				AllowNull->False,
+				AllowNull->True,
 				Widget->Widget[
 					Type->Enumeration,
 					Pattern:>BooleanP
@@ -960,7 +966,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 			{
 				OptionName->StandardFrequency,
 				Default->Automatic,
-				Description->"Indicates how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable.",
+				Description->"Indicates how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable.",
 				ResolutionDescription->"When StandardFrequency is set to Automatic and IncludeStandards is True, it will default to FirstAndLast.",
 				AllowNull->True,
 				Widget->Widget[
@@ -1010,7 +1016,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->StandardPremadeMasterMixDiluent,
 				Default->Automatic,
 				Description->"The solution used to dilute the premade master mix used to its working concentration.",
-				ResolutionDescription->"When StandardPremadeMasterMixDiluent is set to Automatic, StandardPremadeMasterMix is set to True, and IncludeStandards is True, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When StandardPremadeMasterMixDiluent is set to Automatic, StandardPremadeMasterMix is set to True, and IncludeStandards is True, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -1047,7 +1053,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->StandardDiluent,
 				Default->Automatic,
 				Description->"The solution used to top volume in assay tube to total volume and dilute components to working concentration.",
-				ResolutionDescription->"When StandardPremadeMasterMix is set to False, StandardDiluent is set to Automatic, and IncludeStandards is True, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When StandardPremadeMasterMix is set to False, StandardDiluent is set to Automatic, and IncludeStandards is True, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -1065,10 +1071,15 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 					Widget[
 						Type->Object,
 						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-					Adder[Widget[
-						Type->Object,
-						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
-					]
+					Adder[Alternatives[
+						Widget[
+							Type->Object,
+							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+						],
+						Widget[
+							Type-> Enumeration,
+							Pattern:>Alternatives[Automatic|Null]]
+					]]
 				],
 				Category->"Standard Preparation"
 			},
@@ -1134,9 +1145,10 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 							Type->Object,
 							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
 					],
-					Widget[
+					Adder[Widget[
 						Type-> Enumeration,
-						Pattern:>Alternatives[Automatic|Null]]
+						Pattern:>Alternatives[Automatic|Null]
+					]]
 				],
 				Category->"Standard Preparation"
 			},
@@ -1397,7 +1409,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				AllowNull->True,
 				Widget->Alternatives[
 					Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal],
-					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]]
+					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal|Null]]
 				],
 				Category->"Post Experiment"
 			},
@@ -1409,7 +1421,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				AllowNull->True,
 				Widget->Alternatives[
 					Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal],
-					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]]
+					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal|Null]]
 				],
 				Category->"Post Experiment"
 			},
@@ -1591,7 +1603,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 			{
 				OptionName->BlankFrequency,
 				Default->Automatic,
-				Description->"Indicates how many injections per Blank should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable.",
+				Description->"Indicates how many injections per Blank should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable.",
 				ResolutionDescription->"When BlankFrequency is set to Automatic and IncludeBlanks is True, it will default to FirstAndLast.",
 				AllowNull->True,
 				Widget->Widget[
@@ -1641,7 +1653,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->BlankPremadeMasterMixDiluent,
 				Default->Automatic,
 				Description->"The solution used to dilute the premade master mix used to its working concentration.",
-				ResolutionDescription->"When BlankPremadeMasterMixDiluent is set to Automatic and BlankPremadeMasterMix is set to True, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When BlankPremadeMasterMixDiluent is set to Automatic and BlankPremadeMasterMix is set to True, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -1678,7 +1690,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				OptionName->BlankDiluent,
 				Default->Automatic,
 				Description->"The solution used to top volume in assay tube to total volume and dilute components to working concentration.",
-				ResolutionDescription->"When BlankPremadeMasterMix is set to False and BlankDiluent is set to Automatic, Model[Sample,\"LCMS Grade Water\"] will be set as diluent.",
+				ResolutionDescription->"When BlankPremadeMasterMix is set to False and BlankDiluent is set to Automatic, Model[Sample,\"Milli-Q water\"] will be set as diluent.",
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
@@ -1696,10 +1708,15 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 					Widget[
 						Type->Object,
 						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
-					Adder[Widget[
-						Type->Object,
-						Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
-					]
+					Adder[Alternatives[
+						Widget[
+							Type->Object,
+							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]
+						],
+						Widget[
+							Type-> Enumeration,
+							Pattern:>Alternatives[Automatic|Null]]
+					]]
 				],
 				Category->"Blank Preparation"
 			},
@@ -1765,9 +1782,10 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 							Type->Object,
 							Pattern:>ObjectP[{Model[Sample],Object[Sample]}]]
 					],
-					Widget[
+					Adder[Widget[
 						Type-> Enumeration,
-						Pattern:>Alternatives[Automatic|Null]]
+						Pattern:>Alternatives[Automatic|Null]
+					]]
 				],
 				Category->"Blank Preparation"
 			},
@@ -2028,7 +2046,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				AllowNull->True,
 				Widget->Alternatives[
 					Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal],
-					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]]
+					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal|Null]]
 				],
 				Category->"Post Experiment"
 			},
@@ -2040,7 +2058,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 				AllowNull->True,
 				Widget->Alternatives[
 					Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal],
-					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal]]
+					Adder[Widget[Type->Enumeration,Pattern:>SampleStorageTypeP|Disposal|Null]]
 				],
 				Category->"Post Experiment"
 			},
@@ -2169,8 +2187,9 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusing,
 			}
 		],
 		(* Shared Options *)
+		ModelInputOptions,
 		AliquotOptions,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
 		SimulationOption
 	}
@@ -2196,25 +2215,25 @@ Warning::CIEFMissingSampleComposition="Sample composition is missing for `1`. As
 Error::CIEFOnBoardMixingIncompatibleVolumes="Total and sample volumes specified for `1` are incompatible with OnBoardMixing. The total volume must be 125 microliters and the sample volume must be 25 microliters for OnBoardMixing. Please change the total volume and/or sample volume, set them to Automatic, or consider switching OnBoardMixing to False.";
 Error::CIEFMoreThanOneMasterMixWithOnBoardMixing="More than one master mix composition has been specified while OnBoardMixing is set to True (for the following options:`1`). OnboardMixing can only be used with a single master mix composition. Please make sure that reagents, concentrations and volume are the same for all sample or consider setting OnBoardMixing to False.";
 Warning::OnBoardMixingVolume="Onboard mixing requires a minimum volume in each vial in order to run reliably. As a result, an extra `1` of the prepared sample mix will be required.";
-Error::CIEFimagingMethodMismatch="The imaging methods set for `1` are not copacetic with the specified fluorescence imaging times. Please make sure the two options are in agreement, or set one or both to Automatic.";
+Error::CIEFimagingMethodMismatch="The imaging methods set for `1` are not compatible with the specified fluorescence imaging times. Please make sure the two options are in agreement, or set one or both to Automatic.";
 Error::CIEFInvalidVoltageDurationProfile="The number of VoltageDurationProfile Steps for `1` is not within the accepted range (1-20 steps). Please make sure VoltageDuration profiles have 1-20 steps.";
 (* premade mastermix branch (same as in experimentCapillaryGelElectrophoresis) *)
 Error::CIEFPremadeMastermixFalseOptionsSpecifiedError="PremadeMasterMix was set to False while other related options have been specified for `1`. Please set PremadeMasterMix to True or change the related options to Null or Automatic.";
 Error::CIEFPremadeMasterMixReagentNull="PremadeMasterMixReagent is set to Null while premade master mix is True for `1`. Please make sure the premade master mix reagent object is specified or set premade master mix to False.";
 Error::CIEFPremadeMasterMixDilutionFactorNull="PremadeMasterMixReagent's dilution factor is set to Null while premade master mix is True for `1`. Please make sure to specify either the dilution factor or the volume. Alternatively, Set premade master mix to False.";
 Error::CIEFPremadeMasterMixVolumeNull="PremadeMasterMixVolume cannot be set to Null while premade master mix is set to True for `1`. Please set a valid volume or Automatic to use premade master mix reagent. Alternatively, Set premade master mix to False.";
-Error::CIEFPremadeMasterMixVolumeDilutionFactorMismatch="Specified premade master mix volume and dilution factor are not copacetic. Please make sure that their values are in agreement, or set one to Automatic.";
+Error::CIEFPremadeMasterMixVolumeDilutionFactorMismatch="Specified premade master mix volume and dilution factor are not compatible. Please make sure that their values are in agreement, or set one to Automatic.";
 Error::CIEFPremadeMasterMixInvalidTotalVolume="Sample Volume and premade master mix volume sum up to more than the total Volume in `1`. Please make sure volumes do not exceed the total volume in the tube.";
 Error::CIEFPremadeMasterMixDiluentNull="While premade master mix is True, a Diluent is missing for `1`. Please specify the desired diluent or set to Automatic.";
 (* premade mastermix branch *)
 Error::CIEFMakeMasterMixDiluentNull="A Diluent is missing for `1` while other master mix components do not sum up to the total volume. Please specify the desired diluent or set to Automatic.";
 Error::CIEFMakeMasterMixAmpholytesNull="Ampholytes are not specified for `1` while a premade master mix is set to False. Ampholytes are crucial for capillary isoelectric focusing. Please specify the desired ampholytes or set to Automatic.";
-Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic="The number of items specified for Ampholyte objects, target concentrations, and/or volumes for `1` does not match. Please make sure target concentrations and volumes are specified only for the chosen ampholyte objects or set to Automatic.";
+Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible="The number of items specified for Ampholyte objects, target concentrations, and/or volumes for `1` does not match. Please make sure target concentrations and volumes are specified only for the chosen ampholyte objects or set to Automatic.";
 Error::CIEFMakeMasterMixAmpholytesVolumesNull="Ampholyte volumes are not specified for `1` while a premade master mix is set to False. Ampholytes are crucial for capillary isoelectric focusing. Please specify the desired volumes or set to Automatic.";
 Error::CIEFMakeMasterMixAmpholytesConcentrationNull="Ampholyte target concentrations are not specified for `1` while a premade master mix is set to False. Ampholytes are crucial for capillary isoelectric focusing. Please specify the desired target concentrations or set to Automatic.";
 Error::CIEFMakeMasterMixAmpholytesVolumeConcentrationMismatch="Ampholyte target concentrations and volumes are not in agreement for `1`. Please make sure volumes and concentrations are in agreemment or set one of these options to Automatic.";
 Error::CIEFMakeMasterMixIsoelectricPointMarkersNull="IsoelectricPointMarkers are not specified for `1` while a premade master mix is set to False. IsoelectricPointMarkers are crucial for the analysis of capillary isoelectric focusing data. Please specify the desired ampholytes or set to Automatic.";
-Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic="The number of items specified for IsoelectricPointMarker objects, target concentrations, and/or volumes for `1` does not match. Please make sure target concentrations and volumes are specified only for the chosen ampholyte objects or set to Automatic.";
+Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible="The number of items specified for IsoelectricPointMarker objects, target concentrations, and/or volumes for `1` does not match. Please make sure target concentrations and volumes are specified only for the chosen ampholyte objects or set to Automatic.";
 Error::CIEFMakeMasterMixIsoelectricPointMarkersVolumesNull="IsoelectricPointMarker volumes are not specified for `1` while a premade master mix is set to False. IsoelectricPointMarkers are crucial for the analysis of capillary isoelectric focusing data. Please specify the desired volumes or set to Automatic.";
 Error::CIEFMakeMasterMixIsoelectricPointMarkersConcentrationNull="IsoelectricPointMarker target concentrations are not specified for `1` while a premade master mix is set to False. IsoelectricPointMarkers are crucial for the analysis of capillary isoelectric focusing data. Please specify the desired target concentrations or set to Automatic.";
 Error::CIEFMakeMasterMixIsoelectricPointMarkersVolumeConcentrationMismatch="IsoelectricPointMarker target concentrations and volumes are not in agreement for `1`. Please make sure volumes and concentrations are in agreement or set one of these options to Automatic.";
@@ -2254,7 +2273,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 	{
 		listedSamples,listedOptions,outputSpecification,output,gatherTests,messages,safeOptions,
 		safeOptionTests,mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed,
-		validLengths,validLengthTests,upload,confirm,fastTrack,parentProt,inheritedCache,nestedMultipleOptions,
+		validLengths,validLengthTests,upload,confirm,canaryBranch,fastTrack,parentProt,inheritedCache,nestedMultipleOptions,
 		unresolveOptionsListedMultiples,unresolvedOptions,specifiedInjectionTable,applyTemplateOptionTests,combinedOptions,expandedCombinedOptions,
 		sampleModelPreparationPacket,samplePreparationPacket,resolveOptionsResult,resolvedOptions,resolutionTests,
 		resolvedOptionsNoHidden,returnEarlyQ,cacheBall,finalizedPacket,resourcePacketTests,validSamplePreparationResult,
@@ -2274,6 +2293,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 	messages=Not[gatherTests];
 
 	(* Remove temporal links. *)
+	(* quieting because we could throw an ObjectDoesNotExist error here, but if we do we will already do that in a more robust way later so silence it for now *)
 	{listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
@@ -2285,7 +2305,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -2302,7 +2322,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 	];
 
 	(* Call sanitizeInputs to replace named samples with ids *)
-	{mySamplesWithPreparedSamples,safeOptions,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOptions,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOptions,$Failed],
@@ -2334,7 +2354,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 	];
 
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProt,inheritedCache}=Lookup[safeOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProt,inheritedCache}=Lookup[safeOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{unresolvedOptions,applyTemplateOptionTests}=If[gatherTests,
@@ -2401,7 +2421,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 		Association[unresolvedOptions]
 	];
 
-	(* if a template was applied, we need to make sure not to take its injection table (because it will not apply, by definition) but also need to make sure we dont omit a specified injection table *)
+	(* if a template was applied, we need to make sure not to take its injection table (because it will not apply, by definition) but also need to make sure we don't omit a specified injection table *)
 	specifiedInjectionTable = {InjectionTable->Lookup[safeOptions, InjectionTable]};
 
 	(* Replace our safe options with our inherited options from our template. *)
@@ -2474,7 +2494,7 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 
 	(*fields not in the object: DefaultThawTime, DefaultThawTemperature,MolecularWeight*)
 	(* Set up the samplePreparationPacket using SamplePreparationCacheFields*)
-	samplePreparationPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence],Deprecated,UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, IncompatibleMaterials,LiquidHandlerIncompatible,Tablet,TabletWeight,TransportWarmed,TransportChilled];
+	samplePreparationPacket=Packet[SamplePreparationCacheFields[Object[Sample],Format->Sequence],Deprecated,UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, IncompatibleMaterials,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,TransportTemperature];
 	sampleModelPreparationPacket=Packet[Model[Flatten[{Products,Deprecated,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,IncompatibleMaterials,SamplePreparationCacheFields[Model[Sample]]}]]];
 	sampleContainerFields=Packet[Container[{Model,SamplePreparationCacheFields[Object[Container],Format->Sequence]}]];
 	sampleContainerModelFields=Packet[Container[Model][{MaxVolume,Name,Dimensions,DefaultStorageCondition,SamplePreparationCacheFields[Model[Container],Format->Sequence]}]];
@@ -2674,16 +2694,31 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 
 	(* Build packets with resources *)
 	{finalizedPacket,resourcePacketTests}=If[gatherTests,
-		capillaryIsoelectricFocusingResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
-			resolvedOptions,Output->{Result,Tests},Cache->cacheBall,Simulation->updatedSimulation],
-		{capillaryIsoelectricFocusingResourcePackets[ToList[mySamplesWithPreparedSamples],unresolvedOptions,
-			resolvedOptions,Output->Result,Cache->cacheBall,Simulation->updatedSimulation],Null}
+		capillaryIsoelectricFocusingResourcePackets[
+			ToList[mySamplesWithPreparedSamples],
+			unresolvedOptions,
+			resolvedOptions,
+			Output->{Result,Tests},
+			Cache->cacheBall,
+			Simulation->updatedSimulation
+		],
+		{
+			capillaryIsoelectricFocusingResourcePackets[
+				ToList[mySamplesWithPreparedSamples],
+				unresolvedOptions,
+				resolvedOptions,
+				Output->Result,
+				Cache->cacheBall,
+				Simulation->updatedSimulation
+			],
+			Null
+		}
 	];
 
 	(* If we were asked for a simulation, also return a simulation. *)
 	{simulatedProtocol, simulation} = If[performSimulationQ,
 		simulateExperimentCapillaryIsoelectricFocusing[finalizedPacket,ToList[mySamplesWithPreparedSamples],expandedCombinedOptions,Cache->cacheBall,Simulation->updatedSimulation],
-		{Null, Null}
+		{Null, updatedSimulation}
 	];
 
 	(* get all the tests together *)
@@ -2729,11 +2764,12 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 			UploadProtocol[
 				finalizedPacket,
 				Confirm->confirm,
+				CanaryBranch->canaryBranch,
 				Upload->upload,
 				FastTrack->fastTrack,
 				ParentProtocol->parentProt,
 				ConstellationMessage->Object[Protocol,CapillaryIsoelectricFocusing],
-				Simulation->updatedSimulation
+				Simulation->simulation
 			]
 	];
 
@@ -2762,10 +2798,10 @@ ExperimentCapillaryIsoelectricFocusing[mySamples:ListableP[ObjectP[Object[Sample
 
 (* ::Subsubsection::Closed:: *)
 (* singleton container input *)
-ExperimentCapillaryIsoelectricFocusing[myContainer:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[ExperimentCapillaryIsoelectricFocusing]]:=ExperimentCapillaryIsoelectricFocusing[{myContainer},myOptions];
+ExperimentCapillaryIsoelectricFocusing[myContainer:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[ExperimentCapillaryIsoelectricFocusing]]:=ExperimentCapillaryIsoelectricFocusing[{myContainer},myOptions];
 
 (* ExperimentCapillaryIsoelectricFocusing Main function (container overload). *)
-ExperimentCapillaryIsoelectricFocusing[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentCapillaryIsoelectricFocusing[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,containerToSampleSimulation},
 
@@ -2788,7 +2824,7 @@ ExperimentCapillaryIsoelectricFocusing[myContainers:ListableP[ObjectP[{Object[Co
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -2868,8 +2904,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			expandedStandardsOptions,expandNestedIndexMatchedTests,expandThis,fastTrack,focusingPrecisionOptions,gatherTests,
 			includeBlankOptionBool,includeStandardOptionBool,includeBlanksFalseOptionsSpecifiedError,
 			includeStandardsFalseOptionsSpecifiedError,incompatibleCartridgeInvalidOption,incompatibleCartridgeTest,inheritedCache,
-			injectionTableBlankNotCopaceticQ,injectionTableBlankVolumes,injectionTableSamplesNotCopaceticQ,injectionTableSampleVolumes,
-			injectionTableStandardNotCopaceticQ,injectionTableStandardVolumes,injectionTableValidQ,instrumentModelPacket,
+			injectionTableBlankNotCompatibleQ,injectionTableBlankVolumes,injectionTableSamplesNotCompatibleQ,injectionTableSampleVolumes,
+			injectionTableStandardNotCompatibleQ,injectionTableStandardVolumes,injectionTableValidQ,instrumentModelPacket,
 			invalidInputs,invalidOptions,imagingMethodMismatchErrors,joinedExpandedOptions,keyBlankNames,
 			keyBlankNamesPrependRemoved,keyStandardNames,keyStandardNamesPrependRemoved,lengthCorrectedInjectionTableBlankVolumes,
 			lengthCorrectedInjectionTableStandardVolumes,mapThreadFriendlyBlankOptions,mapThreadFriendlyOptions,
@@ -2891,7 +2927,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			unresolvedOptionsKeys,upload,
 
 			(* SampleIn MapThread *)
-			ampholyteConcentrationNullErrors,ampholyteMatchedlengthsNotCopaceticErrors,ampholyteVolumeConcentrationMismatchErrors,
+			ampholyteConcentrationNullErrors,ampholyteMatchedlengthsNotCompatibleErrors,ampholyteVolumeConcentrationMismatchErrors,
 			ampholyteVolumeNullErrors,anodicSpacerConcentrationNullErrors,anodicSpacerConcentrationVolumeMismatchErrors,
 			anodicSpacerFalseOptionsSpecifiedErrors,anodicSpacerNullErrors,anodicSpacerVolumeNullErrors,
 			cathodicSpacerConcentrationNullErrors,cathodicSpacerConcentrationVolumeMismatchErrors,cathodicSpacerFalseOptionsSpecifiedErrors,
@@ -2919,7 +2955,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			sumOfVolumesOverTotalvolumeErrors,unresolveableDenatureReagentConcentrationUnitMismatchErrors,voltageDurationStepErrors,
 
 			(* standards/blanks mapThread *)
-			blankAmpholyteConcentrationNullErrors,blankAmpholyteMatchedlengthsNotCopaceticErrors,blankAmpholyteVolumeConcentrationMismatchErrors,
+			blankAmpholyteConcentrationNullErrors,blankAmpholyteMatchedlengthsNotCompatibleErrors,blankAmpholyteVolumeConcentrationMismatchErrors,
 			blankAmpholyteVolumeNullErrors,blankAnodicSpacerConcentrationNullErrors,blankAnodicSpacerConcentrationVolumeMismatchErrors,
 			blankAnodicSpacerFalseOptionsSpecifiedErrors,blankAnodicSpacerNullErrors,blankAnodicSpacerVolumeNullErrors,blankCathodicSpacerConcentrationNullErrors,
 			blankCathodicSpacerConcentrationVolumeMismatchErrors,blankCathodicSpacerFalseOptionsSpecifiedErrors,blankCathodicSpacerNullErrors,blankCathodicSpacerVolumeNullErrors,
@@ -2960,7 +2996,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			resolvedStandardNativeFluorescenceExposureTime,resolvedStandardPremadeMasterMix,resolvedStandardPremadeMasterMixDiluent,
 			resolvedStandardPremadeMasterMixDilutionFactor,resolvedStandardPremadeMasterMixReagent,resolvedStandardPremadeMasterMixVolume,
 			resolvedStandardTotalVolume,resolvedStandardVoltageDurationProfile,resolvedStandardVolume,standardAmpholyteConcentrationNullErrors,
-			standardAmpholyteMatchedlengthsNotCopaceticErrors,standardAmpholyteVolumeConcentrationMismatchErrors,standardAmpholyteVolumeNullErrors,
+			standardAmpholyteMatchedlengthsNotCompatibleErrors,standardAmpholyteVolumeConcentrationMismatchErrors,standardAmpholyteVolumeNullErrors,
 			standardAnodicSpacerConcentrationNullErrors,standardAnodicSpacerConcentrationVolumeMismatchErrors,
 			standardAnodicSpacerFalseOptionsSpecifiedErrors,standardAnodicSpacerNullErrors,standardAnodicSpacerVolumeNullErrors,
 			standardCathodicSpacerConcentrationNullErrors,standardCathodicSpacerConcentrationVolumeMismatchErrors,
@@ -2999,8 +3035,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			(* Unresolved options tests*)
 			ampholyteConcentrationNullErrorsInvalidOptions,ampholyteConcentrationNullErrorsTests,
 			ampholyteConcentrationNullInvalidSamples,ampholyteConcentrationNullOptions,
-			ampholyteMatchedlengthsNotCopaceticInvalidOptions,ampholyteMatchedlengthsNotCopaceticInvalidSamples,
-			ampholyteMatchedlengthsNotCopaceticOptions,ampholyteMatchedlengthsNotCopaceticTests,
+			ampholyteMatchedlengthsNotCompatibleInvalidOptions,ampholyteMatchedlengthsNotCompatibleInvalidSamples,
+			ampholyteMatchedlengthsNotCompatibleOptions,ampholyteMatchedlengthsNotCompatibleTests,
 			ampholyteVolumeConcentrationMismatchInvalidOptions,ampholyteVolumeConcentrationMismatchInvalidSamples,
 			ampholyteVolumeConcentrationMismatchOptions,ampholyteVolumeConcentrationMismatchTests,ampholyteVolumeNullInvalidOptions,
 			ampholyteVolumeNullInvalidSamples,ampholyteVolumeNullOptions,ampholyteVolumeNullTests,
@@ -3123,7 +3159,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 					samplePrepModelSamples
 				},
 				{
-					{Packet[Composition]},
+					{Packet[Composition, Container], Packet[Container[{Model, Contents}]]},
 					{Evaluate[Packet[Name, MaxVolume, DefaultStorageCondition, SamplePreparationCacheFields[Model[Container], Format -> Sequence]]]},
 					{Evaluate[Packet[Deprecated, Products, UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, Products, IncompatibleMaterials, SamplePreparationCacheFields[Model[Sample], Format -> Sequence]]]}
 				},
@@ -3446,7 +3482,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 					]
 				}]
 			],
-			(* not doing standards, dont worry about it *)
+			(* not doing standards, don't worry about it *)
 			0
 		];
 
@@ -3552,7 +3588,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 					]
 				}]
 			],
-			(* not doing blanks, dont worry about it *)
+			(* not doing blanks, don't worry about it *)
 			0
 		];
 
@@ -3689,7 +3725,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			resolvedBlanks ,resolvedBlanks
 		};
 
-		(* a list of booleans, so we dont try to expand when no standards or blanks are passed. *)
+		(* a list of booleans, so we don't try to expand when no standards or blanks are passed. *)
 		expandThis ={
 			True, True,
 			resolveIncludeStandards,resolveIncludeStandards,
@@ -3707,7 +3743,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			{blankPIMarkerOptions,blankPIMarkerOptionsTests,blankPIMarkerOptionsPrecisionTests}
 		}=MapThread[
 			Function[{sampleTypeExpandedOptions,parentOption,nestedIndexMatchedOptions, specifiedObjects, includeObjects},
-				(* if we dont have standards and or blanks, just return the options as is and tests should be empty *)
+				(* if we don't have standards and or blanks, just return the options as is and tests should be empty *)
 				If[!includeObjects,
 					{Lookup[sampleTypeExpandedOptions,nestedIndexMatchedOptions], {}, {}},
 					(* otherwise, go ahead and expand if needed *)
@@ -3717,7 +3753,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						 ExpendByLongest is false, otherwise it is True (to allow expanding the parent option based on other options. *)
 						expandByLongest = Not[MemberQ[unresolvedOptionsKeys,parentOption]];
 
-						(* if we expend by anything but the parent option, we will get a warning that's not really useful for the user so be selective about what we quiet too; currently quieting all messages because teh ::Engilsh workaround does not work.. *)
+						(* if we expend by anything but the parent option, we will get a warning that's not really useful for the user so be selective about what we quiet too; currently quieting all messages because the ::Engilsh workaround does not work.. *)
 						messagesToQuiet = If[expandByLongest,
 							{Error::ExpandedNestedIndexLengthMismatch::English,Warning::NestedIndexLengthMismatch::English},
 							{Error::ExpandedNestedIndexLengthMismatch::English}
@@ -3869,11 +3905,11 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			Nothing
 		];
 
-		(* to make sure we dont use an invalid injection table later, keep this boolean *)
+		(* to make sure we don't use an invalid injection table later, keep this boolean *)
 		injectionTableValidQ = !(MatchQ[specifiedInjectionTable,Except[Automatic]]&&MatchQ[specifiedNumberOfReplicates,Except[Null]])&&!Or@@volumeZeroInjectionTableBool;
 
-		(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/standards/blanks *)
-		injectionTableSamplesNotCopaceticQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+		(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/standards/blanks *)
+		injectionTableSamplesNotCompatibleQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 			Not[And[
 				ContainsAll[
 					Cases[specifiedInjectionTable, {Sample,ObjectP[],VolumeP|Automatic}][[All,2]],
@@ -3887,17 +3923,17 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			False
 		];
 
-		injectionTableSampleVolumes = If[Not[injectionTableSamplesNotCopaceticQ]&&injectionTableValidQ,
+		injectionTableSampleVolumes = If[Not[injectionTableSamplesNotCompatibleQ]&&injectionTableValidQ,
 			Switch[specifiedInjectionTable,
 				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Sample,ObjectP[],VolumeP|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[mySamples]]
 			],
-			(* If samples in injection tables dont match samplesIn, dont inform volume, we'll raise an error a bit later *)
+			(* If samples in injection tables don't match samplesIn, don't inform volume, we'll raise an error a bit later *)
 			ToList[Lookup[roundedCapillaryIsoelectricFocusingOptions, SampleVolume]]
 		];
 
 		(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-		there is an error check later, but we want to make sure we dont break the MapThread *)
+		there is an error check later, but we want to make sure we don't break the MapThread *)
 		injectionTableSampleVolumes = If[Length[injectionTableSampleVolumes]!=Length[mySamples],
 			ConstantArray[Automatic, Length[mySamples]],
 			injectionTableSampleVolumes
@@ -3964,7 +4000,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			(* make-ones-own mastermix branch errors *)
 			nullDiluentErrors,
 			noSpecifiedAmpholytesErrors,
-			ampholyteMatchedlengthsNotCopaceticErrors,
+			ampholyteMatchedlengthsNotCompatibleErrors,
 			ampholyteVolumeNullErrors,
 			ampholyteConcentrationNullErrors,
 			ampholyteVolumeConcentrationMismatchErrors,
@@ -4029,7 +4065,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						anodicSpacerConcentrationNullError,anodicSpacerConcentrationVolumeMismatchError,
 						cathodicSpacerFalseOptionsSpecifiedError,cathodicSpacerNullError,noCathodicSpacerIdentifiedError,
 						cathodicSpacerVolumeNullError,cathodicSpacerConcentrationNullError,cathodicSpacerConcentrationVolumeMismatchError,
-						sumOfVolumesOverTotalvolumeError,ampholyteMatchedlengthsNotCopaceticError,imagingMethods,
+						sumOfVolumesOverTotalvolumeError,ampholyteMatchedlengthsNotCompatibleError,imagingMethods,
 						nativeFLExposureTime,imagingMismatchError,voltageDurationStepError
 					},
 					(* Setup error tracking variables *)
@@ -4047,7 +4083,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						premadeMasterMixDiluentNullError,
 						nullDiluentError,
 						noSpecifiedAmpholytesError,
-						ampholyteMatchedlengthsNotCopaceticError,
+						ampholyteMatchedlengthsNotCompatibleError,
 						ampholyteVolumeNullError,
 						ampholyteConcentrationNullError,
 						ampholyteVolumeConcentrationMismatchError,
@@ -4109,7 +4145,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						(* if not informed, pull out composition and resolve volume to reach 0.2 mg/ml in total volume*)
 							Module[{compositionProteins,proteinConcentration,calculatedVolume},
 								(* get only proteins in the composition *)
-								compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]]}];
+								compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]],_}];
 								(* get concentrations and add all proteins in sample. If possible convert to mg/ml based on its unit *)
 								proteinConcentration=If[Length[compositionProteins]==0,
 									(* if no proteins in composition, return Null *)
@@ -4250,7 +4286,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						(* make-ones-own mastermix branch errors *)
 						nullDiluentError,
 						noSpecifiedAmpholytesError,
-						ampholyteMatchedlengthsNotCopaceticError,
+						ampholyteMatchedlengthsNotCompatibleError,
 						ampholyteVolumeNullError,
 						ampholyteConcentrationNullError,
 						ampholyteVolumeConcentrationMismatchError,
@@ -4339,8 +4375,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								False];
 
 							(* resolve diluent *)
-							masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"LCMS Grade Water"];
-							(* if masterMix Diluent is Null but no need to top off to total volume, dont raise an error, otherwise raise an error *)
+							masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"Milli-Q water"];
+							(* if masterMix Diluent is Null but no need to top off to total volume, don't raise an error, otherwise raise an error *)
 							masterMixDiluentNullError=(totalVolume-sampleVolume-masterMixVolume)>0Microliter&&MatchQ[masterMixDiluent,Null];
 
 							(* Gather all resolved options and errors to return *)
@@ -4367,7 +4403,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								Lookup[myMapThreadOptions,ElectroosmoticFlowBlocker]/.Automatic:>Null,
 								Lookup[myMapThreadOptions,ElectroosmoticFlowBlockerTargetConcentrations]/.Automatic:>Null,
 								Lookup[myMapThreadOptions,ElectroosmoticFlowBlockerVolume]/.Automatic:>Null,
-								Lookup[myMapThreadOptions,Denature]/.Automatic:>Null,
+								Lookup[myMapThreadOptions,Denature]/.Automatic:>False,
 								Lookup[myMapThreadOptions,DenaturationReagent]/.Automatic:>Null,
 								Lookup[myMapThreadOptions,DenaturationReagentTargetConcentration]/.Automatic:>Null,
 								Lookup[myMapThreadOptions,DenaturationReagentVolume]/.Automatic:>Null,
@@ -4382,7 +4418,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(* Other branch's errors as False *)
 								False,(* nullDiluentQ *)
 								False, (* NoSpecifiedAmpholytesQ *)
-								False, (* ampholyteMatchedlengthsNotCopaceticQ *)
+								False, (* ampholyteMatchedlengthsNotCompatibleQ *)
 								False, (* ampholyteVolumeNullQ *)
 								False, (* ampholyteConcentrationNullQ *)
 								False, (* ampholyteVolumeConcentrationMismatchQ *)
@@ -4429,7 +4465,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								resolveIncludeAnodicSpacer,resolveAnodicSpacer,resolveAnodicSpacerTargetConcentration,resolveAnodicSpacerVolume,
 								resolveIncludeCathodicSpacer,resolveCathodicSpacer,resolveCathodicSpacerTargetConcentration,resolveCathodicSpacerVolume,
 								NoSpecifiedAmpholytesQ, volumeLeft, nullDiluentQ,sumOfVolumesOverTotalvolumeQ,ampholyteVolumeNullQ,ampholyteConcentrationNullQ,
-								ampholyteMatchedlengthsNotCopaceticQ,ampholyteVolumeConcentrationMismatchQ,NoSpecifiedIsoelectricPointMarkersQ,
+								ampholyteMatchedlengthsNotCompatibleQ,ampholyteVolumeConcentrationMismatchQ,NoSpecifiedIsoelectricPointMarkersQ,
 								resolverCantFixIsoelectricPointMarkersMismatchQ,isoelectricPointMarkersVolumeNullQ,isoelectricPointMarkersConcentrationNullQ,
 								isoelectricPointMarkersVolumeConcentrationMismatchQ,pIMarkerVolume,pIMarkerConcentration,
 								electroosmoticFlowBlockerNullQ,electroosmoticFlowBlockerAgentIdentity,noElectroosmoticFlowBlockerAgentIdentifiedQ,
@@ -4463,11 +4499,11 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 							NoSpecifiedAmpholytesQ =Or@@(NullQ[#]& /@ resolveAmpholytes);
 
 							(* resolve ampholyte volume and concentration *)
-							(* to make sure teh length of items is the same, given a situation where volume or concentration, or both are Automatic and ampholytes or any other is not *)
+							(* to make sure the length of items is the same, given a situation where volume or concentration, or both are Automatic and ampholytes or any other is not *)
 							lengthToMatch = Length[resolveAmpholytes];
 
-							(* check that lengths are copacetic *)
-							ampholyteMatchedlengthsNotCopaceticQ =
+							(* check that lengths are compatible *)
+							ampholyteMatchedlengthsNotCompatibleQ =
 								Or@@((Length[#] != lengthToMatch)& /@ {Lookup[myMapThreadOptions,AmpholyteVolume]/. {{Automatic} :> ConstantArray[Automatic, lengthToMatch]},
 									Lookup[myMapThreadOptions,AmpholyteTargetConcentrations]/. {{Automatic} :> ConstantArray[Automatic, lengthToMatch]}});
 
@@ -4476,11 +4512,11 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								resolveAmpholyteTargetConcentrations,
 								ampholyteVolumeNullQ,
 								ampholyteConcentrationNullQ
-							} = If[Not[ampholyteMatchedlengthsNotCopaceticQ],
+							} = If[Not[ampholyteMatchedlengthsNotCompatibleQ],
 								Transpose@MapThread[
 								Function[{volume, concentration},
 									Switch[volume,
-										(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+										(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 										Null,
 										{Null, concentration /. Automatic :>(4VolumePercent/lengthToMatch), True, False},
 										VolumeP,
@@ -4513,7 +4549,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 							];
 
 							(* If volume and concentration are not in agreement, raise an error*)
-							ampholyteVolumeConcentrationMismatchQ=If[Not[ampholyteMatchedlengthsNotCopaceticQ],
+							ampholyteVolumeConcentrationMismatchQ=If[Not[ampholyteMatchedlengthsNotCompatibleQ],
 								MapThread[
 									Function[{volume, concentration},
 										If[!NullQ[volume]&& !NullQ[concentration],
@@ -4527,7 +4563,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 							resolveAmpholyteStorageCondition = Which[
 								Length[ToList[Lookup[myMapThreadOptions,AmpholytesStorageCondition]]]>lengthToMatch,
-								(* in the rare case where more conditions are given than storage conditions, might be the result of expansion, so grab the first and populate for all - its a crappy solution, but works *)
+								(* in the rare case where more conditions are given than storage conditions, might be the result of expansion, so grab the first and populate for all - its a bad solution, but works *)
 								Lookup[myMapThreadOptions,AmpholytesStorageCondition]/.{Automatic|{Automatic..} :> ConstantArray[Null, lengthToMatch],storage:SampleStorageTypeP|{SampleStorageTypeP..}:>  ConstantArray[First[storage], lengthToMatch]},
 								Length[ToList[Lookup[myMapThreadOptions,AmpholytesStorageCondition]]]==1,
 								Lookup[myMapThreadOptions,AmpholytesStorageCondition]/.{Automatic|{Automatic..} :> ConstantArray[Null, lengthToMatch],storage:SampleStorageTypeP|{SampleStorageTypeP}:>  ConstantArray[First[ToList[storage]], lengthToMatch]},
@@ -4601,7 +4637,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 											],
 											pIMarkerCompositionIDs];
 
-										(* pick out cases where the second index in teh list is not null *)
+										(* pick out cases where the second index in the list is not null *)
 										Cases[identifypIMarker,{ObjectP[],_,Except[NullP]}]
 									]],
 									resolveIsoelectricPointMarkers
@@ -4626,7 +4662,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 							];
 
 								(* resolve isoelectricPointMarkers volume and concentration *)
-							(* at this point, we know that the lengths are all the same (we expanded them based on that notion, so we can mapthread to resolve each one seperately *)
+							(* at this point, we know that the lengths are all the same (we expanded them based on that notion, so we can mapthread to resolve each one separately *)
 							{
 								resolveIsoelectricPointMarkersVolume,
 								resolveIsoelectricPointMarkersTargetConcentrations,
@@ -4638,7 +4674,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 									Transpose@MapThread[
 										Function[{volume, concentration, reagentConcentration},
 											Switch[volume,
-												(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+												(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 												Null,
 												{Null, concentration /. Automatic :>1VolumePercent, True, False},
 												VolumeP,
@@ -4741,7 +4777,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										],
 										electroosmoticFlowBlockerAgentCompositionIDs];
 
-									(* pick out cases where the second index in teh list is not null *)
+									(* pick out cases where the second index in the list is not null *)
 									Cases[identifyElectroosmoticFlowBlockerAgent,{ObjectP[],_,Except[NullP]}]
 								],
 								{}];
@@ -4766,7 +4802,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								electroosmoticFlowBlockerConcentrationNullQ
 							}=If[!electroosmoticFlowBlockerNullQ,
 									Switch[eofBlockerVolume,
-										(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+										(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 										Null,
 										{Null, eofBlockerConcentration /. Automatic :>0.35MassPercent, True, False},
 										VolumeP,
@@ -4874,7 +4910,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										],
 										denaturationReagentAgentCompositionIDs];
 
-									(* pick out cases where the second index in teh list is not null *)
+									(* pick out cases where the second index in the list is not null *)
 									Cases[identifyDenaturationAgent,{ObjectP[],_,Except[NullP]}]
 								],
 								{}
@@ -4935,7 +4971,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								denaturationReagentConcentrationNullQ
 							}=If[resolveDenature&&!denaturationReagentNullQ,
            						Switch[denatureVolume,
-									(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+									(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 									Null,
 									{Null, denatureConcentration /. Automatic :>targetConcentrationByDenaturationReagent, True, False},
 									VolumeP,
@@ -5059,7 +5095,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										],
 										anodicSpacerAgentCompositionIDs];
 
-									(* pick out cases where the second index in teh list is not null *)
+									(* pick out cases where the second index in the list is not null *)
 									Cases[identifyAnodicSpacer,{ObjectP[],_,Except[NullP]}]
 								],
 								{}
@@ -5096,7 +5132,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								anodicSpacerConcentrationNullQ
 							}=If[resolveIncludeAnodicSpacer,
            						Switch[anodicVolume,
-									(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+									(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 									Null,
 									{Null, anodicConcentration /. Automatic :>targetConcentrationByAnodicSpacer, True, False},
 									VolumeP,
@@ -5196,7 +5232,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										],
 										cathodicSpacerAgentCompositionIDs];
 
-									(* pick out cases where the second index in teh list is not null *)
+									(* pick out cases where the second index in the list is not null *)
 									Cases[identifyCathodicSpacer,{ObjectP[],_,Except[NullP]}]
 								],
 								{}
@@ -5233,7 +5269,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								cathodicSpacerConcentrationNullQ
 							}=If[resolveIncludeCathodicSpacer,
 								Switch[cathodicVolume,
-									(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+									(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 									Null,
 									{Null, cathodicConcentration /. Automatic :>targetConcentrationByCathodicSpacer, True, False},
 									VolumeP,
@@ -5288,8 +5324,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(* sum of volumes is less than totalVolume, check if there's a diluent defines, if not raise error *)
 								volumeLeft > 0Microliter,
 								{
-									Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "LCMS Grade Water"],
-									NullQ[Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "LCMS Grade Water"]],
+									Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "id:8qZ1VWNmdLBD"], (* Model[Sample, "Milli-Q water"] *)
+									NullQ[Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "id:8qZ1VWNmdLBD"]], (* Model[Sample, "Milli-Q water"] *)
 									False
 								},
 								volumeLeft < 0Microliter,
@@ -5341,7 +5377,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(* make-your-own mix branch's errors - remember to add Or@@ on error checking from nested indexMatched options *)
 								nullDiluentQ,
 								NoSpecifiedAmpholytesQ,
-								Or@@ampholyteMatchedlengthsNotCopaceticQ,
+								Or@@ampholyteMatchedlengthsNotCompatibleQ,
 								Or@@ampholyteVolumeNullQ,
 								Or@@ampholyteConcentrationNullQ,
 								Or@@ampholyteVolumeConcentrationMismatchQ,
@@ -5434,7 +5470,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 						(* make-ones-own mastermix branch errors *)
 						nullDiluentError,
 						noSpecifiedAmpholytesError,
-						ampholyteMatchedlengthsNotCopaceticError,
+						ampholyteMatchedlengthsNotCompatibleError,
 						ampholyteVolumeNullError,
 						ampholyteConcentrationNullError,
 						ampholyteVolumeConcentrationMismatchError,
@@ -5472,13 +5508,13 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 					}
 				]
 			],
-			(* we are passing teh sample packets and options, as well as the injection table volumes directly to the mapthread to handle sampleVolume resolution in the right sample order *)
+			(* we are passing the sample packets and options, as well as the injection table volumes directly to the mapthread to handle sampleVolume resolution in the right sample order *)
 			{samplePackets,mapThreadFriendlyOptions, roundedInjectionTableSampleVolumes}
 		]];
 
 		(* We've already resolved standards and blanks for the most part, but need to prepare them for their own mapThread *)
-		(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/standards/blanks *)
-		injectionTableStandardNotCopaceticQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+		(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/standards/blanks *)
+		injectionTableStandardNotCompatibleQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 			Not[Or[
 				MatchQ[resolvedStandards,Null|Automatic|{Automatic..}],
 				And[
@@ -5495,17 +5531,17 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		];
 
 		(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
-		injectionTableStandardVolumes =If[Not[injectionTableStandardNotCopaceticQ],
+		injectionTableStandardVolumes =If[Not[injectionTableStandardNotCompatibleQ],
 			Switch[specifiedInjectionTable,
 				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Standard,ObjectP[],VolumeP|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[resolvedStandards]]
 			],
-			(* If samples in injection tables dont match Standard, dont inform volume, we'll raise an error a bit later *)
+			(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
 			ToList[Lookup[roundedCapillaryIsoelectricFocusingOptions, StandardVolume]]
 		];
 
 		(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-	there is an error check later, but we want to make sure we dont break the MapThread *)
+	there is an error check later, but we want to make sure we don't break the MapThread *)
 		lengthCorrectedInjectionTableStandardVolumes = If[Length[injectionTableStandardVolumes]!=Length[resolvedStandards],
 			ConstantArray[Automatic, Length[resolvedStandards]],
 			injectionTableStandardVolumes
@@ -5530,9 +5566,9 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			renamedStandardOptionSet
 		];
 
-		(* Informing volumes from the injection table runs the risk of it not being copacetic with specified samples/standards/blanks *)
-		(* to avoid this breaking the mapthread, make sure blanks are copacetic, and if not, inform volume from sampleVolume *)
-		injectionTableBlankNotCopaceticQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
+		(* Informing volumes from the injection table runs the risk of it not being compatible with specified samples/standards/blanks *)
+		(* to avoid this breaking the mapthread, make sure blanks are compatible, and if not, inform volume from sampleVolume *)
+		injectionTableBlankNotCompatibleQ = If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 			Not[Or[
 				MatchQ[resolvedBlanks,Null|Automatic|{Automatic..}],
 				And[
@@ -5549,17 +5585,17 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		];
 
 		(* if there is a user specified an injection table, and if they did, grab volumes to pass to the mapthread  *)
-		injectionTableBlankVolumes =If[Not[injectionTableBlankNotCopaceticQ],
+		injectionTableBlankVolumes =If[Not[injectionTableBlankNotCompatibleQ],
 			Switch[specifiedInjectionTable,
 				{{_,ObjectP[],VolumeP|Automatic}..}, Cases[specifiedInjectionTable, {Blank,ObjectP[],VolumeP|Automatic}][[All,3]],
 				Automatic, ConstantArray[Automatic, Length[resolvedBlanks]]
 			],
-			(* If samples in injection tables dont match Standard, dont inform volume, we'll raise an error a bit later *)
+			(* If samples in injection tables don't match Standard, don't inform volume, we'll raise an error a bit later *)
 			ToList[Lookup[roundedCapillaryIsoelectricFocusingOptions, BlankVolume]]
 		];
 
 		(* we need to account for a situation where the injection table is not in agreement with samplesIn and options.
-		there is an error check later, but we want to make sure we dont break the MapThread *)
+		there is an error check later, but we want to make sure we don't break the MapThread *)
 		lengthCorrectedInjectionTableBlankVolumes = If[Length[injectionTableBlankVolumes]!=Length[resolvedBlanks],
 			ConstantArray[Automatic, Length[resolvedBlanks]],
 			injectionTableBlankVolumes
@@ -5646,7 +5682,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 				(* make-ones-own mastermix branch errors *)
 				standardNullDiluentErrors,
 				standardNoSpecifiedAmpholytesErrors,
-				standardAmpholyteMatchedlengthsNotCopaceticErrors,
+				standardAmpholyteMatchedlengthsNotCompatibleErrors,
 				standardAmpholyteVolumeNullErrors,
 				standardAmpholyteConcentrationNullErrors,
 				standardAmpholyteVolumeConcentrationMismatchErrors,
@@ -5741,7 +5777,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 				(* make-ones-own mastermix branch errors *)
 				blankNullDiluentErrors,
 				blankNoSpecifiedAmpholytesErrors,
-				blankAmpholyteMatchedlengthsNotCopaceticErrors,
+				blankAmpholyteMatchedlengthsNotCompatibleErrors,
 				blankAmpholyteVolumeNullErrors,
 				blankAmpholyteConcentrationNullErrors,
 				blankAmpholyteVolumeConcentrationMismatchErrors,
@@ -5817,7 +5853,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 							Lookup[mapThreadFriendlyOptionsLocal,ElectroosmoticFlowBlockerVolume]/.Automatic:>Null,
 							Lookup[mapThreadFriendlyOptionsLocal,AmpholytesStorageCondition]/.Automatic:>Null,
 							Lookup[mapThreadFriendlyOptionsLocal,IsoelectricPointMarkersStorageCondition]/.Automatic:>Null,
-							Lookup[mapThreadFriendlyOptionsLocal,Denature]/.Automatic:>Null,
+							Lookup[mapThreadFriendlyOptionsLocal,Denature]/.Automatic:>False,
 							Lookup[mapThreadFriendlyOptionsLocal,DenaturationReagent]/.Automatic:>Null,
 							Lookup[mapThreadFriendlyOptionsLocal,DenaturationReagentTargetConcentration]/.Automatic:>Null,
 							Lookup[mapThreadFriendlyOptionsLocal,DenaturationReagentVolume]/.Automatic:>Null,
@@ -5862,7 +5898,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								anodicSpacerConcentrationNullError,anodicSpacerConcentrationVolumeMismatchError,cathodicSpacerFalseOptionsSpecifiedError,
 								cathodicSpacerNullError,noCathodicSpacerIdentifiedError,cathodicSpacerVolumeNullError,cathodicSpacerConcentrationNullError,
 								cathodicSpacerConcentrationVolumeMismatchError,sumOfVolumesOverTotalvolumeError,loadTime,loadTimeNullError,
-								voltageDurationProfile,imagingMethods,nativeFluorescenceExposureTime,ampholyteMatchedlengthsNotCopaceticError,
+								voltageDurationProfile,imagingMethods,nativeFluorescenceExposureTime,ampholyteMatchedlengthsNotCompatibleError,
 								premadeMasterMixReagent,ampholyteStorageCondition,isoelectricPointMarkerStorageCondition,imagingMismatchError,voltageDurationStepError
 							},
 							(* Setup error tracking variables *)
@@ -5883,7 +5919,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								premadeMasterMixDiluentNullError,
 								nullDiluentError,
 								noSpecifiedAmpholytesError,
-								ampholyteMatchedlengthsNotCopaceticError,
+								ampholyteMatchedlengthsNotCompatibleError,
 								ampholyteVolumeNullError,
 								ampholyteConcentrationNullError,
 								ampholyteVolumeConcentrationMismatchError,
@@ -5950,7 +5986,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(* if not informed, pull out composition and resolve volume to reach 0.2 mg/ml in total volume*)
 									Module[{compositionProteins,proteinConcentration,calculatedVolume},
 										(* get only proteins in the composition *)
-										compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]]}];
+										compositionProteins=Cases[Lookup[mySample,Composition],{_,ObjectP[Model[Molecule,Protein]], _}];
 										(* get concentrations and add all proteins in sample. If possible convert to mg/ml based on its unit *)
 										proteinConcentration=If[Length[compositionProteins]==0,
 											(* if no proteins in composition, return Null *)
@@ -6126,7 +6162,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(*36*)(* make-ones-own mastermix branch errors *)
 								(*37*)nullDiluentError,
 								(*38*)noSpecifiedAmpholytesError,
-								(*39*)ampholyteMatchedlengthsNotCopaceticError,
+								(*39*)ampholyteMatchedlengthsNotCompatibleError,
 								(*40*)ampholyteVolumeNullError,
 								(*41*)ampholyteConcentrationNullError,
 								(*42*)ampholyteVolumeConcentrationMismatchError,
@@ -6218,8 +6254,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										False];
 
 									(* resolve diluent *)
-									masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"LCMS Grade Water"];
-									(* if masterMix Diluent is Null but no need to top off to total volume, dont raise an error, otherwise raise an error *)
+									masterMixDiluent=Lookup[myMapThreadOptions,PremadeMasterMixDiluent]/.Automatic:>Model[Sample,"Milli-Q water"];
+									(* if masterMix Diluent is Null but no need to top off to total volume, don't raise an error, otherwise raise an error *)
 									masterMixDiluentNullError=(totalVolume-sampleVolume-masterMixVolume)>0Microliter&&MatchQ[masterMixDiluent,Null];
 
 									(* Gather all resolved options and errors to return *)
@@ -6262,7 +6298,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										(*34*)(* Other branch's errors as False *)
 										(*35*)False,(* nullDiluentQ *)
 										(*36*)False, (* NoSpecifiedAmpholytesQ *)
-										(*37*)False, (* ampholyteMatchedlengthsNotCopaceticQ *)
+										(*37*)False, (* ampholyteMatchedlengthsNotCompatibleQ *)
 										(*38*)False, (* ampholyteVolumeNullQ *)
 										(*39*)False, (* ampholyteConcentrationNullQ *)
 										(*40*)False, (* ampholyteVolumeConcentrationMismatchQ *)
@@ -6309,7 +6345,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										resolveIncludeAnodicSpacer,resolveAnodicSpacer,resolveAnodicSpacerTargetConcentration,resolveAnodicSpacerVolume,
 										resolveIncludeCathodicSpacer,resolveCathodicSpacer,resolveCathodicSpacerTargetConcentration,resolveCathodicSpacerVolume,
 										NoSpecifiedAmpholytesQ, volumeLeft, nullDiluentQ,sumOfVolumesOverTotalvolumeQ,ampholyteVolumeNullQ,ampholyteConcentrationNullQ,
-										ampholyteMatchedlengthsNotCopaceticQ,ampholyteVolumeConcentrationMismatchQ,NoSpecifiedIsoelectricPointMarkersQ,
+										ampholyteMatchedlengthsNotCompatibleQ,ampholyteVolumeConcentrationMismatchQ,NoSpecifiedIsoelectricPointMarkersQ,
 										resolverCantFixIsoelectricPointMarkersMismatchQ,isoelectricPointMarkersVolumeNullQ,
 										isoelectricPointMarkersConcentrationNullQ,isoelectricPointMarkersVolumeConcentrationMismatchQ,
 										pIMarkerVolume,pIMarkerConcentration,electroosmoticFlowBlockerNullQ,
@@ -6344,11 +6380,11 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 									NoSpecifiedAmpholytesQ =Or@@(NullQ[#]& /@ resolveAmpholytes);
 
 									(* resolve ampholyte volume and concentration *)
-									(* to make sure teh length of items is the same, given a situation where volume or concentration, or both are Automatic and ampholytes or any other is not *)
+									(* to make sure the length of items is the same, given a situation where volume or concentration, or both are Automatic and ampholytes or any other is not *)
 									lengthToMatch = Length[resolveAmpholytes];
 
-									(* check that lengths are copacetic *)
-									ampholyteMatchedlengthsNotCopaceticQ =
+									(* check that lengths are compatible *)
+									ampholyteMatchedlengthsNotCompatibleQ =
 										Or@@((Length[ToList[#]] != lengthToMatch)& /@ {Lookup[myMapThreadOptions,AmpholyteVolume]/. {{Automatic}:> ConstantArray[Automatic, lengthToMatch]},
 											Lookup[myMapThreadOptions,AmpholyteTargetConcentrations]/. {{Automatic} :> ConstantArray[Automatic, lengthToMatch]}});
 
@@ -6357,11 +6393,11 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										resolveAmpholyteTargetConcentration,
 										ampholyteVolumeNullQ,
 										ampholyteConcentrationNullQ
-									} = If[Not[ampholyteMatchedlengthsNotCopaceticQ],
+									} = If[Not[ampholyteMatchedlengthsNotCompatibleQ],
 										Transpose@MapThread[
 											Function[{volume, concentration},
 												Switch[volume,
-													(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+													(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 													Null,
 													{Null, concentration /. Automatic :>(4VolumePercent/lengthToMatch), True, False},
 													VolumeP,
@@ -6394,7 +6430,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 									];
 
 									(* If volume and concentration are not in agreement, raise an error*)
-									ampholyteVolumeConcentrationMismatchQ=If[Not[ampholyteMatchedlengthsNotCopaceticQ],
+									ampholyteVolumeConcentrationMismatchQ=If[Not[ampholyteMatchedlengthsNotCompatibleQ],
              							MapThread[
 											Function[{volume, concentration},
 												If[!NullQ[volume]&& !NullQ[concentration],
@@ -6482,7 +6518,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 													],
 													pIMarkerCompositionIDs];
 
-												(* pick out cases where the second index in teh list is not null *)
+												(* pick out cases where the second index in the list is not null *)
 												Cases[identifypIMarker,{ObjectP[],_,Except[NullP]}]
 											]],
 											resolveIsoelectricPointMarkers
@@ -6507,7 +6543,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 									];
 
 									(* resolve isoelectricPointMarkers volume and concentration *)
-									(* at this point, we know that the lengths are all the same (we expanded them based on that notion, so we can mapthread to resolve each one seperately *)
+									(* at this point, we know that the lengths are all the same (we expanded them based on that notion, so we can mapthread to resolve each one separately *)
 									{
 										resolveIsoelectricPointMarkersVolume,
 										resolveIsoelectricPointMarkersTargetConcentrations,
@@ -6519,7 +6555,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										Transpose@MapThread[
 											Function[{volume, concentration, reagentConcentration},
 												Switch[volume,
-													(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+													(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 													Null,
 													{Null, concentration /. Automatic :>1VolumePercent, True, False},
 													VolumeP,
@@ -6621,7 +6657,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 												],
 												electroosmoticFlowBlockerAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyElectroosmoticFlowBlockerAgent,{ObjectP[],_,Except[NullP]}]
 										],
 										{}];
@@ -6646,7 +6682,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										electroosmoticFlowBlockerConcentrationNullQ
 									}=If[!electroosmoticFlowBlockerNullQ,
 										Switch[eofBlockerVolume,
-											(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+											(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 											Null,
 											{Null, eofBlockerConcentration /. Automatic :>0.35MassPercent, True, False},
 											VolumeP,
@@ -6758,7 +6794,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 												],
 												denaturationReagentAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyDenaturationAgent,{ObjectP[],_,Except[NullP]}]
 										],
 										{}
@@ -6819,7 +6855,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										denaturationReagentConcentrationNullQ
 									}=If[resolveDenature&&!denaturationReagentNullQ,
 										Switch[denatureVolume,
-											(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+											(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 											Null,
 											{Null, denatureConcentration /. Automatic :>targetConcentrationByDenaturationReagent, True, False},
 											VolumeP,
@@ -6943,7 +6979,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 												],
 												anodicSpacerAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyAnodicSpacer,{ObjectP[],_,Except[NullP]}]
 										],
 										{}
@@ -6980,7 +7016,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										anodicSpacerConcentrationNullQ
 									}=If[resolveIncludeAnodicSpacer,
 										Switch[anodicVolume,
-											(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+											(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 											Null,
 											{Null, anodicConcentration /. Automatic :>targetConcentrationByAnodicSpacer, True, False},
 											VolumeP,
@@ -7080,7 +7116,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 												],
 												cathodicSpacerAgentCompositionIDs];
 
-											(* pick out cases where the second index in teh list is not null *)
+											(* pick out cases where the second index in the list is not null *)
 											Cases[identifyCathodicSpacer,{ObjectP[],_,Except[NullP]}]
 										],
 										{}
@@ -7117,7 +7153,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										cathodicSpacerConcentrationNullQ
 									}=If[resolveIncludeCathodicSpacer,
 										Switch[cathodicVolume,
-											(* if volume is defined, return it and whatever the concentration is (we'll check that they are copacetic in a bit *)
+											(* if volume is defined, return it and whatever the concentration is (we'll check that they are compatible in a bit *)
 											Null,
 											{Null, cathodicConcentration /. Automatic :>targetConcentrationByCathodicSpacer, True, False},
 											VolumeP,
@@ -7172,8 +7208,8 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										(* sum of volumes is less than totalVolume, check if there's a diluent defines, if not raise error *)
 										volumeLeft > 0Microliter,
 										{
-											Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "LCMS Grade Water"],
-											NullQ[Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "LCMS Grade Water"]],
+											Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "id:8qZ1VWNmdLBD"], (* Model[Sample, "Milli-Q water"] *)
+											NullQ[Lookup[myMapThreadOptions,Diluent]/.Automatic:>Model[Sample, "id:8qZ1VWNmdLBD"]], (* Model[Sample, "Milli-Q water"] *)
 											False
 										},
 										volumeLeft < 0Microliter,
@@ -7226,7 +7262,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 										(* make-your-own mix branch's errors - remember to add Or@@ on error checking from nested indexMatched options *)
 										nullDiluentQ,
 										NoSpecifiedAmpholytesQ,
-										Or@@ampholyteMatchedlengthsNotCopaceticQ,
+										Or@@ampholyteMatchedlengthsNotCompatibleQ,
 										Or@@ampholyteVolumeNullQ,
 										Or@@ampholyteConcentrationNullQ,
 										Or@@ampholyteVolumeConcentrationMismatchQ,
@@ -7325,7 +7361,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 								(* make-ones-own mastermix branch errors *)
 								nullDiluentError,
 								noSpecifiedAmpholytesError,
-								ampholyteMatchedlengthsNotCopaceticError,
+								ampholyteMatchedlengthsNotCompatibleError,
 								ampholyteVolumeNullError,
 								ampholyteConcentrationNullError,
 								ampholyteVolumeConcentrationMismatchError,
@@ -7379,13 +7415,13 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 		(* resolve InjectionTable *)
 		(* If there is a user specified injection table, check if there is agreement between samples on the injection list and in options,
-		if not, dont bother trying to populate volumes, we're raising an error a bit later *)
+		if not, don't bother trying to populate volumes, we're raising an error a bit later *)
 
 		injectionTableContainsAllQ=If[MatchQ[specifiedInjectionTable,Except[Automatic]],
 			Not[Or@@{
-				injectionTableSamplesNotCopaceticQ,
-				injectionTableStandardNotCopaceticQ,
-				injectionTableBlankNotCopaceticQ
+				injectionTableSamplesNotCompatibleQ,
+				injectionTableStandardNotCompatibleQ,
+				injectionTableBlankNotCompatibleQ
 			}],
 			True
 		];
@@ -7394,7 +7430,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		(* The injection table is a little tricky since we need to figure out if we need to aliquot and consolidate aliquots *)
 		(* Resolve RequiredAliquotContainers *)
 		(* targetContainers is in the form {(Null|ObjectP[Model[Container]])..} and is index-matched to simulatedSamples. *)
-		(* samples will be transferred to a 96 well plate anyways, so we dont need to worry about it here too much, unless they are in a container that's not liquid handler compatible *)
+		(* samples will be transferred to a 96 well plate anyways, so we don't need to worry about it here too much, unless they are in a container that's not liquid handler compatible *)
 		hamiltonCompatibleContainers=Experiment`Private`compatibleSampleManipulationContainers[MicroLiquidHandling];
 
 		(* When you do not want an aliquot to happen for the corresponding simulated sample, make the corresponding index of targetContainers Null. *)
@@ -7460,7 +7496,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 					ToList[resolvedStandardFrequency/.Null:>1],1]
 				],
 			(* If there is a user specified injection table, check if there is agreement between samples on the injection
-			list and in options, if not, dont bother trying to populate volumes *)
+			list and in options, if not, don't bother trying to populate volumes *)
 			(* if an injection table has been specified, we still need to make sure it has all the right volumes. *)
 			(* But first we need to populate the sampleIndex, we can do this by their order *)
 			Module[{indexedInjectionTable,sampleInjectionPositions,updatedSampleTuples,
@@ -7564,10 +7600,10 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		usesLeftOnCartridge=Switch[Lookup[cartridgePacket,Object],
 			(* if object, grab numberOfUses *)
 			ObjectP[Object[Container,ProteinCapillaryElectrophoresisCartridge]],
-			(Lookup[cartridgeModelPacket,MaxNumberOfUses,200])-(Lookup[cartridgePacket,NumberOfUses,0]),
+			(Lookup[cartridgeModelPacket,MaxNumberOfUses,100])-(Lookup[cartridgePacket,NumberOfUses,0]),
 			(* if Model, grab MaxNumberOfUses *)
 			ObjectP[Model[Container,ProteinCapillaryElectrophoresisCartridge]],
-			Lookup[cartridgeModelPacket,MaxNumberOfUses,200]
+			Lookup[cartridgeModelPacket,MaxNumberOfUses,100]
 		];
 
 		notEnoughUsesLeftQ = usesLeftOnCartridge<Length[resolvedInjectionTable];
@@ -7600,6 +7636,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		];
 
 		(* make sure not to raise both this warning and the previous error *)
+		(* Note: Currently our cartridge models all have the same OptimalMaxInjections as MaxNumberOfUses *)
 		notEnoughOptimalUsesLeftOption=If[optimalUsesLeftOnCartridge<Length[resolvedInjectionTable]&&!engineQ&&!notEnoughUsesLeftQ&&!sampleCountQ,
 			(
 				Message[Warning::NotEnoughOptimalUsesLeftOnCIEFCartridge,ObjectToString[Lookup[cartridgePacket,Object],Cache->inheritedCache],optimalUsesLeftOnCartridge];
@@ -8415,7 +8452,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the non-passing inputs *)
 				failingSampleTests=If[Length[failingSamples]>0,
-					Test["For the provided samples "<>failingString<>",the set imaging methods are copacetic with the native fluorescence imaging times:",
+					Test["For the provided samples "<>failingString<>",the set imaging methods are compatible with the native fluorescence imaging times:",
 						False,
 						True
 					],
@@ -8424,7 +8461,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the passing inputs *)
 				passingSampleTests=If[Length[passingSamples]>0,
-					Test["For the provided samples "<>passingString<>",the set imaging methods are copacetic with the native fluorescence imaging times:",
+					Test["For the provided samples "<>passingString<>",the set imaging methods are compatible with the native fluorescence imaging times:",
 						True,
 						True
 					],
@@ -8582,7 +8619,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the non-passing inputs *)
 				failingSampleTests=If[Length[failingSamples]>0,
-					Test["For the provided samples "<>failingString<>",PremadeMasterMix is copacetic with its options: ",
+					Test["For the provided samples "<>failingString<>",PremadeMasterMix is compatible with its options: ",
 						False,
 						True
 					],
@@ -8591,7 +8628,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the passing inputs *)
 				passingSampleTests=If[Length[passingSamples]>0,
-					Test["For the provided samples "<>passingString<>",PremadeMasterMix is copacetic with its options: ",
+					Test["For the provided samples "<>passingString<>",PremadeMasterMix is compatible with its options: ",
 						True,
 						True
 					],
@@ -8908,7 +8945,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the non-passing inputs *)
 				failingSampleTests=If[Length[failingSamples]>0,
-					Test["For the provided samples "<>failingString<>",MasterMix Volume and Dilution Factor are copacetic:",
+					Test["For the provided samples "<>failingString<>",MasterMix Volume and Dilution Factor are compatible:",
 						False,
 						True
 					],
@@ -8917,7 +8954,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the passing inputs *)
 				passingSampleTests=If[Length[passingSamples]>0,
-					Test["For the provided samples "<>passingString<>",MasterMix Volume and Dilution Factor are copacetic:",
+					Test["For the provided samples "<>passingString<>",MasterMix Volume and Dilution Factor are compatible:",
 						True,
 						True
 					],
@@ -9248,62 +9285,62 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			]
 		];
 
-		(* ampholyteMatchedlengthsNotCopaceticErrors *)
-		ampholyteMatchedlengthsNotCopaceticOptions = PickList[
+		(* ampholyteMatchedlengthsNotCompatibleErrors *)
+		ampholyteMatchedlengthsNotCompatibleOptions = PickList[
 			{
 				{Ampholytes,AmpholyteTargetConcentrations,AmpholyteVolume},
 				{StandardAmpholytes,StandardAmpholyteTargetConcentrations,StandardAmpholyteVolume},
 				{BlankAmpholytes,BlankAmpholyteTargetConcentrations,BlankAmpholyteVolume}
 			},
 			{
-				Or@@ampholyteMatchedlengthsNotCopaceticErrors,
-				Or@@standardAmpholyteMatchedlengthsNotCopaceticErrors,
-				Or@@blankAmpholyteMatchedlengthsNotCopaceticErrors
+				Or@@ampholyteMatchedlengthsNotCompatibleErrors,
+				Or@@standardAmpholyteMatchedlengthsNotCompatibleErrors,
+				Or@@blankAmpholyteMatchedlengthsNotCompatibleErrors
 			}
 		];
 
-		ampholyteMatchedlengthsNotCopaceticInvalidSamples =combineObjectStrings[{
-			ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache],
-			ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache],
-			ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache]
+		ampholyteMatchedlengthsNotCompatibleInvalidSamples =combineObjectStrings[{
+			ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache],
+			ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache],
+			ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache]
 		}];
 
-		ampholyteMatchedlengthsNotCopaceticInvalidOptions=If[Length[ampholyteMatchedlengthsNotCopaceticOptions]>0&&messages,
+		ampholyteMatchedlengthsNotCompatibleInvalidOptions=If[Length[ampholyteMatchedlengthsNotCompatibleOptions]>0&&messages,
 			(
-				Message[Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic,ampholyteMatchedlengthsNotCopaceticInvalidSamples];
-				ampholyteMatchedlengthsNotCopaceticOptions
+				Message[Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible,ampholyteMatchedlengthsNotCompatibleInvalidSamples];
+				ampholyteMatchedlengthsNotCompatibleOptions
 			),
 			{}
 		];
 
-		ampholyteMatchedlengthsNotCopaceticTests=If[gatherTests,
+		ampholyteMatchedlengthsNotCompatibleTests=If[gatherTests,
 			Module[{failingSamples,passingSamples,failingSampleTests,passingSampleTests,failingString,
 				passingString},
 
 				(* get the inputs that fail this test *)
 				failingSamples=Join[
-					PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCopaceticErrors]],
-					PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCopaceticErrors]],
-					PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCopaceticErrors]]
+					PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCompatibleErrors]],
+					PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCompatibleErrors]],
+					PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCompatibleErrors]]
 				];
 
 				failingString =combineObjectStrings[{
-					ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache],
-					ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache],
-					ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCopaceticErrors]],Cache->inheritedCache]
+					ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache],
+					ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache],
+					ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCompatibleErrors]],Cache->inheritedCache]
 				}];
 
 				(* get the inputs that pass this test *)
 				passingSamples=Join[
-					PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCopaceticErrors],False],
-					PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCopaceticErrors],False],
-					PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCopaceticErrors],False]
+					PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCompatibleErrors],False],
+					PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCompatibleErrors],False],
+					PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCompatibleErrors],False]
 				];
 
 				passingString=combineObjectStrings[{
-					ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCopaceticErrors],False],Cache->inheritedCache],
-					ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCopaceticErrors],False],Cache->inheritedCache],
-					ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCopaceticErrors],False],Cache->inheritedCache]
+					ObjectToString[PickList[ToList[simulatedSamples],ToList[ampholyteMatchedlengthsNotCompatibleErrors],False],Cache->inheritedCache],
+					ObjectToString[PickList[ToList[resolvedStandards],ToList[standardAmpholyteMatchedlengthsNotCompatibleErrors],False],Cache->inheritedCache],
+					ObjectToString[PickList[ToList[resolvedBlanks],ToList[blankAmpholyteMatchedlengthsNotCompatibleErrors],False],Cache->inheritedCache]
 				}];
 
 				(* create a test for the non-passing inputs *)
@@ -9547,7 +9584,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the non-passing inputs *)
 				failingSampleTests=If[Length[failingSamples]>0,
-					Test["For the provided samples "<>failingString<>",the specified ampholyte volume and concentration are copacetic:",
+					Test["For the provided samples "<>failingString<>",the specified ampholyte volume and concentration are compatible:",
 						False,
 						True
 					],
@@ -9556,7 +9593,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the passing inputs *)
 				passingSampleTests=If[Length[passingSamples]>0,
-					Test["For the provided samples "<>passingString<>",the specified ampholyte volume and concentration are copacetic:",
+					Test["For the provided samples "<>passingString<>",the specified ampholyte volume and concentration are compatible:",
 						True,
 						True
 					],
@@ -9669,7 +9706,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 		resolverCantFixIsoelectricPointMarkersMismatchInvalidOptions=If[Length[resolverCantFixIsoelectricPointMarkersMismatchOptions]>0&&messages,
 			(
-				Message[Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic,resolverCantFixIsoelectricPointMarkersMismatchInvalidSamples];
+				Message[Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible,resolverCantFixIsoelectricPointMarkersMismatchInvalidSamples];
 				resolverCantFixIsoelectricPointMarkersMismatchOptions
 			),
 			{}
@@ -9947,7 +9984,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the non-passing inputs *)
 				failingSampleTests=If[Length[failingSamples]>0,
-					Test["For the provided samples "<>failingString<>",the specified isoelectricPointMarkers volume and concentration are copacetic:",
+					Test["For the provided samples "<>failingString<>",the specified isoelectricPointMarkers volume and concentration are compatible:",
 						False,
 						True
 					],
@@ -9956,7 +9993,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 				(* create a test for the passing inputs *)
 				passingSampleTests=If[Length[passingSamples]>0,
-					Test["For the provided samples "<>passingString<>",the specified isoelectricPointMarkers volume and concentration are copacetic:",
+					Test["For the provided samples "<>passingString<>",the specified isoelectricPointMarkers volume and concentration are compatible:",
 						True,
 						True
 					],
@@ -12032,6 +12069,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 
 
 		(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub or Upload -> False *)
+		{upload, email} = Lookup[roundedCapillaryIsoelectricFocusingOptions, {Upload, Email}];
 		resolvedEmail=Which[
 			MatchQ[email,Except[Automatic]],email,
 			MatchQ[email,Automatic]&&NullQ[Lookup[roundedCapillaryIsoelectricFocusingOptions,ParentProtocol]]&&TrueQ[upload]&&MemberQ[output,Result],True,
@@ -12074,7 +12112,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			premadeMasterMixNullInvalidOptions,
 			nullDiluentInvalidOptions,
 			noSpecifiedAmpholytesInvalidOptions,
-			ampholyteMatchedlengthsNotCopaceticInvalidOptions,
+			ampholyteMatchedlengthsNotCompatibleInvalidOptions,
 			ampholyteVolumeNullInvalidOptions,
 			ampholyteConcentrationNullErrorsInvalidOptions,
 			ampholyteVolumeConcentrationMismatchInvalidOptions,
@@ -12197,7 +12235,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 		resolvedExperimentOptions={
 			Instrument->Lookup[roundedCapillaryIsoelectricFocusingOptions,Instrument],
 			Cartridge->Lookup[roundedCapillaryIsoelectricFocusingOptions,Cartridge],
-			SampleTemperature->Lookup[roundedCapillaryIsoelectricFocusingOptions,SampleTemperature] /. Ambient:> $AmbientTemperature,
+			SampleTemperature->Lookup[roundedCapillaryIsoelectricFocusingOptions,SampleTemperature]/. Ambient :> $AmbientTemperature,
 			InjectionTable->resolvedInjectionTable[[All, ;; -2]],
 			MatchedInjectionTable->resolvedInjectionTable,
 			NumberOfReplicates->Lookup[roundedCapillaryIsoelectricFocusingOptions,NumberOfReplicates],
@@ -12347,13 +12385,13 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 			CartridgeStorageCondition->Lookup[roundedCapillaryIsoelectricFocusingOptions,CartridgeStorageCondition],
 			SamplesInStorageCondition->Lookup[roundedCapillaryIsoelectricFocusingOptions,SamplesInStorageCondition],
 			PreparatoryUnitOperations->Lookup[roundedCapillaryIsoelectricFocusingOptions,PreparatoryUnitOperations],
-			PreparatoryPrimitives->Lookup[roundedCapillaryIsoelectricFocusingOptions, PreparatoryPrimitives],
 			Cache->Lookup[roundedCapillaryIsoelectricFocusingOptions,Cache],
 			FastTrack->Lookup[roundedCapillaryIsoelectricFocusingOptions,FastTrack],
 			Template->Lookup[roundedCapillaryIsoelectricFocusingOptions,Template],
 			ParentProtocol->Lookup[roundedCapillaryIsoelectricFocusingOptions,ParentProtocol],
 			Operator->Lookup[roundedCapillaryIsoelectricFocusingOptions,Operator],
 			Confirm->Lookup[roundedCapillaryIsoelectricFocusingOptions,Confirm],
+			CanaryBranch->Lookup[roundedCapillaryIsoelectricFocusingOptions,CanaryBranch],
 			Name->Lookup[roundedCapillaryIsoelectricFocusingOptions,Name],
 			Upload->Lookup[roundedCapillaryIsoelectricFocusingOptions,Upload],
 			Output->Lookup[roundedCapillaryIsoelectricFocusingOptions,Output],
@@ -12409,7 +12447,7 @@ resolveCapillaryIsoelectricFocusingOptions[mySamples:{ObjectP[Object[Sample]]...
 				premadeMasterMixNullTests,
 				nullDiluentTests,
 				noSpecifiedAmpholytesTests,
-				ampholyteMatchedlengthsNotCopaceticTests,
+				ampholyteMatchedlengthsNotCompatibleTests,
 				ampholyteVolumeNullTests,
 				ampholyteConcentrationNullErrorsTests,
 				ampholyteVolumeConcentrationMismatchTests,
@@ -12528,8 +12566,8 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 	nestedMatchParent_,nestedOptions_List,myOptions:OptionsPattern[expandNestedIndexMatch]]:=
 	Module[
 		{noNullExtractorDepth3,withNullExtractorDepth3,unitPatternDepth3Extractor,findDepth3Positions,getExpandedDimensionsDepth3,
-			performDepth3Expansion,	expandedNestedOptions,relevantOptions,positioning,automatics,copaceticLengthWarningQ,
-			copaceticLengthErrorQ,lengthMatchInvalidOptions,lengthMatchErrorTests,lengthMatchWarningTests,
+			performDepth3Expansion,	expandedNestedOptions,relevantOptions,positioning,automatics,compatibleLengthWarningQ,
+			compatibleLengthErrorQ,lengthMatchInvalidOptions,lengthMatchErrorTests,lengthMatchWarningTests,
 			parentPositioning,parentAutomatics,outputAssociation,expandByLongest,quiet},
 
 		expandByLongest = Lookup[ToList[myOptions],ExpandByLongest];
@@ -12684,7 +12722,7 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 
 		(* Raise error if there is any type of mismatch that we cant expant (not automatics)*)
 		(*Make sure that all values are of the same length *)
-		copaceticLengthErrorQ=MapThread[Function[{key,values},
+		compatibleLengthErrorQ=MapThread[Function[{key,values},
 			(* Get the length of each option value and see if there are more than one, meaning something has a different length - if there is, return True *)
 			Module[{lengths},
 				lengths = Map[Length[ToList[#]]&, values];
@@ -12697,9 +12735,9 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 		];
 
 		(* set up tests *)
-		lengthMatchInvalidOptions=If[Or@@Values[copaceticLengthErrorQ]&&!MatchQ[$ECLApplication,Engine]&&!quiet,
+		lengthMatchInvalidOptions=If[Or@@Values[compatibleLengthErrorQ]&&!MatchQ[$ECLApplication,Engine]&&!quiet,
 			(
-				Message[Error::ExpandedNestedIndexLengthMismatch,nestedOptions,PickList[mySamples,Values[copaceticLengthErrorQ]],nestedMatchParent];
+				Message[Error::ExpandedNestedIndexLengthMismatch,nestedOptions,PickList[mySamples,Values[compatibleLengthErrorQ]],nestedMatchParent];
 				nestedOptions
 			),
 			{}
@@ -12709,10 +12747,10 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 			Module[{failingSamples,passingSamples,failingSamplesTests,passingSamplesTests},
 
 				(* get the inputs that fail this test *)
-				failingSamples=PickList[mySamples,Values[copaceticLengthErrorQ]];
+				failingSamples=PickList[mySamples,Values[compatibleLengthErrorQ]];
 
 				(* get the inputs that pass this test *)
-				passingSamples=PickList[mySamples,Values[copaceticLengthErrorQ],False];
+				passingSamples=PickList[mySamples,Values[compatibleLengthErrorQ],False];
 
 				(* create a test for the non-passing inputs *)
 				failingSamplesTests=If[Length[failingSamples]>0,
@@ -12739,7 +12777,7 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 
 		(* warn if there is any type of mismatch to let the user know you are going to expand *)
 		(*Make sure that all values are of the same length *)
-		copaceticLengthWarningQ=If[!Or@@Values[copaceticLengthErrorQ],
+		compatibleLengthWarningQ=If[!Or@@Values[compatibleLengthErrorQ],
 			MapThread[Function[{key,values},
 				(* Get the length of each option value and see if there are more than one, meaning something has a different length - if there is, return True *)
 				Module[{lengths},
@@ -12755,22 +12793,22 @@ expandNestedIndexMatch[experimentFunction_,expandedExperimentOptions_Association
 		];
 
 		(* set up tests only if no error was raised before *)
-		lengthMatchInvalidOptions=If[!Or@@Values[copaceticLengthErrorQ]&&Or@@Values[copaceticLengthWarningQ]&&!MatchQ[$ECLApplication,Engine]&&!quiet,
+		lengthMatchInvalidOptions=If[!Or@@Values[compatibleLengthErrorQ]&&Or@@Values[compatibleLengthWarningQ]&&!MatchQ[$ECLApplication,Engine]&&!quiet,
 			(
-				Message[Warning::NestedIndexLengthMismatch,nestedOptions,PickList[mySamples,Values[copaceticLengthWarningQ]],If[expandByLongest,"longest input", "parent option "<>ToString[nestedMatchParent]]];
+				Message[Warning::NestedIndexLengthMismatch,nestedOptions,PickList[mySamples,Values[compatibleLengthWarningQ]],If[expandByLongest,"longest input", "parent option "<>ToString[nestedMatchParent]]];
 				nestedOptions
 			),
 			{}
 		];
 
-		lengthMatchWarningTests=If[(!Or@@Values[copaceticLengthErrorQ])&&(!quiet),
+		lengthMatchWarningTests=If[(!Or@@Values[compatibleLengthErrorQ])&&(!quiet),
 			Module[{failingSamples,passingSamples,failingSamplesTests,passingSamplesTests},
 
 				(* get the inputs that fail this test *)
-				failingSamples=PickList[mySamples,Values[copaceticLengthWarningQ]];
+				failingSamples=PickList[mySamples,Values[compatibleLengthWarningQ]];
 
 				(* get the inputs that pass this test *)
-				passingSamples=PickList[mySamples,Values[copaceticLengthWarningQ],False];
+				passingSamples=PickList[mySamples,Values[compatibleLengthWarningQ],False];
 
 				(* create a test for the non-passing inputs *)
 				failingSamplesTests=If[Length[failingSamples]>0,
@@ -12866,7 +12904,13 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 	originalSampleObjects=Download[mySamples,Object];
 
 	(* Get our simulated samples (we have to figure out sample groupings here). *)
-	{simulatedSamples,updatedSimulation}=simulateSamplesResourcePacketsNew[ExperimentCapillaryIsoelectricFocusing,originalSampleObjects,myResolvedOptions,Cache->inheritedCache,Simulation->simulation];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[
+		ExperimentCapillaryIsoelectricFocusing,
+		originalSampleObjects,
+		myResolvedOptions,
+		Cache->inheritedCache,
+		Simulation->simulation
+	];
 
 	(* --- Make our one big Download call --- *)
 	allDownloadValues=Quiet[Download[
@@ -12904,7 +12948,7 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		DenaturationReagentVolume, AnodicSpacerVolume, CathodicSpacerVolume};
 
 	(* Build rules for replacing values in expanded options (this isn't very elegant, but it works..) *)
-	(* need to check if Aliquot-> True, in which case, dont change anything..  *)
+	(* need to check if Aliquot-> True, in which case, don't change anything..  *)
 	replaceVolumesForReplicates =
 		Rule[
 			#,
@@ -13382,7 +13426,7 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		} = If[Length[diluentsVolumeOptions]>0,
 			Transpose[
 				MapThread[Function[{diluentObject, sampleVolume, totalVolume, ampholyteVolumes, pIMarkerVolumes, eofBlockerVolume, denaturantVolume, anodicSpacerVolume, cathodicSpacerVolume},
-					{diluentObject, totalVolume-Total[{sampleVolume, Total@ampholyteVolumes, Total@pIMarkerVolumes, eofBlockerVolume, denaturantVolume, anodicSpacerVolume, cathodicSpacerVolume}]}
+					{diluentObject, totalVolume-Total[ReplaceAll[{sampleVolume, Total@ampholyteVolumes, Total@pIMarkerVolumes, eofBlockerVolume, denaturantVolume, anodicSpacerVolume, cathodicSpacerVolume},Null->0Microliter]]}
 				],
 					Transpose[diluentsVolumeOptions]
 				]],
@@ -13413,7 +13457,7 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 	];
 
 	onBoardMixingWashResource = If[Lookup[myResolvedOptions,OnBoardMixing],
-		ConstantArray[Resource[Sample->Model[Sample, "Milli-Q water"], Amount-> 5Milliliter, Container -> Model[Container, Vessel, "6 mL Shorty Vials, Borosilicate Glass"]], 2],
+		ConstantArray[Resource[Sample->Model[Sample, "id:8qZ1VWNmdLBD"], Amount-> 5Milliliter, Container -> Model[Container, Vessel, "6 mL Shorty Vials, Borosilicate Glass"]], 2],
 		{Nothing}
 	];
 
@@ -13433,8 +13477,8 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 
 	(* Template Note: The time in instrument resources is used to charge customers for the instrument time so it's important
 	that this estimate is accurate this will probably look like set-up time + time/sample + tear-down time *)
-	(* to calculate time needed, consider setup time + the sum of injection time and separation time, for each of samples/standards/blanks and add an overhead between samples, and add teh cleanup time at the end. *)
-	(* soubling imaging time because each sample is imaged before focusing for background and after for signal *)
+	(* to calculate time needed, consider setup time + the sum of injection time and separation time, for each of samples/standards/blanks and add an overhead between samples, and add the cleanup time at the end. *)
+	(* doubling imaging time because each sample is imaged before focusing for background and after for signal *)
 	sampleTimes = Total@MapThread[
 		Function[{loadTime, focusingTimes, imagingTimes},
 			loadTime+Total@focusingTimes+(2*Total@ToList[imagingTimes])],
@@ -13522,7 +13566,7 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		RunTime->runTime,
 		Replace[InjectionTable] -> injectionTableToUpload,
 		NumberOfReplicates -> sampleReplicates,
-		SampleTemperature -> Lookup[myResolvedOptions, SampleTemperature],
+		SampleTemperature -> Lookup[myResolvedOptions, SampleTemperature]/. Ambient :> $AmbientTemperature,
 
 		(* instrument setup *)
 		Anolyte -> Link[anolyteResource],
@@ -13558,11 +13602,31 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		Replace[DenaturationReagents] -> (Link[#]&) /@ denaturationAgentResources,
 		Replace[DenaturationReagentTargetConcentrations] -> Lookup[optionsWithReplicatesAssociation,DenaturationReagentTargetConcentration,{}],
 		Replace[DenaturationReagentVolumes] -> Lookup[optionsWithReplicatesAssociation,DenaturationReagentVolume,{}],
-		Replace[Ampholytes] -> ToList[(Map[Function[resource, Link[resource[Sample]]], #]&) /@ ampholyteResources]/.{Null}:>Null, (* we are using ListedAmpholytes for resources, this one is just for presentation (and list structure) *)
+		Replace[Ampholytes] -> ToList[(
+			Map[
+				Function[resource,
+					If[NullQ[resource],
+						resource,
+						Link[resource[Sample]]
+					]
+				],
+				#
+			]&
+		) /@ ampholyteResources], (* we are using ListedAmpholytes for resources, this one is just for presentation (and list structure) *)
 		Replace[ListedAmpholytes] -> (Link[#]&) /@ Flatten[ampholyteResources],
 		Replace[AmpholyteTargetConcentrations] -> Lookup[optionsWithReplicatesAssociation,AmpholyteTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[AmpholyteVolumes] -> Lookup[optionsWithReplicatesAssociation,AmpholyteVolume,{}]/.{Null}:>Null,
-		Replace[IsoelectricPointMarkers] -> ToList[(Map[Function[resource, Link[resource[Sample]]], #]&) /@ pIMarkerResources]/.{Null}:>Null, (* we are using ListedIsoelectricPointMarkers for resources, this one is just for presentation (and list structure) *)
+		Replace[IsoelectricPointMarkers] -> ToList[(
+				Map[
+					Function[resource,
+						If[NullQ[resource],
+							resource,
+							Link[resource[Sample]]
+						]
+					],
+					#
+				]&
+			) /@ pIMarkerResources], (* we are using ListedIsoelectricPointMarkers for resources, this one is just for presentation (and list structure) *)
 		Replace[ListedIsoelectricPointMarkers] -> (Link[#]&) /@ Flatten[pIMarkerResources],
 		Replace[IsoelectricPointMarkersTargetConcentrations] -> Lookup[optionsWithReplicatesAssociation,IsoelectricPointMarkersTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[IsoelectricPointMarkersVolumes] -> Lookup[optionsWithReplicatesAssociation,IsoelectricPointMarkersVolume,{}]/.{Null}:>Null,
@@ -13599,11 +13663,31 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		Replace[StandardDenaturationReagents] -> (Link[#]&) /@ standardDenaturationAgentResources,
 		Replace[StandardDenaturationReagentTargetConcentrations] -> Lookup[standardOptionsWithReplicatesAssociation,StandardDenaturationReagentTargetConcentration,{}],
 		Replace[StandardDenaturationReagentVolumes] -> Lookup[standardOptionsWithReplicatesAssociation,StandardDenaturationReagentVolume,{}],
-		Replace[StandardAmpholytes] -> Replace[ToList[(Map[Function[resource, If[!MatchQ[resource,Null],Link[resource[Sample]],Null]], #]&) /@ standardAmpholyteResources],{Null}:>Null,1],
+		Replace[StandardAmpholytes] -> ToList[(
+			Map[
+				Function[resource,
+					If[NullQ[resource],
+						resource,
+						Link[resource[Sample]]
+					]
+				],
+				#
+			]&
+		) /@ standardAmpholyteResources],
 		Replace[ListedStandardAmpholytes] -> (Link[#]&) /@ Flatten[standardAmpholyteResources],
 		Replace[StandardAmpholyteTargetConcentrations] -> Lookup[standardOptionsWithReplicatesAssociation,StandardAmpholyteTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[StandardAmpholyteVolumes] -> Lookup[standardOptionsWithReplicatesAssociation,StandardAmpholyteVolume,{}]/.{Null}:>Null,
-		Replace[StandardIsoelectricPointMarkers] -> Replace[ToList[(Map[Function[resource, If[!MatchQ[resource,Null],Link[resource[Sample]],Null]], #]&) /@ standardpIMarkerResources],{Null}:>Null,1],
+		Replace[StandardIsoelectricPointMarkers] -> ToList[(
+			Map[
+				Function[resource,
+					If[NullQ[resource],
+						resource,
+						Link[resource[Sample]]
+					]
+				],
+				#
+			]&
+		) /@ standardpIMarkerResources],
 		Replace[ListedStandardIsoelectricPointMarkers] -> (Link[#]&) /@ Flatten[standardpIMarkerResources],
 		Replace[StandardIsoelectricPointMarkersTargetConcentrations] -> Lookup[standardOptionsWithReplicatesAssociation,StandardIsoelectricPointMarkersTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[StandardIsoelectricPointMarkersVolumes] -> Lookup[standardOptionsWithReplicatesAssociation,StandardIsoelectricPointMarkersVolume,{}]/.{Null}:>Null,
@@ -13640,11 +13724,31 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		Replace[BlankDenaturationReagents] -> (Link[#]&) /@ blankDenaturationAgentResources,
 		Replace[BlankDenaturationReagentTargetConcentrations] -> Lookup[blankOptionsWithReplicatesAssociation,BlankDenaturationReagentTargetConcentration,{}],
 		Replace[BlankDenaturationReagentVolumes] -> Lookup[blankOptionsWithReplicatesAssociation,BlankDenaturationReagentVolume,{}],
-		Replace[BlankAmpholytes] -> ToList[(Map[Function[resource, Link[resource[Sample]]], #]&) /@ blankAmpholyteResources]/.{Null}:>Null,
+		Replace[BlankAmpholytes] -> ToList[(
+			Map[
+				Function[resource,
+					If[NullQ[resource],
+						resource,
+						Link[resource[Sample]]
+					]
+				],
+				#
+			]&
+		) /@ blankAmpholyteResources],
 		Replace[ListedBlankAmpholytes] ->(Link[#]&) /@ Flatten[blankAmpholyteResources],
 		Replace[BlankAmpholyteTargetConcentrations] -> Lookup[blankOptionsWithReplicatesAssociation,BlankAmpholyteTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[BlankAmpholyteVolumes] -> Lookup[blankOptionsWithReplicatesAssociation,BlankAmpholyteVolume,{}]/.{Null}:>Null,
-		Replace[BlankIsoelectricPointMarkers] -> ToList[(Map[Function[resource, Link[resource[Sample]]], #]&) /@ blankpIMarkerResources]/.{Null}:>Null,
+		Replace[BlankIsoelectricPointMarkers] -> ToList[(
+			Map[
+				Function[resource,
+					If[NullQ[resource],
+						resource,
+						Link[resource[Sample]]
+					]
+				],
+				#
+			]&
+		) /@ blankpIMarkerResources],
 		Replace[ListedBlankIsoelectricPointMarkers] -> (Link[#]&) /@ Flatten[blankpIMarkerResources],
 		Replace[BlankIsoelectricPointMarkersTargetConcentrations] -> Lookup[blankOptionsWithReplicatesAssociation,BlankIsoelectricPointMarkersTargetConcentrations,{}]/.{Null}:>Null,
 		Replace[BlankIsoelectricPointMarkersVolumes] -> Lookup[blankOptionsWithReplicatesAssociation,BlankIsoelectricPointMarkersVolume,{}]/.{Null}:>Null,
@@ -13670,14 +13774,14 @@ capillaryIsoelectricFocusingResourcePackets[mySamples:{ObjectP[Object[Sample]]..
 		Replace[BlankNativeFluorescenceExposureTimes] -> Lookup[blankOptionsWithReplicatesAssociation,BlankNativeFluorescenceExposureTime,{}],
 		(* checkpoints *)
 		Replace[Checkpoints] -> {
-			{"Preparing Samples",30 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-			{"Picking Resources",60 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-			{"Preparing Mastermix and Assay Plate Setup",1 Hour,"Mixing reagents for each assay tube, denaturing and centrifuging (if applicable), and loading onto the assay plate.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-			{"Preparing Instrument",1Hour,"Setting up the instrument by preparing the experiment cartridge and loading required reagents is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1*Hour]]},
-			{"Running Samples",instrumentTime,"Analyzing the loaded samples by capillary isoelectric focusing.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]},
-			{"Instrument Cleanup",30 Minute,"The experiment cartridge is cleaned and used reagents are disposed of.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+			{"Preparing Samples",30 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Picking Resources",3 Hour,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 3 Hour]]},
+			{"Preparing Assay Plate",1 Hour,"Reagents such as sample buffer, internal standards, and reducing or alkylating agents, are mixed with samples, ladders, standards, and/or blanks.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Preparing Instrument",1 Hour,"Setting up the instrument by preparing the experiment cartridge and loading required reagents is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Running Samples",instrumentTime,"Analyzing the loaded samples by capillary isoelectric focusing.", Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+			{"Instrument Cleanup",30 Minute,"The experiment cartridge is cleaned and used reagents are disposed of.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Returning Materials",1 Hour,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time ->1 Hour]]}
 		}
 	|>;
 
@@ -13763,7 +13867,7 @@ expandNumberOfReplicatesIndexMatchingParent[mySamples_List,myOptions_Association
 (* This function is used to create rules for replacing objects with resources in expanded sample lists (for standards, and blanks) *)
 sampleResourceRules[mySamplesWithReplicates:{ObjectP[{Model[Sample], Object[Sample]}]...}, myExpandedVolumes:{VolumeP...}, includeSamples_?BooleanQ]:=Module[
 	{pairedObjectsVolumes, objectVolumeRules,objectResourceReplaceRules},
-	(* NOTE - we dont need to take replicates into account here, since everything has already been expanded and object replace rules will sum up the volume for all replicates *)
+	(* NOTE - we don't need to take replicates into account here, since everything has already been expanded and object replace rules will sum up the volume for all replicates *)
 	(* first, check if we need to include these samples or not *)
 	If[Not[includeSamples],
 		(* not including these, return an empty list *)
@@ -14033,7 +14137,7 @@ simulateExperimentCapillaryIsoelectricFocusing[
 		(* Now we need to make a sham sample in each well we transfer reagents to, so we can use UploadSampleTransfer *)
 		assignedWells = ToString/@Lookup[injectionTableWithWells, Well];
 
-		(* upload a sample to each well in teh assay plate *)
+		(* upload a sample to each well in the assay plate *)
 		samplePrepPlateDestinationSamples =
       		UploadSample[
 				ConstantArray[{{Null,Null}}, Length[assignedWells]],
@@ -14651,7 +14755,7 @@ simulateExperimentCapillaryIsoelectricFocusing[
 		];
 
 		(* designate placement for the assay plate loaded on the instrument *)
-		(* taking the last because if we incubate or spin, there would be two plates here, the first is a prep plate and the second is teh assay plate *)
+		(* taking the last because if we incubate or spin, there would be two plates here, the first is a prep plate and the second is the assay plate *)
 		exportedAssayPlatePlacement={{Download[Lookup[protocolPacket,AssayContainer],Object],{"Plate Slot", Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"]}}};
 
 		(* Collate all placements to two lists for UploadLocation *)
@@ -14735,7 +14839,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusingOptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentCapillaryIsoelectricFocusingOptions[
-	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],
+	mySamples:ListableP[(ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String)],
 	myOptions:OptionsPattern[ExperimentCapillaryIsoelectricFocusingOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -14769,7 +14873,7 @@ DefineOptions[ValidExperimentCapillaryIsoelectricFocusingQ,
 	SharedOptions:>{ExperimentCapillaryIsoelectricFocusing}
 ];
 
-ValidExperimentCapillaryIsoelectricFocusingQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryIsoelectricFocusingQ]]:=Module[
+ValidExperimentCapillaryIsoelectricFocusingQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryIsoelectricFocusingQ]]:=Module[
 	{listedOptions,preparedOptions,capillaryIsoelectricFocusingTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)
@@ -14824,7 +14928,7 @@ DefineOptions[ExperimentCapillaryIsoelectricFocusingPreview,
 	SharedOptions:>{ExperimentCapillaryIsoelectricFocusing}
 ];
 
-ExperimentCapillaryIsoelectricFocusingPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryIsoelectricFocusingPreview]]:=Module[
+ExperimentCapillaryIsoelectricFocusingPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryIsoelectricFocusingPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];

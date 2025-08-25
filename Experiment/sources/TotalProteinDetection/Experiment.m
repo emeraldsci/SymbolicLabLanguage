@@ -554,9 +554,11 @@ DefineOptions[ExperimentTotalProteinDetection,
 			]
 		},
 		WesSharedImagingOptions,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModelInputOptions,
 		SamplesInStorageOptions,
-		SubprotocolDescriptionOption
+		SubprotocolDescriptionOption,
+		SimulationOption
 	}
 ];
 
@@ -604,11 +606,12 @@ Error::WesConflictingStandardSecondaryAntibodyStorageOptions="The following inpu
 
 (* - Container to Sample Overload - *)
 
-ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
-		containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache},
+ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,
+		updatedSimulation, containerToSampleSimulation},
 
-(* Make sure we're working with a list of options *)
+	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
@@ -621,31 +624,31 @@ ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 	(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentTotalProteinDetection,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentTotalProteinDetection,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -656,23 +659,17 @@ ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentTotalProteinDetection,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result,Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -683,11 +680,11 @@ ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container
 			Options -> $Failed,
 			Preview -> Null
 		},
-	(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentTotalProteinDetection[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentTotalProteinDetection[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -695,10 +692,10 @@ ExperimentTotalProteinDetection[myContainers:ListableP[ObjectP[{Object[Container
 
 ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,outputSpecification,output,gatherTests,messages,listedSamples,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
-		safeOps,safeOpsTests,validLengths,validLengthTests,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,samplePreparationCacheNamed,
+		listedOptions,outputSpecification,output,gatherTests,messages,listedSamples,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		safeOps,safeOpsTests,validLengths,validLengthTests,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,totalProteinDetectionOptionsAssociation,ladderOption,washBufferOption,concentratedLoadingBufferOption,
-		instrumentOption,blockingBufferOption,ladderDownloadFields,
+		instrumentOption,blockingBufferOption,ladderDownloadFields, updatedSimulation, cache,
 		washBufferDownloadFields,concentratedLoadingBufferDownloadFields,listedBlockingBuffer,uniqueBlockingBufferObjects,uniqueBlockingBufferModels,objectSamplePacketFields,modelSamplePacketFields,
 		objectContainerFields,modelContainerFields,modelContainerPacketFields,samplesContainerModelPacketFields,liquidHandlerContainers,
 		listedSampleContainerPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
@@ -720,20 +717,20 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 	(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentTotalProteinDetection,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -743,13 +740,7 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	];
 
 	(* Sanitize the samples and options using sanitizInput funciton*)
-	{mySamplesWithPreparedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentTotalProteinDetection,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentTotalProteinDetection,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -759,6 +750,12 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentTotalProteinDetection,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentTotalProteinDetection,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -850,6 +847,7 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
 	(* - Big download call - *)
+	cache = Lookup[expandedSafeOps,Cache,{}];
 	{
 		listedSampleContainerPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
 		listedBlockingBufferObjectPackets,listedBlockingBufferModelPackets,objectsInOrder,liquidHandlerContainerPackets
@@ -887,7 +885,8 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 				{Packet[Object]},
 				{modelContainerPacketFields}
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache->cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -895,7 +894,7 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 	cacheBall=FlattenCachePackets[
 		{
-			samplePreparationCache,listedSampleContainerPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
+			cache,listedSampleContainerPackets,listedModelInstrumentPackets,listedLadderOptionPackets,listedWashBufferOptionPackets,listedConcentratedLoadingBufferOptionPackets,
 			listedBlockingBufferObjectPackets,listedBlockingBufferModelPackets,liquidHandlerContainerPackets
 		}
 	];
@@ -906,7 +905,7 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveWesExperimentOptions[inputObjects,{},expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveWesExperimentOptions[inputObjects,{},expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -916,7 +915,7 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveWesExperimentOptions[inputObjects,{},expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveWesExperimentOptions[inputObjects,{},expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -943,8 +942,8 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		wesResourcePackets[inputObjects,{},templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{wesResourcePackets[inputObjects,{},templatedOptions,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+		wesResourcePackets[inputObjects,{},templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{wesResourcePackets[inputObjects,{},templatedOptions,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->Result],{}}
 	];
 
 
@@ -964,9 +963,11 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,TotalProteinDetection],
-			Cache->cacheBall
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -988,13 +989,13 @@ ExperimentTotalProteinDetection[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 DefineOptions[
 	resolveWesExperimentOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|{},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveWesExperimentOptions]]:=Module[
 	{
 		totalProteinDetectionSpecificOptions,westernSpecificOptions,westernQ,outputSpecification,output,gatherTests,messages,notInEngine,cache,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,
-		simulatedCache,experimentOptionsAssociation,suppliedInstrument,numberOfReplicates,suppliedDenaturing,suppliedDenaturingTemperature,suppliedDenaturingTime,
+		experimentOptionsAssociation,suppliedInstrument,numberOfReplicates,suppliedDenaturing,suppliedDenaturingTemperature,suppliedDenaturingTime,
 		suppliedName,suppliedSystemStandard,suppliedStandardPrimaryAntibody,suppliedStandardPrimaryAntibodyVolume,suppliedStandardSecondaryAntibody,suppliedStandardSecondaryAntibodyVolume,
 		suppliedPrimaryAntibodyDiluent,suppliedPrimaryAntibodyDiluentVolume,suppliedMolecularWeightRange,suppliedLadder,suppliedLadderVolume,suppliedSeparatingMatrixLoadTime,suppliedStackingMatrixLoadTime,
 		suppliedSampleLoadTime,suppliedVoltage,suppliedSeparationTime,suppliedUVExposureTime,suppliedBlockingBufferVolume,suppliedBlockingTime,suppliedWashBuffer,suppliedWashBufferVolume,suppliedConcentratedLoadingBuffer,
@@ -1058,7 +1059,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 		westernUnresolvableOptionTests,invalidDilutionFactorOptions,conflictingStandardPrimaryAntibodyStorageOptions,
 		conflictingStandardSecondaryAntibodyStorageOptions,requiredAliquotAmounts,liquidHandlerContainerModels,liquidHandlerContainerMaxVolumes,
 		potentialAliquotContainers,simulatedSamplesContainerModels,
-		resolvedMolecularWeightRange,nonOptimalAntibodyQ,
+		resolvedMolecularWeightRange,nonOptimalAntibodyQ, simulation, updatedSimulation,
 		invalidInputs,invalidOptions,requiredAliquotContainers,resolvedAliquotOptions,aliquotTests,resolvedAliquotBooleans,totalProteinConcListNoNull,inputLysateAndAntibodyTuples,
 		aliquotFailureBools,failingLysateAliquotTuples,passingLysateAliquotTuples,lysateDilutionTests,
 		resolvedPostProcessingOptions,email,realBlockingBuffer,resolvedOptions
@@ -1089,12 +1090,13 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions,experimentOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentTotalProteinDetection,mySamples,samplePrepOptions,Cache->cache];
+	{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation}=resolveSamplePrepOptionsNew[ExperimentTotalProteinDetection,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	experimentOptionsAssociation = Association[experimentOptions];
@@ -1264,7 +1266,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 				},
 				{modelContainerPacketFields}
 			},
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -1490,7 +1493,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If there are discarded invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1498,12 +1501,12 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1517,8 +1520,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* Check to see if the SamplesInStorageCondition is valid *)
 	{validSamplesInStorageBools,samplesInStorageTests}=If[gatherTests,
-		ValidContainerStorageConditionQ[simulatedSamples,suppliedSamplesInStorageCondition,Cache->simulatedCache,Output->{Result,Tests}],
-		{ValidContainerStorageConditionQ[simulatedSamples, suppliedSamplesInStorageCondition, Output -> Result, Cache -> simulatedCache], {}}
+		ValidContainerStorageConditionQ[simulatedSamples,suppliedSamplesInStorageCondition,Cache->cache, Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{ValidContainerStorageConditionQ[simulatedSamples, suppliedSamplesInStorageCondition, Cache -> cache, Simulation -> updatedSimulation,Output -> Result], {}}
 	];
 
 	(* Set the invalid options variable *)
@@ -1550,7 +1553,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[tooManyInvalidInputs]==0,
 				Nothing,
-				Test["There are 24 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Cache->simulatedCache],True,False]
+				Test["There are 24 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Simulation -> updatedSimulation],True,False]
 			];
 
 			passingTest=If[Length[tooManyInvalidInputs]==Length[simulatedSamples],
@@ -1573,7 +1576,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If there are any primary inputs that do not have TotalProteinConcentration informed, throw a warning, as we cannot warn them that the samples may be too concentrated *)
 	If[Length[missingTotalProteinLysates]>0&&messages&&notInEngine&&westernQ,
-		Message[Warning::WesTotalProteinConcentrationNotInformed,ObjectToString[missingTotalProteinLysates,Cache->simulatedCache]]
+		Message[Warning::WesTotalProteinConcentrationNotInformed,ObjectToString[missingTotalProteinLysates,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1581,12 +1584,12 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[missingTotalProteinLysates]==0,
 				Nothing,
-				Warning["The following primary inputs have TotalProteinConcentration informed "<>ObjectToString[missingTotalProteinLysates,Cache->simulatedCache],True,False]
+				Warning["The following primary inputs have TotalProteinConcentration informed "<>ObjectToString[missingTotalProteinLysates,Simulation -> updatedSimulation],True,False]
 			];
 
 			passingTest=If[Length[informedTotalProteinLysates]==0,
 				Nothing,
-				Warning["The following primary inputs have TotalProteinConcentration informed "<>ObjectToString[informedTotalProteinLysates,Cache->simulatedCache],True,True]
+				Warning["The following primary inputs have TotalProteinConcentration informed "<>ObjectToString[informedTotalProteinLysates,Simulation -> updatedSimulation],True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1866,8 +1869,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* - Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument - *)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[suppliedInstrument,Join[simulatedSamples,myAntibodies],Cache->simulatedCache,Output->{Result,Tests}],
-		{CompatibleMaterialsQ[suppliedInstrument,Join[simulatedSamples,myAntibodies],Cache->simulatedCache,Messages->messages],{}}
+		CompatibleMaterialsQ[suppliedInstrument,Join[simulatedSamples,myAntibodies],Cache->cache, Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{CompatibleMaterialsQ[suppliedInstrument,Join[simulatedSamples,myAntibodies],Cache->cache, Simulation -> updatedSimulation,Messages->messages],{}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
@@ -2177,7 +2180,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If we are throwing messages, throw an error if there are any samples in loadingVolumeTooLargeSamples - will for sure yield undesired results *)
 	If[messages&&Length[invalidLoadingVolumeOptions]>0,
-		Message[Error::WesternLoadingVolumeTooLarge,ObjectToString[loadingVolumeTooLargeSamples,Cache->simulatedCache]]
+		Message[Error::WesternLoadingVolumeTooLarge,ObjectToString[loadingVolumeTooLargeSamples,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, write a passing/failing test for the WesternLoadingVolumeTooLarge Warning message *)
@@ -2186,11 +2189,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			failingTest=If[Length[loadingVolumeTooLargeSamples]==0,
 				Nothing,
-				Test["The LoadingVolume is smaller than the sum of the SampleVolume and the LoadingBufferVolume for the following input samples, "<>ObjectToString[loadingVolumeTooLargeSamples,Cache->simulatedCache],True,False]
+				Test["The LoadingVolume is smaller than the sum of the SampleVolume and the LoadingBufferVolume for the following input samples, "<>ObjectToString[loadingVolumeTooLargeSamples,Simulation -> updatedSimulation],True,False]
 			];
 			passingTest=If[Length[loadingVolumeFineSamples]==0,
 				Nothing,
-				Test["The LoadingVolume is smaller than the sum of the SampleVolume and the LoadingBufferVolume for the following input samples, "<>ObjectToString[loadingVolumeFineSamples,Cache->simulatedCache],True,True]
+				Test["The LoadingVolume is smaller than the sum of the SampleVolume and the LoadingBufferVolume for the following input samples, "<>ObjectToString[loadingVolumeFineSamples,Simulation -> updatedSimulation],True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2198,7 +2201,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 	];
 
 	(* - Check to make sure that if the PrimaryAntibodyDilutionFactor is set to 1, the PrimaryAntibodyDiluent and PrimaryAntibodyDiluent must both be Null or Automatic - *)
-	(* MapThread over a function that checks whether the 3 options are copacetic to give a list of Booleans *)
+	(* MapThread over a function that checks whether the 3 options are compatible to give a list of Booleans *)
 	conflictingDilutionFactorOptionsQ=If[westernQ,
 		MapThread[
 			Function[{primaryAntibodyDilutionFactor,primaryAntibodyDiluent,primaryAntibodyDiluentVolume},
@@ -2249,7 +2252,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If we are throwing messages, throw an error if there are any samples in conflictingAbDilutionSamples *)
 	If[messages&&westernQ&&Length[invalidAntibodyDilutionOptions]>0,
-		Message[Error::ConflictingWesternAntibodyDiluentOptions,ObjectToString[conflictingAbDilutionSamples,Cache->simulatedCache]]
+		Message[Error::ConflictingWesternAntibodyDiluentOptions,ObjectToString[conflictingAbDilutionSamples,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests and are in ExperimentWestern, define the user-facing tests for the above error *)
@@ -2258,11 +2261,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			failingTest=If[Length[conflictingAbDilutionSamples]==0,
 				Nothing,
-				Test["If the PrimaryAntibodyDilutionFactor is set to 1, the PrimaryAntibodyDiluent and PrimaryAntibodyDiluentVolume options are both left as Null or Automatic for the following input samples, "<>ObjectToString[conflictingAbDilutionSamples,Cache->simulatedCache],True,False]
+				Test["If the PrimaryAntibodyDilutionFactor is set to 1, the PrimaryAntibodyDiluent and PrimaryAntibodyDiluentVolume options are both left as Null or Automatic for the following input samples, "<>ObjectToString[conflictingAbDilutionSamples,Simulation -> updatedSimulation],True,False]
 			];
 			passingTest=If[Length[nonConflictingAbDilutionSamples]==0,
 				Nothing,
-				Test["If the PrimaryAntibodyDilutionFactor is set to 1, the PrimaryAntibodyDiluent and PrimaryAntibodyDiluentVolume options are both left as Null or Automatic for the following input samples, "<>ObjectToString[nonConflictingAbDilutionSamples,Cache->simulatedCache],True,True]
+				Test["If the PrimaryAntibodyDilutionFactor is set to 1, the PrimaryAntibodyDiluent and PrimaryAntibodyDiluentVolume options are both left as Null or Automatic for the following input samples, "<>ObjectToString[nonConflictingAbDilutionSamples,Simulation -> updatedSimulation],True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2918,7 +2921,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If we are throwing messages and there are any invalidTotalPrimaryAntibodyMixtureVolumeInputs, throw an Error *)
 	If[messages&&Length[invalidTotalPrimaryAntibodyMixtureVolumeInputs]>0,
-		Message[Error::InvalidWesternDilutedPrimaryAntibodyVolume,ToString[invalidTotalPrimaryAntibodyMixtureVolumes],ObjectToString[invalidTotalPrimaryAntibodyMixtureVolumeInputs,Cache->simulatedCache]]
+		Message[Error::InvalidWesternDilutedPrimaryAntibodyVolume,ToString[invalidTotalPrimaryAntibodyMixtureVolumes],ObjectToString[invalidTotalPrimaryAntibodyMixtureVolumeInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create failing Tests for the above Errors - not creating passing tests here because the input samples and antibodies will so often be the same, so doing Cases here doesn't make sense *)
@@ -2926,7 +2929,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 		Module[{failingTest},
 
 			failingTest=If[Length[invalidTotalPrimaryAntibodyMixtureVolumeInputs]>0,
-				Test["The sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume options, "<>ToString[invalidTotalPrimaryAntibodyMixtureVolumes]<>", is not between 35 and 275 uL for the following pairs of input samples and antibodies, "<>ObjectToString[invalidTotalPrimaryAntibodyMixtureVolumeInputs,Cache->simulatedCache],True,False],
+				Test["The sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume options, "<>ToString[invalidTotalPrimaryAntibodyMixtureVolumes]<>", is not between 35 and 275 uL for the following pairs of input samples and antibodies, "<>ObjectToString[invalidTotalPrimaryAntibodyMixtureVolumeInputs,Simulation -> updatedSimulation],True,False],
 				Nothing
 			];
 			failingTest
@@ -3015,7 +3018,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingNonIdealSecondaryAntibodyInputs *)
 			If[messages&&notInEngine&&Length[failingNonIdealSecondaryAntibodyInputs]>0,
-				Message[Warning::NonIdealWesternSecondaryAntibody,ObjectToString[nonIdealSecondaryAntibodies,Cache->simulatedCache],ObjectToString[failingNonIdealSecondaryAntibodyInputs,Cache->simulatedCache]]
+				Message[Warning::NonIdealWesternSecondaryAntibody,ObjectToString[nonIdealSecondaryAntibodies,Simulation -> updatedSimulation],ObjectToString[failingNonIdealSecondaryAntibodyInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for NonIdealWesternSecondaryAntibody *)
@@ -3024,11 +3027,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingNonIdealSecondaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The SecondaryAntibodies, "<>ObjectToString[nonIdealSecondaryAntibodies,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealSecondaryAntibodyInputs,Cache->simulatedCache],True,False]
+						Warning["The SecondaryAntibodies, "<>ObjectToString[nonIdealSecondaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealSecondaryAntibodyInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingNonIdealSecondaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The SecondaryAntibodies, "<>ObjectToString[idealSecondaryAntibodies,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealSecondaryAntibodyInputs,Cache->simulatedCache],True,True]
+						Warning["The SecondaryAntibodies, "<>ObjectToString[idealSecondaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealSecondaryAntibodyInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3046,7 +3049,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingNonIdealSecondaryAntibodyInputs *)
 			If[messages&&notInEngine&&Length[failingNonIdealStandardPrimaryAntibodyInputs]>0,
-				Message[Warning::NonIdealWesternStandardPrimaryAntibody,ObjectToString[nonIdealStandardPrimaryAntibodies,Cache->simulatedCache],ObjectToString[failingNonIdealStandardPrimaryAntibodyInputs,Cache->simulatedCache]]
+				Message[Warning::NonIdealWesternStandardPrimaryAntibody,ObjectToString[nonIdealStandardPrimaryAntibodies,Simulation -> updatedSimulation],ObjectToString[failingNonIdealStandardPrimaryAntibodyInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for NonIdealWesternStandardPrimaryAntibody *)
@@ -3055,11 +3058,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingNonIdealStandardPrimaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The StandardPrimaryAntibodies, "<>ObjectToString[nonIdealStandardPrimaryAntibodies,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealStandardPrimaryAntibodyInputs,Cache->simulatedCache],True,False]
+						Warning["The StandardPrimaryAntibodies, "<>ObjectToString[nonIdealStandardPrimaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealStandardPrimaryAntibodyInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingNonIdealStandardPrimaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The StandardPrimaryAntibodies, "<>ObjectToString[idealStandardPrimaryAntibodies,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealStandardPrimaryAntibodyInputs,Cache->simulatedCache],True,True]
+						Warning["The StandardPrimaryAntibodies, "<>ObjectToString[idealStandardPrimaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealStandardPrimaryAntibodyInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3077,7 +3080,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingNonIdealStandardSecondaryAntibodyInputs *)
 			If[messages&&notInEngine&&Length[failingNonIdealStandardSecondaryAntibodyInputs]>0,
-				Message[Warning::NonIdealWesternStandardSecondaryAntibody,ObjectToString[nonIdealStandardSecondaryAntibodies,Cache->simulatedCache],ObjectToString[failingNonIdealStandardSecondaryAntibodyInputs,Cache->simulatedCache]]
+				Message[Warning::NonIdealWesternStandardSecondaryAntibody,ObjectToString[nonIdealStandardSecondaryAntibodies,Simulation -> updatedSimulation],ObjectToString[failingNonIdealStandardSecondaryAntibodyInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for NonIdealWesternStandardSecondaryAntibody *)
@@ -3086,11 +3089,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingNonIdealStandardSecondaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The StandardSecondaryAntibodies, "<>ObjectToString[nonIdealStandardSecondaryAntibodies,Cache->simulatedCache]<>", are ideal for the StandardPrimaryAntibody and the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealStandardSecondaryAntibodyInputs,Cache->simulatedCache],True,False]
+						Warning["The StandardSecondaryAntibodies, "<>ObjectToString[nonIdealStandardSecondaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the StandardPrimaryAntibody and the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealStandardSecondaryAntibodyInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingNonIdealStandardSecondaryAntibodyInputs]==0,
 						Nothing,
-						Warning["The StandardSecondaryAntibodies, "<>ObjectToString[idealStandardSecondaryAntibodies,Cache->simulatedCache]<>", are ideal for the StandardPrimaryAntibody and the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealStandardSecondaryAntibodyInputs,Cache->simulatedCache],True,True]
+						Warning["The StandardSecondaryAntibodies, "<>ObjectToString[idealStandardSecondaryAntibodies,Simulation -> updatedSimulation]<>", are ideal for the StandardPrimaryAntibody and the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealStandardSecondaryAntibodyInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3108,7 +3111,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingNonIdealBlockingBufferInputs *)
 			If[messages&&notInEngine&&Length[failingNonIdealBlockingBufferInputs]>0,
-				Message[Warning::NonIdealWesternBlockingBuffer,ObjectToString[nonIdealBlockingBuffers,Cache->simulatedCache],ObjectToString[failingNonIdealBlockingBufferInputs,Cache->simulatedCache]]
+				Message[Warning::NonIdealWesternBlockingBuffer,ObjectToString[nonIdealBlockingBuffers,Simulation -> updatedSimulation],ObjectToString[failingNonIdealBlockingBufferInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for NonIdealWesternBlockingBuffer *)
@@ -3117,11 +3120,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingNonIdealBlockingBufferInputs]==0,
 						Nothing,
-						Test["The BlockingBuffers, "<>ObjectToString[nonIdealBlockingBuffers,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealBlockingBufferInputs,Cache->simulatedCache],True,False]
+						Test["The BlockingBuffers, "<>ObjectToString[nonIdealBlockingBuffers,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealBlockingBufferInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingNonIdealBlockingBufferInputs]==0,
 						Nothing,
-						Test["The BlockingBuffers, "<>ObjectToString[idealBlockingBuffers,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealBlockingBufferInputs,Cache->simulatedCache],True,True]
+						Test["The BlockingBuffers, "<>ObjectToString[idealBlockingBuffers,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealBlockingBufferInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3139,7 +3142,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingNonIdealPrimaryAntibodyDiluentInputs *)
 			If[messages&&notInEngine&&Length[failingNonIdealPrimaryAntibodyDiluentInputs]>0,
-				Message[Warning::NonIdealWesternPrimaryAntibodyDiluent,ObjectToString[nonIdealPrimaryAntibodyDiluents,Cache->simulatedCache],ObjectToString[failingNonIdealPrimaryAntibodyDiluentInputs,Cache->simulatedCache]]
+				Message[Warning::NonIdealWesternPrimaryAntibodyDiluent,ObjectToString[nonIdealPrimaryAntibodyDiluents,Simulation -> updatedSimulation],ObjectToString[failingNonIdealPrimaryAntibodyDiluentInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for NonIdealWesternPrimaryAntibodyDiluent *)
@@ -3148,11 +3151,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingNonIdealPrimaryAntibodyDiluentInputs]==0,
 						Nothing,
-						Warning["The PrimaryAntibodyDiluents, "<>ObjectToString[nonIdealPrimaryAntibodyDiluents,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealPrimaryAntibodyDiluentInputs,Cache->simulatedCache],True,False]
+						Warning["The PrimaryAntibodyDiluents, "<>ObjectToString[nonIdealPrimaryAntibodyDiluents,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[failingNonIdealPrimaryAntibodyDiluentInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingNonIdealPrimaryAntibodyDiluentInputs]==0,
 						Nothing,
-						Warning["The PrimaryAntibodyDiluents, "<>ObjectToString[idealPrimaryAntibodyDiluents,Cache->simulatedCache]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealPrimaryAntibodyDiluentInputs,Cache->simulatedCache],True,True]
+						Warning["The PrimaryAntibodyDiluents, "<>ObjectToString[idealPrimaryAntibodyDiluents,Simulation -> updatedSimulation]<>", are ideal for the Organism of the PrimaryAntibodies of the following pairs on input samples and antibodies, "<>ObjectToString[passingNonIdealPrimaryAntibodyDiluentInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3176,7 +3179,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingSecondaryAntibodyVolumeInputs *)
 			If[messages&&notInEngine&&Length[failingSecondaryAntibodyVolumeInputs]>0,
-				Message[Warning::WesternSecondaryAntibodyVolumeLow,ToString[nonIdealSecondaryAntibodyVolumes],ObjectToString[failingSecondaryAntibodyVolumeInputs,Cache->simulatedCache]]
+				Message[Warning::WesternSecondaryAntibodyVolumeLow,ToString[nonIdealSecondaryAntibodyVolumes],ObjectToString[failingSecondaryAntibodyVolumeInputs,Simulation -> updatedSimulation]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for WesternSecondaryAntibodyVolumeLow *)
@@ -3185,11 +3188,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingSecondaryAntibodyVolumeInputs]==0,
 						Nothing,
-						Warning["The sum of the SecondaryAntibodyVolume and StandardSecondaryAntibodyVolume, "<>ToString[nonIdealSecondaryAntibodyVolumes]<>", is at least 10 uL for the following pairs on input samples and antibodies, "<>ObjectToString[failingSecondaryAntibodyVolumeInputs,Cache->simulatedCache],True,False]
+						Warning["The sum of the SecondaryAntibodyVolume and StandardSecondaryAntibodyVolume, "<>ToString[nonIdealSecondaryAntibodyVolumes]<>", is at least 10 uL for the following pairs on input samples and antibodies, "<>ObjectToString[failingSecondaryAntibodyVolumeInputs,Simulation -> updatedSimulation],True,False]
 					];
 					passingTest=If[Length[passingSecondaryAntibodyVolumeInputs]==0,
 						Nothing,
-						Warning["The sum of the SecondaryAntibodyVolume and StandardSecondaryAntibodyVolume, "<>ToString[idealSecondaryAntibodyVolumes]<>", is at least 10 uL for the following pairs on input samples and antibodies, "<>ObjectToString[passingSecondaryAntibodyVolumeInputs,Cache->simulatedCache],True,True]
+						Warning["The sum of the SecondaryAntibodyVolume and StandardSecondaryAntibodyVolume, "<>ToString[idealSecondaryAntibodyVolumes]<>", is at least 10 uL for the following pairs on input samples and antibodies, "<>ObjectToString[passingSecondaryAntibodyVolumeInputs,Simulation -> updatedSimulation],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3223,7 +3226,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingStandardAntibodyRatioInputs *)
 			If[messages&&notInEngine&&Length[failingStandardAntibodyRatioInputs]>0,
-				Message[Warning::WesternStandardPrimaryAntibodyVolumeRatioNonIdeal,ObjectToString[failingStandardAntibodyRatioInputs,Cache->simulatedCache],ToString[nonIdealStandardPrimaryAntibodyVolumes],ToString[nonIdealTotalPrimaryAntibodyMixtureRatioVolumes]]
+				Message[Warning::WesternStandardPrimaryAntibodyVolumeRatioNonIdeal,ObjectToString[failingStandardAntibodyRatioInputs,Simulation -> updatedSimulation],ToString[nonIdealStandardPrimaryAntibodyVolumes],ToString[nonIdealTotalPrimaryAntibodyMixtureRatioVolumes]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for WesternStandardPrimaryAntibodyVolumeRatioNonIdeal *)
@@ -3232,11 +3235,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingStandardAntibodyRatioInputs]==0,
 						Nothing,
-						Warning["For the following pairs of input samples and antibodies,"<>ObjectToString[failingStandardAntibodyRatioInputs,Cache->simulatedCache]<>", the StandardPrimaryAntibodyVolume, "<>ToString[nonIdealStandardPrimaryAntibodyVolumes]<>", is between 7-13% of the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and the StandardPrimaryAntibodyVolume,"<>ToString[nonIdealTotalPrimaryAntibodyMixtureRatioVolumes],True,False]
+						Warning["For the following pairs of input samples and antibodies,"<>ObjectToString[failingStandardAntibodyRatioInputs,Simulation -> updatedSimulation]<>", the StandardPrimaryAntibodyVolume, "<>ToString[nonIdealStandardPrimaryAntibodyVolumes]<>", is between 7-13% of the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and the StandardPrimaryAntibodyVolume,"<>ToString[nonIdealTotalPrimaryAntibodyMixtureRatioVolumes],True,False]
 					];
 					passingTest=If[Length[passingStandardAntibodyRatioInputs]==0,
 						Nothing,
-						Warning["For the following pairs of input samples and antibodies,"<>ObjectToString[passingStandardAntibodyRatioInputs,Cache->simulatedCache]<>", the StandardPrimaryAntibodyVolume, "<>ToString[idealStandardPrimaryAntibodyVolumes]<>", is between 7-13% of the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and the StandardPrimaryAntibodyVolume,"<>ToString[idealTotalPrimaryAntibodyMixtureRatioVolumes],True,True]
+						Warning["For the following pairs of input samples and antibodies,"<>ObjectToString[passingStandardAntibodyRatioInputs,Simulation -> updatedSimulation]<>", the StandardPrimaryAntibodyVolume, "<>ToString[idealStandardPrimaryAntibodyVolumes]<>", is between 7-13% of the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and the StandardPrimaryAntibodyVolume,"<>ToString[idealTotalPrimaryAntibodyMixtureRatioVolumes],True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3282,7 +3285,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* If we are throwing messages, throw a warning if there are any failingEqualDilutionInputs *)
 			If[messages&&Length[failingEqualDilutionInputs]>0,
-				Message[Error::ConflictingWesternPrimaryAntibodyDilutionFactorOptions,ObjectToString[failingEqualDilutionInputs,Cache->simulatedCache],ToString[nonEqualRoundedDilutionFactors],ToString[nonEqualCalculatedDilutionFactors]]
+				Message[Error::ConflictingWesternPrimaryAntibodyDilutionFactorOptions,ObjectToString[failingEqualDilutionInputs,Simulation -> updatedSimulation],ToString[nonEqualRoundedDilutionFactors],ToString[nonEqualCalculatedDilutionFactors]]
 			];
 
 			(* If we are gathering tests, define the user-facing tests for WesternStandardPrimaryAntibodyVolumeRatioNonIdeal *)
@@ -3291,11 +3294,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 					failingTest=If[Length[failingEqualDilutionInputs]==0,
 						Nothing,
-						Test["For the following pairs of input samples and antibodies,"<>ObjectToString[failingEqualDilutionInputs,Cache->simulatedCache]<>", the PrimaryAntibodyDilutionFactor, "<>ToString[nonEqualRoundedDilutionFactors]<>", is equal to the DilutionFactor calculated by taking the ratio of the PrimaryAntibodyVolume to the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume, "<>ToString[nonEqualCalculatedDilutionFactors]<>", when each is rounded to the thousandths place.",True,False]
+						Test["For the following pairs of input samples and antibodies,"<>ObjectToString[failingEqualDilutionInputs,Simulation -> updatedSimulation]<>", the PrimaryAntibodyDilutionFactor, "<>ToString[nonEqualRoundedDilutionFactors]<>", is equal to the DilutionFactor calculated by taking the ratio of the PrimaryAntibodyVolume to the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume, "<>ToString[nonEqualCalculatedDilutionFactors]<>", when each is rounded to the thousandths place.",True,False]
 					];
 					passingTest=If[Length[passingEqualDilutionInputs]==0,
 						Nothing,
-						Test["For the following pairs of input samples and antibodies,"<>ObjectToString[passingEqualDilutionInputs,Cache->simulatedCache]<>", the PrimaryAntibodyDilutionFactor, "<>ToString[equalRoundedDilutionFactors]<>", is equal to the DilutionFactor calculated by taking the ratio of the PrimaryAntibodyVolume to the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume, "<>ToString[equalCalculatedDilutionFactors]<>", when each is rounded to the thousandths place.",True,True]
+						Test["For the following pairs of input samples and antibodies,"<>ObjectToString[passingEqualDilutionInputs,Simulation -> updatedSimulation]<>", the PrimaryAntibodyDilutionFactor, "<>ToString[equalRoundedDilutionFactors]<>", is equal to the DilutionFactor calculated by taking the ratio of the PrimaryAntibodyVolume to the sum of the PrimaryAntibodyVolume, PrimaryAntibodyDiluentVolume, and StandardPrimaryAntibodyVolume, "<>ToString[equalCalculatedDilutionFactors]<>", when each is rounded to the thousandths place.",True,True]
 					];
 					{failingTest,passingTest}
 				],
@@ -3318,18 +3321,18 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* Throw an error message if we are throwing messages, and there are some input samples that caused standardPrimaryAntibodyStorageConditionErrors to be set to True *)
 			If[standardPrimaryAntibodyStorageConditionErrorQ&&messages,
-				Message[Error::WesConflictingStandardPrimaryAntibodyStorageOptions,ObjectToString[failingConflictingStandardPrimaryAntibodyStorageSamples,Cache->simulatedCache]]
+				Message[Error::WesConflictingStandardPrimaryAntibodyStorageOptions,ObjectToString[failingConflictingStandardPrimaryAntibodyStorageSamples,Simulation -> updatedSimulation]]
 			];
 
 			(* Define the tests the user will see for the above message *)
 			conflictingStandardPrimaryAntibodyStorageTests=If[gatherTests,
 				Module[{failingTest,passingTest},
 					failingTest=If[standardPrimaryAntibodyStorageConditionErrorQ,
-						Test["For the following samples, the StandardPrimaryAntibody and StandardPrimaryAntibodyStorageCondition options are in conflict, "<>ObjectToString[failingConflictingStandardPrimaryAntibodyStorageSamples,Cache->simulatedCache]<>":",True,False],
+						Test["For the following samples, the StandardPrimaryAntibody and StandardPrimaryAntibodyStorageCondition options are in conflict, "<>ObjectToString[failingConflictingStandardPrimaryAntibodyStorageSamples,Simulation -> updatedSimulation]<>":",True,False],
 						Nothing
 					];
 					passingTest=If[Length[passingConflictingStandardPrimaryAntibodyStorageSamples]>0,
-						Test["For the following samples, the StandardPrimaryAntibody and StandardPrimaryAntibodyStorageCondition options are not in conflict, "<>ObjectToString[passingConflictingStandardPrimaryAntibodyStorageSamples,Cache->simulatedCache]<>":",True,True],
+						Test["For the following samples, the StandardPrimaryAntibody and StandardPrimaryAntibodyStorageCondition options are not in conflict, "<>ObjectToString[passingConflictingStandardPrimaryAntibodyStorageSamples,Simulation -> updatedSimulation]<>":",True,True],
 						Nothing
 					];
 					{failingTest,passingTest}
@@ -3352,18 +3355,18 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			(* Throw an error message if we are throwing messages, and there are some input samples that caused standardSecondaryAntibodyStorageConditionErrors to be set to True *)
 			If[standardSecondaryAntibodyStorageConditionErrorQ&&messages,
-				Message[Error::WesConflictingStandardSecondaryAntibodyStorageOptions,ObjectToString[failingConflictingStandardSecondaryAntibodyStorageSamples,Cache->simulatedCache]]
+				Message[Error::WesConflictingStandardSecondaryAntibodyStorageOptions,ObjectToString[failingConflictingStandardSecondaryAntibodyStorageSamples,Simulation -> updatedSimulation]]
 			];
 
 			(* Define the tests the user will see for the above message *)
 			conflictingStandardSecondaryAntibodyStorageTests=If[gatherTests,
 				Module[{failingTest,passingTest},
 					failingTest=If[standardSecondaryAntibodyStorageConditionErrorQ,
-						Test["For the following samples, the StandardSecondaryAntibody and StandardSecondaryAntibodyStorageCondition options are in conflict, "<>ObjectToString[failingConflictingStandardSecondaryAntibodyStorageSamples,Cache->simulatedCache]<>":",True,False],
+						Test["For the following samples, the StandardSecondaryAntibody and StandardSecondaryAntibodyStorageCondition options are in conflict, "<>ObjectToString[failingConflictingStandardSecondaryAntibodyStorageSamples,Simulation -> updatedSimulation]<>":",True,False],
 						Nothing
 					];
 					passingTest=If[Length[passingConflictingStandardSecondaryAntibodyStorageSamples]>0,
-						Test["For the following samples, the StandardSecondaryAntibody and StandardSecondaryAntibodyStorageCondition options are not in conflict, "<>ObjectToString[passingConflictingStandardSecondaryAntibodyStorageSamples,Cache->simulatedCache]<>":",True,True],
+						Test["For the following samples, the StandardSecondaryAntibody and StandardSecondaryAntibodyStorageCondition options are not in conflict, "<>ObjectToString[passingConflictingStandardSecondaryAntibodyStorageSamples,Simulation -> updatedSimulation]<>":",True,True],
 						Nothing
 					];
 					{failingTest,passingTest}
@@ -3403,7 +3406,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(*  Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3453,7 +3456,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-				Cache -> simulatedCache,
+				Cache -> cache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotAmounts,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3466,7 +3470,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 					mySamples,
 					simulatedSamples,
 					ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-					Cache -> simulatedCache,
+					Cache -> cache,
+					Simulation->updatedSimulation,
 					RequiredAliquotContainers->requiredAliquotContainers,
 					RequiredAliquotAmounts->requiredAliquotAmounts,
 					AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3478,7 +3483,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-				Cache -> simulatedCache,
+				Cache -> cache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotAmounts,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3491,7 +3497,8 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 					mySamples,
 					simulatedSamples,
 					ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-					Cache -> simulatedCache,
+					Cache -> cache,
+					Simulation->updatedSimulation,
 					RequiredAliquotContainers->requiredAliquotContainers,
 					RequiredAliquotAmounts->requiredAliquotAmounts,
 					AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3537,7 +3544,7 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 	(* If we are throwing messages and any of the lysate input samples have TotalProteinConcentrations greater than 3 mg/mL and are not being Aliquotted, throw a warning *)
 	If[messages&&notInEngine&&Length[failingLysateAliquotTuples]>0,
-		Message[Warning::WesInputsShouldBeDiluted,ObjectToString[failingLysateAliquotTuples,Cache->simulatedCache]]
+		Message[Warning::WesInputsShouldBeDiluted,ObjectToString[failingLysateAliquotTuples,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, define the user-facing passing and failing tests *)
@@ -3546,11 +3553,11 @@ resolveWesExperimentOptions[mySamples:{ObjectP[Object[Sample]]...},myAntibodies:
 
 			failingTest=If[Length[failingLysateAliquotTuples]==0,
 				Nothing,
-				Test["The following inputs, "<>ObjectToString[failingLysateAliquotTuples,Cache->simulatedCache]<>", have TotalProteinConcentrations greater than 3 mg/mL that are not being diluted with the sample preparation aliquot options.",True,False]
+				Test["The following inputs, "<>ObjectToString[failingLysateAliquotTuples,Simulation -> updatedSimulation]<>", have TotalProteinConcentrations greater than 3 mg/mL that are not being diluted with the sample preparation aliquot options.",True,False]
 			];
 			passingTest=If[Length[passingLysateAliquotTuples]==0,
 				Nothing,
-				Test["The following inputs, "<>ObjectToString[passingLysateAliquotTuples,Cache->simulatedCache]<>", either have TotalProteinConcentrations less than or equal to 3 mg/mL, or TotalProteinConcentrations greater than 3 mg/mL that are being diluted with the sample preparation aliquot options.",True,True]
+				Test["The following inputs, "<>ObjectToString[passingLysateAliquotTuples,Simulation -> updatedSimulation]<>", either have TotalProteinConcentrations less than or equal to 3 mg/mL, or TotalProteinConcentrations greater than 3 mg/mL that are being diluted with the sample preparation aliquot options.",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -4150,7 +4157,7 @@ resolveIndexMatchedWesternOptions[
 
 DefineOptions[
 	wesResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|{},myTemplatedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
@@ -4180,11 +4187,11 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 		washBufferResource,concentratedLoadingBufferResource,denaturantResource,labelingReagentResource,peroxidaseReagentResource,ladderPeroxidaseReagentResource,
 		extraCapillarySampleReplacementResource,extraCapillaryBufferReplacementResource,ladderCapillaryBufferResource,luminescenceReagentResource,bufferWaterResource,
 		samplePlateResource,assayPlateResource,antibodyPlateResource,instrumentResource,capillaryCartridgeResource,pipetteTipResource,blockWashTime,numberOfBlockWashes,
-		pipetteResource,secondaryPipetteTipsResource,
+		pipetteResource,secondaryPipetteTipsResource, simulation,
 		protocolPacket,specificFields,prepPacket,finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule,optionsRule,resultRule,testsRule
 	},
 
-(* Get the resolved collapsed index matching options that don't include hidden options *)
+	(* Get the resolved collapsed index matching options that don't include hidden options *)
 	resolvedOptionsNoHidden=If[westernQ,
 		CollapseIndexMatchedOptions[
 			ExperimentWestern,
@@ -4233,7 +4240,8 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 	];
 
 	(* Get the cache *)
-	cache=Lookup[ToList[ops],Cache];
+	cache=Lookup[ToList[ops],Cache,{}];
+	simulation=Lookup[ToList[ops],Simulation, Simulation[]];
 
 	(* Get all containers which can fit on the liquid handler - many of our resources are in one of these containers *)
 	(* In case we need to prepare the resource add 0.5mL tube in 2 mL skirt to the beginning of the list (Engine uses the first requested container if it has to transfer or make a stock solution) *)
@@ -4251,6 +4259,7 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 				{MaxVolume}
 			},
 			Cache->cache,
+			Simulation -> simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -4748,12 +4757,12 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 			LadderPeroxidaseReagentStorageCondition->ladderPeroxidaseReagentStorageCondition,
 			LadderPeroxidaseReagentVolume->ladderPeroxidaseReagentVolume,
 			Replace[Checkpoints]->{
-				{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-				{"Picking Resources",1*Hour,"Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-				{"Preparing Assay Plate",1*Hour,"The SamplePlate, AntibodyPlate, and AssayPlate are loaded with the specified reagents.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-				{"Preparing Instrumentation",20*Minute,"The instrument is configured for the protocol.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20 Minute]]},
-				{"Acquiring Data",3*Hour,"Samples are loaded into the capillaries, labeled with antibodies, and chemoluminescent signal is detected.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 3Hour]]},
-				{"Returning Materials",1*Hour,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]}
+				{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+				{"Picking Resources",1*Hour,"Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+				{"Preparing Assay Plate",1*Hour,"The SamplePlate, AntibodyPlate, and AssayPlate are loaded with the specified reagents.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+				{"Preparing Instrumentation",20*Minute,"The instrument is configured for the protocol.", Link[Resource[Operator -> $BaselineOperator, Time -> 20 Minute]]},
+				{"Acquiring Data",3*Hour,"Samples are loaded into the capillaries, labeled with antibodies, and chemoluminescent signal is detected.", Link[Resource[Operator -> $BaselineOperator, Time -> 3Hour]]},
+				{"Returning Materials",1*Hour,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]}
 			}
 		|>,
 
@@ -4786,7 +4795,7 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 
 
 	(* - Populate prep field - send in initial samples and options since this handles NumberOfReplicates on its own - *)
-	prepPacket=populateSamplePrepFields[mySamples,myResolvedOptions];
+	prepPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[protocolPacket,specificFields,prepPacket];
@@ -4798,9 +4807,9 @@ wesResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myAntibodies:Lis
 		MatchQ[$ECLApplication,Engine],
 			{True,{}},
 		gatherTests,
-			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation->simulation],
 		True,
-			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache, Simulation->simulation],Null}
 	];
 
 

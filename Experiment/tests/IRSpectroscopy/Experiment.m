@@ -90,6 +90,40 @@ DefineTests[ExperimentIRSpectroscopy,
 
     (*TODO: many additional resolver checks needed*)
 
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+      options = ExperimentIRSpectroscopy[
+        {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+        PreparedModelContainer -> Model[Container, Vessel, "2mL Tube"],
+        PreparedModelAmount -> 1 Milliliter,
+        Output -> Options
+      ];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+        {ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+        {EqualP[1 Milliliter]..},
+        {"A1", "A1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
+    ],
+    Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+      ExperimentIRSpectroscopy[
+        Model[Sample, "Caffeine"],
+        PreparedModelAmount -> 1 Gram,
+        Aliquot -> True,
+        Mix -> True
+      ],
+      ObjectP[Object[Protocol, IRSpectroscopy]]
+    ],
+
     (*Instrument specific options*)
 
 
@@ -235,9 +269,26 @@ DefineTests[ExperimentIRSpectroscopy,
     ],
 
     (*Error checking*)
-
-
-
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentIRSpectroscopy[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentIRSpectroscopy[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentIRSpectroscopy[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentIRSpectroscopy[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
     Example[{Messages,"DiscardedSamples","Return an error for a discarded sample:"},
       ExperimentIRSpectroscopy[Object[Sample, "Test sample (discarded) for ExperimentIRSpectroscopy" <> $SessionUUID]],
       $Failed,
@@ -613,31 +664,6 @@ DefineTests[ExperimentIRSpectroscopy,
       False,
       Variables :> {options}
     ],
-    Example[{Options,PreparatoryPrimitives,"Specify prepared samples for measurement:"},
-      packet=First@ExperimentIRSpectroscopy[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
-        PreparatoryPrimitives -> {Define[Name -> "WaterSample Container 1",
-          Container -> Model[Container, Vessel, "2mL Tube"]],
-          Define[Name -> "WaterSample Container 2",
-            Container -> Model[Container, Vessel, "2mL Tube"]],
-          Define[Name -> "WaterSample Container 3",
-            Container -> Model[Container, Vessel, "2mL Tube"]],
-          Define[Name -> "WaterSample Container 4",
-            Container -> Model[Container, Vessel, "2mL Tube"]],
-          Transfer[Source -> Model[Sample, "Milli-Q water"],
-            Amount -> 1 Milliliter, Destination -> "WaterSample Container 1"],
-          Transfer[Source -> Model[Sample, "Milli-Q water"],
-            Amount -> 1 Milliliter, Destination -> "WaterSample Container 2"],
-          Transfer[Source -> Model[Sample, "Milli-Q water"],
-            Amount -> 1 Milliliter, Destination -> "WaterSample Container 3"],
-          Transfer[Source -> Model[Sample, "Milli-Q water"],
-            Amount -> 1 Milliliter,
-            Destination -> "WaterSample Container 4"]},
-        Blanks -> {Null, Null, Model[Sample, "Milli-Q water"],Model[Sample, "Milli-Q water"]},MinWavenumber -> {2400/Centimeter, 2400/Centimeter, 400/Centimeter,Automatic},
-        MaxWavenumber -> {5000/Centimeter, 5000/Centimeter, Automatic, Automatic}, NumberOfReadings -> 24, NumberOfReplicates -> 5,ImageSample -> False, MeasureVolume -> False, Upload -> False];
-      Length[Lookup[packet,Replace[SamplesIn]]],
-      20,
-      Variables :> {packet}
-    ],
     Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for measurement:"},
       packet=First@ExperimentIRSpectroscopy[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
         PreparatoryUnitOperations -> {
@@ -970,7 +996,7 @@ DefineTests[ExperimentIRSpectroscopy,
     Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
       options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "In Situ-1 Crystallization Plate"], Output -> Options];
       Lookup[options, AliquotContainer],
-      {1, ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]},
+      {{1, ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]}},
       Variables :> {options}
     ],
     Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -1000,10 +1026,12 @@ DefineTests[ExperimentIRSpectroscopy,
     Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1"},
       Variables:>{options}
     ]
   },
+  (* without this, telescope crashes and the test fails *)
+  HardwareConfiguration->HighRAM,
   (* Every time a test is run, reset $CreatedObjects and erase things at the end *)
 
   (* Un-comment this out when Variables works the way we would expect it to *)
@@ -1021,9 +1049,9 @@ DefineTests[ExperimentIRSpectroscopy,
         (* Initial tear-down *)
         testObjList, existsFilter,
         (* Models *)
-        modelIncompat, solidNoDensityModel, fakeModel,
+        modelIncompat, solidNoDensityModel, testModel,
         (* Bench *)
-        fakeBench,
+        testBench,
         (* Containers *)
         emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, emptyContainer7,
         emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12, emptyContainer13,
@@ -1078,211 +1106,209 @@ DefineTests[ExperimentIRSpectroscopy,
 
       EraseObject[PickList[testObjList, existsFilter], Force -> True, Verbose -> False];
 
-      {modelIncompat, solidNoDensityModel, fakeModel} = Upload[{
-        <|
-          Type -> Model[Sample],
-          Name -> "Test chemical model incompatible for ExperimentIRSpectroscopy" <> $SessionUUID,
-          State -> Liquid,
-          Replace[Composition] -> {{Null, Null}},
-          DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-          Append[IncompatibleMaterials] -> Platinum,
-          DeveloperObject -> True
-        |>,
-        <|
-          Type -> Model[Sample],
-          Name -> "Test chemical solid model with no density for ExperimentIRSpectroscopy" <> $SessionUUID,
-          State -> Solid,
-          Replace[Composition] -> {{Null,Null}},
-          DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-          DeveloperObject -> True
-        |>,
-        <|
-          Type -> Model[Sample],
-          Name -> "Test chemical liquid model for ExperimentIRSpectroscopy" <> $SessionUUID,
-          State -> Liquid,
-          Replace[Composition] -> {{Null,Null}},
-          DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-          DeveloperObject -> True
-        |>
-      }];
+      Block[{$DeveloperUpload = True},
+        {modelIncompat, solidNoDensityModel, testModel} = Upload[{
+          <|
+            Type -> Model[Sample],
+            Name -> "Test chemical model incompatible for ExperimentIRSpectroscopy" <> $SessionUUID,
+            State -> Liquid,
+            Replace[Composition] -> {{Null, Null}},
+            DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+            Append[IncompatibleMaterials] -> Platinum
+          |>,
+          <|
+            Type -> Model[Sample],
+            Name -> "Test chemical solid model with no density for ExperimentIRSpectroscopy" <> $SessionUUID,
+            State -> Solid,
+            Replace[Composition] -> {{Null,Null}},
+            DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+          |>,
+          <|
+            Type -> Model[Sample],
+            Name -> "Test chemical liquid model for ExperimentIRSpectroscopy" <> $SessionUUID,
+            State -> Liquid,
+            Replace[Composition] -> {{Null,Null}},
+            DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+          |>
+        }];
 
-      (* Create fake bench to put containers on *)
-      fakeBench = Upload[
-        <|
-          Type -> Object[Container, Bench],
-          Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-          Name -> "Test bench for ExperimentIRSpectroscopy tests " <> $SessionUUID,
-          Site -> Link[$Site],
-          DeveloperObject -> True
-        |>
-      ];
+        (* Create test bench to put containers on *)
+        testBench = Upload[
+          <|
+            Type -> Object[Container, Bench],
+            Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+            Name -> "Test bench for ExperimentIRSpectroscopy tests " <> $SessionUUID,
+            Site -> Link[$Site]
+          |>
+        ];
 
-      (* Create some empty containers and put them on the bench *)
-      {
-        emptyContainer1,
-        emptyContainer2,
-        emptyContainer3,
-        emptyContainer4,
-        emptyContainer5,
-        emptyContainer6,
-        emptyContainer7,
-        emptyContainer8,
-        emptyContainer9,
-        emptyContainer10,
-        emptyContainer11,
-        emptyContainer12,
-        emptyContainer13
-      } = UploadSample[
+        (* Create some empty containers and put them on the bench *)
         {
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"]
-        },
-        {
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench}
-        },
-        Name -> {
-          "Test container 1 for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 2 for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 3 (empty) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 4 (too low volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 5 (incompatible) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 6 (ethanol) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 7 (stock solution with water solvent) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 8 (Sodium phosphate solid) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 9 (solid with no density) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 10 (sample with no volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 11 (sample with no mass) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 12 (sample with no mass or volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test container 13 (sample with no model) for ExperimentIRSpectroscopy" <> $SessionUUID
-        },
-        Status -> Available
-      ];
-
-      (* Create some samples *)
-      {
-        discardedChemical,
-        waterSample,
-        lowVolSample,
-        incompatibleSample,
-        ethanolSample,
-        ethanolSampleNoModel,
-        ssSample,
-        solidSample,
-        solidNoDensitySample,
-        sampleNoVolume,
-        sampleNoMass,
-        sampleNeither
-      } = UploadSample[
-        {
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-          modelIncompat,
-          Model[Sample, "id:Y0lXejGKdEDW"],
-          Model[Sample, "id:Y0lXejGKdEDW"],
-          Model[Sample,StockSolution,"pH 2 Buffer Solution"],
-          Model[Sample, "Dibasic Sodium Phosphate"],
-          solidNoDensityModel,
-          fakeModel,
-          fakeModel,
-          fakeModel
-        },
-        {
-          {"A1", emptyContainer1},
-          {"A1", emptyContainer2},
-          {"A1", emptyContainer4},
-          {"A1", emptyContainer5},
-          {"A1", emptyContainer6},
-          {"A1", emptyContainer13},
-          {"A1", emptyContainer7},
-          {"A1", emptyContainer8},
-          {"A1", emptyContainer9},
-          {"A1", emptyContainer10},
-          {"A1", emptyContainer11},
-          {"A1", emptyContainer12}
-        },
-        InitialAmount -> {
-          50 Milliliter,
-          50 Milliliter,
-          5 Microliter,
-          50 Milliliter,
-          50 Milliliter,
-          50 Milliliter,
-          50 Milliliter,
-          10 Gram,
-          5 Gram,
-          5 Gram,
-          5 Milliliter,
-          Null
-        },
-        Name -> {
-          "Test sample (discarded) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 3 (too low volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 4 (incompatible) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 5 (chemical, ethanol) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 12 (chemical, ethanol, no model) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 6 (stock solution with water solvent) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 7 (solid sample) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 8 (solid sample with no density) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 9 (sample no volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 10 (sample no mass) for ExperimentIRSpectroscopy" <> $SessionUUID,
-          "Test sample 11 (sample no mass nor volume) for ExperimentIRSpectroscopy" <> $SessionUUID
-        }
-      ];
-
-      (* Make some changes to our samples to make them invalid *)
-      Upload[{
-        <|Object -> discardedChemical, Status -> Discarded, DeveloperObject -> True|>,
-        <|Object -> waterSample,
-          Replace[Composition] -> {
-            {100 VolumePercent, Link[Model[Molecule, "Water"]]},
-            {5 Micromolar, Link[Model[Molecule, "Uracil"]]}
+          emptyContainer1,
+          emptyContainer2,
+          emptyContainer3,
+          emptyContainer4,
+          emptyContainer5,
+          emptyContainer6,
+          emptyContainer7,
+          emptyContainer8,
+          emptyContainer9,
+          emptyContainer10,
+          emptyContainer11,
+          emptyContainer12,
+          emptyContainer13
+        } = UploadSample[
+          {
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"]
           },
-          DeveloperObject->True|>,
-        <|Object -> lowVolSample, DeveloperObject -> True|>,
-        <|Object -> incompatibleSample, DeveloperObject -> True|>,
-        <|Object -> ethanolSample, DeveloperObject -> True|>,
-        <|Object -> ssSample, DeveloperObject -> True|>,
-        <|Object -> solidSample, DeveloperObject -> True|>,
-        <|Object -> solidNoDensitySample, DeveloperObject -> True|>,
-        <|Object -> sampleNoVolume, DeveloperObject -> True|>,
-        <|Object -> sampleNoMass, DeveloperObject -> True|>,
-        <|Object -> sampleNeither, DeveloperObject -> True|>,
-        <|Object -> ethanolSampleNoModel, Model -> Null, DeveloperObject -> True|>
-      }];
+          {
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench},
+            {"Work Surface", testBench}
+          },
+          Name -> {
+            "Test container 1 for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 2 for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 3 (empty) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 4 (too low volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 5 (incompatible) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 6 (ethanol) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 7 (stock solution with water solvent) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 8 (Sodium phosphate solid) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 9 (solid with no density) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 10 (sample with no volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 11 (sample with no mass) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 12 (sample with no mass or volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test container 13 (sample with no model) for ExperimentIRSpectroscopy" <> $SessionUUID
+          },
+          Status -> Available
+        ];
 
-      sample1 = waterSample;
+        (* Create some samples *)
+        {
+          discardedChemical,
+          waterSample,
+          lowVolSample,
+          incompatibleSample,
+          ethanolSample,
+          ethanolSampleNoModel,
+          ssSample,
+          solidSample,
+          solidNoDensitySample,
+          sampleNoVolume,
+          sampleNoMass,
+          sampleNeither
+        } = UploadSample[
+          {
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+            modelIncompat,
+            Model[Sample, "id:Y0lXejGKdEDW"],
+            Model[Sample, "id:Y0lXejGKdEDW"],
+            Model[Sample,StockSolution,"pH 2 Buffer Solution"],
+            Model[Sample, "Dibasic Sodium Phosphate"],
+            solidNoDensityModel,
+            testModel,
+            testModel,
+            testModel
+          },
+          {
+            {"A1", emptyContainer1},
+            {"A1", emptyContainer2},
+            {"A1", emptyContainer4},
+            {"A1", emptyContainer5},
+            {"A1", emptyContainer6},
+            {"A1", emptyContainer13},
+            {"A1", emptyContainer7},
+            {"A1", emptyContainer8},
+            {"A1", emptyContainer9},
+            {"A1", emptyContainer10},
+            {"A1", emptyContainer11},
+            {"A1", emptyContainer12}
+          },
+          InitialAmount -> {
+            50 Milliliter,
+            50 Milliliter,
+            5 Microliter,
+            50 Milliliter,
+            50 Milliliter,
+            50 Milliliter,
+            50 Milliliter,
+            10 Gram,
+            5 Gram,
+            5 Gram,
+            5 Milliliter,
+            Null
+          },
+          Name -> {
+            "Test sample (discarded) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 3 (too low volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 4 (incompatible) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 5 (chemical, ethanol) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 12 (chemical, ethanol, no model) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 6 (stock solution with water solvent) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 7 (solid sample) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 8 (solid sample with no density) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 9 (sample no volume) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 10 (sample no mass) for ExperimentIRSpectroscopy" <> $SessionUUID,
+            "Test sample 11 (sample no mass nor volume) for ExperimentIRSpectroscopy" <> $SessionUUID
+          }
+        ];
 
-      (* Create a protocol that we'll use for template testing *)
-      Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-      (* Create a protocol that we'll use for template testing *)
-        templateIRSpectroscopyProtocol = ExperimentIRSpectroscopy[sample1,
-          Blanks -> Null,
-          Name -> "Test Template Protocol for ExperimentIRSpectroscopy" <> $SessionUUID]
+        (* Make some changes to our samples to make them invalid *)
+        Upload[{
+          <|Object -> discardedChemical, Status -> Discarded, DeveloperObject -> True|>,
+          <|Object -> waterSample,
+            Replace[Composition] -> {
+              {100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+              {5 Micromolar, Link[Model[Molecule, "Uracil"]], Now}
+            },
+            DeveloperObject->True|>,
+          <|Object -> lowVolSample, DeveloperObject -> True|>,
+          <|Object -> incompatibleSample, DeveloperObject -> True|>,
+          <|Object -> ethanolSample, DeveloperObject -> True|>,
+          <|Object -> ssSample, DeveloperObject -> True|>,
+          <|Object -> solidSample, DeveloperObject -> True|>,
+          <|Object -> solidNoDensitySample, DeveloperObject -> True|>,
+          <|Object -> sampleNoVolume, DeveloperObject -> True|>,
+          <|Object -> sampleNoMass, DeveloperObject -> True|>,
+          <|Object -> sampleNeither, DeveloperObject -> True|>,
+          <|Object -> ethanolSampleNoModel, Model -> Null, DeveloperObject -> True|>
+        }];
+
+        sample1 = waterSample;
+
+        (* Create a protocol that we'll use for template testing *)
+        Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
+        (* Create a protocol that we'll use for template testing *)
+          templateIRSpectroscopyProtocol = ExperimentIRSpectroscopy[sample1,
+            Blanks -> Null,
+            Name -> "Test Template Protocol for ExperimentIRSpectroscopy" <> $SessionUUID]
+        ]
       ]
     ]
   ),
@@ -1328,7 +1354,7 @@ DefineTests[
 
     Off[Warning::SamplesOutOfStock];
     Off[Warning::InstrumentUndergoingMaintenance];
-    Module[{testObjList, existsFilter, fakeBench, emptyContainer1, emptyContainer2, discardedChemical, waterSample},
+    Module[{testObjList, existsFilter, testBench, emptyContainer1, emptyContainer2, discardedChemical, waterSample},
       testObjList = {
         Object[Container, Bench, "Test bench for ExperimentIRSpectroscopyOptions " <> $SessionUUID],
         Object[Container, Vessel, "Test container 1 for ExperimentIRSpectroscopyOptions " <> $SessionUUID],
@@ -1343,64 +1369,66 @@ DefineTests[
 
       EraseObject[PickList[testObjList, existsFilter], Force -> True, Verbose -> False];
 
-      (* Create a test bench *)
-      fakeBench = Upload[
-        <|
-          Type -> Object[Container, Bench],
-          Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-          Name -> "Test bench for ExperimentIRSpectroscopyOptions " <> $SessionUUID
-        |>
+      Block[{$DeveloperUpload = True},
+        (* Create a test bench *)
+        testBench = Upload[
+          <|
+            Type -> Object[Container, Bench],
+            Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+            Name -> "Test bench for ExperimentIRSpectroscopyOptions " <> $SessionUUID
+          |>
+        ];
+
+        (* Create some empty test containers and put them on the test bench *)
+        {emptyContainer1, emptyContainer2} = UploadSample[
+          {
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"]
+          },
+          {
+            {"Work Surface", testBench},
+            {"Work Surface", testBench}
+          },
+          Name -> {
+            "Test container 1 for ExperimentIRSpectroscopyOptions " <> $SessionUUID,
+            "Test container 2 for ExperimentIRSpectroscopyOptions " <> $SessionUUID
+          },
+          Status -> {
+            Available,
+            Available
+          }
+        ];
+
+        (* Create some samples and put them in the test containers *)
+        {discardedChemical, waterSample} = UploadSample[
+          {
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"]
+          },
+          {
+            {"A1", emptyContainer1},
+            {"A1", emptyContainer2}
+          },
+          InitialAmount -> {
+            50 Milliliter,
+            50 Milliliter
+          },
+          Name -> {
+            "Test sample (discarded) for ExperimentIRSpectroscopyOptions " <> $SessionUUID,
+            "Test sample 2 (red food dye) for ExperimentIRSpectroscopyOptions " <> $SessionUUID
+          }
+        ];
+
+        (* Make some changes to our samples to make them invalid. *)
+
+        Upload[{
+          <|Object -> emptyContainer1|>,
+          <|Object -> emptyContainer2|>,
+          <|Object -> discardedChemical, Status -> Discarded, DeveloperObject -> True|>,
+          <|Object -> waterSample, Concentration -> 10 Micromolar, DeveloperObject -> True|>}
+        ]
       ];
-
-      (* Create some empty test containers and put them on the test bench *)
-      {emptyContainer1, emptyContainer2} = UploadSample[
-        {
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"]
-        },
-        {
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench}
-        },
-        Name -> {
-          "Test container 1 for ExperimentIRSpectroscopyOptions " <> $SessionUUID,
-          "Test container 2 for ExperimentIRSpectroscopyOptions " <> $SessionUUID
-        },
-        Status -> {
-          Available,
-          Available
-        }
-      ];
-
-      (* Create some samples and put them in the test containers *)
-      {discardedChemical, waterSample} = UploadSample[
-        {
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"]
-        },
-        {
-          {"A1", emptyContainer1},
-          {"A1", emptyContainer2}
-        },
-        InitialAmount -> {
-          50 Milliliter,
-          50 Milliliter
-        },
-        Name -> {
-          "Test sample (discarded) for ExperimentIRSpectroscopyOptions " <> $SessionUUID,
-          "Test sample 2 (red food dye) for ExperimentIRSpectroscopyOptions " <> $SessionUUID
-        }
-      ];
-
-      (* Make some changes to our samples to make them invalid. *)
-
-      Upload[{
-        <|Object -> emptyContainer1|>,
-        <|Object -> emptyContainer2|>,
-        <|Object -> discardedChemical, Status -> Discarded, DeveloperObject -> True|>,
-        <|Object -> waterSample, Concentration -> 10 Micromolar, DeveloperObject -> True|>}
-      ]
-    ];
+    ]
   ),
 
   SymbolTearDown :> (
@@ -1443,7 +1471,7 @@ DefineTests[
     Off[Warning::SamplesOutOfStock];
     Off[Warning::InstrumentUndergoingMaintenance];
 
-    Module[{testObjList, existsFilter, fakeBench, emptyContainer1, emptyContainer2, discardedChemical, waterSample},
+    Module[{testObjList, existsFilter, testBench, emptyContainer1, emptyContainer2, discardedChemical, waterSample},
 
       testObjList={
         Object[Container, Vessel, "Test container 1 for ValidExperimentIRSpectroscopyQ" <> $SessionUUID],
@@ -1459,52 +1487,54 @@ DefineTests[
 
       EraseObject[PickList[testObjList, existsFilter], Force->True, Verbose->False];
 
-      fakeBench = Upload[
-        <|
-          Type -> Object[Container, Bench],
-          Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-          Name -> "Test bench for ValidExperimentIRSpectroscopyQ tests " <> $SessionUUID,
-          Site -> Link[$Site]
-        |>
-      ];
+      Block[{$DeveloperUpload = True},
+        testBench = Upload[
+          <|
+            Type -> Object[Container, Bench],
+            Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+            Name -> "Test bench for ValidExperimentIRSpectroscopyQ tests " <> $SessionUUID,
+            Site -> Link[$Site]
+          |>
+        ];
 
-      (* Create some empty containers *)
-      {emptyContainer1, emptyContainer2} = UploadSample[
-        {
-          Model[Container, Vessel, "50mL Tube"],
-          Model[Container, Vessel, "50mL Tube"]
-        },
-        {
-          {"Work Surface", fakeBench},
-          {"Work Surface", fakeBench}
-        },
-        Name -> {
-          "Test container 1 for ValidExperimentIRSpectroscopyQ" <> $SessionUUID,
-          "Test container 2 for ValidExperimentIRSpectroscopyQ" <> $SessionUUID
-        }
-      ];
+        (* Create some empty containers *)
+        {emptyContainer1, emptyContainer2} = UploadSample[
+          {
+            Model[Container, Vessel, "50mL Tube"],
+            Model[Container, Vessel, "50mL Tube"]
+          },
+          {
+            {"Work Surface", testBench},
+            {"Work Surface", testBench}
+          },
+          Name -> {
+            "Test container 1 for ValidExperimentIRSpectroscopyQ" <> $SessionUUID,
+            "Test container 2 for ValidExperimentIRSpectroscopyQ" <> $SessionUUID
+          }
+        ];
 
-      (* Create some samples *)
-      {discardedChemical, waterSample} = ECL`InternalUpload`UploadSample[
-        {
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-          Model[Sample, StockSolution, "Red Food Dye Test Solution"]
-        },
-        {
-          {"A1", emptyContainer1}, {"A1", emptyContainer2}
-        },
-        InitialAmount->{50 Milliliter, 50 Milliliter},
-        Name->{
-          "Test sample (discarded) for ValidExperimentIRSpectroscopyQ" <> $SessionUUID,
-          "Test sample 2 (red food dye) for ValidExperimentIRSpectroscopyQ" <> $SessionUUID
-        }
-      ];
+        (* Create some samples *)
+        {discardedChemical, waterSample} = ECL`InternalUpload`UploadSample[
+          {
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+            Model[Sample, StockSolution, "Red Food Dye Test Solution"]
+          },
+          {
+            {"A1", emptyContainer1}, {"A1", emptyContainer2}
+          },
+          InitialAmount->{50 Milliliter, 50 Milliliter},
+          Name->{
+            "Test sample (discarded) for ValidExperimentIRSpectroscopyQ" <> $SessionUUID,
+            "Test sample 2 (red food dye) for ValidExperimentIRSpectroscopyQ" <> $SessionUUID
+          }
+        ];
 
-      (* Make some changes to our samples to make them invalid. *)
-      Upload[{
-        <|Object->discardedChemical, Status->Discarded, DeveloperObject->True|>,
-        <|Object->waterSample, Concentration->10*Micromolar, DeveloperObject->True|>
-      }]
+        (* Make some changes to our samples to make them invalid. *)
+        Upload[{
+          <|Object->discardedChemical, Status->Discarded, DeveloperObject->True|>,
+          <|Object->waterSample, Concentration->10*Micromolar, DeveloperObject->True|>
+        }]
+      ]
     ]
   ),
 

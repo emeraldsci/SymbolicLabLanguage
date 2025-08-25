@@ -30,7 +30,12 @@ DefineTests[
 		Example[{Basic,"Check chemical compatibility of a mixed list of models and samples with an instrument model:"},
 			CompatibleMaterialsQ[Model[Instrument,FPLC,"AKTApurifier UPC 10"],{Model[Sample,"Acetone, HPLC Grade"],Object[Sample,"17.5% Nitric Acid Sample"]}],
 			False,
-			Messages:>{Warning::IncompatibleMaterials}
+			Messages:>{Error::IncompatibleMaterials}
+		],
+		Example[{Basic,"Check chemical compatible of multiple samples and instruments:"},
+			CompatibleMaterialsQ[{Model[Instrument,HPLC,"UltiMate 3000"], Model[Instrument, FPLC, "AKTApurifier UPC 10"]},{Model[Sample,"Acetone, HPLC Grade"],Object[Sample,"17.5% Nitric Acid Sample"]}, OutputFormat -> Boolean],
+			{{True, True}, {False, True}},
+			Messages:>{Error::IncompatibleMaterials}
 		],
 		Example[{Additional,"Returns True if given an empty list:"},
 			CompatibleMaterialsQ[Model[Instrument,FPLC,"AKTApurifier UPC 10"],{}],
@@ -59,6 +64,15 @@ DefineTests[
 				Output->{Result,Tests}
 			],
 			{False,{_EmeraldTest ..}}
+		],
+		Example[{Options, {Output, OutputFormat},"If having Result and Tests and OutputFormat -> Boolean, make sure we get the right level of listedness:"},
+			CompatibleMaterialsQ[
+				Model[Instrument,FPLC,"AKTApurifier UPC 10"],
+				{Model[Sample,"Acetone, HPLC Grade"],Object[Sample,"17.5% Nitric Acid Sample"]},
+				Output->{Result,Tests},
+				OutputFormat -> Boolean
+			],
+			{{False, True},{_EmeraldTest ..}}
 		]
 	}
 ];

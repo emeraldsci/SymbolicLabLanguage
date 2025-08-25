@@ -64,6 +64,25 @@ DefineObjectType[Object[Container, GasCylinder], {
 			Pattern:>GasP,
 			Description->"The type of gas contained by this cylinder.",
 			Category->"Container Specifications"
+		},
+		LiquidLevelSensor -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sensor][DevicesMonitored],
+			Description -> "Liquid level sensor used to monitor cryogenic freezer's liquid nitrogen level.",
+			Category -> "Sensor Information"
+		},
+		CryogenicFreezer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> {
+				Object[Instrument, CryogenicFreezer][Cylinder],
+				Object[Instrument, PortableCooler][Cylinder]
+			},
+			Description -> "Cryogenic Freezer connected to the gas cylinder.",
+			Category -> "Sensor Information"
 		}
 	}
 }];

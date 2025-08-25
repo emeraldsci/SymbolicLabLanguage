@@ -72,7 +72,11 @@ DefineObjectType[Object[Qualification,LiquidLevelDetector],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation],
+			Relation->Alternatives[
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description->"The sample manipulation protocol used to generate the test samples.",
 			Category->"Sample Preparation"
 		},

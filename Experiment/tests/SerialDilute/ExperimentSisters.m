@@ -94,13 +94,12 @@ DefineTests[ExperimentSerialDilutePreview,
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 3 (200 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 4 (Discarded)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 5 (no amount)" <> $SessionUUID],
-                Object[Sample,"ExperimentSerialDilutePreview New Test Chemcial 6 (100 mg)" <> $SessionUUID],
+                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 6 (100 mg)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 7 (0.01 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 8 (120 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 9 (200 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 2 (100 uL)" <> $SessionUUID],
-                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 3 (100 uL)" <> $SessionUUID],
-                Object[Protocol,SampleManipulation,Dilute,"Existing ExperimentSerialDilutePreview Protocol" <> $SessionUUID]
+                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 3 (100 uL)" <> $SessionUUID]
             };
             existingObjs=PickList[allObjs,DatabaseMemberQ[allObjs]];
             EraseObject[existingObjs,Force->True,Verbose->False]
@@ -268,7 +267,7 @@ DefineTests[ExperimentSerialDilutePreview,
                         "ExperimentSerialDilutePreview New Test Chemical 3 (200 uL)" <> $SessionUUID,
                         "ExperimentSerialDilutePreview New Test Chemical 4 (Discarded)" <> $SessionUUID,
                         "ExperimentSerialDilutePreview New Test Chemical 5 (no amount)" <> $SessionUUID,
-                        "ExperimentSerialDilutePreview New Test Chemcial 6 (100 mg)" <> $SessionUUID,
+                        "ExperimentSerialDilutePreview New Test Chemical 6 (100 mg)" <> $SessionUUID,
                         "ExperimentSerialDilutePreview New Test Chemical 7 (0.01 uL)" <> $SessionUUID,
                         "ExperimentSerialDilutePreview New Test Chemical 8 (120 uL)" <> $SessionUUID,
                         "ExperimentSerialDilutePreview New Test Chemical 9 (200 uL)" <> $SessionUUID,
@@ -323,13 +322,12 @@ DefineTests[ExperimentSerialDilutePreview,
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 3 (200 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 4 (Discarded)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 5 (no amount)" <> $SessionUUID],
-                Object[Sample,"ExperimentSerialDilutePreview New Test Chemcial 6 (100 mg)" <> $SessionUUID],
+                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 6 (100 mg)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 7 (0.01 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 8 (120 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical 9 (200 uL)" <> $SessionUUID],
                 Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 2 (100 uL)" <> $SessionUUID],
-                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 3 (100 uL)" <> $SessionUUID],
-                Object[Protocol,SampleManipulation,Dilute,"Existing ExperimentSerialDilutePreview Protocol" <> $SessionUUID]
+                Object[Sample,"ExperimentSerialDilutePreview New Test Chemical In Plate 3 (100 uL)" <> $SessionUUID]
             };
             existingObjs=PickList[allObjs,DatabaseMemberQ[allObjs]];
             EraseObject[existingObjs,Force->True,Verbose->False]

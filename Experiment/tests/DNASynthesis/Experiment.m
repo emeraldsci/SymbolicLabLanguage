@@ -384,7 +384,7 @@ DefineTests[ExperimentDNASynthesis,
 			{LinkP[Model[Sample, "id:E8zoYveRlKq5"]], LinkP[Object[Sample, "Test activator solution for ExperimentDNASynthesis Unit Test " <> $SessionUUID]]}
 		],
 		Example[
-			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified Activator Solutions is not copacetic with the number of banks used:"},
+			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified Activator Solutions is not compatible with the number of banks used:"},
 			ExperimentDNASynthesis[
 				ConstantArray[Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID], 40],
 				ActivatorSolution -> {Model[Sample, "id:E8zoYveRlKq5"]}
@@ -465,7 +465,7 @@ DefineTests[ExperimentDNASynthesis,
 			{LinkP[Model[Sample, "id:4pO6dMWvnAKX"]], LinkP[Object[Sample, "Test Cap A solution for ExperimentDNASynthesis Unit Test " <> $SessionUUID]]}
 		],
 		Example[
-			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified CapA Solutions is not copacetic with teh number of banks used:"},
+			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified CapA Solutions is not compatible with the number of banks used:"},
 			ExperimentDNASynthesis[
 				ConstantArray[Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID], 40],
 				CapASolution -> {Model[Sample, "id:4pO6dMWvnAKX"]}
@@ -546,7 +546,7 @@ DefineTests[ExperimentDNASynthesis,
 			{LinkP[Model[Sample, "id:P5ZnEj4P8qKE"]], LinkP[Object[Sample, "Test Cap B solution for ExperimentDNASynthesis Unit Test " <> $SessionUUID]]}
 		],
 		Example[
-			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified CapB Solutions is not copacetic with teh number of banks used:"},
+			{Messages, "MismatchDeckReagentBanks", "Raise error when the number of specified CapB Solutions is not compatible with the number of banks used:"},
 			ExperimentDNASynthesis[
 				ConstantArray[Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID], 40],
 				CapBSolution -> {Model[Sample, "id:P5ZnEj4P8qKE"]}
@@ -1816,6 +1816,13 @@ DefineTests[ExperimentDNASynthesis,
 				Status],
 			InCart
 		],
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentDNASynthesis[{Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID], Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID]}, CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"],
+				CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options, Template, "Inherit the resolved options of a previous protocol:"},
 			(referenceProtocol = ExperimentDNASynthesis[{Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID], Model[Sample, "polyATTest ExperimentDNASynthesis Test" <> $SessionUUID]}, Scale -> 1 Micromole];
 			Lookup[
@@ -2026,7 +2033,7 @@ DefineTests[ExperimentDNASynthesis,
 				Mass->Quantity[0.0012`, "Grams"],
 				Model->Link[Model[Sample, "id:WNa4ZjRD0z3z"], Objects],
 				Status->Available,
-				Replace[Composition]->{{100 MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]]}},
+				Replace[Composition]->{{100 MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]], Now}},
 				DeveloperObject->True,
 				Site->Link[$Site],
 				Container->Link[Object[Container, ReactionVessel, SolidPhaseSynthesis, "Test container for 40 nmol column for ExperimentDNASynthesis" <> $SessionUUID], Contents, 2],
@@ -2046,7 +2053,7 @@ DefineTests[ExperimentDNASynthesis,
 				Type->Object[Sample],
 				Name->"Test 40 nmol column for ExperimentDNASynthesis (2)" <> $SessionUUID,
 				Model->Link[Model[Sample, "id:WNa4ZjRD0z3z"], Objects],
-				Replace[Composition]->{{100 MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]]}},
+				Replace[Composition]->{{100 MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]], Now}},
 				Mass->Quantity[0.0012`, "Grams"],
 				Status->Available,
 				DeveloperObject->True,
@@ -2059,7 +2066,7 @@ DefineTests[ExperimentDNASynthesis,
 				Type->Object[Sample],
 				Name->"Test 40 nmol column for ExperimentDNASynthesis No Loading" <> $SessionUUID,
 				Model->Link[Model[Sample, "id:WNa4ZjRD0z3z"], Objects],
-				Replace[Composition]->{{Null, Null}},
+				Replace[Composition]->{{Null, Null, Null}},
 				Mass->Quantity[0.0012`, "Grams"],
 				Status->Available,
 				Site->Link[$Site],
@@ -2083,7 +2090,7 @@ DefineTests[ExperimentDNASynthesis,
 				Type->Object[Sample],
 				Site->Link[$Site],
 				Name->"Test 1000 nmol column for ExperimentDNASynthesis" <> $SessionUUID,
-				Replace[Composition]->{{100MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]]}},
+				Replace[Composition]->{{100MassPercent, Link[Model[Resin, "id:9RdZXv1l7pX9"]], Now}},
 				DeveloperObject->True,
 				Container->Link[Object[Container, ReactionVessel, SolidPhaseSynthesis, "Test container for 40 nmol column for ExperimentDNASynthesis" <> $SessionUUID], Contents, 2],
 				Position->"A1"
@@ -2186,7 +2193,7 @@ DefineTests[ExperimentDNASynthesis,
 				PreDownloaded->True,
 				ProtectingGroup->DMT,
 				ResinMaterial->ControlledPoreGlass,
-				(*Reusability -> True,*)
+				(*Reusable -> True,*)
 				State->Solid,
 				Strand->Link[dnaSynthIdModel3]
 			|>];
@@ -2211,7 +2218,7 @@ DefineTests[ExperimentDNASynthesis,
 			Upload[<|
 				Type->Object[Sample],
 				Mass->Quantity[0.006`, "Grams"],
-				Replace[Composition]->{{100MassPercent, Link[Model[Resin, SolidPhaseSupport, "Test model resin oligomer GC for ExperimentDNASynthesis" <> $SessionUUID]]}},
+				Replace[Composition]->{{100MassPercent, Link[Model[Resin, SolidPhaseSupport, "Test model resin oligomer GC for ExperimentDNASynthesis" <> $SessionUUID]], Now}},
 				Status->Available,
 				Site->Link[$Site],
 				DeveloperObject->True,
@@ -2261,7 +2268,7 @@ DefineTests[ExperimentDNASynthesis,
 				Container->Link[Object[Container, Vessel,"Test container for amidite for ExperimentDNASynthesis" <> $SessionUUID],Contents, 2],
 				Mass->Quantity[4.`, "Grams"],
 				Model->Link[Model[Sample, "dT-CE Phosphoramidite"], Objects],
-				Replace[Composition]->{{100 MassPercent, Link[Model[Molecule, "id:01G6nvwRWRLd"]]}},
+				Replace[Composition]->{{100 MassPercent, Link[Model[Molecule, "id:01G6nvwRWRLd"]], Now}},
 				Position->"A1",
 				Status->Stocked,
 				DeveloperObject->True
@@ -2321,11 +2328,10 @@ DefineTests[ExperimentDNASynthesis,
 						Site->Link[$Site],
 						StorageCondition->Link[Model[StorageCondition, "id:vXl9j57YrPlN"]],
 						Volume->Quantity[0.45`, "Liters"],
-						Replace[Composition]->{{Quantity[3,
-							IndependentUnit["MassPercent"]],
-							Link[Model[Molecule, "id:J8AY5jD675Px"]]}, {Quantity[90,
-							IndependentUnit["MassPercent"]],
-							Link[Model[Molecule, "id:6V0npvmlWlvV"]]}},
+						Replace[Composition]->{
+							{Quantity[3, IndependentUnit["MassPercent"]], Link[Model[Molecule, "id:J8AY5jD675Px"]], Now},
+							{Quantity[90, IndependentUnit["MassPercent"]], Link[Model[Molecule, "id:6V0npvmlWlvV"]], Now}
+						},
 						DeveloperObject->True
 					|>,
 					(* Doppelganger object of Object[Sample,"id:V0npvmanwx1"] *)
@@ -2342,15 +2348,16 @@ DefineTests[ExperimentDNASynthesis,
 						Site->Link[$Site],
 						StorageCondition->Link[Model[StorageCondition, "id:vXl9j57YrPlN"]],
 						Volume->Quantity[0.45`, "Liters"],
-						Replace[Composition]->{{Quantity[10, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:WNa4ZjKVdVpL"]]},
-							{Quantity[80, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:6V0npvmlWlvV"]]},
-							{Quantity[10, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:lYq9jRxPaP7r"]]}
+						Replace[Composition]->{
+							{Quantity[10, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:WNa4ZjKVdVpL"]], Now},
+							{Quantity[80, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:6V0npvmlWlvV"]], Now},
+							{Quantity[10, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:lYq9jRxPaP7r"]], Now}
 						},
 						DeveloperObject->True
 					|>,
 					(* Doppelganger object of Object[Sample,"id:GmzlKjPdpz6p"] *)
 					<|
-						Type->Object[Sample], Name->Null,
+						Type->Object[Sample],
 						Name->"Test Cap B solution for ExperimentDNASynthesis Unit Test " <> $SessionUUID,
 						Model->Link[Model[Sample, "id:P5ZnEj4P8qKE"], Objects],
 						Container->Link[Object[Container, Vessel, "Test container for Cap B solution for ExperimentDNASynthesis Unit Test " <> $SessionUUID], Contents, 2],
@@ -2362,11 +2369,10 @@ DefineTests[ExperimentDNASynthesis,
 						Site->Link[$Site],
 						StorageCondition->Link[Model[StorageCondition, "id:vXl9j57YrPlN"]],
 						Volume->Quantity[0.45, "Liters"],
-						Replace[Composition]->{{Quantity[20,
-							IndependentUnit["VolumePercent"]],
-							Link[Model[Molecule, "id:AEqRl9K67lYa"]]}, {Quantity[80,
-							IndependentUnit["VolumePercent"]],
-							Link[Model[Molecule, "id:54n6evLm7mvv"]]}},
+						Replace[Composition]->{
+							{Quantity[20, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:AEqRl9K67lYa"]], Now},
+							{Quantity[80, IndependentUnit["VolumePercent"]], Link[Model[Molecule, "id:54n6evLm7mvv"]], Now}
+						},
 						DeveloperObject->True
 					|>
 				}
@@ -2746,9 +2752,10 @@ DefineTests[ValidExperimentDNASynthesisQ,
 		],
 		Example[
 			{Basic, "If an option is invalid, returns False:"},
-			ValidExperimentDNASynthesisQ[{Model[Sample, "polyATTest for ValidExperimentDNASynthesisQ"<>$SessionUUID]},
+			Quiet[ValidExperimentDNASynthesisQ[{Model[Sample, "polyATTest for ValidExperimentDNASynthesisQ"<>$SessionUUID]},
 				Phosphoramidites -> {{DNA["A"], Model[Sample, "NonExistingSample"]}}
 			],
+				{Download::ObjectDoesNotExist}],
 			False
 		],
 		Example[{Options, OutputFormat, "Return a test summary of the tests run to validate the call:"},

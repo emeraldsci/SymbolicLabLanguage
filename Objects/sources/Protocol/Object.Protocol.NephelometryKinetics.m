@@ -156,28 +156,43 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
+		BlankContainerUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A set of instructions specifying the transfers of blanks into the plates used to house samples for nephelometry measurement.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
 		BlankContainerManipulation -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "A sample manipulation protocol used to transfer blanks into the plates used to house sample for measurement.",
+			Relation -> Alternatives[
+				Object[Protocol,SampleManipulation],
+				Object[Protocol,RoboticCellPreparation],
+				Object[Protocol,ManualCellPreparation],
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
+			Description -> "The protocol used to transfer blanks into the plates used to house sample for measurement.",
 			Category -> "General"
 		},
 		MoatPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of MoatBuffer into MoatWells in order to create the moat to slow evaporation of inner assay samples.",
-			Category -> "Sample Preparation",
+			Category -> "General",
 			Developer -> True
 		},
 		MoatManipulation -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The sample manipulations protocol used to transfer buffer into the moat wells.",
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
 			Category -> "General"
 		},
 		AssayPlatePrimitives -> {
@@ -188,13 +203,28 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Category -> "Sample Preparation",
 			Developer -> True
 		},
+		AssayPlateUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A set of instructions specifying the aliquoting of MoatBuffer into MoatWells in order to create the moat and transfer of samples and diluents into the assay plate to create the dilution curves if specified.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
 		AssayPlateManipulation -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The sample manipulations protocol used to transfer buffer into the moat wells and create the dilution series if specified.",
-			Category -> "General"
+			Relation -> Alternatives[
+				Object[Protocol,SampleManipulation],
+				Object[Protocol,RoboticCellPreparation],
+				Object[Protocol,ManualCellPreparation],
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
+			Description -> "The protocol used to transfer buffer into the moat wells and create the dilution series if specified.",
+			Category -> "Sample Preparation"
 		},
 		AssayPlatePlacements -> {
 			Format -> Multiple,
@@ -258,6 +288,23 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Pattern :> GreaterEqualP[0 * Percent],
 			Units -> Percent,
 			Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			Category -> "Measurement"
+		},
+		AtmosphereEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			Category -> "Measurement"
+		},
+		EstimatedACUEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The estimated length of time for the gas level inside the chamber to reach the TargetOxygenLevel and TargetCarbonDioxideLevel.",
+			Developer -> True,
 			Category -> "Measurement"
 		},
 		Instrument -> {
@@ -690,7 +737,7 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		PrimaryPreppingSolvent -> {
+		Line1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -701,7 +748,7 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Description -> "The primary solvent with which the injectors are washed prior to running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryPreppingSolvent -> {
+		Line1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -712,7 +759,7 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Description -> "The secondary solvent with which the injectors are washed prior to running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		PrimaryFlushingSolvent -> {
+		Line2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -723,7 +770,7 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryFlushingSolvent -> {
+		Line2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -733,6 +780,66 @@ DefineObjectType[Object[Protocol, NephelometryKinetics], {
 			],
 			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
 			Category -> "Injector Cleaning"
+		},
+		PrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		StorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]| Object[Container] | Object[Sample] | Model[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move the injection containers into position.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Placements",
+			Developer -> True
 		},
 		CleaningRack -> {
 			Format -> Single,

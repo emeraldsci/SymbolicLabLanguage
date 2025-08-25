@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 (* ::Subsection::Closed:: *)
 (*resolveSharedOptions*)
@@ -43,7 +43,7 @@ DefineUsage[
 	populateWorkingAndAliquotSamples,
 	{
 		BasicDefinitions->{
-			{"populateWorkingAndAliquotSamples[protocol]","protocol"," populates WorkingSamples/WorkingContainers from SamplesIn/ContainersIn if they are not filled out, otherwise, populates AliquotSamples if WorkingSamples is different than SamplesIn."}
+			{"populateWorkingAndAliquotSamples[protocol]","protocol","populates WorkingSamples/WorkingContainers from SamplesIn/ContainersIn if they are not filled out, otherwise, populates AliquotSamples if WorkingSamples is different than SamplesIn."}
 		},
 		MoreInformation->{},
 		Input:>{
@@ -53,7 +53,8 @@ DefineUsage[
 			{"protocol",ObjectP[Object[Protocol]],"The updated protocol."}
 		},
 		SeeAlso->{
-			"populatePreparedSamples"
+			"populatePreparedSamples",
+			"populateWorkingSamples"
 		},
 		Author->{"ben", "tyler.pabst", "charlene.konkankit", "thomas"}
 	}
@@ -67,10 +68,10 @@ DefineUsage[
 	populatePreparedSamples,
 	{
 		BasicDefinitions->{
-			{"populatePreparedSamples[protocol]","protocol","populates any samples/containers that were prepared by PreparatoryUnitOperations/PreparatoryPrimitives in the fields in which their resources were created."}
+			{"populatePreparedSamples[protocol]","protocol","populates any samples/containers that were prepared by PreparatoryUnitOperations in the fields in which their resources were created."}
 		},
 		MoreInformation->{
-			"When a resource for a simulated sample (from PreparatoryUnitOperations/PreparatoryPrimitives) is made, the PreparedSamples field is filled out with the label of that sample and the field that the sample should be uploaded to once it is prepared.",
+			"When a resource for a simulated sample (from PreparatoryUnitOperations) is made, the PreparedSamples field is filled out with the label of that sample and the field that the sample should be uploaded to once it is prepared.",
 			"This function looks at the PreparedSamples field and the SamplePreparationProtocols field to fill out the fields in the protocol object with the Object[Sample]/Object[Container] that was prepared",
 			"This happens similar to how the resource picking system fills out picked resources via the RequiredResources field."
 		},
@@ -84,7 +85,7 @@ DefineUsage[
 			"ExperimentSamplePreparation",
 			"simulateSamplePreparationPacketsNew"
 		},
-		Author->{"thomas", "lige.tonggu"}
+		Author->{"taylor.hochuli", "thomas", "lige.tonggu"}
 	}
 ];
 
@@ -134,8 +135,8 @@ DefineUsage[
 			"containerToSampleOptions does not validate option lengths or patterns. If an option is an invalid length or does not match its pattern it will be left unchanged."
 		},
 		Input:>{
-			{"myFunction",_Symbol,"The function whose options are being index matched to the full list of sampeles."},
-			{"myObjects",ListableP[ObjectP[{Object[Container],Model[Contaienr],Object[Sample],Model[Sample]}]],"The input objects which should be converted to samples."},
+			{"myFunction",_Symbol,"The function whose options are being index matched to the full list of samples."},
+			{"myObjects",ListableP[ObjectP[{Object[Container],Model[Container],Object[Sample],Model[Sample]}]],"The input objects which should be converted to samples."},
 			{"myOptions",{(_Rule|_RuleDelayed)...},"The options which should be index matched to the full list of samples."}
 		},
 		Output:>{
@@ -208,7 +209,7 @@ DefineUsage[
 			"SafeOptions",
 			"SimulateSample"
 		},
-		Author->{"thomas", "lige.tonggu"}
+		Author->{"taylor.hochuli"}
 	}
 ];
 
@@ -238,7 +239,75 @@ DefineUsage[
 			"populateSamplePrepFields",
 			"resolveSamplePrepOptions"
 		},
-		Author->{"thomas", "lige.tonggu"}
+		Author->{"taylor.hochuli"}
+	}
+];
+
+
+(* ::Subsection::Closed:: *)
+(*simulateSamplePreparationPackets*)
+
+
+DefineUsage[
+	simulateSamplePreparationPackets,
+	{
+		BasicDefinitions->{
+			{"simulateSamplePreparationPackets[myFunction,mySamples,myOptions]","{simulatedSamples,updatedOptionsWithPreparedSamples,simulatedCache}","simulates any samples (and returns then via in-situ replacement) that will be affected by sample manipulation."}
+		},
+		MoreInformation->{
+			"simulateSamplePreparationPackets calls simulateSamplesResourcePacketsNew and converts updatedSimulation to cache."
+		},
+		Input:>{
+			{"myFunction",_Symbol,"The experiment function that this sample is being called from."},
+			{"mySamples",{ObjectP[Object[Sample]]...},"The samples to the main experiment function."},
+			{"myOptions",{(_Rule|_RuleDelayed)...},"The full set of specified options for myFunction."}
+		},
+		Output:>{
+			{"simulatedSamples",{ObjectP[Object[Sample]]...},"The samples (after simulation) as they will exist after sample preparation (including aliquot)."},
+			{"updatedOptionsWithPreparedSamples",{(_Rule|_RuleDelayed)...},"Options without Cache or Simulation but with ModelInputOptions and PreparatoryUnitOperations option updated."},
+			{"simulatedCache",{PacketP[]..},"Packets from the simulated sample and container objects that should be used to download information from the simulated samples."}
+		},
+		SeeAlso->{
+			"simulateSamplePreparationPacketsNew",
+			"resolveSamplePrepOptions",
+			"populateSamplePrepFields",
+			"resolveSamplePrepOptions"
+		},
+		Author->{"lige.tonggu"}
+	}
+];
+
+
+(* ::Subsection::Closed:: *)
+(*simulateSamplePreparationPacketsNew*)
+
+
+DefineUsage[simulateSamplePreparationPacketsNew,
+	{
+		BasicDefinitions->{
+			{"simulateSamplePreparationPacketsNew[myFunction,mySamples,myOptions]","{simulatedSamples,updatedOptionsWithPreparedSamples,updatedSimulation}","simulates any samples that will be affected by sample preparation and update ModelInputOptions and PreparatoryUnitOperations option."}
+		},
+		MoreInformation->{
+			"When simulateSamplesResourcePacketsNew is called in container overload of myFunction, (pooled)containerToSampleOptions has not happened yet. So simulateSamplesResourcePacketsNew can convert {LocationPositionP, container} to Null to keep indexmatching length.",
+			"When a Model[Sample] is specified as mySamples, ModelInputOptions and PreparatoryUnitOperations are resolved in simulateSamplesResourcePacketsNew.",
+			"If an option of ModelInputOptions is specified and have invalid, it will be left unchanged."
+		},
+		Input:>{
+			{"myFunction",_Symbol,"The experiment function that this sample is being called from."},
+			{"mySamples",ListableP[ListableP[(ObjectP[{Object[Container],Object[Sample],Model[Sample],Object[Item]}]|_String|{LocationPositionP, _String|ObjectP[Object[Container]]}|Null)]],"The samples to the main experiment function."},
+			{"myOptions",{(_Rule|_RuleDelayed)...},"The full set of specified options for myFunction."}
+		},
+		Output:>{
+			{"simulatedSamples",ListableP[ListableP[(ObjectP[{Object[Container],Object[Sample],Object[Item]}]|_String|{LocationPositionP, _String|ObjectP[Object[Container]]}|Null)]],"The samples (after simulation) as they will exist after sample preparation (including aliquot)."},
+			{"updatedOptionsWithPreparedSamples",{(_Rule|_RuleDelayed)...},"Options without Cache or Simulation but with ModelInputOptions and PreparatoryUnitOperations option updated."},
+			{"updatedSimulation",SimulationP,"Simulation containing the simulated sample and container objects that should be used to download information from the simulated samples."}
+		},
+		SeeAlso->{
+			"simulateSamplePreparationPackets",
+			"populateSamplePrepFields",
+			"resolveSamplePrepOptions"
+		},
+		Author->{"lige.tonggu"}
 	}
 ];
 
@@ -267,7 +336,7 @@ DefineUsage[
 			"populateSamplePrepFields",
 			"resolveSamplePrepOptions"
 		},
-		Author->{"thomas", "lige.tonggu"}
+		Author->{"dima"}
 	}
 ];
 
@@ -384,6 +453,103 @@ DefineUsage[
 		SeeAlso->{
 			"populatePreparedSamples"
 		},
-		Author->{"kelmen.low", "dima", "charlene.konkankit", "thomas", "steven"}
+		Author->{"ryan.bisbey", "kelmen.low", "dima", "charlene.konkankit", "thomas", "steven"}
 	}
 ];
+
+
+(* ::Subsection::Closed:: *)
+(*resolveManualFrameworkFunction*)
+
+
+DefineUsage[
+	resolveManualFrameworkFunction,
+	{
+		BasicDefinitions -> {
+			{"resolveManualFrameworkFunction[mySamples, myOptions]", "resolvedExperimentFrameworkFunction", "resolves to either ExperimentManualSamplePreparation or ExperimentManualCellPreparation and corresponding protocol type based on whether mySamples contain biological cells or require aseptic techniques:"}
+		},
+		MoreInformation -> {
+			"Resolves experiment function and protocol type with sample properties, including CellType, Living, Sterile, and AsepticHandling.",
+			"Note:experiment-specific options like SterileTechnique and Sterile are also considered.",
+			"ExperimentManualCellPreparation is resolved for cell samples, sterile samples and samples requiring aseptic techniques.",
+			"It is preferable that myCache includes packets corresponding to all Object[Sample] and Model[Sample] inputs in mySamples, as well as any Object[Sample] in the Contents field of any Object[Container] included in mySamples."
+		},
+		Input :> {
+			{"mySamples", _List, "The input and output samples to the experiment function."},
+			{"myOptions", {_Rule...}, "The list of shared experiment options that will be sent down to the childFunction, after translation by the optionMap."}
+		},
+		Output :> {
+			{"resolveManualFrameworkFunction", ListableP[_Symbol|TypeP[]], "The most appropriate experiment framework function (or corresponding protocol Type) for the given input samples."}
+		},
+		SeeAlso -> {
+			"ExperimentManualSamplePreparation",
+			"ExperimentManualCellPreparation",
+			"resolvePotentialWorkCells"
+		},
+		Author -> {"lige.tonggu", "tyler.pabst"}
+	}
+];
+
+(* ::Subsection::Closed:: *)
+(*resolvePotentialWorkCells*)
+
+
+DefineUsage[
+	resolvePotentialWorkCells,
+	{
+		BasicDefinitions -> {
+			{"resolvePotentialWorkCells[mySamples, myOptions]", "resolvePotentialWorkCells", "resolves to all possible robotic work cells based on whether mySamples contain biological cells, or whether aseptic techniques are required:"}
+		},
+		MoreInformation -> {
+			"Resolves potential work cells with sample properties, including CellType, Living, Sterile, and AsepticHandling.",
+			"Note:experiment options like Preparation, SterileTechnique and Sterile are also considered.",
+			"{} is resolved for manual preparation.",
+			"{bioSTAR} is resolved for mammalian samples.",
+			"{microbioSTAR} is resolved for microbial samples.",
+			"{bioSTAR, microbioSTAR} is resolved for samples requiring aseptic techniques.",
+			"{STAR, bioSTAR, microbioSTAR} is resolved for non-living and non-sterile samples.",
+			"For QPix experiments (ImageColonies/QuantifyColonies/SpreadCells/StreakCells/PickColonies), only Qpix can be work cell, so this helper is not needed."
+		},
+		Input :> {
+			{"mySamples", _List, "The input and output samples to the experiment function."},
+			{"myOptions", {_Rule...}, "The list of shared experiment options that will be sent down to the childFunction, after translation by the optionMap."}
+		},
+		Output :> {
+			{"resolvePotentialWorkCells", ListableP[WorkCellP], "All potential work cells for the given input samples."}
+		},
+		SeeAlso -> {
+			"ExperimentRoboticSamplePreparation",
+			"ExperimentRoboticCellPreparation",
+			"resolveManualFrameworkFunction"
+		},
+		Author -> {"lige.tonggu", "tyler.pabst"}
+	}
+];
+
+
+(* ::Subsection::Closed:: *)
+(*FlattenCachePacketsSimulation*)
+
+
+DefineUsage[
+	FlattenCachePacketsSimulation,
+	{
+		BasicDefinitions -> {
+			{"FlattenCachePacketsSimulation[myCache]", "mergedCache", "merges all cache packets in 'myCache' with the same object keys and update the corresponding fields if there are additional upload packets included with the same logic as the Simulation framework."}
+		},
+		MoreInformation -> {
+			"If there are no any updating packets or packets with the same object and duplicate field keys, just call FlattenCachePackets since that is faster."
+		},
+		Input :> {
+			{"myCache", _List, "The input cache packets that are to be merged."}
+		},
+		Output :> {
+			{"mergedCache", _List, "The merged cache packets."}
+		},
+		SeeAlso -> {
+			"FlattenCachePackets"
+		},
+		Author -> {"lei.tian"}
+	}
+];
+

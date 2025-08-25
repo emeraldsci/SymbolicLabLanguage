@@ -25,7 +25,17 @@ DefineOptions[ExperimentPCR,
 			Default->Model[Instrument,Thermocycler,"Automated Thermal Cycler"],
 			Description->"The instrument for running the polymerase chain reaction (PCR) experiment.",
 			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]]
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Thermocyclers"
+					}
+				}
+			]
 		},
 		{
 			OptionName->LidTemperature,
@@ -69,8 +79,9 @@ DefineOptions[ExperimentPCR,
 			},
 			{
 				OptionName->SampleVolume,
-				Default->2 Microliter,
+				Default->Automatic,
 				Description->"For each sample, the volume to add to the reaction.",
+				ResolutionDescription -> "Automatically set to 2 Microliter if PreparedPlate is not True, and automatically set to 0 Microliter if it is True.",
 				AllowNull->False,
 				Widget->Widget[Type->Quantity,Pattern:>RangeP[0 Microliter,100 Microliter],Units->{Microliter,{Microliter,Milliliter}}],
 				Category->"Sample Preparation"
@@ -187,11 +198,36 @@ DefineOptions[ExperimentPCR,
 			Category->"Sample Preparation"
 		},
 		{
+			OptionName -> PreparedPlate,
+			Default -> Automatic,
+			Description -> "Indicates if the input sample or container has already been prepared and does not need to be diluted/mixed with master mix or buffer.  If set to True, MasterMix and Buffer will be set to Null and the input sample will be used as is.",
+			ResolutionDescription -> "Automatically set to True if MasterMix and Buffer are set to Null and no primers were specified.  Otherwise set to False.",
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Category -> "Sample Preparation"
+		},
+		{
 			OptionName->MasterMix,
-			Default->Model[Sample,"id:GmzlKjP6pan9"],(*"DreamTaq PCR Master Mix"*)
+			Default->Automatic,
 			Description->"The stock solution composed of the polymerase, nucleotides, and buffer for amplifying the target sequences.",
+			ResolutionDescription -> "Automatically set to $PCRDefaultMasterMix if PreparedPlate is not True.",
 			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Reagents",
+						"Molecular Biology",
+						"PCR"
+					}
+				}
+			],
 			Category->"Sample Preparation"
 		},
 		{
@@ -237,10 +273,23 @@ DefineOptions[ExperimentPCR,
 		},
 		{
 			OptionName->Buffer,
-			Default->Model[Sample,"Milli-Q water"],
+			Default->Automatic,
 			Description->"The solution for bringing each reaction to ReactionVolume once all the reaction components (template, primers, and master mix) are added.",
+			ResolutionDescription -> "Automatically set to Model[Sample,\"Milli-Q water\"] if PreparedPlate is not True.",
 			AllowNull->True,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Model[Sample],Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Reagents",
+						"Water"
+					}
+				}
+
+			],
 			Category->"Sample Preparation"
 		},
 		{
@@ -323,7 +372,7 @@ DefineOptions[ExperimentPCR,
 			Description->"The rate at which the sample is heated to reach ActivationTemperature.",
 			AllowNull->True,
 			ResolutionDescription->"Automatically set to 3.5 degrees Celsius per second if Activation is set to True, or Null otherwise.",
-			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.1 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
+			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.2 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
 			Category->"Polymerase Activation"
 		},
 
@@ -350,7 +399,7 @@ DefineOptions[ExperimentPCR,
 			Default->3.5 (Celsius/Second),
 			Description->"The rate at which the sample is heated to reach DenaturationTemperature.",
 			AllowNull->False,
-			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.1 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
+			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.2 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
 			Category->"Denaturation"
 		},
 
@@ -389,7 +438,7 @@ DefineOptions[ExperimentPCR,
 			Description->"The rate at which the sample is cooled to reach PrimerAnnealingTemperature.",
 			ResolutionDescription->"Automatically set to 3.5 degrees Celsius per second if PrimerAnnealing is set to True, or Null otherwise.",
 			AllowNull->True,
-			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.1 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
+			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.2 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
 			Category->"Primer Annealing"
 		},
 
@@ -416,7 +465,7 @@ DefineOptions[ExperimentPCR,
 			Default->3.5 (Celsius/Second),
 			Description->"The rate at which the sample is heated/cooled to reach ExtensionTemperature.",
 			AllowNull->False,
-			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.1 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
+			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.2 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
 			Category->"Strand Extension"
 		},
 
@@ -466,7 +515,7 @@ DefineOptions[ExperimentPCR,
 			Description->"The rate at which the sample is heated/cooled to reach ActivationTemperature.",
 			AllowNull->True,
 			ResolutionDescription->"Automatically set to 3.5 degrees Celsius per second if FinalExtension is set to True, or Null otherwise.",
-			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.1 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
+			Widget->Widget[Type->Quantity,Pattern:>RangeP[0.2 (Celsius/Second),3.5 (Celsius/Second)],Units->CompoundUnit[{1,{Celsius,{Celsius,Kelvin,Fahrenheit}}},{-1,{Second,{Second,Minute}}}]],
 			Category->"Final Extension"
 		},
 
@@ -488,13 +537,14 @@ DefineOptions[ExperimentPCR,
 		SimulationOption,
 		PreparationOption,
 		WorkCellOption,
-		FuntopiaSharedOptions
+		ModelInputOptions,
+		BiologyFuntopiaSharedOptions
 	}
 ];
 
 
 Error::PCRTooManySamples="The number of input samples cannot fit onto the instrument in a single protocol. Please select fewer than 96 samples to run this protocol.";
-Error::InvalidPreparedPlate="When using a prepared plate by specifying 0 sample volumes, and no buffer, primers, or master mix, the samples must all be in the same plate with the model, Model[Container, Plate, \"96-well Optical Full/Semi-Skirted PCR Plate\"] or Model[Container, Plate, \"96-well PCR Plate\"]. Please transfer the samples.";
+Error::InvalidPreparedPlate="When using a prepared plate by specifying PreparedPlate -> True (or 0 sample volumes, and no buffer, primers, or master mix), the samples must all be in the same plate with the model, Model[Container, Plate, \"96-well Optical Full/Semi-Skirted PCR Plate\"] or Model[Container, Plate, \"96-well PCR Plate\"]. Please transfer the samples and try again.";
 Error::ForwardPrimerVolumeMismatch="The specified forward primer volumes have conflicts with the input forward primers. Please change the value of ForwardPrimerVolume or leave it unspecified to be set automatically.";
 Error::ReversePrimerVolumeMismatch="The specified reverse primer volumes have conflicts with the input reverse primers. Please change the value of ReversePrimerVolume or leave it unspecified to be set automatically.";
 Error::PCRBufferVolumeMismatch="If Buffer is Null, BufferVolume cannot be specified; if Buffer is specified, BufferVolume cannot be Null. Please change the value of either or both option(s), or leave BufferVolume unspecified to be set automatically.";
@@ -507,6 +557,8 @@ Error::ForwardPrimerStorageConditionMismatch="The specified forward primer stora
 Error::ReversePrimerStorageConditionMismatch="The specified reverse primer storage conditions have conflicts with the input reverse primers. Please change the value of ReversePrimerStorageCondition.";
 Error::TotalVolumeOverReactionVolume="The total volume consisting of SampleVolume, MasterMixVolume, ForwardPrimerVolume, ReversePrimerVolume, and BufferVolume exceeds ReactionVolume for sample(s) `1`. Please change the value of some or all of these options, or leave MasterMixVolume, ForwardPrimerVolume, ReversePrimerVolume, and/or BufferVolume unspecified to be set automatically.";
 
+(* constants so we're not hard coding the same thing in multiple places *)
+$PCRDefaultMasterMix = Model[Sample, "id:GmzlKjP6pan9"] (* Model[Sample, "DreamTaq PCR Master Mix"] *)
 
 (* ::Subsubsection::Closed:: *)
 (* ExperimentPCR *)
@@ -522,13 +574,13 @@ ExperimentPCR[
 		outputSpecification,output,gatherTests,resultQ,simulation,
 		listedSamples,initialListedOptions,listedPrimerPairSamples,listedOptions,flatPrimerPairSamples,primerPairLengths,
 		validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,allPreparedSamples, myFlatPrimerPairSamplesWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed,
-		safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples,myOptionsWithPreparedSamplesNamed,
-		validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,name,upload,confirm,fastTrack,parentProtocol,priority,startDate,holdOrder,queuePosition,
-		cache,currentSimulation, myPrimerPairSamplesWithPreparedSamplesForExpansion,expandedSamples,nonNullExpandedPrimerPairSamples,expandedSafeOps,expandedPrimerPairSamples,
-		pcrOptionsAssociation,masterMix,buffer,liquidHandlerContainers,sampleObjectDownloadFields,allSamplePackets,allPrimerSamplePackets,masterMixPacket,bufferPacket,
-		liquidHandlerContainerPackets,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,returnEarlyQ,performSimulationQ,updatedSimulation,
-		resourceResult,roboticSimulation,runTime,resourcePacketTests,simulatedProtocol,simulatedProtocolSimulation,resolvedPreparation,protocolObject,
-		modelContainerFields
+		safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples,preExpandedNullPrimerPairSamples,safeOps,myOptionsWithPreparedSamples,myOptionsWithPreparedSamplesNamed,
+		validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,name,upload,confirm,canaryBranch,fastTrack,parentProtocol,priority,startDate,holdOrder,
+		queuePosition,cache,currentSimulation,expandedSamples,nonNullExpandedPrimerPairSamples,expandedSafeOps,
+		expandedPrimerPairSamples,pcrOptionsAssociation,masterMixes,buffers,liquidHandlerContainers,sampleObjectDownloadFields,allSamplePackets,allPrimerSamplePackets,masterMixPacket,
+		bufferPacket,liquidHandlerContainerPackets,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,performSimulationQ,updatedSimulation,
+		resourceResult,roboticSimulation,runTime,resourcePacketTests,simulatedProtocol,simulatedProtocolSimulation,resolvedPreparation,protocolObject, optionsResolverOnly,
+		returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ, modelContainerFields
 	},
 
 	(* Determine the requested return value from the function *)
@@ -556,7 +608,7 @@ ExperimentPCR[
 	(* Get the number of primer pairs per sample for bringing back the nested form of listedPrimerPairSamples *)
 	primerPairLengths=Length/@listedPrimerPairSamples;
 	(* Lookup the simulation - if one exists *)
-  simulation=Lookup[listedOptions,Simulation];
+	simulation=Lookup[listedOptions,Simulation];
 
 	(*--Simulate sample preparation--*)
 	(* initialSamplePreparationCache,samplePreparationCache *)
@@ -567,7 +619,15 @@ ExperimentPCR[
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+	];
+
+	(*If we are given an invalid define name, return early*)
+	If[MatchQ[validSamplePreparationResult,$Failed],
+		(* Return early *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets *)
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
+		Return[$Failed]
 	];
 
 	{mySamplesWithPreparedSamplesNamed, myFlatPrimerPairSamplesWithPreparedSamplesNamed}=TakeDrop[allPreparedSamples, Length[listedSamples]];
@@ -575,13 +635,6 @@ ExperimentPCR[
 	currentSimulation = If[MatchQ[simulation,SimulationP],
 		UpdateSimulation[simulation,updatedSimulation],
 		updatedSimulation
-	];
-	(*If we are given an invalid define name, return early*)
-	If[MatchQ[validSamplePreparationResult,$Failed],
-		(* Return early *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
-		Return[$Failed]
 	];
 
 	(* Bring back the nested form of listedPrimerPairSamples *)
@@ -600,7 +653,18 @@ ExperimentPCR[
 		{safeOps,myOptionsWithPreparedSamples}
 	}=sanitizeInputs[
 		{mySamplesWithPreparedSamplesNamed,myPrimerPairSamplesWithPreparedSamplesNamed},
-		{safeOpsNamed,myOptionsWithPreparedSamplesNamed}
+		{safeOpsNamed,myOptionsWithPreparedSamplesNamed},
+		Simulation -> currentSimulation
+	];
+
+	(* If the specified options don't match their patterns, return $Failed *)
+	If[MatchQ[safeOps,$Failed],
+		Return[outputSpecification/.{
+			Result->$Failed,
+			Tests->safeOpsTests,
+			Options->$Failed,
+			Preview->Null
+		}]
 	];
 
 	(* Call ValidInputLengthsQ to make sure all inputs and options have matching lengths *)
@@ -613,16 +677,6 @@ ExperimentPCR[
 			{ValidInputLengthsQ[ExperimentPCR,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,1],Null},
 			{ValidInputLengthsQ[ExperimentPCR,{mySamplesWithPreparedSamples,myPrimerPairSamplesWithPreparedSamples},myOptionsWithPreparedSamples,2],Null}
 		]
-	];
-
-	(* If the specified options don't match their patterns, return $Failed *)
-	If[MatchQ[safeOps,$Failed],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->safeOpsTests,
-			Options->$Failed,
-			Preview->Null
-		}]
 	];
 
 	(* If input and option lengths are invalid, return $Failed (or the tests up to this point) *)
@@ -655,27 +709,21 @@ ExperimentPCR[
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* Get assorted hidden options *)
-	{name,upload,confirm,fastTrack,parentProtocol,priority,startDate,holdOrder,queuePosition,cache,currentSimulation}=Lookup[inheritedOptions,
-		{Name,Upload,Confirm,FastTrack,ParentProtocol,Priority,StartDate,HoldOrder,QueuePosition,Cache,Simulation}
+	{name,upload,confirm,canaryBranch,fastTrack,parentProtocol,priority,startDate,holdOrder,queuePosition,cache,currentSimulation}=Lookup[inheritedOptions,
+		{Name,Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Priority,StartDate,HoldOrder,QueuePosition,Cache,Simulation}
 	];
 
 	(*--Expand index-matching inputs and options--*)
 
-	(* Prepare myPrimerPairSamplesWithPreparedSamples for expansion: if it consists of primer pairs for only one sample, then remove the outer list so it can be expanded *)
-	myPrimerPairSamplesWithPreparedSamplesForExpansion=Switch[
-		myPrimerPairSamplesWithPreparedSamples,
-		{{{ObjectP[],ObjectP[]}..}},Flatten[myPrimerPairSamplesWithPreparedSamples,1],
-		{{{ObjectP[],ObjectP[]}..}..}|{{{Null,Null}}..},myPrimerPairSamplesWithPreparedSamples
-	];
+	(* If there are no primer pairs (PrimerPairs == {{{Null,Null}}}) then it needs to be pre-expanded to match the Length of mySamplesWithPreparedSamples or it'll crash ExpandIndexMatchedInputs[] *)
+	preExpandedNullPrimerPairSamples =
+			If[MatchQ[myPrimerPairSamplesWithPreparedSamples, {{{Null, Null}}}],
+				ConstantArray[{{Null, Null}}, Length[mySamplesWithPreparedSamples]],
+				myPrimerPairSamplesWithPreparedSamples
+			];
 
 	(* Expand index-matching secondary input (primerPairs) and options *)
-	{{expandedSamples,nonNullExpandedPrimerPairSamples},expandedSafeOps}=ExpandIndexMatchedInputs[ExperimentPCR,{mySamplesWithPreparedSamples,myPrimerPairSamplesWithPreparedSamplesForExpansion},inheritedOptions,2];
-
-	(* Expand index-matching secondary input (primerPairs) if it's Null *)
-	expandedPrimerPairSamples=If[MatchQ[nonNullExpandedPrimerPairSamples,{{{Null,Null}}}],
-		ConstantArray[{{Null,Null}},Length[expandedSamples]],
-		nonNullExpandedPrimerPairSamples
-	];
+	{{expandedSamples,expandedPrimerPairSamples},expandedSafeOps}=ExpandIndexMatchedInputs[ExperimentPCR,{mySamplesWithPreparedSamples, preExpandedNullPrimerPairSamples},inheritedOptions,2];
 
 	(*--Download the information we need for the option resolver and resource packet function--*)
 
@@ -683,7 +731,9 @@ ExperimentPCR[
 	pcrOptionsAssociation=Association[expandedSafeOps];
 
 	(* Pull out the options that have objects whose information we need to download *)
-	{masterMix,buffer}=Lookup[pcrOptionsAssociation,{MasterMix,Buffer}];
+	(* also include the resolution defaults to make sure we have the stuff for htem too *)
+	masterMixes = Cases[Flatten[{$PCRDefaultMasterMix, Lookup[pcrOptionsAssociation, MasterMix]}], ObjectP[]];
+	buffers = Cases[Flatten[{Model[Sample, "Milli-Q water"], Lookup[pcrOptionsAssociation, MasterMix]}], ObjectP[]];
 
 	(* Get all the liquid handler-compatible containers, with the low-volume containers prepended *)
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
@@ -698,8 +748,8 @@ ExperimentPCR[
 			{
 				mySamplesWithPreparedSamples,
 				Flatten[myPrimerPairSamplesWithPreparedSamples],
-				{masterMix},
-				{buffer},
+				masterMixes,
+				buffers,
 				liquidHandlerContainers
 			},
 				{
@@ -728,26 +778,17 @@ ExperimentPCR[
 	cacheBall=FlattenCachePackets[{cache,allSamplePackets,allPrimerSamplePackets,masterMixPacket,bufferPacket,liquidHandlerContainerPackets}];
 
 	(*--Build the resolved options--*)
-	resolvedOptionsResult=If[gatherTests,
-		(* We are gathering tests. This silences any messages being thrown *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentPCROptions[
-			expandedSamples,
-			expandedPrimerPairSamples,
-			expandedSafeOps,
-			Cache->cacheBall,
-			Simulation->updatedSimulation,
-			Output->{Result,Tests}
-		];
-
-		(* Therefore, we have to run the tests to see if we encountered a failure *)
-		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-			{resolvedOptions,resolvedOptionsTests},
-			$Failed
-		],
-
-		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption *)
-		Check[
-			{resolvedOptions,resolvedOptionsTests}={
+	resolvedOptionsResult = Check[
+		{resolvedOptions,resolvedOptionsTests} = If[gatherTests,
+			resolveExperimentPCROptions[
+				expandedSamples,
+				expandedPrimerPairSamples,
+				expandedSafeOps,
+				Cache->cacheBall,
+				Simulation->updatedSimulation,
+				Output->{Result,Tests}
+			],
+			{
 				resolveExperimentPCROptions[
 					expandedSamples,
 					expandedPrimerPairSamples,
@@ -756,10 +797,10 @@ ExperimentPCR[
 					Simulation->updatedSimulation
 				],
 				{}
-			},
-			$Failed,
-			{Error::InvalidInput,Error::InvalidOption}
-		]
+			}
+		],
+		$Failed,
+		{Error::InvalidInput, Error::InvalidOption, Error::ConflictingUnitOperationMethodRequirements}
 	];
 
 	(* Collapse the resolved options *)
@@ -773,8 +814,19 @@ ExperimentPCR[
 	(* Lookup our resolved Preparation option. *)
 	resolvedPreparation = Lookup[resolvedOptions, Preparation];
 
+	(* Lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
+	(* If Output contains Result or Simulation, then we can't do this *)
+	optionsResolverOnly = Lookup[resolvedOptions, OptionsResolverOnly];
+	returnEarlyBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result|Simulation]];
+
 	(* Run all the tests from the resolution; if any of them were False, then we should return early here *)
-	returnEarlyQ= MatchQ[resolvedOptionsResult,$Failed];
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
+	(* basically, if _not_ all the tests are passing, then we do need to return early *)
+	returnEarlyBecauseFailuresQ = Which[
+		MatchQ[resolvedOptionsResult, $Failed], True,
+		gatherTests, Not[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
+		True, False
+	];
 
 	(* NOTE: We need to perform simulation if Result is asked for in PCR since it's part of the SamplePreparation experiments. *)
 	(* This is because we pass down our simulation to ExperimentMSP or ExperimentRSP. *)
@@ -790,7 +842,7 @@ ExperimentPCR[
 	resultQ = MemberQ[output, Result];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early *)
-	If[returnEarlyQ&&!performSimulationQ,
+	If[(returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly)&&!performSimulationQ,
 		Return[outputSpecification/.{
 			Result->$Failed,
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
@@ -802,7 +854,7 @@ ExperimentPCR[
 
 	(*--Build packets with resources--*)
 	{{resourceResult,roboticSimulation,runTime},resourcePacketTests}=Which[
-		returnEarlyQ,
+		returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseFailuresQ,
 			{{$Failed,$Failed,$Failed}, {}},
 		gatherTests,
 			experimentPCRResourcePackets[
@@ -831,7 +883,7 @@ ExperimentPCR[
 	(* If we were asked for a simulation, also return a simulation *)
 	{simulatedProtocol,simulatedProtocolSimulation}=Which[
 		!performSimulationQ,
-			{Null, Null},
+			{Null, updatedSimulation},
 		MatchQ[resolvedPreparation, Robotic] && MatchQ[roboticSimulation, SimulationP],
 			{Null, roboticSimulation},
 		!resultQ,
@@ -945,6 +997,7 @@ ExperimentPCR[
 						Name->name,
 						Upload->upload,
 						Confirm->confirm,
+						CanaryBranch->canaryBranch,
 						ParentProtocol->parentProtocol,
 						Priority->priority,
 						StartDate->startDate,
@@ -963,6 +1016,7 @@ ExperimentPCR[
 				resourceResult[[1]],(*protocolPacket*)
 				Upload->upload,
 				Confirm->confirm,
+				CanaryBranch->canaryBranch,
 				ParentProtocol->parentProtocol,
 				Priority->priority,
 				StartDate->startDate,
@@ -970,7 +1024,7 @@ ExperimentPCR[
 				QueuePosition->queuePosition,
 				ConstellationMessage->Object[Protocol,PCR],
 				Cache->cacheBall,
-				Simulation->updatedSimulation
+				Simulation->simulatedProtocolSimulation
 			]
 	];
 
@@ -988,17 +1042,19 @@ ExperimentPCR[
 
 (*---Function overload accepting (defined) sample/container objects as sample inputs and (defined) sample/container objects or Nulls as primer pair inputs---*)
 ExperimentPCR[
-	myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
-	myPrimerPairContainers:ListableP[{{ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]},ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}}..}|{{Null,Null}}],
+	myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	myPrimerPairContainers:ListableP[{{ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]},ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}}..}|{{Null,Null}}],
 	myOptions:OptionsPattern[ExperimentPCR]
 ]:=Module[
-	{outputSpecification,output,gatherTests,allPreparedSamples,
-		listedSamples,initialListedOptions,listedPrimerPairSamples,listedOptions,flatPrimerPairSamples,primerPairLengths,
-		validSamplePreparationResult,mySamplesWithPreparedSamples,
+	{
+		outputSpecification,output,gatherTests,listedSamples,initialListedOptions,listedPrimerPairSamples,listedOptions,
+		flatPrimerPairSamples,primerPairLengths,miniSafeOptions,specifiedPreparedModelContainer,specifiedPreparedModelAmount,
+		allPreparedSamples,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamplesWithModifiedPreparedModelOps,
 		myFlatPrimerPairSamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleSimulation,
 		containerToSampleResult,containerToSampleOutput,containerToSampleTests,updatedSimulation,primerContainerToSampleSimulation,
 		primerContainerToSampleResult,primerContainerToSampleOutput,primerContainerToSampleTests,myPrimerPairSamplesWithPreparedSamples,
-		combinedContainerToSampleTests,updatedCache,samples,sampleOptions},
+		combinedContainerToSampleTests,updatedCache,samples,sampleOptions
+	},
 
 
 	(* Determine the requested return value from the function *)
@@ -1026,19 +1082,27 @@ ExperimentPCR[
 	(* Get the number of primer pairs per sample for bringing back the nested primer pairs form *)
 	primerPairLengths=Length/@listedPrimerPairSamples;
 
+	(* Need to check the PreparedModelContainer and PreparedModelAmount options, since ModelInputOptions are technically index-matching to listedSamples *)
+	(* but in simulateSamplePreparationPacketsNew we use them to do both listedSamples and flatPrimerPairSamples. *)
+	(* To make LabelSample works for both listedSamples and flatPrimerPairSamples, we do a trick here to extract user-specified value as default *)
+	(* What we should really do is to introduce PrimerPairPreparedModelAmount and PrimerPairPreparedModelContainer in the future which is a low priority *)
+	miniSafeOptions = Quiet[SafeOptions[ExperimentPCR, listedOptions, AutoCorrect -> True]];
+	{specifiedPreparedModelContainer, specifiedPreparedModelAmount} = Lookup[miniSafeOptions, {PreparedModelContainer, PreparedModelAmount}];
+
 	(*--Simulate sample preparation--*)
 	(* initialSamplePreparationCache,samplePreparationCache *)
 	validSamplePreparationResult=Check[
-		{allPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
+		{allPreparedSamples,myOptionsWithPreparedSamplesWithModifiedPreparedModelOps,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentPCR,
 			Join[listedSamples, flatPrimerPairSamples],
-			listedOptions
+			(* in order for the index matching to work here, need to un-expand things *)
+			ReplaceRule[listedOptions, {PreparedModelContainer -> Automatic, PreparedModelAmount -> Automatic}],
+			DefaultPreparedModelContainer -> FirstCase[ToList@specifiedPreparedModelContainer, ObjectP[Model[Container]], Model[Container, Vessel, "2mL Tube"]],
+			DefaultPreparedModelAmount -> FirstCase[ToList@specifiedPreparedModelAmount, UnitsP[]|All, 1 Milliliter]
 		],
 		$Failed,
-	 	{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
-
-	{mySamplesWithPreparedSamples, myFlatPrimerPairSamplesWithPreparedSamples}=TakeDrop[allPreparedSamples, Length[listedSamples]];
 
 	(* If we are given an invalid define name, return early *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
@@ -1047,6 +1111,14 @@ ExperimentPCR[
 		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];
 		Return[$Failed]
 	];
+
+	{mySamplesWithPreparedSamples, myFlatPrimerPairSamplesWithPreparedSamples}=TakeDrop[allPreparedSamples, Length[listedSamples]];
+
+	(* put the "proper" specified preparatory models in here now *)
+	(* need to switch back to the not-expanded version of this option again *)
+	(* Our current index matching system does not support ModelInputOptions match to 3 input sample groups *)
+	(* Have to Null the value but it is okay since LabelSample has been created in PreparatoryUnitOperations during simulateSamplePreparationPacketsNew so ModelInputOptions are useless now *)
+	myOptionsWithPreparedSamples = ReplaceRule[myOptionsWithPreparedSamplesWithModifiedPreparedModelOps, {PreparedModelContainer -> Null, PreparedModelAmount -> Null}];
 
 	(*--Convert the given containers into samples and sample index-matched options--*)
 
@@ -1168,7 +1240,7 @@ ExperimentPCR[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ExperimentPCR[
-	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentPCR]
 ]:=ExperimentPCR[
 	mySamples,
@@ -1178,8 +1250,8 @@ ExperimentPCR[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ExperimentPCR[
-	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
-	myPrimerPairs:Null,
+	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],
+	myPrimerPairs:NullP,
 	myOptions:OptionsPattern[ExperimentPCR]
 ]:=ExperimentPCR[
 	mySamples,
@@ -1237,7 +1309,8 @@ resolveExperimentPCROptions[
 		invalidReversePrimerStorageConditionOptions,validReversePrimerStorageConditionTest,totalVolumeOverReactionVolumeOptions,totalVolumeTest,updatedSimulation,
 		targetContainers,resolvedAliquotOptions,aliquotTests,compatibleMaterialsBool,compatibleMaterialsTests,compatibleMaterialsInvalidOption,
 		resolvedPostProcessingOptions,invalidInputs,invalidOptions,resolvedEmail,resolvedPrimerPairLabel,resolvedPrimerPairContainerLabel,resolvedOptions,
-		allTests,resultRule,testsRule},
+		allTests,resultRule,testsRule, preparedPlate, specifiedMasterMix, specifiedBuffer, specifiedPreparedPlate, specifiedSampleVolume,
+		sampleVolumeNotRounded, sampleVolumeTests},
 
 
 	(*---Set up the user-specified options and cache---*)
@@ -1285,11 +1358,13 @@ resolveExperimentPCROptions[
 	(* Pull out the options that are defaulted or specified that don't have precision *)
 	{
 		instrument,
-		masterMix,
+		specifiedPreparedPlate,
+		specifiedSampleVolume,
+		specifiedMasterMix,
 		masterMixLabel,
 		masterMixContainerLabel,
 		masterMixStorageCondition,
-		buffer,
+		specifiedBuffer,
 		bufferLabel,
 		bufferContainerLabel,
 		assayPlate,
@@ -1300,26 +1375,90 @@ resolveExperimentPCROptions[
 		fastTrack,
 		name,
 		parentProtocol
-	}=Lookup[
-			pcrOptionsAssociation,
+	} = Lookup[
+		pcrOptionsAssociation,
+		{
+			Instrument,
+			PreparedPlate,
+			SampleVolume,
+			MasterMix,
+			MasterMixLabel,
+			MasterMixContainerLabel,
+			MasterMixStorageCondition,
+			Buffer,
+			BufferLabel,
+			BufferContainerLabel,
+			AssayPlate,
+			AssayPlateLabel,
+			Activation,
+			PrimerAnnealing,
+			FinalExtension,
+			FastTrack,
+			Name,
+			ParentProtocol
+		}
+	];
+
+	(* SUPER EARLY resolution of the PreparedPlate, MasterMix, SampleVolume, and Buffer options; this is because we need to do some Downloading and error checking early on *)
+	preparedPlate = Which[
+		(* if it's specified it's specified *)
+		Not[MatchQ[specifiedPreparedPlate, Automatic]], specifiedPreparedPlate,
+		(* if MasterMix and Buffer are explicitly set to Null and we don't have any primers, then PreparedPlate is True *)
+		And[
+			NullQ[specifiedMasterMix],
+			NullQ[specifiedBuffer],
+			MatchQ[flatPrimerSamples,ListableP[Null]]
+		],
+			True,
+		(* otherwise, this is False *)
+		True, False
+	];
+	buffer = Which[
+		(* if it's specified it's specified *)
+		Not[MatchQ[specifiedBuffer, Automatic]], specifiedBuffer,
+		(* if PreparedPlate is set to True, then this is Null *)
+		TrueQ[preparedPlate], Null,
+		(* else, set to water *)
+		True, Model[Sample, "id:8qZ1VWNmdLBD"] (* Model[Sample, "Milli-Q water"] *)
+	];
+	masterMix = Which[
+		(* if it's specified it's specified *)
+		Not[MatchQ[specifiedMasterMix, Automatic]], specifiedMasterMix,
+		(* if PreparedPlate is set to True, then this is Null *)
+		TrueQ[preparedPlate], Null,
+		(* else, set to the default master mix *)
+		True, $PCRDefaultMasterMix
+	];
+
+	(* SampleVolume similar to above, but the differences are that 1.) It's index matching, and 2.) It needs to be rounded since it's a number.  So do that *)
+	sampleVolumeNotRounded = Map[
+		Which[
+			(* if it's specified it's specified *)
+			Not[MatchQ[#, Automatic]], #,
+			(* if PreparedPlate is set to True, then this is 0 Microliter *)
+			TrueQ[preparedPlate], 0 Microliter,
+			(* else, default to 2 Microliter *)
+			True, 2 Microliter
+		]&,
+		specifiedSampleVolume
+	];
+
+	(* doing this weird rounding to ensure I still throw the message from RoundOptionPrecision (which seemingly only happens with the option overload and not the direct quantity one) *)
+	{sampleVolume, sampleVolumeTests} = If[gatherTests,
+		With[{optionsAndTests = RoundOptionPrecision[<|SampleVolume -> sampleVolumeNotRounded|>, {SampleVolume}, {10^-1 Microliter}, Output -> {Result, Tests}]},
 			{
-				Instrument,
-				MasterMix,
-				MasterMixLabel,
-				MasterMixContainerLabel,
-				MasterMixStorageCondition,
-				Buffer,BufferLabel,
-				BufferContainerLabel,
-				AssayPlate,
-				AssayPlateLabel,
-				Activation,
-				PrimerAnnealing,
-				FinalExtension,
-				FastTrack,
-				Name,
-				ParentProtocol
+				Lookup[optionsAndTests[[1]], SampleVolume],
+				optionsAndTests[[2]]
 			}
-		];
+		],
+		{
+			Lookup[
+				RoundOptionPrecision[<|SampleVolume -> sampleVolumeNotRounded|>, {SampleVolume}, {10^-1 Microliter}],
+				SampleVolume
+			],
+			{}
+		}
+	];
 
 	(* Define the object fields from which to download information *)
 	sampleObjectDownloadFields=Packet[DateUnsealed,UnsealedShelfLife,RequestedResources,IncompatibleMaterials,Notebook,SamplePreparationCacheFields[Object[Sample],Format->Sequence]];
@@ -1504,24 +1643,24 @@ resolveExperimentPCROptions[
 	{roundedPCROptions,precisionTests}=If[gatherTests,
 		RoundOptionPrecision[
 			pcrOptionsAssociation,
-			{SampleVolume,ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature},
-			{10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Celsius,10^-1 Microliter,10^-1 Microliter,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,10^-1 Celsius},
+			{ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature},
+			{10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Celsius,10^-1 Microliter,10^-1 Microliter,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,10^-1 Celsius},
 			Output->{Result,Tests}
 		],
 		{
 			RoundOptionPrecision[
 				pcrOptionsAssociation,
-				{SampleVolume,ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature},
-				{10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Celsius,10^-1 Microliter,10^-1 Microliter,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,10^-1 Celsius}
+				{ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature},
+				{10^-1 Microliter,10^-1 Microliter,10^-1 Microliter,10^-1 Celsius,10^-1 Microliter,10^-1 Microliter,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,1 Second,10^-1 Celsius,10^-1 Celsius/Second,10^-1 Celsius}
 			],
 			{}
 		}
 	];
 
 	(* Pull out the rounded options *)
-	{sampleVolume,forwardPrimerVolume,reversePrimerVolume,bufferVolume,lidTemperature,reactionVolume,masterMixVolume,activationTime,activationTemperature,activationRampRate,denaturationTime,denaturationTemperature,denaturationRampRate,primerAnnealingTime,primerAnnealingTemperature,primerAnnealingRampRate,extensionTime,extensionTemperature,extensionRampRate,finalExtensionTime,finalExtensionTemperature,finalExtensionRampRate,holdTemperature}=Lookup[
+	{forwardPrimerVolume,reversePrimerVolume,bufferVolume,lidTemperature,reactionVolume,masterMixVolume,activationTime,activationTemperature,activationRampRate,denaturationTime,denaturationTemperature,denaturationRampRate,primerAnnealingTime,primerAnnealingTemperature,primerAnnealingRampRate,extensionTime,extensionTemperature,extensionRampRate,finalExtensionTime,finalExtensionTemperature,finalExtensionRampRate,holdTemperature}=Lookup[
 		roundedPCROptions,
-		{SampleVolume,ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature}
+		{ForwardPrimerVolume,ReversePrimerVolume,BufferVolume,LidTemperature,ReactionVolume,MasterMixVolume,ActivationTime,ActivationTemperature,ActivationRampRate,DenaturationTime,DenaturationTemperature,DenaturationRampRate,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,ExtensionTime,ExtensionTemperature,ExtensionRampRate,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate,HoldTemperature}
 	];
 
 
@@ -1532,12 +1671,7 @@ resolveExperimentPCROptions[
 	(* check if a prepared plate was provided. In this situation, there is no master mix, buffer or primers *)
 	(* in this case, the samples should all be in the same compatible PCR plate *)
 	(* We allow to 3 models of PCR plates. *)
-	validPreparedPlateQ=If[
-		And[
-			NullQ[masterMix],
-			NullQ[buffer],
-			MatchQ[flatPrimerSamples,ListableP[Null]]
-		],
+	validPreparedPlateQ=If[preparedPlate,
 		And[
 			MatchQ[Lookup[sampleContainerPackets,Model],{LinkP[{Model[Container,Plate,"96-well Optical Full-Skirted PCR Plate"],Model[Container,Plate,"96-well PCR Plate"],Model[Container, Plate, "96-well Optical Semi-Skirted PCR Plate"]}]..}],
 			SameQ@@Lookup[sampleContainerPackets,Object]
@@ -1558,7 +1692,7 @@ resolveExperimentPCROptions[
 
 	(* If we are gathering tests, create a test for a prepared plate error *)
 	validPreparedPlateTest=If[gatherTests,
-		Test["When using a prepared plate by not specifying primers, master mix, buffer, and zero for sample volumes, the input samples are all in one PCR plate with model, Model[Container, Plate, \"96-well Optical Full-Skirted PCR Plate\"]:",
+		Test["When using a prepared plate by specifying PreparedPlate -> True (or not specifying primers, master mix, buffer, and zero for sample volumes), the input samples are all in one PCR plate with model Model[Container, Plate, \"96-well Optical Full-Skirted PCR Plate\"], Model[Container,Plate,\"96-well PCR Plate\"], or Model[Container, Plate, \"96-well Optical Semi-Skirted PCR Plate\"]:",
 			validPreparedPlateQ,
 			True
 		],
@@ -1815,10 +1949,7 @@ resolveExperimentPCROptions[
 		MatchQ[assayPlate,ObjectP[]],
 			assayPlate,
 		And[
-			NullQ[flatPrimerSamples],
-			NullQ[masterMix],
-			NullQ[buffer],
-			MatchQ[sampleVolume,ListableP[EqualP[0 Microliter]]],
+			preparedPlate,
 			(*"96-well Optical Full-Skirted PCR Plate", "96-well Optical Semi-Skirted PCR Plate", "96-well PCR Plate"*)
 			MatchQ[Lookup[sampleContainerPackets,Model],
 				{LinkP[{Model[Container,Plate,"id:9RdZXv1laYVK"],Model[Container,Plate,"id:Z1lqpMz1EnVL"],Model[Container,Plate,"id:01G6nvkKrrYm"]}]..}],
@@ -2046,12 +2177,12 @@ resolveExperimentPCROptions[
 		resolvedReversePrimerContainerLabel,
 		resolvedSampleOutLabel
 	}=Transpose[MapThread[
-		Function[{sample,sampleContainer,primerPairSample,primerPairSampleContainer,myMapThreadOptions},
+		Function[{sample,sampleContainer,primerPairSample,primerPairSampleContainer,myMapThreadOptions, mapThreadSampleVolume},
 			Module[
 				{
 					forwardPrimerStorageConditionError,reversePrimerStorageConditionError,totalVolumeTooLargeError,
 					specifiedForwardPrimerVolume,specifiedForwardPrimerStorageCondition,specifiedReversePrimerVolume,specifiedReversePrimerStorageCondition,
-					specifiedBufferVolume,mapThreadMasterMixVolume,mapThreadSampleVolume,mapThreadReactionVolume,
+					specifiedBufferVolume,mapThreadMasterMixVolume,mapThreadReactionVolume,
 					specifiedSampleLabel,specifiedSampleContainerLabel,specifiedPrimerPairLabel,specifiedPrimerPairContainerLabel,specifiedSampleOutLabel,
 					forwardPrimerSample,forwardPrimerSampleContainer,reversePrimerSample,reversePrimerSampleContainer,
 					specifiedForwardPrimerLabel,specifiedForwardPrimerContainerLabel,specifiedReversePrimerLabel,specifiedReversePrimerContainerLabel,
@@ -2065,12 +2196,12 @@ resolveExperimentPCROptions[
 				(* Pull out the specified options *)
 				{
 					specifiedForwardPrimerVolume,specifiedForwardPrimerStorageCondition,specifiedReversePrimerVolume,specifiedReversePrimerStorageCondition,
-					specifiedBufferVolume,mapThreadMasterMixVolume,mapThreadSampleVolume,mapThreadReactionVolume, specifiedSampleLabel,specifiedSampleContainerLabel,
+					specifiedBufferVolume,mapThreadMasterMixVolume,mapThreadReactionVolume, specifiedSampleLabel,specifiedSampleContainerLabel,
 					specifiedPrimerPairLabel,specifiedPrimerPairContainerLabel,specifiedSampleOutLabel
 				}=Lookup[
 					myMapThreadOptions,
 					{
-						ForwardPrimerVolume,ForwardPrimerStorageCondition,ReversePrimerVolume,ReversePrimerStorageCondition,BufferVolume,MasterMixVolume,SampleVolume,ReactionVolume,
+						ForwardPrimerVolume,ForwardPrimerStorageCondition,ReversePrimerVolume,ReversePrimerStorageCondition,BufferVolume,MasterMixVolume,ReactionVolume,
 						SampleLabel,SampleContainerLabel,PrimerPairLabel,PrimerPairContainerLabel,SampleOutLabel
 					}
 				];
@@ -2309,7 +2440,7 @@ resolveExperimentPCROptions[
 					sampleLabel,sampleContainerLabel,forwardPrimerLabel,forwardPrimerContainerLabel,reversePrimerLabel,reversePrimerContainerLabel,sampleOutLabel}
 			]
 		],
-		{simulatedSamples,sampleContainers,expandedListedPrimerPairSamples,expandedListedPrimerPairSampleContainers,mapThreadFriendlyOptions}
+		{simulatedSamples,sampleContainers,expandedListedPrimerPairSamples,expandedListedPrimerPairSampleContainers,mapThreadFriendlyOptions, sampleVolume}
 	]];
 
 
@@ -2485,7 +2616,7 @@ resolveExperimentPCROptions[
 
 
 	(*---Resolve Post Processing Options---*)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[ReplaceRule[myOptions, Preparation->resolvedPreparation]];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[ReplaceRule[myOptions, Preparation->resolvedPreparation],Sterile->True];
 
 
 	(*---Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary---*)
@@ -2547,16 +2678,20 @@ resolveExperimentPCROptions[
 		Flatten[{
 			SampleLabel->resolvedSampleLabel,
 			SampleContainerLabel->resolvedSampleContainerLabel,
+			PreparedPlate->preparedPlate,
+			SampleVolume->sampleVolume,
 			PrimerPairLabel->resolvedPrimerPairLabel,
 			PrimerPairContainerLabel->resolvedPrimerPairContainerLabel,
 			ForwardPrimerVolume->resolvedForwardPrimerVolume,
 			ForwardPrimerStorageCondition->resolvedForwardPrimerStorageCondition,
 			ReversePrimerVolume->resolvedReversePrimerVolume,
 			ReversePrimerStorageCondition->resolvedReversePrimerStorageCondition,
+			Buffer->buffer,
 			BufferVolume->resolvedBufferVolume,
 			SampleOutLabel->resolvedSampleOutLabel,
 			MasterMixLabel->resolvedMasterMixLabel,
 			MasterMixContainerLabel->resolvedMasterMixContainerLabel,
+			MasterMix->masterMix,
 			MasterMixVolume->resolvedMasterMixVolume,
 			MasterMixStorageCondition->masterMixStorageCondition,
 			BufferLabel->resolvedBufferLabel,
@@ -2593,6 +2728,7 @@ resolveExperimentPCROptions[
 		tooManySamplesTest,
 		validPreparedPlateTest,
 		precisionTests,
+		sampleVolumeTests,
 		validNameTest,
 		forwardPrimerVolumeMismatchTest,
 		reversePrimerVolumeMismatchTest,
@@ -2657,7 +2793,7 @@ experimentPCRResourcePackets[
 		activationRampRate,denaturationTime,denaturationTemperature,denaturationRampRate,primerAnnealing,primerAnnealingTime,
 		primerAnnealingTemperature,primerAnnealingRampRate,extensionTime,extensionTemperature,extensionRampRate,numberOfCycles,finalExtension,
 		finalExtensionTime,finalExtensionTemperature,finalExtensionRampRate,runTime,totalRunTime,masterMix,totalMasterMixVolume,masterMixContainer,
-		masterMixSourceVesselDeadVolume,masterMixAndVolumeAssoc,masterMixResource,buffer, preparatoryPrimitives, preparatoryUnitOperations,
+		masterMixSourceVesselDeadVolume,masterMixAndVolumeAssoc,masterMixResource,buffer, preparatoryUnitOperations,
 		totalBufferVolume,bufferAndVolumeAssoc, bufferResource,forwardPrimerLabels,reversePrimerLabels,instrumentResource,simulation,assayPlate,
 		protocolPacket,unitOperationPacket, sharedFieldPacket,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,
 		allResourceBlobs,fulfillable,frqTests,previewRule, optionsRule,resultRule,testsRule
@@ -2843,14 +2979,14 @@ experimentPCRResourcePackets[
 		primerAnnealing,primerAnnealingTime,primerAnnealingTemperature,primerAnnealingRampRate,
 		extensionTime,extensionTemperature,extensionRampRate,
 		numberOfCycles,
-		finalExtension,finalExtensionTime,finalExtensionTemperature,finalExtensionRampRate, preparatoryPrimitives, preparatoryUnitOperations
+		finalExtension,finalExtensionTime,finalExtensionTemperature,finalExtensionRampRate, preparatoryUnitOperations
 	}=Lookup[myResolvedOptions,{
 		Activation,ActivationTime,ActivationTemperature,ActivationRampRate,
 		DenaturationTime,DenaturationTemperature,DenaturationRampRate,
 		PrimerAnnealing,PrimerAnnealingTime,PrimerAnnealingTemperature,PrimerAnnealingRampRate,
 		ExtensionTime,ExtensionTemperature,ExtensionRampRate,
 		NumberOfCycles,
-		FinalExtension,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate, PreparatoryPrimitives, PreparatoryUnitOperations
+		FinalExtension,FinalExtensionTime,FinalExtensionTemperature,FinalExtensionRampRate, PreparatoryUnitOperations
 	}];
 
 	(* Calculate the estimated run time of the reaction *)
@@ -2899,7 +3035,7 @@ experimentPCRResourcePackets[
 			SameQ@@uniqueContainersIn,
 			Or[
 				DatabaseMemberQ[First[uniqueContainersIn]],
-				Total[Length/@{preparatoryPrimitives, preparatoryUnitOperations}]>0,
+				Length[preparatoryUnitOperations]>0,
 				MemberQ[
 					Values[Lookup[simulation[[1]],Labels]],
 					uniqueContainersIn[[1]]
@@ -2957,15 +3093,16 @@ experimentPCRResourcePackets[
 
 				(*===Resources===*)
 				Replace[Checkpoints]->{
-					{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->45 Minute]]},
-					{"Picking Resources",45 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->45 Minute]]},
-					{"Preparing Assay Plate",2 Hour,"The AssayPlate is loaded with samples and reagents.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->2 Hour]]},
-					{"Thermocycling",runTime,"The thermocycling procedure is performed on the reaction mixtures.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->runTime]]},
-					{"Returning Materials",1 Hour,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Hour]]}
+					{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]},
+					{"Picking Resources",45 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]},
+					{"Preparing Assay Plate",2 Hour,"The AssayPlate is loaded with samples and reagents.",Link[Resource[Operator->$BaselineOperator,Time->2 Hour]]},
+					{"Thermocycling",runTime,"The thermocycling procedure is performed on the reaction mixtures.",Link[Resource[Operator->$BaselineOperator,Time->runTime]]},
+					{"Returning Materials",1 Hour,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->1 Hour]]}
 				},
 
 
 				(*===Sample Preparation===*)
+				PreparedPlate -> Lookup[myResolvedOptions, PreparedPlate],
 				ReactionVolume->Lookup[myResolvedOptions,ReactionVolume],
 				Replace[SampleVolumes]->Lookup[myResolvedOptions,SampleVolume],
 				Replace[ForwardPrimers]->If[NullQ[forwardPrimers],Null,Link/@forwardPrimers],
@@ -3428,7 +3565,7 @@ simulateExperimentPCR[
 	{protocolObject,cache,inheritedSimulation,parentProtocol,sampleVolumes,forwardPrimerVolumes,reversePrimerVolumes,masterMixVolume,bufferVolumes,currentSimulation,
 		unitOperationField,simulatedSamplePackets,simulatedAssayPlatePackets,takeAllIndexLeavingNull,
 		simulatedSourceAndDestinationCache,samplesIn,containersIn,sampleOut,assayPlate,
-		samplesInTransferPackets,simulationWithLabels,masterMix,buffer, resolvedPreparation},
+		samplesInTransferPackets,simulationWithLabels,masterMix,buffer, resolvedPreparation, simulatedAssayPlatePacketsCorrected, simulatedContainersInPackets},
 
 	(* Get our protocol ID. This should already be in our protocol packet, unless the resource packets failed *)
 	protocolObject=Which[
@@ -3559,14 +3696,16 @@ simulateExperimentPCR[
 	(* Download information from our simulated resources *)
 	{
 		simulatedSamplePackets,
-		simulatedAssayPlatePackets
+		simulatedAssayPlatePackets,
+		simulatedContainersInPackets
 	}=If[MatchQ[resolvedPreparation, Robotic],
 		Quiet[
 			Download[
 				protocolObject,
 				{
 					Packet[OutputUnitOperations[SampleLink][{Model,State,Container,Name,Contents}]],
-					Packet[OutputUnitOperations[AssayPlateLink][{Model,State,Container,Name,Contents}]]
+					Packet[OutputUnitOperations[AssayPlateLink][{Model,State,Container,Name,Contents}]],
+					Packet[OutputUnitOperations[SampleLink][[1]][Container][{Model,State,Container,Name,Contents}]]
 				},
 				Simulation->currentSimulation
 			],
@@ -3577,7 +3716,8 @@ simulateExperimentPCR[
 				protocolObject,
 				{
 					Packet[SamplesIn[{Model,State,Container,Name,Contents}]],
-					Packet[AssayPlate[{Model,State,Container,Name,Contents}]]
+					Packet[AssayPlate[{Model,State,Container,Name,Contents}]],
+					Packet[ContainersIn[[1]][{Model,State,Container,Name,Contents}]]
 				},
 				Simulation->currentSimulation
 			],
@@ -3586,9 +3726,14 @@ simulateExperimentPCR[
 
 	];
 
+	simulatedAssayPlatePacketsCorrected = If[NullQ[simulatedAssayPlatePackets],
+		simulatedContainersInPackets,
+		simulatedAssayPlatePackets
+	];
+
 	simulatedSourceAndDestinationCache=FlattenCachePackets[{
 		simulatedSamplePackets,
-		simulatedAssayPlatePackets
+		simulatedAssayPlatePacketsCorrected
 	}];
 
 	(* Get SamplesIn and ContainersIn *)
@@ -3602,7 +3747,7 @@ simulateExperimentPCR[
 	{sampleOut,assayPlate}=Module[{},
 
 		(* If there are already samples in the assay plate, assume it's the input plate, otherwise upload new samples to the empty plate *)
-		If[!MatchQ[Lookup[simulatedAssayPlatePackets,Contents,{}],{}],
+		If[!MatchQ[Lookup[simulatedAssayPlatePacketsCorrected,Contents,{}],{}],
 			{samplesIn,First[containersIn]},
 			Module[{samplesInModels,assayPlateWells,destinations,newSampleOut, newSampleOutPackets},
 				samplesInModels=Download[Lookup[Flatten[simulatedSamplePackets],Model],Object];
@@ -3610,11 +3755,11 @@ simulateExperimentPCR[
 					Range[1,Length[samplesInModels]],
 					InputFormat->TransposedIndex
 				];
-				destinations={#,Lookup[simulatedAssayPlatePackets,Object]}&/@assayPlateWells;
+				destinations={#,Lookup[simulatedAssayPlatePacketsCorrected,Object]}&/@assayPlateWells;
+				(* make empty samples in the destinations, and also don't put volumes in them because UploadSampleTransfer will take care of it *)
 				newSampleOutPackets = UploadSample[
-					samplesInModels,
+					ConstantArray[{}, Length[samplesInModels]],
 					destinations,
-					InitialAmount->sampleVolumes,
 					Simulation -> currentSimulation,
 					FastTrack->True,
 					Upload -> False,
@@ -3623,7 +3768,7 @@ simulateExperimentPCR[
 				currentSimulation = UpdateSimulation[currentSimulation, Simulation[newSampleOutPackets]];
 				newSampleOut = Lookup[Take[newSampleOutPackets, Length[samplesInModels]], Object, {}];
 
-				{newSampleOut,Lookup[simulatedAssayPlatePackets,Object]}
+				{newSampleOut,Lookup[simulatedAssayPlatePacketsCorrected,Object]}
 			]
 		]
 	];
@@ -3775,7 +3920,7 @@ resolveExperimentPCRMethod[
 			Nothing
 		],
 		Module[{manualOnlyOptions},
-			manualOnlyOptions=Select[{ImageSample, MeasureVolume, MeasureWeight},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Swirl|Automatic]]&)];
+			manualOnlyOptions=Select[{ImageSample, MeasureVolume, MeasureWeight},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Swirl|Automatic|False]]&)];
 
 			If[Length[manualOnlyOptions]>0,
 				"the following Manual-only options were specified "<>ToString[manualOnlyOptions],
@@ -3885,8 +4030,8 @@ DefineOptions[ExperimentPCROptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentPCROptions[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
-	myPrimerPairSamples:ListableP[{{ObjectP[Object[Sample]],ObjectP[Object[Sample]]}..}|{{Null,Null}}|_String],
+	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	myPrimerPairSamples:ListableP[{{ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]},ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}}..}|{{Null,Null}}],
 	myOptions:OptionsPattern[ExperimentPCROptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -3909,7 +4054,7 @@ ExperimentPCROptions[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ExperimentPCROptions[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentPCROptions]
 ]:=ExperimentPCROptions[
 	mySamples,
@@ -3929,7 +4074,7 @@ DefineOptions[ExperimentPCRPreview,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentPCRPreview[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myPrimerPairSamples:ListableP[{{ObjectP[Object[Sample]],ObjectP[Object[Sample]]}..}|{{Null,Null}}|_String],
 	myOptions:OptionsPattern[ExperimentPCRPreview]
 ]:=Module[{listedOptions},
@@ -3943,7 +4088,7 @@ ExperimentPCRPreview[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ExperimentPCRPreview[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentPCRPreview]
 ]:=ExperimentPCRPreview[
 	mySamples,
@@ -3964,7 +4109,7 @@ DefineOptions[ValidExperimentPCRQ,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ValidExperimentPCRQ[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myPrimerPairSamples:ListableP[{{ObjectP[Object[Sample]],ObjectP[Object[Sample]]}..}|{{Null,Null}}|_String],
 	myOptions:OptionsPattern[ValidExperimentPCRQ]
 ]:=Module[
@@ -4017,7 +4162,7 @@ ValidExperimentPCRQ[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ValidExperimentPCRQ[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ValidExperimentPCRQ]
 ]:=ValidExperimentPCRQ[
 	mySamples,

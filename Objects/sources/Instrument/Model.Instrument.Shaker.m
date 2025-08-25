@@ -111,6 +111,14 @@ DefineObjectType[Model[Instrument, Shaker], {
 			Description -> "Maximum temperature at which the shaker can incubate.",
 			Category -> "Operating Limits"
 		},
+		MaxWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Gram],
+			Units -> Gram,
+			Description -> "Maximum total weight of container and sample which the shaker can incubate.",
+			Category -> "Operating Limits"
+		},
 		GripperDiameter -> {
 			Format -> Single,
 			Class -> Real,
@@ -132,7 +140,7 @@ DefineObjectType[Model[Instrument, Shaker], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Part, ShakerAdapter][CompatibleMixers],
+			Relation -> Model[Part, ShakerAdapter][CompatibleMixers]|Model[Container, Rack][CompatibleMixers],
 			Description -> "The shaker adapters that can be used with this shaker.",
 			Category -> "Model Information"
 		}

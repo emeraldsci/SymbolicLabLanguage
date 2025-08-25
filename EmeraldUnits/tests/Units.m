@@ -1716,6 +1716,36 @@ DefineTests[
 		]
 	}
 ];
+
+(* ::Subsubsection::Closed:: *)
+(*ColonyCountQ*)
+
+
+DefineTests[
+	ColonyCountQ,
+	{
+		Example[{Basic, "Returns true if the quantity is in Units of Colony:"},
+			ColonyCountQ[3.4 Colony],
+			True
+		],
+		Example[{Basic, "Works regardless of metric prefixes:"},
+			ColonyCountQ[23 Micro Colony],
+			True
+		],
+		Example[{Basic, "Will reject things that are not in the correct Units:"},
+			ColonyCountQ[23 Nano Meter],
+			False
+		],
+		Example[{Attributes, Listable, "The function is listable:"},
+			ColonyCountQ[{42 Milli Colony, 32 Nano Colony, 1.33 Colony}],
+			{True, True, True}
+		],
+		Test["Does not accept giberish:",
+			ColonyCountQ["Taco"],
+			False
+		]
+	}
+];
 (* ::Subsubsection::Closed:: *)
 (*ConcentrationQ*)
 
@@ -5953,6 +5983,10 @@ DefineTests[
 		Test["Days get scaled properly:",
 			UnitScale[Quantity[730, "Days"]],
 			Quantity[2, "Years"]
+		],
+		Test["Negative times are scaled in the same way as positive times:",
+			UnitScale[Quantity[-18000, "Second"]],
+			Quantity[-5, "Hours"]
 		]
 	}
 ];
@@ -6636,7 +6670,7 @@ DefineTests[MatrixP, {
 
 }];
 
-
+Authors[unitPaclets]:={"hiren.patel"};
 DefineTests[unitPaclets, {
 	Test["UnitTable paclet:",
 		PacletInformation["UnitTable"],
@@ -6737,7 +6771,7 @@ DefineTests[
 ];
 
 
-
+Authors[mm13Units]:={"hiren.patel"};
 DefineTests[mm13Units,{
 
 	Test["Celsius",Celsius,Quantity[1,"DegreesCelsius"]],
@@ -6774,3 +6808,218 @@ DefineTests[mm13Units,{
 	
 	
 }];
+
+
+
+(* ::Subsection::Closed:: *)
+(*StringToQuantity*)
+
+
+DefineTests[StringToQuantity,
+	{
+		Example[{Basic, "Convert a string denoting a quantity into a quantity object:"},
+			StringToQuantity["2 Meters", Server -> False],
+			EqualP[2 Meter]
+		],
+		Example[{Basic, "Convert a series of strings denoting quantities into quantity objects:"},
+			StringToQuantity[{"2 Meters", "14 inches", "2mm", "3.2 Kelvin"}, Server -> False],
+			{EqualP[2 Meter], EqualP[14 Inch], EqualP[2 Millimeter], EqualP[3.2 Kelvin]}
+		],
+		Example[{Basic, "Returns $Failed if a string cannot be parsed:"},
+			StringToQuantity["2 Kittens", Server -> False],
+			$Failed
+		],
+		Example[{Basic, "By default, contacts the Wolfram server to interpret quantities that can't be parsed locally if not in engine:"},
+			StringToQuantity["2 Kittens"],
+			EqualP[Quantity[2, "Kittens"]]
+		],
+		Example[{Additional, "Parses strings with abbreviated units:"},
+			StringToQuantity["2m", Server -> False],
+			EqualP[2 Meter]
+		],
+		Example[{Additional, "Quantity strings are potentially ambiguous and formatting is interpreted strictly:"},
+			StringToQuantity[{"2 ms", "2 m s", "3 \[Degree]C", "3 \[Degree] C"}, Server -> False],
+			{EqualP[2 Millisecond], EqualP[2 Meter Second], EqualP[3 Celsius], EqualP[3 AngularDegree Coulomb]}
+		],
+		Example[{Additional, "Celsius is used in preference to Centigrade:"},
+			StringToQuantity["3 \[Degree]C", Server -> False],
+			EqualP[3 Celsius]
+		],
+		Example[{Options, Server, "Prevent the function from contacting the Wolfram server if the unit can't be interpreted locally:"},
+			StringToQuantity["2 Kittens", Server -> False],
+			$Failed
+		],
+		Example[{Additional, "Server option resolves to False in engine as the Wolfram server can't be contacted when in Engine:"},
+			StringToQuantity["2 Kittens"],
+			$Failed,
+			Stubs :> {$ECLApplication = Engine}
+		],
+		Test["Parses strings with a variety of spacing between magnitude and unit:",
+			StringToQuantity[{"2 Meter", "2Meter"}, Server -> False],
+			{EqualP[2 Meter], EqualP[2 Meter]}
+		],
+		Test["Parses units in plural form:",
+			StringToQuantity[{"2 Meters", "2Meters"}, Server -> False],
+			{EqualP[2 Meter], EqualP[2 Meter]}
+		],
+		Test["Parses strings without capitalization:",
+			StringToQuantity[{"2 meters", "2meters"}, Server -> False],
+			{EqualP[2 Meter], EqualP[2 Meter]}
+		],
+		Test["Parses strings with abbreviated units:",
+			StringToQuantity[{"2m", "2 m"}, Server -> False],
+			{EqualP[2 Meter], EqualP[2 Meter]}
+		],
+		Test["Parses a series of common unit abbreviations:",
+			StringToQuantity[
+				{
+					"8 m",
+					"8 s",
+					"8 USD",
+					"8 g",
+					"8 kg",
+					"8 in",
+					"8 oz",
+					"8 J",
+					"8 Hz",
+					"8 C",
+					"8 \[Degree]C",
+					"8 K",
+					"8 \[Degree]F",
+					"8 PSI",
+					"8 L"
+				},
+				Server -> False
+			],
+			{
+				EqualP[8 Meter],
+				EqualP[8 Second],
+				EqualP[8 USD],
+				EqualP[8 Gram],
+				EqualP[8 Kilogram],
+				EqualP[8 Inch],
+				EqualP[8 Ounce],
+				EqualP[8 Joule],
+				EqualP[8 Hertz],
+				EqualP[8 Coulomb],
+				EqualP[8 Celsius],
+				EqualP[8 Kelvin],
+				EqualP[8 Fahrenheit],
+				EqualP[8 PSI],
+				EqualP[8 Liter]
+			}
+		],
+		Test["Parses a series of common compound unit abbreviations:",
+			StringToQuantity[
+				{
+					"8 m/s",
+					"8 s^-1",
+					"8 USD/yr",
+					"8 g/cm^3",
+					"8 kg/L",
+					"8 J/C",
+					"8 \[Degree]C/s",
+					"8 J/K",
+					"8 J K^-1"
+				},
+				Server -> False
+			],
+			{
+				EqualP[8 Meter / Second],
+				EqualP[8 / Second],
+				EqualP[8 USD / Year],
+				EqualP[8 Gram / Centimeter^3],
+				EqualP[8 Kilogram / Liter],
+				EqualP[8 Joule / Coulomb],
+				EqualP[8 Celsius / Second],
+				EqualP[8 Joule / Kelvin],
+				EqualP[8 Joule / Kelvin]
+			}
+		],
+		Test["Parses a series of units with prefixes:",
+			StringToQuantity[
+				{
+					"8 mm",
+					"8 \[Mu]s",
+					"8 USD",
+					"8 Mg",
+					"8 kg",
+					"8 MJ",
+					"8 nC",
+					"8 mL"
+				},
+				Server -> False
+			],
+			{
+				EqualP[8 Millimeter],
+				EqualP[8 Microsecond],
+				EqualP[8 USD],
+				EqualP[8 Megagram],
+				EqualP[8 Kilogram],
+				EqualP[8 Megajoule],
+				EqualP[8 Nano Coulomb],
+				EqualP[8 Milliliter]
+			}
+		],
+		Test["All canonical Emerald units are interpreted from ToString forms without requiring the Wolfram Server:",
+			(
+				(* Convert to strings *)
+				emeraldUnitStrings = ToString /@ emeraldUnits;
+
+				StringToQuantity[emeraldUnitStrings, Server -> False]
+			),
+			EqualP /@ emeraldUnits,
+			SetUp :> {
+				(* Get a list of emerald units *)
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[1]]
+			},
+			Variables :> {emeraldUnits, emeraldUnitStrings}
+		],
+		Test["All canonical Emerald units are interpreted from TextString forms without requiring the Wolfram Server:",
+			(
+				(* Convert to strings *)
+				emeraldUnitStrings = TextString /@ emeraldUnits;
+
+				StringToQuantity[emeraldUnitStrings, Server -> False]
+			),
+			EqualP /@ emeraldUnits,
+			SetUp :> {
+				(* Get a list of emerald units *)
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[Alternatives[1, Dozen]]]
+			},
+			Variables :> {emeraldUnits, emeraldUnitStrings}
+		],
+		Test["All prefixed canonical Emerald units are interpreted from ToString forms without requiring the Wolfram Server:",
+			(
+				(* Convert to strings *)
+				emeraldUnitStrings = ToString /@ emeraldUnits;
+
+				StringToQuantity[emeraldUnitStrings, Server -> False]
+			),
+			EqualP /@ emeraldUnits,
+			SetUp :> {
+				(* Get a list of emerald units *)
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalPrefixedUnitLookup), Except[1]]
+			},
+			Variables :> {emeraldUnits, emeraldUnitStrings}
+		],
+		Test["All prefixed canonical Emerald units are interpreted from TextString forms without requiring the Wolfram Server:",
+			(
+				(* Convert to strings *)
+				emeraldUnitStrings = TextString /@ emeraldUnits;
+
+				StringToQuantity[emeraldUnitStrings, Server -> False]
+			),
+			EqualP /@ emeraldUnits,
+			SetUp :> {
+				(* Get a list of emerald units *)
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalPrefixedUnitLookup), Except[Alternatives[1, Dozen]]]
+			},
+			Variables :> {emeraldUnits, emeraldUnitStrings}
+		],
+		Test["Custom hard-coded units are converted:",
+			StringToQuantity[{"2\"", "2 \"", "3'", "3 '", "150 sqft", "150sqft", "10 Centipoises"}],
+			{EqualP[2 Inch], EqualP[2 Inch], EqualP[3 Foot], EqualP[3 Foot], EqualP[150 Foot^2], EqualP[150 Foot^2], EqualP[10 Centipoise]}
+		]
+	}
+];

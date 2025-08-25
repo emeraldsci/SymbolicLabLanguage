@@ -91,13 +91,6 @@ DefineObjectType[Model[Item,GCInletLiner], {
 			Pattern :> BooleanP,
 			Description -> "Indicates whether the inlet liner has been deactivated to prevent reaction with the injected analytes.",
 			Category -> "Physical Properties"
-		},
-		Reusable -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates whether this inlet liner can be re-used if the item is removed from its installed location.",
-			Category -> "Physical Properties"
 		}
 	}
 }];

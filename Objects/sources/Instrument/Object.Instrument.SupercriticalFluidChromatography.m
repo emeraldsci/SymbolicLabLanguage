@@ -82,6 +82,50 @@ DefineObjectType[Object[Instrument, SupercriticalFluidChromatography], {
 			Description -> "The aspiration cap used to take up ExternalNeedleWash solution from the container to the instrument pump.",
 			Category -> "Instrument Specifications"
 		},
+		SealWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][SupercriticalFluidChromatography]
+			],
+			Description -> "The aspiration cap used to take up SealWash solution from the container to the instruments regeneration pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SealWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][SupercriticalFluidChromatography]|Object[Plumbing, Tubing],
+			Description->"The seal wash solution inlet tubing used to uptake SealWash solution from container to the regeneration pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SecondarySealWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][SupercriticalFluidChromatography]
+			],
+			Description -> "The aspiration cap used to take up SealWash solution from the container to the chromatographic pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SecondarySealWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][SupercriticalFluidChromatography]|Object[Plumbing, Tubing],
+			Description->"The seal wash solution inlet tubing used to uptake SealWash solution from container to the chromatographic pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
 		CosolventACap -> {
 			Format -> Single,
 			Class -> Link,

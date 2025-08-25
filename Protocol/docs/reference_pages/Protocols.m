@@ -15,10 +15,10 @@ DefineUsage[ConfirmProtocol,
 		"Protocols can be put back into the cart by calling UnconfirmProtocol."
 	},
 	Input :> {
-		{"protocol",ObjectP[ProtocolTypes[]],"Protocol objects to be confirmed."}
+		{"protocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocol objects to be confirmed."}
 	},
 	Output :> {
-		{"updatedProtocol",ObjectP[ProtocolTypes[]],"Protocols updated to reflect their confirming."}
+		{"updatedProtocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocols updated to reflect their confirming."}
 	},
 	Behaviors -> {
 		"ReverseMapping"
@@ -43,10 +43,10 @@ DefineUsage[CancelProtocol,
 		"A protocol that has already been confirmed can no longer be canceled."
 	},
 	Input :> {
-		{"protocol",ObjectP[ProtocolTypes[]],"Protocol objects to be canceled."}
+		{"protocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocol objects to be canceled."}
 	},
 	Output :> {
-		{"updatedProtocol",ObjectP[ProtocolTypes[]],"Protocols updated to reflect their cancellation."}
+		{"updatedProtocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocols updated to reflect their cancellation."}
 	},
 	Behaviors -> {
 		"ReverseMapping"
@@ -72,10 +72,10 @@ DefineUsage[UnconfirmProtocol,
 		"A protocol that has already started running in the lab cannot be unconfirmed."
 	},
 	Input :> {
-		{"protocol",ObjectP[ProtocolTypes[]],"Protocol objects to be returned to the cart."}
+		{"protocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocol objects to be returned to the cart."}
 	},
 	Output :> {
-		{"updatedProtocol",ObjectP[ProtocolTypes[]],"Protocols updated to reflect their revoking."}
+		{"updatedProtocol",ObjectP[ProtocolTypes[Output -> Short]],"Protocols updated to reflect their revoking."}
 	},
 	Behaviors -> {
 		"ReverseMapping"

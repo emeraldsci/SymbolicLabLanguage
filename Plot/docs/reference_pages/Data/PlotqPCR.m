@@ -33,6 +33,26 @@ DefineUsage[PlotqPCR,
 				}
 			},
 			{
+				Definition -> {"PlotqPCR[protocol]", "plot"},
+				Description -> "creates a 'plot' of the amplification curves in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing qPCR data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, qPCR]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the qPCR protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition -> {"PlotqPCR[meltingPointAnalysis]", "fig"},
 				Description -> "plots the negative derivative of the melting curve data 'meltingPointAnalysis'.",
 				Inputs :> {
@@ -79,7 +99,7 @@ DefineUsage[PlotqPCR,
 			"PlotQuantificationCycle",
 			"PlotCopyNumber"
 		},
-		Author -> {"andrey.shur", "robert", "weiran.wang", "eqian"},
+		Author -> {"lei.tian", "andrey.shur", "robert", "weiran.wang", "eqian"},
 		Preview -> True
 	}
 ];

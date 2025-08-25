@@ -46,17 +46,19 @@ DefineObjectType[Object[Protocol, Transfer], {
 				Model[Instrument, FumeHood],
 				Model[Instrument, GloveBox],
 				Model[Container, Bench],
-
+				Model[Container, Enclosure],
+				Model[Instrument, HandlingStation],
 				Object[Instrument, BiosafetyCabinet],
 				Object[Instrument, FumeHood],
 				Object[Instrument, GloveBox],
-				Object[Container, Bench]
+				Object[Container, Bench],
+				Object[Container, Enclosure],
+				Object[Instrument, HandlingStation]
 			],
-			Description -> "The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Bench). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC.",
+			Description -> "The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC.",
 			Category -> "General",
 			Abstract -> True
 		},
-
 		Instruments->{
 			Format -> Multiple,
 			Class -> Link,
@@ -133,13 +135,35 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Description -> "The pill crusher bags that will contain the crushed itemized samples after it has been in the pill crusher.",
 			Category->"Instrument Specifications"
 		},
+		IncludeSachetPouches -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicate if the pouches are also transferred to the destination along with the filler. If set to False, the pouches are directly discarded after emptied.",
+			Category->"Instrument Specifications",
+			IndexMatching -> SamplesIn
+		},
+		SachetIntermediateContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, WeighBoat],
+				Object[Item, WeighBoat]
+			],
+			Description -> "For each member of SamplesIn, the container that the filler is emptied into after cutting open the source sachet in order to transfer to the destination, if not transferring gravimetrically.",
+			Category->"Instrument Specifications",
+			IndexMatching -> SamplesIn
+		},
 		Tips->{
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Model[Item, Tips],
-				Object[Item, Tips]
+				Object[Item, Tips],
+				Model[Item, Consumable],
+				Object[Item, Consumable]
 			],
 			Description -> "The pipette tips used to aspirate and dispense the requested volume of the samples.",
 			Category->"Instrument Specifications"
@@ -276,17 +300,6 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Description -> "The allowed tolerance of the weighed source sample from the specified amount requested to be transferred.",
 			Category->"Instrument Specifications"
 		},
-		WaterPurifiers->{
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Model[Instrument,WaterPurifier],
-				Object[Instrument,WaterPurifier]
-			],
-			Description -> "The water purifier used to gather the requested water model required for the transfer.",
-			Category->"Instrument Specifications"
-		},
 		HandPumps->{
 			Format -> Multiple,
 			Class -> Link,
@@ -297,6 +310,17 @@ DefineObjectType[Object[Protocol, Transfer], {
 			],
 			Description -> "The hand pump used to get liquid out of the source container.",
 			Category->"Instrument Specifications"
+		},
+		HandPumpAdapters -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part,HandPumpAdapter],
+				Object[Part,HandPumpAdapter]
+			],
+			Description -> "The part used to connect the handpump to the solvent container in order to transfer liquid out.",
+			Category -> "General"
 		},
 		QuantitativeTransfer->{
 			Format -> Multiple,
@@ -848,6 +872,14 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Category -> "Container Covering",
 			Developer -> True
 		},
+		AllowSourceContainerReCover->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the source container is allowed to re-cover once uncovered during this protocol. For example, the containers are not allowed to be re-covered if it is an ampoule or has CoverType->Crimped.",
+			Category ->  "Container Covering",
+			Developer -> True
+		},
 		KeepSourceCovered -> {
 			Format -> Multiple,
 			Class -> Boolean,
@@ -866,7 +898,7 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives@@Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels],
+			Relation -> Alternatives@@Join[CoverObjectTypes, CoverModelTypes],
 			Description -> "The new cover that was placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover was used.",
 			Category -> "Container Covering"
 		},
@@ -904,7 +936,7 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives@@Join[Patterns`Private`coveringTypesObjects, Patterns`Private`coveringTypesModels],
+			Relation -> Alternatives@@Join[CoverObjectTypes, CoverModelTypes],
 			Description -> "The new cover that was placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover was used.",
 			Category -> "Container Covering"
 		},
@@ -953,22 +985,6 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if the source sample was able to become fully homogeneous via aspiration mixing (mixing up to MaxNumberOfAspirationMixes times) before the slurry transfer occurred. This data is recorded by the operator if the transfer is set as a SlurryTransfer.",
-			Category -> "Experimental Results"
-		},
-		MeasuredTransferWeights -> {
-			Format -> Multiple,
-			Class->Distribution,
-			Pattern:>DistributionP[Milligram],
-			Units->Milligram,
-			Description -> "The weight of the weighing container when filled with the amount of sample needed to complete the transfer.",
-			Category -> "Experimental Results"
-		},
-		MeasuredTransferWeightData -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Data, Weight],
-			Description -> "The weight of the weighing container when filled with the amount of sample needed to complete the transfer.",
 			Category -> "Experimental Results"
 		},
 		DestinationSampleHandling -> {
@@ -1033,6 +1049,156 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Category -> "Experimental Results",
 			IndexMatching->MeasuredDestinationTemperatures
 		},
+
+		(* NOTE: These are copied from the corresponding UOs. *)
+		TareData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Weight] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the weight measurement data recorded with nothing on the balance and after zeroing the reading. This data should always be 0 Gram. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		TareWeights -> {
+			Format -> Multiple,
+			Class -> Distribution,
+			Pattern :> DistributionP[Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the weight recorded with nothing on the balance and after zeroing the reading. This data should always be 0 Gram. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		TareWeightAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Appearance] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the side on image of the weighing surface of the balance, captured immediately following the weight measurement of TareData by the integrated camera. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+
+		EmptyContainerWeightData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Weight] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the weight measurement data of the weigh container when empty and before any incoming sample transfer has commenced. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		EmptyContainerWeights -> {
+			Format -> Multiple,
+			Class -> Distribution,
+			Pattern :> DistributionP[Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the weight of the weigh container when empty and before any incoming sample transfer has commenced. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		EmptyContainerWeightAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Appearance] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of EmptyContainerWeightData by the integrated camera. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+
+		MeasuredTransferWeightData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Weight] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the weight measurement data of the weighing container when filled with the amount of sample needed to complete the transfer. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		MeasuredTransferWeights -> {
+			Format -> Multiple,
+			Class -> Distribution,
+			Pattern :> DistributionP[Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the weight of the weighing container when filled with the amount of sample needed to complete the transfer. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		MeasuredTransferWeightAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Appearance] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of MeasuredTransferWeightData by the integrated camera. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+
+		MaterialLossWeightData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Weight] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the weight measurement data recorded after the weighing container is removed from the balance. This measurement accounts for any material lost onto the balance pan during the transfer process. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		MaterialLossWeights -> {
+			Format -> Multiple,
+			Class -> Distribution,
+			Pattern :> DistributionP[Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the weight recorded after the weighing container is removed from the balance. This weight accounts for any material lost onto the balance pan during the transfer process. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		MaterialLossWeightAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Appearance] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the side on image of the weighing surface of the balance, captured immediately following the weight measurement of MaterialLossWeightData by the integrated camera. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		ResidueWeightData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Weight] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the weight measurement data of the weighing container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		ResidueWeights -> {
+			Format -> Multiple,
+			Class -> Distribution,
+			Pattern :> DistributionP[Milligram],
+			Units -> Milligram,
+			Description -> "For each member of SamplesIn, the weight of the weighing container after weighing is complete and the sample has been transferred out, leaving behind possible residue in the container. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
+		ResidueWeightAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			(* This must be Object[Data,Appearance] but the pattern should be Object[Data] for backlink *)
+			Relation -> Object[Data][Protocol],
+			Description -> "For each member of SamplesIn, the side on image of the weighing surface of the balance and its contents, captured immediately following the weight measurement of ResidueWeightData by the integrated camera. This field is Null for non-weight-based transfers.",
+			Category -> "Experimental Results",
+			IndexMatching -> SamplesIn
+		},
 		AspirationDates->{
 			Format->Multiple,
 			Class->Date,
@@ -1083,15 +1249,6 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Category -> "General",
 			Developer -> True
 		},
-		TareWeights -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Data][Protocol],
-			Description -> "Weight measurements taken after the balances are tared to read zero.",
-			Category -> "Weighing",
-			Developer -> True
-		},
 		KeepInstruments ->{
 			Format -> Single,
 			Class -> Boolean,
@@ -1099,6 +1256,14 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Description ->  "Indicates if instruments are released and moved back to the previous location after completing the ExperimentTransfer protocol.",
 			Category -> "General",
 			Developer -> True
+		},
+		OrdersFulfilled -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Transaction, Order][Fulfillment],
+			Description -> "Automatic inventory orders fulfilled by samples generated by this protocol.",
+			Category -> "Inventory"
 		},
 		PreparedResources -> {
 			Format -> Multiple,
@@ -1117,7 +1282,7 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "For each member of SamplesIn, indicates if the typical rules for setting the Living field of the Destination will be followed, or if the Living field of the Destination will be set to False regardless of the state of the Living field of the source and destination initially. See the UploadSampleTranser helpfile for more information on the 'typical rules' for setting the Living field.",
+			Description -> "For each member of SamplesIn, indicates if the typical rules for setting the Living field of the Destination will be followed, or if the Living field of the Destination will be set to False regardless of the state of the Living field of the source and destination initially. See the UploadSampleTransfer helpfile for more information on the 'typical rules' for setting the Living field.",
 			IndexMatching -> SamplesIn,
 			Category -> "General",
 			Developer -> True
@@ -1152,6 +1317,72 @@ DefineObjectType[Object[Protocol, Transfer], {
 			Description -> "The samples that will be queued for post processing at the end of the protocol.",
 			Category -> "General",
 			Developer -> True
+		},
+		MaterialLossLog -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				OperatorMaterialLossAssessment -> Boolean,
+				MeasuredTransferWeightAppearance -> Link,
+				MaterialLossAutoDetected -> Boolean,
+				MaterialLossWeight -> Real,
+				MaterialLossWeightAppearance -> Link,
+				Sample -> Link,
+				UnitOperation -> Link,
+				Operator -> Link
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				OperatorMaterialLossAssessment -> BooleanP,
+				MeasuredTransferWeightAppearance -> _Link,
+				MaterialLossAutoDetected -> BooleanP,
+				MaterialLossWeight -> _?QuantityQ,
+				MaterialLossWeightAppearance -> _Link,
+				Sample -> _Link,
+				UnitOperation -> _Link,
+				Operator -> _Link
+			},
+			Units -> {
+				Date -> None,
+				OperatorMaterialLossAssessment -> None,
+				MeasuredTransferWeightAppearance -> None,
+				MaterialLossAutoDetected -> None,
+				MaterialLossWeight -> Milligram,
+				MaterialLossWeightAppearance -> None,
+				Sample -> None,
+				UnitOperation -> None,
+				Operator -> None
+			},
+			Relation -> {
+				Date -> None,
+				OperatorMaterialLossAssessment -> None,
+				MeasuredTransferWeightAppearance -> Object[Data, Appearance],
+				MaterialLossAutoDetected -> None,
+				MaterialLossWeight -> Milligram,
+				MaterialLossWeightAppearance -> Object[Data, Appearance],
+				Sample -> Alternatives[
+					Object[Sample],
+					Object[Container]
+				],
+				UnitOperation -> Object[UnitOperation],
+				Operator -> Object[User,Emerald,Operator]
+			},
+			Description -> "The information regarding stray material during a weighing instance. OperatorMaterialLossAssessment indicates the response of the operator as to whether stray material is after weighing. MeasuredTransferWeightAppearance is the image immediately taken after the weighing step. MaterialLossAutoDetected indicates whether a material loss is detected based on relevant weight data tracked. MaterialLossWeight is the weight that is not effectively transferred to the weighing container. MeasuredTransferWeightAppearance is the image immediately taken after material loss is autodetected. UnitOperation is the unit operation the log is associated with. Sample is the material ends up in the destination container. UnitOperation is the object pertaining to the transfer by weighing that is performed. Operator is the lab operator who performed the weighing.",
+			Category -> "General"
+		},
+		BalancePreCleaningMethod ->{
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Wet,Dry,None],
+			Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
+			Category -> "Cleaning"
+		},
+		BalanceCleaningMethods ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[Wet,Dry],
+			Description ->  "Indicates the type of cleaning performed on the balance right before a weighing instance if the operator indicates presence of stray material. Dry indicates the balance pan surface and the balance floor outside of the balance pan is cleared of any stray material using soft and lint-free non-woven wipes. Wet indicates the balance pan surface and the balance floor outside of the balance pan is first cleaned with Dry method, followed by wiping with DI-water moistened wipes, IPA-moistened wipes, and a final dry wipe. None indicates no cleaning is performed prior to initial setup.",
+			Category -> "Cleaning"
 		}
 	}
 }];

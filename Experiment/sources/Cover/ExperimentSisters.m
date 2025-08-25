@@ -30,7 +30,7 @@ ValidExperimentCoverQ[
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentCover *)
@@ -103,7 +103,7 @@ ExperimentCoverOptions[
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
   (* return only the options for ExperimentCover *)

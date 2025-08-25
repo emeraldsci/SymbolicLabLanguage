@@ -74,6 +74,44 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Description -> "For each member of SamplesIn, the NMR tube in which the provided sample was placed prior to data collection.",
 			Category -> "General"
 		},
+		NMRTubeReplicates -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates if the NMR tube in which the provided sample was placed is a duplicate. The first instance of the duplicates is marked False while the rest is marked True.",
+			Category -> "General",
+			Developer -> True
+		},
+		StickerSheet -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Consumable] | Model[Item, Consumable],
+			Description -> "A book of laminated sheets that is used to collect the object stickers for NMR tubes going into the instrument. The stickers of NMR tubes are taken off temporarily and collected in this book, and restickered after the measurement is done, because loading NMR tubes with stickers into the NMR instrument can lead to bad shimming, compromised data quality, and even broken tubes inside NMR historically.",
+			Developer -> True,
+			Category -> "General"
+		},
+		RackedNMRTubeStickerPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, String},
+			Pattern :> {GreaterP[0], _String},
+			Headers -> {"Page", "Slot Name"},
+			Description -> "For each member of RackedNMRTubePlacements, indicates the page number and the slot on the StickerSheet book where the sticker of the racked NMR tube is collected temporarily.",
+			Developer -> True,
+			IndexMatching -> RackedNMRTubePlacements,
+			Category -> "General"
+		},
+		UnrackedNMRTubeStickerPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, String},
+			Pattern :> {GreaterP[0], _String},
+			Headers -> {"Page", "Slot Name"},
+			Description -> "For each member of UnrackedNMRTubeLoadingPlacements, indicates the page number and the slot on the StickerSheet book where the sticker of the unracked NMR tube is collected temporarily.",
+			Developer -> True,
+			IndexMatching -> UnrackedNMRTubeLoadingPlacements,
+			Category -> "General"
+		},
 		DepthGauge -> {
 			Format -> Single,
 			Class -> Link,
@@ -382,17 +420,28 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Description -> "For each member of SamplesIn, he file delineating the custom pulse sequence desired for this experiment, overriding whatever the corresponding value of ExperimentTypes is.",
 			Category -> "General"
 		},
-		NMRTubePlacements -> {
+		RackedNMRTubePlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Object[Container], Object[Container], Null},
-			Description -> "A list of placements used to move the NMR tubes onto the NMR tube rack or into the spinners.",
+			Description -> "A list of placements used to move the NMR tubes onto the NMR tube rack.",
 			Headers -> {"NMR Tube to Place", "NMR Tube Destination", "Placement Position"},
 			Category -> "Placements",
 			Developer -> True
 		},
-		NMRTubeRackPlacements -> {
+		UnrackedNMRTubePlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container], Object[Container], Null},
+			Description -> "For each member of UnrackedNMRTubeLoadingPlacements, the placement used to move the NMR tubes into the spinners.",
+			Headers -> {"Spinner", "NMR Tube To Move", "Placement Position"},
+			IndexMatching -> UnrackedNMRTubeLoadingPlacements,
+			Category -> "Placements",
+			Developer -> True
+		},
+		RackedNMRTubeLoadingPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Expression},
 			Pattern :> {_Link, {LocationPositionP..}},
@@ -402,10 +451,20 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Category -> "Placements",
 			Developer -> True
 		},
+		UnrackedNMRTubeLoadingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Expression},
+			Pattern :> {_Link, {LocationPositionP..}},
+			Relation -> {Object[Container], Null},
+			Description -> "A list of placements used to move the unracked NMR tubes onto the NMR autosampler.",
+			Headers -> {"NMR Tube Rack to Place", "Placement Tree"},
+			Category -> "Placements",
+			Developer -> True
+		},
 		NMRTubePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of samples into the NMR tubes.",
 			Category -> "General",
 			Developer -> True
@@ -414,14 +473,14 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer samples into the NMR tubes.",
 			Category -> "General"
 		},
 		SampleRecoveryPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of samples from the NMR tubes back into storable containers.",
 			Category -> "General",
 			Developer -> True
@@ -430,7 +489,7 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation],
 			Description -> "A sample manipulation protocol used to transfer samples from the NMR tubes back into storable containers.",
 			Category -> "General",
 			Developer -> True
@@ -458,6 +517,14 @@ DefineObjectType[Object[Protocol, NMR2D], {
 			Pattern :> GreaterP[0*Minute],
 			Units -> Minute,
 			Description -> "The estimated completion time for the collection of NMR data.",
+			Category -> "General",
+			Developer -> True
+		},
+		TopSpinVersion -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The current version of TopSpin used by the NMR instrument.",
 			Category -> "General",
 			Developer -> True
 		}

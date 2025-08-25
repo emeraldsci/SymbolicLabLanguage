@@ -21,13 +21,13 @@ DefineOptions[ValidExperimentThermalShiftQ,
 ];
 
 (* --- Source code --- *)
-ValidExperimentThermalShiftQ[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ValidExperimentThermalShiftQ]]:=Module[
+ValidExperimentThermalShiftQ[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String]]],myOptions:OptionsPattern[ValidExperimentThermalShiftQ]]:=Module[
   {listedOptions, preparedOptions, thermalShiftTests,initialTestDescription, allTests, verbose,outputFormat},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentThermalShift *)
@@ -87,13 +87,13 @@ DefineOptions[ExperimentThermalShiftOptions,
 ];
 
 (* --- Source code --- *)
-ExperimentThermalShiftOptions[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentThermalShiftOptions]]:=Module[
+ExperimentThermalShiftOptions[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String]]],myOptions:OptionsPattern[ExperimentThermalShiftOptions]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
   listedOptions=ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
   (* return only the options for ExperimentThermalShift *)
@@ -117,13 +117,13 @@ DefineOptions[ExperimentThermalShiftPreview,
 
 
 (* --- Source code --- *)
-ExperimentThermalShiftPreview[myInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String]]],myOptions:OptionsPattern[ExperimentThermalShiftPreview]]:=Module[
+ExperimentThermalShiftPreview[myInputs:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String]]],myOptions:OptionsPattern[ExperimentThermalShiftPreview]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
   (* return only the preview for ExperimentThermalShift *)

@@ -19,13 +19,20 @@ DefineUsage[ExperimentMeasureDissolvedOxygen,
             {
               InputName -> "Samples",
               Description-> "The samples or containers to be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -51,7 +58,7 @@ DefineUsage[ExperimentMeasureDissolvedOxygen,
 		"ExperimentMeasureConductivity",
 		"ExperimentMeasurepH"
     },
-    Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+    Author -> {"axu", "waseem.vali", "malav.desai", "cgullekson"}
   }
 ];
 
@@ -72,13 +79,20 @@ DefineUsage[ExperimentMeasureDissolvedOxygenOptions,
             {
               InputName -> "Samples",
               Description-> "The samples or containers whose DissolvedOxygen will be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -105,7 +119,7 @@ DefineUsage[ExperimentMeasureDissolvedOxygenOptions,
     Tutorials->{
 			"Sample Preparation"
 		},
-    Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+    Author -> {"axu", "waseem.vali", "malav.desai", "cgullekson"}
   }
 ];
 
@@ -126,13 +140,20 @@ DefineUsage[ExperimentMeasureDissolvedOxygenPreview,
             {
               InputName -> "Samples",
               Description-> "The samples or containers whose DissolvedOxygen will be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -154,7 +175,7 @@ DefineUsage[ExperimentMeasureDissolvedOxygenPreview,
       "ExperimentMeasureDissolvedOxygenOptions",
       "ValidExperimentMeasureDissolvedOxygenQ"
     },
-    Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+    Author -> {"axu", "waseem.vali", "malav.desai", "cgullekson"}
   }
 ];
 
@@ -173,14 +194,21 @@ DefineUsage[ValidExperimentMeasureDissolvedOxygenQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers whose DissolvedOxygen will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
+							Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
+              ],
 							Expandable->False
 						},
 						IndexName->"experiment samples"
@@ -205,6 +233,6 @@ DefineUsage[ValidExperimentMeasureDissolvedOxygenQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author -> {"waseem.vali", "malav.desai", "cgullekson"}
+		Author -> {"axu", "waseem.vali", "malav.desai", "cgullekson"}
 	}
 ];

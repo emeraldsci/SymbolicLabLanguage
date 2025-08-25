@@ -10,57 +10,61 @@
 
 DefineUsage[PlotFreezeCells,
 	{
-		BasicDefinitions->{
+		BasicDefinitions -> {
 			{
-				Definition->{"PlotFreezeCells[dataObject]","plots"},
-				Description->"plots the data collected during an ExperimentFreezeCells.",
-				Inputs:>{
-					{
-						InputName->"dataObject",
-						Description->"Data object from ExperimentFreezeCells.",
-						Widget->Widget[
-							Type->Object,
-							Pattern:>ObjectP[Object[Data,FreezeCells]]
-						],
-						Expandable->False
-					}
+				Definition -> {"PlotFreezeCells[data]", "plot"},
+				Description -> "generates a graphical representation of the freezer environmental temperature 'data' collected during an ExperimentFreezeCells with target temperature info.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "data",
+							Description -> "Data object(s) from ExperimentFreezeCells.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[Object[Data, Temperature]]
+							],
+							Expandable -> False
+						},
+						IndexName -> "dataObject"
+					]
 				},
-				Outputs:>{
+				Outputs :> {
 					{
-						OutputName->"plots",
-						Description->"Graphical representation of the data collected for ControlledRateFreezer batches during ExperimentFreezeCells.",
-						Pattern:>Alternatives[{_Manipulate..},Null]
+						OutputName -> "plot",
+						Description -> "Graphical representation of the data collected with target temperature profile or temperature during ExperimentFreezeCells.",
+						Pattern :> Alternatives[_Legended, _TabView]
 					}
 				}
 			},
 			{
-				Definition->{"PlotFreezeCells[protocolObject]","plots"},
-				Description->"plots the data collected during an ExperimentFreezeCells.",
-				Inputs:>{
+				Definition -> {"PlotFreezeCells[protocol]", "plot"},
+				Description -> "generates a graphical representation of the freezer environmental temperature temperature data collected during an ExperimentFreezeCells 'protocol' with target temperature info.",
+				Inputs :> {
 					{
-						InputName->"protocolObject",
-						Description->"Protocol object from a completed ExperimentFreezeCells.",
-						Widget->Widget[
-							Type->Object,
-							Pattern:>ObjectP[Object[Protocol,FreezeCells]]
+						InputName -> "protocol",
+						Description -> "Protocol object from a completed ExperimentFreezeCells.",
+						Widget -> Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Object[Protocol, FreezeCells]]
 						],
-						Expandable->False
+						Expandable -> False
 					}
 				},
-				Outputs:>{
+				Outputs :> {
 					{
-						OutputName->"plots",
-						Description->"Graphical representation of the data collected for ControlledRateFreezer batches during ExperimentFreezeCells.",
-						Pattern:>Alternatives[{_Manipulate..},Null]
+						OutputName -> "plot",
+						Description -> "Graphical representation of the data collected with target temperature profile or temperature during ExperimentFreezeCells.",
+						Pattern :> Alternatives[_Legended, _TabView]
 					}
 				}
 			}
 		},
-		MoreInformation->{},
-		SeeAlso->{
+		MoreInformation -> {},
+		SeeAlso -> {
 			"ExperimentFreezeCells",
-			"ExperimentFreezeCellsPreview"
+			"PlotSensor"
 		},
-		Author->{"scicomp", "brad", "gokay.yamankurt"}
+		Author -> {"scicomp", "brad", "lige.tonggu"},
+		Preview -> True
 	}
 ];

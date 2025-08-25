@@ -100,7 +100,7 @@ DefineObjectType[Object[User,Emerald], {
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Object[Container,Site],
-			Description->"The site where this person is based at.",
+			Description->"The Emerald facility where this person is based.",
 			Category->"Company Information",
 			Abstract->True
 		},
@@ -225,7 +225,7 @@ DefineObjectType[Object[User,Emerald], {
 			Format -> Multiple,
 			Class -> {Date, Expression, Link},
 			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[Troubleshooting]|Object[SupportTicket]},
+			Relation -> {Null, Null, Object[SupportTicket]},
 			Description -> "A list of tickets representing resolvable or unresolvable errors made by this user.",
 			Headers -> {"Ticket Created", "Resolvable", "Ticket"},
 			Category -> "Operations Information",
@@ -274,12 +274,28 @@ DefineObjectType[Object[User,Emerald], {
 			Category->"Operations Information"
 		},
 		DateTrained -> {
-            Format -> Single,
-            Class -> Date,
-            Pattern :> _?DateObjectQ,
-            Description -> "The date that this operator completed all automatically enqueued certifications and was thus able to start running general protocols.",
-            Category -> "Operations Information",
-            Developer -> True
-        }
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The date that this operator completed all automatically enqueued certifications and was thus able to start running general protocols.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		TeamsSupported-> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Team, Financing][SolutionsSupport],
+			Description -> "The customers for whom this employee onboards and maintains Cloud Lab methods. Every customer has at least one assigned ECL Scientific Solutions team member responsible for collaborating with the subject matter experts to implement methods, build data analysis workflows and generate comprehensive reports.",
+			Category -> "Organizational Information"
+		},
+		TeamsManaged -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Team, Financing][ClientAccountManagers],
+			Description -> "The customers for whom this employee builds and maintains a partnership. Every customer has at least one assigned ECL employee in this role. ECL employees may oversee multiple customer accounts.",
+			Category -> "Organizational Information"
+		}
 	}
 }];

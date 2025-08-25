@@ -37,8 +37,17 @@ DefineObjectType[Model[Qualification, Diffractometer], {
 				Object[Sample],
 				Model[Sample]
 			],
-			Description -> "Input samples for negative control wells in this qualification.",
+			Description -> "Input samples for control wells in this qualification.",
 			Category -> "Analytes"
+		},
+
+		(*Sample Preparation*)
+		TransferType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[MassTransfer, SlurryTransfer],
+			Description -> "The transfer type required for preparing the samples in the crystallization plate.",
+			Category -> "Sample Preparation"
 		},
 		
 		(* Method Information *)
@@ -86,7 +95,7 @@ DefineObjectType[Model[Qualification, Diffractometer], {
 			Class -> Real,
 			Pattern :> RangeP[0.025 Second, 1 Hour],
 			Units -> Second,
-			Description -> "For each member of TestSamples, thelength of time the sample is exposed to x-rays for each scan.",
+			Description -> "For each member of TestSamples, thelength of time the sample is exposed to X-rays for each scan.",
 			IndexMatching -> TestSamples,
 			Category -> "General"
 		},

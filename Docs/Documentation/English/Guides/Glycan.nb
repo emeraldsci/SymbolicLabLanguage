@@ -1,3 +1,354 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:22b452d3089ed2dba8ca88b675a002bfc2379201e7790e89d852d65bdd01f492
-size 14016
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     13462,        344]
+NotebookOptionsPosition[      9952,        274]
+NotebookOutlinePosition[     11298,        309]
+CellTagsIndexPosition[     11255,        306]
+WindowTitle->Glycan
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "81e3c218-b510-4a8c-a334-2da11a1426d1"]
+        }],ExpressionUUID->"cdb221fc-63c1-40bb-8210-8a77a744bdfc"],
+        StripOnInput->False], {"\<\"AvailableGlycans\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/AvailableGlycans"], "\<\"Glycan\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/Glycan"], "\<\"GlycanQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GlycanQ"], "\<\"GlycanSequence\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GlycanSequence"], "\<\"GlycanSequenceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/GlycanSequenceQ"], "\<\"GlycanStructure\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/GlycanStructure"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "c343a75a-6dca-4152-97e8-81b34c68a59f"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "151f19a3-e8d3-480c-bd04-9cfece57e2af"]
+        }],ExpressionUUID->"303348fa-4e5f-49b0-b4f4-03d8863eb0ad"],
+        StripOnInput->False], {"\<\"Biomolecules\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/Biomolecules"], "\<\"Oligonucleotides\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/Oligonucleotides"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "54854807-7718-4c40-acd7-94c814539233"]
+    }], "AnchorBar",ExpressionUUID->"add1ca10-3285-420c-8469-eeb9b15bf0c9"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"e3d23bb8-e863-45d9-a19d-87344aa53cb5"],
+
+Cell["Glycan", "GuideTitle",
+ CellID->24701698,ExpressionUUID->"0f284c95-8f77-488b-a495-e9ae6ba978d5"],
+
+Cell["\<\
+Collection of functions for the manipulation and analysis of glycan molecules.\
+\>", "GuideAbstract",
+ CellID->245390987,ExpressionUUID->"60cef284-aa09-4f63-a2f6-e3ca33c25d34"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->418467678,ExpressionUUID->"58218d42-5881-452e-b126-1fdcdfdbb368"],
+
+Cell["Structures", "GuideFunctionsSubsection",
+ CellID->424403514,ExpressionUUID->"30f7f22f-8461-4adb-a851-66a3431e1a3b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Glycan"]],"paclet:NucleicAcids/ref/Glycan"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "456e2dd3-f52b-42f3-aa5d-65eccd382282"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Makes the symbolic represents for single glycan subunits (a carbohydrate \
+modification to a protein/peptide sequence)."
+}], "GuideText",
+ CellID->112162895,ExpressionUUID->"4a3be210-a792-4f59-886e-a3f4bb47ca4b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["GlycanStructure"]],"paclet:NucleicAcids/ref/GlycanStructure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "46e15002-e753-48a1-a4a4-2f7f37eb620d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Makes the symbolic branched structure represents for linear sequences of \
+glycan subunits."
+}], "GuideText",
+ CellID->135931210,ExpressionUUID->"2b198d29-16f2-442f-802b-05ed73ff0264"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AvailableGlycans"]],"paclet:NucleicAcids/ref/AvailableGlycans"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "19109244-1d81-4250-b098-8a852dc8554b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the list of supported glycans that can be used in the \
+Glycan/GlycanSequence/GlycanStructure functions."
+}], "GuideText",
+ CellID->429380780,ExpressionUUID->"57b27637-ac73-4e75-952e-859608efc9a5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Glycan"]],"paclet:NucleicAcids/ref/Glycan"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4d7bbe2a-6d62-4874-8426-592b5b4d1c5b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a given input corresponds to a glycan subunit."
+}], "GuideText",
+ CellID->3726871,ExpressionUUID->"7f9f8dca-a970-46fb-b5df-feab53738bf0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["GlycanQ"]],"paclet:NucleicAcids/ref/GlycanQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "06da18fc-35ae-488e-a33a-2a4ade0a1429"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Makes the symbolic representations for single glycan subunits (a \
+carbohydrate modification to a protein/peptide sequence)."
+}], "GuideText",
+ CellID->258424237,ExpressionUUID->"130faf8c-e99d-421d-8cd7-23c03f8ce18c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["GlycanStructure"]],"paclet:NucleicAcids/ref/GlycanStructure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27a01886-f1c8-4920-b6de-2ec9c5977c9a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Makes the symbolic branched structure representations for linear sequences \
+of glycan subunits."
+}], "GuideText",
+ CellID->1721374,ExpressionUUID->"80de6fc5-4c1d-474f-8f78-5b1264fd00d9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["GlycanSequence"]],"paclet:NucleicAcids/ref/GlycanSequence"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f967bab8-0367-4b37-9084-1414ba629097"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of symbolic represents of a linear sequence of glycan \
+subunits."
+}], "GuideText",
+ CellID->322070009,ExpressionUUID->"545abb0d-1556-4211-98ff-6a2df79d641e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["GlycanSequenceQ"]],"paclet:NucleicAcids/ref/GlycanSequenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13937bd6-2426-4e1b-9c03-5bcbf0724a73"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the specified glycan sequence is a valid structure."
+}], "GuideText",
+ CellID->144803680,ExpressionUUID->"57837270-906a-469f-a604-5db52c6a95ed"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->384679543,ExpressionUUID->"f90eea59-177f-4465-a459-ea72062990ba"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"4b4cfd49-211f-4494-9529-ffcbc10a6403"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->94842707,ExpressionUUID->"83cc4c8a-3931-471a-a5f0-05c31789c11a"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->361922040,ExpressionUUID->"3fa0c0eb-3c70-47a7-a06d-4d380389d893"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Biomolecules"]],"paclet:Docs/guide/Biomolecules"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->455633699,ExpressionUUID->"a512a28f-b5c0-4e7f-bbbe-2190ba4fcc06"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Oligonucleotides"]],"paclet:Docs/guide/Oligonucleotides"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->267573004,ExpressionUUID->"3dfe4310-3a20-411c-95a6-1a79c0d1ac4f"],
+
+Cell["", "FooterCell",
+ CellID->112691120,ExpressionUUID->"1824537d-196f-4261-9001-278a25a9e1b6"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"Glycan",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 17:45:33", "context" -> "Docs`", 
+    "keywords" -> {
+     "Glycan", "GlycanStructure", "AvailableGlycans", "GlycanQ", 
+      "GlycanSequence", "GlycanSequenceQ"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for the manipulation and analysis of glycan \
+molecules.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "Glycan", "title" -> "Glycan", "type" -> "Guide", "uri" -> 
+    "Docs/guide/Glycan", "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> 
+  "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[578, 21, 3669, 90, 56, "AnchorBarGrid",ExpressionUUID->"e3d23bb8-e863-45d9-a19d-87344aa53cb5",
+ CellID->1],
+Cell[4250, 113, 102, 1, 50, "GuideTitle",ExpressionUUID->"0f284c95-8f77-488b-a495-e9ae6ba978d5",
+ CellID->24701698],
+Cell[4355, 116, 186, 3, 31, "GuideAbstract",ExpressionUUID->"60cef284-aa09-4f63-a2f6-e3ca33c25d34",
+ CellID->245390987],
+Cell[4544, 121, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"58218d42-5881-452e-b126-1fdcdfdbb368",
+ CellID->418467678],
+Cell[4660, 124, 121, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"30f7f22f-8461-4adb-a851-66a3431e1a3b",
+ CellID->424403514],
+Cell[4784, 127, 507, 12, 53, "GuideText",ExpressionUUID->"4a3be210-a792-4f59-886e-a3f4bb47ca4b",
+ CellID->112162895],
+Cell[5294, 141, 497, 12, 59, "GuideText",ExpressionUUID->"2b198d29-16f2-442f-802b-05ed73ff0264",
+ CellID->135931210],
+Cell[5794, 155, 520, 12, 59, "GuideText",ExpressionUUID->"57b27637-ac73-4e75-952e-859608efc9a5",
+ CellID->429380780],
+Cell[6317, 169, 442, 11, 38, "GuideText",ExpressionUUID->"7f9f8dca-a970-46fb-b5df-feab53738bf0",
+ CellID->3726871],
+Cell[6762, 182, 514, 12, 59, "GuideText",ExpressionUUID->"130faf8c-e99d-421d-8cd7-23c03f8ce18c",
+ CellID->258424237],
+Cell[7279, 196, 500, 12, 59, "GuideText",ExpressionUUID->"80de6fc5-4c1d-474f-8f78-5b1264fd00d9",
+ CellID->1721374],
+Cell[7782, 210, 484, 12, 38, "GuideText",ExpressionUUID->"545abb0d-1556-4211-98ff-6a2df79d641e",
+ CellID->322070009],
+Cell[8269, 224, 467, 11, 38, "GuideText",ExpressionUUID->"57837270-906a-469f-a604-5db52c6a95ed",
+ CellID->144803680],
+Cell[8739, 237, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f90eea59-177f-4465-a459-ea72062990ba",
+ CellID->384679543],
+Cell[8848, 240, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"83cc4c8a-3931-471a-a5f0-05c31789c11a",
+ CellID->94842707],
+Cell[9242, 254, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"3fa0c0eb-3c70-47a7-a06d-4d380389d893",
+ CellID->361922040],
+Cell[9351, 257, 243, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"a512a28f-b5c0-4e7f-bbbe-2190ba4fcc06",
+ CellID->455633699],
+Cell[9597, 264, 251, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"3dfe4310-3a20-411c-95a6-1a79c0d1ac4f",
+ CellID->267573004],
+Cell[9851, 271, 97, 1, 41, "FooterCell",ExpressionUUID->"1824537d-196f-4261-9001-278a25a9e1b6",
+ CellID->112691120]
+}
+]
+*)
+
+(* End of internal cache information *)
+

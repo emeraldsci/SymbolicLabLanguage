@@ -56,6 +56,14 @@ DefineObjectType[Model[Instrument, Roller], {
 			Description -> "The size of the space inside the roller.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
+		},
+		CompatibleRacks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Rack][CompatibleMixers],
+			Description -> "The racks that can be used with this roller.",
+			Category -> "Model Information"
 		}
 	}
 }];

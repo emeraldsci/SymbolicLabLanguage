@@ -154,6 +154,14 @@ DefineObjectType[Object[Maintenance, Handwash], {
 			],
 			Description -> "The syringe used to push air through the dirty needles for drying after solvent cleaning.",
 			Category -> "Cleaning"
+		},
+		CuvetteWasher -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument] | Object[Instrument],
+			Description -> "The cuvette washer instrument used to wash cuvettes.",
+			Category -> "Cleaning"
 		}
 	}
 }];

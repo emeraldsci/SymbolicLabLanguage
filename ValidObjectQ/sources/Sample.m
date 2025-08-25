@@ -164,7 +164,7 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 			(* if sample is in container *)
 			If[MatchQ[Lookup[packet, Container, Null], ObjectP[]],
 				(* check that AwaitingDisposal status matches *)
-				MatchQ[Lookup[packet, AwaitingDisposal, Null], Lookup[containerPacket, AwaitingDisposal]],
+				MatchQ[{Lookup[packet, AwaitingDisposal, Null], Lookup[containerPacket, AwaitingDisposal]}, {True, True}|{Except[True], Except[True]}],
 				(* sample is not in container, so return True *)
 				True
 			],
@@ -254,19 +254,38 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 
 		(* We call UploadStorageCondition in UploadEHSInformation which will throw an error for us. *)
 		Test["The safety fields for all Object[Sample]s in the container match the given StorageCondition:",
-			Module[{modelAssociation, sampleAssociation},
+			Module[{cryoOrDeepFreezerQ, modelAssociation, sampleAssociation},
 
 				If[MatchQ[uniqueSampleContentModelPackets, {PacketP[]..}],
 
+          (* If the storage condition is DeepFreezer or CryogenicStorage, set Flammable to True since *)
+          (* we allow Flammable and non-Flammable samples to be stored under these conditions, but we *)
+          (* need the values to match in this test so we don't have false failures. *)
+          cryoOrDeepFreezerQ = MatchQ[
+						Lookup[packet, StorageCondition],
+						(* {Model[StorageCondition, "Deep Freezer"], Model[StorageCondition, "Cryogenic Storage"]} *)
+						ObjectP[{Model[StorageCondition, "id:xRO9n3BVOe3z"], Model[StorageCondition, "id:6V0npvmE09vG"]}]
+					];
+
 					modelAssociation = <|
-						Flammable -> If[AnyTrue[Lookup[uniqueSampleContentModelPackets, Flammable], TrueQ], True],
+						Flammable -> If[cryoOrDeepFreezerQ,
+							(* Default this to True if we have DeepFreezer or CryogenicStorage. *)
+							True,
+							(* With any other storage condition, we just check the value of the storage condition's Flammable field directly. *)
+							AnyTrue[Lookup[uniqueSampleContentModelPackets, Flammable], TrueQ]
+						],
 						Acid -> If[AnyTrue[Lookup[uniqueSampleContentModelPackets, Acid], TrueQ], True],
 						Base -> If[AnyTrue[Lookup[uniqueSampleContentModelPackets, Base], TrueQ], True],
 						Pyrophoric -> If[AnyTrue[Lookup[uniqueSampleContentModelPackets, Pyrophoric], TrueQ], True]
 					|>;
 
 					sampleAssociation = <|
-						Flammable -> If[TrueQ[Lookup[packet, Flammable]], True],
+						Flammable -> If[cryoOrDeepFreezerQ,
+							(* Default this to True if we have DeepFreezer or CryogenicStorage. *)
+							True,
+							(* With any other storage condition, we just check the value of the sample's Flammable field directly. *)
+							TrueQ[Lookup[packet, Flammable]]
+						],
 						Acid -> If[TrueQ[Lookup[packet, Acid]], True],
 						Base -> If[TrueQ[Lookup[packet, Base]], True],
 						Pyrophoric -> If[TrueQ[Lookup[packet, Pyrophoric]], True]
@@ -581,8 +600,8 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 			MessageArguments -> {identifier}
 		],
 
-		Test["If Model[UsedAsMedia] is set to True, then Model[UsedAsSolvent] must also be set to True for " <> ToString[identifier] <> ":",
-			If[!NullQ[modelPacket]&&MatchQ[Lookup[modelPacket, UsedAsMedia], True],
+		Test["If Model[UsedAsMedia] is set to True and Model[State] is Liquid, then Model[UsedAsSolvent] must also be set to True for " <> ToString[identifier] <> ":",
+			If[!NullQ[modelPacket]&&MatchQ[Lookup[modelPacket, UsedAsMedia], True]&&MatchQ[Lookup[modelPacket, State], Liquid],
 				MatchQ[Lookup[modelPacket,UsedAsSolvent], True],
 				True
 			],
@@ -614,8 +633,48 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 		],
 
 		Test["If Living is set to True, then neither Model[UsedAsSolvent] or Model[UsedAsMedia] can be set to True for " <> ToString[identifier] <> ":",
-			If[MatchQ[Lookup[packet,Living], True],
+			If[MatchQ[Lookup[packet,Living], True]&&!NullQ[modelPacket],
 				!(MatchQ[Lookup[modelPacket, UsedAsSolvent], True] || MatchQ[Lookup[modelPacket, UsedAsMedia], True]),
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True, then the CellType should also be informed for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet,Living], True],
+				MatchQ[Lookup[packet, CellType], Except[Null]],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True and CellType is set to Bacterial/Yeast, then Sterile cannot be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, Living], True] && MatchQ[Lookup[packet, CellType], MicrobialCellTypeP],
+				!MatchQ[Lookup[packet, Sterile], True],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True and status is not discarded, then BiohazardDisposal cannot be set to False for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, Living], True] && MatchQ[Lookup[packet, Status], Except[Discarded]],
+				!MatchQ[Lookup[packet, BiohazardDisposal], False],
+				True
+			],
+			True
+		],
+
+		Test["If BiohazardDisposal is set to True, then DrainDisposal cannot be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, BiohazardDisposal], True],
+				!MatchQ[Lookup[packet, DrainDisposal], True],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True and status is not discarded, then AsepticHandling must be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, Living], True] && MatchQ[Lookup[packet, Status], Except[Discarded]],
+				MatchQ[Lookup[packet, AsepticHandling], True],
 				True
 			],
 			True

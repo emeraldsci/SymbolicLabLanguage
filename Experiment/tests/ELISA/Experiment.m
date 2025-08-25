@@ -193,6 +193,34 @@ DefineTests[
 
 
 		(*Options*)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentELISA[
+				{Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID], Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample,"ExperimentELISA test model sample 1" <> $SessionUUID]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentELISA[Model[Sample, "ExperimentELISA test model sample 1" <> $SessionUUID], PreparedModelAmount -> 0.5 Milliliter, Aliquot -> True, Mix -> True],
+			ObjectP[Object[Protocol, ELISA]]
+		],
 
 		Example[
 			{Options,Method,"Defines the type of ELISA experiment to be performed:"},
@@ -2468,33 +2496,6 @@ DefineTests[
 				Unset[$CreatedObjects]
 			)
 		],
-		Example[{Options,PreparatoryPrimitives,"Use the PreparatoryPrimitives option to pre-dilute Sample:"},
-			ExperimentELISA["Antibody Container",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Antibody Container",
-						Container->Model[Container,Vessel,"id:3em6Zv9NjjN8"]
-					],
-					Transfer[
-						Source->Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],
-						Amount->2*Microliter,
-						Destination->{"Antibody Container","A1"}
-					],
-					Transfer[
-						Source->Model[Sample,"ELISA Blocker Blocking Buffer"],
-						Amount->248*Microliter,
-						Destination->{"Antibody Container","A1"}
-					]
-				}
-			],
-			ObjectP[Object[Protocol,ELISA]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			),
-			TimeConstraint -> 1000
-		],
 		Example[{Options,PreparatoryUnitOperations,"Use the PreparatoryUnitOperations option to pre-dilute Sample:"},
 			Module[{protocol},
 				protocol=ExperimentELISA["Antibody Container",
@@ -2870,7 +2871,7 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentELISA[Object[Sample,"ExperimentELISA test object sample 1" <> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1","A1"},
 			Variables:>{options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -2904,13 +2905,81 @@ DefineTests[
 
 		(*======Messages Tests==========*)
 
-		Example[{Messages,"ObjectDoesNotExist","Throw error is the specified object does not exist:"},
-			ExperimentELISA[Object[Sample,"This ELISA sample is not a real thing"]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentELISA[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages:>{
-				Error::ObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentELISA[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentELISA[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentELISA[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentELISA[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Warning::ELISANoStandardForExperiment,Error::UnresolvableIndexMatchedOptions,Error::InvalidOption}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentELISA[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Warning::ELISANoStandardForExperiment,Error::UnresolvableIndexMatchedOptions,Error::InvalidOption}
 		],
 		Example[{Messages,"DiscardedSamples","The input sample cannot have a Status of Discarded:"},
 			ExperimentELISA[Object[Sample,"ExperimentELISA test object sample 3 discarded" <> $SessionUUID]],
@@ -4178,33 +4247,33 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1]}},
+						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
 						DeveloperObject->True
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{100Micro*Molar,Link[targetAntigen1]}},
+						Replace[Composition]->{{100Micro*Molar,Link[targetAntigen1],Now}},
 						DeveloperObject->True
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1]}},
+						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
 						DeveloperObject->True
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1]}},
+						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
 						Volume->Null,
 						DeveloperObject->True
 					|>,
 					<|Object->testSample5,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1]}},
+						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
 						DeveloperObject->True
 					|>,
 					<|Object->testSample6,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetAntigen1]},
-						Replace[Composition]->{{Null,Link[targetAntigen1]}},
+						Replace[Composition]->{{Null,Link[targetAntigen1],Now}},
 						DeveloperObject->True
 					|>,
 					<|Object->testAntigenSample1,
@@ -4251,8 +4320,6 @@ DefineTests[
 		]
 
 	),
-
-
 	SymbolTearDown:>{
 		Module[{allObjects,existingObjects},
 			allObjects=
@@ -4340,6 +4407,7 @@ DefineTests[
 		$PersonID=Object[User,"Test user for notebook-less test protocols"]
 	},
 	Parallel -> True,
+	HardwareConfiguration -> HighRAM,
 	TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance,Warning::NegativeDiluentVolume}
 ];
 

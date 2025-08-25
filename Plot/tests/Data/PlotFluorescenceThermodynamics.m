@@ -22,6 +22,10 @@ DefineTests[PlotFluorescenceThermodynamics,
 			PlotFluorescenceThermodynamics[Link[Object[Data, FluorescenceThermodynamics, "id:jLq9jXY4oG0w"],Protocol]],
 			_?Core`Private`ValidLegendedQ
 		],
+		Example[{Basic,"Plot FluorescenceThermodynamics data objects linked to a given FluorescenceThermodynamics protocol object:"},
+			PlotFluorescenceThermodynamics[Object[Data, FluorescenceThermodynamics, "id:lYq9jRzXBmvA"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
 		Test[
 			"Plot only the cooling curve data:",
 			PlotFluorescenceThermodynamics[Object[Data, FluorescenceThermodynamics, "id:jLq9jXY4oG0w"],PrimaryData->CoolingCurve],

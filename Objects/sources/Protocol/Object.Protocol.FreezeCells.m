@@ -1,351 +1,384 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
-DefineObjectType[Object[Protocol,FreezeCells],{
-	Description->"A protocol for gradual freezing of cells for long-term storage in the cryogenic freezer.",
-	CreatePrivileges->None,
-	Cache->Download,
-	Fields->{
-		
-		(* ---------- Experiment/Instrument Setup ---------- *)
-		
-		Batches->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>{ObjectP[Object[Sample]]..},
-			Description->"Describes the group of cells that are frozen together.",
-			Category->"General"
+DefineObjectType[Object[Protocol, FreezeCells], {
+	Description -> "A protocol for the freezing of cells for long-term storage cryogenic storage.",
+	CreatePrivileges -> None,
+	Cache -> Session,
+	Fields -> {
+		(* ---------- General Fields ---------- *)
+		CellTypes -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> CellTypeP,
+			Description -> "For each member of SamplesIn, the taxon of the organism or cell line from which the cell sample originates. Options include Bacterial, Mammalian, and Yeast.",
+			Category -> "General",
+			IndexMatching -> SamplesIn
 		},
-		
-		FreezingMethods->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>FreezeCellMethodP,
-			Description->"For each member of Batches, describes which process is used to freeze the cells.",
-			Category->"General",
-			IndexMatching->Batches
+		CultureAdhesions -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> CultureAdhesionP,
+			Description -> "For each member of SamplesIn, indicates how the input cell sample physically interacts with its container.",
+			Category -> "General",
+			IndexMatching -> SamplesIn
 		},
-		
-		Instruments->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Instrument,ControlledRateFreezer],
-				Object[Instrument,ControlledRateFreezer],
-				Model[Instrument,Freezer],
-				Object[Instrument,Freezer]
+		CryoprotectionStrategies -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Alternatives[ChangeMedia, AddCryoprotectant, None],
+			Description -> "For each member of SamplesIn, the manner in which the cell sample is processed prior to freezing in order to protect the cells from detrimental ice formation.",
+			Category -> "General",
+			IndexMatching -> SamplesIn
+		},
+		EstimatedProcessingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> TimeP,
+			Description -> "The estimated amount of time remaining until when the current round of instrument processing is projected to finish.",
+			Category -> "General",
+			Units -> Minute,
+			Developer -> True
+		},
+		(* ---------- ChangeMedia Fields ---------- *)
+		CellPelletCentrifuges -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Instrument], Object[Instrument]],
+			Description -> "For each member of SamplesIn, the centrifuge used to pellet the cell sample in order to remove the existing media and replace with cryoprotectant media.",
+			Category -> "Pelleting",
+			IndexMatching -> SamplesIn
+		},
+		CellPelletTimes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SamplesIn, the duration of time for which the sample is centrifuged in order to pellet the cells, enabling removal of existing media.",
+			Category -> "Pelleting",
+			IndexMatching -> SamplesIn
+		},
+		CellPelletIntensities -> {
+			Format -> Multiple,
+			Class -> VariableUnit,
+			Pattern :> Alternatives[GreaterP[0 RPM], GreaterP[0 GravitationalAcceleration]],
+			Units -> None,
+			Description -> "For each member of SamplesIn, the rotational speed or force applied to the cell sample by centrifugation in order to create a pellet, enabling removal of existing media.",
+			Category -> "Pelleting",
+			IndexMatching -> SamplesIn
+		},
+		CellPelletSupernatantVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "For each member of SamplesIn, the volume of supernatant to be removed from the cell sample following pelleting.",
+			Category -> "Pelleting",
+			IndexMatching -> SamplesIn
+		},
+		FreezeCellsPelletUnitOperation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A set of instructions specifying the pelleting of the cell sample(s) to remove existing media prior to freezing.",
+			Category -> "Pelleting",
+			Developer -> True
+		},
+		FreezeCellsPelletProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
+			Description -> "The protocol used to pellet the cell sample(s) to remove existing media in a cell freezing experiment.",
+			Category -> "Pelleting",
+			Developer -> True
+		},
+		(* ---------- Cryoprotection Fields ---------- *)
+		CryoprotectantSolutions -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "For each member of SamplesIn, the solution to be added to the cell sample to reduce ice formation during freezing.",
+			Category -> "Cryoprotection",
+			IndexMatching -> SamplesIn,
+			Abstract -> True
+		},
+		CryoprotectantSolutionsToAutoclave -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "For each member of SamplesIn, the solution to be autoclaved prior to addition to the cell sample to reduce ice formation during freezing.",
+			Category -> "Cryoprotection",
+			IndexMatching -> SamplesIn,
+			Developer -> True
+		},
+		CryoprotectantSolutionVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "For each member of SamplesIn, the volume of CryoprotectantSolution is added to the cell sample.",
+			Category -> "Cryoprotection",
+			IndexMatching -> SamplesIn
+		},
+		CryoprotectantSolutionTemperature -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Ambient, Chilled],
+			Description -> "The temperature of the CryoprotectantSolution(s) prior to their addition to the cell sample(s).",
+			Category -> "Cryoprotection"
+		},
+		CryoprotectantSolutionChillingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "The duration for which the CryoprotectantSolution is chilled prior to its addition to the cell sample.",
+			Category -> "Cryoprotection",
+			Developer -> True
+		},
+		CryoprotectantAutoclaveProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol,Autoclave]],
+			Description -> "The protocol used to autoclave CryoprotectantSolutions before adding to the input cell sample(s) prior to freezing in a cell freezing experiment.",
+			Category -> "Cryoprotection",
+			Developer -> True
+		},
+		FreezeCellsTransferUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A set of instructions specifying the aliquoting of the input cell sample(s) to CryogenicSampleContainers, resuspending the cells, and transferring of CryoprotectantSolutions to CryogenicSampleContainers prior to freezing.",
+			Category -> "Cryoprotection",
+			Developer -> True
+		},
+		FreezeCellsTransferProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
+			Description -> "The protocol specifying the aliquoting of the input cell sample(s) to CryogenicSampleContainers, resuspending the cells, and transferring of CryoprotectantSolutions to CryogenicSampleContainers prior to freezing.",
+			Category -> "Cryoprotection",
+			Developer -> True
+		},
+		(* ---------- General Cell Freezing Fields ---------- *)
+		CryogenicSampleContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Container, Vessel], Object[Container, Vessel]],
+			Description -> "For each member of SamplesIn, the container in which the cell sample is frozen and subsequently stored under cryogenic conditions.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn
+		},
+		CryogenicSampleContainerLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SamplesIn, the container label in which the cell sample is frozen and subsequently stored under cryogenic conditions used in FreezeCellsTransferUnitOperations.",
+			Category -> "Sample Preparation",
+			IndexMatching -> SamplesIn,
+			Developer -> True
+		},
+		FreezingRacks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Container, Rack], Object[Container, Rack]],
+			Description -> "For each member of SamplesIn, the insulated cooler rack or controlled rate freezer-compatible sample rack used to freeze the cell sample.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn
+		},
+		Freezers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument, ControlledRateFreezer],
+				Object[Instrument, ControlledRateFreezer],
+				Model[Instrument, Freezer],
+				Object[Instrument, Freezer]
 			],
-			Description->"For each member of Batches, the cooling device that is used to lower the temperature of samples.",
-			Category->"General",
-			IndexMatching->Batches
+			Description -> "For each member of SamplesIn, the device used to cool the cell sample.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn,
+			Abstract -> True
 		},
-		
-		(* ---------- ControlledRateFreezer ---------- *)
-		
-		FreezingProfiles->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>{{GreaterEqualP[0 Kelvin],GreaterEqualP[0 Minute]}..},
-			Description->"For each member of Batches, describes the series of steps that are taken to cool the cells.",
-			Category->"General",
-			IndexMatching->Batches
+		FreezingStartTime -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The time at which the recording of environmental data inside the freezer begins.",
+			Category -> "Cell Freezing"
 		},
-		
-		FreezingRates->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0 Celsius/Minute],
-			Units->Celsius/Minute,
-			Description->"For each member of Batches, the decrease in temperature per unit time if cooling at a constant rate is desired.",
-			Category->"General",
-			IndexMatching->Batches
+		FreezingEndTime -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "The time at which the recording of environmental data inside the freezer ceases.",
+			Category -> "Cell Freezing"
 		},
-		
-		Durations->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0 Minute],
-			Units->Minute,
-			Description->"For each member of Batches, the amount of time the cells are cooled at FreezingRate.",
-			Category->"General",
-			IndexMatching->Batches
+		FreezerSensors -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sensor, Temperature]],
+			Description -> "The temperature sensor object(s) inside Freezers whose data are recorded while the cell samples are being frozen.",
+			Category -> "Cell Freezing",
+			Developer -> True
 		},
-		
-		ResidualTemperatures->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0 Kelvin],
-			Units->Celsius,
-			Description->"For each member of Batches, the final temperature at which the cells are kept before moving to final storage.",
-			Category->"General",
-			IndexMatching->Batches
+		FreezerEnvironmentalData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Data, Temperature]],
+			Description -> "For each member of FreezerSensors, the temperature data recorded from the sensor during freezing.",
+			Category -> "Cell Freezing",
+			IndexMatching -> FreezerSensors
 		},
-		
-		(* ---------- InsulatedCooler ---------- *)
-		
-		FreezingContainers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Container,Rack,InsulatedCooler],
-				Object[Container,Rack,InsulatedCooler]
-			],
-			Description->"For each member of Batches, the cooling apparatus that is used to freeze the cells.",
-			Category->"General",
-			IndexMatching->Batches
+		(* ---------- ControlledRateFreezer Fields ---------- *)
+		TemperatureProfile -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> _List,
+			Description -> "The series of cooling steps applied to the cell sample.",
+			Category -> "Cell Freezing"
 		},
-		
-		Coolants->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Sample],
-				Object[Sample]
-			],
-			Description->"For each member of Batches, liquid that is used to transport heat away from the samples during freezing. This liquid controls the rate of cooling during the experiment.",
-			Category->"General",
-			IndexMatching->Batches
+		VIAFreezeTemperatureProfile -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "A list of instruction strings describing the construction of a temperature profile on the VIA Freeze Research controlled rate freezer.",
+			Category -> "Cell Freezing",
+			Developer -> True
 		},
-		
-		(* ---------- Transport ---------- *)
-		
-		TransportFreezers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Instrument,PortableCooler],
-				Object[Instrument,PortableCooler]
-			],
-			Description->"For each member of Batches, the portable freezer in which the samples are transported from the instrument to the final storage container.",
-			Category->"General",
-			IndexMatching->Batches
+		VIAFreezeHoldSegment -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "A list of Booleans indicating whether or not a particular segment of a temperature profile on the VIA Freeze Research controlled rate freezer is to be held at its final temperature until the operator advances the profile using the instrument touchscreen.",
+			Category -> "Cell Freezing",
+			Developer -> True
 		},
-		
-		(* ---------- Miscellaneous ---------- *)
-		
-		Tweezer->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Item,Tweezer],
-				Object[Item,Tweezer]
-			],
-			Description->"Tweezer that is used to move frozen cell containers.",
-			Category->"General",
-			Developer->True
+		(* ---------- InsulatedCooler Fields ---------- *)
+		Coolants -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Sample], Object[Sample]],
+			Description -> "For each member of SamplesIn, the liquid that fills the chamber of the insulated cooler in which the sample rack is immersed to achieve gradual cooling of the cell sample.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn
 		},
-		
-		AdditionalProcessingTime->{
-			Format->Single,
-			Class->Real,
-			Pattern:>GreaterEqualP[0 Minute],
-			Units->Minute,
-			Description->"After ControlledRateFreezer methods are completed, any extra time needed to finish the freezing of InsulatedCooler batches.",
-			Category->"General",
-			Developer->True
+		CoolantVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "For each member of SamplesIn, the volume of liquid that fills the chamber of the insulated cooler in which the sample rack is immersed to achieve gradual cooling of the cell sample.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn,
+			Developer -> True
 		},
-		
-		(* ---------- Batching ---------- *)
-		
-		ControlledRateFreezerBatches->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Sample],
-			Description->"Describes the group of cells that are frozen together in the ControlledRateFreezer methods.",
-			Category->"Batching",
-			Developer->True
+		FreezeCellsCoolantTransferUnitOperation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A set of instructions specifying the transfer of Coolants to the InsulatedCoolerContainers for to a cell freezing experiment.",
+			Category -> "Cell Freezing",
+			Developer -> True
 		},
-		
-		ControlledRateFreezerBatchLengths->{
-			Format->Multiple,
-			Class->Integer,
-			Pattern:>GreaterP[0],
-			Description->"For each member of ControlledRateFreezerBatches, parameters describing the length of each ControlledRateFreezer batch.",
-			Category->"Batching",
-			IndexMatching->ControlledRateFreezerBatches,
-			Developer->True
+		FreezeCellsCoolantTransferProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]],
+			Description -> "The transfer protocol used to fill InsulatedCoolerContainers with Coolants in a cell freezing experiment.",
+			Category -> "Cell Freezing",
+			Developer -> True
 		},
-		
-		ControlledRateFreezerInstrument->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Instrument,ControlledRateFreezer],
-				Object[Instrument,ControlledRateFreezer]
-			],
-			Description->"The cooling device that is used to lower the temperature of samples.",
-			Category->"Batching",
-			Developer->True
+		InsulatedCoolerFreezingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "The duration for which the cell sample within an insulated cooler is kept within the Freezer to freeze the cells prior to being transported to SamplesOutStorageCondition.",
+			Category -> "Cell Freezing"
 		},
-		
-		ControlledRateFreezerTransportCoolers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Instrument,PortableCooler],
-				Object[Instrument,PortableCooler]
-			],
-			Description->"The portable freezer in which the samples are transported from the instrument to the final storage container.",
-			Category->"Batching",
-			Developer->True
+		InsulatedCoolerFreezingConditions -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[StorageCondition]],
+			Description -> "For each member of SamplesIn, the conditions under which the cell sample is frozen for InsulatedCooler protocols.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn,
+			Developer -> True
 		},
-		
-		ControlledRateFreezerTransportTemperatures->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0 Kelvin],
-			Units->Celsius,
-			Description->"For each member of ControlledRateFreezerTransportCoolers, the temperature setting for the portable freezer which transport the samples from the instrument to the final storage container.",
-			Category->"Batching",
-			IndexMatching->ControlledRateFreezerTransportCoolers,
-			Developer->True
+		InsulatedCoolerContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Container, Vessel], Object[Container, Vessel]],
+			Description -> "For each member of SamplesIn, the container into which the Coolant and FreezerRack (for InsulatedCooler strategies) used to freeze the cell sample is placed.",
+			Category -> "Cell Freezing",
+			IndexMatching -> SamplesIn,
+			Developer -> True
 		},
-		
-		ControlledRateFreezerStorageConditions->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleStorageTypeP,
-			Description->"For each member of ControlledRateFreezerBatches, describes the final storage destination for each sample.",
-			Category->"Batching",
-			IndexMatching->ControlledRateFreezerBatches,
-			Developer->True
+		(* ---------- Storage Fields ---------- *)
+		SamplesOutStorageConditions -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> CellStorageTypeP,
+			Description -> "For each member of SamplesIn, the long-term storage condition for the cell sample after freezing.",
+			Category -> "Sample Storage",
+			IndexMatching -> SamplesIn
 		},
-		
-		RunTimes->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterEqualP[0 Minute],
-			Units->Minute,
-			Description->"Describes how long each ControlledRateFreezer batch takes to freeze.",
-			Category->"Batching",
-			Developer->True
+		SamplesOutStorageConditionObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[StorageCondition]],
+			Description -> "For each member of SamplesIn, the long-term storage condition for the cell sample after freezing.",
+			Category -> "Sample Storage",
+			IndexMatching -> SamplesIn
 		},
-		
-		MethodNames->{
-			Format->Multiple,
-			Class->String,
-			Pattern:>_String,
-			Description->"File names used for the ControlledRateFreezer methods.",
-			Category->"Batching",
-			Developer->True
+		CryogenicGloves -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Item, Glove], Object[Item, Glove]],
+			Description -> "The gloves used to safely store samples in CryogenicStorage during this protocol.",
+			Category -> "Sample Storage",
+			Developer -> True
 		},
-		
-		InsulatedCoolerBatches->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Sample],
-			Description->"Describes the group of cells that are frozen together in the InsulatedCooler methods.",
-			Category->"Batching",
-			Developer->True
+		CryogenicSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample], Object[Container], Model[Container]],
+			Description -> "The cell samples to be stored in cryogenic storage at the conclusion of the protocol.",
+			Category -> "Sample Storage",
+			Developer -> True
 		},
-		
-		InsulatedCoolerBatchLengths->{
-			Format->Multiple,
-			Class->Integer,
-			Pattern:>GreaterP[0],
-			Description->"For each member of InsulatedCoolerBatches, parameters describing the length of each InsulatedCooler batch.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerBatches,
-			Developer->True
-		},
-		
-		InsulatedCoolerFreezingContainers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Container,Rack,InsulatedCooler],
-				Object[Container,Rack,InsulatedCooler]
-			],
-			Description->"The cooling apparatus that is used to freeze the cells.",
-			Category->"Batching",
-			Developer->True
-		},
-		
-		InsulatedCoolerCoolants->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Sample],
-				Object[Sample]
-			],
-			Description->"For each member of InsulatedCoolerFreezingContainers, liquid that is used to transport heat away from the samples during freezing. This liquid controls the rate of cooling during the experiment.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerFreezingContainers,
-			Developer->True
-		},
-		
-		InsulatedCoolerCoolantContainers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Container,Vessel],
-				Object[Container,Vessel]
-			],
-			Description->"For each member of InsulatedCoolerFreezingContainers, containers in which both the coolants and the freezing containers are placed in.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerFreezingContainers,
-			Developer->True
-		},
-		
-		InsulatedCoolerFreezingConditions->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleStorageTypeP,
-			Description->"For each member of InsulatedCoolerFreezingContainers, the manner in which the samples are stored during freezing.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerFreezingContainers,
-			Developer->True
-		},
-		
-		InsulatedCoolerTransportCoolers->{
-			Format->Multiple,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[
-				Model[Instrument,PortableCooler],
-				Object[Instrument,PortableCooler]
-			],
-			Description->"For each member of InsulatedCoolerFreezingContainers, the portable freezer in which the samples are transported from the instrument to the final storage container.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerFreezingContainers,
-			Developer->True
-		},
-		
-		InsulatedCoolerTransportTemperatures->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0 Kelvin],
-			Units->Celsius,
-			Description->"For each member of InsulatedCoolerTransportCoolers, the temperature setting for the portable freezer which transport the samples from the instrument to the final storage container.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerTransportCoolers,
-			Developer->True
-		},
-		
-		InsulatedCoolerStorageConditions->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleStorageTypeP,
-			Description->"For each member of InsulatedCoolerBatches, describes the final storage destination for each sample.",
-			Category->"Batching",
-			IndexMatching->InsulatedCoolerBatches,
-			Developer->True
+		NonCryogenicSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample], Object[Container], Model[Container]],
+			Description -> "The cell samples to be stored in non-cryogenic storage at the conclusion of the protocol.",
+			Category -> "Sample Storage",
+			Developer -> True
 		}
+
 	}
 }];
 

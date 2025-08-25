@@ -183,6 +183,52 @@ DefineTests[
 			],
 			{ObjectP[Model[Instrument, SampleImager]],{Top}}
 		],
+		Example[
+			{Options, ImageContainer, "Imaging multiple samples with ImageContainer -> True defaults Instrument to SampleImager batch over unique container:"},
+			Download[
+				ExperimentImageSample[
+					{Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
+						Object[Sample, "Test water sample 2 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
+						Object[Sample, "Test water sample in 384-well plate for ExperimentImageSample "<>$SessionUUID]},
+					ImageContainer->True
+				],
+				BatchedImagingParameters[[All, {Imager, Wells}]]
+			],
+			{
+				<|Imager -> LinkP[Model[Instrument, SampleImager]], Wells -> Null|>,
+				<|Imager -> LinkP[Model[Instrument, SampleImager]], Wells -> Null|>
+			}
+		],
+		Example[
+			{Options, ImageContainer, "Imaging multiple samples without ImageContainer -> True defaults Instrument to PlateImager batch over samples:"},
+			Download[
+				ExperimentImageSample[
+					{Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
+						Object[Sample, "Test water sample 2 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
+						Object[Sample, "Test water sample in 384-well plate for ExperimentImageSample "<>$SessionUUID]}
+				],
+				BatchedImagingParameters[[All, {Imager, Wells}]]
+			],
+			{
+				<|Imager -> LinkP[Model[Instrument, PlateImager]], Wells -> {"A1", "A2"}|>,
+				<|Imager -> LinkP[Model[Instrument, PlateImager]], Wells -> {"A1"}|>
+			}
+		],
+		Example[
+			{Options, ImageContainer, "Imaging multiple containers with ImageContainer specified will resolve Instrument differently:"},
+			Download[
+				ExperimentImageSample[
+					{Object[Container, Plate, "Test DWP for ExperimentImageSample " <> $SessionUUID],
+						Object[Container, Plate, "Test 384-well plate for ExperimentImageSample " <> $SessionUUID]},
+					ImageContainer->{True, False}
+				],
+				BatchedImagingParameters[[All, {Imager, Wells}]]
+			],
+			{
+				<|Imager -> LinkP[Model[Instrument, PlateImager]], Wells -> {"A1"}|>,
+				<|Imager -> LinkP[Model[Instrument, SampleImager]], Wells -> Null|>
+			}
+		],
 		(*Example[
 			{Options, ImageContainer, "Image an empty plate and associated the photo with the plate:"},
 			Download[
@@ -352,8 +398,114 @@ DefineTests[
 			ObjectP[Model[Molecule,"Water"]],
 			Variables:>{options}
 		],
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation - label automatically applied:"},
+			Lookup[ExperimentImageSample[Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID], Output -> Options], SampleLabel],
+			"image sample sample" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation:"},
+			Lookup[ExperimentImageSample[Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID], SampleLabel -> "my sample", Output -> Options], SampleLabel],
+			"my sample"
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation: - label automatically applied:"},
+			Lookup[ExperimentImageSample[Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID], Output -> Options], SampleContainerLabel],
+			"image sample container" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation:"},
+			Lookup[ExperimentImageSample[Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID], SampleContainerLabel -> "my container", Output -> Options], SampleContainerLabel],
+			"my container"
+		],
+		Example[{Options, OptionsResolverOnly, "If OptionsResolverOnly -> True and Output -> Options, skip the resource packets and simulation functions:"},
+			ExperimentImageSample[
+				Object[Sample,"Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],
+				Output -> Options,
+				OptionsResolverOnly -> True
+			],
+			{__Rule},
+			(* stubbing to be False so that we return $Failed if we get here; the point of the option though is that we don't get here *)
+			Stubs :> {Resources`Private`fulfillableResourceQ[___]:=(Message[Error::ShouldntGetHere];False)}
+		],
+		Test["ExperimentImageSample returns a simulation blob if Output -> Simulation:",
+			ExperimentImageSample[Object[Sample,"Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], Output -> Simulation],
+			SimulationP
+		],
 		
 		(* === Invalid Input Examples === *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentImageSample[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentImageSample[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentImageSample[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentImageSample[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentImageSample[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentImageSample[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[
 			{Messages, "DiscardedSamples", "If samples are discarded, an error is displayed:"},
 			ExperimentImageSample[Object[Sample, "Test discarded sample for ExperimentImageSample "<>$SessionUUID]],
@@ -413,7 +565,7 @@ DefineTests[
 			}
 		],
 		Example[
-			{Messages, "OptionMismatch", "If Instrument and IlluminationDirection are incompatible, an error is displayed:"},
+			{Messages, "IlluminationOptionMismatch", "If Instrument and IlluminationDirection are incompatible, an error is displayed:"},
 			ExperimentImageSample[
 				Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID], 
 				Instrument -> Model[Instrument, PlateImager, "id:n0k9mGzRal41"],
@@ -421,7 +573,7 @@ DefineTests[
 			],
 			$Failed,
 			Messages :> {
-				Error::OptionMismatch,
+				Error::IlluminationOptionMismatch,
 				Error::InvalidOption
 			}
 		],
@@ -434,7 +586,7 @@ DefineTests[
 				]],
 				AliquotContainer
 			],
-			{1,ObjectP[Model[Container]]},
+			{{1, ObjectP[Model[Container]]}},
 			Messages :> {Warning::ImagingIncompatibleContainer, Warning::AliquotRequired},
 			Variables :> {currentDeprecationState},
 			SetUp :> (
@@ -456,7 +608,7 @@ DefineTests[
 				]],
 				AliquotContainer
 			],
-			{1, Model[Container, Vessel, "id:eGakld01zzpq"]},
+			{{1, Model[Container, Vessel, "id:eGakld01zzpq"]}},
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[
@@ -572,10 +724,19 @@ DefineTests[
 			{500.` Millisecond}	
 		],
 		Test[
-			"Short-circuits to $Failed if passed nonexistent samples:",
-			ExperimentImageSample[Object[Sample, "Priceless Unobtainium"]],
-			$Failed,
-			Messages:>{Download::ObjectDoesNotExist}
+			"Exposure time resolves to 200 Milliseconds when the only light source is Ambient and we are at CMU:",
+			Lookup[
+				Download[
+					ExperimentImageSample[
+						Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID],
+						IlluminationDirection -> {Ambient},
+						Site->Object[Container, Site, "id:P5ZnEjZpRlK4"]
+					],
+					BatchedImagingParameters
+				],
+				ExposureTime
+			],
+			{200.` Millisecond}
 		],
 		Test[
 			"ImageContainers is index matched to ContainersIn:",
@@ -623,20 +784,6 @@ DefineTests[
 		
 		(* === FUNTOPIA SHARED EXAMPLES === *)
 		(* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESNT BUG ON THIS. *)
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol = ExperimentImageSample[
-				{"caffeine sample 1", "caffeine sample 2"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "caffeine sample 1", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "caffeine sample 2", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Caffeine"], Destination -> "caffeine sample 1", Amount -> 500*Milligram],
-					Transfer[Source -> Model[Sample, "Caffeine"], Destination -> "caffeine sample 2", Amount -> 300*Milligram]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol = ExperimentImageSample[
 				{"caffeine sample 1", "caffeine sample 2"},
@@ -651,7 +798,39 @@ DefineTests[
 			{SamplePreparationP..},
 			Variables :> {protocol}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentImageSample[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"id:3em6Zv9NjjN8"],(*2mL Tube*)
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"id:3em6Zv9NjjN8"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentImageSample[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, ImageSample]]
+		],
 		Example[{Options, Incubate, "Set the Incubate option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], Incubate -> True, Output -> Options];
 			Lookup[options, Incubate],
@@ -953,7 +1132,7 @@ DefineTests[
 		Example[{Options, AliquotSampleLabel, "Set the AliquotSampleLabel option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], Aliquot -> True,AliquotSampleLabel -> "Water Aliquot", Output -> Options];
 			Lookup[options, AliquotSampleLabel],
-			"Water Aliquot",
+			{"Water Aliquot"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotSampleStorageCondition, "Set the AliquotSampleStorageCondition option:"},
@@ -977,13 +1156,13 @@ DefineTests[
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, MeasureWeight, "Set the MeasureWeight option:"},
@@ -1004,8 +1183,81 @@ DefineTests[
 			"Function runs properly on typeless, modelless samples:",
 			ExperimentImageSample[Object[Sample, "Test water sample with no subtype and no model for ExperimentImageSample "<>$SessionUUID]],
 			ObjectP[Object[Protocol, ImageSample]]
+		],
+		(*If there is Living sample in the input, and it has a non-stocksolution parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test[
+			"Living samples will be filtered out if there is a parent non-stocksolution protocol:",
+			ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],ParentProtocol->Object[Protocol, Centrifuge, "id:8qZ1VWNvxmnD"]],
+			$Failed,
+			SetUp:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Living->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Living->Null|>])
+		],
+		(*If there is Sterile sample in the input, and it has a non-stocksolution parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test[
+			"Sterile samples will be filtered out if there is a parent non-stocksolution protocol:",
+			Download[ExperimentImageSample[{
+				Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],
+				Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID]
+			},ParentProtocol->Object[Protocol, Centrifuge, "id:8qZ1VWNvxmnD"]],
+				{Object,SamplesIn}],
+			{
+				ObjectP[Object[Protocol,ImageSample]],
+				{ObjectP[Object[Sample, "Test water sample in 50mL tube for ExperimentImageSample "<>$SessionUUID]]}
+			},
+			SetUp:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Sterile->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Sterile->Null|>])
+		],
+		(*If there is Living or Sterile sample in the input, and it has a parent stock solution protocol, the sample is not filtered out*)
+		Test[
+			"Sterile/Living samples will not be filtered out if the parent protocol is stocksolution:",
+			Download[ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],ParentProtocol->Object[Protocol,StockSolution,"Test StockSolution protocol for ExperimentImageSample " <> $SessionUUID]],
+				{Object,SamplesIn}],
+			{
+				ObjectP[Object[Protocol,ImageSample]],
+				{ObjectP[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID]]}
+			},
+			SetUp:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Sterile->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Sterile->Null|>])
+		],
+		(*If there is Living or Sterile sample in the input, and it does not have a parent protocol, the sample is not filtered out*)
+		Test[
+			"Sterile/Living samples will not be filtered out if there is no parent protocol:",
+			Download[ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID]],
+				{Object,SamplesIn}],
+			{
+				ObjectP[Object[Protocol,ImageSample]],
+				{ObjectP[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID]]}
+			},
+			SetUp:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Living->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],Living->Null|>])
+		],
+		(*If there is Living or Sterile sample in the input, the sample is in a plate, and it does not have a parent protocol, a warning is thrown *)
+		Test[
+			"A warning is thrown if there is Living samples in a plate when there is no parent protocol, but a protocol can still be generated:",
+		Download[ExperimentImageSample[Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID]],
+			{Object, SamplesIn}
+			],
+			{
+				ObjectP[Object[Protocol,ImageSample]],
+				{ObjectP[Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID]]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesInPlateQueuedForImaging},
+			SetUp:>(Upload[<|Object->Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],Living->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],Living->Null|>])
+		],
+		Test[
+			"A warning is thrown if there is Sterile samples in a plate when there is no parent protocol, but a protocol can still be generated:",
+			Download[ExperimentImageSample[Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID]],
+				{Object, SamplesIn}
+				],
+			{
+				ObjectP[Object[Protocol,ImageSample]],
+				{ObjectP[Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID]]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesInPlateQueuedForImaging},
+			SetUp:>(Upload[<|Object->Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],Sterile->True|>]),
+			TearDown:>(Upload[<|Object->Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],Sterile->Null|>])
 		]
-		
 		(*Test[
 			"If imaging standalone and a container transfer will be necessary, a warning is displayed:"
 		]
@@ -1217,7 +1469,6 @@ DefineTests[ValidExperimentImageSampleQ,
 	},
 
 
-
 	Stubs:>{
 		$PersonID=Object[User,"Test user for notebook-less test protocols"],
 		$EmailEnabled=False
@@ -1241,6 +1492,87 @@ DefineTests[ValidExperimentImageSampleQ,
 ];
 
 
+(* ::Subsection:: *)
+(* ImageSample *)
+DefineTests[ImageSample,
+	{
+		Example[{Basic,"Form an ImageSample unit operation:"},
+		    ImageSample[
+				Sample -> Object[Sample, "Test water sample 1 in 96 deep-well plate for ImageSample "<>$SessionUUID],
+				Instrument->Object[Instrument, SampleImager, "Inspector Clouseau"],
+				ImageContainer->True
+			],
+		    ImageSampleP
+		],
+		Example[{Basic,"Specifying a key incorrectly will not form a unit operation:"},
+			primitive = ImageSample[
+				Sample -> Object[Sample, "Test water sample 1 in 96 deep-well plate for ImageSample "<>$SessionUUID],
+				Instrument->Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				ImageContainer->True
+			];
+			MatchQ[primitive, SamplePreparationP],
+			False,
+			Variables -> {primitive}
+		],
+		Example[{Basic,"A protocol is generated when the unit op is inside an MSP:"},
+		    ExperimentManualSamplePreparation[
+				{
+					ImageSample[
+						Sample -> Object[Sample, "Test water sample 1 in 96 deep-well plate for ImageSample "<>$SessionUUID]
+					]
+				}
+			],
+		    ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the unit op is given labels as input:"},
+		    ExperimentManualSamplePreparation[
+				{
+					LabelSample[
+						Sample -> Model[Sample, "Milli-Q water"],
+						Container -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 1 Milliliter,
+						Label -> "my sample"
+					],
+					ImageSample[
+						Sample -> "my sample",
+						ImageContainer -> True
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the output of the image sample is passed to another unit op using a label:"},
+			ExperimentManualSamplePreparation[
+				{
+					ImageSample[
+						Sample -> Object[Sample, "Test water sample 1 in 96 deep-well plate for ImageSample "<>$SessionUUID],
+						ImageContainer -> True,
+						SampleLabel -> "my imaged sample"
+					],
+					Transfer[
+						Source -> "my imaged sample",
+						Destination -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 0.5 Milliliter
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		]
+	},
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+		$CreatedObjects={};
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+		InternalExperiment`Private`imageSampleTestSampleSetup["ImageSample"];
+	),
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		EraseObject[$CreatedObjects,Force->True,Verbose->False];
+	)
+];
 (* ::Subsection::Closed:: *)
 (* AcquireImage *)
 DefineTests[AcquireImage,

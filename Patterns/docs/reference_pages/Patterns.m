@@ -159,9 +159,7 @@ DefineUsage[AffinityLabelP,
 			"RangeP",
 			"ListableP"
 		},
-		Author -> {
-			"gil.sharon"
-		}
+		Author -> {"dirk.schild", "gil.sharon"}
 	}];
 
 (* ::Subsubsection::Closed:: *)
@@ -183,9 +181,7 @@ DefineUsage[DetectionLabelP,
 			"RangeP",
 			"ListableP"
 		},
-		Author -> {
-			"gil.sharon"
-		}
+		Author -> {"dirk.schild", "gil.sharon"}
 	}];
 
 
@@ -207,7 +203,7 @@ DefineUsage[AreaMeasurementAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 (* ::Subsubsection::Closed:: *)
@@ -228,7 +224,7 @@ DefineUsage[BestfitEllipseAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 (* ::Subsubsection::Closed:: *)
@@ -249,7 +245,7 @@ DefineUsage[BoundingboxPropertiesAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 (* ::Subsubsection::Closed:: *)
@@ -271,7 +267,7 @@ DefineUsage[CellConcentrationQ,
 			"AnalyzeCellCount",
 			"CFUConcentrationQ"
 		},
-		Author -> {"waseem.vali", "lei.tian"}
+		Author -> {"dirk.schild"}
 	}];
 
 
@@ -309,7 +305,7 @@ DefineUsage[CentroidPropertiesAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 DefineUsage[ImageIntensityAssociationQ,
@@ -326,7 +322,7 @@ DefineUsage[ImageIntensityAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 DefineUsage[PerimeterPropertiesAssociationQ,
@@ -343,7 +339,7 @@ DefineUsage[PerimeterPropertiesAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 DefineUsage[ShapeMeasurementsAssociationQ,
@@ -360,7 +356,7 @@ DefineUsage[ShapeMeasurementsAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 
 DefineUsage[TopologicalPropertiesAssociationQ,
@@ -377,7 +373,7 @@ DefineUsage[TopologicalPropertiesAssociationQ,
 		SeeAlso -> {
 			"AnalyzeCellCount"
 		},
-		Author -> {"waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
+		Author -> {"dirk.schild", "waseem.vali", "lei.tian", "charlene.konkankit", "cgullekson"}
 	}];
 (* ::Subsection:: *)
 (* Sample History Cards *)
@@ -550,7 +546,7 @@ DefineUsage[FlashFrozen,
 			"Incubated",
 			"Evaporated"
 		},
-		Author -> {"waseem.vali", "lei.tian"}
+		Author -> {"dirk.schild"}
 	}
 ];
 
@@ -625,6 +621,29 @@ DefineUsage[Filtered,
 		Author -> {
 			"jireh.sacramento",
 			"steven"
+		}
+	}
+];
+(* ::Subsubsection:: *)
+(* Ground *)
+
+DefineUsage[Ground,
+	{
+		BasicDefinitions -> {
+			{"Ground[rules]", "sampleHistoryCard", "creates a sample history card that indicates when the sample object was ground."}
+		},
+		Input :> {
+			{"rules", __Rule, "Rules indicating grinding parameters for the indicated sample."}
+		},
+		Output :> {
+			{"sampleHistoryCard", _Ground, "A sample history card that indicates when the sample object was ground."}
+		},
+		SeeAlso -> {
+			"Incubated",
+			"Evaporated"
+		},
+		Author -> {
+			"yanzhe.zhu", "lige.tonggu"
 		}
 	}
 ];
@@ -959,9 +978,28 @@ DefineUsage[DayObjectQ,
 			"DateObjectQ",
 			"DateObject"
 		},
+		Author -> {"dirk.schild", "kelmen.low", "david.ascough"}
+	}
+];
+
+(* ::Subsubsection:: *)
+(* CellsFrozen *)
+DefineUsage[CellsFrozen,
+	{
+		BasicDefinitions -> {
+			{"CellsFrozen[rules]", "sampleHistoryCard", "creates a sample history card that indicates when a cell sample object has been frozen for cryopreservation."}
+		},
+		Input :> {
+			{"rules", __Rule, "Rules indicating the conditions under which cells contained in the indicated sample have been frozen."}
+		},
+		Output :> {
+			{"sampleHistoryCard", _CellsFrozen, "A sample history card that indicates the conditions under which the cells contained within the sample object have been frozen."}
+		},
+		SeeAlso -> {
+			"ExperimentFreezeCells"
+		},
 		Author -> {
-			"kelmen.low",
-			"david.ascough"
+			"tyler.pabst"
 		}
 	}
 ];

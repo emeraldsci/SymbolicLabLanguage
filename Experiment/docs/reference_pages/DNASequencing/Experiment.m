@@ -18,10 +18,20 @@ DefineUsage[ExperimentDNASequencing,
 						{
 							InputName->"Samples",
 							Description->"The fluorescently labeled nucleic acid template samples, prepared for Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -44,20 +54,41 @@ DefineUsage[ExperimentDNASequencing,
 						{
 							InputName->"Samples",
 							Description->"The nucleic acid template samples to be mixed with a Master Mix composed of the polymerase, nucleotides, fluorescently-labeled dideoxynucleotides, primer, and buffer, that will then undergo the chain-terminating polymerase reaction, purification if desired, and Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"primers",
 							Description->"The oligomer strand designed to bind to the templates and serve as an anchor for the polymerase in the chain-terminating polymerase reaction.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								],
+								Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 							],
 							Expandable->False
 						},
@@ -83,10 +114,7 @@ DefineUsage[ExperimentDNASequencing,
 			"ExperimentDNASequencingPreview",
 			"ValidExperimentDNASequencingQ"
 		},
-		Author->{
-			"clayton.schwarz",
-			"hailey.hibbard"
-		}
+		Author->{"taylor.hochuli", "clayton.schwarz", "hailey.hibbard"}
 	}
 ];
 
@@ -106,10 +134,20 @@ DefineUsage[ExperimentDNASequencingOptions,
 						{
 							InputName->"Samples",
 							Description->"The fluorescently labeled nucleic acid template samples, prepared for Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -132,20 +170,41 @@ DefineUsage[ExperimentDNASequencingOptions,
 						{
 							InputName->"Samples",
 							Description->"The nucleic acid template samples to be mixed with a Master Mix composed of the polymerase, nucleotides, fluorescently-labeled dideoxynucleotides, primer, and buffer, that will then undergo the chain-terminating polymerase reaction, purification if desired, and Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"primers",
 							Description->"The oligomer strand designed to bind to the templates and serve as an anchor for the polymerase in the chain-terminating polymerase reaction.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								],
+								Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 							],
 							Expandable->False
 						},
@@ -166,7 +225,7 @@ DefineUsage[ExperimentDNASequencingOptions,
 			"ExperimentDNASequencingPreview",
 			"ValidExperimentDNASequencingQ"
 		},
-		Author->{"clayton.schwarz", "hailey.hibbard"}
+		Author->{"taylor.hochuli", "clayton.schwarz", "hailey.hibbard"}
 	}
 ];
 
@@ -186,10 +245,20 @@ DefineUsage[ExperimentDNASequencingPreview,
 						{
 							InputName->"Samples",
 							Description->"The fluorescently labeled nucleic acid template samples, prepared for Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -212,20 +281,41 @@ DefineUsage[ExperimentDNASequencingPreview,
 						{
 							InputName->"Samples",
 							Description->"The nucleic acid template samples to be mixed with a Master Mix composed of the polymerase, nucleotides, fluorescently-labeled dideoxynucleotides, primer, and buffer, that will then undergo the chain-terminating polymerase reaction, purification if desired, and Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"primers",
 							Description->"The oligomer strand designed to bind to the templates and serve as an anchor for the polymerase in the chain-terminating polymerase reaction.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								],
+								Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 							],
 							Expandable->False
 						},
@@ -246,7 +336,7 @@ DefineUsage[ExperimentDNASequencingPreview,
 			"ExperimentDNASequencingOptions",
 			"ValidExperimentDNASequencingQ"
 		},
-		Author->{"clayton.schwarz", "hailey.hibbard"}
+		Author->{"taylor.hochuli", "clayton.schwarz", "hailey.hibbard"}
 	}
 ];
 
@@ -266,10 +356,20 @@ DefineUsage[ValidExperimentDNASequencingQ,
 						{
 							InputName->"Samples",
 							Description->"The fluorescently labeled nucleic acid template samples, prepared for Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -292,20 +392,41 @@ DefineUsage[ValidExperimentDNASequencingQ,
 						{
 							InputName->"Samples",
 							Description->"The nucleic acid template samples to be mixed with a Master Mix composed of the polymerase, nucleotides, fluorescently-labeled dideoxynucleotides, primer, and buffer, that will then undergo the chain-terminating polymerase reaction, purification if desired, and Sanger DNA sequencing by capillary electrphoresis to determine the nucleotide sequences.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
 						{
 							InputName->"primers",
 							Description->"The oligomer strand designed to bind to the templates and serve as an anchor for the polymerase in the chain-terminating polymerase reaction.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample],Object[Container]}],
+									Dereference -> {
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								(* TODO confirm "Container with Well Position" is supported. *)
+								"Model Sample" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								],
+								Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 							],
 							Expandable->False
 						},
@@ -326,9 +447,6 @@ DefineUsage[ValidExperimentDNASequencingQ,
 			"ExperimentDNASequencingOptions",
 			"ExperimentDNASequencingPreview"
 		},
-		Author->{
-			"clayton.schwarz",
-			"hailey.hibbard"
-		}
+		Author->{"taylor.hochuli", "clayton.schwarz", "hailey.hibbard"}
 	}
 ];

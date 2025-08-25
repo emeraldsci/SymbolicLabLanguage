@@ -32,7 +32,7 @@ DefineUsage[DesignOfExperiment,
 			}
 		},
 		SeeAlso -> {"ExperimentScript", "RunScriptDesignOfExperiment", "AnalyzePeaks"},
-		Author -> {"kevin.hou", "li.gao", "tommy.harrelson", "derek.machalek", "brad"}
+		Author -> {"xu.yi", "kevin.hou", "li.gao", "tommy.harrelson", "derek.machalek", "brad"}
 	}
 ];
 

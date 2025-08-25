@@ -13,21 +13,27 @@ DefineTests[PlotRamanSpectroscopy,
 		(* -- BASIC -- *)
 		Example[{Basic,"Given a RamanSpectroscopy data object, creates plots for the AverageRamanSpectrum as well as the spectra and positions collected at each sampling position:"},
 			PlotRamanSpectroscopy[
-				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>plotRamanUUID]
+				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>$SessionUUID]
 			],
 			_TabView
 		],
 		Example[{Basic,"Plot a list of RamanSpectroscopy data objects:"},
 			PlotRamanSpectroscopy[
-				Repeat[Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>plotRamanUUID], 3]
+				Repeat[Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>$SessionUUID], 3]
 			],
 			TabView[{(_String->_TabView)..}, ___]
+		],
+		Example[{Basic,"Given a RamanSpectroscopy protocol object, creates plots of the linked data objects:"},
+			PlotRamanSpectroscopy[
+				Object[Protocol, RamanSpectroscopy, "PlotRamanSpectroscopy sample protocol"<>$SessionUUID]
+			],
+			_TabView
 		],
 
 		(* -- OPTIONS -- *)
 		Example[{Options, ReduceData, "Indicate that the number of spectra should be reduced when a dense sampling pattern was used:"},
 			output = PlotRamanSpectroscopy[
-				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>plotRamanUUID],
+				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>$SessionUUID],
 				ReduceData -> True
 			];
 			Values[output[[1]]],
@@ -36,7 +42,7 @@ DefineTests[PlotRamanSpectroscopy,
 		],
 		Example[{Options, OutputFormat, "Set the output format:"},
 			output = PlotRamanSpectroscopy[
-				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>plotRamanUUID],
+				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>$SessionUUID],
 				OutputFormat -> Average
 			];
 			output,
@@ -45,7 +51,7 @@ DefineTests[PlotRamanSpectroscopy,
 		],
 		Example[{Options, ImageSize, "Set the image size for the output plots:"},
 			output = PlotRamanSpectroscopy[
-				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>plotRamanUUID],
+				Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"<>$SessionUUID],
 				ImageSize -> 800
 			];
 			Values[output[[1]]],
@@ -58,15 +64,13 @@ DefineTests[PlotRamanSpectroscopy,
 	Stubs:>{
 		$EmailEnabled=False
 	},
-	Variables:>{
-		plotRamanUUID
-	},
 	SymbolSetUp :> (
 		$CreatedObjects = {};
 		Module[{objs, existingObjs},
 			objs = Quiet[Cases[
 				Flatten[{
-					Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"]
+					Object[Data, RamanSpectroscopy, "PlotRamanSpectroscopy sample data"],
+					Object[Protocol, RamanSpectroscopy, "PlotRamanSpectroscopy sample protocol"]
 				}],
 				ObjectP[]
 			]];
@@ -76,9 +80,8 @@ DefineTests[PlotRamanSpectroscopy,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{
-					rawRamanData, ramanDataQA1, ramanDataQA2, ramanDataQA3, ramanPositions, ramanProtocol, dataObject1
+					rawRamanData, ramanDataQA1, ramanDataQA2, ramanDataQA3, ramanPositions, ramanProtocol, dataObject1, ramanProtocol1
 				},
-			plotRamanUUID = CreateUUID[];
 				(* -- FAKE RAMAN DATA -- *)
 				(*make some believable looking raman data*)
 				rawRamanData =
@@ -112,10 +115,16 @@ DefineTests[PlotRamanSpectroscopy,
 				(* -- FAKE RAMAN DATA OBJECT -- *)
 				dataObject1 = Upload[<|
 					Type -> Object[Data, RamanSpectroscopy],
-					Name -> "PlotRamanSpectroscopy sample data"<>plotRamanUUID,
+					Name -> "PlotRamanSpectroscopy sample data"<>$SessionUUID,
 					Replace[AverageRamanSpectrum] -> ramanDataQA1,
 					Replace[RamanSpectra] -> Join[ConstantArray[ramanDataQA1, 5], ConstantArray[ramanDataQA2, 5], ConstantArray[ramanDataQA3, 5]],
 					Replace[MeasurementPositions]-> ramanPositions
+				|>];
+
+				ramanProtocol1 = Upload[<|
+					Type -> Object[Protocol, RamanSpectroscopy],
+					Name -> "PlotRamanSpectroscopy sample protocol"<>$SessionUUID,
+					Replace[Data] -> {Link[dataObject1, Protocol]}
 				|>]
 			]
 		]

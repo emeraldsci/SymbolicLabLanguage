@@ -19,12 +19,20 @@ DefineUsage[ExperimentBioLayerInterferometry,
             {
               InputName -> "Samples",
               Description-> "BLI measures the interaction between a solution phase analyte (the input sample) and a bio-layer functionalized probe surface by recording changes in the bio-layer thickness over time. Analytes may include antibodies, antigens, proteins, DNA, RNA, small molecules, cells, viruses, and bacteria. Sample solutions can be homogenous or heterogeneous mixtures, and may be recovered and reused due to the nondesctructive nature of the measurement.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -79,12 +87,20 @@ DefineUsage[ExperimentBioLayerInterferometryOptions,
             {
               InputName -> "Samples",
               Description-> "The samples to be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -127,12 +143,20 @@ DefineUsage[ValidExperimentBioLayerInterferometryQ,
             {
               InputName -> "Samples",
               Description -> "The samples to be measured.",
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                Dereference -> {
-                  Object[Container] -> Field[Contents[[All, 2]]]
-                }
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable -> False
             },
@@ -167,12 +191,20 @@ DefineUsage[ExperimentBioLayerInterferometryPreview,
             {
               InputName -> "Samples",
               Description -> "The samples to be measured.",
-              Widget -> Widget[
-                Type -> Object,
-                Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-                Dereference -> {
-                  Object[Container] -> Field[Contents[[All, 2]]]
-                }
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable -> False
             },

@@ -12,7 +12,7 @@ DefineUsage[PlotICPMS,
 		BasicDefinitions -> {
 			{
 				Definition->{"PlotICPMS[ICPMSData]", "plot"},
-				Description->"provides a graphical plot the provided ICP-MS spectra.",
+				Description->"provides a graphical 'plot' of the provided ICP-MS spectra.",
 				Inputs:>{
 					{
 						InputName->"ICPMSData",
@@ -25,6 +25,26 @@ DefineUsage[PlotICPMS,
 						OutputName->"plot",
 						Description->"A graphical representation of the spectra.",
 						Pattern:>ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition -> {"PlotICPMS[protocol]", "plot"},
+				Description -> "creates a 'plot' of the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing ICPMS data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, ICPMS]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the ICPMS protocol.",
+						Pattern :> ValidGraphicsP[]
 					}
 				}
 			},
@@ -51,9 +71,7 @@ DefineUsage[PlotICPMS,
 			"PlotChromatography",
 			"PlotNMR"
 		},
-		Author -> {
-			"hanming.yang"
-		},
+		Author -> {"hanming.yang"},
 		Preview->True
 	}
 ]

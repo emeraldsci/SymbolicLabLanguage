@@ -121,7 +121,7 @@ initiateComputation[comp:ObjectReferenceP[Object[Notebook,Computation]]]:=Module
 	{
 		currStatus,templateCloudFile,templateInputFile,templateAssetFile,
 		completedNotebook,resolvedSLLCommit,initialDateStarted,randomDelay,
-		uploadResult,initialUploadPacket
+		uploadResult,initialUploadPacket,compNotebook
 	},
 
 	(* Logging for manifold *)
@@ -132,11 +132,12 @@ initiateComputation[comp:ObjectReferenceP[Object[Notebook,Computation]]]:=Module
 	Pause[randomDelay];
 
 	(* Make sure we have an object reference *)
-	{currStatus,templateInputFile,templateAssetFile,initialDateStarted}=Download[comp,{
+	{currStatus,templateInputFile,templateAssetFile,initialDateStarted,compNotebook}=Download[comp,{
 		Status,
 		Job[TemplateNotebookFile][Object],
 		Job[TemplateNotebook][AssetFile],
-		DateStarted
+		DateStarted,
+		Notebook[Object]
 	}];
 
 	(* if DateStarted is populated already, this means that another AWS pod is running this and we are inside a secondary pod somehow *)
@@ -153,7 +154,7 @@ initiateComputation[comp:ObjectReferenceP[Object[Notebook,Computation]]]:=Module
 	Echo["Initializing Computation...(Download Object)"];
 
 	(* Create an empty completed notebook *)
-	completedNotebook=makeBlankNotebook[];
+	completedNotebook=makeBlankNotebook[compNotebook];
 
 	Echo["Initializing Computation...(Create Notebook)"];
 
@@ -266,6 +267,11 @@ errorComputation[comp:ObjectReferenceP[Object[Notebook,Computation]], message_St
 (*finishComputation*)
 
 (* Set Status to Completed and update the DateCompleted and ActualRunTime fields *)
+
+
+(* Authors definition for Manifold`Private`finishComputation *)
+Authors[Manifold`Private`finishComputation]:={"steven"};
+
 finishComputation[comp:ObjectReferenceP[Object[Notebook,Computation]]]:=Module[
 	{currStatus,startTime,destinationNotebook,destinationNameFunction,finalStatus,
 	destinationNotebookPackets,computedNotebookFile,computationPacket},
@@ -346,16 +352,13 @@ runComputationLoop[
 		currentFutureCellObject,currentFutureCell,echoToPastNotebook,
 		currentHeldExpression,currentCell,evaluatedExpression,currentCreatedObjects,
 		messages,sectionsJSON,erroredOut,newPastNotebookFilename,newFutureNotebookFilename,
-		newPastNotebookCloudFile,newFutureNotebookCloudFile, pastNotebook, futureNotebook
+		newPastNotebookCloudFile,newFutureNotebookCloudFile, pastNotebook, futureNotebook,
+		compNotebook
 	},
-	
-	(*
-		assign notebooks to new variables so we can set them.
-		In 12.0 the notebooks get set correctly by default after saving,
-		but in 12.3.1 we have to set them to the default we want.
-	*)
 	pastNotebook = pastNotebookInput;
 	futureNotebook = futureNotebookInput;
+
+	compNotebook = Download[comp, Notebook[Object]];
 
 	(* Get all of the cells in this notebook. *)
 	historyLength=1;
@@ -456,13 +459,13 @@ runComputationLoop[
 
 		(* Save current created objects *)
 		currentCreatedObjects=If[MatchQ[$CreatedObjects,{ObjectP[]...}],
-      $CreatedObjects,
-      {}
-    ];
+			$CreatedObjects,
+			{}
+		];
 
 		(* Update created objects in the computation notebook page. *)
 		Block[{$NotebookPage=comp},
-			HandleCreatedObjects[];
+			HandleCreatedObjects[compNotebook];
 		];
 
 		(* Lookup messages from the evaluation *)
@@ -524,7 +527,7 @@ runComputationLoop[
 		(* Save the notebook objects to the new filenames *)
 		UsingFrontEnd[NotebookSave[pastNotebook,newPastNotebookFilename]];
 		UsingFrontEnd[NotebookSave[futureNotebook,newFutureNotebookFilename]];
-		
+
 		(*
 			set pastNotebook/futureNotebook to the last location is was saved,
 			otherwise it will default to the UUID and be unusable.
@@ -535,8 +538,8 @@ runComputationLoop[
 		(* Upload these notebooks to cloud file objects. *)
 		{newPastNotebookCloudFile,newFutureNotebookCloudFile}=Upload[
 			{
-				UploadCloudFile[newPastNotebookFilename,Upload->False],
-				UploadCloudFile[newFutureNotebookFilename,Upload->False]
+				UploadCloudFile[newPastNotebookFilename, Notebook -> compNotebook, Upload->False],
+				UploadCloudFile[newFutureNotebookFilename, Notebook -> compNotebook, Upload->False]
 			},
 			ConstellationMessage->{}
 		];

@@ -94,6 +94,22 @@ DefineObjectType[Object[LaboratoryNotebook], {
 			Description -> "Notebook scripts associated with this notebook.",
 			Category -> "Organizational Information"
 		},
+		Folders -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Folder],
+			Description -> "A list of all folders present in this notebook containing any objects to be listed in Command Center.",
+			Category -> "Organizational Information"
+		},
+		SortedNotebookFiles -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Notebook, Page] | Object[Notebook, Function] | Object[Notebook, Script] | Object[Folder],
+			Description -> "A sorted list of all pages, functions, scripts, and folders associated with this notebook.",
+			Category -> "Organizational Information"
+		},
 		Jobs -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -126,14 +142,10 @@ DefineObjectType[Object[LaboratoryNotebook], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
-		Objects->{
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Object[][Notebook],
-				Model[][Notebook]
-			],
+		Objects -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Field[Object]}, Computables`Private`objectsInNotebook[Field[Object]]],
+			Pattern :> {ObjectP[{Object[], Model[]}]...},
 			Description -> "Objects that were created in this notebook.",
 			Category -> "Organizational Information"
 		},

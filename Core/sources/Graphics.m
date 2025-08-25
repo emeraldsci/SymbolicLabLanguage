@@ -17,10 +17,10 @@ InteractiveImageP = Alternatives[
 	(*With ScrollZoom*)
 	HoldPattern[
 		DynamicModule[_List,
-			Deploy[DynamicModule[_List,
+			DynamicModule[_List,
 				EventHandler[Pane[Grid[{{Graphics[{
-					
-					
+
+
 					(*AutoDownsampling*)
 					DynamicModule[_List,
 						DynamicBox[
@@ -30,25 +30,25 @@ InteractiveImageP = Alternatives[
 
 						(*No AutoDownsampling*)
 						RasterBox[_NumericArray, _],
-					
+
 					___}, ___], ___}, ___}, ___],
-					___], ___], ___]], ___]],
+					___], ___], ___], ___]],
 	
 	
 	(*Without ScrollZoom*)
 	HoldPattern[
 		DynamicModule[_List,
-			Deploy[Graphics[{
+			Graphics[{
 				(*AutoDownsampling*)
 				DynamicModule[_List,
 					DynamicBox[
 						SciCompFramework`Private`rasterBoxDownsamplingFunction[
 							SciCompFramework`Private`zoomFactor][_NumericArray],
 						___], ___] |
-					
+
 					(*No AutoDownsampling*)
 					RasterBox[_NumericArray, _],
-				___}, ___]], ___]]
+				___}, ___], ___]]
 
 ];
 
@@ -57,8 +57,8 @@ ZoomableP=Alternatives[
 	(* Scroll Zoom Overload *)
 	HoldPattern[
 		DynamicModule[_List,
-			Deploy[DynamicModule[_List,
-				EventHandler[Pane[Grid[{{_Graphics, ___}, ___}, ___], ___], ___], ___]], ___]] /; ECL`$CCD,
+			DynamicModule[_List,
+				EventHandler[Pane[Grid[{{_Graphics, ___}, ___}, ___], ___], ___], ___], ___]] /; ECL`$CCD,
 
 	(* Original Zoomable Overload *)
 	HoldPattern[DynamicModule[_List, EventHandler[Dynamic[_Graphics], ___], ___]]
@@ -851,6 +851,7 @@ Zoomable[graphics_Graphics] /; ECL`$CCD :=
 		newGraphics = Insert[newGraphics, PlotLabel -> newLabel, 2];
 
 		DynamicModule[{
+			SciCompFramework`Private`graphicsBoxImageSize = resolvedImageSize,
 			SciCompFramework`Private`xMin = xMinFull,
 			SciCompFramework`Private`xMax = xMaxFull,
 			SciCompFramework`Private`yMin = yMinFull,
@@ -877,14 +878,13 @@ Zoomable[graphics_Graphics] /; ECL`$CCD :=
 
 			(*Fix the image size*)
 			newGraphics = Insert[newGraphics, AspectRatio -> Full, 2];
-			newGraphics = Insert[newGraphics, ImageSize -> resolvedImageSize, 2];
+			newGraphics = Insert[newGraphics, ImageSize -> Dynamic[SciCompFramework`Private`graphicsBoxImageSize], 2];
 			newGraphics = Insert[newGraphics, ImagePadding -> resolvedImagePadding, 2];
 
-			(*Deploy turns off the built-in resizeability and graphics editor to avoid any bad iteractions with the framework layers*)
-			Deploy[newGraphics //
+			newGraphics //
 				SciCompFramework`Private`scrollZoomWrapper[
 					True, {{xMinFull, xMaxFull}, {yMinFull, yMaxFull}}, {0, 0},
-					resolvedImageSize, {False, False}]]
+					Dynamic[SciCompFramework`Private`graphicsBoxImageSize], Automatic, {False, False}]
 
 		]
 	];
@@ -903,7 +903,7 @@ truncateTicks[spec_] := spec;
 truncateEachTick[{pos_, label_, __}] := {pos, label};
 truncateEachTick[tick_] := tick;
 
-changeTitleFontSize[Pane[Style[title_, fontSize_, bold_, fontFamily_], ops___], magnification_] := Module[{newFontSize, factor},
+changeTitleFontSize[Pane[Style[title_, fontSize_?NumericQ, styleRest___], ops___], magnification_] := Module[{newFontSize, factor},
 	(*factor of adjusted font size. 1 is no change, 0.5 is half of the default font size.
     The factor is 1 if the magnification is greater than 0.8,
     The factor is 0.6 if the magnification is less than 0.5,
@@ -914,8 +914,21 @@ changeTitleFontSize[Pane[Style[title_, fontSize_, bold_, fontFamily_], ops___], 
 		fontSize,
 		Round[fontSize*factor]
 	];
-	Pane[Style[title, newFontSize, bold, fontFamily], ops]
+	Pane[Style[title, newFontSize, styleRest], ops]
 ];
+
+(* 
+    sometimes FontSize is in an option rule -- pull it out and redirect to main defintition
+*)
+changeTitleFontSize[Pane[Style[title_, styleRules___Rule], ops___], magnification_]  := Module[{fontSize,otherRules},
+	fontSize = FirstCase[{styleRules},Rule["FontSize"|FontSize, val_] :> val, Null];
+	otherRules = Select[{styleRules},Not[MatchQ[First[#], "FontSize"|FontSize]]&];
+	If[fontSize === Null,
+		Pane[Style[title,otherRules], ops],
+		changeTitleFontSize[Pane[Style[title, fontSize, Sequence@@otherRules], ops], magnification]
+	]
+];
+
 changeTitleFontSize[others_, magnification_]:=others;
 
 absorbEpilogAndProlog[expression_] := Module[{},
@@ -1049,10 +1062,10 @@ Unzoomable[interactiveImage: InteractiveImageP] := interactiveImage;
 (*Stripping away the new scrollzoom*)
 Unzoomable[HoldPattern[
 	DynamicModule[_List,
-		Deploy[DynamicModule[_List,
+		DynamicModule[_List,
 			EventHandler[Pane[Grid[{{Graphics[{prolog_, {originalPrimitives___, _},
 				epilog_, _}, _, _, _, _, _, _,
-				originalOptions___], ___}, ___}, ___], ___], ___], ___]], ___]]] /; ECL`$CCD :=
+				originalOptions___], ___}, ___}, ___], ___], ___], ___], ___]]] /; ECL`$CCD :=
 	Graphics[{originalPrimitives}, Epilog->epilog, Prolog->prolog, originalOptions];
 
 
@@ -1143,7 +1156,7 @@ removeFrameLabelSpace[plot_]:=Module[
 		Return[plot]
 	];
 
-	(* replace spaces with "a" in teh frame labels *)
+	(* replace spaces with "a" in the frame labels *)
 	frameLabelNoSpace = Replace[
 		frameLabel,
 		{HoldForm[Style[myString_, a_]]:>With[{newString = StringReplace[myString, " "->"a"]}, HoldForm[Style[newString, a]]]},
@@ -1166,10 +1179,15 @@ removeFrameLabelSpace[plot_]:=Module[
  Used by the new Zoomability to determine the resolved values of ImagePadding and ImageSize.
 *)
 
+
+
+(* Authors definition for Core`Private`graphicsInformation *)
+Authors[Core`Private`graphicsInformation]:={"xu.yi"};
+
 graphicsInformation[graphicsIn_Graphics]:=
 	Module[{
 		annotatedGraphicsIn, notebookExpression, frontEndReturnedPacket, plotRangeAnnotation, imageSizeAnnotation,
-		strippedSpaceGraphic, imageMagnification, imagePadding, correctedImagePadding
+		strippedSpaceGraphic, imageMagnification, imagePadding, correctedImagePadding, windowSize, magnification
 	},
 
 		(* removes spaces and puts an "a" in their place from FrameLabel, because spaces cause issues with FrontEndExecute on manifold in MM 13.2 *)
@@ -1184,13 +1202,24 @@ graphicsInformation[graphicsIn_Graphics]:=
 				{1, -1}
 			];
 
+		(* If EvaluationNotebook[] returns $Failed as we have seen in scripts, use the WindowSize and Magnification of *)
+		(* the $FutureScriptNotebook, which is set in a Block[] call within RunScriptJSON. *)
+		windowSize = If[MatchQ[AbsoluteCurrentValue[EvaluationNotebook[], WindowSize], $Failed],
+			AbsoluteCurrentValue[$FutureScriptNotebook, WindowSize],
+			AbsoluteCurrentValue[EvaluationNotebook[], WindowSize]
+		];
+		magnification = If[MatchQ[AbsoluteCurrentValue[EvaluationNotebook[], Magnification], $Failed],
+			AbsoluteCurrentValue[$FutureScriptNotebook, Magnification],
+			AbsoluteCurrentValue[EvaluationNotebook[], Magnification]
+		];
+
 		(*Build a notebook expression that contains the box form of the annotatedGraphics.
 		The WindowSize of the notebook must be resolved; otherwise the ImagePadding is incorrect on Windows.*)
 		notebookExpression = UsingFrontEnd[
 			Notebook[
 				{Cell[BoxData@ToBoxes@annotatedGraphicsIn, "Output"]},
-				WindowSize -> AbsoluteCurrentValue[EvaluationNotebook[], WindowSize],
-				Magnification -> AbsoluteCurrentValue[EvaluationNotebook[], Magnification],
+				WindowSize -> windowSize,
+				Magnification -> magnification,
 				Evaluator -> None
 			]
 		];

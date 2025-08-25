@@ -192,7 +192,22 @@ DefineObjectType[Object[Qualification,IonChromatography],{
             Description->"The samples, dilution factors, and data used for testing the linearity of the IonChromatography instrument's absorbance detector.",
             Category -> "General"
         },
-
+        CationBlankSample -> {
+            Format->Single,
+            Class->Link,
+            Pattern:>_Link,
+            Relation->Alternatives[Model[Sample], Object[Sample]],
+            Description->"The sample model that will be injected as a blank when testing the IonChromatography instrument's cation channel.",
+            Category->"General"
+        },
+        AnionBlankSample -> {
+            Format->Single,
+            Class->Link,
+            Pattern:>_Link,
+            Relation->Alternatives[Model[Sample], Object[Sample]],
+            Description->"The sample model that will be injected as a blank when testing the IonChromatography instrument's anion channel.",
+            Category->"General"
+        },
         (* Sample Preparation *)
         SamplePreparationUnitOperations->{
             Format->Multiple,

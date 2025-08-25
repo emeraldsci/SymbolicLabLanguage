@@ -80,6 +80,39 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Description -> "The length of time for which the plates are incubated in the plate reader at Temperature before readings are taken.",
 			Category -> "Luminescence Measurement"
 		},
+		TargetCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+			Category -> "Luminescence Measurement"
+		},
+		TargetOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			Category -> "Luminescence Measurement"
+		},
+		AtmosphereEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			Category -> "Luminescence Measurement"
+		},
+		EstimatedACUEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The estimated length of time for the gas level inside the chamber to reach the TargetOxygenLevel and TargetCarbonDioxideLevel.",
+			Developer -> True,
+			Category -> "Luminescence Measurement"
+		},
 		IntegrationTime -> {
 			Format -> Single,
 			Class -> Real,
@@ -279,7 +312,7 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 		MoatPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of MoatBuffer into MoatWells in order to create the moat to slow evaporation of inner assay samples.",
 			Category -> "General",
 			Developer -> True
@@ -288,9 +321,9 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The sample manipulations protocol used to transfer buffer into the moat wells.",
-			Category -> "Sample Preparation"
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
+			Category -> "General"
 		},
 		PumpPrimingFilePath -> {
 			Format -> Single,
@@ -374,7 +407,7 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		PrimaryPreppingSolvent -> {
+		Line1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -382,10 +415,10 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which the injectors are washed prior to running the experiment.",
+			Description ->"The primary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryPreppingSolvent -> {
+		Line1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -393,7 +426,7 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which the injectors are washed prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
 		PreppingSolutionPlacements -> {
@@ -406,7 +439,7 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		PrimaryFlushingSolvent -> {
+		Line2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -414,10 +447,10 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryFlushingSolvent -> {
+		Line2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -425,7 +458,7 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
 		FlushingSolutionPlacements -> {
@@ -434,6 +467,56 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Pattern :> {_Link, _Link, LocationPositionP},
 			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
 			Description -> "A list of placements used to move cleaning solvents into position after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		StorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injector Cleaning",
 			Developer -> True
@@ -476,6 +559,15 @@ DefineObjectType[Object[Protocol, LuminescenceSpectroscopy], {
 			Pattern :> SampleStorageTypeP|Disposal,
 			Description -> "The storage conditions under which any injections samples used in this experiment should be stored after their usage in this experiment.",
 			Category -> "Sample Storage"
+		},
+		EstimatedProcessingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Second],
+			Units -> Second,
+			Description -> "The predicted total time to complete readings of all samples based on requested run times, injections and mixing times.",
+			Developer -> True,
+			Category -> "Luminescence Measurement"
 		}
 	}
 }];

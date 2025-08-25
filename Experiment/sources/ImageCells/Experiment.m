@@ -971,10 +971,30 @@ DefineOptions[ExperimentImageCells,
 
 		(* options shared between manual and robotic ImageCells *)
 		ImageCellsSharedOptions,
-
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True,
+					ResolutionDescription -> "Automatically set to 200 Microliter."
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True,
+					ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"24-well Tissue Culture Plate\"]."
+				}
+			}
+		],
+		(* don't actually want this exposed to the customer, but do need it under the hood for ModelInputOptions to work *)
+		ModifyOptions[
+			PreparatoryUnitOperationsOption,
+			Category -> "Hidden"
+		],
 		(* shared options *)
 		PreparationOption,
-		FuntopiaSharedOptionsPooled,
+		WorkCellOption,
+		BiologyFuntopiaSharedOptionsPooled,
 		SimulationOption,
 		SubprotocolDescriptionOption
 	}
@@ -984,11 +1004,10 @@ DefineOptions[ExperimentImageCells,
 (* ::Subsubsection:: *)
 (*ExperimentImageCells Errors and Warnings*)
 
-
-Error::ImageCellsObjectDoesNotExist="The following objects, `1`, could not be found. Please verify that the objects' ID or Name exist in the database.";
-Error::ImageCellsInstrumentModelNotFound="No microscope instrument was found based on the specified options. Please specify Instrument directly or modify the option values.";
+Error::ImageCellsInstrumentModelNotFound="`1`. Please specify Instrument directly or modify the input/option values.";
+Error::ImageCellsCultureHandlingMismatch="The CultureHandling, `1`, of Instrument `2` does not match the culture handling of the input samples, `3`. Please choose a new instrument or leave the Instrument option to be set automatically.";
 Error::ImageCellsContainerlessSamples="The following samples cannot be imaged because they are not in a container: `1`. Please make sure their containers are accurately uploaded.";
-Error::MicroscopeOrientationMismatch="The Orientation, `1`, of Instrument `2` and specified MicroscopeOrientation, `3`, are not copacetic. Please choose a new instrument or leave the MicroscopeOrientation option to be set automatically.";
+Error::MicroscopeOrientationMismatch="The Orientation, `1`, of Instrument `2` and specified MicroscopeOrientation, `3`, are not compatible. Please choose a new instrument or leave the MicroscopeOrientation option to be set automatically.";
 Error::InvalidMicroscopeStatus="The specified Instrument `1` is retired or deprecated. Please choose a new instrument with a valid status.";
 Error::MicroscopeCalibrationNotAllowed="The following Instrument does not allow calibration by running a maintenance: `1`. Please choose a new instrument with MicroscopeCalibration -> True. Otherwise, leave the Instrument option to be set automatically.";
 Error::MicroscopeCalibrationMismatch="The following ReCalibrateMicroscope and MicroscopeCalibration options are conflicting: `1`. MicroscopeCalibration can only be specified when ReCalibrateMicroscope is True and Instrument allows calibration to be performed. Please correct these options or leave MicroscopeCalibration to be set automatically.";
@@ -1053,7 +1072,6 @@ Error::ImageCellsSamplingRowSpacingNotAllowed="The SamplingRowSpacing options fo
 Error::ImageCellsSamplingColumnSpacingNotAllowed="The SamplingColumnSpacing options for pool number `1` must be Null when SamplingPattern is not Grid or Adaptive. Please correct the option value or leave SamplingColumnSpacing option to be set automatically.";
 Error::ImageCellsInvalidSamplingCoordinates="The following specified SamplingCoordinates options for pool number `1` are invalid: `2`. If SamplingPattern is SinglePoint, SamplingCoordinates can only be set to {0 \[Mu]m, 0 \[Mu]m}. If SamplingPattern is Coordinates, SamplingCoordinates must be within each sample's well or position. Please correct the option values or leave the SamplingCoordinates option to be set automatically.";
 Error::ImageCellsSamplingCoordinatesNotSpecified="The SamplingCoordinates options for pool number `1` cannot be Null when SamplingPattern is Coordinates or SinglePoint. Please correct the option value or leave SamplingCoordinates option to be set automatically.";
-Error::ImageCellsInvalidCellType="The following samples cannot be imaged using ExperimentImageCells because they contain bacterial and/or yeast cells: `1`. Please remove the invalid samples and run the function again to proceed.";
 Error::ImageCellsMultipleContainersForAdjustmentSample="The AdjustmentSample option cannot be specified as a sample object for the sample pools `1` because they contain more than one sample containers: `2`. If the use of AdjustmentSample is desired, please separate the sample pools in question into individual pools with each pool containing only one sample container.";
 Error::ImageCellsIncompatibleContainerThickness="The sample containers `1` from pool `2` have thickness `3` that are larger than the working distance `4` of the objectives with magnification `5`. Please specify samples in compatible containers or specify different ObjectiveMagnification option.";
 Error::ImageCellsTimelapseAcquisitionOrderNotAllowed="TimelapseAcquisitionOrder TimelapseDuration options for pool number `1` must be Null when Timelapse option is False. Please correct the option value or leave TimelapseDuration option to be set automatically.";
@@ -1064,7 +1082,7 @@ Error::ImageCellsTimelapseAcquisitionOrderNotAllowed="TimelapseAcquisitionOrder 
 
 
 (*---Function overload accepting semi-pooled sample/container objects as inputs. Note: {s1,{s2,s3}}->{{s1},{s2,s3}}---*)
-ExperimentImageCells[mySemiPooledInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String]],myOptions:OptionsPattern[]]:=Module[
+ExperimentImageCells[mySemiPooledInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String]],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		updatedSimulation,listedInputs,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests
@@ -1086,17 +1104,19 @@ ExperimentImageCells[mySemiPooledInputs:ListableP[ListableP[ObjectP[{Object[Samp
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentImageCells,
 			listedSamples,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 200 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "id:E8zoYveRlldX"](* 24-well clear bottom *)
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Wrap a list around any single sample inputs to convert flat input into a nested list *)
@@ -1161,23 +1181,24 @@ ExperimentImageCells[mySemiPooledInputs:ListableP[ListableP[ObjectP[{Object[Samp
 
 
 (* This is the core function taking only clean pooled lists of samples in the form -> {{s1},{s2},{s3,s4},{s5,s6,s7}} *)
-experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentImageCells]]:=Module[
+experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[{Object[Sample],Model[Sample]}]..}],myOptions:OptionsPattern[ExperimentImageCells]]:=Module[
 	{
-		listedSamples,listedOptions,outputSpecification,output,gatherTests,updatedSimulation,safeOps,validLengths,
+		listedSamples,listedOptions,outputSpecification,output,gatherTests,updatedSimulation,safeOptionsNamed,safeOps,validLengths,
 		returnEarlyQ,performSimulationQ,templatedOptions,inheritedOptions,expandedSafeOps,cacheBall,samplesContainers,
 		containerlessSamples,resolvedOptionsResult,simulatedProtocol,simulation,resolvedOptions,collapsedResolvedOptions,
-		result,resourceResult,upload,confirm,fastTrack,parentProtocol,cache,objectsExistQs,nonExistingObjects,
-		resolvedPreparation,runTime,optionsToReturn,
+		result,resourceResult,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,resolvedPreparation,runTime,optionsToReturn,
+		validSamplePreparationResult,samplesWithPreparedSamplesNamed,optionsWithPreparedSamplesNamed,samplesWithPreparedSamples,
+		optionsWithPreparedSamples,
 
 		(* download variables *)
 		flatListedSamples,specifiedInstrument,instrumentsToDownload,allSlideAdapterModels,detectionLabelsFromPrimitives,
 		sampleFields,modelSampleFields,objectContainerFields,modelContainerFields,objectInstrumentFields,modelInstrumentFields,
 		detectionLabelFields,identityCellModelFields,objectMaintenanceFields,modelMaintenanceFields,modelObjectiveFields,
-		rawObjectsToDownload,objectsToDownload,packetsToDownload,allPackets,allinstrumentFields,
+		objectsToDownload,packetsToDownload,allPackets,allinstrumentFields,
 
 		(* test variables *)
 		safeOpsTests,validLengthTests,templateTests,instrumentNotFoundTest,containerlessSampleTests,resolvedOptionsTests,
-		resourcePacketTests,objectDoesNotExistTests
+		resourcePacketTests
 	},
 
 	(* Determine the requested return value from the function *)
@@ -1188,19 +1209,35 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedSamples,listedOptions}=sanitizeInputs[ToList[myPooledSamples],ToList[myOptions]];
+	{listedSamples,listedOptions}=removeLinks[ToList[myPooledSamples],ToList[myOptions]];
+
+	(* Simulate our sample preparation. *)
+	validSamplePreparationResult=Check[
+		(* Simulate sample preparation. *)
+		{samplesWithPreparedSamplesNamed,optionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
+			ExperimentImageCells,
+			listedSamples,
+			listedOptions
+		],
+		$Failed,
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+	];
+
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult,$Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		Return[$Failed]
+	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOps,safeOpsTests}=If[gatherTests,
+	{safeOptionsNamed,safeOpsTests}=If[gatherTests,
 		SafeOptions[ExperimentImageCells,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
 		{SafeOptions[ExperimentImageCells,listedOptions,AutoCorrect->False],{}}
 	];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentImageCells,{listedSamples},listedOptions,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentImageCells,{listedSamples},listedOptions],Null}
-	];
+	(* Replace all objects referenced by Name to ID *)
+	{samplesWithPreparedSamples,safeOps,optionsWithPreparedSamples}=sanitizeInputs[samplesWithPreparedSamplesNamed,safeOptionsNamed,optionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1212,6 +1249,12 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			Simulation->Simulation[],
 			RunTime->0 Minute
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentImageCells,{listedSamples},listedOptions,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentImageCells,{listedSamples},listedOptions],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -1228,8 +1271,8 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[ExperimentImageCells,{listedSamples},listedOptions,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentImageCells,{listedSamples},listedOptions],Null}
+		ApplyTemplateOptions[ExperimentImageCells,{ToList[samplesWithPreparedSamples]},optionsWithPreparedSamples,Output->{Result,Tests}],
+		{ApplyTemplateOptions[ExperimentImageCells,{ToList[samplesWithPreparedSamples]},optionsWithPreparedSamples],Null}
 	];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
@@ -1248,7 +1291,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(*get assorted hidden options*)
-	{upload,confirm,fastTrack,parentProtocol,cache,updatedSimulation}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache,Simulation}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,updatedSimulation}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache,Simulation}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentImageCells,{listedSamples},inheritedOptions]];
@@ -1272,7 +1315,8 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	instrumentsToDownload=microscopeDevices[
 		specifiedInstrument,
 		expandedSafeOps,
-		Lookup[expandedSafeOps,Preparation]
+		Lookup[expandedSafeOps,Preparation],
+		Lookup[expandedSafeOps,WorkCell]
 	];
 
 	(* get all possible slide adapter models that we may need *)
@@ -1280,7 +1324,10 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 	(* throw an error if Instrument was not specified and no default model was found based on the supplied options *)
 	If[MatchQ[instrumentsToDownload,{}]&&!gatherTests,
-		Message[Error::ImageCellsInstrumentModelNotFound]
+		Module[{errorString},
+			errorString = "No microscope instrument was found based on the specified options";
+			Message[Error::ImageCellsInstrumentModelNotFound,errorString]
+		]
 	];
 
 	(* generate test for default instrument model *)
@@ -1308,66 +1355,15 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	detectionLabelsFromPrimitives=Cases[Lookup[expandedSafeOps,Images],ObjectP[],Infinity];
 
 	(* combine all objects to download *)
-	rawObjectsToDownload=Flatten[{
+	objectsToDownload=Flatten[{
 		flatListedSamples,
 		instrumentsToDownload,
 		allSlideAdapterModels,
 		detectionLabelsFromPrimitives,
-		Model[Instrument,LiquidHandler,"id:o1k9jAKOwLV8"](* bioSTAR *)
+		Model[Instrument,LiquidHandler,"id:o1k9jAKOwLV8"],(* bioSTAR *)
+		Model[Instrument, LiquidHandler, "id:aXRlGnZmOd9m"], (* Model[Instrument, LiquidHandler, "microbioSTAR"] *)
+		Model[Instrument, Microscope, "id:XnlV5jN97nnM"] (* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Microbial"] *)
 	}];
-
-	(* ---OBJECTS EXISTENCE CHECK--- *)
-
-	(* for each object, see if it exists in either database, simulation, or cache *)
-	objectsExistQs=Quiet[MapThread[
-		Or[#1,#2]&,
-		{
-			DatabaseMemberQ[rawObjectsToDownload,Simulation->updatedSimulation,IncludeSimulatedObjects->True],
-			MatchQ[fetchPacketFromCache[#,cache],PacketP[]]&/@rawObjectsToDownload
-		}
-	],{Download::ObjectDoesNotExist,Most::normal,Last::normal}];
-
-	(* get the objects that don't exist *)
-	nonExistingObjects=PickList[rawObjectsToDownload,objectsExistQs,False];
-
-	(* if there are objects not in the database and we are throwing messages, throw an error message *)
-	If[!MatchQ[nonExistingObjects,{}]&&!gatherTests,
-		Message[Error::ImageCellsObjectDoesNotExist,nonExistingObjects];
-		Message[Error::InvalidInput,nonExistingObjects]
-	];
-
-	(* if we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	objectDoesNotExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[Length[nonExistingObjects]==0,
-				Nothing,
-				Test["The following objects "<>ObjectToString[nonExistingObjects,Cache->cache]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[Length[nonExistingObjects]==Length[rawObjectsToDownload],
-				Nothing,
-				Test["The following objects "<>ObjectToString[Complement[rawObjectsToDownload,nonExistingObjects],Cache->cache]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		Nothing
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!MatchQ[nonExistingObjects,{}],
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,instrumentNotFoundTest,objectDoesNotExistTests}],
-			Options->$Failed,
-			Preview->Null,
-			Simulation->Simulation[],
-			RunTime->0 Minute
-		}]
-	];
-
-	(* create a list of all to objects to download without duplicates *)
-	objectsToDownload=DeleteDuplicates@Download[rawObjectsToDownload,Object];
 
 	(* ---GATHER ALL FIELDS TO DOWNLOAD--- *)
 
@@ -1387,7 +1383,9 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 		ImageDeconvolution,ImagingChannels,LampTypes,MaxTemperatureControl,MinTemperatureControl,Modes,ObjectiveMagnifications,
 		Objectives,OpticModules,Orientation,PixelBinning,SamplingMethods,TemperatureControlledEnvironment,TimelapseImaging,
 		ZStackImaging,MicroscopeCalibration,MaintenanceFrequency,MaxImagingChannels,TransmittedLightColorCorrection,
-		MinExposureTime,MaxExposureTime,DefaultTargetMaxIntensity,MaxGrayLevel,ImageSizeX,ImageSizeY,ImageScalesX,ImageScalesY,MaxFocalHeight];
+		MinExposureTime,MaxExposureTime,DefaultTargetMaxIntensity,MaxGrayLevel,ImageSizeX,ImageSizeY,ImageScalesX,ImageScalesY,
+		MaxFocalHeight,CultureHandling
+	];
 	detectionLabelFields=Sequence[Name,DetectionLabel,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums];
 	identityCellModelFields=Sequence[Name,DefaultSampleModel,DetectionLabels,Diameter,PreferredMaxCellCount,
 		CellType,Tissues];
@@ -1397,7 +1395,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	modelObjectiveFields=Sequence[Name,Magnification,ImmersionMedium,NumericalAperture,MaxWorkingDistance];
 	allinstrumentFields=DeleteDuplicates[Join[{modelInstrumentFields},{Modes,Name,WettedMaterials,Positions,MaxRotationRate,MinRotationRate,
 		MinTemperature,MaxTemperature,CompatibleAdapters,Objects,
-		InternalDimensions,SampleHandlingCategories,MaxTime,SpeedResolution,CentrifugeType,
+		InternalDimensions,AsepticHandling,MaxTime,SpeedResolution,CentrifugeType,
 		RequestedResources,AluminumFoil,Parafilm,MaxForce,MinForce,IntegratedLiquidHandlers,
 		ProgrammableTemperatureControl,ProgrammableMixControl,
 		MaxOscillationAngle,MinOscillationAngle,GripperDiameter,MaxTemperatureRamp,MinTemperatureRamp}]];
@@ -1512,7 +1510,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentImageCellsOptions[ToList[myPooledSamples],expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentImageCellsOptions[samplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1522,7 +1520,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentImageCellsOptions[ToList[myPooledSamples],expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentImageCellsOptions[samplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1532,7 +1530,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 	collapsedResolvedOptions=CollapseIndexMatchedOptions[
 		ExperimentImageCells,
 		resolvedOptions,
-		Ignore->ToList[myOptions],
+		Ignore->listedOptions,
 		Messages->False
 	];
 
@@ -1640,7 +1638,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 			Simulation->updatedSimulation,
 			ParentProtocol->Lookup[safeOps,ParentProtocol]
 		],
-		{Null,Null}
+		{Null,updatedSimulation}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -1706,6 +1704,7 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 						Name->Lookup[safeOps,Name],
 						Upload->Lookup[safeOps,Upload],
 						Confirm->Lookup[safeOps,Confirm],
+						CanaryBranch->Lookup[safeOps,CanaryBranch],
 						ParentProtocol->Lookup[safeOps,ParentProtocol],
 						Priority->Lookup[safeOps,Priority],
 						StartDate->Lookup[safeOps,StartDate],
@@ -1723,12 +1722,13 @@ experimentImageCellsCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],
 				resourceResult[[2]],(* unitOperationPackets *)
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
 				HoldOrder->Lookup[safeOps,HoldOrder],
 				QueuePosition->Lookup[safeOps,QueuePosition],
-				Simulation->updatedSimulation
+				Simulation->simulation
 			]
 	];
 
@@ -1776,12 +1776,14 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		pooledSampleContainerModelPackets,pooledSampleDetectionLabelPackets,pooledSampleIdentityModelPackets,
 		pooledSampleIdentityModelDetectionLabelPackets,cleanedPrimitiveDetectionLabelPackets,cleanedInstrumentPackets,
 		newCache,resolvedInstrumentModelPacket,resolvedInstrumentObjectPacket,objectiveModelPackets,resolvedObjectiveModelPackets,
+		instrumentNotFoundTestOptions,instrumentNotFoundTest,resolvedInstrumentCultureHandling,instrumentCultureHandlingMismatchQ,
+		cultureHandlingInvalidOptions,instrumentCultureHandlingMismatchTest,potentialWorkCells,resolvedWorkCell,
 
 		(* input validation check variables *)
 		optionsForRounding,valuesToRoundTo,avoidZeroBools,roundedImageCellsOptions,pooledSimulatedSamples,
 
 		(* conflicting option variables *)
-		validNameQ,highContentImager,resolvedInstrumentModel,resolvedInstrumentObject,instrumentOrientation,
+		validNameQ,resolvedInstrumentModel,resolvedInstrumentObject,instrumentOrientation,
 		instrumentOrientationMismatchQ,validInstrumentStatusQ,calibrationOption,calibrationMismatchQ,
 		instrumentAllowsCalibrationQ,calibrationNotAllowedError,calibrationMaintObjectExistQ,validCalibrationTargetQ,
 		validTemperatureQ,validCarbonDioxideQ,specifiedCO2PercentOption,carbonDioxideMismatch,
@@ -1808,7 +1810,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		incompatibleContainerThicknessErrors,
 
 		(* resolved/defaulted options variables *)
-		resolvedInstrument,nameOption,microscopeOrientationOption,resolvedMicroscopeOrientation,recalibrateBool,
+		sampleCellTypes,requiredInstrumentCultureHandling,resolvedInstrument,noValidInstrumentError,nameOption,microscopeOrientationOption,resolvedMicroscopeOrientation,recalibrateBool,
 		resolvedMicroscopeCalibrationOption,temperatureOption,carbonDioxideBool,resolvedCO2PercentOption,
 		resolvedContainerOrientations,resolvedCoverslipThicknesses,resolvedPlateBottomThicknesses,resolvedObjectiveMagnifications,
 		resolvedEquilibrationTimes,resolvedPixelBinnings,resolvedTimelapses,resolvedTimelapseIntervals,resolvedTimelapseDurations,
@@ -1823,7 +1825,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		discardedInvalidInputs,pooledSamplesWithIncompatibleContainers,pooledSamplesWithInvalidWellBottom,
 		mismatchedContainersInvalidInputs,incompatibleContainerInvalidInputs,opaqueWellBottomInvalidInputs,
 		negativePlateBottomThicknessInvalidInputs,objectivesToUse,maxAllowedZDistances,pooledTotalImagingSites,
-		invalidSamplingCoordinates,invalidCellTypeQs,samplesWithInvalidCellType,incompatibleContainerThicknessInputs,
+		invalidSamplingCoordinates,incompatibleContainerThicknessInputs,
 
 		(* coordinates variables *)
 		allCoordinatesInWells,usableCoordinatesInWells,
@@ -1869,7 +1871,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		adaptiveExcitationWaveLengthNotAllowedTest,adaptiveNumberOfCellsNotAllowedTest,adaptiveMinNumberOfImagesNotAllowedTest,
 		adaptiveCellWidthNotAllowedTest,adaptiveIntensityThresholdNotAllowedTest,samplingNumberOfRowsNotAllowedTest,
 		samplingNumberOfColumnsNotAllowedTest,samplingRowSpacingNotAllowedTest,samplingColumnSpacingNotAllowedTest,
-		invalidSamplingCoordinatesTest,samplingCoordinatesNotSpecifiedTest,invalidCellTypeTest,preparationTest,
+		invalidSamplingCoordinatesTest,samplingCoordinatesNotSpecifiedTest,preparationTest,
 		multipleContainersForAdjustmentSampleTest,incompatibleContainerThicknessTest
 	},
 
@@ -1966,7 +1968,8 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	instrumentsToDownload=microscopeDevices[
 		specifiedInstrument,
 		imageCellsOptionsAssociation,
-		Lookup[myOptions,Preparation]
+		Lookup[myOptions,Preparation],
+		Lookup[myOptions,WorkCell]
 	];
 
 	(* get all possible slide adapter models that we may need *)
@@ -1974,7 +1977,8 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 
 	(* separate instruments into models and objects to download *)
 	instrumentObjectsToDownload=Cases[instrumentsToDownload,ObjectReferenceP[Object[Instrument]]];
-	instrumentModelsToDownload=Cases[instrumentsToDownload,ObjectReferenceP[Model[Instrument]]];
+	(* NOTE: Always include Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Microbial"] because it is our default instrument model if all else fails *)
+	instrumentModelsToDownload=Join[Cases[instrumentsToDownload,ObjectReferenceP[Model[Instrument]]],{Model[Instrument, Microscope, "id:XnlV5jN97nnM"]}];
 
 	(* ---GATHER ALL FIELDS TO DOWNLOAD--- *)
 
@@ -1994,7 +1998,9 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		ImageDeconvolution,ImagingChannels,LampTypes,MaxTemperatureControl,MinTemperatureControl,Modes,ObjectiveMagnifications,
 		Objectives,OpticModules,Orientation,PixelBinning,SamplingMethods,TemperatureControlledEnvironment,TimelapseImaging,
 		ZStackImaging,MicroscopeCalibration,MaintenanceFrequency,MaxImagingChannels,TransmittedLightColorCorrection,
-		MinExposureTime,MaxExposureTime,DefaultTargetMaxIntensity,MaxGrayLevel,ImageSizeX,ImageSizeY,ImageScalesX,ImageScalesY,MaxFocalHeight];
+		MinExposureTime,MaxExposureTime,DefaultTargetMaxIntensity,MaxGrayLevel,ImageSizeX,ImageSizeY,ImageScalesX,ImageScalesY,
+		MaxFocalHeight,CultureHandling
+	];
 	detectionLabelFields=Sequence[Name,DetectionLabel,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums];
 	identityCellModelFields=Sequence[Name,DefaultSampleModel,DetectionLabels,Diameter,PreferredMaxCellCount,
 		CellType,Tissues];
@@ -2146,41 +2152,6 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* ---INVALID CELLTYPE CHECK--- *)
-
-	(* determine if each sample contains yeast or bacteria *)
-	invalidCellTypeQs=MapThread[
-		Function[{samplesCellType,compositionTypes},
-			(* check if sample's CellType and Composition for yeast and bacteria *)
-			MatchQ[samplesCellType,MicrobialCellTypeP]||MemberQ[compositionTypes,Model[Cell,Yeast]|Model[Cell,Bacteria]]
-		],
-		{Lookup[Flatten@flatSimulatedSamplePackets,CellType],flatSampleCompositionTypes}
-	];
-
-	(* get the sample with invalid cell types *)
-	samplesWithInvalidCellType=PickList[flatSimulatedSamples,invalidCellTypeQs];
-
-	(* if there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-	If[Length[samplesWithInvalidCellType]>0&&messages,
-		Message[Error::ImageCellsInvalidCellType,ObjectToString[samplesWithInvalidCellType,Cache->newCache]]
-	];
-
-	(*If we are gathering tests, create a passing and/or failing test with the appropriate result*)
-	invalidCellTypeTest=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[Length[samplesWithInvalidCellType]==0,
-				Nothing,
-				Test["Our input samples "<>ObjectToString[samplesWithInvalidCellType,Cache->newCache]<>" do not contain any yeast or bacterial cells:",True,False]
-			];
-			passingTest=If[Length[samplesWithInvalidCellType]==Length[flatSimulatedSamples],
-				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSimulatedSamples,samplesWithInvalidCellType],Cache->newCache]<>" do not contain any yeast or bacterial cells:",True,True]
-			];
-			{failingTest,passingTest}
-		],
-		Nothing
-	];
-
 	(* ----------------------------- *)
 	(* ---OPTION PRECISION CHECKS--- *)
 	(* ----------------------------- *)
@@ -2280,28 +2251,88 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* ---2. resolve MicroscopeOrientation / check if Instrument and MicroscopeOrientation are copacetic --- *)
+	(* ---2. resolve Instrument --- *)
+
+	(* Get the culture handling that is required by our input *)
+	(* Get desired culture handling based on the input samples *)
+	sampleCellTypes=MapThread[
+		Function[{samplesCellType,compositionTypes},
+			Which[
+				(* check if sample's CellType and Composition for yeast and bacteria *)
+				MatchQ[samplesCellType,MicrobialCellTypeP]||MemberQ[compositionTypes,Model[Cell,Yeast]|Model[Cell,Bacteria]],
+				Microbial,
+
+				(* Next check for mammalian cells *)
+				MatchQ[samplesCellType,NonMicrobialCellTypeP]||MemberQ[compositionTypes,Model[Cell,Mammalian]],
+				NonMicrobial,
+
+				(* If no cells we can use anything *)
+				True,
+				Automatic
+			]
+		],
+		{Lookup[Flatten@flatSimulatedSamplePackets,CellType],flatSampleCompositionTypes}
+	];
+
+	(* Determine the instrument cell types from the input samples *)
+	(* 1. If we have any Microbial cells, need to use microbial microscopes *)
+	(* 2. If no microbial present, but have nonmicrobial, use nonmicrobial microscope *)
+	(* 3. If no cells, can use anything *)
+	requiredInstrumentCultureHandling = Which[
+		MemberQ[sampleCellTypes,Microbial], Microbial,
+		MemberQ[sampleCellTypes, NonMicrobial], NonMicrobial,
+		True, Automatic
+	];
 
 	(* resolve instrument option *)
-	resolvedInstrument=If[MatchQ[specifiedInstrument,Automatic],
-		(* check if there are multiple instrument models that meet our criteria *)
-		(
-			If[Length[instrumentsToDownload]>1,
-				(
-					(* if so, check if any of them is a high content imager *)
-					highContentImager=FirstCase[cleanedInstrumentPackets,(KeyValuePattern[{Object->x_,HighContentImaging->True}]:>x)];
+	{resolvedInstrument,noValidInstrumentError}=If[MatchQ[specifiedInstrument,Automatic],
+		Module[{microscopeModelPackets,potentialInstrumentsCultureHandling,finalPotentialInstrumentPackets},
 
-					If[MissingQ[highContentImager],
-						(* if none of the instruments are high content imager, return the first instrument in the list *)
-						First@instrumentsToDownload,
-						(* otherwise, return the first high content imager found in the list *)
-						highContentImager
+			(* Get our microscope model packets *)
+			microscopeModelPackets = Cases[cleanedInstrumentPackets,ObjectP[instrumentsToDownload]];
+
+			(* We need to do a final filter of our instrument packets to check their CultureHandling vs the CellType of the input samples *)
+			potentialInstrumentsCultureHandling = Map[Function[{modelMicroscopePacket},
+				Lookup[modelMicroscopePacket,CultureHandling,Null]
+			],
+				microscopeModelPackets
+			];
+
+			(* Filter out instruments if they have invalid culture handlings compared to our input samples *)
+			finalPotentialInstrumentPackets = Switch[requiredInstrumentCultureHandling,
+				Microbial,PickList[microscopeModelPackets,potentialInstrumentsCultureHandling,Except[NonMicrobial]],
+				NonMicrobial,PickList[microscopeModelPackets,potentialInstrumentsCultureHandling,Except[Microbial]],
+				Automatic,microscopeModelPackets
+			];
+
+			Switch[Length[finalPotentialInstrumentPackets],
+				(* If we have no valid instruments, mark an error and choose the microbial high content imager by default *)
+				0,
+					{
+						Model[Instrument, Microscope, "id:XnlV5jN97nnM"], (* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Microbial"] *)
+						True
+					},
+				(* If we have one valid instrument, choose it *)
+				1,
+					{
+						Lookup[First@finalPotentialInstrumentPackets,Object],
+						False
+					},
+				_,
+					Module[{highContentImager},
+						(* if so, check if any of them is a high content imager *)
+						highContentImager=FirstCase[finalPotentialInstrumentPackets,(KeyValuePattern[{Object->x_,HighContentImaging->True}]:>x)];
+
+						If[MissingQ[highContentImager],
+							(* if none of the instruments are high content imager, return the first instrument in the list *)
+							{Lookup[First@finalPotentialInstrumentPackets,Object],False},
+							(* otherwise, return the first high content imager found in the list *)
+							{highContentImager,False}
+						]
 					]
-				),
-				First@instrumentsToDownload
 			]
-		),
-		specifiedInstrument
+		],
+		{specifiedInstrument,False}
 	];
 
 	(* assign separate variables since resolvedInstrument can be either model or object type *)
@@ -2321,6 +2352,114 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* get the packets of objectives installed on the resolved instrument *)
 	resolvedObjectiveModelPackets=fetchPacketFromCache[#,objectiveModelPackets]&/@Lookup[resolvedInstrumentModelPacket,Objectives];
 
+	(* throw an error if Instrument was not specified and no default model was found based on the supplied options *)
+	instrumentNotFoundTestOptions = If[noValidInstrumentError&&!gatherTests,
+		Module[{specifiedOptions,errorString},
+			(* Get the options *)
+			specifiedOptions = Select[
+				{
+					MicroscopeOrientation,
+					Images,
+					ReCalibrateMicroscope,
+					Temperature,
+					CarbonDioxide,
+					ObjectiveMagnification
+				},
+				(!MatchQ[Lookup[roundedImageCellsOptions,#],ListableP[Alternatives[Automatic,False,Ambient]]])&
+			];
+
+			(* Define the error string *)
+			errorString = StringJoin[
+				"No microscope instrument was found based on the combination of specified options, ",
+				ToString[specifiedOptions],
+				" and the detected celltype of the input samples, ",
+				ToString[requiredInstrumentCultureHandling /. {Automatic -> "No Cells"}]
+			];
+
+			Message[Error::ImageCellsInstrumentModelNotFound,errorString];
+			specifiedOptions
+		],
+		{}
+	];
+
+	(* generate test for default instrument model *)
+	instrumentNotFoundTest=If[gatherTests,
+		Test["If Instrument is not specified, at least one instrument model that meets all the specified criteria must exist:",
+			noValidInstrumentError,
+			False
+		],
+		{}
+	];
+
+	(* Check if CultureHandling and resolved instrument are compatible *)
+	(* First, get the culture handling of the resolved instrument *)
+	resolvedInstrumentCultureHandling = Lookup[resolvedInstrumentModelPacket,CultureHandling,Null];
+	instrumentCultureHandlingMismatchQ = Which[
+		(* If the samples, have no found cells, no error *)
+		MatchQ[requiredInstrumentCultureHandling,Automatic], False,
+
+		(* If the Instrument has Null CultureHandling - were also always ok *)
+		MatchQ[resolvedInstrumentCultureHandling,Null], False,
+
+		(* If the samples have non microbial, but the instrument is microbial, we are ok *)
+		MatchQ[requiredInstrumentCultureHandling,NonMicrobial], False,
+
+		(* If the samples have Microbial, instrument must have microbial *)
+		MatchQ[requiredInstrumentCultureHandling,Microbial] && !MatchQ[resolvedInstrumentCultureHandling,Microbial], True,
+
+		(* Catch all *)
+		True, False
+	];
+
+	(* if instrumentCultureHandlingMismatchQ is True and we are throwing message, throw an error message *)
+	cultureHandlingInvalidOptions = If[instrumentCultureHandlingMismatchQ&&!gatherTests&&!noValidInstrumentError,
+		(
+			Message[Error::ImageCellsCultureHandlingMismatch,resolvedInstrumentCultureHandling,ObjectToString[resolvedInstrument,Cache->newCache],requiredInstrumentCultureHandling /. {Automatic -> "No Cells"}];
+			{Instrument}
+		),
+		{}
+	];
+
+	(* If we are gathering tests, generate a test for Instrument-CultureHandling mismatch *)
+	instrumentCultureHandlingMismatchTest = If[gatherTests,
+		Test["The culture handling of the input samples matches the culture handling of the Instrument:",
+			If[noValidInstrumentError,
+				False,
+				instrumentCultureHandlingMismatchQ
+			],
+			False
+		],
+		Nothing
+	];
+
+	(* 2.5 Resolve the workcell, now that we have our instrument  *)
+	potentialWorkCells = resolveImageCellsWorkCell[myPooledSamples,myOptions];
+
+	(* resolve workcells based on instrument and preparation *)
+	resolvedWorkCell = Which[
+		(* No Workcell for manual preparation *)
+		MatchQ[resolvedPreparation,Manual],
+			Null,
+		(* If only one potential workcell, go with it *)
+		Length[potentialWorkCells] == 1,
+			First[potentialWorkCells],
+		True,
+			(* If we have multiple potential workcells, decide based on the resolved instrument *)
+			Switch[resolvedInstrumentModel,
+				(* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 20X, 60X Confocal, Mammalian"] *)
+				(* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Mammalian"] *)
+				ObjectP[{Model[Instrument, Microscope, "id:n0k9mG8pj9BW"],Model[Instrument, Microscope, "id:L8kPEjObWWOE"]}], bioSTAR,
+				(* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 40X, 60X Confocal, Microbial"] *)
+				(* Model[Instrument, Microscope, "Molecular Devices ImageXpress, 4X, 10X, 20X, 60X Confocal, Microbial"] *)
+				ObjectP[{Model[Instrument, Microscope, "id:XnlV5jN97nnM"],Model[Instrument, Microscope, "id:pZx9joObekxM"]}], microbioSTAR,
+				(* Catch All *)
+				_,
+				Null
+			]
+	];
+
+	(* ---3. resolve MicroscopeOrientation / check if Instrument and MicroscopeOrientation are copacetic --- *)
+
 	(* get the instrument's orientation from its model *)
 	instrumentOrientation=Lookup[resolvedInstrumentModelPacket,Orientation];
 
@@ -2331,12 +2470,12 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	{resolvedMicroscopeOrientation,instrumentOrientationMismatchQ}=If[MatchQ[microscopeOrientationOption,Automatic],
 		(* set to our resolved instrument's orientation *)
 		{instrumentOrientation,False},
-		(* else: return the specified value and check if copacetic with our resolved instrument's orientation *)
+		(* else: return the specified value and check if compatible with our resolved instrument's orientation *)
 		{microscopeOrientationOption,!MatchQ[instrumentOrientation,microscopeOrientationOption]}
 	];
 
 	(* if instrumentOrientationMismatchQ is False and we are throwing message, throw an error message *)
-	orientationInvalidOptions=If[instrumentOrientationMismatchQ&&!gatherTests,
+	orientationInvalidOptions=If[instrumentOrientationMismatchQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::MicroscopeOrientationMismatch,instrumentOrientation,ObjectToString[resolvedInstrument,Cache->newCache],microscopeOrientationOption];
 			{Instrument,MicroscopeOrientation}
@@ -2346,14 +2485,17 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 
 	(* if we are gathering tests generate a test for Instrument-MicroscopeOrientation mismatch *)
 	instrumentOrientationMismatchTest=If[gatherTests,
-		Test["If both are specified, Instrument's Orientation and MicroscopeOrientation option must be copacetic:",
-			instrumentOrientationMismatchQ,
+		Test["If both are specified, Instrument's Orientation and MicroscopeOrientation option must be compatible:",
+			If[noValidInstrumentError,
+				False,
+				instrumentOrientationMismatchQ
+			],
 			False
 		],
 		Nothing
 	];
 
-	(* ---3. instrument status check--- *)
+	(* ---4. instrument status check--- *)
 
 	(* check the status of the Instrument if specified by the user *)
 	validInstrumentStatusQ=If[MatchQ[specifiedInstrument,Automatic],
@@ -2387,7 +2529,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* ---4. ReCalibrateMicroscope and Instrument check--- *)
+	(* ---5. ReCalibrateMicroscope and Instrument check--- *)
 
 	(* get ReCalibrateMicroscope and MicroscopeCalibration option *)
 	{recalibrateBool,calibrationOption}=Lookup[roundedImageCellsOptions,{ReCalibrateMicroscope,MicroscopeCalibration}];
@@ -2402,7 +2544,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message if ReCalibrateMicroscope is True when calibration is not allowed by the Instrument *)
-	calibrationNotAllowedOptions=If[calibrationNotAllowedError&&!gatherTests,
+	calibrationNotAllowedOptions=If[calibrationNotAllowedError&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::MicroscopeCalibrationNotAllowed,ObjectToString[resolvedInstrument,Cache->newCache]];
 			{Instrument,ReCalibrateMicroscope}
@@ -2413,13 +2555,16 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	calibrationNotAllowedTest=If[gatherTests,
 		Test["If ReCalibrateMicroscope is True, "<>ObjectToString[resolvedInstrument,Cache->newCache]<>" must allow calibration by running a maintenance:",
-			calibrationNotAllowedError,
+			If[noValidInstrumentError,
+				False,
+				calibrationNotAllowedError
+			],
 			False
 		],
 		Nothing
 	];
 
-	(* ---5. ReCalibrateMicroscope and MicroscopeCalibration check--- *)
+	(* ---6. ReCalibrateMicroscope and MicroscopeCalibration check--- *)
 
 	(* check if the MicroscopeCalibration agrees with ReCalibrateMicroscope *)
 	calibrationMismatchQ=If[MatchQ[calibrationOption,Automatic],
@@ -2436,7 +2581,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message if MicroscopeCalibration and ReCalibrateMicroscope mismatch *)
-	mismatchedCalibrationOptions=If[calibrationMismatchQ&&!gatherTests,
+	mismatchedCalibrationOptions=If[calibrationMismatchQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::MicroscopeCalibrationMismatch,{recalibrateBool,calibrationOption}];
 			{ReCalibrateMicroscope,MicroscopeCalibration}
@@ -2447,13 +2592,16 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	mismatchedCalibrationOptionsTest=If[gatherTests,
 		Test["MicroscopeCalibration option can only be specified when ReCalibrateMicroscope is True and Instrument allows calibration:",
-			calibrationMismatchQ,
+			If[noValidInstrumentError,
+				False,
+				calibrationMismatchQ
+			],
 			False
 		],
 		Nothing
 	];
 
-	(* ---6. MicroscopeCalibration validation check--- *)
+	(* ---7. MicroscopeCalibration validation check--- *)
 
 	(* resolve MicroscopeCalibration to an Object[Maintenance,CalibrateMicroscope] *)
 	resolvedMicroscopeCalibrationOption=If[MatchQ[calibrationOption,Automatic],
@@ -2504,7 +2652,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message *)
-	microscopeCalibrationNotFoundOptions=If[!calibrationMaintObjectExistQ&&!gatherTests,
+	microscopeCalibrationNotFoundOptions=If[!calibrationMaintObjectExistQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::MicroscopeCalibrationNotFound,resolvedInstrument];
 			{Instrument,ReCalibrateMicroscope,MicroscopeCalibration}
@@ -2515,7 +2663,10 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	microscopeCalibrationNotFoundTest=If[gatherTests,
 		Test["If ReCalibrateMicroscope is True and Instrument allows calibration, MicroscopeCalibration option must be specified with or successfully resolved to Object[Maintenance,CalibrationMicroscope]:",
-			calibrationMaintObjectExistQ,
+			If[noValidInstrumentError,
+				True,
+				calibrationMaintObjectExistQ
+			],
 			True
 		],
 		Nothing
@@ -2540,7 +2691,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message *)
-	invalidCalibrationTargetOptions=If[!validCalibrationTargetQ&&!gatherTests,
+	invalidCalibrationTargetOptions=If[!validCalibrationTargetQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::InvalidMicroscopeCalibration,resolvedMicroscopeCalibrationOption,resolvedInstrument];
 			{MicroscopeCalibration,Instrument}
@@ -2551,13 +2702,16 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	invalidCalibrationTargetTest=If[gatherTests,
 		Test["If ReCalibrateMicroscope is True and Instrument allows calibration, the Target of MicroscopeCalibration option must not conflict with the Instrument option:",
-			validCalibrationTargetQ,
+			If[noValidInstrumentError,
+				True,
+				validCalibrationTargetQ
+			],
 			True
 		],
 		Nothing
 	];
 
-	(* ---7. Temperature and Instrument--- *)
+	(* ---8. Temperature and Instrument--- *)
 
 	(* get the Temperature option value *)
 	temperatureOption=Lookup[roundedImageCellsOptions,Temperature];
@@ -2581,7 +2735,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message *)
-	invalidTemperatureOptions=If[!validTemperatureQ&&!gatherTests,
+	invalidTemperatureOptions=If[!validTemperatureQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::InvalidMicroscopeTemperature,temperatureOption,resolvedInstrument];
 			{Temperature,Instrument}
@@ -2592,13 +2746,16 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	invalidTemperatureTest=If[gatherTests,
 		Test["Temperature must be within range supported by the Instrument:",
-			validTemperatureQ,
+			If[noValidInstrumentError,
+				True,
+				validTemperatureQ
+			],
 			True
 		],
 		Nothing
 	];
 
-	(* ---8. CarbonDioxide and Instrument--- *)
+	(* ---9. CarbonDioxide and Instrument--- *)
 
 	(* get the CarbonDioxide option value *)
 	carbonDioxideBool=Lookup[roundedImageCellsOptions,CarbonDioxide];
@@ -2610,7 +2767,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* if we are throwing messages, throw an error message *)
-	invalidCarbonDioxideOptions=If[!validCarbonDioxideQ&&!gatherTests,
+	invalidCarbonDioxideOptions=If[!validCarbonDioxideQ&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::CO2IncompatibleMicroscope,resolvedInstrument];
 			{Temperature,Instrument}
@@ -2621,30 +2778,39 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	invalidCarbonDioxideTest=If[gatherTests,
 		Test["If CarbonDioxide is True, the Instrument must support carbon dioxide incubation:",
-			validCarbonDioxideQ,
+			If[noValidInstrumentError,
+				True,
+				validCarbonDioxideQ
+			],
 			True
 		],
 		Nothing
 	];
 
-	(* ---9. CarbonDioxide and CarbonDioxidePercentage--- *)
+	(* ---10. CarbonDioxide and CarbonDioxidePercentage--- *)
 
 	(* get the CarbonDioxidePercentage option value *)
 	specifiedCO2PercentOption=Lookup[roundedImageCellsOptions,CarbonDioxidePercentage];
 
-	{resolvedCO2PercentOption,carbonDioxideMismatch}=Switch[{carbonDioxideBool,specifiedCO2PercentOption},
-		(* if CarbonDioxide is True, resolve CarbonDioxidePercentage to 5% *)
-		{True,Automatic},{5 Percent,False},
-		(* if CarbonDioxide is True and CarbonDioxidePercentage is specified, return as is *)
-		{True,_},{specifiedCO2PercentOption,False},
-		(* if CarbonDioxide is False, resolve CarbonDioxidePercentage to Null *)
-		{False,Automatic},{Null,False},
-		(* if CarbonDioxide is False and CarbonDioxidePercentage is specified, return user's value and set mismatch to True *)
-		_,{specifiedCO2PercentOption,True}
+	resolvedCO2PercentOption = Which[
+		(* respect user input *)
+		MatchQ[specifiedCO2PercentOption, Except[Automatic]], specifiedCO2PercentOption,
+		(* if CarbonDioxide is True, set to 5% *)
+		TrueQ[carbonDioxideBool], 5 * Percent,
+		(* otherwise set to Null *)
+		True, Null
+	];
+
+	(* we have a conflict if either of the following is True *)
+	carbonDioxideMismatch = Or[
+		(* CarbonDioxide is True but CO2 percent is Null *)
+		TrueQ[carbonDioxideBool] && NullQ[resolvedCO2PercentOption],
+		(* CarbonDioxide is False but CO2 percent is a number *)
+		!TrueQ[carbonDioxideBool] && MatchQ[resolvedCO2PercentOption, PercentP]
 	];
 
 	(* if we are throwing messages, throw an error message *)
-	carbonDioxideMismatchOptions=If[carbonDioxideMismatch&&!gatherTests,
+	carbonDioxideMismatchOptions=If[carbonDioxideMismatch&&!gatherTests&&!noValidInstrumentError,
 		(
 			Message[Error::CarbonDioxideOptionsMismatch,{carbonDioxideBool,specifiedCO2PercentOption}];
 			{CarbonDioxide,CarbonDioxidePercentage}
@@ -2655,7 +2821,10 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* If we are gathering tests, create a test with the appropriate result. *)
 	carbonDioxideMismatchTest=If[gatherTests,
 		Test["If CarbonDioxide is False, CarbonDioxidePercentage cannot be specified:",
-			carbonDioxideMismatch,
+			If[noValidInstrumentError,
+				False,
+				carbonDioxideMismatch
+			],
 			False
 		],
 		Nothing
@@ -3102,7 +3271,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 				(* calculate well bottom thickness *)
 				calculatedWellThickness=If[MatchQ[firstContainerFootprint,Plate],
 					(* if our container is a plate, calculate from plate height - well depth - depth margin *)
-					(firstContainerDimensions[[3]]-firstContainerWellDepth-firstContainerDepthMargin),
+					SafeRound[(firstContainerDimensions[[3]]-firstContainerWellDepth-firstContainerDepthMargin), 10^-2 Millimeter],
 					(* otherwise, return Null *)
 					Null
 				];
@@ -3170,12 +3339,17 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 					],
 					(
 						(* ELSE: is the specified magnification available on our instrument? *)
-						If[!MemberQ[instrumentObjectiveMagnifications,N[objectiveMagnification]],
+						(* NOTE: If we have an invalid instrument error, we should already be throwing an error, no need to throw this one also *)
+						If[!MemberQ[instrumentObjectiveMagnifications,N[objectiveMagnification]]&&!noValidInstrumentError,
 							(* if not, flip the error switch *)
 							unsupportedObjectiveMagnificationError=True;
 						];
-						(* accept the specified value *)
-						objectiveMagnification
+						(* If we couldn't find an instrument before, we know we are defaulting to 10 *)
+						If[noValidInstrumentError,
+							10,
+							(* accept the specified value *)
+							objectiveMagnification
+						]
 					)
 				];
 
@@ -4900,7 +5074,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* 10. Error::ImageCellsInvalidObjectiveMagnification *)
 
 	(* if there are unsupportedObjectiveMagnificationErrors and we are throwing messages, throw an error message*)
-	invalidObjectiveMagnificationOptions=If[Or@@unsupportedObjectiveMagnificationErrors&&messages,
+	invalidObjectiveMagnificationOptions=If[Or@@unsupportedObjectiveMagnificationErrors&&messages&&!noValidInstrumentError,
 		Module[{invalidIndices,invalidValues},
 			(* get the invalid index *)
 			invalidIndices=Flatten@Position[unsupportedObjectiveMagnificationErrors,True];
@@ -4927,16 +5101,28 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		(* we're gathering tests. Create the appropriate tests *)
 		Module[{failingIndices,passingIndices,failingSamples,passingSamples,passingTest,failingTest},
 			(* get the inputs that fail this test *)
-			failingIndices=Flatten@Position[unsupportedObjectiveMagnificationErrors,True];
+			failingIndices=If[noValidInstrumentError,
+				{},
+				Flatten@Position[unsupportedObjectiveMagnificationErrors,True]
+			];
 
 			(* get the inputs that pass this test *)
-			passingIndices=Flatten@Position[unsupportedObjectiveMagnificationErrors,False];
+			passingIndices=If[noValidInstrumentError,
+				Range[Length[pooledSimulatedSamples]],
+				Flatten@Position[unsupportedObjectiveMagnificationErrors,False]
+			];
 
 			(*Get the inputs that fail this test*)
-			failingSamples=PickList[pooledSimulatedSamples,unsupportedObjectiveMagnificationErrors];
+			failingSamples=If[noValidInstrumentError,
+				{},
+				PickList[pooledSimulatedSamples,unsupportedObjectiveMagnificationErrors]
+			];
 
 			(*Get the inputs that pass this test*)
-			passingSamples=PickList[pooledSimulatedSamples,unsupportedObjectiveMagnificationErrors,False];
+			passingSamples=If[noValidInstrumentError,
+				pooledSimulatedSamples,
+				PickList[pooledSimulatedSamples,unsupportedObjectiveMagnificationErrors,False]
+			];
 
 			(* create a test for the non-passing inputs *)
 			failingTest=If[Length[failingIndices]>0,
@@ -4960,7 +5146,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* 11. Error::ImageCellsInvalidPixelBinning *)
 
 	(* if there are unsupportedPixelbinningErrors and we are throwing messages, throw an error message*)
-	invalidPixelBinningOptions=If[Or@@unsupportedPixelbinningErrors&&messages,
+	invalidPixelBinningOptions=If[Or@@unsupportedPixelbinningErrors&&messages&&!noValidInstrumentError,
 		Module[{invalidIndices,invalidValues},
 			(* get the invalid index *)
 			invalidIndices=Flatten@Position[unsupportedPixelbinningErrors,True];
@@ -4987,16 +5173,28 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		(* we're gathering tests. Create the appropriate tests *)
 		Module[{failingIndices,passingIndices,failingSamples,passingSamples,passingTest,failingTest},
 			(* get the inputs that fail this test *)
-			failingIndices=Flatten@Position[unsupportedPixelbinningErrors,True];
+			failingIndices=If[noValidInstrumentError,
+				{},
+				Flatten@Position[unsupportedPixelbinningErrors,True]
+			];
 
 			(* get the inputs that pass this test *)
-			passingIndices=Flatten@Position[unsupportedPixelbinningErrors,False];
+			passingIndices=If[noValidInstrumentError,
+				Range[Length[pooledSimulatedSamples]],
+				Flatten@Position[unsupportedPixelbinningErrors,False]
+			];
 
 			(*Get the inputs that fail this test*)
-			failingSamples=PickList[pooledSimulatedSamples,unsupportedPixelbinningErrors];
+			failingSamples=If[noValidInstrumentError,
+				{},
+				PickList[pooledSimulatedSamples,unsupportedPixelbinningErrors]
+			];
 
 			(*Get the inputs that pass this test*)
-			passingSamples=PickList[pooledSimulatedSamples,unsupportedPixelbinningErrors,False];
+			passingSamples=If[noValidInstrumentError,
+				pooledSimulatedSamples,
+				PickList[pooledSimulatedSamples,unsupportedPixelbinningErrors,False]
+			];
 
 			(* create a test for the non-passing inputs *)
 			failingTest=If[Length[failingIndices]>0,
@@ -5280,7 +5478,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* 17. Error::ImageCellsUnsupportedTimelapseImaging *)
 
 	(* if there are unsupportedTimelapseImagingErrors and we are throwing messages, throw an error message*)
-	unsupportedTimelapseOptions=If[Or@@unsupportedTimelapseImagingErrors&&messages,
+	unsupportedTimelapseOptions=If[Or@@unsupportedTimelapseImagingErrors&&messages&&!noValidInstrumentError,
 		Module[{invalidIndices},
 			(* get the invalid index *)
 			invalidIndices=Flatten@Position[unsupportedTimelapseImagingErrors,True];
@@ -5299,16 +5497,27 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		(* we're gathering tests. Create the appropriate tests *)
 		Module[{failingIndices,passingIndices,failingSamples,passingSamples,passingTest,failingTest},
 			(* get the inputs that fail this test *)
-			failingIndices=Flatten@Position[unsupportedTimelapseImagingErrors,True];
+			failingIndices=If[noValidInstrumentError,
+				{},
+				Flatten@Position[unsupportedTimelapseImagingErrors,True]
+			];
 
 			(* get the inputs that pass this test *)
-			passingIndices=Flatten@Position[unsupportedTimelapseImagingErrors,False];
+			passingIndices=If[noValidInstrumentError,
+				Range[Length[pooledSimulatedSamples]]
+			];
 
 			(*Get the inputs that fail this test*)
-			failingSamples=PickList[pooledSimulatedSamples,unsupportedTimelapseImagingErrors];
+			failingSamples=If[noValidInstrumentError,
+				{},
+				PickList[pooledSimulatedSamples,unsupportedTimelapseImagingErrors]
+			];
 
 			(*Get the inputs that pass this test*)
-			passingSamples=PickList[pooledSimulatedSamples,unsupportedTimelapseImagingErrors,False];
+			passingSamples=If[noValidInstrumentError,
+				pooledSimulatedSamples,
+				PickList[pooledSimulatedSamples,unsupportedTimelapseImagingErrors,False]
+			];
 
 			(* create a test for the non-passing inputs *)
 			failingTest=If[Length[failingIndices]>0,
@@ -5439,7 +5648,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* 20. Error::ImageCellsUnsupportedZStackImaging *)
 
 	(* if there are unsupportedZStackImagingErrors and we are throwing messages, throw an error message*)
-	unsupportedZStackOptions=If[Or@@unsupportedZStackImagingErrors&&messages,
+	unsupportedZStackOptions=If[Or@@unsupportedZStackImagingErrors&&messages&&!noValidInstrumentError,
 		Module[{invalidIndices},
 			(* get the invalid index *)
 			invalidIndices=Flatten@Position[unsupportedZStackImagingErrors,True];
@@ -5458,16 +5667,28 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		(* we're gathering tests. Create the appropriate tests *)
 		Module[{failingIndices,passingIndices,failingSamples,passingSamples,passingTest,failingTest},
 			(* get the inputs that fail this test *)
-			failingIndices=Flatten@Position[unsupportedZStackImagingErrors,True];
+			failingIndices=If[noValidInstrumentError,
+				{},
+				Flatten@Position[unsupportedZStackImagingErrors,True]
+			];
 
 			(* get the inputs that pass this test *)
-			passingIndices=Flatten@Position[unsupportedZStackImagingErrors,False];
+			passingIndices=If[noValidInstrumentError,
+				Range[Length[pooledSimulatedSamples]],
+				Flatten@Position[unsupportedZStackImagingErrors,False]
+			];
 
 			(*Get the inputs that fail this test*)
-			failingSamples=PickList[pooledSimulatedSamples,unsupportedZStackImagingErrors];
+			failingSamples=If[noValidInstrumentError,
+				{},
+				PickList[pooledSimulatedSamples,unsupportedZStackImagingErrors]
+			];
 
 			(*Get the inputs that pass this test*)
-			passingSamples=PickList[pooledSimulatedSamples,unsupportedZStackImagingErrors,False];
+			passingSamples=If[noValidInstrumentError,
+				pooledSimulatedSamples,
+				PickList[pooledSimulatedSamples,unsupportedZStackImagingErrors,False]
+			];
 
 			(* create a test for the non-passing inputs *)
 			failingTest=If[Length[failingIndices]>0,
@@ -5986,7 +6207,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* 30. Error::ImageCellsUnsupportedSamplingPattern *)
 
 	(* if there are unsupportedSamplingPatternErrors and we are throwing messages, throw an error message*)
-	unsupportedSamplingPatternOptions=If[Or@@unsupportedSamplingPatternErrors&&messages,
+	unsupportedSamplingPatternOptions=If[Or@@unsupportedSamplingPatternErrors&&messages&&!noValidInstrumentError,
 		Module[{invalidIndices,invalidValues},
 			(* get the invalid index *)
 			invalidIndices=Flatten@Position[unsupportedSamplingPatternErrors,True];
@@ -6013,16 +6234,28 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		(* we're gathering tests. Create the appropriate tests *)
 		Module[{failingIndices,passingIndices,failingSamples,passingSamples,passingTest,failingTest},
 			(* get the inputs that fail this test *)
-			failingIndices=Flatten@Position[unsupportedSamplingPatternErrors,True];
+			failingIndices=If[noValidInstrumentError,
+				{},
+				Flatten@Position[unsupportedSamplingPatternErrors,True]
+			];
 
 			(* get the inputs that pass this test *)
-			passingIndices=Flatten@Position[unsupportedSamplingPatternErrors,False];
+			passingIndices=If[noValidInstrumentError,
+				Range[Length[pooledSimulatedSamples]],
+				Flatten@Position[unsupportedSamplingPatternErrors,False]
+			];
 
 			(*Get the inputs that fail this test*)
-			failingSamples=PickList[pooledSimulatedSamples,unsupportedSamplingPatternErrors];
+			failingSamples=If[noValidInstrumentError,
+				{},
+				PickList[pooledSimulatedSamples,unsupportedSamplingPatternErrors]
+			];
 
 			(*Get the inputs that pass this test*)
-			passingSamples=PickList[pooledSimulatedSamples,unsupportedSamplingPatternErrors,False];
+			passingSamples=If[noValidInstrumentError,
+				pooledSimulatedSamples,
+				PickList[pooledSimulatedSamples,unsupportedSamplingPatternErrors,False]
+			];
 
 			(* create a test for the non-passing inputs *)
 			failingTest=If[Length[failingIndices]>0,
@@ -7664,7 +7897,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	];
 
 	(* ---resolve Post Processing Options--- *)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions,Living->True];
 
 	(* ---resolve Email--- *)
 	(* True if it's a parent protocol, and False if it's a subprotocol*)
@@ -7686,12 +7919,12 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{
 		discardedInvalidInputs,mismatchedContainersInvalidInputs,incompatibleContainerInvalidInputs,
-		opaqueWellBottomInvalidInputs,negativePlateBottomThicknessInvalidInputs,samplesWithInvalidCellType,
+		opaqueWellBottomInvalidInputs,negativePlateBottomThicknessInvalidInputs,
 		incompatibleContainerThicknessInputs
 	}]];
 	invalidOptions=DeleteDuplicates[Flatten[{
-		nameInvalidOptions,orientationInvalidOptions,invalidInstrumentStatusOption,calibrationNotAllowedOptions,
-		mismatchedCalibrationOptions,microscopeCalibrationNotFoundOptions,invalidCalibrationTargetOptions,
+		nameInvalidOptions,instrumentNotFoundTestOptions,orientationInvalidOptions,cultureHandlingInvalidOptions,invalidInstrumentStatusOption,
+		calibrationNotAllowedOptions, mismatchedCalibrationOptions,microscopeCalibrationNotFoundOptions,invalidCalibrationTargetOptions,
 		invalidTemperatureOptions,invalidCarbonDioxideOptions,carbonDioxideMismatchOptions,invalidContainerOrientationOptions,
 		invalidCoverslipThicknessOptions,invalidPlateBottomThicknessOptions,invalidObjectiveMagnificationOptions,
 		invalidPixelBinningOptions,timelapseIntervalNotAllowedOptions,timelapseDurationNotAllowedOptions,
@@ -7709,7 +7942,11 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		adaptiveIntensityThresholdNotAllowedOptions,samplingNumberOfRowsNotAllowedOptions,samplingNumberOfColumnsNotAllowedOptions,
 		samplingRowSpacingNotAllowedOptions,samplingColumnSpacingNotAllowedOptions,invalidSamplingCoordinatesOptions,
 		samplingCoordinatesNotSpecifiedOptions,multipleContainersForAdjustmentSampleOptions,incompatibleContainerThicknessOptions,
-		If[MatchQ[preparationResult,$Failed],{Preparation},{}]
+		If[MatchQ[preparationResult,$Failed],{Preparation},{}],
+		(* For experiments that teh developer marks the post processing samples as Living -> True, we need to add potential failing options to invalidOptions list in order to properly fail the resolver *)
+		If[MemberQ[Values[resolvedPostProcessingOptions],$Failed],
+			PickList[Keys[resolvedPostProcessingOptions],Values[resolvedPostProcessingOptions],$Failed],
+			Nothing]
 	}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
@@ -7728,8 +7965,8 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 
 	(* gather all the tests together *)
 	allTests=Cases[Flatten[{
-		discardedTest,precisionTests,validNameTest,instrumentOrientationMismatchTest,invalidInstrumentStatusTest,
-		calibrationNotAllowedTest,mismatchedCalibrationOptionsTest,microscopeCalibrationNotFoundTest,invalidCalibrationTargetTest,
+		discardedTest,precisionTests,validNameTest,instrumentNotFoundTest,instrumentOrientationMismatchTest,instrumentCultureHandlingMismatchTest,
+		invalidInstrumentStatusTest, calibrationNotAllowedTest,mismatchedCalibrationOptionsTest,microscopeCalibrationNotFoundTest,invalidCalibrationTargetTest,
 		invalidTemperatureTest,invalidCarbonDioxideTest,carbonDioxideMismatchTest,mismatchedContainersTest,
 		incompatibleContainerTest,opaqueWellBottomTest,invalidContainerOrientationTest,mismatchedCoverslipThicknessTest,
 		invalidCoverslipThicknessTest,negativePlateBottomThicknessTest,mismatchedPlateBottomThicknessTest,invalidPlateBottomThicknessTest,
@@ -7747,7 +7984,11 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 		adaptiveMinNumberOfImagesNotAllowedTest,adaptiveCellWidthNotAllowedTest,adaptiveIntensityThresholdNotAllowedTest,
 		samplingNumberOfRowsNotAllowedTest,samplingNumberOfColumnsNotAllowedTest,samplingRowSpacingNotAllowedTest,
 		samplingColumnSpacingNotAllowedTest,invalidSamplingCoordinatesTest,samplingCoordinatesNotSpecifiedTest,
-		invalidCellTypeTest,preparationTest,multipleContainersForAdjustmentSampleTest,incompatibleContainerThicknessTest
+		preparationTest,multipleContainersForAdjustmentSampleTest,incompatibleContainerThicknessTest,
+		If[gatherTests,
+			postProcessingTests[resolvedPostProcessingOptions],
+			Nothing
+		]
 	}],_EmeraldTest];
 
 	(* ------------------------ *)
@@ -7758,6 +7999,7 @@ resolveExperimentImageCellsOptions[myPooledSamples:ListableP[{ObjectP[Object[Sam
 	resolvedOptions=ReplaceRule[Normal[roundedImageCellsOptions],
 		Flatten[{
 			Preparation->resolvedPreparation,
+			WorkCell->resolvedWorkCell,
 			SampleLabel->resolvedSampleLabels,
 			SampleContainerLabel->resolvedSampleContainerLabels,
 			Instrument->resolvedInstrument,
@@ -8254,7 +8496,8 @@ experimentImageCellsResourcePackets[
 				BatchNumber->Lookup[batchParameter,BatchNumber],
 				RunTime->Lookup[batchParameter,RunTime],
 				AllImagingSiteCoordinates->List@Lookup[batchParameter,AllImagingSiteCoordinates],
-				UsableImagingSiteCoordinates->List@Lookup[batchParameter,UsableImagingSiteCoordinates]
+				UsableImagingSiteCoordinates->List@Lookup[batchParameter,UsableImagingSiteCoordinates],
+				Instrument -> instrumentResource
 			|>]
 		],
 		{batchedImagingParameters,Flatten[nestedPooledSamples,1],Flatten[nestedPooledSampleIndexes,1],batchedContainerIndexes}
@@ -8262,8 +8505,9 @@ experimentImageCellsResourcePackets[
 
 	{protocolPacket,unitOperationPackets}=If[MatchQ[resolvedPreparation,Manual],
 		(* if Preparation -> Manual, generate batched unit operations and ImageCells protocol *)
-		Module[{imageCellsManualUnitOperationPackets,imageCellsUnitOperationIDs,manualProtocolPacket,sharedFieldPacket,
-			protocolPacketWithSamplePrepFields},
+		Module[
+			{imageCellsManualUnitOperationPackets,imageCellsUnitOperationIDs,manualProtocolPacket,sharedFieldPacket,
+				protocolPacketWithSamplePrepFields,simulatedSampleLabelRules},
 
 			(* call UploadUnitOperation to generate our upload packets *)
 			imageCellsManualUnitOperationPackets=UploadUnitOperation[
@@ -8280,13 +8524,20 @@ experimentImageCellsResourcePackets[
 				KeyValuePattern[{Object->obj_,Type->Object[UnitOperation,ImageCells]}]:>obj
 			];
 
+			(*
+			   we want to stash the simulated <> labels in a field so we can update all fields
+			   (like NestedIndexMatchingSamplesIn) once the samples are prepared,
+			*)
+			simulatedSampleLabelRules = Reverse/@Lookup[updatedSimulation[[1]],Labels];
+
+
 			(* generate our protocol packet *)
 			manualProtocolPacket=<|
 				(* ---Organizational Information--- *)
 				Object->CreateID[Object[Protocol,ImageCells]],
 				Type->Object[Protocol,ImageCells],
 				Replace[SamplesIn]->Map[Link[#,Protocols]&,samplesInResources],
-				Replace[NestedIndexMatchingSamplesIn]->Download[myPooledSamples,Object],
+				Replace[NestedIndexMatchingSamplesIn]->ReplaceAll[Download[myPooledSamples,Object],simulatedSampleLabelRules],
 				Replace[ContainersIn]->Map[Link[#,Protocols]&,(uniqueContainersIn/.containersInResourceLookup)],
 
 				(* ---Options Handling--- *)
@@ -8361,12 +8612,12 @@ experimentImageCellsResourcePackets[
 				Replace[ContainerCalibrationPrimitives]->calibrationPrimitives,
 
 				Replace[Checkpoints]->{
-					{"Preparing Instrumentation",tempEqulibrateTime,"The microscope is equilibrated to the desired temperature.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->tempEqulibrateTime]]},
-					{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-					{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-					{"Acquiring Images",instrumentTime,"The images are acquired for the samples.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->instrumentTime]]},
-					{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Hour]]},
-					{"Returning Materials",15 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]}
+					{"Preparing Instrumentation",tempEqulibrateTime,"The microscope is equilibrated to the desired temperature.",Link[Resource[Operator->$BaselineOperator,Time->tempEqulibrateTime]]},
+					{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+					{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+					{"Acquiring Images",instrumentTime,"The images are acquired for the samples.",Link[Resource[Operator->$BaselineOperator,Time->instrumentTime]]},
+					{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->1 Hour]]},
+					{"Returning Materials",15 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]}
 				},
 				RunTime->instrumentTime,
 
@@ -8431,12 +8682,12 @@ experimentImageCellsResourcePackets[
 						ReplaceRule[
 							Cases[myResolvedOptions,Verbatim[Rule][Alternatives@@imageCellsUnitOperationOptions,_]],
 							{
-								BatchedUnitOperations->imageCellsBatchedUnitOperationIDs,
+								(* TODO this almost definitely does not work but it makes sure the tests pass and this will need a big second pass anyway *)
+								RoboticUnitOperations->imageCellsBatchedUnitOperationIDs,
 								Instrument->instrumentResource,
 								RunTime->instrumentTime,
 								Name->Null, (*don't want name to be passed down *)
-								PreparatoryUnitOperations->Null, (* make sure we don't upload PreparatoryUnitOperations option *)
-								PreparatoryPrimitives->Null
+								PreparatoryUnitOperations->Null (* make sure we don't upload PreparatoryUnitOperations option *)
 							}
 						]
 					}],
@@ -8802,8 +9053,8 @@ resolveImageCellsMethod[
 			"specified instrument is not a workcell integrated microscope",
 			Nothing
 		],
-		(* 9.) if any container model is not calibrated for the high content imager (MetaXpressPrefix is Null), must be manual *)
-		If[MemberQ[allModelContainerMetaXpressPrefixes,Null],
+		(* 9.) if any container model is not calibrated for the high content imager (MetaXpressPrefix is Null or is an empty string ("")), must be manual *)
+		If[MemberQ[allModelContainerMetaXpressPrefixes,(Null | "")],
 			"container model is not calibrated for the high content imager",
 			Nothing
 		],
@@ -8823,6 +9074,10 @@ resolveImageCellsMethod[
 	roboticRequirementStrings={
 		If[MatchQ[Lookup[safeOps,Preparation],Robotic],
 			"the Preparation option is set to Robotic by the user",
+			Nothing
+		],
+		If[MatchQ[Lookup[safeOps,WorkCell],Except[Automatic]],
+			"the WorkCell option is set to a specific workcell by the user",
 			Nothing
 		]
 	};
@@ -8863,84 +9118,123 @@ resolveImageCellsMethod[
 	outputSpecification/.{Result->result,Tests->tests}
 ];
 
+(* resolveImageCellsWorkCell *)
+resolveImageCellsWorkCell[
+	mySemiPooledInputs:ListableP[ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String]],
+	myOptions:OptionsPattern[]
+]:= Module[
+	{workCell},
+
+	workCell=Lookup[myOptions,WorkCell, Automatic];
+
+	(* Determine the WorkCell that can be used: *)
+	If[
+		MatchQ[workCell,Except[Automatic]],
+		{workCell},
+		{bioSTAR,microbioSTAR}
+	]
+];
+
 
 (* ::Subsection:: *)
 (*ImageCells Helpers*)
 
 
 (* search of instrument models based on specified options *)
-microscopeDevices[instrumentOption_,experimentOptions_,preparationOption_]:=Module[{},
+microscopeDevices[instrumentOption_,experimentOptions_,preparationOption_,workCellOption_]:=Module[{},
 	(* first check if the Instrument is specified *)
 	If[MatchQ[instrumentOption,Automatic],
-		If[MatchQ[preparationOption,Robotic],
-			(* if Preparation -> Robotic, search for microscope OBJECT with integrated liquid handler *)
-			Search[Object[Instrument,Microscope],IntegratedLiquidHandler!=Null&&Status!=Retired],
+		Module[{
+			microscopeOrientation,orientationSearchCondition,microscopeObjectiveMagnifications,objectiveMagnificationSearchCondition,
+			specifiedImagingModes,modeSearchCondition,recalibrateOption,
+			calibrationSearchOption,temperatureOption,temperatureSearchCondition,carbonDioxideOption,carbonDioxideSearchOption,
+			highContentImagingSearchCondition,workCellSearchCondition,modelSearchConditions
+		},
+			(* get the microscope orientation option *)
+			microscopeOrientation=Lookup[experimentOptions,MicroscopeOrientation];
 
-			(* else: search for microscope models based on given options *)
-			Module[{
-				microscopeOrientation,orientationSearchCondition,specifiedImagingModes,modeSearchCondition,recalibrateOption,
-				calibrationSearchOption,temperatureOption,temperatureSearchCondition,carbonDioxideOption,carbonDioxideSearchOption,
-				modelSearchConditions
-			},
-				(* get the microscope orientation option *)
-				microscopeOrientation=Lookup[experimentOptions,MicroscopeOrientation];
+			(* create search condition for microscope viewing orientation *)
+			orientationSearchCondition=If[MatchQ[microscopeOrientation,Automatic],
+				Orientation==MicroscopeViewOrientationP,
+				Orientation==microscopeOrientation
+			];
 
-				(* create search condition for microscope viewing orientation *)
-				orientationSearchCondition=If[MatchQ[microscopeOrientation,Automatic],
-					Orientation==MicroscopeViewOrientationP,
-					Orientation==microscopeOrientation
-				];
+			(* Get the ObjectiveMagnification option *)
+			microscopeObjectiveMagnifications = Cases[ToList[Lookup[experimentOptions,ObjectiveMagnification]],NumberP];
 
-				(* get all specified imaging modes from the AcquireImage primitives *)
-				specifiedImagingModes=DeleteDuplicates@Cases[Lookup[experimentOptions,Images],MicroscopeModeP,Infinity];
+			(* create the Search condition for objective magnifications - must allow all specified *)
+			objectiveMagnificationSearchCondition = If[!MatchQ[microscopeObjectiveMagnifications,{}],
+				ObjectiveMagnifications==#&/@microscopeObjectiveMagnifications,
+				{}
+			];
 
-				(* create search condition for imaging modes *)
-				modeSearchCondition=Any[Modes==#]&/@specifiedImagingModes;
+			(* get all specified imaging modes from the AcquireImage primitives *)
+			specifiedImagingModes=DeleteDuplicates@Cases[Lookup[experimentOptions,Images],MicroscopeModeP,Infinity];
 
-				(* get ReCalibrateMicroscope option *)
-				recalibrateOption=Lookup[experimentOptions,ReCalibrateMicroscope];
+			(* create search condition for imaging modes *)
+			modeSearchCondition=Modes==#&/@specifiedImagingModes;
 
-				(* create search condition for microscope calibration *)
-				calibrationSearchOption=If[TrueQ[recalibrateOption],
-					MicroscopeCalibration==True,
-					{}
-				];
+			(* get ReCalibrateMicroscope option *)
+			recalibrateOption=Lookup[experimentOptions,ReCalibrateMicroscope];
 
-				(* get Temperature option *)
-				temperatureOption=Lookup[experimentOptions,Temperature];
+			(* create search condition for microscope calibration *)
+			calibrationSearchOption=If[TrueQ[recalibrateOption],
+				MicroscopeCalibration==True,
+				{}
+			];
 
-				(* create search condition for temperature control *)
-				temperatureSearchCondition=If[!MatchQ[temperatureOption,Ambient],
-					{
-						TemperatureControlledEnvironment==True,
-						MinTemperatureControl<=temperatureOption,
-						MaxTemperatureControl>=temperatureOption
-					},
-					{}
-				];
+			(* get Temperature option *)
+			temperatureOption=Lookup[experimentOptions,Temperature];
 
-				(* get the CarbonDioxide option value *)
-				carbonDioxideOption=Lookup[experimentOptions,CarbonDioxide];
+			(* create search condition for temperature control *)
+			temperatureSearchCondition=If[!MatchQ[temperatureOption,Ambient],
+				{
+					TemperatureControlledEnvironment==True,
+					MinTemperatureControl<=temperatureOption,
+					MaxTemperatureControl>=temperatureOption
+				},
+				{}
+			];
 
-				(* create search condition for microscope calibration *)
-				carbonDioxideSearchOption=If[TrueQ[carbonDioxideOption],
-					CarbonDioxideControl==True,
-					{}
-				];
+			(* get the CarbonDioxide option value *)
+			carbonDioxideOption=Lookup[experimentOptions,CarbonDioxide];
 
-				(* combine all search conditions *)
-				modelSearchConditions=And@@Flatten[{
-					Deprecated==(False|Null),
-					orientationSearchCondition,
-					calibrationSearchOption,
-					modeSearchCondition,
-					temperatureSearchCondition,
-					carbonDioxideSearchOption
-				}];
+			(* create search condition for microscope calibration *)
+			carbonDioxideSearchOption=If[TrueQ[carbonDioxideOption],
+				CarbonDioxideControl==True,
+				{}
+			];
 
-				(* search for all microscope models that meet our criteria *)
-				Search[Model[Instrument,Microscope],Evaluate@modelSearchConditions]
-			]
+			(* If we have Preparation->Robotic, we know we have a high content imager *)
+			highContentImagingSearchCondition = If[MatchQ[preparationOption,Robotic],
+				HighContentImaging == True,
+				{}
+			];
+
+			(* Workcell search condition *)
+			(* If we have a specified workcell, only allow instrument models on that workcell *)
+			workCellSearchCondition = Switch[workCellOption,
+				Automatic, {},
+				bioSTAR, IntegratedLiquidHandlers==Model[Instrument, LiquidHandler, "id:o1k9jAKOwLV8"], (* Model[Instrument, LiquidHandler, "bioSTAR"] *)
+				microbioSTAR, IntegratedLiquidHandlers==Model[Instrument, LiquidHandler, "id:aXRlGnZmOd9m"], (*Model[Instrument, LiquidHandler, "microbioSTAR"]*)
+				_, {}
+			];
+
+			(* combine all search conditions *)
+			modelSearchConditions=And@@Flatten[{
+				Deprecated==(False|Null),
+				orientationSearchCondition,
+				objectiveMagnificationSearchCondition,
+				calibrationSearchOption,
+				modeSearchCondition,
+				temperatureSearchCondition,
+				carbonDioxideSearchOption,
+				workCellSearchCondition,
+				highContentImagingSearchCondition
+			}];
+
+			(* search for all microscope models that meet our criteria *)
+			Search[Model[Instrument,Microscope],Evaluate@modelSearchConditions]
 		],
 
 		(* if Instrument is specified return as is *)

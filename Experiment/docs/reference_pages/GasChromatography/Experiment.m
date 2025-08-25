@@ -43,7 +43,18 @@ DefineUsage[ExperimentGasChromatography,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
+						]
 					],
 					Expandable -> False
 				},
@@ -73,7 +84,7 @@ DefineUsage[ExperimentGasChromatography,{
 	Tutorials -> {
 		"Sample Preparation"
 	},
-	Author -> {"andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
+	Author -> {"steven", "andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
 }];
 (* ::Subsubsection::Closed:: *)
 (*ExperimentGCMS*)
@@ -116,7 +127,18 @@ DefineUsage[ExperimentGCMS,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
+						]
 					],
 					Expandable -> False
 				},
@@ -191,7 +213,12 @@ DefineUsage[ExperimentGasChromatographyPreview,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -210,13 +237,13 @@ DefineUsage[ExperimentGasChromatographyPreview,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author -> {"andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
+	Author -> {"steven", "andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
 }];
 
 
@@ -259,7 +286,12 @@ DefineUsage[ExperimentGasChromatographyOptions,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -278,13 +310,13 @@ DefineUsage[ExperimentGasChromatographyOptions,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author -> {"andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
+	Author -> {"steven", "andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
 }];
 
 
@@ -327,7 +359,12 @@ DefineUsage[ValidExperimentGasChromatographyQ,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -346,13 +383,13 @@ DefineUsage[ValidExperimentGasChromatographyQ,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{
 		"Sample Preparation"
 	},
-	Author -> {"andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
+	Author -> {"steven", "andrey.shur", "lei.tian", "jihan.kim", "james.kammert"}
 }];
 
 
@@ -395,7 +432,12 @@ DefineUsage[ExperimentGCMSPreview,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -414,7 +456,7 @@ DefineUsage[ExperimentGCMSPreview,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{
@@ -463,7 +505,12 @@ DefineUsage[ExperimentGCMSOptions,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -482,7 +529,7 @@ DefineUsage[ExperimentGCMSOptions,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{
@@ -531,7 +578,12 @@ DefineUsage[ValidExperimentGCMSQ,{
 								Type -> Object,
 								Pattern :> ObjectP[{Object[Container]}]
 							]
-						}
+						},
+						"Model Sample"->Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Model[Sample]],
+							ObjectTypes -> {Model[Sample]}
+						]
 					],
 					Expandable -> False
 				},
@@ -550,7 +602,7 @@ DefineUsage[ValidExperimentGCMSQ,{
 		""
 	},
 	SeeAlso -> {
-		"ExperimentSampleManipulation",
+		"ExperimentSamplePreparation",
 		"ExperimentMassSpectrometry"
 	},
 	Tutorials->{

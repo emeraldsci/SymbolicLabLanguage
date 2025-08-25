@@ -40,6 +40,33 @@ DefineTests[
 			{ObjectP[Model[Part, OpticModule, "Fluorescence Polarization - Excitation: 485nm, EmissionPrimary: 520 nm, EmissionSecondary: 520nm, PolarizationPrimary: Horizontal, PolarizationSeconday: Vertical"]]}
 		],
 
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentFluorescencePolarization[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well UV-Star Plate"],
+				PreparedModelAmount -> 200 Microliter,
+				Preparation -> Manual,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:n0k9mGzRaaBn"]]..},
+				{EqualP[200 Microliter
+				]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+
 		(* -- Primitive tests -- *)
 		Test["Generate an FluorescencePolarization protocol object based on a single primitive with Preparation->Manual:",
 			Experiment[{
@@ -870,7 +897,7 @@ DefineTests[
 				PrimaryInjectionVolume->3 Microliter
 			],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InjectionSampleStateError,Error::InvalidOption}
+			Messages:>{Error::IncompatibleMaterials,Error::InjectionSampleStateError,Error::InvalidOption}
 		],
 		Test["When running tests indicates that all injection samples must be compatible with the plate reader tubing:",
 			ValidExperimentFluorescencePolarizationQ[
@@ -1267,6 +1294,11 @@ DefineTests[
 			ExperimentFluorescencePolarization[Object[Sample,"Test sample 1 for ExperimentFluorescencePolarization"<>$SessionUUID],Confirm->True][Status],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			ExperimentFluorescencePolarization[Object[Sample,"Test sample 1 for ExperimentFluorescencePolarization"<>$SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"][CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options,Name,"Name the protocol:"},
 			ExperimentFluorescencePolarization[Object[Sample,"Test sample 1 for ExperimentFluorescencePolarization"<>$SessionUUID],Name->"World's Best FP Protocol"<>$SessionUUID],
 			Object[Protocol,FluorescencePolarization,"World's Best FP Protocol"<>$SessionUUID]
@@ -1359,19 +1391,19 @@ DefineTests[
 					PrimaryInjectionVolume->3 Microliter
 				],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
 			],
 			{
 				ObjectP@Model[Sample,StockSolution,"70% Ethanol"],
-				ObjectP@Model[Sample,StockSolution,"70% Ethanol"],
+				Null,
 				ObjectP@Model[Sample,"Milli-Q water"],
-				ObjectP@Model[Sample,"Milli-Q water"],
+				Null,
 				Null,
 				Null
 			}
@@ -1385,10 +1417,10 @@ DefineTests[
 					SecondaryInjectionVolume->2 Microliter
 				],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
@@ -1406,10 +1438,10 @@ DefineTests[
 			Download[
 				ExperimentFluorescencePolarization[Object[Sample,"Test sample 1 for ExperimentFluorescencePolarization"<>$SessionUUID]],
 				{
-					PrimaryPreppingSolvent,
-					PrimaryFlushingSolvent,
-					SecondaryPreppingSolvent,
-					SecondaryFlushingSolvent,
+					Line1PrimaryPurgingSolvent,
+					Line2PrimaryPurgingSolvent,
+					Line1SecondaryPurgingSolvent,
+					Line2SecondaryPurgingSolvent,
 					SolventWasteContainer,
 					SecondarySolventWasteContainer
 				}
@@ -1431,7 +1463,7 @@ DefineTests[
 				];
 
 				resourceEntries=Download[protocol,RequiredResources];
-				solventEntries=Cases[resourceEntries,{_,PrimaryPreppingSolvent|PrimaryFlushingSolvent|SecondaryPreppingSolvent|SecondaryFlushingSolvent,___}];
+				solventEntries=Cases[resourceEntries,{_,Line1PrimaryPurgingSolvent|Line2PrimaryPurgingSolvent|Line1SecondaryPurgingSolvent|Line2SecondaryPurgingSolvent,___}];
 				solventResources=DeleteDuplicates[Download[solventEntries[[All,1]],Object]];
 				uniqueSolventResources=Length[solventResources]
 			],
@@ -1840,13 +1872,13 @@ DefineTests[
 		Example[{Options,AliquotContainer,"Indicate that the aliquot should be prepared in a UV-Star Plate:"},
 			options=ExperimentFluorescencePolarization[Object[Sample,"Test sample 7 for ExperimentFluorescencePolarization"<>$SessionUUID],AliquotContainer->Model[Container,Plate,"96-well UV-Star Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"96-well UV-Star Plate"]]},
+			{{1,ObjectP[Model[Container,Plate,"96-well UV-Star Plate"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicate that the sample should be aliquoted into well D6:"},
 			options=ExperimentFluorescencePolarization[Object[Sample,"Test sample 7 for ExperimentFluorescencePolarization"<>$SessionUUID],AliquotAmount->100 Microliter,DestinationWell->"D6",Output->Options];
 			Lookup[options,DestinationWell],
-			"D6",
+			{"D6"},
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
@@ -1861,16 +1893,6 @@ DefineTests[
 			Lookup[options,SamplesInStorageCondition],
 			Disposal,
 			Variables:>{options}
-		],
-		Example[{Options, PreparatoryPrimitives, "Use PreparatoryPrimitives option to prepare a plate with control samples:"},
-			ExperimentFluorescencePolarization["test plate",
-				PreparatoryPrimitives -> {
-					Define[Name -> "test plate", Container -> Model[Container, Plate, "id:kEJ9mqR3XELE"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Amount -> 100*Microliter, Destination -> {"test plate","A1"}],
-					Transfer[Source -> Object[Sample,"Test sample 1 for ExperimentFluorescencePolarization"<>$SessionUUID], Amount -> 100*Microliter, Destination -> {"test plate","A2"}]
-				}
-			],
-			ObjectP[Object[Protocol,FluorescencePolarization]]
 		],
 		Example[{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to prepare a plate with control samples:"},
 			ExperimentFluorescencePolarization["test plate",
@@ -1991,6 +2013,82 @@ DefineTests[
 		Test["Handles a sample without a model:",
 			ExperimentFluorescencePolarization[Object[Sample,"Test sample 9 for ExperimentFluorescencePolarization"<>$SessionUUID]],
 			ObjectP[Object[Protocol,FluorescencePolarization]]
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFluorescencePolarization[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFluorescencePolarization[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFluorescencePolarization[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFluorescencePolarization[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFluorescencePolarization[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Warning::SinglePlateRequired}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFluorescencePolarization[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Warning::SinglePlateRequired}
 		]
 	},
 

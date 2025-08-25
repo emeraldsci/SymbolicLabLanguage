@@ -80,13 +80,7 @@ DefineUsage[NumberOfBonds,
 		"Structure",
 		"Bond"
 	},
-	Author -> {
-		"austin",
-		"brad",
-		"alice",
-		"qian",
-		"thomas"
-	}
+	Author -> {"dirk.schild", "austin", "brad", "alice", "qian", "thomas"}
 }];
 
 
@@ -191,13 +185,7 @@ DefineUsage[StructureSort,
 		"PermutationGroup",
 		"PermutationReplace"
 	},
-	Author -> {
-		"austin",
-		"brad",
-		"alice",
-		"qian",
-		"thomas"
-	}
+	Author -> {"dirk.schild", "austin", "brad", "alice", "qian", "thomas"}
 }];
 
 

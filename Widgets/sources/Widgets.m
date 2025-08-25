@@ -2316,7 +2316,7 @@ quantityRange[heldInequalityPattern_]:=quantityRange[heldInequalityPattern]=Modu
 	(* Extract the increment value from the pattern. *)
 	incrementPatternValues=Switch[heldInequalityPattern,
 		(* RangeP[minimum,maximum,increment] *)
-		Hold[RangeP[_,_,_]]|Hold[RangeP[_,_,_,Inclusive->_]],
+		Hold[RangeP[_,_,Except[Inclusive->_]]]|Hold[RangeP[_,_,_,Inclusive->_]],
 		Extract[heldInequalityPattern,{1,3}],
 
 		(* GreaterP[minimum,increment] and GreaterEqualP[minimum,increment] *)

@@ -449,7 +449,7 @@ DefineTests[Search,
 		],
 		Example[{Additional, "Any/All/Exactly", "Multiple fields can be searched using the Any syntax. In the following example, stock solutions will be returned which have a component under 1 Micromolar:"},
 			results=Search[Model[Sample, StockSolution], Any[Composition[[1]] <= 1 Micromolar], MaxResults->5];
-			And @@ ((MemberQ[#, LessEqualP[1 Micromolar]]&) /@ Download[results, Composition[[All, 1]]]),
+			MemberQ[Download[results, Composition][[1, All, 1]], LessEqualP[1 Micromolar]],
 			True,
 			Variables :> {results},
 			Stubs:>{
@@ -2648,3 +2648,46 @@ setupSearchLink[]:=Module[
 
 	{obj, objName, link, linkName}
 ];
+
+
+DefineTests[
+	parallelSearch,
+	{
+		Example[{Basic,"Search multiple sets of types at once with different criteria for each set, allowing empty lists:"},
+			parallelSearch[
+				{Object[Instrument, HPLC], Object[Container, Plate]},
+				{
+					(Status == InUse) && (DeveloperObject == True),
+					(Status == Available) && (DeveloperObject == True)
+				},
+				MaxResults -> 5
+			],
+			{
+				{Repeated[ObjectP[Object[Instrument, HPLC]], {0, 5}]},
+				{Repeated[ObjectP[Object[Container, Plate]], {0, 5}]}
+			}
+		],
+		Example[{Basic,"All search queries are done in parallel:"},
+			Module[{types},
+				
+				types = Types[Object[Instrument]];
+				
+				With[{clauses = Table[(Status == Available) && (DeveloperObject == True),Length[types]]},
+					parallelSearch[types,clauses]
+				]
+			],
+			{{ObjectP[Object[Instrument]]...}..}
+		],
+		Example[{Basic,"Because the queries are done in parallel, the runtime should be faster than Search:"},
+			Module[{types},
+				
+				types = RandomChoice[Types[Object[Instrument]],20];
+				
+				With[{clauses = Table[(Status == Available) && (DeveloperObject == True),Length[types]]},
+					{RepeatedTiming[parallelSearch[types,clauses]][[1]],RepeatedTiming[Search[types,clauses]][[1]]}
+				]
+			],
+			_?((#[[1]]<#[[2]])&)
+		]
+	}
+]

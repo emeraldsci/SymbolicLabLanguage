@@ -6,7 +6,7 @@ DefineOptions[ExperimentLuminescenceSpectroscopyPreview,
 	SharedOptions :> {ExperimentLuminescenceSpectroscopy}
 ];
 
-ExperimentLuminescenceSpectroscopyPreview[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceSpectroscopyPreview]]:=Module[
+ExperimentLuminescenceSpectroscopyPreview[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceSpectroscopyPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentLuminescenceSpectroscopyOptions,
 	SharedOptions :> {ExperimentLuminescenceSpectroscopy}
 ];
 
-ExperimentLuminescenceSpectroscopyOptions[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceSpectroscopyOptions]]:=Module[
+ExperimentLuminescenceSpectroscopyOptions[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceSpectroscopyOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -61,7 +61,7 @@ DefineOptions[ValidExperimentLuminescenceSpectroscopyQ,
 	SharedOptions :> {ExperimentLuminescenceSpectroscopy}
 ];
 
-ValidExperimentLuminescenceSpectroscopyQ[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentLuminescenceSpectroscopyQ]]:=Module[
+ValidExperimentLuminescenceSpectroscopyQ[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentLuminescenceSpectroscopyQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

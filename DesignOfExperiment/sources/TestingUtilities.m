@@ -239,13 +239,13 @@ ResolutionOfTallestPeak[dataObject:peakDataTypesP]:=Module[
 
 
 
-DefineOptions[SimulateGuasssian,
+DefineOptions[SimulateGaussian,
 Options:>{
 	{
 		OptionName->Parameter1,
 		Default->4,
 		AllowNull->False,
-		Description->"First parameter used by SimulateGuasssian to generate simulated chromatography data for DOE testing.",
+		Description->"First parameter used by SimulateGaussian to generate simulated chromatography data for DOE testing.",
 		Widget->Widget[Type->Number,Pattern:>GreaterP[0]],
 		Category->"General Information"
 	},
@@ -253,7 +253,7 @@ Options:>{
 		OptionName->Parameter2,
 		Default->2,
 		AllowNull->False,
-		Description->"Second parameter used by SimulateGuasssian to generate simulated chromatography for DOE testing.",
+		Description->"Second parameter used by SimulateGaussian to generate simulated chromatography for DOE testing.",
 		Widget->Widget[Type->Enumeration,Pattern:>Alternatives@@Range[0,4]],
 		Category->"General Information"
 	},
@@ -281,12 +281,12 @@ Options:>{
 }];
 
 (* Function to generate simulated chromatography data for DOE testing *)
-SimulateGuasssian[samples_, myOps:OptionsPattern[]]:=Module[
+SimulateGaussian[samples_, myOps:OptionsPattern[]]:=Module[
 {safeOps, p1, p2, xy, chromData, prot,p1spec,p2spec,xmin,xmax,dx},
 	p1spec={1,6};
 	p2spec={0,4};
 {xmin,xmax,dx} = {0,10,.1};
-	safeOps = SafeOptions[SimulateGuasssian,ToList[myOps]];
+	safeOps = SafeOptions[SimulateGaussian,ToList[myOps]];
 	{p1,p2} = Lookup[safeOps, {Parameter1,Parameter2}];
 
 	xy = QuantityArray[

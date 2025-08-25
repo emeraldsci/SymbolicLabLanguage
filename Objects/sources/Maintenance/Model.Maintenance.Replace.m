@@ -31,6 +31,25 @@ DefineObjectType[Model[Maintenance, Replace], {
 			Description -> "The location positions where replacement parts are installed on the target.",
 			Category -> "General",
 			Developer -> True
+		},
+		RequiredTools -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Screwdriver],
+				Model[Item, Wrench],
+				Model[Item, Plier]
+			],
+			Description -> "The tools required for maintenance.",
+			Category -> "General"
+		},
+		DeveloperOnly -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Null, BooleanP],
+			Description -> "Indicates if the maintenance should be performed by a developer or a trained engineer.",
+			Category -> "General"
 		}
 	}
 }];

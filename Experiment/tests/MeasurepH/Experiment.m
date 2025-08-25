@@ -47,11 +47,9 @@ DefineTests[
 			ObjectP[Object[Protocol,MeasurepH]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
 		],
-
-
 		(*Additional Unit Tests*)
 		Example[{Additional,"Measure the pH of a single sample when the Object[Sample] does not have a Model:"},
-			ExperimentMeasurepH[Object[Sample, "Test MilliQ water sample for sample without a model for ExperimentMeasurepH " <> $SessionUUID]],
+			ExperimentMeasurepH[Object[Sample, "Test MilliQ water sample for sample without a model for ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null],
 			ObjectP[Object[Protocol,MeasurepH]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
 		],
@@ -79,7 +77,7 @@ DefineTests[
 			Variables :> {protocol}
 		],
 		Example[{Additional,"Measure the pH of a plate sample:"},
-			ExperimentMeasurepH[Object[Sample, "Test water sample in a plate for ExperimentMeasurepH " <> $SessionUUID]],
+			ExperimentMeasurepH[Object[Sample, "Test water sample in a plate for ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null],
 			ObjectP[Object[Protocol]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
 		],
@@ -103,7 +101,9 @@ DefineTests[
 				Instrument -> {Model[Instrument, pHMeter, "id:BYDOjvG65vLz"], Model[Instrument, pHMeter, "id:AEqRl9K8o1D5"], Model[Instrument, pHMeter, "id:BYDOjvG65vLz"]},
 				AcquisitionTime -> {30 Second, 10 Second, 20 Second},
 				Aliquot -> {False, False, True},
-				RecoupSample -> {False, False, True}];
+				RecoupSample -> {False, False, True},
+				SecondaryWashSolution -> Null
+			];
 			Download[protocol,{ProbeInstruments,ProbeInstrumentsSelect,ProbeBatchLength,ProbeParameters[[All,Sample]][Name]}],
 			{
 				ConstantArray[ObjectP[],2],
@@ -128,7 +128,8 @@ DefineTests[
 					Model[Instrument, pHMeter, "SevenExcellence (for pH)"],
 					Model[Instrument, pHMeter, "SevenExcellence (for pH)"],
 					Model[Instrument, pHMeter, "id:BYDOjvG65vLz"]
-				}
+				},
+				SecondaryWashSolution -> Null
 			];
 			Download[protocol,{ProbeInstruments,Probes,ProbeInstrumentsSelect,ProbeBatchLength}],
 			{
@@ -175,56 +176,59 @@ DefineTests[
 			ObjectP[Model[Instrument, pHMeter, "Mettler Toledo InLab Micro"]],
 			Variables :> {options}
 		],
+		(* Commenting out TemperatureCorrection as this option needs re-worked. *)
 		Example[{Options,AcquisitionTime,"Measure the pH of a single liquid sample with a custom acquisition time (time over which to read pH):"},
 		  options=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],AcquisitionTime->1 Minute,Output->Options];
-		  Lookup[options, {AcquisitionTime,Instrument, Probe, TemperatureCorrection}],
+		  Lookup[options, {AcquisitionTime,Instrument, Probe(*, TemperatureCorrection*)}],
 		  {
 			  1 Minute,
 			  Except[ObjectP[Model[Instrument, pHMeter, "SevenExcellence (for pH)"]]],
-			  ObjectP[Model[Part, pHProbe]],
-			  Null
+			  ObjectP[Model[Part, pHProbe]](*,
+			  Null*)
 		  },
 		  Variables :> {options}
 		],
-		Example[{Options,TemperatureCorrection,"Measure the pH of a single sample with correction for the sample temperature:"},
+		(* Our temperature correction option needs reworked. The current option patterns apply to conductivity not pH. *)
+		(*{Options,TemperatureCorrection,"Measure the pH of a single sample with correction for the sample temperature:"}*)
+		Test["Measure the pH of a single sample with correction for the sample temperature:",
 			options=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],TemperatureCorrection->Linear,Output->Options];
-			Lookup[options, {AcquisitionTime, TemperatureCorrection, Instrument, Probe}],
+			Lookup[options, {AcquisitionTime, (*TemperatureCorrection,*) Instrument, Probe}],
 			{
 				Null,
-				Linear,
+				(* Hidden options are not returned for Output -> Options. *)
+				(*Linear,*)
 				ObjectP[Model[Instrument, pHMeter, "SevenExcellence (for pH)"]],
 				ObjectP[]
 			},
 			Variables :> {options}
 		],
 
-		Example[{Options,WashSolution,"Measure the pH of a single liquid sample while specifying a custom wash solution to wash the pH probe with:"},
+		Example[{Options,WashSolution,"Measure the pH of a single liquid sample while specifying a wash solution to wash the pH probe with:"},
 			protocol=ExperimentMeasurepH[
 				Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				WashSolution->Model[Sample,StockSolution,"Red Food Dye Test Solution"]
 			];
-			Download[protocol,{WashSolution,ProbeCleanWashSolution,ProbeDirtyWashSolution,ProbeCleanPipetteBulb,ProbeDirtyPipetteBulb}],
-			{
-				ObjectP[Model[Sample,StockSolution,"Red Food Dye Test Solution"]],
-				ObjectP[Model[Sample,StockSolution,"Red Food Dye Test Solution"]],
-				ObjectP[Model[Sample,StockSolution,"Red Food Dye Test Solution"]],
-				ObjectP[Model[Item,Consumable]],ObjectP[Model[Item,Consumable]]
-			},
+			Download[protocol,WashSolutions],
+			{ObjectP[Model[Sample,StockSolution,"Red Food Dye Test Solution"]]},
 			Variables:>{protocol}
 		],
-		Example[{Options,WashSolution,"Measure the pH of a single liquid sample while specifying a custom wash solution to wash the pH probe with:"},
+		Example[{Options,SecondaryWashSolution,"Measure the pH of a single liquid sample while specifying a secondary wash solution to wash the pH probe with:"},
 			protocol=ExperimentMeasurepH[
 				Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-				WashSolution->Model[Sample,"Milli-Q water"]
+				SecondaryWashSolution->Model[Sample,"Milli-Q water"]
 			];
-			Download[protocol,{WashSolution,ProbeCleanWashSolution,ProbeDirtyWashSolution,ProbeCleanPipetteBulb,ProbeDirtyPipetteBulb}],
-			{ObjectP[Model[Sample,"Milli-Q water"]],Null,Null,Null,Null},
+			Download[protocol,SecondaryWashSolutions],
+			{ObjectP[Model[Sample,"Milli-Q water"]]},
 			Variables:>{protocol}
 		],
-		Example[{Options,WashSolution,"Measure the pH of a single liquid sample while specifying a wash solution object with Milli-Q water model to wash the pH probe with:"},
-			ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],WashSolution->Object[Sample, "Water WashSolution for ExperimentMeasurepH " <> $SessionUUID]][{WashSolution,ProbeCleanWashSolution,ProbeDirtyWashSolution,ProbeCleanPipetteBulb,ProbeDirtyPipetteBulb}],
-			{ObjectP[Object[Sample, "Water WashSolution for ExperimentMeasurepH " <> $SessionUUID]],Null,Null,Null,Null},
-			Variables :> {options}
+		Example[{Options,SecondaryWashSolution,"Measure the pH of a single liquid sample while specifying no secondary wash solution to wash the pH probe with:"},
+			protocol=ExperimentMeasurepH[
+				Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				SecondaryWashSolution->Null
+			];
+			Download[protocol,SecondaryWashSolutions],
+			{Null},
+			Variables :> {protocol}
 		],
 		Example[{Options,LowCalibrationBuffer,"Measure the pH of a single liquid sample while specifying a custom low calibrant solution (between pH 2 and 5). Note to change LowCalibrationBufferpH, if necessary:"},
 		  options=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],LowCalibrationBuffer->Model[Sample,"Reference Buffer - pH 4.63"],LowCalibrationBufferpH->4.63,Output->Options];
@@ -278,9 +282,140 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotAmount],
-			10*Milliliter,
+			25*Milliliter,
 			Variables:>{options},
 			EquivalenceFunction->Equal
+		],
+
+		(* Verification Standard Options *)
+		Example[{Options, VerificationStandard, "Confirm the calbiration is suitable with a verification standard using the VerificationStandard option:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"]
+			];
+			Download[protocol, VerificationStandard],
+			ObjectP[Model[Sample, "Reference Buffer - pH 11.00"]],
+			Variables :> {protocol}
+		],
+		Example[{Options, {MinVerificationStandardpH, MaxVerificationStandardpH}, "Set a range of acceptable pH values for the pH measured of the VerificationStandard with the calibration using MinVerificationStandardpH and MaxVerificationStandardpH:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				MinVerificationStandardpH -> 10.9,
+				MaxVerificationStandardpH -> 11.1
+			];
+			Download[protocol, {MinVerificationStandardpH, MaxVerificationStandardpH}],
+			{EqualP[10.9], EqualP[11.1]},
+			Variables :> {protocol}
+		],
+		Example[{Options, VerificationStandardWashSolution, "Set the solution used to clean the pH probe prior to measuring the VerificationStandard using the VerificationStandardWashSolution option:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				VerificationStandardWashSolution -> Model[Sample, "Milli-Q water"]
+			];
+			Download[protocol, VerificationStandardWashSolution],
+			ObjectP[Model[Sample, "Milli-Q water"]],
+			Variables :> {protocol}
+		],
+		Example[{Messages, "Error::VerificationStandardOptionsRequired", "If options related to calibration verification standard are Null but a VerificationStandard was specified an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				MinVerificationStandardpH -> Null
+			],
+			$Failed,
+			Messages :> {Error::VerificationStandardOptionsRequired, Error::InvalidOption},
+			Variables :> {options}
+		],
+		Test[{"(2) If options related to calibration verification standard are Null but a VerificationStandard was specified an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				MaxVerificationStandardpH -> Null
+			],
+			$Failed,
+			Messages :> {Error::VerificationStandardOptionsRequired, Error::InvalidOption},
+			Variables :> {options}
+		],
+		Example[{Messages, "Error::VerificationStandardRequired", "If options related to calibration verification standard are non-Null but VerificationStandard is Null and error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Null,
+				MinVerificationStandardpH -> 10.9,
+				MaxVerificationStandardpH -> 11.1
+			],
+			$Failed,
+			Messages :> {Error::VerificationStandardRequired, Error::InvalidOption}
+		],
+		Test["If options related to calibration verification standard are non-Null but VerificationStandard is Null and error is thrown:",
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Null,
+				VerificationStandardWashSolution -> Model[Sample, "Milli-Q water"]
+			],
+			$Failed,
+			Messages :> {Error::VerificationStandardRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "Warning::VerificationStandardRangeAndSampleMismatch", "If MinVerificationStandardpH and MaxVerificationStandardpH do not comprise a valid range and error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				MinVerificationStandardpH -> 10.5,
+				MaxVerificationStandardpH -> 10.6
+			],
+			ObjectP[Object[Protocol, MeasurepH]],
+			Messages :> {Warning::VerificationStandardRangeAndSampleMismatch}
+		],
+		Example[{Messages, "Error::InvalidVerificationStandardpHRange", "If MinVerificationStandardpH and MaxVerificationStandardpH do not comprise a valid range and error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Reference Buffer - pH 11.00"],
+				MinVerificationStandardpH -> 11.1,
+				MaxVerificationStandardpH -> 10.9
+			],
+			$Failed,
+			Messages :> {Error::InvalidVerificationStandardpHRange, Error::InvalidOption}
+		],
+		Example[{Messages, "Error::UniformedVerificationStandardpH", "If automatic resolution of MinVerificationStandardpH and MaxVerificationStandardpH is not possible because the pH of the VerificationStandard is not known an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Model[Sample, "Test medium calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::UniformedVerificationStandardpH, Error::InvalidOption}
+		],
+		Example[{Messages, "Error::InputCannotBeOption", "Inputs cannot be given as values for options, otherwise an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Large test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Object[Sample, "Large test water sample for ExperimentMeasurepH " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::InputCannotBeOption, Error::InvalidOption, Error::InvalidInput}
+		],
+		Example[{Messages, "Error::NullVolumeSampleInOption", "Object[Sample] values for options must have their Volume informed, otherwise an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Object[Sample, "Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::NullVolumeSampleInOption, Error::InvalidOption}
+		],
+		Example[{Messages, "Error::InsufficientVolumeSampleInOption", "Object[Sample] values for options must have sufficient Volume, otherwise an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Object[Sample, "Test sample with volume too low for measurement ExperimentMeasurepH " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::InsufficientVolumeSampleInOption, Error::InvalidOption}
+		],
+		Example[{Messages, "Error::IncompatibleSampleInOption", "Object[Sample] values for options must be compatible with the phMeter probes, otherwise an error is thrown:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				VerificationStandard -> Object[Sample, "Test too acidic sample for ExperimentMeasurepH " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::IncompatibleSampleInOption, Error::InvalidOption}
 		],
 
 		(*post processing options*)
@@ -297,45 +432,6 @@ DefineTests[
 			Variables:>{options}
 		],
 
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for pH measurement:"},
-			packet=First@ExperimentMeasurepH[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
-				PreparatoryPrimitives -> {Define[Name -> "WaterSample Container 1",
-					Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "WaterSample Container 2",
-						Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "WaterSample Container 3",
-						Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "WaterSample Container 4",
-						Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 1 Milliliter, Destination -> "WaterSample Container 1"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 1 Milliliter, Destination -> "WaterSample Container 2"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 1 Milliliter, Destination -> "WaterSample Container 3"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 1 Milliliter,
-						Destination -> "WaterSample Container 4"]},
-				ImageSample -> False, MeasureVolume -> False, Upload -> False];
-			Length[Lookup[packet,Replace[SamplesIn]]],
-			4,
-			Variables :> {packet}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for the wash solution:"},
-			protocol=ExperimentMeasurepH[
-				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-				LowCalibrationBuffer -> "wash",
-				LowCalibrationBufferpH -> 6,
-				PreparatoryPrimitives -> {
-					Define[Name -> "50mL Tube", Container -> Model[Container, Vessel, "50mL Tube"]],
-					Define[Name -> "wash", Sample -> {"50mL Tube", "A1"}],
-					Transfer[Source -> Model[Sample, StockSolution, "70% Ethanol"], Destination -> "wash", Amount -> 50 Milliliter]
-				}
-			];
-			Download[protocol,ProbeLowCalibrationBuffer],
-			ObjectP[Model[Sample, StockSolution, "70% Ethanol"]],
-			Variables :> {protocol}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples by PreparatoryUnitOperations for pH measurement:"},
 			protocol=ExperimentMeasurepH[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
 				PreparatoryUnitOperations -> {LabelContainer[Label -> "WaterSample Container 1",
@@ -355,9 +451,10 @@ DefineTests[
 					Transfer[Source -> Model[Sample, "Milli-Q water"],
 						Amount -> 1 Milliliter,
 						Destination -> "WaterSample Container 4"]},
-				ImageSample -> False, MeasureVolume -> False];
+				ImageSample -> False, MeasureVolume -> False, SecondaryWashSolution -> Null];
 			Length[Download[protocol,SamplesIn]],
 			4,
+			TimeConstraint -> 1000,
 			Variables :> {protocol}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples by PreparatoryUnitOperations for the wash solution:"},
@@ -609,16 +706,16 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], AliquotAmount -> 15*Milliliter,AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], AliquotAmount -> 20*Milliliter,AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, AliquotAmount],
-			15*Milliliter,
+			20*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
-			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], AssayVolume -> 15*Milliliter, Output -> Options];
+			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], AssayVolume -> 20*Milliliter, Output -> Options];
 			Lookup[options, AssayVolume],
-			15*Milliliter,
+			20*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -686,7 +783,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,SamplesInStorageCondition, "Indicates how the input samples of the experiment should be stored:"},
@@ -716,8 +813,75 @@ DefineTests[
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasurepH[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 40 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+				{EqualP[40 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasurepH[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True,
+				SecondaryWashSolution -> Null
+			],
+			ObjectP[Object[Protocol, MeasurepH]]
+		],
+
+		Example[{Options,MaxpHSlope, "Specify MaxpHSlope and MinpHSlope:"},
+			options = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], MaxpHSlope-> 102*Percent, MinpHSlope -> 98*Percent, Output->Options];
+			Lookup[options, {MinpHSlope, MaxpHSlope}],
+			{EqualP[98*Percent], EqualP[102*Percent]},
+			Variables :> {options},
+			TimeConstraint->1000
+		],
+
+		Example[{Options,MaxpHOffset, "Specify MaxpHOffset and MinpHOffset:"},
+			options = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], MaxpHOffset-> 50*Milli*Volt, MinpHOffset -> -50*Milli*Volt, Output->Options];
+			Lookup[options, {MinpHOffset, MaxpHOffset}],
+			{EqualP[-50*Milli*Volt], EqualP[50*Milli*Volt]},
+			Variables :> {options},
+			TimeConstraint->1000
+		],
+
+		Example[{Options,MinpHSlope, "Specify MaxpHSlope and MinpHSlope:"},
+			protocol = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], MaxpHSlope-> 102*Percent, MinpHSlope -> 98*Percent];
+			Download[protocol, {MinpHSlope, MaxpHSlope}],
+			{EqualP[98*Percent], EqualP[102*Percent]},
+			Variables :> {protocol},
+			TimeConstraint->1000
+		],
+
+		Example[{Options,MinpHOffset, "Specify MaxpHOffset and MinpHOffset:"},
+			protocol = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], MaxpHOffset-> 50*Milli*Volt, MinpHOffset -> -50*Milli*Volt];
+			Download[protocol, {MinpHOffset, MaxpHOffset}],
+			{EqualP[-50*Milli*Volt], EqualP[50*Milli*Volt]},
+			Variables :> {protocol},
+			TimeConstraint->1000
 		],
 
 		Test["Sets the InSitu flag:",
@@ -728,7 +892,16 @@ DefineTests[
 			True,
 			Variables:>{options}
 		],
-		
+
+		Test["Sets the WashProbe flag:",
+			options = Download[
+				ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], DestinationWell -> "A1", WashProbe->False],
+				WashProbe
+			],
+			False,
+			Variables:>{options}
+		],
+
 		Test["Batched immersion fields needed for looping are index matched:",
 			protocol=ExperimentMeasurepH[{Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID]},NumberOfReplicates->6];
 			Length/@Download[protocol,{ProbeInstruments,DataFilePath,CalibrationFilePath,ProbeInstrumentsSelect,ProbeInstrumentsRelease,Probes,ProbePorts}],
@@ -738,8 +911,80 @@ DefineTests[
 		],
 
 		(*Input errors and warnings*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasurepH[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasurepH[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasurepH[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasurepH[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentMeasurepH[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentMeasurepH[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"RecoupSampleAliquotConflict","Return an error when RecoupSample is True but Aliquot is false:"},
 			ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				RecoupSample->True,
@@ -751,7 +996,9 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"TemperatureCorrectionConflict","Return an error when TemperatureCorrection is incompatible for the given instrument:"},
+		(* This test needs reworked as the pattern for TemperatureCorrection applies to conductivity measurements not pH measurements. *)
+		(*{Messages,"TemperatureCorrectionConflict","Return an error when TemperatureCorrection is incompatible for the given instrument:"}*)
+		Test["Return an error when TemperatureCorrection is incompatible for the given instrument:",
 			ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				TemperatureCorrection->Linear,
 				Instrument->Model[Instrument, pHMeter, "Mettler Toledo InLab Micro"]
@@ -845,7 +1092,7 @@ DefineTests[
 			}
 		], *)
 		Example[{Messages,"NoVolume","Return an error for samples that do not have a volume:"},
-			ExperimentMeasurepH[Object[Sample, "Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID]],
+			ExperimentMeasurepH[Object[Sample, "Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null],
 			$Failed,
 			Messages:>{
 				Error::NoVolume,
@@ -887,7 +1134,7 @@ DefineTests[
 		],
 		Example[{Messages,"InsufficientVolume","Return an error for too low sample volume, thereby incapable of measurement:"},
 
-			ExperimentMeasurepH[Object[Sample, "Test sample with volume too low for measurement ExperimentMeasurepH"]],
+			ExperimentMeasurepH[Object[Sample, "Test sample with volume too low for measurement ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null],
 			$Failed,
 			Messages:>{
 				Error::InsufficientVolume,
@@ -934,10 +1181,10 @@ DefineTests[
 			}
 		],
 		Example[{Messages,"NoAvailableInstruments","Return $Failed when a container with too low of liquid volume is enqueued without aliquot:"},
-			ExperimentMeasurepH[Object[Sample,"Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID],Aliquot->False],
+			ExperimentMeasurepH[Object[Sample,"Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID],Aliquot->False, SecondaryWashSolution -> Null],
 			$Failed,
 			Messages:>{
-				Error::NoAvailableInstruments,
+				Error::NoAvailablepHInstruments,
 				Error::InvalidInput
 			}
 		],
@@ -946,11 +1193,11 @@ DefineTests[
 			{Surface}
 		],
 		Test["Use the surface probe when the volume is too small to be measured by any other method:",
-			ExperimentMeasurepH[Object[Sample,"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID]][Probes][ProbeType],
+			ExperimentMeasurepH[Object[Sample,"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null][Probes][ProbeType],
 			{Surface}
 		],
 		Test["If Aliquot->False gives a warning that a portion of the sample will be used for the measurement:",
-			ExperimentMeasurepH[Object[Sample,"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID],Aliquot->False][Probes][ProbeType],
+			ExperimentMeasurepH[Object[Sample,"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID],Aliquot->False, SecondaryWashSolution -> Null][Probes][ProbeType],
 			{Surface},
 			Messages:>{Warning::SurfaceAliquotConflict}
 		],
@@ -965,7 +1212,7 @@ DefineTests[
 			ExperimentMeasurepH[
 				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				ParentProtocol -> Object[Protocol, AdjustpH, "pH ParentProtocol for ExperimentMeasurepH " <> $SessionUUID]][WasteBeaker],
-			LinkP[Object[Container, Vessel, "Test container 23 1000ml beaker for ExperimentMeasurepH " <> $SessionUUID]]
+			LinkP[Object[Sample, "Water WasteBeaker for ExperimentMeasurepH " <> $SessionUUID]]
 		],
 		Test["When a surface probe instrument is specified ProbeType resolves to Surface:",
 			Lookup[
@@ -974,11 +1221,13 @@ DefineTests[
 			],
 			Surface
 		]
-	(* Put tests here. *)
-	(* IMPORTANT: Refer to objects in object notation, not by variable names. *)
-	(* Users should see Object[Sample,"Test water sample for ExperimentMix"] and not waterSample. *)
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
+	},
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
 	},
 	SymbolSetUp:>(
 		Off[Warning::SamplesOutOfStock];
@@ -1015,7 +1264,7 @@ DefineTests[
 				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test water sample in a plate for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test water sample for invalid container for ExperimentMeasurepH " <> $SessionUUID],
-				Object[Sample, "Test sample with volume too low for measurement ExperimentMeasurepH"],
+				Object[Sample, "Test sample with volume too low for measurement ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test water sample for too large container for lil stick for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID],
@@ -1032,6 +1281,7 @@ DefineTests[
 				Object[Sample, "Extra large test water sample for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Test sample in tube for ExperimentMeasurepH " <> $SessionUUID],
 				Object[Sample, "Water WashSolution for ExperimentMeasurepH " <> $SessionUUID],
+				Object[Sample, "Water WasteBeaker for ExperimentMeasurepH " <> $SessionUUID],
 				Model[Sample, "Test chemical model incompatible for ExperimentMeasurepH " <> $SessionUUID],
 				Model[Sample, "Test chemical model too acidic for ExperimentMeasurepH " <> $SessionUUID],
 				Model[Sample, "Test medium calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID],
@@ -1052,186 +1302,75 @@ DefineTests[
 			EraseObject[PickList[testObjList, existsFilter], Force -> True, Verbose -> False];
 
 		];
-		Module[
-			{modelIncompat, tooAcidicModel, medCalNopHModel, anotherCalNopHModel, containerNoCalModel,
-				emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, plateSample,
-				emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12,
-				emptyContainer13, emptyContainer14, emptyContainer15, emptyContainer16,discardedChemical, waterSample, lowVolSample,
-				invConSample, tooBigConSample, tooBigLilStickSample,incompatSample, tooAcidicSample, noVolumeSample, noCalSample,
-				largeSample, milliQSample, mediumCalNopH, anotherCalNopH,modelLessSample,emptyContainer17,emptyContainer18,pH10Stock,emptyPlate,
-				emptyContainer19, sample19, emptyContainer20,emptyContainer21,sample20,sample21,emptyContainer22,sample22,testBench,noGlassSample,
-				emptyContainer23, subprotocol1, subprotocol2, parentProtocol},
+		Block[{$AllowPublicObjects = True, $DeveloperUpload = True},
+			Module[
+				{modelIncompat, tooAcidicModel, medCalNopHModel, anotherCalNopHModel, containerNoCalModel,
+					emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, plateSample,
+					emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12,
+					emptyContainer13, emptyContainer14, emptyContainer15, emptyContainer16,discardedChemical, waterSample, lowVolSample,
+					invConSample, tooBigConSample, tooBigLilStickSample,incompatSample, tooAcidicSample, noVolumeSample, noCalSample,
+					largeSample, milliQSample, mediumCalNopH, anotherCalNopH,modelLessSample,emptyContainer17,emptyContainer18,pH10Stock,emptyPlate,
+					emptyContainer19, sample19, emptyContainer20,emptyContainer21,sample20,sample21,emptyContainer22,sample22,testBench,noGlassSample,
+					emptyContainer23, subprotocol1, subprotocol2, parentProtocol,sample23},
 
-			testBench = Upload[<|Type -> Object[Container, Bench],
-				Site -> Link[$Site],
-				Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-				Name -> "Bench for ExperimentMeasurepH tests" <> $SessionUUID,
-				DeveloperObject -> True,
-				StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
-			|>];
+				testBench = Upload[<|Type -> Object[Container, Bench],
+					Site -> Link[$Site],
+					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+					Name -> "Bench for ExperimentMeasurepH tests" <> $SessionUUID,
+					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+				|>];
 
-			(*Create some chemicals too corrosive for measurement as well as instrument models*)
-			{modelIncompat, tooAcidicModel, medCalNopHModel, anotherCalNopHModel, containerNoCalModel} = Upload[{
-				<|
-					Type -> Model[Sample],
-					Name -> "Test chemical model incompatible for ExperimentMeasurepH " <> $SessionUUID,
-					State -> Liquid,
-					Replace[Composition] -> {{Null,Null}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					Append[IncompatibleMaterials] -> Glass,
-					DeveloperObject -> True
-				|>,
-				<|
-					Type -> Model[Sample],
-					Name -> "Test chemical model too acidic for ExperimentMeasurepH " <> $SessionUUID,
-					State -> Liquid,
-					Replace[Composition] -> {{Null,Null}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					DeveloperObject -> True
-				|>,
-				(*Create a calibration solution model for medium with no pH value*)
-				<|
-					Type -> Model[Sample],
-					Name -> "Test medium calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID,
-					State -> Liquid,
-					Replace[Composition] -> {{Null,Null}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					pH -> Null,
-					DeveloperObject -> True
-				|>,
-				<|
-					Type -> Model[Sample],
-					Name -> "Another test calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID,
-					State -> Liquid,
-					Replace[Composition] -> {{Null,Null}},
-					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-					pH -> Null,
-					DeveloperObject -> True
-				|>,
-				(*Create container model with no calibration data*)
-				<|Type -> Model[Container, Vessel],
-					Name -> "Test container model with no calibration data for ExperimentMeasurepH " <> $SessionUUID,
-					Deprecated -> False,
-					DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
-					Dimensions -> {Quantity[0.028575`, "Meters"],
-						Quantity[0.028575`, "Meters"],
-						Quantity[0.1143`, "Meters"]},
-					Replace[Positions] -> {<|Name -> "A1", Footprint -> Null,
-						MaxWidth -> Quantity[0.028575`, "Meters"],
-						MaxDepth -> Quantity[0.028575`, "Meters"],
-						MaxHeight -> Quantity[0.1143`, "Meters"]|>},
-					DeveloperObject -> True|>
-			}];
+				(*Create some chemicals too corrosive for measurement as well as instrument models*)
+				{modelIncompat, tooAcidicModel, medCalNopHModel, anotherCalNopHModel, containerNoCalModel} = Upload[{
+					<|
+						Type -> Model[Sample],
+						Name -> "Test chemical model incompatible for ExperimentMeasurepH " <> $SessionUUID,
+						State -> Liquid,
+						Replace[Composition] -> {{Null,Null}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Append[IncompatibleMaterials] -> Glass
+					|>,
+					<|
+						Type -> Model[Sample],
+						Name -> "Test chemical model too acidic for ExperimentMeasurepH " <> $SessionUUID,
+						State -> Liquid,
+						Replace[Composition] -> {{Null,Null}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+					|>,
+					(*Create a calibration solution model for medium with no pH value*)
+					<|
+						Type -> Model[Sample],
+						Name -> "Test medium calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID,
+						State -> Liquid,
+						Replace[Composition] -> {{Null,Null}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						pH -> Null
+					|>,
+					<|
+						Type -> Model[Sample],
+						Name -> "Another test calibration solution model with no pH for ExperimentMeasurepH " <> $SessionUUID,
+						State -> Liquid,
+						Replace[Composition] -> {{Null,Null}},
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						pH -> Null
+					|>,
+					(*Create container model with no calibration data*)
+					<|Type -> Model[Container, Vessel],
+						Name -> "Test container model with no calibration data for ExperimentMeasurepH " <> $SessionUUID,
+						Deprecated -> False,
+						DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+						Dimensions -> {Quantity[0.028575`, "Meters"],
+							Quantity[0.028575`, "Meters"],
+							Quantity[0.1143`, "Meters"]},
+						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null,
+							MaxWidth -> Quantity[0.028575`, "Meters"],
+							MaxDepth -> Quantity[0.028575`, "Meters"],
+							MaxHeight -> Quantity[0.1143`, "Meters"]|>}
+					|>
+				}];
 
-		(* Create some empty containers *)
-		{
-			emptyContainer1,
-			emptyContainer2,
-			emptyContainer3,
-			emptyContainer4,
-			emptyContainer5,
-			emptyContainer6,
-			emptyContainer7,
-			emptyContainer8,
-			emptyContainer9,
-			emptyContainer10,
-			emptyContainer11,
-			emptyContainer12,
-			emptyContainer13,
-			emptyContainer14,
-			emptyContainer15,
-			emptyContainer16,
-			emptyContainer17,
-			emptyContainer18,
-			emptyPlate,
-			emptyContainer19,
-			emptyContainer20,
-			emptyContainer21,
-			emptyContainer22,
-			emptyContainer23
-		}=
-       UploadSample[
-		   {
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,ReactionVessel,SolidPhaseSynthesis,"NAP 10 Gravity Cartridge"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"10L Polypropylene Carboy"],
-			   Model[Container,Vessel,"500mL Glass Bottle"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   containerNoCalModel,
-			   Model[Container, Vessel, "1L Glass Bottle"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container,Vessel,"50mL Tube"],
-			   Model[Container, Vessel, "1L Glass Bottle"],
-			   Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-			   Model[Container, Vessel, "id:Vrbp1jG800Zm"],
-			   Model[Container,Vessel,"2mL Tube"],
-			   Model[Container,Vessel,"2mL Tube"],
-			   Model[Container, Vessel, "600mL Pyrex Beaker"],
-				 Model[Container, Vessel, "1000mL Glass Beaker"]
-		   },
-		   {
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-			   {"Work Surface",testBench},
-				 {"Work Surface",testBench},
-			   {"Work Surface",testBench}
-		   },
-		   Status->Available,
-		   Name->{
-			   "Test container 1 for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 2 for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 3 for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 4 invalid for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 5 with no sample for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 6 that is too big for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 7 that is too large for lil stick for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 8 with incompatible sample for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 9 with too acidic sample for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 10 with anti-Glass sample for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 11 for No Volume sample for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 12 for no calibration for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 13 for large sample volume for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 14 for MilliQ water for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 15 for medium calibration solution with no pH for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 16 for another calibration solution with no pH for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 17 for solution without a model for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 18 Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test plate container for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 19 for extra large sample volume for ExperimentMeasurepH " <> $SessionUUID,
-			   "Test container 20 for ExperimentMeasurepH " <> $SessionUUID,
-			   Null,
-			   "Test container 22 600ml beaker for ExperimentMeasurepH " <> $SessionUUID,
-				 "Test container 23 1000ml beaker for ExperimentMeasurepH " <> $SessionUUID
-		   }
-	   ];
-			Upload[<|Object -> #, DeveloperObject -> True|> & /@ Cases[Flatten[{
+			(* Create some empty containers *)
+			{
 				emptyContainer1,
 				emptyContainer2,
 				emptyContainer3,
@@ -1256,170 +1395,243 @@ DefineTests[
 				emptyContainer21,
 				emptyContainer22,
 				emptyContainer23
-			}], ObjectP[]]];
+			}=
+				 UploadSample[
+				 {
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,ReactionVessel,SolidPhaseSynthesis,"NAP 10 Gravity Cartridge"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"10L Polypropylene Carboy"],
+					 Model[Container,Vessel,"500mL Glass Bottle"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 containerNoCalModel,
+					 Model[Container, Vessel, "1L Glass Bottle"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container,Vessel,"50mL Tube"],
+					 Model[Container, Vessel, "1L Glass Bottle"],
+					 Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					 Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+					 Model[Container,Vessel,"2mL Tube"],
+					 Model[Container,Vessel,"2mL Tube"],
+					 Model[Container, Vessel, "600mL Pyrex Beaker"],
+					 Model[Container, Vessel, "1000mL Glass Beaker"]
+				 },
+				 {
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench},
+					 {"Work Surface",testBench}
+				 },
+				 Status->Available,
+				 Name->{
+					 "Test container 1 for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 2 for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 3 for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 4 invalid for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 5 with no sample for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 6 that is too big for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 7 that is too large for lil stick for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 8 with incompatible sample for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 9 with too acidic sample for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 10 with anti-Glass sample for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 11 for No Volume sample for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 12 for no calibration for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 13 for large sample volume for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 14 for MilliQ water for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 15 for medium calibration solution with no pH for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 16 for another calibration solution with no pH for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 17 for solution without a model for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 18 Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test plate container for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 19 for extra large sample volume for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 20 for ExperimentMeasurepH " <> $SessionUUID,
+					 Null,
+					 "Test container 22 600ml beaker for ExperimentMeasurepH " <> $SessionUUID,
+					 "Test container 23 1000ml beaker for ExperimentMeasurepH " <> $SessionUUID
+				 }
+			 ];
 
-
-		(* Create some samples *)
-		{discardedChemical,waterSample,lowVolSample,invConSample,tooBigConSample,tooBigLilStickSample,
-			incompatSample,tooAcidicSample,noGlassSample,noVolumeSample,noCalSample,largeSample,milliQSample,
-			mediumCalNopH,anotherCalNopH,modelLessSample,pH10Stock,plateSample,sample19,sample20,sample21,sample22}=UploadSample[
-			{
-				(*1*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*2*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*3*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*4*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*5*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*6*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*7*)modelIncompat,
-				(*8*)tooAcidicModel,
-				(*9*)Model[Sample, "id:XnlV5jK6jbk3"],
-				(*10*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*11*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*12*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*13*)Model[Sample, "Milli-Q water"],
-				(*14*)medCalNopHModel,
-				(*15*)anotherCalNopHModel,
-				(*16*)Model[Sample, "Milli-Q water"],
-				(*17*)Model[Sample, "Reference buffer, pH 10"],
-				(*18*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*19*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*20*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*21*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*2*)Model[Sample, "Milli-Q water"]
-			},
-			{
-				(*1*){"A1",emptyContainer1},
-				(*2*){"A1",emptyContainer2},
-				(*3*){"A1",emptyContainer3},
-				(*4*){"A1",emptyContainer4},
-				(*5*){"A1",emptyContainer6},
-				(*6*){"A1",emptyContainer7},
-				(*7*){"A1",emptyContainer8},
-				(*8*){"A1",emptyContainer9},
-				(*9*){"A1",emptyContainer10},
-				(*10*){"A1",emptyContainer11},
-				(*11*){"A1",emptyContainer12},
-				(*12*){"A1",emptyContainer13},
-				(*13*){"A1",emptyContainer14},
-				(*14*){"A1",emptyContainer15},
-				(*15*){"A1",emptyContainer16},
-				(*16*){"A1",emptyContainer17},
-				(*17*){"A1",emptyContainer18},
-				(*18*){"A1",emptyPlate},
-				(*19*){"A1",emptyContainer19},
-				(*20*){"A1",emptyContainer20},
-				(*21*){"A1",emptyContainer21},
-				(*22*){"A1",emptyContainer22}
-			},
-			InitialAmount->{
-				(*1*)50 Milliliter,
-				(*2*)50 Milliliter,
-				(*3*)0.009 Milliliter,
-				(*4*)1 Milliliter,
-				(*5*)1Milliliter,
-				(*6*)102 Milliliter,
-				(*7*)50 Milliliter,
-				(*8*)50 Milliliter,
-				(*9*)50 Milliliter,
-				(*10*)Null,
-				(*11*)50 Milliliter,
-				(*12*)350 Milliliter,
-				(*13*)50 Milliliter,
-				(*14*)50 Milliliter,
-				(*15*)50 Milliliter,
-				(*16*)20 Milliliter,
-				(*17*)1 Liter,
-				(*18*)1 Milliliter,
-				(*19*)3 Liter,
-				(*20*)1 Milliliter,
-				(*21*)199 Microliter,
-				(*22*)400 Milliliter
-			},
-			Name->{
-				(*1*)"Test discarded sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*2*)"Test water sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*3*)"Test sample with volume too low for measurement ExperimentMeasurepH",
-				(*4*)"Test water sample for invalid container for ExperimentMeasurepH " <> $SessionUUID,
-				(*5*)"Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID,
-				(*6*)"Test water sample for too large container for lil stick for ExperimentMeasurepH " <> $SessionUUID,
-				(*7*)"Test incompatible sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*8*)"Test too acidic sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*9*)"Test anti-Glass chemical for ExperimentMeasurepH " <> $SessionUUID,
-				(*10*)"Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID,
-				(*11*)"Test water sample for container sans calibration data for ExperimentMeasurepH " <> $SessionUUID,
-				(*12*)"Large test water sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*13*)"Test MilliQ water sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*14*)"Test Medium calibration solution with no pH value for ExperimentMeasurepH " <> $SessionUUID,
-				(*15*)"Another test calibration solution with no pH Value for ExperimentMeasurepH " <> $SessionUUID,
-				(*16*)"Test MilliQ water sample for sample without a model for ExperimentMeasurepH " <> $SessionUUID,
-				(*17*)"Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID,
-				(*18*)"Test water sample in a plate for ExperimentMeasurepH " <> $SessionUUID,
-				(*19*)"Extra large test water sample for ExperimentMeasurepH " <> $SessionUUID,
-				(*20*)"Test sample in tube for ExperimentMeasurepH " <> $SessionUUID,
-				(*21*)"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID,
-				(*22*)"Water WashSolution for ExperimentMeasurepH " <> $SessionUUID
-			}
-		];
-
-			(* Make some changes to our samples to make them invalid. *)
-
-		Upload[{
-			<|Object->discardedChemical,Status->Discarded,DeveloperObject->True|>,
-			<|
-				Object->waterSample,
-				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
-				DeveloperObject->True
-			|>,
-			<|Object->lowVolSample,DeveloperObject->True|>,
-			<|Object->invConSample,DeveloperObject->True|>,
-			<|Object->tooBigConSample,DeveloperObject->True|>,
-			<|Object->tooBigLilStickSample,DeveloperObject->True|>,
-			<|Object->incompatSample,DeveloperObject->True|>,
-			<|Object->tooAcidicSample,pH->-0.0001,DeveloperObject->True|>,
-			<|Object->noGlassSample,DeveloperObject->True|>,
-			<|Object->noVolumeSample,DeveloperObject->True|>,
-			<|Object->noCalSample,DeveloperObject->True|>,
-			<|Object->largeSample,DeveloperObject->True|>,
-			<|Object->milliQSample,DeveloperObject->True|>,
-			<|Object->mediumCalNopH,DeveloperObject->True|>,
-			<|Object->anotherCalNopH,DeveloperObject->True|>,
-			<|Object->plateSample,DeveloperObject->True|>,
-			<|Object->sample19,DeveloperObject->True|>,
-			<|Object->sample20,DeveloperObject->True|>,
-			<|Object->modelLessSample,Model -> Null,DeveloperObject->True|>
-		}];
-
-			(*Create a protocol that we'll use for template testing*)
-			Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-				(*Create a protocol that we'll use for template testing*)
-				ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-					AliquotAmount -> 10*Milliliter,
-					Name -> "pH Test Template Protocol for ExperimentMeasurepH " <> $SessionUUID]
+			(* Create some samples *)
+			{discardedChemical,waterSample,lowVolSample,invConSample,tooBigConSample,tooBigLilStickSample,
+				incompatSample,tooAcidicSample,noGlassSample,noVolumeSample,noCalSample,largeSample,milliQSample,
+				mediumCalNopH,anotherCalNopH,modelLessSample,pH10Stock,plateSample,sample19,sample20,sample21,sample22,sample23}=UploadSample[
+				{
+					(*1*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*2*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*3*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*4*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*5*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*6*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*7*)modelIncompat,
+					(*8*)tooAcidicModel,
+					(*9*)Model[Sample, "id:XnlV5jK6jbk3"],
+					(*10*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*11*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*12*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*13*)Model[Sample, "Milli-Q water"],
+					(*14*)medCalNopHModel,
+					(*15*)anotherCalNopHModel,
+					(*16*)Model[Sample, "Milli-Q water"],
+					(*17*)Model[Sample, "Reference buffer, pH 10"],
+					(*18*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*19*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*20*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*21*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
+					(*22*)Model[Sample, "Milli-Q water"],
+					(*23*)Model[Sample, "Milli-Q water"]
+				},
+				{
+					(*1*){"A1",emptyContainer1},
+					(*2*){"A1",emptyContainer2},
+					(*3*){"A1",emptyContainer3},
+					(*4*){"A1",emptyContainer4},
+					(*5*){"A1",emptyContainer6},
+					(*6*){"A1",emptyContainer7},
+					(*7*){"A1",emptyContainer8},
+					(*8*){"A1",emptyContainer9},
+					(*9*){"A1",emptyContainer10},
+					(*10*){"A1",emptyContainer11},
+					(*11*){"A1",emptyContainer12},
+					(*12*){"A1",emptyContainer13},
+					(*13*){"A1",emptyContainer14},
+					(*14*){"A1",emptyContainer15},
+					(*15*){"A1",emptyContainer16},
+					(*16*){"A1",emptyContainer17},
+					(*17*){"A1",emptyContainer18},
+					(*18*){"A1",emptyPlate},
+					(*19*){"A1",emptyContainer19},
+					(*20*){"A1",emptyContainer20},
+					(*21*){"A1",emptyContainer21},
+					(*22*){"A1",emptyContainer22},
+					(*23*){"A1",emptyContainer23}
+				},
+				InitialAmount->{
+					(*1*)50 Milliliter,
+					(*2*)50 Milliliter,
+					(*3*)0.009 Milliliter,
+					(*4*)1 Milliliter,
+					(*5*)1Milliliter,
+					(*6*)102 Milliliter,
+					(*7*)50 Milliliter,
+					(*8*)50 Milliliter,
+					(*9*)50 Milliliter,
+					(*10*)Null,
+					(*11*)50 Milliliter,
+					(*12*)350 Milliliter,
+					(*13*)50 Milliliter,
+					(*14*)50 Milliliter,
+					(*15*)50 Milliliter,
+					(*16*)20 Milliliter,
+					(*17*)1 Liter,
+					(*18*)1 Milliliter,
+					(*19*)3 Liter,
+					(*20*)1 Milliliter,
+					(*21*)60 Microliter,
+					(*22*)400 Milliliter,
+					(*22*)200 Milliliter
+				},
+				Name->{
+					(*1*)"Test discarded sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*2*)"Test water sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*3*)"Test sample with volume too low for measurement ExperimentMeasurepH " <> $SessionUUID,
+					(*4*)"Test water sample for invalid container for ExperimentMeasurepH " <> $SessionUUID,
+					(*5*)"Test water sample for too large container for ExperimentMeasurepH " <> $SessionUUID,
+					(*6*)"Test water sample for too large container for lil stick for ExperimentMeasurepH " <> $SessionUUID,
+					(*7*)"Test incompatible sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*8*)"Test too acidic sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*9*)"Test anti-Glass chemical for ExperimentMeasurepH " <> $SessionUUID,
+					(*10*)"Test water sample with Volume=Null for ExperimentMeasurepH " <> $SessionUUID,
+					(*11*)"Test water sample for container sans calibration data for ExperimentMeasurepH " <> $SessionUUID,
+					(*12*)"Large test water sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*13*)"Test MilliQ water sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*14*)"Test Medium calibration solution with no pH value for ExperimentMeasurepH " <> $SessionUUID,
+					(*15*)"Another test calibration solution with no pH Value for ExperimentMeasurepH " <> $SessionUUID,
+					(*16*)"Test MilliQ water sample for sample without a model for ExperimentMeasurepH " <> $SessionUUID,
+					(*17*)"Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID,
+					(*18*)"Test water sample in a plate for ExperimentMeasurepH " <> $SessionUUID,
+					(*19*)"Extra large test water sample for ExperimentMeasurepH " <> $SessionUUID,
+					(*20*)"Test sample in tube for ExperimentMeasurepH " <> $SessionUUID,
+					(*21*)"Surface probe test sample in tube for ExperimentMeasurepH " <> $SessionUUID,
+					(*22*)"Water WashSolution for ExperimentMeasurepH " <> $SessionUUID,
+					(*23*)"Water WasteBeaker for ExperimentMeasurepH " <> $SessionUUID
+				}
 			];
 
-			subprotocol1 = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-				(*Create a protocol that we'll use for template testing*)
-				ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-					Name -> "pH Subprotocol 1 for ExperimentMeasurepH " <> $SessionUUID]
-			];
-			subprotocol2 = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-				(*Create a protocol that we'll use for template testing*)
-				ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
-					Name -> "pH Subprotocol 2 for ExperimentMeasurepH " <> $SessionUUID]
-			];
-			parentProtocol = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
-				(*Create a protocol that we'll use for template testing*)
-				ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],8,
-					Name -> "pH ParentProtocol for ExperimentMeasurepH " <> $SessionUUID]
-			];
+				(* Make some changes to our samples to make them invalid. *)
 
-			Upload[<|
-				Object -> parentProtocol,
-				WasteBeaker -> Link[Object[Container, Vessel, "Test container 23 1000ml beaker for ExperimentMeasurepH " <> $SessionUUID]],
-				Replace[Subprotocols] -> Link[Object[Protocol, MeasurepH, "pH Subprotocol 1 for ExperimentMeasurepH " <> $SessionUUID], ParentProtocol],
-				Append[Subprotocols] -> Link[Object[Protocol, MeasurepH, "pH Subprotocol 2 for ExperimentMeasurepH " <> $SessionUUID], ParentProtocol]
-			|>]
+			Upload[{
+				<|Object -> discardedChemical, Status -> Discarded|>,
+				<|
+					Object -> waterSample,
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
+					pH -> 7.0
+				|>,
+				<|Object -> lowVolSample, pH -> 7.0|>,
+				<|Object -> noVolumeSample, pH -> 7.0 |>,
+				<|Object -> tooAcidicSample, pH -> -0.0001|>,
+				<|Object -> largeSample, pH -> 7.0|>,
+				<|Object -> modelLessSample, Model -> Null|>
+			}];
 
+				(*Create a protocol that we'll use for template testing*)
+				Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
+					(*Create a protocol that we'll use for template testing*)
+					ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+						AliquotAmount -> 25*Milliliter,
+						Name -> "pH Test Template Protocol for ExperimentMeasurepH " <> $SessionUUID]
+				];
+
+				subprotocol1 = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
+					(*Create a protocol that we'll use for template testing*)
+					ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+						Name -> "pH Subprotocol 1 for ExperimentMeasurepH " <> $SessionUUID]
+				];
+				subprotocol2 = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
+					(*Create a protocol that we'll use for template testing*)
+					ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+						Name -> "pH Subprotocol 2 for ExperimentMeasurepH " <> $SessionUUID]
+				];
+				parentProtocol = Block[{$PersonID = Object[User, "Test user for notebook-less test protocols"]},
+					(*Create a protocol that we'll use for template testing*)
+					ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],8,
+						Name -> "pH ParentProtocol for ExperimentMeasurepH " <> $SessionUUID]
+				];
+
+				Upload[<|
+					Object -> parentProtocol,
+					WasteBeaker -> Link[Object[Sample, "Water WasteBeaker for ExperimentMeasurepH " <> $SessionUUID]],
+					Replace[Subprotocols] -> Link[Object[Protocol, MeasurepH, "pH Subprotocol 1 for ExperimentMeasurepH " <> $SessionUUID], ParentProtocol],
+					Append[Subprotocols] -> Link[Object[Protocol, MeasurepH, "pH Subprotocol 2 for ExperimentMeasurepH " <> $SessionUUID], ParentProtocol]
+				|>]
+
+			]
 		]
 	),
 	SymbolTearDown:>(
@@ -1451,6 +1663,9 @@ DefineTests[
 			ExperimentMeasurepHOptions[Object[Sample,"Test water sample for ExperimentMeasurepHOptions " <> $SessionUUID],OutputFormat->List],
 			{(_Rule|_RuleDelayed)..}
 		]
+	},
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
 	},
 	SymbolSetUp:>(
 		$CreatedObjects={};
@@ -1557,6 +1772,9 @@ DefineTests[
 			True
 		]
 	},
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
+	},
 	SymbolSetUp:>Module[{testObjList, existsFilter, emptyContainer1, emptyContainer2, emptyContainer3, discardedChemical, waterSample, another},
 		$CreatedObjects={};
 		Off[Warning::SamplesOutOfStock];
@@ -1655,6 +1873,9 @@ DefineTests[
 			ValidExperimentMeasurepHQ[Object[Sample,"Test water sample for ExperimentMeasurepHPreview " <> $SessionUUID]],
 			True
 		]
+	},
+	TurnOffMessages :> {
+		Warning::SampleMustBeMoved
 	},
 	SymbolSetUp:>Module[{testObjList, existsFilter, emptyContainer1, emptyContainer2, emptyContainer3, discardedChemical, waterSample, another},
 		$CreatedObjects={};

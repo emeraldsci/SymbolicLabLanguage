@@ -198,6 +198,16 @@ DefineObjectType[Object[Part], {
 			Headers -> {"Date","Dishwash Protocol"}
 		},
 
+		(* --- Quality Assurance --- *)
+		Certificates -> {
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Report, Certificate][PartCertified],
+			Description->"The quality assurance documentation and data for this part.",
+			Category->"Quality Assurance"
+		},
+
 		(* --- Inventory --- *)
 		SerialNumber -> {
 			Format -> Single,
@@ -334,6 +344,13 @@ DefineObjectType[Object[Part], {
 			Class -> String,
 			Pattern :> LocationPositionP,
 			Description -> "The position of this part within the container in which it is located.",
+			Category -> "Storage Information"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how this part is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
 		StackedAbove -> {

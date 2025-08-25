@@ -260,7 +260,7 @@ DefineObjectType[Object[Protocol, CircularDichroism], {
 		ReadPlatePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of all samples (SamplesIn, Blank and MoatBuffer) into desired wells.",
 			Category -> "General",
 			Developer -> True
@@ -269,7 +269,7 @@ DefineObjectType[Object[Protocol, CircularDichroism], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The sample manipulations protocol used to transfer buffer into the ReadPlate.",
 			Category -> "General"
 		},
@@ -385,7 +385,7 @@ DefineObjectType[Object[Protocol, CircularDichroism], {
 		SampleRecoveryPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the aliquoting of all samples (SamplesIn, Blank and MoatBuffer) from the Readplate to the ContainerOut.",
 			Category -> "General",
 			Developer -> True
@@ -394,7 +394,7 @@ DefineObjectType[Object[Protocol, CircularDichroism], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol, ManualSamplePreparation],
 			Description -> "The sample manipulations protocol used to transfer samples from the ReadPlate to the ContainerOut.",
 			Category -> "General"
 		},

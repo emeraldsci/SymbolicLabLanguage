@@ -2130,92 +2130,93 @@ DefineTests[ComplementSequenceQ,{
 (*ReverseComplementSequence*)
 
 
-DefineTests[ReverseComplementSequence,{
-	Example[{Basic,"Given a sequence input will return the reverse complementary sequence:"},
-		ReverseComplementSequence["ATGCG"],
-		"CGCAT"
-	],
-	Example[{Basic,"If provided a Strand, the function returns a reverse complementary Strand:"},
-		ReverseComplementSequence[Strand[DNA["ATGCA","A"],DNA["GCAGAT","B"]]],
-		Strand[DNA["ATCTGC","B'"],DNA["TGCAT","A'"]]
-	],
-	Example[{Basic,"If provided a motif name, returns the reverse complimentary motif (' signify reverse complimentarity):"},
-		{ReverseComplementSequence["Cat"],ReverseComplementSequence["Cat'"]},
-		{"Cat'","Cat"}
-	],
-	Example[{Additional,"The function can handle degenerate sequences as well:"},
-		ReverseComplementSequence[DNA[25,"A'"]],
-		DNA["NNNNNNNNNNNNNNNNNNNNNNNNN","A"]
-	],
-	Example[{Additional,"The reverse complement for LNAChimera:"},
-		ReverseComplementSequence[LNAChimera["+A+TmG"]],
-		LNAChimera["mC+A+T"]
-	],
-	Example[{Options,ExplicitlyTyped,"The ExplicitlyTyped option can be used to request that the ouput be explicitly typed:"},
-		ReverseComplementSequence["AGCAUC",ExplicitlyTyped->True],
-		RNA["GAUGCU"]
-	],
-	Example[{Options,Polymer,"The Polymer option can be used to disambiguate input:"},
-		{ReverseComplementSequence["AGCAGG",Polymer->RNA,ExplicitlyTyped->True],ReverseComplementSequence["AGCAGG",Polymer->DNA,ExplicitlyTyped->True]},
-		{RNA["CCUGCU"],DNA["CCTGCT"]}
-	],
-	Example[{Options,ExplicitlyTyped,"If ExplicitlyTyped is set to automatic, will match the typing of the input:"},
-		{ReverseComplementSequence["AGCAUC"],ReverseComplementSequence[RNA["AGCAUC"]]},
-		{"GAUGCU",RNA["GAUGCU"]}
-	],
-	Example[{Options,Motif,"The motif option can be used to indicate that a string input is a motif rather than a sequence:"},
-		{ReverseComplementSequence["A",Motif->False],ReverseComplementSequence["A",Motif->True]},
-		{"T","A'"}
-	],
-	Example[{Attributes,"Listable","The function is listable across sequences, strands, or motifs:"},
-		ReverseComplementSequence[{"ATGAT","GCAGG","TGCAG"}],
-		{"ATCAT","CCTGC","CTGCA"}
-	],
-	Test["Explicit typing can not be stripped from a Strand:",
-		ReverseComplementSequence[Strand[DNA["ATGATA"]],ExplicitlyTyped->False],
-		Strand[DNA["TATCAT"]]
-	],
+DefineTests[ReverseComplementSequence,
+	{
+		Example[{Basic,"Given a sequence input will return the reverse complementary sequence:"},
+			ReverseComplementSequence["ATGCG"],
+			"CGCAT"
+		],
+		Example[{Basic,"If provided a Strand, the function returns a reverse complementary Strand:"},
+			ReverseComplementSequence[Strand[DNA["ATGCA","A"],DNA["GCAGAT","B"]]],
+			Strand[DNA["ATCTGC","B'"],DNA["TGCAT","A'"]]
+		],
+		Example[{Basic,"If provided a motif name, returns the reverse complimentary motif (' signify reverse complementarity):"},
+			{ReverseComplementSequence["Cat"],ReverseComplementSequence["Cat'"]},
+			{"Cat'","Cat"}
+		],
+		Example[{Additional,"The function can handle degenerate sequences as well:"},
+			ReverseComplementSequence[DNA[25,"A'"]],
+			DNA["NNNNNNNNNNNNNNNNNNNNNNNNN","A"]
+		],
+		Example[{Additional,"The reverse complement for LNAChimera:"},
+			ReverseComplementSequence[LNAChimera["+A+TmG"]],
+			LNAChimera["mC+A+T"]
+		],
+		Example[{Options,ExplicitlyTyped,"The ExplicitlyTyped option can be used to request that the output be explicitly typed:"},
+			ReverseComplementSequence["AGCAUC",ExplicitlyTyped->True],
+			RNA["GAUGCU"]
+		],
+		Example[{Options,Polymer,"The Polymer option can be used to disambiguate input:"},
+			{ReverseComplementSequence["AGCAGG",Polymer->RNA,ExplicitlyTyped->True],ReverseComplementSequence["AGCAGG",Polymer->DNA,ExplicitlyTyped->True]},
+			{RNA["CCUGCU"],DNA["CCTGCT"]}
+		],
+		Example[{Options,ExplicitlyTyped,"If ExplicitlyTyped is set to automatic, will match the typing of the input:"},
+			{ReverseComplementSequence["AGCAUC"],ReverseComplementSequence[RNA["AGCAUC"]]},
+			{"GAUGCU",RNA["GAUGCU"]}
+		],
+		Example[{Options,Motif,"The motif option can be used to indicate that a string input is a motif rather than a sequence:"},
+			{ReverseComplementSequence["A",Motif->False],ReverseComplementSequence["A",Motif->True]},
+			{"T","A'"}
+		],
+		Example[{Attributes,"Listable","The function is listable across sequences, strands, or motifs:"},
+			ReverseComplementSequence[{"ATGAT","GCAGG","TGCAG"}],
+			{"ATCAT","CCTGC","CTGCA"}
+		],
+		Test["Explicit typing can not be stripped from a Strand:",
+			ReverseComplementSequence[Strand[DNA["ATGATA"]],ExplicitlyTyped->False],
+			Strand[DNA["TATCAT"]]
+		],
 
-	Test["Modification remains untouched:",
-		ReverseComplementSequence["Fluorescein"],
-		"Fluorescein"
-	],
-	Test["Peptide remains uncomped:",
-		ReverseComplementSequence["LysHisArg"],
-		"ArgHisLys"
-	],
-	Test["Explicitly typded Modification remains untouched:",
-		ReverseComplementSequence[Modification["Fluorescein"],IncludeModification->True],
-		Modification["Fluorescein"]
-	],
-	Example[{Messages,"RemoveModification","Return Null for cases where modification is asked to be removed but cannot:"},
-		ReverseComplementSequence[Modification["Fluorescein"],IncludeModification->False],
-		Null,
-		Messages:>{ComplementSequence::RemoveModification}
-	],
-	Test["Return Null if given just modification or Peptide and not including it:",
-		ReverseComplementSequence[Peptide["LysHisArg"],IncludeModification->False],
-		Null,
-		Messages:>{ComplementSequence::RemoveModification}
-	],
-	Test["Modification in strand remains untouched:",
-		ReverseComplementSequence[Strand[Modification["Fluorescein"]],IncludeModification->True],
-		Strand[Modification["Fluorescein"]]
-	],
-	Test["Modification in strand remains untouched:",
-		ReverseComplementSequence[Strand[Modification["Fluorescein"]],IncludeModification->False],
-		Strand[]
-	],
-	Example[{Options,IncludeModification,"Leave modifications as they are in the strand:"},
-		ReverseComplementSequence[Strand[DNA["AAAA"],Modification["Fluorescein"],RNA["CCC"],Peptide["LysHisArg"]],IncludeModification->True],
-		Strand[Peptide["ArgHisLys"],RNA["GGG"],Modification["Fluorescein"],DNA["TTTT"]]
-	],
-	Example[{Options,IncludeModification,"Remove any modifications:"},
-		ReverseComplementSequence[Strand[DNA["AAAA"],Modification["Fluorescein"],RNA["CCC"],Peptide["LysHisArg"]],IncludeModification->False],
-		Strand[RNA["GGG"],DNA["TTTT"]]
-	],
-	Parallel -> True
-}];
+		Test["Modification remains untouched:",
+			ReverseComplementSequence["Fluorescein"],
+			"Fluorescein"
+		],
+		Test["Peptide remains uncomped:",
+			ReverseComplementSequence["LysHisArg"],
+			"ArgHisLys"
+		],
+		Test["Explicitly typded Modification remains untouched:",
+			ReverseComplementSequence[Modification["Fluorescein"],IncludeModification->True],
+			Modification["Fluorescein"]
+		],
+		Example[{Messages,"RemoveModification","Return Null for cases where modification is asked to be removed but cannot:"},
+			ReverseComplementSequence[Modification["Fluorescein"],IncludeModification->False],
+			Null,
+			Messages:>{ComplementSequence::RemoveModification}
+		],
+		Test["Return Null if given just modification or Peptide and not including it:",
+			ReverseComplementSequence[Peptide["LysHisArg"],IncludeModification->False],
+			Null,
+			Messages:>{ComplementSequence::RemoveModification}
+		],
+		Test["Modification in strand remains untouched:",
+			ReverseComplementSequence[Strand[Modification["Fluorescein"]],IncludeModification->True],
+			Strand[Modification["Fluorescein"]]
+		],
+		Test["Modification in strand remains untouched:",
+			ReverseComplementSequence[Strand[Modification["Fluorescein"]],IncludeModification->False],
+			Strand[]
+		],
+		Example[{Options,IncludeModification,"Leave modifications as they are in the strand:"},
+			ReverseComplementSequence[Strand[DNA["AAAA"],Modification["Fluorescein"],RNA["CCC"],Peptide["LysHisArg"]],IncludeModification->True],
+			Strand[Peptide["ArgHisLys"],RNA["GGG"],Modification["Fluorescein"],DNA["TTTT"]]
+		],
+		Example[{Options,IncludeModification,"Remove any modifications:"},
+			ReverseComplementSequence[Strand[DNA["AAAA"],Modification["Fluorescein"],RNA["CCC"],Peptide["LysHisArg"]],IncludeModification->False],
+			Strand[RNA["GGG"],DNA["TTTT"]]
+		]
+	}
+];
 
 
 (* ::Subsubsection:: *)
@@ -2858,7 +2859,7 @@ DefineTests[SequenceRotateRight,{
 		SequenceRotateRight["ATGGC"],
 		"CATGG"
 	],
-	Example[{Basic,"Rotating to teh right by 2 will move the last two bases to the front of the sequence:"},
+	Example[{Basic,"Rotating to the right by 2 will move the last two bases to the front of the sequence:"},
 		SequenceRotateRight["ATGGC",2],
 		"GCATG"
 	],
@@ -2918,7 +2919,7 @@ DefineTests[SequenceRotateLeft,{
 		SequenceRotateLeft["ATGGC"],
 		"TGGCA"
 	],
-	Example[{Basic,"Rotating to teh right by 2 will move the last two bases to the front of the sequence:"},
+	Example[{Basic,"Rotating to the right by 2 will move the last two bases to the front of the sequence:"},
 		SequenceRotateLeft["ATGGC",2],
 		"GGCAT"
 	],

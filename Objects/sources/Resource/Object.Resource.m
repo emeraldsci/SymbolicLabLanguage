@@ -61,6 +61,15 @@ DefineObjectType[Object[Resource], {
 			Headers -> {"Date","Status","Responsible Party"},
 			Developer -> True
 		},
+		Site -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container,Site],
+			Description -> "The ECL site where the item requested by this resource is used.",
+			Category -> "General",
+			Abstract -> True
+		},
 		Requestor -> {
 			Format -> Multiple,
 			Class -> Link,

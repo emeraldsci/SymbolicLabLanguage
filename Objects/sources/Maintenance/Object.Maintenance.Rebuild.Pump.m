@@ -149,6 +149,14 @@ DefineObjectType[Object[Maintenance, Rebuild, Pump], {
 			Description -> "The software sequence name for the protocol's system flush.",
 			Category -> "Cleaning",
 			Developer -> True
+		},
+		WasteBeaker -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> (Model[Container, Vessel]|Object[Container, Vessel]),
+			Description -> "A beaker used to drain liquid waste from the pump.",
+			Category -> "Cleaning"
 		}
 	}
 }];

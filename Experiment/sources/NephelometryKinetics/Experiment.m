@@ -223,7 +223,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -240,14 +240,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 	];
 
 	(* change Named version of objects into ID version *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentNephelometryKinetics,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentNephelometryKinetics,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -257,6 +250,12 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentNephelometryKinetics,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentNephelometryKinetics,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -295,7 +294,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 	(*Convert list of rules to Association so we can Lookup, Append, Join as usual*)
 	nephelometryKineticsOptionsAssociation=Association[expandedSafeOps];
 
-	(* Seperate out our Nephelometry options from our Sample Prep options. *)
+	(* Separate out our Nephelometry options from our Sample Prep options. *)
 	{samplePrepOptions,nephelometryKineticsOptions}=splitPrepOptions[expandedSafeOps];
 
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
@@ -382,7 +381,6 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 		Download::FieldDoesntExist
 	];
 
-
 	(*Extract the sample-related packets*)
 	samplePackets=allSamplePackets[[All,1]];
 	sampleModelPackets=allSamplePackets[[All,2]];
@@ -401,7 +399,6 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 		listedAliquotContainerPackets,
 		analytePacket
 	}];
-
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
@@ -440,7 +437,6 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 		}]
 	];
 
-
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
 	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
@@ -452,7 +448,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ=MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];
+	performSimulationQ=MemberQ[output, Result|Simulation] || MatchQ[$CurrentSimulation, SimulationP];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[returnEarlyQ && !performSimulationQ,
@@ -489,11 +485,11 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 				ToList[resourcePackets[[2]]] (* unitOperationPackets *)
 			],
 			ToList[mySamplesWithPreparedSamples],
-			expandedSafeOps,
+			resolvedOptions,
 			Cache->cacheBall,
 			Simulation->updatedSimulation
 		],
-		{Null, Null}
+		{Null, updatedSimulation}
 	];
 
 	estimatedRunTime = 15 Minute +
@@ -526,11 +522,25 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 
 		(* If we're doing Preparation->Robotic and Upload->True, call RCP or RSP with our primitive. *)
 		MatchQ[Lookup[resolvedOptions,Preparation],Robotic],
-		Module[{primitive, nonHiddenOptions,experimentFunction},
+		Module[{primitive, nonHiddenOptions, samplesMaybeWithModels, experimentFunction},
+
+			(* convert the samples to models if we had model inputs originally *)
+			(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+			(* NOTE: this is important. Need to use updatedSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+			(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+			samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+				mySamples,
+				simulatedSamplesToModels[
+					Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					updatedSimulation,
+					mySamples
+				]
+			];
+
 			(* Create our primitive to feed into RoboticSamplePreparation. *)
 			primitive=NephelometryKinetics@@Join[
 				{
-					Sample->mySamples
+					Sample -> samplesMaybeWithModels
 				},
 				RemoveHiddenPrimitiveOptions[NephelometryKinetics,ToList[myOptions]]
 			];
@@ -565,6 +575,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 					Name->Lookup[safeOps,Name],
 					Upload->Lookup[safeOps,Upload],
 					Confirm->Lookup[safeOps,Confirm],
+					CanaryBranch->Lookup[safeOps,CanaryBranch],
 					ParentProtocol->Lookup[safeOps,ParentProtocol],
 					Priority->Lookup[safeOps,Priority],
 					StartDate->Lookup[safeOps,StartDate],
@@ -581,6 +592,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
@@ -588,7 +600,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,NephelometryKinetics],
 			Cache->cacheBall,
-			Simulation->updatedSimulation
+			Simulation->simulation
 		]
 	];
 
@@ -608,7 +620,7 @@ ExperimentNephelometryKinetics[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 (*----Container overload----*)
 (*--------------------------*)
 
-ExperimentNephelometryKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentNephelometryKinetics[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleSimulation,
 		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests},
 
@@ -620,7 +632,7 @@ ExperimentNephelometryKinetics[myContainers:ListableP[ObjectP[{Object[Container]
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=sanitizeInputs[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -628,10 +640,13 @@ ExperimentNephelometryKinetics[myContainers:ListableP[ObjectP[{Object[Container]
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentNephelometryKinetics,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			(* Note:the default input options are also in NephelometrySharedOptions, if these values are updated, please update resolution description in the shared options as well *)
+			DefaultPreparedModelAmount -> 100 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)

@@ -37,8 +37,8 @@ LaunchManifoldKernel[numKernels:GreaterP[0,1], opts:OptionsPattern[LaunchManifol
 	(* Validate the number of computation threads *)
 	If[MatchQ[$Failed, validateAvailableComputationThreads[numKernels]], Return[$Failed]];
 
-	(* get any pre-existing kernels we can use *)
-	existingKernels = $ManifoldKernelPool;
+	(* get any pre-existing kernels we can use, and remove any that have Available -> False; this could happen from a different kernel and so the local $ManifoldKernelPool cache would become out of date *)
+	existingKernels = PickList[$ManifoldKernelPool, Download[$ManifoldKernelPool, Available], Except[False]];
 	numNewKernels = If[Length[existingKernels] > 0,
 		kernelsToReuse = Take[existingKernels, UpTo[numKernels]];
 		$ManifoldKernelPool = kernelsToReuse;
@@ -83,7 +83,8 @@ insertSllVersionAndCommitIntoOps[opts:OptionsPattern[LaunchManifoldKernel]] := M
 
 	(* Figure out the sll version and commit to use - if we're in a git repo, use the current branch, if we're on a distro, use that branch, otherwise use stable*)
 	{sllCommit, sllVersion} = localSllVersionAndCommit[];
-	(* overwrite the default options, if actual options were specified *)
+
+	(* overwrite the default options, but keep the actual options if they were specified *)
 	updatedOpts = Normal@Append[<|SLLCommit -> sllCommit, SLLVersion -> sllVersion|>, ToList[opts]];
 	updatedOpts
 ];
@@ -387,6 +388,11 @@ resultOfCompletedKernelCommand[object_] := Module[
 ];
 
 (* This runs on manifold to poll incoming commands until it is time to exit *)
+
+
+(* Authors definition for Manifold`Private`runInteractiveManifoldKernel *)
+Authors[Manifold`Private`runInteractiveManifoldKernel]:={"steven"};
+
 runInteractiveManifoldKernel[kernel_] := Module[
 	{timeoutDate = Now + 8 Hour, cas = "", receivedTermination = False, commands, pendingCommands},
 	Echo[Now, "current time"];
@@ -424,6 +430,11 @@ runInteractiveManifoldKernel[kernel_] := Module[
 ];
 
 (* This executes the supplied kernel task.  It returns true if the kernel should die as a result of this task *)
+
+
+(* Authors definition for Manifold`Private`executeKernelCommand *)
+Authors[Manifold`Private`executeKernelCommand]:={"steven"};
+
 executeKernelCommand[command_] := Module[
 	{evaluationData, commandString, zdriveFiles, kernel},
 
@@ -512,6 +523,11 @@ ManifoldKernelStatus[kernel_] := Module[
 
 (* Find all commands that should have completed but have not *)
 (* A kernel should never close without finishing its pending commands, so notify platform about these instances *)
+
+
+(* Authors definition for Manifold`Private`notifyKernelsWithIncompleteCommands *)
+Authors[Manifold`Private`notifyKernelsWithIncompleteCommands]:={"steven"};
+
 notifyKernelsWithIncompleteCommands[] := Module[{incompleteCommands, commandKernels, kernelStatuses,
 	completedKernels, allAsanaPackets, allAsanaIDs, uploadPackets},
 	(* Find all Commands that have not completed. Also don't grab any commands whose kernels have already been tagged with an error *)
@@ -529,6 +545,11 @@ notifyKernelsWithIncompleteCommands[] := Module[{incompleteCommands, commandKern
 ];
 
 (* find's all kernels that are in Error and create an Asana task for them *)
+
+
+(* Authors definition for Manifold`Private`notifyKernelInError *)
+Authors[Manifold`Private`notifyKernelInError]:={"steven"};
+
 notifyKernelInError[] := Module[{allErroredKernels, allErrorMessages, allAsanaPackets, allAsanaIDs, uploadPackets},
 	allErroredKernels = Search[Object[Software, ManifoldKernel], ManifoldJob[Computations][Status] == Error && AsanaTaskID == Null];
 

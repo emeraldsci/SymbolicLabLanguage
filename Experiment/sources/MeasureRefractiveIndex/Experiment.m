@@ -389,7 +389,21 @@ DefineOptions[ExperimentMeasureRefractiveIndex,
 		],
 
 		(* Shared options *)
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 40 Milliliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
 		SimulationOption,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
@@ -409,24 +423,22 @@ Error::CalibrantRefractiveIndexDoesntExist = "The provide calibrant model `1` do
 (* ExperimentMeasureRefractiveIndex Source Code *)
 
 ExperimentMeasureRefractiveIndex[
-	mySamples:ListableP[ObjectP[Object[Sample]]],
+	mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}]],
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
-		listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,
-		mySamplesWithPreparedSamplesNamed,
-		myOptionsWithPreparedSamplesNamed,safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples, safeOps,
+		listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,safeOps,
+		mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,safeOpsNamed,safeOpsTests,mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,
 		expandedSafeOps,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
-		protocolObject,resourcePackets,resourcePacketTests,optionsWithObjects,userSpecifiedObjects,specifiedInstrumentObjects,
-		specifiedInstrumentModels,refractometerInstrumentModels,simulatedSampleQ,objectsExistQs,objectsExistTests,
+		protocolObject,resourcePackets,resourcePacketTests,specifiedInstrumentObjects, specifiedInstrumentModels,refractometerInstrumentModels,
 		primaryWashSolutionModels,secondaryWashSolutionModels,tertiaryWashSolutionModels,mySamplesWithPreparedSamplesFields,
 		mySamplesWithPreparedSamplesModelFields,mySamplesWithPreparedSamplesContainerFields,
 		mySamplesWithPreparedSamplesContainerModelFields,allInstrumentModels,allSamplePackets,instrumentObjectPacket,
 		instrumentModelPacket,primaryWashSolutionModelsPacket,secondaryWashSolutionModelsPacket,
 		tertiaryWashSolutionModelsPacket,primaryWashSolutionObjects,primaryWashSolutionObjectsPacket,
 		secondaryWashSolutionObjects,secondaryWashSolutionObjectsPacket,tertiaryWashSolutionObjects,
-		tertiaryWashSolutionObjectsPacket,cacheOption,currentSimulation,inheritedCache,returnEarlyQ, performSimulationQ,
+		tertiaryWashSolutionObjectsPacket,currentSimulation,inheritedCache,returnEarlyQ, performSimulationQ,
 		simulatedProtocol,simulation,resolvedPreparation
 	},
 
@@ -438,63 +450,37 @@ ExperimentMeasureRefractiveIndex[
 	gatherTests = MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedSamples, listedOptions} = sanitizeInputs[ToList[mySamples], ToList[myOptions]];
-
-	(* Make sure we're working with a list of options *)
-	cacheOption = ToList[Lookup[listedOptions,Cache,{}]];
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,currentSimulation} =
-			simulateSamplePreparationPacketsNew[
-				ExperimentMeasureRefractiveIndex,
-				ToList[listedSamples],
-				ToList[listedOptions]
-			],
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,currentSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentMeasureRefractiveIndex,
+			listedSamples,
+			listedOptions,
+			DefaultPreparedModelAmount -> 40 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
+		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];
 		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOpsNamed,safeOpsTests} = If[gatherTests,
-		SafeOptions[
-			ExperimentMeasureRefractiveIndex,
-			myOptionsWithPreparedSamplesNamed,
-			AutoCorrect -> False,
-			Output -> {Result,Tests}
-		],
-		{SafeOptions[
-			ExperimentMeasureRefractiveIndex,
-			myOptionsWithPreparedSamplesNamed,
-			AutoCorrect -> False],{}}
+	{safeOpsNamed, safeOpsTests} = If[gatherTests,
+		SafeOptions[ExperimentMeasureRefractiveIndex, listedOptions, AutoCorrect -> False, Output -> {Result,Tests}],
+		{SafeOptions[ExperimentMeasureRefractiveIndex, listedOptions, AutoCorrect -> False], {}}
 	];
 
-	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} =
-		sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[
-			ExperimentMeasureRefractiveIndex,
-			{mySamplesWithPreparedSamples},
-			myOptionsWithPreparedSamples,
-			Output->{Result,Tests}
-		],
-		{ValidInputLengthsQ[
-			ExperimentMeasureRefractiveIndex,
-			{mySamplesWithPreparedSamples},
-			myOptionsWithPreparedSamples],Null}
-	];
+	(* Replace all objects referenced by Name to ID *)
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> currentSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -504,6 +490,12 @@ ExperimentMeasureRefractiveIndex[
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureRefractiveIndex, {listedSamples}, listedOptions, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureRefractiveIndex, {listedSamples}, listedOptions], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -549,60 +541,6 @@ ExperimentMeasureRefractiveIndex[
 	(* Expand index-matching options *)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentMeasureRefractiveIndex,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
 
-	(* Options that are assigned with an object *)
-	optionsWithObjects = Cases[Values[ToList[myOptions]], ObjectP[], Infinity];
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				ToList[mySamplesWithPreparedSamples],
-				Lookup[expandedSafeOps, optionsWithObjects,Null]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = MemberQ[Download[Lookup[currentSimulation[[1]],Packets],Object],#]&/@userSpecifiedObjects;
-
-	objectsExistQs = DatabaseMemberQ[
-		PickList[userSpecifiedObjects,simulatedSampleQ,False]
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	(* Combine our downloaded and simulated cache. *)
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
@@ -642,7 +580,7 @@ ExperimentMeasureRefractiveIndex[
 		(* For Experiment *)
 		RefractiveIndex,Viscosity,IncompatibleMaterials,Composition,Name,Solvent,State,Deprecated,Sterile,Products,
 		(* Transport *)
-		TransportChilled,TransportWarmed,
+		TransportTemperature,
 		(* Storage *)
 		DefaultStorageCondition
 	}]]];
@@ -753,7 +691,7 @@ ExperimentMeasureRefractiveIndex[
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
 		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureRefractiveIndexOptions[
-			ToList[mySamples],
+			ToList[mySamplesWithPreparedSamples],
 			expandedSafeOps,
 			Cache -> cacheBall,
 			Simulation -> currentSimulation,
@@ -769,7 +707,7 @@ ExperimentMeasureRefractiveIndex[
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
 			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureRefractiveIndexOptions[
-				ToList[mySamples],
+				ToList[mySamplesWithPreparedSamples],
 				expandedSafeOps,
 				Cache->cacheBall,
 				Simulation -> currentSimulation
@@ -853,7 +791,7 @@ ExperimentMeasureRefractiveIndex[
 			Cache -> cacheBall,
 			Simulation -> currentSimulation
 		],
-		{Null, Null}
+		{Null, currentSimulation}
 	];
 
 
@@ -889,6 +827,7 @@ ExperimentMeasureRefractiveIndex[
 			resourcePackets,
 			Upload -> Lookup[safeOps, Upload],
 			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
 			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 			Priority -> Lookup[safeOps, Priority],
 			StartDate -> Lookup[safeOps, StartDate],
@@ -896,7 +835,7 @@ ExperimentMeasureRefractiveIndex[
 			QueuePosition -> Lookup[safeOps, QueuePosition],
 			ConstellationMessage -> Object[Protocol, MeasureRefractiveIndex],
 			Cache -> cacheBall,
-			Simulation -> currentSimulation
+			Simulation -> simulation
 		]
 	];
 
@@ -912,11 +851,13 @@ ExperimentMeasureRefractiveIndex[
 
 (* Container overload *)
 ExperimentMeasureRefractiveIndex[
-	myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]
+	myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]
 ]:=Module[
-	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,
+	{
+		listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,
 		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleResult,containerToSampleOutput,
-		updatedCache,samples,sampleOptions,containerToSampleTests,objectsExistQs,objectsExistTests,currentSimulation},
+		samples,sampleOptions,containerToSampleTests,currentSimulation
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -926,63 +867,25 @@ ExperimentMeasureRefractiveIndex[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=sanitizeInputs[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,currentSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureRefractiveIndex,
-			ToList[listedContainers],
-			ToList[listedOptions]
+			listedContainers,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulatedSamplePreparationPackets];
 		Return[$Failed]
-	];
-
-	(* Before we turn containers into samples, we want to check that all containers exist in the database. We don't check any other option objects as they will be checked in our main Sample overload. We don't want random result to be returned from containerToSample function *)
-
-	objectsExistQs=DatabaseMemberQ[ToList[myContainers]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[ToList[myContainers],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[ToList[myContainers],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->objectsExistTests,
-			Options->$Failed,
-			Preview->Null
-		}]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
@@ -1012,16 +915,9 @@ ExperimentMeasureRefractiveIndex[
 				Simulation -> currentSimulation
 			],
 			$Failed,
-			{Error::EmptyContainer}
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	(* It is important the the sample preparation cache appears first in the cache ball. *)
-	updatedCache = FlattenCachePackets[{
-		currentSimulation,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -1113,7 +1009,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 		failingTimeStepOptions,timeStepWarningTests,modTempRange, resolvedCalibrationTemperature,
 		(* Unresolvable option checks *)
 		(* Miscellaneous options *)
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,
 		samplesInStorageCondition,samplesOutStorageCondition,operator,imageSample,
 		measureWeight,measureVolume,validSampleStorageConditionQ,validSampleStorageTests, invalidStorageConditionOptions,
 		resolvedEmail,
@@ -1833,6 +1729,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 		uploadOption,
 		nameOption,
 		confirmOption,
+		canaryBranchOption,
 		parentProtocolOption,
 		fastTrackOption,
 		templateOption,
@@ -1849,6 +1746,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 			Upload,
 			Name,
 			Confirm,
+			CanaryBranch,
 			ParentProtocol,
 			FastTrack,
 			Template,
@@ -1950,6 +1848,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
 			Cache -> simulatedCache,
+			Simulation->Simulation[simulatedCache],
 			RequiredAliquotContainers-> requiredAliquotContainers,
 			RequiredAliquotAmounts -> requiredAliquotAmounts,
 			AllowSolids -> False,
@@ -1962,6 +1861,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
 				Cache -> simulatedCache,
+				Simulation->Simulation[simulatedCache],
 				RequiredAliquotContainers-> requiredAliquotContainers,
 				RequiredAliquotAmounts -> requiredAliquotAmounts,
 				AllowSolids -> False,
@@ -2031,7 +1931,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 		If[And[uploadOption,MemberQ[output,Result]],
 			True,
 			False
-		];
+		]
 	];
 
 	(* Resolve Post Processing Options *)
@@ -2072,6 +1972,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 				CalibrantVolume -> calibrantVolume,
 				CalibrantStorageCondition -> calibrantStorageCondition,
 				Confirm -> confirmOption,
+				CanaryBranch -> canaryBranchOption,
 				Name -> nameOption,
 				Template -> templateOption,
 				Cache -> simulatedCache,
@@ -2919,13 +2820,13 @@ DefineOptions[ExperimentMeasureRefractiveIndexOptions,
 	SharedOptions :> {ExperimentMeasureRefractiveIndex}
 ];
 
-ExperimentMeasureRefractiveIndexOptions[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureRefractiveIndexOptions[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, (Output -> _) | (OutputFormat->_)];
 
 	(* return only the preview for ExperimentMeasureSurfaceTension *)
@@ -2950,7 +2851,7 @@ DefineOptions[ExperimentMeasureRefractiveIndexPreview,
 	SharedOptions :> {ExperimentMeasureRefractiveIndex}
 ];
 
-ExperimentMeasureRefractiveIndexPreview[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:= Module[
+ExperimentMeasureRefractiveIndexPreview[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:= Module[
 	{listedOptions, noOutputOptions},
 
 	(* Get the options as a list*)
@@ -2972,7 +2873,7 @@ DefineOptions[ValidExperimentMeasureRefractiveIndexQ,
 ];
 
 ValidExperimentMeasureRefractiveIndexQ[
-	myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ValidExperimentMeasureRefractiveIndexQ]]:= Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 

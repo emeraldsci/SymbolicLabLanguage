@@ -1,3 +1,885 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0803e8a4c2bd42e28109eb545ce004cd182799ac37f7198d347cb359831b282e
-size 34988
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     34788,        875]
+NotebookOptionsPosition[     27030,        737]
+NotebookOutlinePosition[     29197,        784]
+CellTagsIndexPosition[     29154,        781]
+WindowTitle->AnalyticalAndPhysicalChemistry
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "47d9eed8-06ca-4d04-bb62-ad2c807c9691"]
+        }],ExpressionUUID->"c7189f4c-043d-48ae-bcaf-bd7aeae06046"],
+        StripOnInput->False], {"\<\"AnalyzeAbsorbanceQuantification\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeAbsorbanceQuantification"], \
+"\<\"AnalyzeBindingKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeBindingKinetics"], \
+"\<\"AnalyzeBindingQuantitation\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeBindingQuantitation"], \
+"\<\"AnalyzeComposition\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeComposition"], "\<\"AnalyzeCopyNumber\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCopyNumber"], \
+"\<\"AnalyzeCriticalMicelleConcentration\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCriticalMicelleConcentration"], \
+"\<\"AnalyzeFractions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeFractions"], "\<\"AnalyzeKinetics\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeKinetics"], "\<\"AnalyzeMeltingPoint\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeMeltingPoint"], "\<\"AnalyzeParallelLine\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeParallelLine"], "\<\"AnalyzePeaks\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzePeaks"], "\<\"AnalyzeQuantificationCycle\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeQuantificationCycle"], \
+"\<\"AnalyzeThermodynamics\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeThermodynamics"], \
+"\<\"AnalyzeTotalProteinQuantification\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeTotalProteinQuantification"], \
+"\<\"PlotBindingKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotBindingKinetics"], "\<\"PlotBindingQuantitation\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotBindingQuantitation"], "\<\"PlotCopyNumber\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotCopyNumber"], \
+"\<\"PlotCriticalMicelleConcentration\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotCriticalMicelleConcentration"], \
+"\<\"PlotMeltingPoint\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotMeltingPoint"], "\<\"PlotQuantificationCycle\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotQuantificationCycle"], "\<\"PlotState\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotState"], "\<\"PlotThermodynamics\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotThermodynamics"], "\<\"PlotTrajectory\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotTrajectory"], "\<\"ReactionMechanism\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/ReactionMechanism"], \
+"\<\"SimulateEnthalpy\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEnthalpy"], "\<\"SimulateEntropy\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEntropy"], \
+"\<\"SimulateEquilibrium\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEquilibrium"], \
+"\<\"SimulateEquilibriumConstant\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateEquilibriumConstant"], \
+"\<\"SimulateKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/SimulateKinetics"], "\<\"State\"\>":>
+       Documentation`HelpLookup["paclet:NucleicAcids/ref/State"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "797887f9-26ac-41f2-bee1-0b5dace66eb7"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "2c2bcbb7-ae2c-4ebb-a4d5-fbd51e381d96"]
+        }],ExpressionUUID->"f5e099da-46d9-483e-a544-48e884dff9e5"],
+        StripOnInput->False], {"\<\"AnalysisBySubjectMatter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalysisBySubjectMatter"], "\<\"ImageAnalysis\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ImageAnalysis"], "\<\"NumericAnalysis\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/NumericAnalysis"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "fc121c6b-3866-44df-8b82-d575f1cb662c"]
+    }], "AnchorBar",ExpressionUUID->"ec2b4f3e-94f9-4271-bc3b-26103949a6a1"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"e8d657d8-014f-4778-8a13-6ced04a170dc"],
+
+Cell["Analytical And Physical Chemistry", "GuideTitle",
+ CellID->1307735464,ExpressionUUID->"1f27e4d1-dc11-4be8-8d88-09b0261016ad"],
+
+Cell["\<\
+Collection of functions involved in deriving physical parameters from \
+empirical data.\
+\>", "GuideAbstract",
+ CellID->1762300050,ExpressionUUID->"953fb7fa-38c5-43f3-94ed-81d504e0ef4f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->882480926,ExpressionUUID->"bc9b2638-04de-4322-95ab-0916bf7e96ac"],
+
+Cell["Quantification", "GuideFunctionsSubsection",
+ CellID->1334857100,ExpressionUUID->"dbb6c30d-a15b-4ef2-81e5-78971e14a1c6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeAbsorbanceQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeAbsorbanceQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0816e530-481d-4be1-b1c8-ee4c6677294b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Users Beer's Law to calculate the concentration of an analyte based on its \
+extinction coefficient and absorbance spectra."
+}], "GuideText",
+ CellID->181619491,ExpressionUUID->"762bc82a-8407-4092-aa99-b53d101dd800"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeTotalProteinQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeTotalProteinQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f75781f4-ec7d-4192-bc0a-5187da11f9ad"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates total protein calculation based on total protein quantification \
+assay data."
+}], "GuideText",
+ CellID->904522850,ExpressionUUID->"be5a5c78-98fc-4137-a503-c76fdf1eaa91"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCopyNumber"]], "paclet:Analysis/ref/AnalyzeCopyNumber"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d5347c86-04d7-4688-be1b-40410aa217f1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the estimated copy number of a given gene sequences in an \
+analyte based on qPCR data or Quantification Cycle analysis."
+}], "GuideText",
+ CellID->278802837,ExpressionUUID->"758ccded-3bc5-4a81-aeda-9d93861eefd9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCopyNumber"]], "paclet:Plot/ref/PlotCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27194ccd-0bad-4c84-9cf5-08bf67489e1f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of the fitted standard curve relating quantification \
+cycle (Cq) to Log10[copy number] from the provided copy number analysis \
+object."
+}], "GuideText",
+ CellID->29963705,ExpressionUUID->"f5bbb233-d4f6-4089-a1ad-afbbb3a70d80"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeQuantificationCycle"]], 
+    "paclet:Analysis/ref/AnalyzeQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a15e6da6-384b-4f69-92c0-543c3ac71656"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the Quantification Cycle (Cq) which is the inflection point in \
+the amplification curve of qPCR data."
+}], "GuideText",
+ CellID->1088816537,ExpressionUUID->"c6e50f47-4c16-43cb-9d03-65f475336c8d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotQuantificationCycle"]], 
+    "paclet:Plot/ref/PlotQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fe91257f-a754-4f8b-8062-5220f466d089"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plots the Cq value on the amplification curve the value was fit to."
+}], "GuideText",
+ CellID->1031381272,ExpressionUUID->"1433e91c-cf42-4156-ba31-c5c981e2ff35"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaks"]], "paclet:Analysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "43e59b63-60ea-463c-bd95-812e0a72c0b4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Preforms peak picking analysis of experimental source data connecting the \
+results of the analysis to its source data and experimental protocol \
+information."
+}], "GuideText",
+ CellID->2084523567,ExpressionUUID->"885ed0f4-7398-4880-95ee-747bbed7ee5e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCriticalMicelleConcentration"]], 
+    "paclet:Analysis/ref/AnalyzeCriticalMicelleConcentration"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "67688291-045a-40b5-b87d-bd60b5382031"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given the surface tension values at different concentrations, calculates \
+the critical micelle concentration of a target molecule above which surface \
+tension is constant and below which the surface tension decreases with \
+concentration."
+}], "GuideText",
+ CellID->539373411,ExpressionUUID->"b4e0f45e-8a5d-4e47-88fe-a5d14febe4ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCriticalMicelleConcentration"]], 
+    "paclet:Plot/ref/PlotCriticalMicelleConcentration"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eb43c0ad-7c9f-4e9b-961e-b1db78f1fc87"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot showing the critical micelle concentration above \
+which surface tension is constant from the provided critical micelle \
+concentration analysis object."
+}], "GuideText",
+ CellID->720444690,ExpressionUUID->"eb544871-8ab5-4e9f-97b2-4920370d86fa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingQuantitation"]], 
+    "paclet:Analysis/ref/AnalyzeBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f8188fab-7795-441b-b007-a6df5722fefa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determines the concentration of the analyte measured by first creating a \
+standard curve that fits all data with the specified model and then finding \
+the concentration at a specific binding rate."
+}], "GuideText",
+ CellID->1001103044,ExpressionUUID->"8767beed-eb0c-4340-b5b9-3c7bb2fa7cce"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingQuantitation"]], 
+    "paclet:Plot/ref/PlotBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7f594499-61b6-4ef5-9332-ac09fcfe1e37"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of the observed binding rate as a function of \
+concentration showing the bio-layer thickness during the quantitation step \
+from the provided BLI analysis object."
+}], "GuideText",
+ CellID->4486263,ExpressionUUID->"66d3865f-7207-4218-b0e6-881e2edc389e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeComposition"]], 
+    "paclet:Analysis/ref/AnalyzeComposition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ae30b7f4-245e-427a-93f4-f60ffc55882f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the concentrations of different analytes in assays based on the \
+chromatogram peaks in a HPLC protocol."
+}], "GuideText",
+ CellID->238694596,ExpressionUUID->"3d49ae81-f37e-41dd-ac25-f64f5cba5df1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeFractions"]], "paclet:Analysis/ref/AnalyzeFractions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bc8d96f4-1909-40b0-81f6-698259d67abf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Selects a set of fractions to be carried forward for further analysis from \
+chromatography data where fractions were collected."
+}], "GuideText",
+ CellID->240622376,ExpressionUUID->"affe1232-020e-407a-bccb-f57ff6ca1c75"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->428566131,ExpressionUUID->"e698c991-b11d-4a4a-ac73-af2b7163e55b"],
+
+Cell["Thermodynamics", "GuideFunctionsSubsection",
+ CellID->250811679,ExpressionUUID->"9f1dfca6-0e18-4c0f-b2b6-146f04d159a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMeltingPoint"]], 
+    "paclet:Analysis/ref/AnalyzeMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1549b449-5b77-4919-9bc8-ec964c8abea7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the melting point from a melting curve, a cooling curve, or a \
+dynamic light scattering dataset (dataset can be either from fluorescence or \
+absorbance thermodynamics data, or thermal shift instrument which may contain \
+both fluorescence spectra as well as dynamic light scattering data)."
+}], "GuideText",
+ CellID->2028973539,ExpressionUUID->"09d2fc80-eb48-44f2-9156-6fa57e343d2f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotMeltingPoint"]], "paclet:Plot/ref/PlotMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9edadc65-ffa9-422b-aa22-30492805efa9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot of the source melting curve analysis along with a \
+demarcation of the fitted melting point."
+}], "GuideText",
+ CellID->1065439260,ExpressionUUID->"0ee769cc-a2c7-4658-bcea-fbbaf74f0ca7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeThermodynamics"]], 
+    "paclet:Analysis/ref/AnalyzeThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b1723eda-a792-444a-897f-e2825ae9b6dc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of melting curve data or analysis, performs Van't Hoff \
+analysis to determine free-energy, enthalpy, and entropy components of a \
+binding event."
+}], "GuideText",
+ CellID->1118994134,ExpressionUUID->"dd3e205d-aef1-469f-abc9-387f4a96e346"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotThermodynamics"]], "paclet:Plot/ref/PlotThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9e4a7e84-8c7f-4fe7-aaa2-db29830a8e9c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a Van't Hoff plot log of Keq as a function of inverse \
+temperature and the fitted line containing the thermodynamic parameters from \
+the provided thermodynamic analysis object."
+}], "GuideText",
+ CellID->1420113359,ExpressionUUID->"2a1651a2-ce23-465f-bdf0-53c284cba69c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeParallelLine"]], 
+    "paclet:Analysis/ref/AnalyzeParallelLine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "71134d8d-08b8-42a7-bce1-f3f58fbec27c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the relative potency ratio between two dose-response fitted \
+curves."
+}], "GuideText",
+ CellID->711971955,ExpressionUUID->"7fc9e9b3-f917-4d3d-8e6c-1e8cce7e6bf2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReactionMechanism"]], 
+    "paclet:NucleicAcids/ref/ReactionMechanism"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d1e18def-56ae-4dcb-8636-728d0cb1d398"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Used to represent a reaction mechanism consisting of a set of \
+transformations."
+}], "GuideText",
+ CellID->333766601,ExpressionUUID->"03d0bdde-0d00-4d91-8e76-463d8417217e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["State"]], "paclet:NucleicAcids/ref/State"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "07e3f567-56d5-4194-be32-7563a46de39c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Used to represent a single state of a reaction consisting of the species \
+involved and their concentrations."
+}], "GuideText",
+ CellID->387977043,ExpressionUUID->"7c916ee9-f612-4b69-b2c6-787e8f4a5fdf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SimulateEquilibrium"]], 
+    "paclet:Simulation/ref/SimulateEquilibrium"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e5f02b76-a9e7-439d-9567-ee79a7eec3a3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction mechanism and a set of initial conditions, projects the \
+equilibrium state of the system."
+}], "GuideText",
+ CellID->969809409,ExpressionUUID->"db617dd4-7333-4a7b-84c6-6498eda9c841"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotState"]], "paclet:Plot/ref/PlotState"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b142a414-ab0d-45cd-984a-a748f4c8eb0b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plots the relative concentration of each species in a given state of a \
+reaction."
+}], "GuideText",
+ CellID->185856333,ExpressionUUID->"770498e6-f929-4ea1-9b01-cba8af4f5443"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SimulateEquilibriumConstant"]], 
+    "paclet:Simulation/ref/SimulateEquilibriumConstant"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "aaaf4f0f-0138-474f-ad31-1b921702b203"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction and a temperature, calculates the equilibrium constant of \
+a system."
+}], "GuideText",
+ CellID->1246165993,ExpressionUUID->"1514207f-c5b7-4b38-a89a-8a9c5b784f56"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SimulateEnthalpy"]], "paclet:Simulation/ref/SimulateEnthalpy"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b67d8e66-d280-4bd7-a3d0-9d512a52f899"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction, calculates the change in enthalpy between the starting \
+material and the product."
+}], "GuideText",
+ CellID->2051318807,ExpressionUUID->"231a8bba-21ca-4911-b413-2cbfc4eb0914"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SimulateEntropy"]], "paclet:Simulation/ref/SimulateEntropy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3040b7ac-70fa-4953-9ee5-f8ef603448f0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction, calculates the change in entropy between the starting \
+material and the product."
+}], "GuideText",
+ CellID->812720311,ExpressionUUID->"862614f4-9818-4f3a-8fbb-6cfaf18fc7db"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1394272057,ExpressionUUID->"a8eb917f-003e-4a10-858d-2cf1f7e0dd60"],
+
+Cell["Kinetics", "GuideFunctionsSubsection",
+ CellID->188905935,ExpressionUUID->"c6eca77d-7707-49c2-978f-f5eb55ec1099"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeKinetics"]], "paclet:Analysis/ref/AnalyzeKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a804f097-4f82-48c7-b606-6b1e0078f267"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction mechanism and a set of reaction trajectories (either \
+simulated or from experimentation) fits rate constants which represent a best \
+fit to the trajectory data."
+}], "GuideText",
+ CellID->961219279,ExpressionUUID->"a78a4035-7305-414d-a0cf-14123e01728b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SimulateKinetics"]], "paclet:Simulation/ref/SimulateKinetics"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a5324ac2-7758-4eb0-a26f-6e0d5df9699e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction mechanism (including rate constants), an initial state, \
+and a time duration for the reaction simulates the time course behavior of a \
+system."
+}], "GuideText",
+ CellID->1840429419,ExpressionUUID->"f19513c8-e487-44f7-b20a-73c2dc7b2119"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotTrajectory"]], "paclet:Plot/ref/PlotTrajectory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8b00431c-f5c2-4b96-9092-0d1514b40f58"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plots the concentration of each species in a reaction as a function of \
+time."
+}], "GuideText",
+ CellID->1890277392,ExpressionUUID->"3528c2f5-a2a2-4ad0-94f4-0ee024d18dc6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ReactionMechanism"]], 
+    "paclet:NucleicAcids/ref/ReactionMechanism"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "839af96f-7c69-408b-95f1-c66237700bed"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Used to represent a reaction mechanism consisting of a set of \
+transformations."
+}], "GuideText",
+ CellID->19053626,ExpressionUUID->"14361947-7eec-4825-a546-d2cf5f99d3ea"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingKinetics"]], 
+    "paclet:Analysis/ref/AnalyzeBindingKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "64d772dd-e4c7-4ed4-89d8-8a4c51f25c3b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Solves the kinetic association and dissociation rates by fitting to the \
+source biolayer interferometry binding kinetics."
+}], "GuideText",
+ CellID->259228779,ExpressionUUID->"5b6b12c6-80a8-4754-9389-eab54695899f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingKinetics"]], "paclet:Plot/ref/PlotBindingKinetics"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bedc1552-2f1c-4de9-a359-1108fa5bbb54"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot comparing the prediction of fitted binding kinetics \
+parameters to the source bio-layer interferometry data in the provided \
+binding kinetics analysis object."
+}], "GuideText",
+ CellID->1761252537,ExpressionUUID->"0cc3f83a-6208-4744-a4a2-c3b9023de6e5"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->456799111,ExpressionUUID->"b09d921f-7e8f-44b9-acba-1a7d7383d9b9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"9a20fc40-46ad-439e-9308-9da58399dea6"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->168620552,ExpressionUUID->"d6b1a355-693a-43ec-b0f6-0506b21e0bd2"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1474687071,ExpressionUUID->"091df3a6-da70-417f-8417-6ea0ef995645"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["NumericAnalysis"]], "paclet:Docs/guide/NumericAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->956832270,ExpressionUUID->"3ec54932-d636-4985-ab57-ef2a526f1b74"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ImageAnalysis"]], "paclet:Docs/guide/ImageAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1122413154,ExpressionUUID->"42da90e1-28e1-44a7-811c-99fa44a5644a"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalysisBySubjectMatter"]], 
+   "paclet:Docs/guide/AnalysisBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->901524030,ExpressionUUID->"2471779d-a6c3-4ab5-b4c5-25ebbeda83c7"],
+
+Cell["", "FooterCell",
+ CellID->1417242625,ExpressionUUID->"75f7bf9f-a9ca-4900-b725-9b0b3b8981fe"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"AnalyticalAndPhysicalChemistry",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:02:22", "context" -> "Docs`", 
+    "keywords" -> {
+     "AnalyzeAbsorbanceQuantification", "AnalyzeTotalProteinQuantification", 
+      "AnalyzeCopyNumber", "PlotCopyNumber", "AnalyzeQuantificationCycle", 
+      "PlotQuantificationCycle", "AnalyzePeaks", 
+      "AnalyzeCriticalMicelleConcentration", 
+      "PlotCriticalMicelleConcentration", "AnalyzeBindingQuantitation", 
+      "PlotBindingQuantitation", "AnalyzeComposition", "AnalyzeFractions", 
+      "AnalyzeMeltingPoint", "PlotMeltingPoint", "AnalyzeThermodynamics", 
+      "PlotThermodynamics", "AnalyzeParallelLine", "ReactionMechanism", 
+      "State", "SimulateEquilibrium", "PlotState", 
+      "SimulateEquilibriumConstant", "SimulateEnthalpy", "SimulateEntropy", 
+      "AnalyzeKinetics", "SimulateKinetics", "PlotTrajectory", 
+      "AnalyzeBindingKinetics", "PlotBindingKinetics"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions involved in deriving physical parameters from \
+empirical data.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "AnalyticalAndPhysicalChemistry", "title" -> 
+    "AnalyticalAndPhysicalChemistry", "type" -> "Guide", "uri" -> 
+    "Docs/guide/AnalyticalAndPhysicalChemistry", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"49710085-33e2-42c0-aea2-f94af07ccc9b"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[602, 21, 6559, 140, 58, "AnchorBarGrid",ExpressionUUID->"e8d657d8-014f-4778-8a13-6ced04a170dc",
+ CellID->1],
+Cell[7164, 163, 131, 1, 45, "GuideTitle",ExpressionUUID->"1f27e4d1-dc11-4be8-8d88-09b0261016ad",
+ CellID->1307735464],
+Cell[7298, 166, 196, 4, 30, "GuideAbstract",ExpressionUUID->"953fb7fa-38c5-43f3-94ed-81d504e0ef4f",
+ CellID->1762300050],
+Cell[7497, 172, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"bc9b2638-04de-4322-95ab-0916bf7e96ac",
+ CellID->882480926],
+Cell[7613, 175, 126, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"dbb6c30d-a15b-4ef2-81e5-78971e14a1c6",
+ CellID->1334857100],
+Cell[7742, 178, 568, 14, 51, "GuideText",ExpressionUUID->"762bc82a-8407-4092-aa99-b53d101dd800",
+ CellID->181619491],
+Cell[8313, 194, 537, 14, 57, "GuideText",ExpressionUUID->"be5a5c78-98fc-4137-a503-c76fdf1eaa91",
+ CellID->904522850],
+Cell[8853, 210, 547, 14, 57, "GuideText",ExpressionUUID->"758ccded-3bc5-4a81-aeda-9d93861eefd9",
+ CellID->278802837],
+Cell[9403, 226, 559, 14, 57, "GuideText",ExpressionUUID->"f5bbb233-d4f6-4089-a1ad-afbbb3a70d80",
+ CellID->29963705],
+Cell[9965, 242, 549, 14, 57, "GuideText",ExpressionUUID->"c6e50f47-4c16-43cb-9d03-65f475336c8d",
+ CellID->1088816537],
+Cell[10517, 258, 493, 13, 37, "GuideText",ExpressionUUID->"1433e91c-cf42-4156-ba31-c5c981e2ff35",
+ CellID->1031381272],
+Cell[11013, 273, 562, 14, 57, "GuideText",ExpressionUUID->"885ed0f4-7398-4880-95ee-747bbed7ee5e",
+ CellID->2084523567],
+Cell[11578, 289, 693, 16, 77, "GuideText",ExpressionUUID->"b4e0f45e-8a5d-4e47-88fe-a5d14febe4ca",
+ CellID->539373411],
+Cell[12274, 307, 617, 15, 57, "GuideText",ExpressionUUID->"eb544871-8ab5-4e9f-97b2-4920370d86fa",
+ CellID->720444690],
+Cell[12894, 324, 634, 15, 77, "GuideText",ExpressionUUID->"8767beed-eb0c-4340-b5b9-3c7bb2fa7cce",
+ CellID->1001103044],
+Cell[13531, 341, 603, 15, 57, "GuideText",ExpressionUUID->"66d3865f-7207-4218-b0e6-881e2edc389e",
+ CellID->4486263],
+Cell[14137, 358, 532, 14, 57, "GuideText",ExpressionUUID->"3d49ae81-f37e-41dd-ac25-f64f5cba5df1",
+ CellID->238694596],
+Cell[14672, 374, 538, 13, 57, "GuideText",ExpressionUUID->"affe1232-020e-407a-bccb-f57ff6ca1c75",
+ CellID->240622376],
+Cell[15213, 389, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"e698c991-b11d-4a4a-ac73-af2b7163e55b",
+ CellID->428566131],
+Cell[15329, 392, 125, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"9f1dfca6-0e18-4c0f-b2b6-146f04d159a0",
+ CellID->250811679],
+Cell[15457, 395, 724, 16, 91, "GuideText",ExpressionUUID->"09d2fc80-eb48-44f2-9156-6fa57e343d2f",
+ CellID->2028973539],
+Cell[16184, 413, 521, 13, 57, "GuideText",ExpressionUUID->"0ee769cc-a2c7-4658-bcea-fbbaf74f0ca7",
+ CellID->1065439260],
+Cell[16708, 428, 584, 15, 57, "GuideText",ExpressionUUID->"dd3e205d-aef1-469f-abc9-387f4a96e346",
+ CellID->1118994134],
+Cell[17295, 445, 599, 14, 77, "GuideText",ExpressionUUID->"2a1651a2-ce23-465f-bdf0-53c284cba69c",
+ CellID->1420113359],
+Cell[17897, 461, 501, 14, 37, "GuideText",ExpressionUUID->"7fc9e9b3-f917-4d3d-8e6c-1e8cce7e6bf2",
+ CellID->711971955],
+Cell[18401, 477, 501, 14, 37, "GuideText",ExpressionUUID->"03d0bdde-0d00-4d91-8e76-463d8417217e",
+ CellID->333766601],
+Cell[18905, 493, 501, 13, 57, "GuideText",ExpressionUUID->"7c916ee9-f612-4b69-b2c6-787e8f4a5fdf",
+ CellID->387977043],
+Cell[19409, 508, 530, 14, 57, "GuideText",ExpressionUUID->"db617dd4-7333-4a7b-84c6-6498eda9c841",
+ CellID->969809409],
+Cell[19942, 524, 474, 13, 37, "GuideText",ExpressionUUID->"770498e6-f929-4ea1-9b01-cba8af4f5443",
+ CellID->185856333],
+Cell[20419, 539, 526, 14, 57, "GuideText",ExpressionUUID->"1514207f-c5b7-4b38-a89a-8a9c5b784f56",
+ CellID->1246165993],
+Cell[20948, 555, 517, 14, 57, "GuideText",ExpressionUUID->"231a8bba-21ca-4911-b413-2cbfc4eb0914",
+ CellID->2051318807],
+Cell[21468, 571, 509, 13, 57, "GuideText",ExpressionUUID->"862614f4-9818-4f3a-8fbb-6cfaf18fc7db",
+ CellID->812720311],
+Cell[21980, 586, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"a8eb917f-003e-4a10-858d-2cf1f7e0dd60",
+ CellID->1394272057],
+Cell[22097, 589, 119, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"c6eca77d-7707-49c2-978f-f5eb55ec1099",
+ CellID->188905935],
+Cell[22219, 592, 587, 14, 51, "GuideText",ExpressionUUID->"a78a4035-7305-414d-a0cf-14123e01728b",
+ CellID->961219279],
+Cell[22809, 608, 578, 15, 57, "GuideText",ExpressionUUID->"f19513c8-e487-44f7-b20a-73c2dc7b2119",
+ CellID->1840429419],
+Cell[23390, 625, 481, 13, 37, "GuideText",ExpressionUUID->"3528c2f5-a2a2-4ad0-94f4-0ee024d18dc6",
+ CellID->1890277392],
+Cell[23874, 640, 500, 14, 37, "GuideText",ExpressionUUID->"14361947-7eec-4825-a546-d2cf5f99d3ea",
+ CellID->19053626],
+Cell[24377, 656, 549, 14, 57, "GuideText",ExpressionUUID->"5b6b12c6-80a8-4754-9389-eab54695899f",
+ CellID->259228779],
+Cell[24929, 672, 594, 15, 57, "GuideText",ExpressionUUID->"0cc3f83a-6208-4744-a4a2-c3b9023de6e5",
+ CellID->1761252537],
+Cell[25526, 689, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"b09d921f-7e8f-44b9-acba-1a7d7383d9b9",
+ CellID->456799111],
+Cell[25635, 692, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"d6b1a355-693a-43ec-b0f6-0506b21e0bd2",
+ CellID->168620552],
+Cell[26030, 706, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"091df3a6-da70-417f-8417-6ea0ef995645",
+ CellID->1474687071],
+Cell[26140, 709, 254, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"3ec54932-d636-4985-ab57-ef2a526f1b74",
+ CellID->956832270],
+Cell[26397, 717, 251, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"42da90e1-28e1-44a7-811c-99fa44a5644a",
+ CellID->1122413154],
+Cell[26651, 725, 274, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"2471779d-a6c3-4ab5-b4c5-25ebbeda83c7",
+ CellID->901524030],
+Cell[26928, 734, 98, 1, 40, "FooterCell",ExpressionUUID->"75f7bf9f-a9ca-4900-b725-9b0b3b8981fe",
+ CellID->1417242625]
+}
+]
+*)
+
+(* End of internal cache information *)
+

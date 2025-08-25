@@ -33,6 +33,22 @@ DefineObjectType[Object[Container, WasteBin], {
 			Relation -> Object[Instrument, FumeHood][LiquidWasteBin],
 			Description -> "The fume hood on whose work surface this waste bin is permanently located.",
 			Category -> "Container Specifications"
+		},
+		HandlingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HandlingStation][LiquidWasteBin],
+			Description -> "The handling station on whose work surface this waste bin is permanently located.",
+			Category -> "Part Specifications"
+		},
+		WasteContainerLabel -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> WasteContainerLabelP,
+			Description -> "The label specifying the intended use of the waste container.",
+			Category -> "Container Specifications",
+			Developer -> True
 		}
 	}
 }];

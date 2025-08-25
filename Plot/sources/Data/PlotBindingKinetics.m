@@ -50,7 +50,7 @@ PlotBindingKinetics[objs:ObjectReferenceP[Object[Analysis,BindingKinetics]]|Link
   outputSpecification=Quiet[OptionValue[Output]];
   output=outputSpecification;
 
-  (* Call SafeOptions to make sure all options match pattern - dont gather tests *)
+  (* Call SafeOptions to make sure all options match pattern - don't gather tests *)
   {safeOptions, safeOptionTests} =
       {
         SafeOptions[PlotBindingKinetics, listOps, AutoCorrect -> False],

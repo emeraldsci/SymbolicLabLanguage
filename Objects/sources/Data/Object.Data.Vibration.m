@@ -10,6 +10,14 @@ DefineObjectType[Object[Data, Vibration], {
   Cache->Session,
   Fields -> {
 
+    VibrationSensorType -> {
+      Format -> Single,
+      Class -> Expression,
+      Pattern :> VibrationSensorTypeP,
+      Description -> "The aspect of vibration being measured in this data - acceleration or velocity.",
+      Category -> "Sensor Information",
+      Abstract -> True
+    },
     FirstDataPoint -> {
       Format -> Single,
       Class -> Date,
@@ -33,11 +41,20 @@ DefineObjectType[Object[Data, Vibration], {
       Description -> "Boolean describing whether or not the data object is a daily log. If it is, it will be parsed to create new data objects with the data measured from the sensor using a function called RecordSensor.",
       Category -> "General"
     },
-    VibrationLog -> {
+    SpeedometerVibrationLog -> {
       Format -> Single,
       Class -> QuantityArray,
       Pattern :> QuantityCoordinatesP[{None, Millimeter/Second}],
       Units -> {None, Millimeter/Second},
+      Description -> "Vibration as they appear vs date/time during the course of an experiment or single data point.",
+      Category -> "Sensor Information",
+      Abstract -> True
+    },
+    AccelerometerVibrationLog -> {
+      Format -> Single,
+      Class -> QuantityArray,
+      Pattern :> QuantityCoordinatesP[{None, Meter/Second^2}],
+      Units -> {None, Meter/Second^2},
       Description -> "Vibration as they appear vs date/time during the course of an experiment or single data point.",
       Category -> "Sensor Information",
       Abstract -> True
@@ -54,9 +71,8 @@ DefineObjectType[Object[Data, Vibration], {
     },
     VibrationStandardDeviation -> {
       Format -> Single,
-      Class -> Real,
-      Pattern :> GreaterEqualP[0*Millimeter/Second],
-      Units -> Millimeter/Second,
+      Class -> VariableUnit,
+      Pattern :> GreaterEqualP[0*Millimeter/Second]|GreaterEqualP[0*Meter/Second^2],
       Description -> "The calculated standard deviation for this data.",
       Category -> "Data Processing",
       Abstract -> True
@@ -64,15 +80,14 @@ DefineObjectType[Object[Data, Vibration], {
     VibrationDistribution -> {
       Format -> Single,
       Class -> Expression,
-      Pattern :> DistributionP[Millimeter/Second],
+      Pattern :> (DistributionP[Millimeter/Second]|DistributionP[0*Meter/Second^2]),
       Description -> "The empirical distribution based on this data.",
       Category -> "Data Processing"
     },
     Vibration -> {
       Format -> Single,
-      Class -> Integer,
-      Pattern :> GreaterEqualP[0*Millimeter/Second],
-      Units -> Millimeter/Second,
+      Class -> VariableUnit,
+      Pattern :> GreaterEqualP[0*Millimeter/Second]|GreaterEqualP[0*Meter/Second^2],
       Description -> "Total vibration detected over the course of an experiment or single data point.",
       Category -> "Data Processing",
       Abstract -> True

@@ -21,6 +21,13 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Category -> "Inventory",
 			Abstract -> True
 		},
+		ExpirationDate -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "The date after which this item is considered expired. This date is recorded from the manufacturer's specified expiration date on the product label.",
+			Category -> "Inventory"
+		},
 		ProductName -> {
 			Format -> Single,
 			Class -> String,
@@ -53,6 +60,15 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Pattern :> _Link,
 			Relation -> Object[Container],
 			Description -> "The containers of a particular batch number in this Program.",
+			Category -> "Inventory",
+			Abstract -> True
+		},
+		BulkContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Any bags or envelopes containing the objects being received in this Program.",
 			Category -> "Inventory",
 			Abstract -> True
 		},
@@ -203,6 +219,73 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Pattern :>BooleanP,
 			Description -> "Indicates if there are covers in this shipment which do not match the physical characteristics of their assigned Model.",
 			Category -> "Inventory"
+		},
+		UnbagInBSC -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if aseptic items should be unbagged and stickered in a biosafety cabinet.",
+			Category -> "Inventory"
+		},
+		PrintPiggybackSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if piggyback stickers should be printed for these items.",
+			Category -> "Inventory"
+		},
+		AsepticShippingContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticShippingContainerTypeP,
+			Description -> "Describes the manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+			Category -> "Inventory"
+		},
+		AsepticRebaggingContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Describes the type of container the item(s) will be transferred to if it arrives in a non-resealable aseptic shipping container.",
+			Category -> "Inventory"
+		},
+		AsepticContainers->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Bag, Aseptic],
+				Object[Container, Bag, Aseptic]
+			],
+			Description -> "An aseptic bag used to store aseptic items.",
+			Category -> "Inventory"
+		},
+		AsepticItemBatchLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The batch lengths to separate the items into multiple aseptic bulk containers.",
+			Category -> "Inventory",
+			Developer->True
+		},
+		AsepticContainerBatchLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The batch lengths corresponding to AsepticContainers for separating items of the program into different bulk aseptic containers.",
+			Category -> "Inventory",
+			Developer->True
+		},
+		StickerBags -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Bag],
+				Object[Container, Bag]
+			],
+			Description -> "Small plastic bags used to hold printed stickers for items that need to be stickered inside a biosafety cabinet, until the stickers are applied.",
+			Category -> "Inventory",
+			Developer -> True
 		}
 	}
 }];

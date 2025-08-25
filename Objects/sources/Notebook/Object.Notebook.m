@@ -66,6 +66,14 @@ DefineObjectType[Object[Notebook], {
 			Description -> "Indicates that this object is being used for test purposes only and is not supported by standard SLL features.",
 			Category -> "Organizational Information",
 			Developer -> True
+		},
+		ParentFolder -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Folder][Contents],
+			Description -> "The folder in which the notebook is organized within.",
+			Category -> "General"
 		}
 	}
 }];

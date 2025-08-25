@@ -30,6 +30,27 @@ DefineUsage[PlotELISA,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotELISA[protocol]", "plot"},
+				Description -> "displays a 'plot' of the ELISA or CapillaryELISA data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing ELISA data objects.",
+						Widget -> Alternatives[
+							"ELISA protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, ELISA]]],
+							"Capillary ELISA protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, CapillaryELISA]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the ELISA or CapillaryELISA protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {

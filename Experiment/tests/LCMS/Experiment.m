@@ -535,7 +535,7 @@ DefineTests[ExperimentLCMS,
 					Data -> Null
 				|>
 			},
-			Messages :> {Warning::HPLCGradientNotReequilibrated,Warning::OverwritingMassAcquisitionMethod},
+			Messages :> {Warning::OverwritingMassAcquisitionMethod},
 			Variables :> {customInjectionTable, protocol}
 		],
 		Example[
@@ -1441,9 +1441,10 @@ DefineTests[ExperimentLCMS,
 			Download[protocol, {CollisionEnergies, LowCollisionEnergies, HighCollisionEnergies, FinalLowCollisionEnergies, FinalHighCollisionEnergies}],
 			{
 				{
-					{Null},
+					(* collision energy is not Null under DataIndependent*)
+					{{40 Volt}},
 					{Null, Null},
-					{Null}
+					{{40 Volt}}
 				},
 				{
 					{Quantity[60, "Volts"]},
@@ -2270,6 +2271,10 @@ DefineTests[ExperimentLCMS,
 			{{5, 6}, {10}, {3}},
 			Variables :> {protocol}
 		],
+		(* Prior to the ExpandIndexMatchedInputs update in April 2025, this resolved to a protocol with 3 acquisition windows for the first sample *)
+		(* 4 acquisition windows for the second sample and 2 acquisition windows for the third sample. Now it resolves to a protocol where each sample *)
+		(* has 3 acquisitions windows with 3, 4, and 2 ions excluded for each. This is also a valid protocol and as there have not been of these any protocols  *)
+		(* actually run we have updated it. *)
 		Example[
 			{Options, ChargeStateExclusion, "Specify the specific ionic states of intact ions to redundantly exclude from the survey for further fragmentation/acquisition. 1 refers to +1/-1, 2 refers to +2/-2, etc:"},
 			protocol = ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
@@ -2280,7 +2285,35 @@ DefineTests[ExperimentLCMS,
 				}
 			];
 			Download[protocol, ChargeStateSelections],
-			{{1, 2, 3}, {1, 2, 3, 4}, {2, 4}},
+			{
+				(* Sample 1 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4},
+					(* Acquisition Window 3 *)
+					{2, 4}
+				},
+				(* Sample 2 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4},
+					(* Acquisition Window 3 *)
+					{2, 4}
+				},
+				(* Sample 2 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4},
+					(* Acquisition Window 3 *)
+					{2, 4}
+				}
+			},
 			Variables :> {protocol}
 		],
 		Example[
@@ -2352,6 +2385,9 @@ DefineTests[ExperimentLCMS,
 			},
 			Variables :> {protocol}
 		],
+		(* Prior to ExpandIndexMatchedInputs updates in April 2025 this resolved to a protocol with 2 acquisitions windows for the first and one for the latter samples. *)
+		(* Now it resolves to a protocol with 3 acquisition windows for each measuring to isotopes in the first and one in each of the latter. As no protocols have been *)
+		(* run in lab we decided to update the value of the test. *)
 		Example[
 			{Options, IsotopeDetectionMinimum, "Specify the acquisition rate of a given intact mass to consider for isotope exclusion in the survey:"},
 			protocol = ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
@@ -2368,12 +2404,33 @@ DefineTests[ExperimentLCMS,
 			];
 			Download[protocol, IsotopeDetectionMinimums],
 			{
+				(* Sample 1 *)
 				{
-					{Quantity[10, "Seconds"^(-1)]},
-					{Quantity[20, "Seconds"^(-1)]}
+					(* Acquisition Window 1 *)
+					{10 1/Second, 20 1/Second},
+					(* Acquisition Window 2 *)
+					{15 1/Second},
+					(* Acquisition Window 3 *)
+					{25 1/Second}
 				},
-				{{Quantity[15, "Seconds"^(-1)]}},
-				{{Quantity[25, "Seconds"^(-1)]}}
+				(* Sample 2 *)
+				{
+					(* Acquisition Window 1 *)
+					{10 1/Second, 20 1/Second},
+					(* Acquisition Window 2 *)
+					{15 1/Second},
+					(* Acquisition Window 3 *)
+					{25 1/Second}
+				},
+				(* Sample 3 *)
+				{
+					(* Acquisition Window 1 *)
+					{10 1/Second, 20 1/Second},
+					(* Acquisition Window 2 *)
+					{15 1/Second},
+					(* Acquisition Window 3 *)
+					{25 1/Second}
+				}
 			},
 			Variables :> {protocol}
 		],
@@ -2543,6 +2600,42 @@ DefineTests[ExperimentLCMS,
 			Variables :> {protocol},
 			EquivalenceFunction -> Equal
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentLCMS[
+				(* Small Molecule HPLC Standard Mix *)
+				{Model[Sample, StockSolution, Standard, "id:01G6nvw7AOYE"], Model[Sample, StockSolution, Standard, "id:01G6nvw7AOYE"]},
+				PreparedModelAmount -> 1 Milliliter,
+				(* 96-well 2mL Deep Well Plate *)
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Small Molecule HPLC Standard Mix *)
+				{ObjectP[Model[Sample, StockSolution, Standard, "id:01G6nvw7AOYE"]]..},
+				(* 96-well 2mL Deep Well Plate *)
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentLCMS[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True
+			],
+			ObjectP[Object[Protocol, LCMS]]
+		],
 		Example[{Options, PreparatoryUnitOperations, "Specify prepared samples for ExperimentLCMS:"},
 			ExperimentLCMS["My NestedIndexMatching Sample",
 				PreparatoryUnitOperations -> {
@@ -2563,26 +2656,6 @@ DefineTests[ExperimentLCMS,
 			ObjectP[Object[Protocol, LCMS]],
 			TimeConstraint -> 1000
 		],
-		Example[{Options, PreparatoryPrimitives, "Specify prepared samples for ExperimentLCMS:"},
-			ExperimentLCMS["My NestedIndexMatching Sample",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My NestedIndexMatching Sample",
-						Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
-					],
-					Consolidation[
-						Sources -> {
-							Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID],
-							Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID]
-						},
-						Destination -> "My NestedIndexMatching Sample",
-						Amounts -> {300 Microliter, 300 Microliter}
-					]
-				}
-			],
-			ObjectP[Object[Protocol, LCMS]],
-			TimeConstraint -> 1000
-		],
 		Example[
 			{Options, AliquotSampleLabel, "Specified the label of the samples, after they are aliquotted:"},
 			options = ExperimentLCMS[
@@ -2591,7 +2664,7 @@ DefineTests[ExperimentLCMS,
 				Output -> Options
 			];
 			Lookup[options, AliquotSampleLabel],
-			Null,
+			{Null},
 			Variables :> {options}
 		],
 		(* Standards *)
@@ -3278,12 +3351,12 @@ DefineTests[ExperimentLCMS,
 			}],
 			{
 				{
-					{Null},
+					{{40 Volt}},
 					{Null, Null},
-					{Null},
-					{Null},
+					{{40 Volt}},
+					{{40 Volt}},
 					{Null, Null},
-					{Null}
+					{{40 Volt}}
 				},
 				{
 					{Quantity[60, "Volts"]},
@@ -3888,6 +3961,7 @@ DefineTests[ExperimentLCMS,
 			{{5, 6}, {10}, {3}, {5, 6}, {10}, {3}},
 			Variables :> {protocol}
 		],
+		(* See note on ChargeStateExclusion about how the test below resolved pre and post-ExpandIndexMatchedInputs update on April 2025 *)
 		Example[
 			{Options, StandardChargeStateExclusion, "Specify the specific ionic states of intact ions to redundantly exclude from the survey for further fragmentation/acquisition for standard measurements:"},
 			protocol = ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
@@ -3898,10 +3972,20 @@ DefineTests[ExperimentLCMS,
 			];
 			Download[protocol, StandardChargeStateSelections],
 			{
-				{1, 2, 3},
-				{1, 2, 3, 4},
-				{1, 2, 3},
-				{1, 2, 3, 4}
+				(* Injection 1 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4}
+				},
+				(* Injection 2*)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4}
+				}
 			},
 			Variables :> {protocol}
 		],
@@ -3986,6 +4070,7 @@ DefineTests[ExperimentLCMS,
 			},
 			Variables :> {protocol}
 		],
+		(* See the Note on IsotopeDetectionMinimum for how this resolved pre and post-ExpandIndexMatchedInputs updates in April of 2025 *)
 		Example[
 			{Options, StandardIsotopeDetectionMinimum, "Specify the acquisition rate of a given intact mass to consider for isotope exclusion in the survey for standard measurements:"},
 			protocol = ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
@@ -3997,18 +4082,24 @@ DefineTests[ExperimentLCMS,
 			];
 			Download[protocol, StandardIsotopeDetectionMinimums],
 			{
+				(* Standard 1 *)
 				{
-					{Quantity[10, "Seconds"^(-1)]},
-					{Quantity[20, "Seconds"^(-1)]}
+					(* Acquisition Window 1 *)
+					{10/Second, 20/Second},
+					(* Acquisition Window 2 *)
+					{15/Second},
+					(* Acquisition Window 3 *)
+					{25/Second}
 				},
-				{{Quantity[15, "Seconds"^(-1)]}},
-				{{Quantity[25, "Seconds"^(-1)]}},
+				(* Standard 2 *)
 				{
-					{Quantity[10, "Seconds"^(-1)]},
-					{Quantity[20, "Seconds"^(-1)]}
-				},
-				{{Quantity[15, "Seconds"^(-1)]}},
-				{{Quantity[25, "Seconds"^(-1)]}}
+					(* Acquisition Window 1 *)
+					{10/Second, 20/Second},
+					(* Acquisition Window 2 *)
+					{15/Second},
+					(* Acquisition Window 3 *)
+					{25/Second}
+				}
 			},
 			Variables :> {protocol}
 		],
@@ -4952,12 +5043,12 @@ DefineTests[ExperimentLCMS,
 			}],
 			{
 				{
-					{Null},
+					{{40 Volt}},
 					{Null, Null},
-					{Null},
-					{Null},
+					{{40 Volt}},
+					{{40 Volt}},
 					{Null, Null},
-					{Null}
+					{{40 Volt}}
 				},
 				{
 					{Quantity[60, "Volts"]},
@@ -5628,8 +5719,8 @@ DefineTests[ExperimentLCMS,
 			{{5, 6}, {10}, {3}, {5, 6}, {10}, {3}},
 			Variables :> {protocol}
 		],
-		Example[
-			{Options, BlankChargeStateExclusion, "Specify the specific ionic states of intact ions to redundantly exclude from the survey for further fragmentation/acquisition for blank measurements:"},
+		(* See note on ChargeStateExclusion about how the test below resolved pre and post-ExpandIndexMatchedInputs update on April 2025 *)
+		Example[{Options, BlankChargeStateExclusion, "Specify the specific ionic states of intact ions to redundantly exclude from the survey for further fragmentation/acquisition for blank measurements:"},
 			protocol = ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
 				BlankChargeStateExclusion -> {
 					{1, 2, 3},
@@ -5638,10 +5729,20 @@ DefineTests[ExperimentLCMS,
 			];
 			Download[protocol, BlankChargeStateSelections],
 			{
-				{1, 2, 3},
-				{1, 2, 3, 4},
-				{1, 2, 3},
-				{1, 2, 3, 4}
+				(* Blank 1 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4}
+				},
+				(* Blank 2 *)
+				{
+					(* Acquisition Window 1 *)
+					{1, 2, 3},
+					(* Acquisition Window 2 *)
+					{1, 2, 3, 4}
+				}
 			},
 			Variables :> {protocol}
 		],
@@ -5742,18 +5843,24 @@ DefineTests[ExperimentLCMS,
 			];
 			Download[protocol, BlankIsotopeDetectionMinimums],
 			{
+				(* Blank 1 *)
 				{
-					{Quantity[10, "Seconds"^(-1)]},
-					{Quantity[20, "Seconds"^(-1)]}
+					(* Acquisition Window 1 *)
+					{10/Second, 20/Second},
+					(* Acquisition Window 2 *)
+					{15/Second},
+					(* Acquisition Window 3 *)
+					{25/Second}
 				},
-				{{Quantity[15, "Seconds"^(-1)]}},
-				{{Quantity[25, "Seconds"^(-1)]}},
+				(* Blank 2 *)
 				{
-					{Quantity[10, "Seconds"^(-1)]},
-					{Quantity[20, "Seconds"^(-1)]}
-				},
-				{{Quantity[15, "Seconds"^(-1)]}},
-				{{Quantity[25, "Seconds"^(-1)]}}
+					(* Acquisition Window 1 *)
+					{10/Second,20/Second},
+					(* Acquisition Window 2 *)
+					{15/Second},
+					(* Acquisition Window 3 *)
+					{25/Second}
+				}
 			},
 			Variables :> {protocol}
 		],
@@ -7501,7 +7608,8 @@ DefineTests[ExperimentLCMS,
 				{
 					{
 						Quantity[0., "Minutes"],
-						Quantity[14.99, "Minutes"]
+						(* ExperimentHPLC is now updated to consider the volume/time required to fill the column with the final gradient. To make our test robust for any column dimensions/volume change, we turn this to a pattern match *)
+						GreaterEqualP[Quantity[9., "Minutes"]]
 					}
 				},
 				{
@@ -7595,7 +7703,8 @@ DefineTests[ExperimentLCMS,
 			Download[protocol, ColumnFlushInclusionDomains],
 			{
 				{
-					{Quantity[0., "Minutes"], Quantity[14.99, "Minutes"]},
+					(* ExperimentHPLC is now updated to consider the volume/time required to fill the column with the final gradient. To make our test robust for any column dimensions/volume change, we turn this to a pattern match *)
+					{Quantity[0., "Minutes"], TimeP},
 					{Quantity[10, "Minutes"], Quantity[20, "Minutes"]}
 				},
 				{{Quantity[2, "Minutes"], Quantity[5, "Minutes"]}}
@@ -8069,7 +8178,6 @@ DefineTests[ExperimentLCMS,
 			Download[protocol, SampleTemperature],
 			20 * Celsius,
 			Variables :> {protocol},
-			Messages :> {Warning::OverwritingMassAcquisitionMethod},
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, IncubateAliquotDestinationWell, "Indicates how the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
@@ -8093,7 +8201,7 @@ DefineTests[ExperimentLCMS,
 		Example[{Options, DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		(* ExperimentIncubate tests. *)
@@ -8373,7 +8481,7 @@ DefineTests[ExperimentLCMS,
 		Example[{Options, Aliquot, "If input samples are not in a supported container, force aliquotting in correct container type:"},
 			options = ExperimentLCMS[Object[Sample, "Test sample for invalid container for ExperimentLCMS tests" <> $SessionUUID], InjectionVolume -> 10 Microliter, Output -> Options];
 			Lookup[options, {Aliquot, AliquotContainer}],
-			{True, {1, ObjectP@Model[Container, Plate, "96-well 2mL Deep Well Plate"]}},
+			{True, {{1, ObjectP@Model[Container, Plate, "96-well 2mL Deep Well Plate"]}}},
 			Variables :> {options},
 			Messages :> {Warning::AliquotRequired}
 		],
@@ -8456,10 +8564,30 @@ DefineTests[ExperimentLCMS,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]}},
 			Variables :> {options}
 		],
 		(*===MESSAGES===*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentLCMS[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentLCMS[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentLCMS[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentLCMS[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		(* -- Rounding Tests -- *)
 		Example[{Messages, "GradientPercentPrecision", "Return a warning when the percent in Gradient is specified to unfeasible precision:"},
 			options = ExperimentLCMS[
@@ -8846,7 +8974,7 @@ DefineTests[ExperimentLCMS,
 				Object[Sample, "Test Incompatible Sample for ExperimentLCMS tests" <> $SessionUUID]
 			],
 			ObjectP[Object[Protocol, LCMS]],
-			Messages :> {Warning::IncompatibleMaterials}
+			Messages :> {Error::IncompatibleMaterials}
 		],
 		Example[
 			{Messages, "RepeatedDetectors", "Duplicate entries in the Detector option are removed:"},
@@ -9071,6 +9199,16 @@ DefineTests[ExperimentLCMS,
 			Messages :> {Error::InvalidOption, Error::CollisionEnergyProfileConflict}
 		],
 		Example[
+			{Messages, "CollisionEnergyProfileConflict", "When CollisionEnergy and CollisionEnergyScan are both defined throw an error and return $Failed:"},
+			ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
+				AcquisitionMode -> DataIndependent,
+				CollisionEnergy -> 40 Volt,
+				CollisionEnergyMassProfile -> 25 Volt ;; 78 Volt
+			],
+			$Failed,
+			Messages :> {Error::InvalidOption, Error::CollisionEnergyProfileConflict}
+		],
+		Example[
 			{Messages, "CollisionEnergyScanConflict", "CollisionEnergyMassScan can only be defined when AcquisitionMode is DataDependent:"},
 			ExperimentLCMS[{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
 				StandardAcquisitionMode -> DataIndependent,
@@ -9242,7 +9380,7 @@ DefineTests[ExperimentLCMS,
 				ColumnFlushFragment -> True
 			],
 			$Failed,
-			Messages :> {Warning::HPLCGradientNotReequilibrated,Error::InvalidOption, Error::ColumnFlushConflict},
+			Messages :> {Error::InvalidOption, Error::ColumnFlushConflict},
 			Variables :> {customInjectionTable}
 		],
 		Example[{Messages, "OnlyHPLCAvailable", "If a liquid chromatography device not amendable to LCMS is requested, an error is thrown:"},
@@ -9415,7 +9553,7 @@ DefineTests[ExperimentLCMS,
 				Aliquot -> False
 			],
 			$Failed,
-			Messages :> {Error::InvalidOption, Error::AliquotOptionConflict}
+			Messages :> {Error::InvalidOption, Error::AliquotOptionMismatch}
 		],
 		Example[
 			{Messages, "InjectionTableBlankFrequencyConflict", "Both InjectionTable and (StandardFrequency, BlankFrequency, nor ColumnRefreshFrequency) cannot be set at the same time:"},
@@ -9687,6 +9825,18 @@ DefineTests[ExperimentLCMS,
 			ObjectP[Object[Protocol, LCMS]],
 			Messages :> {Warning::LCMSAutoResolvedNeutralLoss}
 		],
+		Example[{Messages, "InjectionTableColumnGradientConflict", "Return an error when the injection table gradients are different for either ColumnPrime or ColumnFlush entries:"},
+
+			ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID],
+				InjectionTable -> {
+					{ColumnPrime, Null, Null, Automatic, Object[Method, Gradient, "Test Gradient Method 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 1" <> $SessionUUID]},
+					{Sample, Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], 2 Microliter, Automatic, Object[Method, Gradient, "Test Gradient Method 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 2" <> $SessionUUID]},
+					{ColumnPrime, Null, Null, Automatic, Object[Method, Gradient, "Test Gradient Method 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 1" <> $SessionUUID]}
+				}
+			],
+			$Failed,
+			Messages :> {Error::InjectionTableColumnGradientConflict, Error::InvalidOption}
+		],
 		(* This test may be removed if SciEx is able to correct the data artifact issue that results when the instrument is given these conditions. *)
 		Example[{Messages, "InstrumentationLimitation", "If conditions that are known to produce artifacts on the QTRAP 6500 was specified an error is thrown:"},
 			ExperimentLCMS[
@@ -9745,6 +9895,7 @@ DefineTests[ExperimentLCMS,
 					Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 1" <> $SessionUUID],
 					Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 2" <> $SessionUUID],
 					Object[Method, Gradient, "Test Gradient Method 1 for ExperimentLCMS tests" <> $SessionUUID],
+					Object[Method, Gradient, "Test Gradient Method 2 for ExperimentLCMS tests" <> $SessionUUID],
 					Object[Method, Gradient, "LCMS Non-binary gradient for testing"],
 
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentLCMS" <> $SessionUUID],
@@ -9765,7 +9916,7 @@ DefineTests[ExperimentLCMS,
 		Off[Warning::InstrumentUndergoingMaintenance];
 		Module[{methodPacket1, firstSetUpload, samples, plate, largeContainer, plate2, tube, plate3, existingNamedProtocol, plate4,
 			columnModel, guardColumnModel, bench, cartridgeModel, methodPacket2, method1, method2, method3, method4, methodPacket3,
-			antiSapphireModel, plate5, methodPacket4, templateLCMSProtocol},
+			antiSapphireModel, plate5, methodPacket4, methodPacket5, method5, templateLCMSProtocol},
 
 			(*create our method packets*)
 			methodPacket1 = <|
@@ -10007,11 +10158,65 @@ DefineTests[ExperimentLCMS,
 				Name -> "Test Gradient Method 1 for ExperimentLCMS tests" <> $SessionUUID
 			|>;
 
+			methodPacket5 = <|
+				BufferA -> Link[Model[Sample, "id:jLq9jXY4kkYz"]],
+				BufferB -> Link[Model[Sample, "id:9RdZXvKBeeKZ"]],
+				BufferC -> Link[Model[Sample, "id:9RdZXvKBeeKZ"]],
+				BufferD -> Link[Model[Sample, "id:jLq9jXY4kkYz"]],
+				Replace[Gradient] -> {
+					{
+						Quantity[0., "Minutes"],
+						Quantity[76., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[24., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0.4, "Milliliters" / "Minutes"]
+					},
+					{
+						Quantity[20., "Minutes"],
+						Quantity[76., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[24., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0., "Percent"],
+						Quantity[0.4, "Milliliters" / "Minutes"]
+					}
+				},
+				GradientA -> {
+					{Quantity[0., "Minutes"], Quantity[76., "Percent"]},
+					{Quantity[20., "Minutes"], Quantity[76, "Percent"]}
+				},
+				GradientB -> {
+					{Quantity[0., "Minutes"], Quantity[0., "Percent"]},
+					{Quantity[20., "Minutes"], Quantity[0., "Percent"]}
+				},
+				GradientC -> {
+					{Quantity[0., "Minutes"], Quantity[0., "Percent"]},
+					{Quantity[20., "Minutes"], Quantity[0., "Percent"]}
+				},
+				GradientD -> {
+					{Quantity[0., "Minutes"], Quantity[24., "Percent"]},
+					{Quantity[20., "Minutes"], Quantity[24., "Percent"]}
+				},
+				Temperature -> Quantity[45., "DegreesCelsius"],
+				Type -> Object[Method, Gradient],
+				DeveloperObject -> False,
+				Name -> "Test Gradient Method 2 for ExperimentLCMS tests" <> $SessionUUID
+			|>;
+
 			firstSetUpload = List[
 				methodPacket1,
 				methodPacket2,
 				methodPacket3,
 				methodPacket4,
+				methodPacket5,
 				Association[
 					Type -> Object[Container, Plate],
 					Site -> Link[$Site],
@@ -10082,7 +10287,7 @@ DefineTests[ExperimentLCMS,
 					PackingType -> Prepacked,
 					ParticleSize -> Quantity[3.6`, "Micrometers"],
 					PoreSize -> Quantity[100.`, "Angstroms"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column],
 					Replace[WettedMaterials] -> {AerisCoreShell}
 				|>,
@@ -10103,7 +10308,7 @@ DefineTests[ExperimentLCMS,
 					NominalFlowRate -> Quantity[1.`, ("Milliliters") / ("Minutes")],
 					PackingType -> Cartridge,
 					ParticleSize -> Quantity[3.`, "Micrometers"],
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Column]
 				|>,
 				<|
@@ -10115,7 +10320,7 @@ DefineTests[ExperimentLCMS,
 					Expires -> True,
 					FunctionalGroup -> C18,
 					MaxNumberOfUses -> 100,
-					Reusability -> True,
+					Reusable -> True,
 					Type -> Model[Item, Cartridge, Column]
 				|>,
 				<|
@@ -10142,6 +10347,7 @@ DefineTests[ExperimentLCMS,
 				method2,
 				method3,
 				method4,
+				method5,
 				plate,
 				plate2,
 				largeContainer,
@@ -10227,8 +10433,8 @@ DefineTests[ExperimentLCMS,
 					Association[
 						Object -> Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID],
 						Replace[Composition] -> {
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]},
-							{50 Micromolar, Link[Model[Molecule, "Uracil"]]}
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now},
+							{50 Micromolar, Link[Model[Molecule, "Uracil"]], Now}
 						},
 						Site -> Link[$Site]
 					],
@@ -10285,6 +10491,8 @@ DefineTests[ExperimentLCMS,
 					Object[Protocol, LCMS, "My special LCMS protocol name" <> $SessionUUID],
 					Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 1" <> $SessionUUID],
 					Object[Method, MassAcquisition, "LCMS Tests MassAcquisitionMethod 2" <> $SessionUUID],
+					Object[Method, Gradient, "Test Gradient Method 1 for ExperimentLCMS tests" <> $SessionUUID],
+					Object[Method, Gradient, "Test Gradient Method 2 for ExperimentLCMS tests" <> $SessionUUID],
 
 					Model[Item, Column, "Test cartridge-protected column model for ExperimentLCMS" <> $SessionUUID],
 					Object[Item, Column, "Test cartridge-protected column object for ExperimentLCMS" <> $SessionUUID],
@@ -10458,47 +10666,45 @@ DefineTests[
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 		
 		];
-		(*module for ecreating objects*)
-		Module[{containerPackets,samplePackets},
-			
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Site -> Link[$Site],
-					Name -> "Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID
-				]
-			};
-			
-			Upload[containerPackets];
-			
-			samplePackets = UploadSample[
-				{Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]},
-				{{"A1",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]},{"A2",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]},{"A3",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]}},
-				InitialAmount -> 500 Microliter,
-				Name->{
-					"ValidExperimentLCMSQ Test Sample 1" <> $SessionUUID,
-					"ValidExperimentLCMSQ Test Sample 2" <> $SessionUUID,
-					"ValidExperimentLCMSQ Test Sample 3" <> $SessionUUID
-				},
-				Upload->False
-			];
-			
-			Upload[samplePackets];
-			
-			Upload[<|Object->Object[Sample,"ValidExperimentLCMSQ Test Sample 3" <> $SessionUUID],Status->Discarded,DeveloperObject->True|>]
-		
+		(*module for creating objects*)
+		Block[{$DeveloperUpload = True},
+			Module[{containerPackets,samplePackets},
+
+				containerPackets = {
+					Association[
+						Type -> Object[Container, Plate],
+						Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+						Site -> Link[$Site],
+						Name -> "Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID
+					]
+				};
+
+				Upload[containerPackets];
+
+				samplePackets = UploadSample[
+					{Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]},
+					{{"A1",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]},{"A2",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]},{"A3",Object[Container,Plate,"Test plate 1 for ValidExperimentLCMSQ tests" <> $SessionUUID]}},
+					InitialAmount -> 500 Microliter,
+					Name->{
+						"ValidExperimentLCMSQ Test Sample 1" <> $SessionUUID,
+						"ValidExperimentLCMSQ Test Sample 2" <> $SessionUUID,
+						"ValidExperimentLCMSQ Test Sample 3" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[samplePackets];
+
+				Upload[<|Object->Object[Sample,"ValidExperimentLCMSQ Test Sample 3" <> $SessionUUID],Status->Discarded,DeveloperObject->True|>]
+
+			]
 		]
-	
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
-	),
-	Stubs :> {
-		$PersonID = Object[User, "Test user for notebook-less test protocols"]
-	}
+	)
 ];
 
 
@@ -10537,45 +10743,42 @@ DefineTests[
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 		
 		];
-		(*module for ecreating objects*)
-		Module[{containerPackets,samplePackets},
-			
-			containerPackets = {
-				Association[
-					Type -> Object[Container, Plate],
-					Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
-					Site -> Link[$Site],
-					Name -> "Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID
-				]
-			};
-			
-			Upload[containerPackets];
-			
-			samplePackets = UploadSample[
-				{Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]},
-				{{"A1",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]},{"A2",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]},{"A3",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]}},
-				InitialAmount -> 500 Microliter,
-				Name->{
-					"ExperimentLCMSPreview Test Sample 1" <> $SessionUUID,
-					"ExperimentLCMSPreview Test Sample 2" <> $SessionUUID,
-					"ExperimentLCMSPreview Test Sample 3" <> $SessionUUID
-				},
-				Upload->False
-			];
-			
-			Upload[samplePackets];
-			
-			Upload[<|Object->Object[Sample,"ExperimentLCMSPreview Test Sample 3" <> $SessionUUID],Status->Discarded,DeveloperObject->True|>]
-		
+		(*module for creating objects*)
+		Block[{$DeveloperUpload = True},
+			Module[{containerPackets,samplePackets},
+
+				containerPackets = {
+					Association[
+						Type -> Object[Container, Plate],
+						Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+						Site -> Link[$Site],
+						Name -> "Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID
+					]
+				};
+
+				Upload[containerPackets];
+
+				samplePackets = UploadSample[
+					{Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"],Model[Sample,StockSolution,"80% Heptane, 20% Ethanol diluent for SFC"]},
+					{{"A1",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]},{"A2",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]},{"A3",Object[Container,Plate,"Test plate 1 for ExperimentLCMSPreview tests" <> $SessionUUID]}},
+					InitialAmount -> 500 Microliter,
+					Name->{
+						"ExperimentLCMSPreview Test Sample 1" <> $SessionUUID,
+						"ExperimentLCMSPreview Test Sample 2" <> $SessionUUID,
+						"ExperimentLCMSPreview Test Sample 3" <> $SessionUUID
+					},
+					Upload->False
+				];
+
+				Upload[samplePackets];
+
+				Upload[<|Object->Object[Sample,"ExperimentLCMSPreview Test Sample 3" <> $SessionUUID],Status->Discarded,DeveloperObject->True|>]
+			]
 		]
-	
 	),
 	SymbolTearDown:>(
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];
-	),
-	Stubs :> {
-		$PersonID = Object[User, "Test user for notebook-less test protocols"]
-	}
+	)
 ];

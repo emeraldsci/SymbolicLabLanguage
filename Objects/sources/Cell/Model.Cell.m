@@ -266,7 +266,7 @@ DefineObjectType[Model[Cell], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates this molecule is currently banned from usage in the ECL because the facility isn't yet equiped to handle it.",
+			Description -> "Indicates this molecule is currently banned from usage in the ECL because the facility isn't yet equipped to handle it.",
 			Category -> "Health & Safety"
 		},
 		ExpirationHazard -> {

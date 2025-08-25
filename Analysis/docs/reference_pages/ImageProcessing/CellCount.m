@@ -39,7 +39,7 @@ DefineUsage[AnalyzeCellCount,
 				}
 			},
 
-			(* Definition two - a lit of images either stored in cloud or provided as a raw image *)
+			(* Definition two - a list of images either stored in cloud or provided as a raw image *)
 			{
 				Definition->{"AnalyzeCellCount[imageFiles]","cellCountObject"},
 				Description->"counts the number of cells and measures the cell size and morphology by first adjusting the image specifications such as brightness and contrast and then performing image segmentation.",
@@ -72,9 +72,10 @@ DefineUsage[AnalyzeCellCount,
 			"ImageTrim",
 			"PlotMicroscope",
 			"ImageAdjust",
-			"AnalyzeCellCount"
+			"AnalyzeColonies"
 		},
 		Author -> {
+			"scicomp",
 			"amir.saadat",
 			"varoth.lilascharoen",
 			"kevin.hou"
@@ -171,6 +172,7 @@ DefineUsage[AnalyzeCellCountOptions,
 			"AnalyzeCellCount"
 		},
 		Author -> {
+			"scicomp",
 			"amir.saadat",
 			"varoth.lilascharoen",
 			"kevin.hou"
@@ -248,6 +250,7 @@ DefineUsage[AnalyzeCellCountPreview,
 			"AnalyzeCellCount"
 		},
 		Author -> {
+			"scicomp",
 			"amir.saadat",
 			"varoth.lilascharoen",
 			"kevin.hou"
@@ -323,6 +326,7 @@ DefineUsage[ValidAnalyzeCellCountQ,
 			"AnalyzeCellCount"
 		},
 		Author -> {
+			"scicomp",
 			"amir.saadat",
 			"varoth.lilascharoen",
 			"kevin.hou"
@@ -362,7 +366,7 @@ DefineUsage[ImageSelect,
 			"Image",
 			"ImageAdjust"
 		},
-		Author->{"amir.saadat", "varoth.lilascharoen", "kevin.hou"}
+		Author->{"scicomp", "amir.saadat", "varoth.lilascharoen", "kevin.hou"}
 	}
 ];
 
@@ -397,7 +401,7 @@ DefineUsage[MicroscopeImage,
 			"Image",
 			"ImageAdjust"
 		},
-		Author->{"amir.saadat", "varoth.lilascharoen", "kevin.hou"}
+		Author->{"scicomp", "amir.saadat", "varoth.lilascharoen", "kevin.hou"}
 	}
 ];
 
@@ -433,6 +437,6 @@ DefineUsage[Image,
 			"ImageAdjust",
 			"ImageMultiply"
 		},
-		Author->{"amir.saadat", "varoth.lilascharoen", "kevin.hou"}
+		Author->{"scicomp", "amir.saadat", "varoth.lilascharoen", "kevin.hou"}
 	}
 ];

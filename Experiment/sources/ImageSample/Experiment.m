@@ -22,6 +22,7 @@ DefineOptions[
 		IndexMatching[
 			IndexMatchingInput -> "experiment samples",
 			{
+				(* -- Protocol Options -- *)
 				OptionName -> Instrument,
 				Default -> Automatic,
 				AllowNull -> False,
@@ -94,10 +95,14 @@ DefineOptions[
 		],
 
 		(* Shared Options *)
-		(* Had to break apart FuntopiaSharedOptions to get rid of ImageSample option *)
+		(* Had to break apart NonBiologyFuntopiaSharedOptions to get rid of ImageSample option *)
 		ProtocolOptions,
+		SimulationOption,
+		PreparationOption,
+		ModelInputOptions,
 		SamplePrepOptions,
 		AliquotOptions,
+		SampleLabelOptions,
 		(* This set is the post processing options, minus ImageSample and with MV/MW defaulted to False *)
 		{
 			OptionName -> MeasureWeight,
@@ -117,25 +122,30 @@ DefineOptions[
 		},
 
 		(* SamplesIn Shared Options *)
-		SamplesInStorageOption
+		SamplesInStorageOption,
+		SimulationOption
 	}
 ];
 
 Error::OptionMismatch="Images can only be acquired from the Side using a SampleImager, or from Overhead using a PlateImager. Please change one or the other option.";
-Error::HazardousImaging="Sample(s) `1` are set to be imaged from the top which would require us to remove the cap outside of a glove box or fume hood. This is not possible because they are marked as hazardous in open air (e.g. WaterReactive). If you would still like to image these samples, consider setting ImagingDirection->Side, but note that this may not provide a clear image of the contents."
+Error::IlluminationOptionMismatch="Side illumination cannot be performed using a PlateImager. Please change one or the other option.";
+Error::HazardousImaging="Sample(s) `1` are set to be imaged from the top which would require us to remove the cap outside of a glove box or fume hood. This is not possible because they are marked as hazardous in open air (e.g. WaterReactive). If you would still like to image these samples, consider setting ImagingDirection->Side, but note that this may not provide a clear image of the contents.";
 
 (* Core experiment overload *)
-ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,allListedInputs,listedHealthSafetyFields,imagingFromTopPicklist,nonHazardousPicklist,nonHazardousInputs,hazardousInputs,hazardousImagingIndexPosition,hazardCheckedSamples,hazardCheckedResolvedOptions,hazardTests,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
-	templatedOptions,templateTests,inheritedOptions,expandedSafeOps,downloadedPackets,cacheBall,resolvedOptionsResult,
-	resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
-	containerModelFields,preferredContainerModelsFieldSpec,samplePackets,sampleContainerPackets,
-	sampleContainerModelPackets,preferredVessels,preferredPlates,validSamplePreparationResult,mySamplesWithPreparedSamples,
-	myOptionsWithPreparedSamples,samplePreparationCache,sampleFields,objectContainerFields,modelContainerFields,
-	combinedCacheWithSamplePreparation,instrumentOptionObjects,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOptionsNamed},
-
-	(* make sure we're working with a list of options and samples, and remove all temporal links *)
-	{allListedInputs,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
+ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}]],myOptions:OptionsPattern[]]:=Module[
+	{
+		outputSpecification,output,gatherTests,listedSamples,listedOptions,validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,
+		myOptionsWithPreparedSamplesNamed,updatedSimulation,safeOptionsNamed,safeOpsTests,mySamplesWithPreparedSamples,
+		safeOps,myOptionsWithPreparedSamples,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,
+		upload, confirm, fastTrack, parentProtocol, cache,expandedSafeOps,preferredVessels,preferredPlates,sampleFields,
+		objectContainerFields,modelContainerFields, preferredContainerModelsFieldSpec,instrumentOptionObjects,downloadedPackets,
+		cacheBall,samplePackets,parentPostProcessingBool,filteredSamplesIn,filteredExpandedOptions,resolvedOptionsResult,
+		resolvedOptions,resolvedOptionsTests,listedHealthSafetyFields,nonHazardousPicklist,imagingFromTopPicklist,
+		nonHazardousInputs,hazardousInputs,hazardCheckedSamples,hazardCheckedResolvedOptions,hazardousImagingIndexPosition,hazardTests,
+		collapsedResolvedOptions,resolvedPreparation,optionsResolverOnly,returnEarlyBecauseOptionsResolverOnly,
+		returnEarlyBecauseFailuresQ,returnEarlyBecauseAllHazardousSamples,performSimulationQ,
+		protocolObject,protocolPacketWithResources,resourcePacketTests,simulatedProtocol,finalSimulation, containerModelFields
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -144,23 +154,27 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
+	(* make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
+
+
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentImageSample,
-			allListedInputs,
-			ToList[listedOptions]
+			listedSamples,
+			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -170,13 +184,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	];
 
 	(*change all Names to objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -184,8 +192,15 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			Result -> $Failed,
 			Tests -> safeOpsTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -194,14 +209,15 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentImageSample,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+		ApplyTemplateOptions[ExperimentImageSample,{ToList[mySamplesWithPreparedSamples]},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ApplyTemplateOptions[ExperimentImageSample,{ToList[mySamplesWithPreparedSamples]},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
@@ -210,15 +226,19 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests,templateTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
 	(* Replace our safe options with our inherited options from our template. *)
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
+	(* Get assorted hidden options *)
+	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+
 	(* Expand index-matching options *)
-	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentImageSample,{mySamplesWithPreparedSamples},inheritedOptions]];
+	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentImageSample,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
@@ -227,21 +247,18 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	preferredPlates = Join[PreferredContainer[All, Type->Plate], PreferredContainer[All, Type->Plate, LightSensitive->True]];
 
 	(* Get lists of fields required for aliquot / sample prep, and add on a few ImageSample-specific ones *)
-	sampleFields = Join[SamplePreparationCacheFields[Object[Sample], Format -> Packet], Packet[RequestedResources]];
+	sampleFields = Join[SamplePreparationCacheFields[Object[Sample], Format -> Packet],Packet[Living,RequestedResources]];
 	objectContainerFields = Join[SamplePreparationCacheFields[Object[Container]], {Position, Container}];
 	modelContainerFields = Join[SamplePreparationCacheFields[Model[Container]], {CompatibleCameras, NumberOfPositions, Opaque, PlateColor, WellColor, PlateImagerRack, PreferredCamera, PreferredIllumination, SampleImagerRack, Unimageable}];
 
 	(* Using the above list, build field specs to extract container model packets from both input samples and preferred container models *)
 	preferredContainerModelsFieldSpec = Packet@@modelContainerFields;
 
-	(* Combine incoming cache with sample preparation cache *)
-	combinedCacheWithSamplePreparation = FlattenCachePackets[{Lookup[safeOps, Cache], samplePreparationCache}];
-
 	(* get all Instrument option that were specified as Object[Instrument] to download their Model *)
 	instrumentOptionObjects=DeleteDuplicates@Cases[Lookup[safeOps,Instrument],ObjectP[Object[Instrument]],Infinity];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our simulation *)
 	downloadedPackets = Check[
 		Quiet[
 			With[
@@ -257,7 +274,8 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 						preferredVessels,
 						preferredPlates,
 						instrumentOptionObjects,
-						mySamplesWithPreparedSamples
+						mySamplesWithPreparedSamples,
+						{parentProtocol}
 					},
 					{
 						{sampleFields},
@@ -269,9 +287,12 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 						{preferredContainerModelsFieldSpec},
 						{preferredContainerModelsFieldSpec},
 						{Packet[Model]},
-						{Packet[ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,NFPA]}(* Fields for hazard check *)
+						{Packet[ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,NFPA]},(* Fields for hazard check *)
+						(*Specified or resolved value in parent protocol*)
+						{Packet[ImageSample, ParentProtocol]}
 					},
-					Cache->combinedCacheWithSamplePreparation
+					Cache -> cache,
+					Simulation -> updatedSimulation
 				]
 			],
 			Download::FieldDoesntExist
@@ -280,18 +301,121 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 		{Download::ObjectDoesNotExist}
 	];
 
-	(* Return early if objects do not exist *)
-	If[MatchQ[downloadedPackets,$Failed],
-		Return[$Failed]
+	(* Ball it all up so we can toss it down the line *)
+	cacheBall = FlattenCachePackets[{cache, Cases[Flatten[downloadedPackets], PacketP[]]}];
+
+	(*Get sample packets for the living/sterile related warning and filtering calculations below*)
+	samplePackets = fetchPacketFromCache[#,cacheBall]&/@mySamplesWithPreparedSamples;
+
+	(*This section will also check the Living/Sterile field of the samples and parent protocol to throw warning accordingly. If experiment is called directly, we throw a warning without filtering any sample out. Otherwise (i.e. we are in a subprotocol while Sterile -> True or sample is marked Living ->True), we filter the samples out in the next section without throwing any warning *)
+	Module[{livings,steriles,sampleObjects,sampleContainers,warningBools},
+		{livings,steriles,sampleObjects,sampleContainers}=Transpose[Lookup[samplePackets,{Living,Sterile,Object,Container}]];
+		warningBools = MapThread[
+			Function[
+				{living,sterile,container},
+				(*Throw a warning if either living or sterile is true, while the container is a plate*)
+				Or[living,sterile]&&MatchQ[container,ObjectP[Object[Container,Plate]]]
+			],
+			{livings,steriles,sampleContainers}
+		];
+		(*We are called directly, if there is living or sterile sample, will not filter, just a warning*)
+		If[!MatchQ[parentProtocol,ObjectP[]]&&MemberQ[warningBools,True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+			Message[Warning::LivingOrSterileSamplesInPlateQueuedForImaging,
+				ObjectToString[PickList[sampleObjects,warningBools,True], Cache -> cacheBall, Simulation -> updatedSimulation],
+				ObjectToString[PickList[sampleContainers,warningBools,True], Cache -> cacheBall, Simulation -> updatedSimulation]
+			]
+		]
+	];
+	(*Check if the parent protocol specified ImageSample -> True. If parent protocol called for imaging, we will not filter it out for living/sterile*)
+	parentPostProcessingBool = Lookup[fetchPacketFromCache[parentProtocol,cacheBall]/.Null -> <||>,ImageSample,Null];
+
+	(* IF we are in a Subprotocol that does not directly specify ImageSample -> True, this section will filter out samples that are living or sterile*)
+	{filteredSamplesIn,filteredExpandedOptions} = If[And[
+		MatchQ[parentProtocol,ObjectP[]],
+		!MatchQ[parentProtocol,ObjectP[Object[Protocol,StockSolution]]],
+		!TrueQ[parentPostProcessingBool]
+	],
+		(*If we are in a sub that is not ExperimentStockSolution/ExperimentMedia (both create Object[Protocol,StockSolution] ), and the parent protocol did not dictate that we image the samples, quietly filter out living/sterile samples as we'd want things to move fast in biology experiments*)
+		Module[{invalidBools,invalidPositions,validSamples,measureVolumeOptionNames,lengthOfInput,indexMatchedOptions,validOptions,aliquotRaw, trimmedAliquotOption,aliquotDestinationWellRaw,trimmedAliquotDestinationWellOption,numberOfReplicates},
+			(*Generate a list of invalid bools based on Living/Sterile field of a sample*)
+			invalidBools = Or[
+				TrueQ[Lookup[#,Living,Null]],
+				TrueQ[Lookup[#,Sterile,Null]]
+			]&/@samplePackets;
+
+			(* Determine which positions were Invalid *)
+			invalidPositions = Position[invalidBools,True];
+
+			(* Determine the valid positions *)
+			validSamples = Delete[mySamplesWithPreparedSamples,invalidPositions];
+
+			(* Stash the length of the input *)
+			lengthOfInput = Length[mySamplesWithPreparedSamples];
+
+			(* Gather the list of option names that are index matched to the input *)
+			indexMatchedOptions = Select[
+				OptionDefinition[ExperimentImageSample],
+				MatchQ[#["IndexMatchingInput"],"experiment samples"]&
+			][[All,"OptionSymbol"]];
+
+			(* Map over the options and for any option that is index matched to the input, delete the positions that are invalid  *)
+			validOptions = MapThread[
+				Function[{optionName,optionVal},
+					If[MatchQ[Length[optionVal],lengthOfInput],
+
+						(* If the length of the option matches the length of the input, assume Index Matched and trim the bad values *)
+						optionName->Delete[optionVal,invalidPositions],
+
+						(* Otherwise it isn't index matched so leave it be *)
+						optionName->optionVal
+					]
+				],
+				{indexMatchedOptions,Lookup[expandedSafeOps,indexMatchedOptions]}
+			];
+			(*ExperimentImageSample does not have NumberOfReplicates option defined, so it will be always 1 when aliquoting to containers. Keeping the name so that the *)
+			numberOfReplicates = 1;
+
+			(*	The option AliquotContainers is NOT Index-Matched to Samples in so we need to trim it as a special case
+					Length[AliquotContainers] = 1 OR Length[mySamples])
+					We have to handle each of those cases and trim the indexes associated with samples being filtered out
+			*)
+			aliquotRaw = Lookup[expandedSafeOps,AliquotContainer];
+			trimmedAliquotOption = Flatten@Delete[
+				Partition[aliquotRaw, numberOfReplicates],
+				invalidPositions
+			];
+
+			aliquotDestinationWellRaw = Lookup[expandedSafeOps,DestinationWell];
+			trimmedAliquotDestinationWellOption = Flatten@Delete[
+				Partition[aliquotDestinationWellRaw, numberOfReplicates],
+				invalidPositions
+			];
+			(* Return our new samples and options *)
+			{validSamples,ReplaceRule[expandedSafeOps,Join[validOptions, {AliquotContainer -> trimmedAliquotOption,DestinationWell -> trimmedAliquotDestinationWellOption}]]}
+		],
+		(*Otherwise this imaging protocol is not a sub of ExperimentStockSolution/ExperimentMedia where imaging is helpful, or we are called directly, no filter necessary*)
+		{mySamplesWithPreparedSamples,expandedSafeOps}
 	];
 
-	(* Ball it all up so we can toss it down the line *)
-	cacheBall = FlattenCachePackets[{combinedCacheWithSamplePreparation, downloadedPackets}];
+	(* If we no longer have any samples to work with, and we're in a sub protocol, quietly return $Failed so the procedure may skip past volume measurement *)
+	If[
+		And[
+			SameQ[filteredSamplesIn,{}],
+			MatchQ[parentProtocol,ObjectP[Object[]]]
+		],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests->Flatten[Join[safeOpsTests,validLengthTests,templateTests]],
+			Options->$Failed,
+			Preview->Null,
+			Simulation -> Null
+		}]
+	];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentImageSampleOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentImageSampleOptions[filteredSamplesIn,filteredExpandedOptions,Cache->cacheBall, Simulation -> updatedSimulation, Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -301,7 +425,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}=Append[resolveExperimentImageSampleOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result}],{}],
+			{resolvedOptions,resolvedOptionsTests}=Append[resolveExperimentImageSampleOptions[filteredSamplesIn,filteredExpandedOptions,Cache->cacheBall, Simulation -> updatedSimulation, Output->{Result}],{}],
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -320,7 +444,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 					{(*ParticularlyHazardousSubstance,*)HazardousBan,WaterReactive,Pyrophoric,NFPA}
 				]
 		],
-		mySamplesWithPreparedSamples
+		filteredSamplesIn
 	];
 
 	(* Create a non-hazardous Picklist *)
@@ -343,18 +467,18 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	];
 
 	(* Use nonHazardousPicklist to pick nonHazardous and hazardous inputs *)
-	nonHazardousInputs=PickList[mySamplesWithPreparedSamples,nonHazardousPicklist];
-	hazardousInputs=PickList[mySamplesWithPreparedSamples,nonHazardousPicklist, False];
+	nonHazardousInputs=PickList[filteredSamplesIn,nonHazardousPicklist];
+	hazardousInputs=PickList[filteredSamplesIn,nonHazardousPicklist, False];
 
 	(* Setting hazard-checked samples and options *)
 	{hazardCheckedSamples,hazardCheckedResolvedOptions} = Which[
 		(* If no hazard identified, proceed with all inputs *)
-		MatchQ[nonHazardousInputs,mySamplesWithPreparedSamples],
-		{mySamplesWithPreparedSamples,resolvedOptions},
+		MatchQ[nonHazardousInputs,filteredSamplesIn],
+		{filteredSamplesIn,resolvedOptions},
 
 		(* If explicitly setting ImagingDirection->Side, throw error message but proceed with all inputs *)
 		!MemberQ[Lookup[resolvedOptions, ImagingDirection],(Top|All),Infinity],
-		{mySamplesWithPreparedSamples,resolvedOptions},
+		{filteredSamplesIn,resolvedOptions},
 
 		(* If ImagingDirection is NOT set to Side while $ECLApplication is Engine, throw warning message and proceed with nonhazardous inputs *)
 		MatchQ[$ECLApplication,Engine]&&Length[nonHazardousInputs]!=0,
@@ -363,7 +487,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 				If[#1==False&&(MemberQ[#2,Top]||MatchQ[#2,Top|All]),True,False]&,
 				{nonHazardousPicklist,Lookup[resolvedOptions,ImagingDirection]}
 			],True];
-			{Delete[mySamplesWithPreparedSamples,
+			{Delete[filteredSamplesIn,
 				hazardousImagingIndexPosition],OptionsHandling`Private`removeSelectedIndexMatchedOptions[hazardousImagingIndexPosition,resolvedOptions,ExperimentImageSample]}
 		),
 
@@ -371,7 +495,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 		True,
 		(
 			If[!gatherTests&&!MatchQ[$ECLApplication,Engine],
-				Message[Error::HazardousImaging,DeleteNestedDuplicates[hazardousInputs]]
+				Message[Error::HazardousImaging,ObjectToString[DeleteNestedDuplicates[hazardousInputs],Cache -> cacheBall, Simulation -> updatedSimulation]]
 			];
 			{Null, Null}
 		)
@@ -393,25 +517,85 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 		Messages->False
 	];
 
+	(* Lookup our resolved Preparation option. *)
+	resolvedPreparation = Lookup[resolvedOptions, Preparation];
+
+	(* Lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
+	(* If Output contains Result or Simulation, then we can't do this *)
+	optionsResolverOnly = Lookup[resolvedOptions, OptionsResolverOnly];
+	returnEarlyBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result|Simulation]];
+
+	(* Run all the tests from the resolution; if any of them were False, then we should return early here *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
+	(* basically, if _not_ all the tests are passing, then we do need to return early *)
+	returnEarlyBecauseFailuresQ = Which[
+		MatchQ[resolvedOptionsResult, $Failed], True,
+		gatherTests, Not[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
+		True, False
+	];
+
 	(* If option resolution failed OR all samples are hazardous to be imaged, return early. *)
-	If[
-		Or[
-			MatchQ[resolvedOptionsResult, $Failed],
-			NullQ[hazardCheckedSamples],
-			NullQ[hazardCheckedResolvedOptions]
-		],
-		Return[outputSpecification/.{
-			Result -> If[MatchQ[$ECLApplication,Engine],{},$Failed],
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,hazardTests],
-			Options->RemoveHiddenOptions[ExperimentImageSample,collapsedResolvedOptions],
-			Preview->Null
+	returnEarlyBecauseAllHazardousSamples = Or[
+		NullQ[hazardCheckedSamples],
+		NullQ[hazardCheckedResolvedOptions]
+	];
+
+	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
+	(* need to return some type of simulation to our parent function that called us. *)
+	performSimulationQ = MemberQ[output, Simulation];
+
+	(* If option resolution failed (or if we have all hazardous inputs/options) and we aren't asked for the simulation or output, return early. *)
+	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseAllHazardousSamples),
+		Return[outputSpecification /. {
+			Result -> If[MatchQ[$ECLApplication,Engine] && returnEarlyBecauseAllHazardousSamples,{},$Failed],
+			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests}],
+			Options -> RemoveHiddenOptions[ExperimentImageSample, collapsedResolvedOptions],
+			Preview -> Null,
+			Simulation -> updatedSimulation
 		}]
 	];
 
 	(* Build packets with resources *)
-	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		imageSampleResourcePackets[hazardCheckedSamples,templatedOptions,ReplaceRule[collapsedResolvedOptions, {Cache -> cacheBall, Output -> {Result, Tests}}]],
-		{imageSampleResourcePackets[hazardCheckedSamples,templatedOptions,ReplaceRule[collapsedResolvedOptions,{Cache -> cacheBall, Output -> Result}]],{}}
+	{protocolPacketWithResources,resourcePacketTests} = Which[
+		returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseFailuresQ || returnEarlyBecauseAllHazardousSamples,
+			{$Failed, {}},
+		gatherTests,
+			imageSampleResourcePackets[
+				hazardCheckedSamples,
+				templatedOptions,
+				collapsedResolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation,
+				Output -> {Result, Tests}
+			],
+		True,
+			{
+				imageSampleResourcePackets[
+					hazardCheckedSamples,
+					templatedOptions,
+					collapsedResolvedOptions,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> Result
+				],
+				{}
+			}
+	];
+
+	(* If we were asked for a simulation, also return a simulation. *)
+	{simulatedProtocol, finalSimulation} = Which[
+		MatchQ[protocolPacketWithResources, $Failed],
+			{$Failed, updatedSimulation},
+		performSimulationQ,
+			simulateExperimentImageSample[
+				protocolPacketWithResources,
+				ToList[filteredSamplesIn],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation
+			],
+		True,
+			{Null, updatedSimulation}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -420,25 +604,28 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			Result -> Null,
 			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests,hazardTests}],
 			Options -> RemoveHiddenOptions[ExperimentImageSample,collapsedResolvedOptions],
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> finalSimulation
 		}]
 	];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-	protocolObject = If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
+	protocolObject = If[!MatchQ[protocolPacketWithResources,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
 		UploadProtocol[
-			resourcePackets,
+			protocolPacketWithResources,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,ImageSample],
-			Cache->cacheBall
+			Cache->cacheBall,
+			Simulation -> finalSimulation
 		],
-		$Failed
+		If[MatchQ[$ECLApplication,Engine] && returnEarlyBecauseAllHazardousSamples,{},$Failed]
 	];
 
 	(* Return requested output *)
@@ -446,20 +633,20 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 		Result -> protocolObject,
 		Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 		Options -> RemoveHiddenOptions[ExperimentImageSample,collapsedResolvedOptions],
-		Preview -> Null
+		Preview -> Null,
+		Simulation -> finalSimulation
 	}
 ];
 
 
 (* Container overload: Passes to sample overload *)
-ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
-	samples,sampleOptions,containerToSampleTests, containerModelFields,sampleCache,
-	validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
-	updatedCache},
-
-	(* Make sure we're working with a list of options *)
-	listedOptions=ToList[myOptions];
+ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{
+		outputSpecification,output,gatherTests,listedContainers,listedOptions,validSamplePreparationResult,
+		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation,
+		containerToSampleResult,containerToSampleOutput,containerToSampleTests,containerToSampleSimulation,
+		samples,sampleOptions
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -468,34 +655,37 @@ ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
+	(* Make sure we're working with a list of inputs and options *)
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
+
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentImageSample,
-			ToList[myContainers],
-			ToList[myOptions]
+			listedContainers,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentImageSample,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -506,23 +696,17 @@ ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentImageSample,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=FlattenCachePackets[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -531,13 +715,17 @@ ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
 		},
+
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentImageSample[samples,ReplaceRule[sampleOptions, Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentImageSample[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -548,36 +736,37 @@ ExperimentImageSample[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
 DefineOptions[
 	resolveExperimentImageSampleOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 Warning::PreferredIlluminationIncompatible = "The sample(s) `1`, are in containers whose PreferredIllumination is not possible on their specified imaging instrument(s), `2`. A compatible illumination direction has been selected for these samples.";
 Warning::ImagingIncompatibleContainer = "The sample(s) `1` are in containers that are not compatible with any available imaging apparatus. Samples will be transferred to new containers to allow imaging to occur.";
 Error::ImageSampleInvalidAlternateInstruments="The following instrument models cannot be used as alternative devices: `1`. AlternateInstruments cannot be specified if the Instrument option is an instrument object. Any models specified as AlternateInstruments cannot overlap with the Instrument option. Please specify a different model or leave AlternateInstruments option to be set automatically.";
+Warning::LivingOrSterileSamplesInPlateQueuedForImaging = "The following samples,`1`, are in plates, `2`, while the samples are marked Living->True or Sterile->True. Imaging these samples will require opening the cover and therefore pose contamination risks. We recommend removing these samples from input list.";
 
 resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentImageSampleOptions]]:=Module[
 	{
 		outputSpecification, output, listedInputs, gatherTestsQ, messagesQ, engineQ, downloadedPackets,
-		cache, samplePrepOptions, imageSampleOptions, simulatedSamples, resolvedSamplePrepOptions, simulatedCache,
-		imageSampleOptionsAssociation, preferredVessels, preferredPlates, containerModelFields, preferredContainerModelsFieldSpec,
+		cache, simulation, samplePrepOptions, imageSampleOptions, simulatedSamples, resolvedSamplePrepOptions, updatedSimulation,
+		samplePrepTests, imageSampleOptionsAssociation, preferredVessels, preferredPlates, preferredContainerModelsFieldSpec,
 		samplePackets, sampleContainerPackets, sampleContainerModelPackets, preferredVesselPackets, preferredPlatePackets,
 		instrumentObjectPackets, discardedSamplePackets, discardedInvalidInputs, discardedTest, imagerImagingDirectionMismatches,
 		imagerImagingDirectionMismatchOptions, imagerImagingDirectionMismatchInputs, imagerImagingDirectionInvalidOptions,
 		imagerImagingDirectionTest,	imagerIlluminationDirectionMismatches,	imagerIlluminationDirectionMismatchOptions,
 		imagerIlluminationDirectionMismatchInputs, imagerIlluminationDirectionInvalidOptions, imagerIlluminationDirectionTest,
-		nameOption, validNameQ, nameInvalidOptions, validNameTest, mapThreadFriendlyOptions, plateImagerModels, sampleImagerModel,
-		instrumentOptionObjects, updatedSimulatedCache, instrumentModelLookup,
+		nameOption, validNameQ, nameInvalidOptions, validNameTest, resolvedPreparation, mapThreadFriendlyOptions, plateImagerModels,
+		sampleImagerModel, instrumentOptionObjects, updatedSimulatedCache, instrumentModelLookup,
 
 		(* Resolved options from MapThread *)
-		instruments, alternateInstruments, imageContainers, imagingDirections, illuminationDirections,
+		instruments, alternateInstruments, imageContainers, imagingDirections, illuminationDirections,sampleLabels, sampleContainerLabels,
 
 		(* Errors from MapThread *)
 		preferredIlluminationIncompatibleErrors, unimageableContainerErrors, preferredIlluminationIncompatibleTests,
 		imageContainerInstIncompatibleErrors, unimageableContainerTests, potentialAliquotContainersList, invalidInputs,
-		invalidOptions, targetContainers, resolvedAliquotOptions, aliquotTests, imageSample, email,	confirm, template,
+		invalidOptions, targetContainers, resolvedAliquotOptions, aliquotTests, imageSample, email,	confirm, canaryBranch, template,
 		samplesInStorageCondition, fastTrack, operator, parentProtocol, upload, outputOption,	sampleFields,
 		objectContainerFields, modelContainerFields, invalidAlternateInstrumentErrors, invalidAlternateInstrumentsOption,
-		invalidAlternateInstrumentsTests
+		invalidAlternateInstrumentsTests, simulatedFastAssoc, cacheBall
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -600,12 +789,16 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our ImageSample options from our Sample Prep options. *)
+	(* Separate out our ImageSample options from our Sample Prep options. *)
 	{samplePrepOptions,imageSampleOptions} = splitPrepOptions[myOptions];
 
-	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache} = resolveSamplePrepOptions[ExperimentImageSample, listedInputs, samplePrepOptions, Cache->cache];
+	(* Resolve our sample prep options (only if the sample prep option is not true) *)
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTestsQ,
+		resolveSamplePrepOptionsNew[ExperimentImageSample, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentImageSample, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
+	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	imageSampleOptionsAssociation = Association[imageSampleOptions];
@@ -631,7 +824,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	preferredContainerModelsFieldSpec = Packet@@modelContainerFields;
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our simulation *)
 	downloadedPackets = Quiet[
 		Download[
 			{
@@ -650,7 +843,8 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				{preferredContainerModelsFieldSpec},
 				{Packet[Model]}
 			},
-			Cache->simulatedCache
+			Cache->cache,
+			Simulation -> updatedSimulation
 		],
 		Download::FieldDoesntExist
 	];
@@ -662,8 +856,9 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	preferredPlatePackets = Flatten[downloadedPackets[[5]]];
 	instrumentObjectPackets = Flatten[downloadedPackets[[6]]];
 
-	(* TODO: Delete duplicates / merge and stuff? *)
-	updatedSimulatedCache = FlattenCachePackets[{simulatedCache, downloadedPackets}];
+	cacheBall = FlattenCachePackets[{cache, downloadedPackets}];
+	simulatedFastAssoc = makeFastAssocFromCache[FlattenCachePackets[{cacheBall, Lookup[FirstOrDefault[simulation, <||>], Packets, {}]}]];
+	updatedSimulatedCache = FlattenCachePackets[{cache, downloadedPackets, Lookup[FirstOrDefault[simulation, <||>], Packets, {}]}];
 
 
 	(* === INPUT VALIDATION CHECKS === *)
@@ -679,7 +874,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTestsQ,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->updatedSimulatedCache]];
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -687,12 +882,12 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->updatedSimulatedCache]<>" are not discarded:",True,False]
+				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->updatedSimulatedCache]<>" are not discarded:",True,True]
+				Test["The input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -724,7 +919,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	imagerImagingDirectionInvalidOptions=If[Length[imagerImagingDirectionMismatchOptions]>0&&messagesQ,
 		(
-			Message[Error::OptionMismatch,imagerImagingDirectionMismatchOptions,ObjectToString[imagerImagingDirectionMismatchInputs, Cache -> updatedSimulatedCache]];
+			Message[Error::OptionMismatch,imagerImagingDirectionMismatchOptions,ObjectToString[imagerImagingDirectionMismatchInputs, Cache -> updatedSimulatedCache,Simulation->updatedSimulation]];
 			{Instrument, ImagingDirection}
 		),
 		{}
@@ -739,13 +934,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The options Instrument and ImagingDirection match for the inputs "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache]<>", if supplied by the user:",True,True],
+				Test["The options Instrument and ImagingDirection match for the inputs "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", if supplied by the user:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest=If[Length[imagerImagingDirectionMismatchInputs]>0,
-				Test["The options Instrument and ImagingDirection match for the inputs "<>ObjectToString[imagerImagingDirectionMismatchInputs,Cache->updatedSimulatedCache]<>", if supplied by the user:",True,False],
+				Test["The options Instrument and ImagingDirection match for the inputs "<>ObjectToString[imagerImagingDirectionMismatchInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", if supplied by the user:",True,False],
 				Nothing
 			];
 
@@ -781,7 +976,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	imagerIlluminationDirectionInvalidOptions=If[Length[imagerIlluminationDirectionMismatchOptions]>0&&messagesQ,
 		(
-			Message[Error::OptionMismatch,imagerIlluminationDirectionMismatchOptions,ObjectToString[imagerIlluminationDirectionMismatchInputs, Cache -> updatedSimulatedCache]];
+			Message[Error::IlluminationOptionMismatch,imagerIlluminationDirectionMismatchOptions,ObjectToString[imagerIlluminationDirectionMismatchInputs, Cache -> updatedSimulatedCache,Simulation->updatedSimulation]];
 			{Instrument, IlluminationDirection}
 		),
 		{}
@@ -796,13 +991,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The options Instrument and IlluminationDirection match for the inputs "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache]<>", if supplied by the user:",True,True],
+				Test["The options Instrument and IlluminationDirection match for the inputs "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", if supplied by the user:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest=If[Length[imagerIlluminationDirectionMismatchInputs]>0,
-				Test["The options Instrument and IlluminationDirection match for the inputs "<>ObjectToString[imagerIlluminationDirectionMismatchInputs,Cache->updatedSimulatedCache]<>", if supplied by the user:",True,False],
+				Test["The options Instrument and IlluminationDirection match for the inputs "<>ObjectToString[imagerIlluminationDirectionMismatchInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", if supplied by the user:",True,False],
 				Nothing
 			];
 
@@ -847,6 +1042,12 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 
 	(* === RESOLVE EXPERIMENT OPTIONS === *)
+	(* Resolve the preparation option *)
+	resolvedPreparation = If[MatchQ[Lookup[imageSampleOptionsAssociation,Preparation],Except[Automatic]],
+		Lookup[imageSampleOptionsAssociation,Preparation],
+		Manual
+	];
+
 	(* Convert options into a MapThread friendly version. *)
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentImageSample,imageSampleOptionsAssociation];
 
@@ -863,6 +1064,8 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 		imageContainers,
 		imagingDirections,
 		illuminationDirections,
+		sampleLabels,
+		sampleContainerLabels,
 		preferredIlluminationIncompatibleErrors,
 		unimageableContainerErrors,
 		imageContainerInstIncompatibleErrors,
@@ -879,10 +1082,11 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 					samplePacket, sampleContainer, containerPacket, sampleContainerModel, containerModelPacket, errorVariables, finalContainerModel, finalContainerModelPacket,
 					(* Unresolved options *)
 					unresolvedInstrument, unresolvedAlternateInstrumentList, unresolvedImagingDirection, unresolvedIlluminationDirection,
+					unresolvedSampleLabel,unresolvedSampleContainerLabel,
 					(* Model fields relevant to options resolution *)
 					preferredCamera, compatibleCameras,	defaultCamera,
 					(* Resolved options *)
-					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection
+					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection, sampleLabel, sampleContainerLabel
 				},
 
 				(* Initialize error-tracking variable to False *)
@@ -893,7 +1097,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				potentialAliquotContainers = Null;
 
 				(* Lookup information about our sample. *)
-				samplePacket=fetchPacketFromCacheImageSample[mySample[Object], updatedSimulatedCache];
+				samplePacket=fetchPacketFromFastAssoc[mySample, simulatedFastAssoc];
 
 				(* Lookup information about our sample's container. *)
 
@@ -901,18 +1105,34 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				sampleContainer=Lookup[samplePacket,Container,Null]/.{link_Link:>Download[link, Object]};
 
 				(* Lookup information about the container of our sample *)
-				containerPacket = fetchPacketFromCacheImageSample[sampleContainer[Object], updatedSimulatedCache];
+				containerPacket = fetchPacketFromFastAssoc[sampleContainer, simulatedFastAssoc];
 
 				(* Get the model of this container object. *)
-				sampleContainerModel=Lookup[fetchPacketFromCacheImageSample[sampleContainer[Object], updatedSimulatedCache],Model][Object];
+				sampleContainerModel=fastAssocLookup[simulatedFastAssoc, sampleContainer, {Model, Object}];
 
 				(* Get the packet that corresponds to the model of the container object. *)
-				containerModelPacket=fetchPacketFromCacheImageSample[sampleContainerModel, updatedSimulatedCache];
+				containerModelPacket=fetchPacketFromFastAssoc[sampleContainerModel, simulatedFastAssoc];
 
 				(* Pull out some other key information and store in local variables *)
-				{unresolvedInstrument, unresolvedAlternateInstrumentList, unResImageContainer, unresolvedImagingDirection, unresolvedIlluminationDirection} = Lookup[
+				{
+					unresolvedInstrument,
+					unresolvedAlternateInstrumentList,
+					unResImageContainer,
+					unresolvedImagingDirection,
+					unresolvedIlluminationDirection,
+					unresolvedSampleLabel,
+					unresolvedSampleContainerLabel
+				} = Lookup[
 					myMapThreadOptions,
-					{Instrument, AlternateInstruments, ImageContainer, ImagingDirection, IlluminationDirection}
+					{
+						Instrument,
+						AlternateInstruments,
+						ImageContainer,
+						ImagingDirection,
+						IlluminationDirection,
+						SampleLabel,
+						SampleContainerLabel
+					}
 				]/.link_Link:>Download[link,Object];
 
 				(* Extract preferred and compatible cameras *)
@@ -993,7 +1213,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 					(* TODO: Also account for sample imager being specified -- don't include any plates unless they have only one well *)
 					imagerFilteredContainers = Switch[unresolvedInstrument,
 
-						(* If plate imager has been explicitly specified, select only plates or other containers that are 
+						(* If plate imager has been explicitly specified, select only plates or other containers that are
 							explicitly listed as plate imageable (e.g. rackable tubes) *)
 						ObjectP[{Model[Instrument, PlateImager], Object[Instrument, PlateImager]}],
 							Select[
@@ -1014,7 +1234,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 								]&
 							],
 
-						(* If sample imager has been explicitly specified, exclude all plates except those that specifically list 
+						(* If sample imager has been explicitly specified, exclude all plates except those that specifically list
 							S/M/L/Overhead in Preferred/CompatibleCameras *)
 						ObjectP[{Model[Instrument, SampleImager], Object[Instrument, SampleImager]}],
 							Select[
@@ -1043,7 +1263,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				(* Determine whether current container model is completely unimageable.
 					At resource packet generation time, these samples will be omitted if we're in a subprotocol
 					because we don't want to do any transferring in a sub. If we're in a standalone protocol,
-					we'll throw a warning and do the transferring. 
+					we'll throw a warning and do the transferring.
 					TODO: catch subtler errors (e.g. plate imager requested for imaging a bottle) in the instrument resolution block below. *)
 				unimageableContainerError = MatchQ[Lookup[containerModelPacket, Unimageable, Null], True];
 
@@ -1290,9 +1510,33 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 							]
 					]
 				];
+
+				(* Resolve the label options *)
+				(* for Sample/ContainerLabel options, automatically resolve to Null *)
+				(* NOTE: We use the simulated object IDs here to help generate the labels so we don't spin off a million *)
+				(* labels if we have duplicates. *)
+				sampleLabel = Which[
+					Not[MatchQ[unresolvedSampleLabel, Automatic]],
+						unresolvedSampleLabel,
+					MatchQ[updatedSimulation, SimulationP] && MemberQ[Lookup[updatedSimulation[[1]], Labels][[All,2]], Lookup[samplePacket, Object]],
+						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[samplePacket, Object]],
+					True,
+						"image sample sample " <> StringDrop[Lookup[samplePacket, ID], 3]
+				];
+				sampleContainerLabel = Which[
+					Not[MatchQ[unresolvedSampleContainerLabel, Automatic]],
+						unresolvedSampleContainerLabel,
+					MatchQ[updatedSimulation, SimulationP] && MemberQ[Lookup[updatedSimulation[[1]], Labels][[All, 2]], Lookup[containerPacket, Object]],
+						Lookup[Reverse /@ Lookup[updatedSimulation[[1]], Labels], Lookup[containerPacket, Object]],
+					(* In case we have a container-less sample, use sample ID *)
+					True,
+						"image sample container " <> StringDrop[Lookup[containerPacket, ID, Lookup[samplePacket, ID]], 3]
+				];
+
+				(* Return our options and errors *)
 				{
 					(* Resolved options *)
-					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection,
+					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection,sampleLabel,sampleContainerLabel,
 					(* Errors *)
 					preferredIlluminationIncompatibleError, unimageableContainerError, imageContainerInstIncompatibleError, invalidAlternateInstrumentError,
 					(* Aliquot containers *)
@@ -1317,7 +1561,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 			invalidInstruments = PickList[instruments,preferredIlluminationIncompatibleErrors];
 
 			(* Throw the corresponding error. *)
-			Message[Warning::PreferredIlluminationIncompatible,ObjectToString[preferredIlluminationIncompatibleInvalidSamples,Cache->updatedSimulatedCache],ObjectToString[invalidInstruments,Cache->updatedSimulatedCache]];
+			Message[Warning::PreferredIlluminationIncompatible,ObjectToString[preferredIlluminationIncompatibleInvalidSamples,Cache->updatedSimulatedCache,Simulation->updatedSimulation],ObjectToString[invalidInstruments,Cache->updatedSimulatedCache,Simulation->updatedSimulation]];
 		]
 	];
 
@@ -1334,13 +1578,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 			(* Create a test for passing inputs *)
 			failingInputsTest = If[Length[failingInputs]>0,
-				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", will receive different illumination than their containers' PreferredIllumination because of conflicts with the specified imager.",True,False],
+				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", will receive different illumination than their containers' PreferredIllumination because of conflicts with the specified imager.",True,False],
 				Nothing
 			];
 
 			(* Create a test for passing inputs *)
 			passingInputsTest = If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", will be illuminated as specified or as indicated by their containers' PreferredIllumination fields.",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", will be illuminated as specified or as indicated by their containers' PreferredIllumination fields.",True,True],
 				Nothing
 			];
 
@@ -1361,7 +1605,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 			invalidSamples=PickList[simulatedSamples,unimageableContainerErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Warning::ImagingIncompatibleContainer,ObjectToString[invalidSamples,Cache->updatedSimulatedCache]];
+			Message[Warning::ImagingIncompatibleContainer,ObjectToString[invalidSamples,Cache->updatedSimulatedCache,Simulation->updatedSimulation]];
 
 			(* Return the invalid options. *)
 			{Instrument}
@@ -1382,13 +1626,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 			(* Create a test for passing inputs *)
 			failingInputsTest = If[Length[failingInputs]>0,
-				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", will need to be aliquoted from their current containers because those containers are not compatible with available imaging instrumentation.",True,False],
+				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", will need to be aliquoted from their current containers because those containers are not compatible with available imaging instrumentation.",True,False],
 				Nothing
 			];
 
 			(* Create a test for passing inputs *)
 			passingInputsTest = If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", will be imaged in their current containers.",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", will be imaged in their current containers.",True,True],
 				Nothing
 			];
 
@@ -1405,7 +1649,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	invalidAlternateInstrumentsOption=If[And@@invalidAlternateInstrumentErrors&&messagesQ,
 		Module[{invalidInstruments},
 			invalidInstruments=DeleteDuplicates@Flatten@PickList[Lookup[mapThreadFriendlyOptions,AlternateInstruments],invalidAlternateInstrumentErrors];
-			Message[Error::ImageSampleInvalidAlternateInstruments,ObjectToString[invalidInstruments,Cache->simulatedCache]];
+			Message[Error::ImageSampleInvalidAlternateInstruments,ObjectToString[invalidInstruments,Cache->updatedSimulatedCache,Simulation->updatedSimulation]];
 			{AlternateInstruments}
 		],
 		{}
@@ -1427,13 +1671,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 			(* Create a test for passing inputs *)
 			failingInputsTest=If[Length[failingInputs]>0,
-				Test["The following instrument models, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", can be used as alternative instruments.",True,False],
+				Test["The following instrument models, "<>ObjectToString[failingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", can be used as alternative instruments.",True,False],
 				Nothing
 			];
 
 			(* Create a test for passing inputs *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following instrument models, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", can be used as alternative instruments.",True,True],
+				Test["The following instrument models, "<>ObjectToString[passingInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]<>", can be used as alternative instruments.",True,True],
 				Nothing
 			];
 
@@ -1464,7 +1708,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	];
 
 	(* Get the rest of our options directly from SafeOptions. *)
-	{confirm, template, samplesInStorageCondition, cache, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[myOptions, {Confirm, Template, SamplesInStorageCondition, Cache, FastTrack, Operator, ParentProtocol, Upload, Output}];
+	{confirm, canaryBranch, template, samplesInStorageCondition, cache, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[myOptions, {Confirm, CanaryBranch, Template, SamplesInStorageCondition, Cache, FastTrack, Operator, ParentProtocol, Upload, Output}];
 
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
@@ -1473,14 +1717,13 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTestsQ,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->updatedSimulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->updatedSimulatedCache,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
 	If[Length[invalidOptions]>0&&!gatherTestsQ,
 		Message[Error::InvalidOption,invalidOptions]
 	];
-
 	(* Resolve Aliquot Options *)
 	{resolvedAliquotOptions, aliquotTests} = If[gatherTestsQ,
 		resolveAliquotOptions[
@@ -1489,6 +1732,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
 			Cache->updatedSimulatedCache,
+			Simulation->updatedSimulation,
 			Output->{Result, Tests},
 			RequiredAliquotAmounts -> Null,
 			RequiredAliquotContainers -> targetContainers,
@@ -1502,6 +1746,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
 				Cache->updatedSimulatedCache,
+				Simulation->updatedSimulation,
 				Output->{Result},
 				RequiredAliquotAmounts -> Null,
 				RequiredAliquotContainers -> targetContainers,
@@ -1511,7 +1756,6 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 			{}
 		}
 	];
-
 	(* Return our resolved options and/or tests. *)
 	outputSpecification/.{
 		Result -> ReplaceRule[
@@ -1523,9 +1767,12 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				ImageContainer->imageContainers,
 				ImagingDirection->imagingDirections,
 				IlluminationDirection->illuminationDirections,
+				SampleLabel->sampleLabels,
+				SampleContainerLabel->sampleContainerLabels,
 				(* General options *)
 				Email->email,
 				Confirm->confirm,
+				CanaryBranch->canaryBranch,
 				Template->template,
 				SamplesInStorageCondition->samplesInStorageCondition,
 				Cache->cache,
@@ -1533,10 +1780,11 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				Operator->operator,
 				ParentProtocol->parentProtocol,
 				Upload->upload,
-				Output->outputOption
+				Output->outputOption,
+				Preparation -> resolvedPreparation
 			}
 		],
-		Tests -> Flatten[{discardedTest, imagerImagingDirectionTest, imagerIlluminationDirectionTest, preferredIlluminationIncompatibleTests,
+		Tests -> Flatten[{samplePrepTests, discardedTest, imagerImagingDirectionTest, imagerIlluminationDirectionTest, preferredIlluminationIncompatibleTests,
 			unimageableContainerTests, validNameTest, aliquotTests, invalidAlternateInstrumentsTests}]
 	}
 ];
@@ -1604,37 +1852,53 @@ compatibleImagingContainers[
 
 (* ::Subsubsection::Closed:: *)
 (* imageSampleResourcePackets (private helper) *)
+DefineOptions[imageSampleResourcePackets,
+	Options :> {
+		CacheOption,
+		HelperOutputOption,
+		SimulationOption
+	}
+];
 
+DefineOptions[
+	imageSampleResourcePackets,
+	Options :> {
+		HelperOutputOption,
+		CacheOption,
+		SimulationOption
+	}
+];
 
 (* private function to generate the list of protocol packets containing resource blobs *)
-imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}]:=Module[
-	{expandedInputs, expandedResolvedOptions, aliquotQ, filteredExpandedInputs, filteredExpandedOptions, expandedImagingDirections,
-	expandedIlluminationDirections, imagingExpandedResolvedOptions, cache, alternateInstrumentsOption,
-	resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, sampleVolumes, instrumentOpt, simulatedSamples,
-	simulatedCache, incomingAndSimulatedCache, sampleFields, samplePackets, containerPackets, containerModelPackets, secondaryContainerPackets,
-	secondaryContainerModelPackets, plateImagerRackModelPackets, instrumentPackets, updatedCache, safeSecondaryContainerPackets,
-	sampleImageIndexes, uniqueContainerModelPacketsForSampleImaging, containerModelFocalLengthLookup, uniqueContainerModelImagingDistances,
-	uniqueContainerModelImagingPedestals, containerModelImagingDistanceLookup, containerModelPedestalLookup, instrumentGrabber,
+imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, myOptions: OptionsPattern[]]:=Module[
+	{
+		expandedInputs, expandedResolvedOptions, aliquotQ, filteredExpandedInputs, filteredExpandedOptions, expandedImagingDirections,
+		expandedIlluminationDirections, imagingExpandedResolvedOptions, cache, alternateInstrumentsOption,
+		resolvedOptionsNoHidden, safeOps, outputSpecification, output, simulation, gatherTests, messages, sampleVolumes, instrumentOpt, simulatedSamples,
+		updatedSimulation, sampleFields, samplePackets, containerPackets, containerModelPackets, secondaryContainerPackets,
+		secondaryContainerModelPackets, plateImagerRackModelPackets, instrumentPackets, updatedCache, safeSecondaryContainerPackets,
+		sampleImageIndexes, uniqueContainerModelPacketsForSampleImaging, containerModelFocalLengthLookup, uniqueContainerModelImagingDistances,
+		uniqueContainerModelImagingPedestals, containerModelImagingDistanceLookup, containerModelPedestalLookup, instrumentGrabber,
 
-	(* Sorting and gathering of samples *)
-	sampleInformationAssocs, gatherSubgroupsAndFlatten, correctSecondaryRackQ, plateImagerAssocs, sampleImagerAssocs, plateImagerTubeAssocs,
-	plateImagerPlateAssocs, illuminationGatheredPlateImagerTubeAssocs, illuminationGatheredPlateImagerPlateAssocs, containerGatheredPlateImagerPlateAssocs,
-	containerModelGatheredPlateImagerTubeAssocs, rackModelGatheredPlateImagerTubeAssocs,partitionedGatheredPlateImagerTubeAssocs,
-	sideImagingGatheredAssocs, pedestalGatheredSampleImagerAssocs,
+		(* Sorting and gathering of samples *)
+		sampleInformationAssocs, gatherSubgroupsAndFlatten, correctSecondaryRackQ, plateImagerAssocs, sampleImagerAssocs, plateImagerTubeAssocs,
+		plateImagerPlateAssocs, illuminationGatheredPlateImagerTubeAssocs, illuminationGatheredPlateImagerPlateAssocs, containerGatheredPlateImagerPlateAssocs,
+		containerModelGatheredPlateImagerTubeAssocs, rackModelGatheredPlateImagerTubeAssocs,partitionedGatheredPlateImagerTubeAssocs,
+		sideImagingGatheredAssocs, pedestalGatheredSampleImagerAssocs,
 
-	(* Generation of resources *)
-	pairedInstrumentsAndImagingTimes, groupedImagingTimesByInstrument, instrumentResourceLookup, uniqueRacks, rackResourceLookup,
-	aliquotVolumes, pairedSamplesInAndVolumes, sampleVolumeRules,sampleResourceReplaceRules, samplesInResources, containersIn, imagingTimeEstimate,
-	containerResources, plateImagerResources, sampleImagerResources,
+		(* Generation of resources *)
+		pairedInstrumentsAndImagingTimes, groupedImagingTimesByInstrument, instrumentResourceLookup, uniqueRacks, rackResourceLookup,
+		aliquotVolumes, pairedSamplesInAndVolumes, sampleVolumeRules,sampleResourceReplaceRules, samplesInResources, containersIn, imagingTimeEstimate,
+		containerResources, plateImagerResources, sampleImagerResources,
 
-	(* Generation of batching fields *)
-	allBatchedSamplesAssocs, batchLengths, workingContainers, plateImagerPlateBatchedContainerIndexes, plateImagerTubeBatchedContainerIndexes, sampleImagerBatchedContainerIndexes,
-	batchedContainerIndexes, protocolID, protocolIDString, batchedImagingParameters,
+		(* Generation of batching fields *)
+		allBatchedSamplesAssocs, batchLengths, workingContainers, plateImagerPlateBatchedContainerIndexes, plateImagerTubeBatchedContainerIndexes,
+		sampleImagerBatchedContainerIndexes, batchedContainerIndexes, protocolID, protocolIDString, batchedImagingParameters,
 
-	(* Generation of packet *)
-	protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule,
+		(* Generation of packet *)
+		protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule,
 
-	imageContainerAssocs,sampleImagingAssocs
+		imageContainerAssocs,sampleImagingAssocs, containerGatheredSampleImagerAssocs, updatedSampleImagerAssocs
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -1739,9 +2003,15 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		Messages -> False
 	];
 
+	(* Get the safe options for this function *)
+	safeOps = SafeOptions[imageSampleResourcePackets, ToList[myOptions]];
+
 	(* pull out the Output option and make it a list (and also the cache) *)
-	{outputSpecification, cache} = Lookup[imagingExpandedResolvedOptions, {Output, Cache}];
+	outputSpecification = Lookup[safeOps, Output];
 	output = ToList[outputSpecification];
+
+	(* Get the cache and simulation *)
+	{cache, simulation} = Lookup[safeOps, {Cache, Simulation}];
 
 	(* determine if we should keep a running list of tests; if True, then silence the messages *)
 	gatherTests = MemberQ[output, Tests];
@@ -1752,15 +2022,12 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* get the AlternateInstruments option *)
 	alternateInstrumentsOption=Lookup[imagingExpandedResolvedOptions,AlternateInstruments]/.link_Link:>Download[link,Object];
-	
+
 	(* At this point, return if the filtering above has eliminated all inputs *)
 	If[Length[filteredExpandedInputs] == 0, Return[outputSpecification /. {Preview->Null, Options->resolvedOptionsNoHidden, Result->$Failed, Tests->{}}]];
 
 	(* Simulate the samples after they go through all the sample prep *)
-	{simulatedSamples, simulatedCache} = simulateSamplesResourcePackets[ExperimentImageSample, filteredExpandedInputs, imagingExpandedResolvedOptions, Cache->cache];
-	
-	(* Make a new cache with the inherited and simulated caches *)
-	incomingAndSimulatedCache = FlattenCachePackets[{Lookup[imagingExpandedResolvedOptions, Cache], simulatedCache}];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentImageSample, filteredExpandedInputs, imagingExpandedResolvedOptions, Cache->cache, Simulation -> simulation];
 
 	(* Assemble a list of sample fields to be downloaded *)
 	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
@@ -1780,15 +2047,17 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 				{Packet[Container[Container][{Object, Model}]]},
 				{Packet[Container[Container][Model][{NumberOfPositions, Positions, AspectRatio}]]},
 				{Packet[Container[Model][PlateImagerRack][{NumberOfPositions, AspectRatio}]]},
-				{Packet[Object, Model]}
+				{Packet[Object, Model, Site]}
 			},
-			Cache->incomingAndSimulatedCache
+			Cache->cache,
+			Simulation -> updatedSimulation
 		],
 		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
-	updatedCache = FlattenCachePackets[{incomingAndSimulatedCache, samplePackets, containerPackets, containerModelPackets, secondaryContainerPackets,
+	updatedCache = FlattenCachePackets[{cache, samplePackets, containerPackets, containerModelPackets, secondaryContainerPackets,
 		plateImagerRackModelPackets, instrumentPackets}];
+	updatedFastAssoc = makeFastAssocFromCache[FlattenCachePackets[{updatedCache, Lookup[First[updatedSimulation], Packets]}]];
 
 	(* Make secondary container packets safe for future Lookup calls by replacing any 'Null' entries with empty lists *)
 	safeSecondaryContainerPackets = Replace[secondaryContainerPackets, Null->{}, {1}];
@@ -1984,6 +2253,15 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	];
 
 	(* --- Sample imager sorting: Just get containers into an order that will optimize for operational efficiency --- *)
+
+	(* If ImageContainer is Ture, gather all samples that are in the same physical container/plate *)
+	containerGatheredSampleImagerAssocs = GatherBy[sampleImagerAssocs, Lookup[#, {ImageContainer, Container}] &];
+	(* We only keep the first in the gathered sub list if ImagerContainer -> True so that the batching will be over the unique container, rather than wells of each sample *)
+	updatedSampleImagerAssocs =If[MatchQ[Lookup[First[#], ImageContainer], True],
+		{First[#]},
+		#
+	] & /@ containerGatheredSampleImagerAssocs;
+
 	(* Once backlight is installed, all necessary images in all lighting conditions should be able to be taken sequentially and automatically
 		without operator intervention.
 		First, sort so that items with like pedestal requirements are adjacent to minimize pedestal movement.
@@ -1991,7 +2269,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* Sort based on pedestals needed
 		Wrap a list around each sample before beginning because each usage of the sample imager is assumed to operate on a single sample in a single container *)
-	pedestalGatheredSampleImagerAssocs = gatherSubgroupsAndFlatten[List/@sampleImagerAssocs, Lookup[#, Pedestals]&];
+	pedestalGatheredSampleImagerAssocs = gatherSubgroupsAndFlatten[updatedSampleImagerAssocs, Lookup[#, Pedestals]&];
 
 	(* Sort based on imaging direction so all imagings that will take side images happen before any imagings that do not take side images *)
 	(*NOTE: THIS IS REQUIRED FOR IMAGE FILE NUMBERING TO COME OUT RIGHT!
@@ -2003,11 +2281,9 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		 !MemberQ[Lookup[First[#], ImagingDirection], Side]&
 	];
 
-
 	(* Generate a list of lists of sample associations
 		Inner lists of associations correspond to imaging batches *)
 	allBatchedSamplesAssocs = Join[containerGatheredPlateImagerPlateAssocs, partitionedGatheredPlateImagerTubeAssocs, sideImagingGatheredAssocs];
-
 
 	(* === Generate instrument, rack, and sample resources === *)
 
@@ -2045,7 +2321,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		(Hold[#1] -> Resource[Instrument->#1, Time->#2 + 10 Minute, Name->ToString[Unique[]]])&,
 		groupedImagingTimesByInstrument
 	];
-	
+
 	(* --- Rack resources --- *)
 	(* Find unique racks that will be needed, excluding the rack for tubes that are already in an appropriate rack *)
 	uniqueRacks = DeleteDuplicates[Join[
@@ -2053,7 +2329,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		(* Find rack model that will be needed for each set of tubes; tubes being plate imaged will always require a secondary rack
 			Exclude cases where samples are already in a rack of the correct model *)
 		If[correctSecondaryRackQ[First[#]], Nothing, Lookup[First[#], PlateImagerRack]]& /@ partitionedGatheredPlateImagerTubeAssocs,
-		(* Find rack model that will be needed for each sample imaging; do nothing if no secondary rack is required 
+		(* Find rack model that will be needed for each sample imaging; do nothing if no secondary rack is required
 			Use ObjectQ to decide whether a sample imager rack is needed; SampleImagerRack may be either Null or $Failed in cases where one isn't needed *)
 		If[!ObjectQ[Lookup[First[#], SampleImagerRack]], Nothing, Lookup[First[#], SampleImagerRack]]& /@ sideImagingGatheredAssocs
 	]];
@@ -2082,7 +2358,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* Make rules correlating the volumes with each sample in (filtered to eliminate those that cannot be imaged, if in a subprotocol) *)
 	(* note that we CANNOT use AssociationThread here because there might be duplicate keys (we will Merge them down below), and so we're going to lose duplicate volumes *)
-	pairedSamplesInAndVolumes = MapThread[#1 -> #2&, {Download[simulatedSamples, Object], sampleVolumes}];
+	pairedSamplesInAndVolumes = MapThread[#1 -> #2&, {Flatten@Download[filteredExpandedInputs, Object], sampleVolumes}];
 
 	(* merge the SamplesIn volumes together to get the total volume of each sample's resource *)
 	(* need to do this with thing with Nulls in our Merge because otherwise we'll end up with Total[{Null, Null}], which would end up being 2*Null, which I don't want *)
@@ -2100,7 +2376,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	];
 
 	(* use the replace rules to get the sample resources *)
-	samplesInResources = Replace[Download[simulatedSamples, Object], sampleResourceReplaceRules, {1}];
+	samplesInResources = Replace[Flatten@Download[filteredExpandedInputs, Object], sampleResourceReplaceRules, {1}];
 
 
 	(* === Build batching field entries for each group of samples === *)
@@ -2146,7 +2422,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* Extract imaging parameters from plate sample associations and assemble into BatchedImagingParameters *)
 	batchedImagingParameters = MapIndexed[
 		Function[{sampleGroup, batchNumber},
-			Module[{bareBatchNumber, firstSample,imageContainer, imagingType, secondaryRack, imageFilePrefix, runTime, wells, fieldOfView, exposureTime, focalLength},
+			Module[{bareBatchNumber, firstSample,imageContainer, imagingType, secondaryRack, imageFilePrefix, runTime, wells, fieldOfView, exposureTime, ambientExposureTime, focalLength},
 
 				(* Strip useless outer list off of batchNumber *)
 				bareBatchNumber = First[batchNumber];
@@ -2290,12 +2566,22 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 					Sample, Null
 				];
 
-				(* Figure out exposure time *)
+				(* Resolve ambientExposureTime based on site because ambient lighting conditions may vary *)
+				ambientExposureTime = Switch[Lookup[myResolvedOptions,Site],
+					(* CMU *)
+					ObjectP[Object[Container, Site, "id:P5ZnEjZpRlK4"]], 200 Millisecond,
+					(* ECL-2 *)
+					ObjectP[Object[Container, Site, "ECL-2"]], 500 Millisecond,
+					(* Default *)
+					_, 500 Millisecond
+				];
+
+				(* Figure out exposure time, based on the instrument's site *)
 				exposureTime = Switch[imagingType,
 					(Plate|Rack), 16 Millisecond,
 					Sample,
 						Switch[Lookup[firstSample, IlluminationDirection],
-							{Ambient}, 500 Millisecond,
+							{Ambient}, ambientExposureTime,
 							{Top}, 25 Millisecond,
 							{Bottom}, 50 Millisecond,
 							{Side}, 33 Millisecond,
@@ -2331,7 +2617,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 					ImagingDistance -> Lookup[firstSample, Distance],
 					Pedestals -> Lookup[firstSample, Pedestals],
 					ExposureTime -> exposureTime,
-					FocalLength -> focalLength
+					FocalLength -> focalLength,
+					Backdrop->Null
 				|>
 			]
 		],
@@ -2342,7 +2629,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	imagingTimeEstimate = Total[#[Time]& /@ Values[instrumentResourceLookup]];
 
 	(* Generate duplicate-free lists of containers and instrument resources for the protocol packet *)
-	containersIn = DeleteDuplicates[Lookup[containerPackets, Object]];
+	containersIn = DeleteDuplicates[fastAssocLookup[updatedFastAssoc, #, {Container, Object}]& /@ Flatten[filteredExpandedInputs]];
 	containerResources = Resource[Sample->#]& /@ containersIn;
 
 	plateImagerResources = Select[Values[instrumentResourceLookup], MatchQ[#[Instrument], ListableP@ObjectP[{Model[Instrument, PlateImager], Object[Instrument, PlateImager]}]]&];
@@ -2357,14 +2644,14 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		Name -> Lookup[imagingExpandedResolvedOptions, Name],
 		Template -> Link[Lookup[resolvedOptionsNoHidden, Template], ProtocolsTemplated],
 		UnresolvedOptions -> myUnresolvedOptions,
-		ResolvedOptions -> resolvedOptionsNoHidden, (* NOTE: This will not include final expansion of imaging/illum directions *)
+		ResolvedOptions -> imagingExpandedResolvedOptions, (* NOTE: This will not include final expansion of imaging/illum directions *)
 		Replace[SamplesIn] -> (Link[#, Protocols]& /@ samplesInResources),
 		Replace[ContainersIn] -> (Link[#, Protocols]& /@ containerResources),
 		Replace[Checkpoints]->{
-			{"Picking Resources", 1 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->1 Minute]]},
-			{"Imaging Samples", imagingTimeEstimate,"Images of the samples are taken.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->imagingTimeEstimate]]},
-			{"Returning Materials", 5 Minute, "Samples are returned to storage.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->5Minute]]},
-			{"Parsing Data", 5 Minute, "The database is updated to include the new sample images.", Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->5Minute]]}
+			{"Picking Resources", 1 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator->$BaselineOperator,Time->1 Minute]]},
+			{"Imaging Samples", imagingTimeEstimate,"Images of the samples are taken.", Link[Resource[Operator->$BaselineOperator,Time->imagingTimeEstimate]]},
+			{"Returning Materials", 5 Minute, "Samples are returned to storage.", Link[Resource[Operator->$BaselineOperator,Time->5Minute]]},
+			{"Parsing Data", 5 Minute, "The database is updated to include the new sample images.", Link[Resource[Operator->$BaselineOperator,Time->5Minute]]}
 		},
 
 		(* Pipe experiment-specific resolved options in *)
@@ -2376,15 +2663,14 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 		(* Batching fields *)
 		(* BatchedContainers, TubeRackPlacements, and DeckPlacements will get populated at compile time *)
-		Replace[BatchedImagingParameters] -> (KeyDrop[#,ImageContainer]&/@batchedImagingParameters),
-		Replace[BatchedImagingParametersNew] -> batchedImagingParameters,
+		Replace[BatchedImagingParameters] -> batchedImagingParameters,
 		Replace[BatchLengths] -> batchLengths,
 		Replace[BatchedContainerIndexes] -> batchedContainerIndexes,
 		Replace[SamplesInStorage] -> Lookup[imagingExpandedResolvedOptions, SamplesInStorageCondition]
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[simulatedSamples, imagingExpandedResolvedOptions,Cache->updatedCache];
+	sharedFieldPacket = populateSamplePrepFields[simulatedSamples, imagingExpandedResolvedOptions,Cache->updatedCache,Simulation->updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -2396,8 +2682,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication,Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->updatedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages,Cache->updatedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->updatedCache,Simulation->updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages,Cache->updatedCache,Simulation->updatedSimulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -2427,6 +2713,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 ];
 
+
+
 (* Correlating images to sample objects (to be done in parser):
 
 	Plate imager
@@ -2445,6 +2733,80 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 			NOTE: Imager does a silly thing and increments even on the FIRST image, so these numbers are off by one (image index is batch number + 1)
 
 	*)
+
+
+(* ::Subsubsection:: *)
+(* simulateExperimentImageSample *)
+DefineOptions[simulateExperimentImageSample,
+	Options :> {
+		CacheOption,
+		SimulationOption
+	}
+];
+
+simulateExperimentImageSample[
+	myProtocolPacket: PacketP[Object[Protocol, ImageSample]],
+	mySamples: {ObjectP[Object[Sample]]..},
+	myResolvedOptions: {_Rule...},
+	myResolutionOptions: OptionsPattern[simulateExperimentImageSample]
+] := Module[
+	{
+		cache, simulation, protocolObject, samplePackets, fulfillmentSimulation, simulationWithLabels
+	},
+
+	(* Lookup the cache and simulation *)
+	cache = Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
+
+	(* Get our protocol ID. This should already be in our protocol packet, unless the resource packets failed *)
+	protocolObject = Lookup[myProtocolPacket, Object];
+
+	(* Simulate the fulfillment of all resources by the procedure *)
+	fulfillmentSimulation = SimulateResources[
+		myProtocolPacket,
+		Cache -> cache,
+		Simulation -> simulation
+	];
+
+	(* Make sample packets so we know our containers. *)
+	samplePackets=Download[
+		mySamples,
+		Packet[Container],
+		Cache->cache,
+		Simulation->fulfillmentSimulation
+	];
+
+	(* We don't have any SamplesOut for our protocol object, so right now, just tell the simulation where to find the *)
+	(* SamplesIn field. *)
+	simulationWithLabels=Simulation[
+		Labels->Join[
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleLabel], mySamples}],
+				{_String, ObjectP[]}
+			],
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], Lookup[samplePackets, Container]}],
+				{_String, ObjectP[]}
+			]
+		],
+		LabelFields->Join[
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleLabel], (Field[SampleLink[[#]]]&)/@Range[Length[mySamples]]}],
+				{_String, _}
+			],
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], (Field[SampleLink[[#]][Container]]&)/@Range[Length[mySamples]]}],
+				{_String, _}
+			]
+		]
+	];
+
+	(* Merge our packets with our labels. *)
+	{
+		protocolObject,
+		UpdateSimulation[fulfillmentSimulation, simulationWithLabels]
+	}
+];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -2633,14 +2995,14 @@ DefineOptions[ValidExperimentImageSampleQ,
 	SharedOptions :> {ExperimentImageSample}
 ];
 
-ValidExperimentImageSampleQ[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ValidExperimentImageSampleQ]]:=Module[
+ValidExperimentImageSampleQ[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ValidExperimentImageSampleQ]]:=Module[
 	{listedOptions, preparedOptions, imageSampleTests, initialTestDescription, allTests, verbose, outputFormat, listedContainers},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedContainers = ToList[myContainers];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentImageSample *)
@@ -2700,7 +3062,7 @@ DefineOptions[ExperimentImageSampleOptions,
 ];
 
 (* Containers overload *)
-ExperimentImageSampleOptions[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentImageSampleOptions]]:=Module[
+ExperimentImageSampleOptions[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentImageSampleOptions]]:=Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -2731,7 +3093,7 @@ DefineOptions[ExperimentImageSamplePreview,
 
 
 (* Containers overload *)
-ExperimentImageSamplePreview[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentImageSamplePreview]]:=Module[
+ExperimentImageSamplePreview[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions:OptionsPattern[ExperimentImageSamplePreview]]:=Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)

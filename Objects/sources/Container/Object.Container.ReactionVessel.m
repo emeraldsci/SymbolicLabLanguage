@@ -9,18 +9,25 @@ DefineObjectType[Object[Container, ReactionVessel], {
 	CreatePrivileges->None,
 	Cache->Download,
 	Fields -> {
+		Skirted -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this container has walls that extend below the vessel's well geometry to allow the vessel to stand upright on a flat surface without use of a rack.",
+			Category -> "Container Specifications"
+		},
 		MinPressure -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MinPressure]],
 			Pattern :> GreaterEqualP[0*PSI],
-			Description -> "The minimum pressure to which the reaction vessel can be exposed without becomming damaged.",
+			Description -> "The minimum pressure to which the reaction vessel can be exposed without becoming damaged.",
 			Category -> "Operating Limits"
 		},
 		MaxPressure -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MaxPressure]],
 			Pattern :> GreaterP[0*PSI],
-			Description -> "The maximum pressure to which the reaction vessel can be exposed without becomming damaged.",
+			Description -> "The maximum pressure to which the reaction vessel can be exposed without becoming damaged.",
 			Category -> "Operating Limits"
 		},
 		SelfStandingContainers->{

@@ -71,7 +71,9 @@ sensorDataTypeP={
   Object[Data, Temperature],
 	Object[Data, Weight],
 	Object[Data, BubbleLog],
-	Object[Data, FlowRate]
+	Object[Data, FlowRate],
+	Object[Data,Volume],
+	Object[Data,ReedSwitch]
 };
 
 (* Supported patterns *)
@@ -93,7 +95,10 @@ PlotSensor[mySensorDataObject:(sensorObjectDataP),myOps:OptionsPattern[PlotSenso
 
 (*Overload for data sensor info packets*)
 PlotSensor[mySensorDataPacket:sensorDataPacketP,myOps:OptionsPattern[PlotSensor]]:=Module[
-	{measurand, sensorObject, logFieldName, dataObject,sensorPlotLabel,safeOps},
+	{measurand, sensorObject, logFieldName, dataObject,sensorPlotLabel,safeOps,sensorDataType,rawDataLog},
+
+	(*Find the sensor data type*)
+	sensorDataType=Lookup[mySensorDataPacket,Object][[2]];
 
 	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
 	safeOps=SafeOptions[PlotSensor,ToList[myOps]];
@@ -107,6 +112,9 @@ PlotSensor[mySensorDataPacket:sensorDataPacketP,myOps:OptionsPattern[PlotSensor]
 
 	(*REsolve the name of the log field from the data sensor object, e.g. TEmperatureLog*)
 	logFieldName=resolveSensorDataLogField[Download[sensorObject]];
+
+	(*Resolve raw data log*)
+	rawDataLog=Flatten[Lookup[mySensorDataPacket,RawData],1][[2]];
 
 	measurand=If[sensorObject===Null,
 		"Sensor Information",
@@ -123,10 +131,14 @@ PlotSensor[mySensorDataPacket:sensorDataPacketP,myOps:OptionsPattern[PlotSensor]
 		Except[Automatic], (PlotLabel/. safeOps)
 	];
 
-	(*Plot the calibrated data*)
-	PlotSensor[Lookup[mySensorDataPacket,logFieldName], ReplaceRule[ToList[myOps],{yAxisLabel->measurand,PlotLabel->sensorPlotLabel}] ]
+	(*Plot the calibrated data. Plot the RawData if the datatype is ReedSwitch*)
+	Which[
+		    MatchQ[sensorDataType,ReedSwitch],
+	      PlotSensor[rawDataLog, ReplaceRule[ToList[myOps],{yAxisLabel->measurand,PlotLabel->sensorPlotLabel, ScalingFunctions -> {None, "Reverse"}, PlotRange->{Automatic,{-0.2,1.2}},Frame -> True, FrameTicks -> {{None, {{1, "Closed"}, {0, "Open"}}}, Automatic}}]],
+		    MatchQ[sensorDataType,Alternatives[CarbonDioxide,LiquidLevel,Temperature,pH,Pressure,RelativeHumidity,Weight,BubbleLog,FlowRate,Volume]],
+	      PlotSensor[Lookup[mySensorDataPacket,logFieldName], ReplaceRule[ToList[myOps],{yAxisLabel->measurand,PlotLabel->sensorPlotLabel}]]
+		]
 ];
-
 
 (*SuperListable on Data Object*)
 PlotSensor[
@@ -242,7 +254,7 @@ PlotSensor[mySensorData:(DateCoordinateP|{{_?DateObjectQ, _?UnitsQ}..}|QuantityC
 
 	(* allow user input for plot label *)
 	sensorPlotLabel= Switch[(PlotLabel/. safeOps),
-		Automatic, ToString@dataObject,
+		Automatic, "",
 		(* This option can't be null, but the prepareNulls trick blow returns nulls so we need to manage them *)
 		Null, "",
 		Except[Automatic], (PlotLabel/. safeOps)
@@ -306,6 +318,12 @@ sensorObjectToMeasurand[sensorObject:ObjectP[Object[Sensor]]]:=Module[{FamilyNam
 				"Bubbles Detected",
 			FlowRate,
 				"Flow Rate",
+		  Volume,
+		    "Liquid Level",
+		  ReedSwitch,
+		    "Status of Door",
+		  Weight,
+		    "Mass",
 			_,
 				"Sensor Reading"
 	];

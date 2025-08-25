@@ -442,7 +442,7 @@ DefineUsage[TestFailureNotebook,
 					"EmeraldTestSummary",
 					"TestSummaryNotebook"
 				},
-		Author->{"ben","platform","ti.wu"}
+		Author->{"yanzhe.zhu", "ben", "platform", "ti.wu"}
 	}
 ];
 

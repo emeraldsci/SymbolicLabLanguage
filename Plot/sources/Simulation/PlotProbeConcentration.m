@@ -526,7 +526,7 @@ shortenSequenceString[seq_,pol_,showSize_]:=With[
 (* ::Subsubsection::Closed:: *)
 (*MotifFormP*)
 
-
+Authors[MotifFormP]:={"scicomp"};
 MotifFormP = Verbatim[Interpretation][_?ValidGraphicsQ,_Structure|_Strand];
 
 

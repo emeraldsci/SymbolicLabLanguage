@@ -8,7 +8,14 @@ DefineObjectType[Object[Container, Room], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
-
+		OperatorAccessible -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if an operator is expected to be able to enter the area with their cart and gather materials or interact with objects inside during the course of normal lab work.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		PaintProduct -> {
 			Format -> Multiple,
 			Class -> {Name -> String, FinishType -> String, PaintID -> String},

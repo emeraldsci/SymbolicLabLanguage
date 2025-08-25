@@ -45,6 +45,15 @@ DefineObjectType[Object[Qualification,InteractiveTraining],{
 			Category->"Analysis & Reports",
 			Developer->True
 		},
+		GradingNotebookPDF->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[EmeraldCloudFile],
+			Description->"A pdf version of the grading notebook containing details of any responses for manual grading.",
+			Category->"Analysis & Reports",
+			Developer->True
+		},
 		TrainingModule->{
 			Format->Single,
 			Class->Link,

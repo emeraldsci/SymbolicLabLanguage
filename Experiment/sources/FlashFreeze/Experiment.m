@@ -22,7 +22,18 @@ DefineOptions[ExperimentFlashFreeze,
 			Default->Automatic,
 			Description->"Indicates which flash freezing dewar instrument should be used.",
 			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Instrument,Dewar],Object[Instrument,Dewar]}]],
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{Model[Instrument,Dewar],Object[Instrument,Dewar]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Cooling",
+						"Dewars"
+					}
+				}
+			],
 			Category->"General"
 		},
 		IndexMatching[
@@ -72,7 +83,9 @@ DefineOptions[ExperimentFlashFreeze,
 				{OptionName->SamplesInStorageCondition,Default->CryogenicStorage}
 			}
 		],
-		FuntopiaSharedOptions
+		NonBiologyFuntopiaSharedOptions,
+		ModelInputOptions,
+		SimulationOption
 	}
 ];
 
@@ -93,7 +106,7 @@ Error::FlashFreezeSampleVolumeHighError="In ExperimentFlashFreeze, the stored Vo
 ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedSamples,listedOptions,cacheOption,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
+		safeOps,safeOpsTests,validLengths,validLengthTests,updatedSimulation,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
 		optionsWithObjects,freezeInstrumentModels,doserInstrumentModels,allInstrumentModels,objectContainerPacketFields,modelContainerPacketFields,allSamplePackets,
@@ -118,20 +131,20 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentFlashFreeze,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -141,13 +154,7 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentFlashFreeze,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentFlashFreeze,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -157,6 +164,12 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentFlashFreeze,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentFlashFreeze,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -266,21 +279,22 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 					Packet[FlowRate,FlowRatePrecision,MinVolume]
 				}
 			},
-			Cache->Flatten[{samplePreparationCache,cacheOption}],
+			Cache->cacheOption,
+			Simulation->updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
 	];
 
 	cacheBall=FlattenCachePackets[{
-		samplePreparationCache,allSamplePackets,instrumentModelPacket,instrumentObjectPacket,potentialContainerPacket,doserInstrumentPacket
+		allSamplePackets,instrumentModelPacket,instrumentObjectPacket,potentialContainerPacket,doserInstrumentPacket
 	}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentFlashFreezeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentFlashFreezeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests},Simulation->updatedSimulation];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -290,7 +304,7 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentFlashFreezeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentFlashFreezeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -316,8 +330,8 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		flashFreezeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{flashFreezeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+		flashFreezeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests},Simulation->updatedSimulation],
+		{flashFreezeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -336,13 +350,15 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,FlashFreeze],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation->updatedSimulation
 		],
 		$Failed
 	];
@@ -357,9 +373,9 @@ ExperimentFlashFreeze[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opt
 ];
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentFlashFreeze[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentFlashFreeze[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache},
+		containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,containerToSampleSimulation,updatedSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -368,37 +384,37 @@ ExperimentFlashFreeze[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Remove temporal links and named objects. *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+	(* Get the containers and options as lists. *)
+	{listedContainers,listedOptions}= {ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentFlashFreeze,
 			ToList[listedContainers],
 			ToList[listedOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentFlashFreeze,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation->updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -409,39 +425,35 @@ ExperimentFlashFreeze[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentFlashFreeze,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Simulation->updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
 		(* containerToSampleOptions failed - return $Failed *)
 		outputSpecification/.{
-			Result->$Failed,
-			Tests->containerToSampleTests,
-			Options->$Failed,
-			Preview->Null
+			Result -> $Failed,
+			Tests -> containerToSampleTests,
+			Options -> $Failed,
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentFlashFreeze[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentFlashFreeze[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 ];
 
@@ -450,14 +462,15 @@ ExperimentFlashFreeze[myContainers:ListableP[ObjectP[{Object[Container],Object[S
 
 DefineOptions[
 	resolveExperimentFlashFreezeOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentFlashFreezeOptions]]:=Module[
 	{
 		(*Boilerplate variables*)
-		outputSpecification,output,gatherTests,cache,samplePrepOptions,flashFreezeOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+		outputSpecification,output,gatherTests,cache,samplePrepOptions,flashFreezeOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,
 		flashFreezeOptionsAssociation,invalidInputs,invalidOptions,targetContainers,targetVolumes,modifiedAliquotSampleStorageCondition,modifiedResolvedAliquotOptions,aliquotMessage,resolvedAliquotOptions,aliquotTests,
+		simulation,updatedSimulation,
 
 		(* Sample, container, and instrument packets to download*)
 		instrumentDownloadFields,listedSampleContainerPackets,samplePackets,sampleContainerPackets,sampleContainerModelPackets,sampleModelPackets,
@@ -477,7 +490,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		maxFreezeUntilFrozenMismatches,maxFreezeUntilFrozenMismatchInputs,maxFreezeUntilFrozenMismatchOptions,maxFreezeUntilFrozenInvalidOptions,maxFreezeUntilFrozenTest,
 		maxFreezingTimeMismatches,maxFreezingTimeMismatchInputs,maxFreezingTimeMismatchOptions,maxFreezingTimeInvalidOptions,maxFreezingTimeTest,
 		(* map thread*)
-		mapThreadFriendlyOptions,resolvedInstrument,resolvedFreezingTime,resolvedFreezeUntilFrozen,resolvedMaxFreezingTime,resolvedVolume,resolvedPotentialAliquotContainers,volumes,
+		mapThreadFriendlyOptions,resolvedInstrument,resolvedFreezingTime,resolvedFreezeUntilFrozen,resolvedMaxFreezingTime,volumes,
 
 		(* Errors and Testing *)
 		sampleVolumeHighErrors,sampleVolumeHighInvalidOptions,sampleVolumeHighTest,sampleContainerLargeErrors,
@@ -486,7 +499,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		resolvedOptions,resolvedPostProcessingOptions,resolvedEmail,
 
 		(* misc options *)
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator,
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator,
 		sampleInStorageWarnings,sampleInStorageWarningTests,aliquotSampleOutStorageWarnings,aliquotSampleOutStorageWarningTests
 
 
@@ -503,14 +516,15 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation=Lookup[ToList[myResolutionOptions],Simulation,{}];
 
-	(* Seperate out our FlashFreeze options from our Sample Prep options. *)
+	(* Separate out our FlashFreeze options from our Sample Prep options. *)
 	{samplePrepOptions,flashFreezeOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentFlashFreeze,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentFlashFreeze,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentFlashFreeze,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentFlashFreeze,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -537,7 +551,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
 
 	{listedSampleContainerPackets}=Quiet[Download[
 		{
@@ -551,7 +565,8 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				Packet[Container[Model][{MaxVolume,MinTemperature,Name}]]
 			}
 		},
-		Cache->simulatedCache,
+		Cache->cache,
+		Simulation->updatedSimulation,
 		Date->Now
 	],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -582,7 +597,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]];
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -590,12 +605,12 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -610,7 +625,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[noVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Warning::FlashFreezeNoVolume,ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]]
+		Message[Warning::FlashFreezeNoVolume,ObjectToString[noVolumeInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -618,12 +633,12 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[noVolumeInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Cache->simulatedCache]<>" have volume populated:",True,False]
+				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs,Simulation->updatedSimulation]<>" have volume populated:",True,False]
 			];
 
 			passingTest=If[Length[noVolumeInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs],Cache->simulatedCache]<>" have volume populated:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs],Simulation->updatedSimulation]<>" have volume populated:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -672,7 +687,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		Nothing
 	];
 
-	(* 1. FreezeUntilFrozen and MaxFreezingTime are copacetic *)
+	(* 1. FreezeUntilFrozen and MaxFreezingTime are compatible *)
 	maxFreezeUntilFrozenMismatches=MapThread[
 		Function[{freezeUntilFrozen,maxFreezingTime,sampleObject},
 			(* MaxFreezingTime can only be set when FreezeUntilFrozen is set to True or Automatic. *)
@@ -707,13 +722,13 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The option MaxFreezingTime can only be set when FreezeUntilFrozen is True or Automatic for the input(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" if supplied by the user:",True,True],
+				Test["The option MaxFreezingTime can only be set when FreezeUntilFrozen is True or Automatic for the input(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>" if supplied by the user:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest=If[Length[maxFreezeUntilFrozenMismatchInputs]>0,
-				Test["The option MaxFreezingTime can only be set when FreezeUntilFrozen is True or Automatic for the input(s) "<>ObjectToString[maxFreezeUntilFrozenMismatchInputs,Cache->simulatedCache]<>" if supplied by the user:",True,False],
+				Test["The option MaxFreezingTime can only be set when FreezeUntilFrozen is True or Automatic for the input(s) "<>ObjectToString[maxFreezeUntilFrozenMismatchInputs,Simulation->updatedSimulation]<>" if supplied by the user:",True,False],
 				Nothing
 			];
 
@@ -765,13 +780,13 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The FreezingTime must be less than or equal to the option MaxFreezingTime for the input(s) "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" if supplied by the user:",True,True],
+				Test["The FreezingTime must be less than or equal to the option MaxFreezingTime for the input(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>" if supplied by the user:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest=If[Length[maxFreezingTimeMismatchInputs]>0,
-				Test["The option FreezingTime must be less than or equal to the option MaxFreezingTime for the input(s) "<>ObjectToString[maxFreezingTimeMismatchInputs,Cache->simulatedCache]<>" if supplied by the user:",True,False],
+				Test["The option FreezingTime must be less than or equal to the option MaxFreezingTime for the input(s) "<>ObjectToString[maxFreezingTimeMismatchInputs,Simulation->updatedSimulation]<>" if supplied by the user:",True,False],
 				Nothing
 			];
 
@@ -928,9 +943,9 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	];
 
 	(* Pull out Miscellaneous options *)
-	{emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator}=
+	{emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator}=
 		Lookup[allOptionsRounded,
-			{Email,Upload,Name,Confirm,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,Operator}];
+			{Email,Upload,Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,Operator}];
 
 	(* check if the provided samples out storage condition is cryogenic storage*)
 	(* Note that plate samples will be aliquoted so there is no need to check for conflicts as in ValidContainerStorageConditionQ *)
@@ -938,7 +953,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* Throw a warning if the sample storage condition is not cryogenic storage *)
 	If[MemberQ[sampleInStorageWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::FlashFreezeSampleInStorageWarnings,ObjectToString[PickList[samplesInStorageOption,sampleInStorageWarnings],Cache->simulatedCache],ObjectToString[PickList[simulatedSamples,sampleInStorageWarnings],Cache->simulatedCache]]
+		Message[Warning::FlashFreezeSampleInStorageWarnings,ObjectToString[PickList[samplesInStorageOption,sampleInStorageWarnings],Simulation->updatedSimulation],ObjectToString[PickList[simulatedSamples,sampleInStorageWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -953,7 +968,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[MemberQ[sampleInStorageWarnings,True],
-				Test["The SamplesInStorageCondition for "<>ObjectToString[failingSamplesInWarning,Cache->simulatedCache]<>" is not cryogenic storage and will result in storage of the sample at non-cryogenic temperatures:",
+				Test["The SamplesInStorageCondition for "<>ObjectToString[failingSamplesInWarning,Simulation->updatedSimulation]<>" is not cryogenic storage and will result in storage of the sample at non-cryogenic temperatures:",
 					True,
 					False
 				],
@@ -962,7 +977,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[MemberQ[sampleInStorageWarnings,False],
-				Test["The SamplesInStorageCondition for "<>ObjectToString[passingSamplesInWarning,Cache->simulatedCache]<>" is not cryogenic storage and will result in storage of the sample at non-cryogenic temperatures:",
+				Test["The SamplesInStorageCondition for "<>ObjectToString[passingSamplesInWarning,Simulation->updatedSimulation]<>" is not cryogenic storage and will result in storage of the sample at non-cryogenic temperatures:",
 					True,
 					True
 				],
@@ -986,7 +1001,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			(* Get the volumes of these samples. *)
 			myResolvedSampleVolumes=PickList[volumes,sampleVolumeHighErrors];
 
-			(* Throw the corresopnding error. *)
+			(* Throw the corresponding error. *)
 			Message[Error::FlashFreezeSampleVolumeHighError,ObjectToString[myResolvedSampleVolumes],ObjectToString[sampleVolumeHighInvalidSamples,Cache->cache]];
 
 			{SamplesIn}
@@ -1006,13 +1021,13 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The stored Volume of the following samples, "<>ObjectToString[failingInputs,Cache->cache]<>" are less than 50 milliliter if they are to be flash frozen:",True,False],
+				Test["The stored Volume of the following samples, "<>ObjectToString[failingInputs,Cache->cache,Simulation->updatedSimulation]<>" are less than 50 milliliter if they are to be flash frozen:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The stored Volume of the following samples, "<>ObjectToString[passingInputs,Cache->cache]<>" are less than 50 milliliter if they are to be flash frozen:",True,True],
+				Test["The stored Volume of the following samples, "<>ObjectToString[passingInputs,Cache->cache,Simulation->updatedSimulation]<>" are less than 50 milliliter if they are to be flash frozen:",True,True],
 				Nothing
 			];
 
@@ -1032,7 +1047,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -1072,8 +1087,33 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
 		(* Note: Also include AllowSolids\[Rule]True as an option to this function if your experiment function can take solid samples as input. Otherwise, resolveAliquotOptions will throw an error if solid samples will be given as input to your function. *)
-		resolveAliquotOptions[ExperimentFlashFreeze,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->simulatedCache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->{Result,Tests}],
-		{resolveAliquotOptions[ExperimentFlashFreeze,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->simulatedCache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->Result],{}}
+		resolveAliquotOptions[
+			ExperimentFlashFreeze,
+			mySamples,
+			simulatedSamples,
+			ReplaceRule[myOptions,resolvedSamplePrepOptions],
+			Cache->cache,
+			Simulation->updatedSimulation,
+			RequiredAliquotContainers->targetContainers,
+			RequiredAliquotAmounts->targetVolumes,
+			AliquotWarningMessage->aliquotMessage,
+			Output->{Result,Tests}
+			],
+		{
+			resolveAliquotOptions[
+				ExperimentFlashFreeze,
+				mySamples,
+				simulatedSamples,
+				ReplaceRule[myOptions,resolvedSamplePrepOptions],
+				Cache->cache,
+				Simulation->updatedSimulation,
+				RequiredAliquotContainers->targetContainers,
+				RequiredAliquotAmounts->targetVolumes,
+				AliquotWarningMessage->aliquotMessage,
+				Output->Result
+			],
+			{}
+		}
 	];
 
 	(* Modify AliquotSampleStorageCondition to CryogenicStorage if Aliquot is required and AliquotSampleStorageCondition was automatic *)
@@ -1115,7 +1155,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	(* Throw a warning if the sample storage condition is not cryogenic storage *)
 	If[MemberQ[aliquotSampleOutStorageWarnings,True]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-		Message[Warning::FlashFreezeAliquotSampleStorageWarnings,ObjectToString[PickList[Lookup[modifiedResolvedAliquotOptions,AliquotSampleStorageCondition],aliquotSampleOutStorageWarnings],Cache->simulatedCache],ObjectToString[PickList[simulatedSamples,aliquotSampleOutStorageWarnings],Cache->simulatedCache]]
+		Message[Warning::FlashFreezeAliquotSampleStorageWarnings,ObjectToString[PickList[Lookup[modifiedResolvedAliquotOptions,AliquotSampleStorageCondition],aliquotSampleOutStorageWarnings],Simulation->updatedSimulation],ObjectToString[PickList[simulatedSamples,aliquotSampleOutStorageWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -1130,7 +1170,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests=If[MemberQ[aliquotSampleOutStorageWarnings,True],
-				Test["The AliquotSampleStorageCondition for "<>ObjectToString[failingSamplesInWarning,Cache->simulatedCache]<>" is not cryogenic storage and will result in storage of the sample aliquot at non-cryogenic temperatures:",
+				Test["The AliquotSampleStorageCondition for "<>ObjectToString[failingSamplesInWarning,Simulation->updatedSimulation]<>" is not cryogenic storage and will result in storage of the sample aliquot at non-cryogenic temperatures:",
 					True,
 					False
 				],
@@ -1139,7 +1179,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 			(* create a test for the passing inputs *)
 			passingSampleTests=If[MemberQ[aliquotSampleOutStorageWarnings,False],
-				Test["The AliquotSampleStorageCondition for "<>ObjectToString[passingSamplesInWarning,Cache->simulatedCache]<>" is not cryogenic storage and will result in storage of the sample aliquot at non-cryogenic temperatures:",
+				Test["The AliquotSampleStorageCondition for "<>ObjectToString[passingSamplesInWarning,Simulation->updatedSimulation]<>" is not cryogenic storage and will result in storage of the sample aliquot at non-cryogenic temperatures:",
 					True,
 					True
 				],
@@ -1180,6 +1220,7 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				FreezeUntilFrozen->resolvedFreezeUntilFrozen,
 				MaxFreezingTime->resolvedMaxFreezingTime,
 				Confirm->confirmOption,
+				CanaryBranch->canaryBranchOption,
 				Name->name,
 				Email->resolvedEmail,
 				ParentProtocol->parentProtocolOption,
@@ -1208,13 +1249,13 @@ resolveExperimentFlashFreezeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 DefineOptions[
 	flashFreezeResourcePackets,
-	Options:>{OutputOption,CacheOption}
+	Options:>{OutputOption,CacheOption,SimulationOption}
 ];
 
 
 flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
 	{
-		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,
+		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,updatedSimulation,
 		doserInstrumentModel,samplePackets,doserPackets,instrumentPackets,sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,
 		sampleResourceReplaceRules,samplesInResources,instrument,instrumentTime,doserResource,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
 		allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,previewRule,optionsRule,shortOptions,flashFreezeParameters,flashFreezeLengths,
@@ -1243,7 +1284,8 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 	messages=Not[gatherTests];
 
 	(* Get the inherited cache *)
-	inheritedCache=Lookup[myResolvedOptions,Cache];
+	inheritedCache=OptionDefault[OptionValue[Cache]];
+	updatedSimulation=OptionDefault[OptionValue[Simulation]];
 
 	(* Get the instrument*)
 	instrument=Lookup[myResolvedOptions,Instrument];
@@ -1273,7 +1315,8 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				Packet[LiquidNitrogenCapacity]
 			}
 		},
-		Cache->inheritedCache
+		Cache->inheritedCache,
+		Simulation->updatedSimulation
 	],
 		Download::FieldDoesntExist
 	];
@@ -1367,7 +1410,7 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 	(* Estimate the time needed to run an experiment on the viscometer *)
 	instrumentTime=Plus[
 
-		(* Time spent actually measuring the sample is equal to the sum of the freezingtime *)
+		(* Time spent actually measuring the sample is equal to the sum of the freezing time *)
 		totalMeasurementTimes,
 
 		(* transferring sample into and out of the dewar is approximately 5 minutes *)
@@ -1382,34 +1425,34 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 	(* make other needed resources*)
 
 	(* Fumehood resource *)
-	fumeHood=Link[Object[Instrument,FumeHood,"E6 Hood 1"]];
+	fumeHood = Link[Object[Instrument, FumeHood, "id:mnk9jOkaVWbm"](*E6 Hood 1*)];
 
 	(* instrument resource *)
-	instrumentResource=Resource[Instrument->instrument,Time->instrumentTime];
+	instrumentResource = Resource[Instrument -> instrument, Time -> instrumentTime];
 
 	(* CryoPod resource *)
-	cryotransporterResource=Resource[Instrument->Model[Instrument,CryogenicFreezer,"Brooks CryoPod Portable Cryogenic Freezer"],Time->instrumentTime];
+	cryotransporterResource = Resource[Instrument -> Model[Instrument, PortableCooler, "id:GmzlKjN9aEJk"](*Brooks CryoPod Portable Cryogenic Freezer*), Time -> instrumentTime];
 
 	(* Liquid nitrogen doser resource *)
-	doserResource=Resource[Instrument->doserInstrumentModel,Time->Sequence@@doseTime+10*Minute];
+	doserResource = Resource[Instrument -> doserInstrumentModel, Time -> Sequence@@doseTime+10*Minute];
 
 	(* Funnel resource *)
-	funnelResource=Resource[Sample->Model[Part,Funnel,"CryoPod Funnel"],Name->ToString[Unique[]]];
+	funnelResource = Resource[Sample -> Model[Part, Funnel, "id:P5ZnEjdwlzxr"](*CryoPod Funnel*), Name -> ToString[Unique[]]];
 
 	(* Fill rod resource *)
-	fillRodResource=Resource[Sample->Model[Part,FillRod,"CryoPod Fill Rod"],Name->ToString[Unique[]]];
+	fillRodResource = Resource[Sample -> Model[Part, FillRod, "id:9RdZXv10x1dZ"](*CryoPod Fill Rod*), Name -> ToString[Unique[]]];
 
 	(* Tweezer resource *)
-	tweezerResource=Resource[Sample->Model[Item,Tweezer,"Straight flat tip tweezer"],Name->ToString[Unique[]],Rent->True];
+	tweezerResource = Resource[Sample -> Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"](*Straight flat tip tweezer*), Name -> ToString[Unique[]], Rent -> True];
 
 	(* cryo glove resource *)
-	cryoGloveResource=Resource[Sample->Model[Item,Glove,"Cryo Glove, Medium"],Name->ToString[Unique[]],Rent->True];
+	cryoGloveResource = Resource[Sample -> Model[Item, Glove, "id:4pO6dM5EWNaw"](*Cryo Glove, Medium*), Name -> ToString[Unique[]], Rent -> True];
 
 	(*estimate the total freezing time, for the danger zone estimate*)
-	estimatedFreezingTime=Total[Join[Lookup[expandedResolvedOptions,FreezingTime],{Length[Lookup[expandedResolvedOptions,FreezingTime]]*2 Minute}]];
+	estimatedFreezingTime=Total[Join[Lookup[expandedResolvedOptions, FreezingTime], {Length[Lookup[expandedResolvedOptions, FreezingTime]]*2 Minute}]];
 
 	(* generate the cryotransporter placements *)
-	cryotransporterPlacements={{Link[fillRodResource],{"FillRod Slot"}},{Link[funnelResource],{"Funnel Slot"}}};
+	cryotransporterPlacements = {{Link[fillRodResource], {"FillRod Slot"}}, {Link[funnelResource], {"Funnel Slot"}}};
 
 	(* --- Generate the protocol packet --- *)
 	protocolPacket=<|
@@ -1447,16 +1490,16 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 
 		(*Resources*)
 		Replace[Checkpoints]->{
-			{"Picking Resources",5 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->5 Minute]]},
-			{"Preparing Samples",30 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]]},
-			{"Preparing Instrumentation",15 Minute,"The instrument is configured for the protocol.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]]},
-			{"Flash freezing",instrumentTime,"Samples are placed into the instrument and then undergone flash freezing.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->instrumentTime]]},
-			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20*Minute]]}
+			{"Picking Resources",5 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->5 Minute]]},
+			{"Preparing Samples",30 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+			{"Preparing Instrumentation",15 Minute,"The instrument is configured for the protocol.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]},
+			{"Flash freezing",instrumentTime,"Samples are placed into the instrument and then undergone flash freezing.",Link[Resource[Operator->$BaselineOperator,Time->instrumentTime]]},
+			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->20*Minute]]}
 		}
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache,Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -1467,9 +1510,31 @@ flashFreezeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable,frqTests}=Which[
-		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		MatchQ[$ECLApplication,Engine],
+		{True,{}},
+		
+		gatherTests,
+		Resources`Private`fulfillableResourceQ[
+			allResourceBlobs,
+			Output->{Result,Tests},
+			FastTrack->Lookup[myResolvedOptions,FastTrack],
+			Site->Lookup[myResolvedOptions,Site],
+			Cache->inheritedCache,
+			Simulation -> updatedSimulation
+		],
+		
+		True,
+		{
+			Resources`Private`fulfillableResourceQ[
+				allResourceBlobs,
+				FastTrack->Lookup[myResolvedOptions,FastTrack],
+				Site->Lookup[myResolvedOptions,Site],
+				Messages->messages,
+				Cache->inheritedCache,
+				Simulation -> updatedSimulation
+			],
+			Null
+		}
 	];
 
 	(* --- Output --- *)

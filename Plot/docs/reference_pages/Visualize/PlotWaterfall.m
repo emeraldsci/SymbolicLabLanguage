@@ -212,9 +212,7 @@ DefineUsage[PlotWaterfallOptions,{
 		"Graphics3D",
 		"PlotNMR"
 	},
-	Author->{
-		"sebastian.bernasek"
-	},
+	Author->{"yanzhe.zhu", "sebastian.bernasek"},
 	Preview->True
 }
 ];
@@ -320,9 +318,7 @@ DefineUsage[PlotWaterfallPreview,{
 		"Graphics3D",
 		"PlotNMR"
 	},
-	Author->{
-		"sebastian.bernasek"
-	},
+	Author->{"yanzhe.zhu", "sebastian.bernasek"},
 	Preview->True
 }
 ];

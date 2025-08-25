@@ -78,14 +78,6 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			Developer -> True,
 			Headers -> {"Column","Placement"}
 		},
-		PhosphoramiditeDilutionManipulation -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,SampleManipulation],Object[Protocol,ManualSamplePreparation]],
-			Description -> "The set of instructions to transfer the phosphoramidite dilution solution to the undissolved phosphoramidites.",
-			Category -> "Coupling"
-		},
 		PhosphoramiditeDilutionPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
@@ -733,19 +725,11 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			Description -> "The filters used to filter oligomers and cleavage solution from the solid support post-cleavage.",
 			Category -> "Cleavage"
 		},
-		CleavageSolutionManipulation -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The set of instructions specifying the transfers of cleavage solution to the solid support.",
-			Category -> "Cleavage"
-		},
 		FilterTransferManipulation -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, ManualSamplePreparation],
 			Description -> "The set of instructions specifying the transfers of cleaved oligomers and cleavage solution from the solid support to a filter.",
 			Category -> "Cleavage"
 		},
@@ -753,7 +737,7 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of cleavage wash solution to the solid support.",
 			Category -> "Cleavage"
 		},
@@ -761,7 +745,7 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of cleavage wash solution from the solid support to a filter.",
 			Category -> "Cleavage"
 		},
@@ -776,22 +760,6 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			],
 			Description -> "The set of instructions specifying the evaporation of the cleavage solution and cleavage wash solution from the cleaved oligomers.",
 			Category -> "Cleavage"
-		},
-		StorageSolventManipulation -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The set of instructions specifying the transfers of storage solution to uncleaved oligomers (still attached to the solid support).",
-			Category -> "Cleavage"
-		},
-		StorageSolventPrimitives->{
-			Format->Multiple,
-			Class -> Expression,
-			Pattern :> SampleManipulationP,
-			Description -> "The set of instructions specifying the transfers of storage solution to uncleaved oligomers (still attached to the solid support).",
-			Category -> "Cleavage",
-			Developer->True
 		},
 		PhosphoramiditeDesiccants -> {
 			Format -> Multiple,
@@ -908,7 +876,7 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation]|Object[Protocol, RoboticSamplePreparation]|Object[Protocol, ManualSamplePreparation]|Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 			Category -> "Qualifications & Maintenance",
 			Developer->True
@@ -916,7 +884,7 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 		CleaningPrepPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 			Category -> "Qualifications & Maintenance",
 			Developer->True
@@ -1101,10 +1069,10 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 				Filter->_Link,
 				Time->GreaterP[0*Minute],
 				Temperature->GreaterP[0*Kelvin],
-				CleavageSolutionPrimitive->SampleManipulationP,
-				FilterTransferPrimitive->SampleManipulationP,
-				ResinWashPrimitive->SampleManipulationP,
-				FilterWashPrimitive->SampleManipulationP
+				CleavageSolutionPrimitive->SampleManipulationP|SamplePreparationP,
+				FilterTransferPrimitive->SampleManipulationP|SamplePreparationP,
+				ResinWashPrimitive->SampleManipulationP|SamplePreparationP,
+				FilterWashPrimitive->SampleManipulationP|SamplePreparationP
 			},
 			Relation->{
 				Strand->Model[Sample],
@@ -1155,10 +1123,10 @@ DefineObjectType[Object[Protocol, DNASynthesis], {
 				Temperature->GreaterP[0*Kelvin],
 				Pipette->_Link,
 				Tips->_Link,
-				CleavageSolutionPrimitive->SampleManipulationP,
-				FilterTransferPrimitive->SampleManipulationP,
-				ResinWashPrimitive->SampleManipulationP,
-				FilterWashPrimitive->SampleManipulationP
+				CleavageSolutionPrimitive->SampleManipulationP|SamplePreparationP,
+				FilterTransferPrimitive->SampleManipulationP|SamplePreparationP,
+				ResinWashPrimitive->SampleManipulationP|SamplePreparationP,
+				FilterWashPrimitive->SampleManipulationP|SamplePreparationP
 			},
 			Relation->{
 				Strand->Model[Sample],

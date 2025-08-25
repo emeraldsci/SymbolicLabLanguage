@@ -180,7 +180,19 @@ DefineOptions[ExperimentLyophilize,
 					Widget[Type -> Enumeration, Pattern :> LyophilizationCoverP],
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Item,Cap],Object[Item,Cap],Model[Item,PlateSeal],Object[Item,PlateSeal]}]
+						Pattern :> ObjectP[{Model[Item,Cap],Object[Item,Cap],Model[Item,PlateSeal],Object[Item,PlateSeal]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers",
+								"Caps"
+							},
+							{
+								Object[Catalog, "Root"],
+								"Containers",
+								"Plate Lids & Seals"
+							}
+						}
 					]
 				],
 				Description -> "Indicates whether a cap or seal is placed on the containers in to prevent escape of solid material while allowing solvent vapors to escape the container.",
@@ -245,10 +257,12 @@ DefineOptions[ExperimentLyophilize,
 			],
 			Category->"General"
 		},
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
-		SamplesOutStorageOptions
+		SamplesOutStorageOptions,
+		ModelInputOptions,
+		SimulationOption
 	}
 ];
 
@@ -265,15 +279,16 @@ Error::InvalidMaxLyoTime = "The MaxLyophilizationTime (`1`) must be greater than
 
 
 (* - Container to Sample Overload - *)
-ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
+ExperimentLyophilize[mySamples:ListableP[ObjectP[{Object[Sample], Model[Sample]}]],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,allDownloads,cache,
+		safeOps,safeOpsTests,validLengths,validLengthTests,allDownloads,cache,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
 		sampleFieldsRequired,containerFieldsRequired,containerModelFieldsRequired,sampleModelFieldsRequired,unresPierce,
-		unresCover,possibleCovers
+		unresCover,possibleCovers,
+		updatedSimulation
 	},
 
 	(* Determine the requested return value from the function *)
@@ -292,20 +307,20 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentLyophilize,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -315,14 +330,8 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentLyophilize,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentLyophilize,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation -> updatedSimulation];
+	
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -331,6 +340,12 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+	
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentLyophilize,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentLyophilize,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -402,18 +417,19 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 					(* Cap and Seal Packets *)Packet[Deprecated,Pierceable,Breathable]
 				}
 			},
-			Cache->cache
+			Cache->cache,
+			Simulation -> updatedSimulation
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField,Download::Part}
 	];
 
 	(* Add the new packets to the cache *)
-	cacheBall = FlattenCachePackets[Cases[Join[samplePreparationCache,cache,allDownloads],PacketP[]]];
+	cacheBall = FlattenCachePackets[Cases[Join[cache,allDownloads],PacketP[]]];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentLyophilizeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentLyophilizeOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -423,7 +439,7 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentLyophilizeOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentLyophilizeOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -450,8 +466,8 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		lyophilizeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{lyophilizeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+		lyophilizeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation, Output->{Result,Tests}],
+		{lyophilizeResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -470,6 +486,7 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 
 			Priority -> Lookup[safeOps,Priority],
@@ -478,7 +495,8 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 			QueuePosition -> Lookup[safeOps,QueuePosition],
 
 			ConstellationMessage->Object[Protocol,Lyophilize],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -496,11 +514,11 @@ ExperimentLyophilize[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Opti
 (* --- Container Overload --- *)
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentLyophilize[myContainers:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..}, myOptions:OptionsPattern[ExperimentLyophilize]]:=Module[
+ExperimentLyophilize[myContainers:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..}, myOptions:OptionsPattern[ExperimentLyophilize]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,sampleCache,
 		containerToSampleTests, inputSamples, samplesOptions, aliquotResults, initialReplaceRules, testsRule, resultRule,
 		previewRule, optionsRule, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, updatedCache},
+		updatedSimulation, samples, sampleOptions, containerToSampleOutput, containerToSampleSimulation},
 
 	(* make sure we're working with a list of options *)
 	listedOptions = ToList[myOptions];
@@ -515,20 +533,20 @@ ExperimentLyophilize[myContainers:{(ObjectP[{Object[Container],Object[Sample]}]|
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentLyophilize,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* call SafeOptions to make sure all options match pattern *)
@@ -548,55 +566,55 @@ ExperimentLyophilize[myContainers:{(ObjectP[{Object[Container],Object[Sample]}]|
 	];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
-	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		containerToSampleOptions[ExperimentLyophilize, mySamplesWithPreparedSamples, safeOptions, Cache->samplePreparationCache, Output -> {Result, Tests}],
-		{containerToSampleOptions[ExperimentLyophilize, mySamplesWithPreparedSamples, safeOptions, Cache->samplePreparationCache], Null}
-	];
+	containerToSampleResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+			ExperimentLyophilize,
+			mySamplesWithPreparedSamples,
+			safeOptions,
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
+		];
 
-	(* If the specified containers aren't allowed *)
-	If[MatchQ[containerToSampleResult,$Failed],
-		Return[$Failed]
-	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
-	(* separate out the samples and the options *)
-	{inputSamples, samplesOptions, sampleCache} = containerToSampleResult;
-
-	(* call ExperimentLyophilize and get all its outputs *)
-	aliquotResults = ExperimentLyophilize[inputSamples, ReplaceRule[samplesOptions,Cache->updatedCache]];
-
-	(* create a list of replace rules from the mass spec call above and whatever the output specification is *)
-	initialReplaceRules = If[MatchQ[outputSpecification, _List],
-		MapThread[
-			#1 -> #2&,
-			{outputSpecification, aliquotResults}
+		(* Therefore, we have to run the tests to see if we encountered a failure. *)
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			Null,
+			$Failed
 		],
-		{outputSpecification -> aliquotResults}
+
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentLyophilize,
+				mySamplesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
+			],
+			$Failed,
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+		]
 	];
 
-	(* if we are gathering tests, then prepend the safeOptionsTests and containerToSampleTests to the tests we already have *)
-	testsRule = Tests -> If[gatherTests,
-		Prepend[Lookup[initialReplaceRules, Tests], Flatten[{safeOptionTests, containerToSampleTests}]],
-		Null
-	];
+	(* If we were given an empty container, return early. *)
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
+			Result -> $Failed,
+			Tests -> {safeOptionTests, containerToSampleTests},
+			Options -> $Failed,
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
+		},
 
-	(* Results rule is just always what was output in the ExperimentLyophilize call *)
-	resultRule = Result -> Lookup[initialReplaceRules, Result, Null];
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples, sampleOptions} = containerToSampleOutput;
 
-	(* preview is always Null *)
-	previewRule = Preview -> Null;
-
-	(* generate the options output rule *)
-	optionsRule = Options -> Lookup[initialReplaceRules, Options, Null];
-
-	(* return the output as we desire it *)
-	outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
-
+		(* Call our main function with our samples and converted options. *)
+		ExperimentLyophilize[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
+	]
 ];
 
 
@@ -605,12 +623,12 @@ ExperimentLyophilize[myContainers:{(ObjectP[{Object[Container],Object[Sample]}]|
 
 
 DefineOptions[resolveExperimentLyophilizeOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentLyophilizeOptions]]:=Module[
-	{outputSpecification,output,gatherTests,cache,samplePrepOptions,lyophilizeOptions,simulatedSamples,
-		resolvedSamplePrepOptions,simulatedCache,samplePrepTests,lyophilizeOptionsAssociation,fastTrack,
+	{outputSpecification,output,gatherTests,cache,updatedSimulation, samplePrepOptions,lyophilizeOptions,simulatedSamples,
+		resolvedSamplePrepOptions,samplePrepTests,lyophilizeOptionsAssociation,fastTrack,
 		samplePacketsToCheckIfDiscarded,discardedSamplePackets,discardedInvalidInputs,discardedTest,
 		modelPacketsToCheckIfDeprecated,deprecatedModelPackets,deprecatedInvalidInputs,deprecatedTest,preResTemperature,
 		preResPressure,instTempPrecision,instPressurePrecision,instTimePrecision,tempPrecision,pressurePrecision,
@@ -624,7 +642,7 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 		unResPres,lyoTime,maxLyoTime,residTemp,residPres,lyoTillDry,unresPreFreeze,	resInst,resProfile,resTemp,resPres,
 		resLyoTime,resMaxLyoTime,resLyoTilDry,resPreFreeze,samplesInStorage,samplesOutStorage,invalidInputs,invalidOptions,
 		targetContainers,resolvedAliquotOptions,aliquotTests,resolvedPostProcessingOptions,allTests,possibleCoverPackets,
-		sampleContainerPacks,sampleContainerModelPacks,resCover,resPerforate
+		sampleContainerPacks,sampleContainerModelPacks,resCover,resPerforate, simulation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -639,17 +657,18 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our Lyophilize options from our Sample Prep options. *)
+	(* Separate out our Lyophilize options from our Sample Prep options. *)
 	{samplePrepOptions,lyophilizeOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
 	{
-		{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},
+		{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},
 		samplePrepTests
 	} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentLyophilize,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentLyophilize,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+		resolveSamplePrepOptionsNew[ExperimentLyophilize, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentLyophilize, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -668,7 +687,8 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 				Packet[Container[{Model}]],
 				Packet[Container[Model][{Footprint}]]
 			},
-			Cache -> simulatedCache
+			Cache -> cache,
+			Simulation -> updatedSimulation
 		],
 		Download::FieldDoesntExist
 	];
@@ -676,7 +696,7 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 	(* Build the cacheball from simulated cache and our new download *)
 	cacheBall = FlattenCachePackets[
 		Cases[
-			Join[simulatedCache,cache,simulatedSamplePacks,sampleModelPackets,sampleContainerPacks,sampleContainerModelPacks],
+			Join[cache,simulatedSamplePacks,sampleModelPackets,sampleContainerPacks,sampleContainerModelPacks],
 			PacketP[]
 		]
 	];
@@ -1580,8 +1600,8 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 	(* Resolve Aliquot Options *)
 	{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
 		(* Note: Also include AllowSolids->True as an option to this function if your experiment function can take solid samples as input. Otherwise, resolveAliquotOptions will throw an error if solid samples will be given as input to your function. *)
-		resolveAliquotOptions[ExperimentLyophilize,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,RequiredAliquotAmounts->Null,RequiredAliquotContainers->targetContainers,AllowSolids->True,Output->{Result,Tests}],
-		{resolveAliquotOptions[ExperimentLyophilize,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,RequiredAliquotAmounts->Null,RequiredAliquotContainers->targetContainers,AllowSolids->True,Output->Result],{}}
+		resolveAliquotOptions[ExperimentLyophilize,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,Simulation->Simulation[cacheBall],RequiredAliquotAmounts->Null,RequiredAliquotContainers->targetContainers,AllowSolids->True,Output->{Result,Tests}],
+		{resolveAliquotOptions[ExperimentLyophilize,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,Simulation->Simulation[cacheBall],RequiredAliquotAmounts->Null,RequiredAliquotContainers->targetContainers,AllowSolids->True,Output->Result],{}}
 	];
 
 
@@ -1639,17 +1659,18 @@ resolveExperimentLyophilizeOptions[mySamples:{ObjectP[Object[Sample]]...},myOpti
 
 
 DefineOptions[lyophilizeResourcePackets,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 
 
 lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:Alternatives[{_Rule..},{}],myResolvedOptions:{_Rule..},myOptions:OptionsPattern[]]:=Module[
 	{safeOps,outputSpecification,output,gatherTests,messages,inheritedCache,parentProtocol,resolvedOptionsNoHidden,
-		simulatedSampObjects,simulatedCache,simulatedSamps,samplesPackets,containerPackets,containerModelPackets,
+		simulatedSampObjects,simulatedSamps,samplesPackets,containerPackets,containerModelPackets,
 		samplesInResourceMap,samplesInResources,containersIn,containersInResources,lyophilizationTotalTime,instrumentResource,protocolPacket,protocolID,
 		sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,
-		lyoTillDry,probeSamplesResources,coversExpanded,coversPerContainer,coverResources},
+		lyoTillDry,probeSamplesResources,coversExpanded,coversPerContainer,coverResources,
+		simulation, updatedSimulation},
 
 	(* Stash safe options *)
 	safeOps = SafeOptions[lyophilizeResourcePackets,ToList[myOptions]];
@@ -1664,6 +1685,7 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 
 	(* get the cache that was passed from the main function *)
 	inheritedCache= Lookup[safeOps,Cache,{}];
+	simulation = Lookup[safeOps, Simulation, Simulation[]];
 
 	(* Store the ParentProtocol of the protocol being created *)
 	parentProtocol = Lookup[myResolvedOptions,ParentProtocol];
@@ -1677,19 +1699,18 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 	];
 
 	(* Regenerate the simulations done in the option resolver *)
-	{simulatedSampObjects,simulatedCache} = simulateSamplesResourcePackets[ExperimentLyophilize,mySamples,myResolvedOptions,Cache->inheritedCache];
-
-	(* Pull the sample packets from the simulated cache *)
-	simulatedSamps = cacheLookup[simulatedCache,#,Object]&/@simulatedSampObjects;
+	{simulatedSampObjects,updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentLyophilize, mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
 	{samplesPackets,containerPackets,containerModelPackets} = Transpose@Download[
-		simulatedSamps,
+		mySamples,
 		{
 			(* Sample Packet *)Packet[Composition,Model],
 			(* Container Packet *)Packet[Container[{Model,Contents,Container,Position}]],
 			(* Container Model Packet *)Packet[Container[Model][{Dimensions}]]
 		},
-		Cache->simulatedCache
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation,
+		Date -> Now
 	];
 
 	(* create containers in and samples in lists; use original input lists to start,
@@ -1722,7 +1743,7 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 		Lookup[resolvedOptionsNoHidden,LyophilizationTime]
 	];
 
-	(* Generate a resource for the insturment *)
+	(* Generate a resource for the instrument *)
 	instrumentResource = Resource[
 		Instrument -> Lookup[resolvedOptionsNoHidden,Instrument],
 		Time -> lyophilizationTotalTime
@@ -1732,7 +1753,7 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 	probeSamplesResources = Download[
 		Lookup[resolvedOptionsNoHidden,ProbeSamples],
 		Object,
-		Cache->simulatedCache
+		Simulation -> updatedSimulation
 	]/.samplesInResourceMap;
 
 	(* Expand Covers to be index matched all the way in case only a single option was passed *)
@@ -1778,15 +1799,15 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 		Replace[SamplesOutStorage] -> Lookup[myResolvedOptions,SamplesOutStorageCondition],
 
 		Replace[Checkpoints] -> {
-			{"Preparing Samples", 5*Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 0*Minute]]},
-			{"Picking Resources",If[NullQ[parentProtocol],5 Minute,1 Minute],"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> If[NullQ[parentProtocol],5 Minute,1 Minute]]]},
-			{"Lyophilizing Samples",Convert[lyophilizationTotalTime,Minute] * 1.1,"Samples are placed into the instrument and then undergo sublimation to remove unwanted solvents.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> Length[containersIn]*7 Minute]]},
-			{"Returning Materials",5 Minute,"Samples are returned to storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]}
+			{"Preparing Samples", 5*Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Link[Resource[Operator->$BaselineOperator,Time -> 0*Minute]]},
+			{"Picking Resources",If[NullQ[parentProtocol],5 Minute,1 Minute],"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> $BaselineOperator, Time -> If[NullQ[parentProtocol],5 Minute,1 Minute]]]},
+			{"Lyophilizing Samples",Convert[lyophilizationTotalTime,Minute] * 1.1,"Samples are placed into the instrument and then undergo sublimation to remove unwanted solvents.",Link[Resource[Operator -> $BaselineOperator, Time -> Length[containersIn]*7 Minute]]},
+			{"Returning Materials",5 Minute,"Samples are returned to storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 5 Minute]]}
 		}
 	|>;
 
 	(* Get the prep options to populate resources and field values *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache->inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache->inheritedCache, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[protocolPacket,sharedFieldPacket];
@@ -1795,10 +1816,10 @@ lyophilizeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpti
 	allResourceBlobs = DeleteDuplicates[Cases[Values[finalizedPacket], _Resource, Infinity]];
 
 	(* call fulfillableResourceQ on all resources we created *)
-	{fulfillable,frqTests}=Which[
+	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Cache -> inheritedCache, Simulation -> updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> Result, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Messages -> messages, Cache -> inheritedCache, Simulation -> updatedSimulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)

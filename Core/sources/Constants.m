@@ -60,6 +60,27 @@ If[StringStartsQ[$OperatingSystem,"Mac"],
 	]
 ];
 
+
+(* ::Subsubsection::Closed:: *)
+(*$WindowSitePublicPath & $ManifoldSitePublicPath*)
+
+
+	Module[{},
+		DefineConstant[
+			$ManifoldSitePublicPath,
+			"/Volumes/Public/",
+			"The path to ECL's Manifold public server, used to store shared information, data and instrument methods."
+		];
+		$WindowSitePublicPath := publicpathP["Memoization"];
+		(* define using delayed equals and memoization so that we can download stuff, but only once *)
+		publicpathP[fakeString_String]:=publicpathP[fakeString]=Module[{publicPath},
+			If[!MemberQ[$Memoization, Core`Private`publicpathP],
+				AppendTo[$Memoization, Core`Private`publicpathP]
+			];
+			publicPath = Download[$Site,PublicPath]
+		];
+		$WindowSitePublicPath::usage="The path to ECL's Windows public server used to store shared information, data and instrument methods.";
+];
 (* Disable printing of messages related to unavailable front end objects *)
 Off[FrontEndObject::notavail];
 
@@ -220,7 +241,7 @@ DefineConstant[
 DefineConstant[
 	$MicroWaterMaximum,
 	1.5 Milliliter,
-	"The maximum amount of water operators will be asked to prepare via full-blown SampleManipulation."
+	"The maximum amount of water operators will be asked to prepare."
 ];
 
 
@@ -232,6 +253,16 @@ DefineConstant[
 	$WeighBoatThreshold,
 	250 Gram,
 	"The maximum amount of solid operators should be asked to weigh into a large weigh boat. Any volumes larger than this must be partitioned into multiple weighings."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$WeighBoatSmallQuantityThreshold*)
+
+
+DefineConstant[
+	$WeighBoatSmallQuantityThreshold,
+	50 Milligram,
+	"The solid mass threshold below which recovery from the weighing container may require QuantitativeTransfer to minimize loss due to residual material."
 ];
 
 
@@ -301,8 +332,15 @@ DefineConstant[
 (* $MaxNumberOfMixes *)
 DefineConstant[
 	$MaxNumberOfMixes,
-	50,
+	100,
 	"The maximum number of times to mix a sample by inversion or pipetting to attempt to dissolve any solute."
+];
+
+(* $MaxNumberOfDilutions *)
+DefineConstant[
+	$MaxNumberOfDilutions,
+	100,
+	"The maximum number to dilute a sample by serial dilution or linear dilution."
 ];
 
 (* $MinIncubationTemperature *)
@@ -495,11 +533,11 @@ DefineConstant[
 
 		(* NOTE: No RH control by default. *)
 		YeastIncubation -> <|Temperature -> 30 Celsius|>,
-		YeastShakingIncubation -> <|Temperature -> 30 Celsius, ShakingRate -> 400 RPM, PlateShakingRate -> 400 RPM, VesselShakingRate -> 200 RPM|>,
+		YeastShakingIncubation -> <|Temperature -> 30 Celsius, ShakingRate -> 200 RPM, PlateShakingRate -> 200 RPM, VesselShakingRate -> 200 RPM|>,
 
 		(* NOTE: No RH control by default. *)
 		BacterialIncubation -> <|Temperature -> 37 Celsius|>,
-		BacterialShakingIncubation -> <|Temperature -> 37 Celsius, ShakingRadius -> 1 Inch, ShakingRate -> 400 RPM, PlateShakingRate -> 400 RPM, VesselShakingRate -> 250 RPM|>,
+		BacterialShakingIncubation -> <|Temperature -> 37 Celsius, ShakingRadius -> 1 Inch, ShakingRate -> 200 RPM, PlateShakingRate -> 200 RPM, VesselShakingRate -> 200 RPM|>,
 
 		MammalianIncubation -> <|Temperature -> 37 Celsius, Humidity -> 93 Percent, CarbonDioxide -> 5 Percent|>,
 
@@ -511,9 +549,9 @@ DefineConstant[
 		CrystalIncubation -> <|Temperature -> 4 Celsius|>,
 
 
-		AcceleratedTesting -> <|Temperature -> 37 Celsius, Humidity -> 70 Percent|>,
+		AcceleratedTesting -> <|Temperature -> 40 Celsius, Humidity -> 75 Percent|>,
 		IntermediateTesting -> <|Temperature -> 30 Celsius, Humidity -> 65 Percent|>,
-		LongTermTesting -> <|Temperature -> 25 Celsius, Humidity -> 60 Percent|>,
+		LongTermTesting -> <|Temperature -> 25 Celsius, Humidity -> 50 Percent|>,
 		UVVisLightTesting -> <|Temperature -> 25 Celsius, Humidity -> 60 Percent, UVLightIntensity -> 36 Watt / Meter^2, VisibleLightIntensity -> 29 Kilo Lumen / Meter^2|>
 	|>,
 	"A lookup relating storage condition symbols to their implied condition values."
@@ -844,19 +882,29 @@ DefineConstant[
 		(* account info fields *)
 		Site, AccountType, CommitmentLength,  PlanType, LabAccessFee, NumberOfBaselineUsers, NumberOfThreads,
 		(* pricing and included discounts *)
-		CleanUpPricing, IncludedCleanings,
+		CleanUpPricing, IncludedCleaningFees,IncludedCleanings,
 		CommandCenterPrice,
-		ConstellationPrice, IncludedConstellationStorage,
+		ConstellationPrice,
 		InstrumentPricing, IncludedInstrumentHours,
 		IncludedPriorityProtocols,
 		IncludedShipmentFees,
 		StockingPricing, IncludedStockingFees,
-		StoragePricing, IncludedStorage,
+		StoragePricing, IncludedStorageFees, IncludedStorage,
 		WastePricing, IncludedWasteDisposalFees,
-		OperatorTimePrice, OperatorPriorityTimePrice,
+		OperatorTimePrice, OperatorPriorityTimePrice,OperatorModelPrice,
 		PricePerExperiment, PricePerPriorityExperiment,
 		PrivateTutoringFee},
 	"A list of fields shared between Model[Pricing] and Object[Bill] and used for the creation of the new bills."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxUpFunctionsRequired*)
+
+
+DefineConstant[
+	$MaxUpFunctionsRequired,
+	200,
+	"The maximum number of up-function tests needed for a successful ValidPullRequestQ is determined by $MaxUpFunctionsRequired. If the number of up-functions exceeds $MaxUpFunctionsRequired, ManifoldRunUnitTestUp will select a reproducible subset of $MaxUpFunctionsRequired up-functions for testing. Selection is reproducible as long as the input functions remain unchanged; and the associated up-functions for each function remain constant, i.e., no new up-function is added or deleted."
 ];
 
 
@@ -1104,7 +1152,7 @@ DefineConstant[
 (*$MaxConsolidationNumber*)
 DefineConstant[
 	$MaxConsolidationNumber,
-	3,
+	10,
 	"Indicates the max number of containers which can be used when consolidating samples to create a single sample with sufficient volume during resource picking."
 ];
 
@@ -1117,6 +1165,13 @@ DefineConstant[
 	"Indicates the minimum volume as sample must have in order to be a candidate for consolidation."
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*$ConsolidationCutOff*)
+DefineConstant[
+	$ConsolidationCutOff,
+	0.1,
+	"Indicates the minimum percentage volume of the entire request as sample must have in order to be a candidate for consolidation."
+];
 
 (* ::Subsubsection::Closed:: *)
 (*$SPERoboticOnly*)
@@ -1129,7 +1184,8 @@ DefineConstant[
 ];
 
 
-(* ::Subsubsection::Closed:: *)(*$GrowCrystalPreparedOnly*)
+(* ::Subsubsection::Closed:: *)
+(*$GrowCrystalPreparedOnly*)
 (* feature flag temporarily forcing only accept Prepared CrystallizationPlate *)
 DefineConstant[
 	$GrowCrystalPreparedOnly,
@@ -1137,6 +1193,48 @@ DefineConstant[
 	"Feature flag forcing GrowCrystal to only allow Prepared CrystallizationPlate."
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*$IncubateCellsIncubateOnly*)
+(* feature flag temporarily forcing only perform cell incubation without quantification or target for IncubateCells V1 *)
+DefineConstant[
+	$IncubateCellsIncubateOnly,
+	True,
+	"Feature flag forcing IncubateCells to only perform cell incubation without quantification or target."
+];
+(*$IncubateCellsTestIncubateOnly*)
+(* feature flag temporarily forcing only test cell incubation without quantification or target for IncubateCells V1 *)
+DefineConstant[
+	$IncubateCellsTestIncubateOnly,
+	True,
+	"Feature flag forcing IncubateCells to only run tests of cell incubation without quantification or target."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$QuantifyColoniesPreparedOnly*)
+(* feature flag temporarily forcing only accept Prepared Sample for QuantifyColonies V1 *)
+DefineConstant[
+	$QuantifyColoniesPreparedOnly,
+	False,
+	"Feature flag forcing QuantifyColonies to only allow prepared samples."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$QPixImageScale*)
+
+DefineConstant[
+	$QPixImageScale,
+	219 Pixel/(Centi Meter),
+	"The image scale of brightfield/absorbance/fluorescence images taken by QPix colony handler."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$QPixMinDiameter*)
+
+DefineConstant[
+	$QPixMinDiameter,
+	0.2 Millimeter,
+	"The minimum colonies detected by AnalyzeColonies from images taken by QPix colony handler."
+];
 
 (* ::Subsubsection::Closed:: *)
 (*$MaxNumberOfWashes*)
@@ -1163,6 +1261,15 @@ DefineConstant[
 	$MaxRoboticTransferRate,
 	500 Microliter / 1 Minute,
 	"The maximum rate at which liquid is aspirated/dispensed from the robotic pipettes when using a liquid handler."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxRoboticIncubationTime*)
+
+DefineConstant[
+	$MaxRoboticIncubationTime,
+	3 Hour,
+	"The maximum duration of time for which a liquid-handler integrated incubator can be used by a single protocol."
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -1206,4 +1313,140 @@ DefineConstant[
 	$SupportObject,
 	True,
 	"Indicates if troubleshooting objects have been migrated to support objects."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$UnifiedSupportTicketStatusField*)
+
+DefineConstant[
+	$UnifiedSupportTicketStatusField,
+	False,
+	"Indicates if existing support ticket status fields, such as Blocked have been migrated into the new combined Status field."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxNumberOfSamplesToDisplay*)
+
+(* This is for the new error message style guide. *)
+DefineConstant[
+	$MaxNumberOfSamplesToDisplay,
+	3,
+	"The maximum number of samples to display the full Object with Name or ID in error message instead of referring them as \"<number> of the samples (e.g. Object[Sample,name here])\"."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxNumberOfErrorDetails*)
+
+(* This is for the new error message style guide. *)
+DefineConstant[
+	$MaxNumberOfErrorDetails,
+	3,
+	"The maximum number of error details to display instead of referring the errors with general description."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$$MaxNumberOfSuggestedActions*)
+
+(* This is for the new error message style guide. *)
+DefineConstant[
+	$MaxNumberOfSuggestedActions,
+	3,
+	"The maximum number of suggested actions to display instead of referring the suggested actions with general description."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$CustomerProtocolWarningTime*)
+
+DefineConstant[
+	$CustomerProtocolWarningTime,
+	4 Hour,
+	"The amount of time a customer can be blocked before PlotSupportManager will display a warning."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$SystemsProtocolWarningTime*)
+
+DefineConstant[
+	$SystemsProtocolWarningTime,
+	16 Hour,
+	"The amount of time an internal protocol, qualification or maintenance can be blocked before PlotSupportManager will display a warning."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxNumberOfItemsInAsepticBag*)
+
+DefineConstant[
+	$MaxNumberOfItemsInAsepticBag,
+	15,
+	"The maximum number of items we will put into an Object[Container,Bag,Aseptic] when doing a bulk rebagging inside a bsc."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$BaselineOperator*)
+
+DefineConstant[
+	$BaselineOperator,
+	Model[User, Emerald, Operator, "id:9RdZXv1DrGja"],
+	"The model of Baseline operator."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$CuvetteMaxVolume*)
+
+DefineConstant[
+	$CuvetteMaxVolume,
+	4.0 Milliliter,
+	"The maximum volume that can be contained by a Model[Container, Cuvette] in the ECL."
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*$MaxVolumetricFlaskShakeRate*)
+
+DefineConstant[
+	$MaxVolumetricFlaskShakeRate,
+	250 RPM,
+	"The maximum mix rate that can be reached to shake volumetric flasks."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$MeasurepHWashSolutionMinVolume*)
+
+DefineConstant[
+	$MeasurepHWashSolutionMinVolume,
+	4 Milliliter,
+	"The min volume of sample that is needed to wash the pH probe using 15 mL tube."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$DefaultPrimarypHProbe*)
+
+DefineConstant[
+	$DefaultPrimarypHProbe,
+	Model[Part, pHProbe, "id:jLq9jXvP7jLx"],
+	"The primary probe that is connected the SevenExcellence pHMeter."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$DefaultSecondarypHProbe*)
+
+DefineConstant[
+	$DefaultSecondarypHProbe,
+	Model[Part, pHProbe, "id:J8AY5jDmW5BZ"],
+	"The secondary probe that is connected the SevenExcellence pHMeter."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$DefaultSecondarypHProbe*)
+
+DefineConstant[
+	$DefaultTertiaryProbe,
+	Model[Part, pHProbe, "id:J8AY5jDmW5ma"],
+	"The tertiary probe that is connected the SevenExcellence pHMeter."
 ];

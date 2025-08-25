@@ -153,6 +153,13 @@ DefineObjectType[Model[StorageCondition], {
 			Description -> "Indicates if this storage condition is meant to store moisture-sensitive items in a dry atmosphere requiring a sealable secondary enclosure.",
 			Category -> "Storage Information"
 		},
+		Enclosed -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this storage condition is meant to store dust-sensitive or fragile items in a shelving unit or cabinet that is enclosed on all sides.",
+			Category -> "Storage Information"
+		},
 		AtmosphericCondition  -> {
 			Format -> Single,
 			Class -> Expression,

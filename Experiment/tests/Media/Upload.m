@@ -137,6 +137,20 @@ DefineTests[UploadMedia,
 			],
 			{ObjectP[Model[Sample,Media]]}
 		],
+		Example[{Options,DiscardThreshold,"Specify the percentage of the prepared stock solution volume below which the sample will be automatically marked as AwaitingDisposal:"},
+			Download[
+				UploadMedia[
+					{
+						{58.44 Gram, Model[Sample,"LB Broth Miller (Sigma Aldrich)"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					DiscardThreshold -> 4 Percent
+				],
+				DiscardThreshold
+			],
+			{EqualP[4 Percent]}
+		],
 		Example[{Messages,"SupplementsForMediaFormula","Throw an error if a user specifies the Supplements option when creating a new media model with a formula:"},
 			UploadMedia[
 				{
@@ -219,7 +233,44 @@ DefineTests[UploadMedia,
 			{{_?QuantityQ,LinkP[Model[Sample,"Agar for UploadMedia"<>$SessionUUID]]}},
 			Messages:>{Warning::RedundantGellingAgents},
 			Variables:>{mediaModel}
+		],
+		Test["If Autoclave is set to or default to True, the resulted Model[Sample, Media] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadMedia[
+				{
+					{25Gram, Model[Sample, "LB Broth Miller (Sigma Aldrich)"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter,
+				MediaName -> "Liquid LB Autoclaved for UploadMedia test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, Media, "Liquid LB Autoclaved for UploadMedia test of Sterile field" <> $SessionUUID],
+				{Autoclave, Sterile, AsepticHandling}
+			],
+			{True, True, True}
+		],
+		Test["If filtering with size at or below 0.22 Micrometer, the resulted Model[Sample, Media] is automatically populated with Sterile and AsepticHandling as True:",
+			UploadMedia[
+				{
+					{25Gram, Model[Sample, "LB Broth Miller (Sigma Aldrich)"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter,
+				Autoclave -> False,
+				Filter -> True,
+				FilterSize -> 0.22 Micrometer,
+				MediaName -> "Liquid LB Filtered for UploadMedia test of Sterile field" <> $SessionUUID
+			];
+			Download[
+				Model[Sample, Media, "Liquid LB Filtered for UploadMedia test of Sterile field" <> $SessionUUID],
+				{Sterile, AsepticHandling}
+			],
+			{True, True}
 		]
+	},
+	Stubs:>{
+		$PersonID=Object[User,"Test user for notebook-less test protocols"],
+		$AllowPublicObjects = True
 	},
 	SetUp:>{
 		$CreatedObjects={};

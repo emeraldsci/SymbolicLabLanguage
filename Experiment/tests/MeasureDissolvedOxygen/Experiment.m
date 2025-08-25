@@ -131,44 +131,6 @@ DefineTests[
 			{"Measure dissolved oxygen test Name."},
 			Variables:>{options}
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for dissolved oxygen measurement:"},
-			packet=First@ExperimentMeasureDissolvedOxygen[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
-				PreparatoryPrimitives -> {Define[Name -> "WaterSample Container 1",
-					Container -> Model[Container, Vessel, "50mL Tube"]],
-					Define[Name -> "WaterSample Container 2",
-						Container -> Model[Container, Vessel, "50mL Tube"]],
-					Define[Name -> "WaterSample Container 3",
-						Container -> Model[Container, Vessel, "50mL Tube"]],
-					Define[Name -> "WaterSample Container 4",
-						Container -> Model[Container, Vessel, "50mL Tube"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 40 Milliliter, Destination -> "WaterSample Container 1"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 40 Milliliter, Destination -> "WaterSample Container 2"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 40 Milliliter, Destination -> "WaterSample Container 3"],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],
-						Amount -> 40 Milliliter,
-						Destination -> "WaterSample Container 4"]},
-				ImageSample -> False, MeasureVolume -> False, Upload -> False];
-			Length[Lookup[packet,Replace[SamplesIn]]],
-			4,
-			Variables :> {packet}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for the calibrant:"},
-			protocol=ExperimentMeasureDissolvedOxygen[
-				Object[Sample, "Test salt water sample for ExperimentMeasureDissolvedOxygen"<> $SessionUUID],
-				ZeroOxygenCalibrant -> "wash",
-				PreparatoryPrimitives -> {
-					Define[Name -> "50mL Tube", Container -> Model[Container, Vessel, "50mL Tube"]],
-					Define[Name -> "wash", Sample -> {"50mL Tube", "A1"}],
-					Transfer[Source -> Model[Sample, StockSolution, "70% Ethanol"], Destination -> "wash", Amount -> 50 Milliliter]
-				}
-			];
-			Download[protocol,ZeroOxygenCalibrant],
-			ObjectP[Model[Sample, StockSolution, "70% Ethanol"]],
-			Variables :> {protocol}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for dissolved oxygen measurement:"},
 			packet=First@ExperimentMeasureDissolvedOxygen[{"WaterSample Container 1", "WaterSample Container 2", "WaterSample Container 3","WaterSample Container 4"},
 				PreparatoryUnitOperations -> {
@@ -197,6 +159,40 @@ DefineTests[
 			Download[protocol,ZeroOxygenCalibrant],
 			ObjectP[Model[Sample, "Milli-Q water"]],
 			Variables :> {protocol}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureDissolvedOxygen[
+				Model[Sample, "Milli-Q water"],
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 45 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol,MeasureDissolvedOxygen]]
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureDissolvedOxygen[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+				PreparedModelAmount -> 40 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+				{EqualP[40 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 
 		Example[{Basic,"Setting Aliquot->True will take an aliquot of your sample for dissolved oxygen measurement - this is often used to prevent sample contamination:"},
@@ -497,7 +493,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
@@ -595,7 +591,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureDissolvedOxygen[Object[Sample, "Test salt water sample for ExperimentMeasureDissolvedOxygen"<> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "150 mL Glass Bottle"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "150 mL Glass Bottle"]]},
+			{{1, ObjectP[Model[Container, Vessel, "150 mL Glass Bottle"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,SamplesInStorageCondition, "Indicates how the input samples of the experiment should be stored:"},
@@ -625,10 +621,30 @@ DefineTests[
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentMeasureDissolvedOxygen[Object[Sample, "Test salt water sample for ExperimentMeasureDissolvedOxygen"<> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		(*---Error Messages---*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureDissolvedOxygen[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureDissolvedOxygen[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureDissolvedOxygen[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureDissolvedOxygen[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"DiscardedSamples","Return an error for a discarded sample:"},
 			ExperimentMeasureDissolvedOxygen[Object[Sample, "Test discarded sample for ExperimentMeasureDissolvedOxygen"<> $SessionUUID]],
 			$Failed,
@@ -1090,7 +1106,7 @@ DefineTests[
 			<|
 				Object->conductivitySample,
 				Conductivity->QuantityDistribution[DataDistribution["Empirical", {{0.3333333333333333, 0.3333333333333333, 0.3333333333333333}, {1424.4, 1429.2, 1429.9}, False}, 1, 3], "Microsiemens"/"Centimeters"],
-				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+				Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 				DeveloperObject->True
 			|>,
 			<|Object->lowVolSample,DeveloperObject->True|>,
@@ -1110,7 +1126,8 @@ DefineTests[
 	),
 	Stubs :> {
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
-	}
+	},
+	Parallel->True
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -1467,7 +1484,7 @@ DefineTests[
 				<|
 					Object->conductivitySample,
 					Conductivity->QuantityDistribution[DataDistribution["Empirical", {{0.3333333333333333, 0.3333333333333333, 0.3333333333333333}, {1424.4, 1429.2, 1429.9}, False}, 1, 3], "Microsiemens"/"Centimeters"],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 					DeveloperObject->True
 				|>,
 				<|Object->lowVolSample,DeveloperObject->True|>,
@@ -1865,7 +1882,7 @@ DefineTests[
 				<|
 					Object->conductivitySample,
 					Conductivity->QuantityDistribution[DataDistribution["Empirical", {{0.3333333333333333, 0.3333333333333333, 0.3333333333333333}, {1424.4, 1429.2, 1429.9}, False}, 1, 3], "Microsiemens"/"Centimeters"],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 					DeveloperObject->True
 				|>,
 				<|Object->lowVolSample,DeveloperObject->True|>,
@@ -1899,7 +1916,7 @@ DefineTests[
 			ExperimentMeasureDissolvedOxygenPreview[Object[Sample, "Test salt water sample for ExperimentMeasureDissolvedPreview"<> $SessionUUID]],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentMeasureDissolvedOxygenPreview[{Object[Sample, "Test salt water sample for ExperimentMeasureDissolvedPreview"<> $SessionUUID], Object[Sample, "Test MilliQ water sample for ExperimentMeasureDissolvedPreview"<> $SessionUUID]}],
 			Null
 		],
@@ -2242,7 +2259,7 @@ DefineTests[
 				<|
 					Object->conductivitySample,
 					Conductivity->QuantityDistribution[DataDistribution["Empirical", {{0.3333333333333333, 0.3333333333333333, 0.3333333333333333}, {1424.4, 1429.2, 1429.9}, False}, 1, 3], "Microsiemens"/"Centimeters"],
-					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Uracil"]]}},
+					Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}},
 					DeveloperObject->True
 				|>,
 				<|Object->lowVolSample,DeveloperObject->True|>,

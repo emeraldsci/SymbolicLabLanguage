@@ -1,10 +1,7 @@
-(* Mathematica Source File *)
-(* Created by the Wolfram Language Plugin for IntelliJ, see http://wlplugin.halirutan.de/ *)
-(* :Author: User *)
-(* :Date: 2023-06-12 *)
+(* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 $SharedChangeMediaUnitOperationFields={
   (* --- SAMPLES AND SAMPLE LABELS --- *)
@@ -59,16 +56,7 @@ $SharedChangeMediaUnitOperationFields={
     Category -> "General"
   },
   (* --- GENERAL OPTIONS --- *)
-  MethodLink -> {
-    Format -> Multiple,
-    Class -> Link,
-    Pattern :> _Link,
-    Relation -> Alternatives[Object[Method,WashCells]],
-    Description -> "For each member of SampleLink, the set of reagents and recommended operating conditions which are used to change media of the cell sample.",
-    Category -> "General",
-    IndexMatching -> SampleLink,
-    Migration -> SplitField
-  },
+
   MethodExpression -> {
     Format -> Multiple,
     Class -> Expression,
@@ -683,6 +671,20 @@ With[{insertMe=$SharedChangeMediaUnitOperationFields},
     Description->"The group of default settings that should be used when changing media for a given cell culture.",
     CreatePrivileges->None,
     Cache->Session,
-    Fields->insertMe
+    Fields->Flatten[{
+      insertMe,
+      {
+        MethodLink -> {
+          Format -> Multiple,
+          Class -> Link,
+          Pattern :> _Link,
+          Relation -> Alternatives[Object[Method,ChangeMedia]],
+          Description -> "For each member of SampleLink, the set of reagents and recommended operating conditions which are used to change media of the cell sample.",
+          Category -> "General",
+          IndexMatching -> SampleLink,
+          Migration -> SplitField
+        }
+      }
+    }]
   }]
 ];

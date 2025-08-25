@@ -114,6 +114,61 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Description -> "The type of wavelength selection available for absorbance measurement.",
 			Category -> "Instrument Specifications"
 		},
+		(* For Dionex *)
+		MinAbsorbanceSamplingRate -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*1/Second],
+			Units -> 1/Second,
+			Description -> "The minimum frequency setting for absorbance measurements using the UV-Vis or Photodiode Array (PDA) detector on this instrument model.",
+			Category -> "Instrument Specifications"
+		},
+		MaxAbsorbanceSamplingRate -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*1/Second],
+			Units -> 1/Second,
+			Description -> "The maximum frequency setting for absorbance measurements using the UV-Vis or Photodiode Array (PDA) detector on this instrument model.",
+			Category -> "Instrument Specifications"
+		},
+		(* For Agilent and Waters *)
+		AbsorbanceSamplingRates -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0*1/Second],
+			Units -> 1/Second,
+			Description -> "The permitted frequency settings for absorbance measurements using the UV-Vis or Photodiode Array (PDA) detector on this instrument model.",
+			Category -> "Instrument Specifications"
+		},
+		(* For Dionex *)
+		MinSmoothingTimeConstant -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Second],
+			Units -> Second,
+			Description -> "The minimum allowed time window on the instrument software for data filtering in absorbance collection on this instrument model. The smoothing time constant affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise.",
+			Category -> "Instrument Specifications"
+		},
+		MaxSmoothingTimeConstant -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Second],
+			Units -> Second,
+			Description -> "The maximum allowed time window on the instrument software for data filtering in absorbance collection on this instrument model. The smoothing time constant affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise.",
+			Category -> "Instrument Specifications"
+		},
+		(* For Waters and Agilent *)
+		(* Agilent only allows one value per sampling rate (except for the highest 120 Hz, it allows 0.031 Second and 0.016 Second, we will call them Medium and Small *)
+		SmoothingTimeConstants -> {
+			Format -> Multiple,
+			Class -> {Real, Real, Real, Real, Real, Real},
+			Pattern :> {GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second]},
+			Units -> {Second, Second, Second, Second, Second, Second},
+			Headers -> {"Small", "Medium", "Large", "Minimum", "Maximum", "Increment"},
+			Description -> "For each member of AbsorbanceSamplingRates, the allowed time windows on the instrument software for data filtering in absorbance collection, which affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. The instrument supports both pre-defined settings - Small, Medium, and Large as well as user-selectable discrete values that are evenly spaced by the specified Increment between the Minimum and Maximum, inclusive.",
+			Category -> "Instrument Specifications",
+			IndexMatching -> AbsorbanceSamplingRates
+		},
 		ExcitationSource -> {
 			Format -> Single,
 			Class -> Expression,
@@ -452,6 +507,20 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Headers -> {"Connector Type", "Thread Type", "Material", "Gender", "Inner Diameter", "Outer Diameter"},
 			Category -> "Instrument Specifications"
 		},
+		ColumnPreheater -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the instrument is equipped with an electric heating element inside the column compartment that directly heats the column inlet tubing. The rapid heating, low volume design reduces gradient delay and extra-column bandspreading.",
+			Category -> "Instrument Specifications"
+		},
+		ColumnCompartmentOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ColumnCompartmentOrientationP,
+			Description -> "Indicates whether the instrument is plumbed to use the vertical or horizontal column compartment.",
+			Category -> "Instrument Specifications"
+		},
 		TubingInnerDiameter -> {
 			Format -> Single,
 			Class -> Real,
@@ -469,13 +538,6 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Headers -> {"Filename","Cloud File"},
 			Category -> "Instrument Specifications",
 			Developer -> True
-		},
-		ColumnPreheater -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Whether the instrument is equipped with a preheater in the column compartment.",
-			Category -> "Instrument Specifications"
 		},
 		SyringeVolume -> {
 			Format -> Single,

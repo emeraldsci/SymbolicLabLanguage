@@ -31,6 +31,26 @@ DefineUsage[PlotNMR2D,
 						Pattern :> ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotNMR2D[protocol]", "plot"},
+				Description -> "creates a 'plot' of 2D NMR spectra found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing NMR2D data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, NMR2D]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the NMR2D protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		MoreInformation -> {
@@ -44,7 +64,7 @@ DefineUsage[PlotNMR2D,
 			"PlotAbsorbanceSpectroscopy",
 			"EmeraldListContourPlot"
 		},
-		Author -> {"kevin.hou","steven"},
+		Author -> {"yanzhe.zhu", "kevin.hou", "steven"},
 		Preview -> True
 	}
 ];

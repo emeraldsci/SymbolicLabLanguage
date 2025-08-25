@@ -59,7 +59,7 @@ DefineUsage[UploadReferenceElectrodeModel,
 			"ValidUploadReferenceElectrodeModelQ",
 			"ExperimentPrepareReferenceElectrode"
 		},
-		Author->{"waseem.vali", "malav.desai", "steven", "qijue.wang"}
+		Author->{"taylor.hochuli", "waseem.vali", "malav.desai", "steven", "qijue.wang"}
 	}
 ];
 
@@ -111,7 +111,7 @@ DefineUsage[UploadReferenceElectrodeModelOptions,
 			"ValidUploadReferenceElectrodeModelQ",
 			"ExperimentPrepareReferenceElectrode"
 		},
-		Author->{"waseem.vali", "malav.desai", "steven", "qijue.wang"}
+		Author->{"taylor.hochuli", "waseem.vali", "malav.desai", "steven", "qijue.wang"}
 	}
 ];
 
@@ -163,6 +163,6 @@ DefineUsage[ValidUploadReferenceElectrodeModelQ,
 			"UploadReferenceElectrodeModelOptions",
 			"ExperimentPrepareReferenceElectrode"
 		},
-		Author->{"waseem.vali", "malav.desai", "steven", "qijue.wang"}
+		Author->{"taylor.hochuli", "waseem.vali", "malav.desai", "steven", "qijue.wang"}
 	}
 ];

@@ -452,10 +452,7 @@ DefineUsage[ByteQ,
 			"BasePairQ"
 		},
 		Author -> {
-			"Jonathan",
-			"Ruben",
-			"brad",
-			"alice"
+			"xu.yi"
 		}
 	}];
 
@@ -553,6 +550,29 @@ DefineUsage[CFUConcentrationQ,
 			"CFUQ"
 		},
 		Author -> {"harrison.gronlund", "taylor.hochuli"}
+	}];
+
+(* ::Subsubsection::Closed:: *)
+(*ColonyCountQ*)
+
+
+DefineUsage[ColonyCountQ,
+	{
+		BasicDefinitions -> {
+			{"ColonyCountQ[item]", "validUnit", "tests if the given item is in Units of Colony."}
+		},
+		Input :> {
+			{"item", _, "The item you wish to query."}
+		},
+		Output :> {
+			{"validUnit", BooleanP, "True if item is in Units of Colony."}
+		},
+		SeeAlso -> {
+			"UnitsQ",
+			"Colony",
+			"CFUQ"
+		},
+		Author -> {"lige.tonggu", "harrison.gronlund"}
 	}];
 
 (* ::Subsubsection::Closed:: *)
@@ -1164,7 +1184,7 @@ DefineUsage[RRTQ,
 			"ConcentrationQ"
 		},
 		Author -> {
-			"kevin.hou"
+			"xu.yi"
 		}
 	}];
 
@@ -1626,7 +1646,7 @@ DefineUsage[PositiveQuantityQ,
 			"UnitsQ",
 			"CompatibleUnitQ"
 		},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"xu.yi", "hanming.yang", "thomas"}
 	}
 ];
 
@@ -1713,11 +1733,7 @@ DefineUsage[RangeQ,
 			"Less",
 			"LessEqual"
 		},
-		Author -> {
-			"Frezza",
-			"Courtney",
-			"brad"
-		}
+		Author -> {"xu.yi", "Frezza", "Courtney", "brad"}
 	}];
 
 
@@ -2773,11 +2789,7 @@ DefineUsage[UnitScale,
 			"Convert",
 			"CompatibleUnitQ"
 		},
-		Author -> {
-			"qian",
-			"brad",
-			"Frezza"
-		}
+		Author -> {"xu.yi", "qian", "brad", "Frezza"}
 	}];
 
 
@@ -3122,13 +3134,7 @@ DefineUsage[QuantityFunctionP,
 			"QuantityFunction",
 			"AnalyzeFit"
 		},
-		Author -> {
-			"Javi",
-			"brad",
-			"alice",
-			"qian",
-			"thomas"
-		}
+		Author -> {"xu.yi", "Javi", "brad", "alice", "qian", "thomas"}
 	}];
 
 
@@ -3456,7 +3462,7 @@ DefineUsage[QuantityPartition,
 			"QuantityQ",
 			"CompatibleUnitQ"
 		},
-		Author -> {"hanming.yang", "thomas", "wyatt"}
+		Author -> {"xu.yi", "hanming.yang", "thomas", "wyatt"}
 	}
 ];
 
@@ -3510,29 +3516,37 @@ DefineUsage[ParticleCountQ,
 			"noelle.toong"
 		}
 	}];
-(* ::Subsection::Closed:: *)
-(*UnitSymbols*)
 
 
-DefineUsage[OD600,
+(* ::Subsubsection::Closed:: *)
+(*StringToQuantity*)
+
+
+DefineUsage[StringToQuantity,
 	{
 		BasicDefinitions -> {
-			{"QuantityPartition[amount,maxAmount]", "amounts", "divides 'amount' into a list of 'amounts' that are all equal to or below the 'maxAmount'."}
+			{"StringToQuantity[strings]", "quantities", "attempts to interpret each of the 'strings' as a quantity, returning the 'quantities'."}
+		},
+		MoreInformation -> {
+			"Be aware that converting from strings to quantities is not always an exact process and multiple interpretations may be possible, particularly if the formatting of the input string is poor.",
+			"For example, ms could potentially be milliseconds or meter-seconds. This function follows the behavior of Quantity, and scientific convention, that a compound unit such as meter-seconds should be separated by a space to indicate multiplication - m s.",
+			"Additionally, \[Degree]C is interpreted as Celsius whereas \[Degree] C is interpreted strictly as Angular Degree-Coulomb.",
+			"In general, the function will try to find the longest match between the string and possible units.",
+			"Unit words are not case sensitive but unit symbols and abbreviations are."
 		},
 		Input :> {
-			{"amount", PositiveQuantityP, "A quantity to partition based on a given maximum."},
-			{"maxAmount", PositiveQuantityP, "The maximum size of any given element of the partitioned list."},
-			{"integer", _Integer, "An integer to partition based on a given maximum."},
-			{"maxInteger", _Integer, "The maximum size of any given element of the partitioned list."}
+			{"strings", ListableP[_String], "The quantity strings to convert."}
 		},
 		Output :> {
-			{"amounts", {PositiveQuantityP...}, "A list of partitioned amounts all at or below the provided maximum amount."},
-			{"integers", {(_Integer)...}, "A list of partitioned integers all at or below the provided maximum integer."}
+			{"quantities", ListableP[Alternatives[_Quantity, $Failed]], "The list of quantities, or $Failed if a conversion failed."}
 		},
 		SeeAlso -> {
-			"OD600Q",
-			"CFUQ"
+			"UnitsQ",
+			"ToString",
+			"TextForm"
 		},
-		Author -> {"harrison.gronlund", "taylor.hochuli"}
+		Author -> {
+			"david.ascough"
+		}
 	}
 ];

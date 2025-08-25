@@ -641,7 +641,7 @@ analyzeBindingQuantitationSetUp[label_String]:=Module[{objs, existingObjs, stand
     {70*10^-9, 30*10^-9}
   ];
 
-  (*make teh fake sample data Quantity Arrays and baselines*)
+  (*make the fake sample data Quantity Arrays and baselines*)
   fakeSampleData = QuantityArray[fakeUnitlessSampleData, {Second, Nanometer}];
   fakeSampleBaselines = QuantityArray[Table[{t,0}, {t, 0, 2000}], {Second, Nanometer}];
 

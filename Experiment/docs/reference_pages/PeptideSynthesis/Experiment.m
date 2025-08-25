@@ -18,7 +18,7 @@ DefineUsage[ExperimentPeptideSynthesis,
 					IndexMatching[
 						{
 							InputName -> "OligomerModels",
-							Description-> "The oligomer models, sequence, strands or structures for each oligomer sample that will be created by the protocol.",
+							Description-> "The oligomer models, strand, sequence for each oligomer sample that will be created by the protocol.",
 							Widget->Alternatives[
 								"Oligomer Model" -> Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Model[Molecule,Oligomer]}],ObjectTypes->{Model[Sample],Model[Molecule,Oligomer]}],
 								"Oligomer Strand" -> Widget[Type->Expression,Pattern:>StrandP,Size->Paragraph],

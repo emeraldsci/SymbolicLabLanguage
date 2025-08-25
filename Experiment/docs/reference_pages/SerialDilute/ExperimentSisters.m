@@ -5,24 +5,33 @@ DefineUsage[ExperimentSerialDilutePreview,
     {
         BasicDefinitions -> {
             {
-                Definition->{"ExperimentSerialDilutePreview[Objects]","Preview"},
+                Definition->{"ExperimentSerialDilutePreview[samples]","Preview"},
                 Description -> "returns the preview for ExperimentSerialDilute when it is called on 'objects'.",
                 Inputs:>{
                     IndexMatching[
                         {
-                            InputName -> "Objects",
-                            Description-> "The sample to be serially diluted.",
-                            Widget->Widget[
-                                Type->Object,
-                                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                                ObjectTypes->{Object[Sample],Object[Container]},
-                                Dereference->{
-                                    Object[Container]->Field[Contents[[All,2]]]
-                                }
+                            InputName -> "samples",
+                            Description -> "The samples to be iteratively diluted.",
+                            Widget -> Alternatives[
+                                "Sample or Container" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                                    Dereference -> {
+                                        Object[Container] -> Field[Contents[[All, 2]]]
+                                    },
+                                    PreparedSample -> False,
+                                    PreparedContainer -> False
+                                ],
+                                "Model Sample" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[Model[Sample]],
+                                    ObjectTypes -> {Model[Sample]}
+                                ]
                             ],
-                            Expandable->False
+
+                            Expandable -> False
                         },
-                        IndexName->"experiment samples"
+                        IndexName -> "experiment samples"
                     ]
                 },
                 Outputs:>{
@@ -39,7 +48,7 @@ DefineUsage[ExperimentSerialDilutePreview,
             "ExperimentSerialDilute",
             "ValidExperimentDiluteQ",
             "ExperimentSerialDiluteOptions",
-            "ExperimentSampleManipulation",
+            "ExperimentSamplePreparation",
             "Transfer",
             "Mix",
             "Aliquot"
@@ -58,21 +67,29 @@ DefineUsage[ExperimentSerialDiluteOptions,
     {
         BasicDefinitions -> {
             {
-                Definition->{"ExperimentSerialDiluteOptions[objects]","calculatedOptions"},
+                Definition->{"ExperimentSerialDiluteOptions[samples]","calculatedOptions"},
                 Description->"returns the calculated options for ExperimentSerialDiluteOptions when it is called on 'objects'.",
                 Inputs:>{
                     IndexMatching[
                         {
                             InputName -> "samples",
-                            Description -> "The samples to be serially diluted.",
-                            Widget ->
-                                Widget[
+                            Description -> "The samples to be iteratively diluted.",
+                            Widget -> Alternatives[
+                                "Sample or Container" -> Widget[
                                     Type -> Object,
                                     Pattern :> ObjectP[{Object[Sample], Object[Container]}],
                                     Dereference -> {
                                         Object[Container] -> Field[Contents[[All, 2]]]
-                                    }
+                                    },
+                                    PreparedSample -> False,
+                                    PreparedContainer -> False
                                 ],
+                                "Model Sample" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[Model[Sample]],
+                                    ObjectTypes -> {Model[Sample]}
+                                ]
+                            ],
 
                             Expandable -> False
                         },
@@ -94,7 +111,7 @@ DefineUsage[ExperimentSerialDiluteOptions,
         SeeAlso -> {
             "ExperimentSerialDilute",
             "ValidExperimentSerialDiluteQ",
-            "ExperimentSampleManipulation",
+            "ExperimentSamplePreparation",
             "ExperimentDilute",
             "ExperimentAliquot",
             "ExperimentTransfer"
@@ -113,21 +130,29 @@ DefineUsage[ValidExperimentSerialDiluteQ,
     {
         BasicDefinitions -> {
             {
-                Definition->{"ValidExperimentSerialDiluteQ[objects]","bools"},
+                Definition->{"ValidExperimentSerialDiluteQ[samples]","bools"},
                 Description -> "checks whether the provided 'objects' and specified options are valid for calling ExperimentSerialDilute.",
                 Inputs:>{
                     IndexMatching[
                         {
                             InputName -> "samples",
-                            Description -> "The samples to be serially diluted.",
-                            Widget ->
-                                Widget[
+                            Description -> "The samples to be iteratively diluted.",
+                            Widget -> Alternatives[
+                                "Sample or Container" -> Widget[
                                     Type -> Object,
                                     Pattern :> ObjectP[{Object[Sample], Object[Container]}],
                                     Dereference -> {
                                         Object[Container] -> Field[Contents[[All, 2]]]
-                                    }
+                                    },
+                                    PreparedSample -> False,
+                                    PreparedContainer -> False
                                 ],
+                                "Model Sample" -> Widget[
+                                    Type -> Object,
+                                    Pattern :> ObjectP[Model[Sample]],
+                                    ObjectTypes -> {Model[Sample]}
+                                ]
+                            ],
 
                             Expandable -> False
                         },
@@ -147,7 +172,7 @@ DefineUsage[ValidExperimentSerialDiluteQ,
         SeeAlso -> {
             "ExperimentSerialDilute",
             "ValidExperimentSerialDiluteOptions",
-            "ExperimentSampleManipulation",
+            "ExperimentSamplePreparation",
             "ExperimentDilute",
             "ExperimentAliquot",
             "ExperimentTransfer"

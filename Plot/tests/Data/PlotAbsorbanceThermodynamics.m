@@ -35,6 +35,18 @@ DefineTests[PlotAbsorbanceThermodynamics,
 			TimeConstraint -> 120
 		],
 		Example[
+			{Basic,"Plots data objects linked to a protocol when given a UVMelting protocol object:"},
+			PlotAbsorbanceThermodynamics[Object[Protocol, UVMelting, "UVMelting Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID]],
+			_?ValidGraphicsQ,
+			TimeConstraint->120
+		],
+		Example[
+			{Basic,"Plots data objects linked to a protocol when given a ThermalShift protocol object:"},
+			PlotAbsorbanceThermodynamics[Object[Protocol, ThermalShift, "ThermalShift Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID]],
+			_?ValidGraphicsQ,
+			TimeConstraint->120
+		],
+		Example[
 			{Basic,"Plot raw cooling curve data:"},
 			PlotAbsorbanceThermodynamics[{{86.76999664, 0.8889893293}, {84.31999969, 0.8903881907}, {81.72000122, 0.8887994289}, {79.22000122, 0.8896051645}, {76.66999817, 0.8877320886}, {74.12000275, 0.8876239061}, {71.66999817, 0.8869766593}, {69.01999664, 0.8862888217}, {66.56999969, 0.883474648}, {63.97000122, 0.8812503815}, {61.41999817, 0.8708394766}, {59.02999878, 0.8542538881}, {56.36999893, 0.8401528597}, {53.81999969, 0.8302058578}, {51.31999969, 0.822193265}, {48.77000046, 0.8170831203}, {46.16999817, 0.8125882149}, {43.66999817, 0.8086900711}, {41.11999893, 0.8073564172}, {38.61999893, 0.8050329685}, {36.18000031, 0.8041143417}, {33.47000122, 0.8016431928}, {30.96999931, 0.8016029596}, {28.55999947, 0.8012183309}, {25.87000084, 0.8000658154}, {23.31999969, 0.8006708026}, {20.95999908, 0.7997810245}, {18.27000046, 0.7994769812}, {15.77000046, 0.7989316583}, {13.38000011, 0.7977842093}, {10.67000008, 0.7979000807}},PrimaryData->{CoolingCurve}],
 			_?ValidGraphicsQ,
@@ -48,7 +60,7 @@ DefineTests[PlotAbsorbanceThermodynamics,
 		],
 		Example[
 			{Options,PlotType,"Plot three dimensional data:"},
-			PlotAbsorbanceThermodynamics[Object[Data, MeltingCurve, "PlotAbsorbanceThermodynamics test 3D data"],PlotType->ListPlot3D],
+			PlotAbsorbanceThermodynamics[Object[Data, MeltingCurve, "PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID],PlotType->ListPlot3D],
 			_?ValidGraphicsQ,
 			TimeConstraint -> 120
 		],
@@ -280,13 +292,13 @@ DefineTests[PlotAbsorbanceThermodynamics,
 
 		(* Messages *)
 		Example[{Messages,"UnresolvablePlotType","The provided data objects do not contain data of similar dimensionality:"},
-			PlotAbsorbanceThermodynamics[{Object[Data,MeltingCurve,"id:pZx9jonGJLOp"],Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data"]}],
+			PlotAbsorbanceThermodynamics[{Object[Data,MeltingCurve,"id:pZx9jonGJLOp"],Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID]}],
 			$Failed,
 			Messages:>{Error::UnresolvablePlotType}
 		],
 		Example[{Messages,"MismatchedPlotType","The requested PlotType must match with the allowed PlotType determined from the dimensionality of the provided data:"},
 			PlotAbsorbanceThermodynamics[
-				Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data"],
+				Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID],
 				PlotType->ListLinePlot
 			],
 			$Failed,
@@ -294,7 +306,7 @@ DefineTests[PlotAbsorbanceThermodynamics,
 		],
 		Example[{Messages,"Invalid3DPlotOptions","EmeraldListLinePlot options must be Null when 3D plot is requested:"},
 			PlotAbsorbanceThermodynamics[
-				Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data"],
+				Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID],
 				PlotType->ListPlot3D,
 				AlignmentPoint->Center
 			],
@@ -308,7 +320,11 @@ DefineTests[PlotAbsorbanceThermodynamics,
 	SymbolSetUp:>(
 		Module[{allObjects},
 			allObjects={
-				Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data"]
+				Object[Data, MeltingCurve, "PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID],
+				Object[Data, MeltingCurve, "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID],
+				Object[Data, MeltingCurve, "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 2 " <> $SessionUUID],
+				Object[Protocol, UVMelting, "UVMelting Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID],
+				Object[Protocol, ThermalShift, "ThermalShift Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID]
 			};
 
 			EraseObject[
@@ -320,27 +336,64 @@ DefineTests[PlotAbsorbanceThermodynamics,
 
 		$CreatedObjects={};
 
-		Module[{data1},
-			data1=CreateID[Object[Data,MeltingCurve]];
+		Module[{data1, data2, data3, protocol1, protocol2},
+			{data1, data2, data3, protocol1, protocol2} = CreateID[{Object[Data, MeltingCurve], Object[Data, MeltingCurve], Object[Data, MeltingCurve], Object[Protocol, UVMelting], Object[Protocol, ThermalShift]}];
+
 			Upload[
-				<|
-					Name->"PlotAbsorbanceThermodynamics test 3D data",
-					Object->data1,
-					Type->Object[Data,MeltingCurve],
-					MinWavelength->300 Nanometer,
-					MaxWavelength->500 Nanometer,
-					MeltingCurve3D->QuantityArray[
-						{{22.1161,266,3334.89},{24.8088,266,3322.31},{27.6072,266,3342.07},{30.3384,266,3328.32},{33.1176,266,3287.77},{36.0314,266,3299.14},{38.801,266,3324.75},{41.5802,266,3324.39},{44.3499,266,3283.66},{47.1483,266,3267.2},{49.8987,266,3311.95},{52.6683,266,3247.77},{55.4379,266,3271.48},{58.2267,266,3358.25},{60.9963,266,3463.33},{63.7755,266,3674.1},{66.5547,266,3833.56},{69.3147,266,3930.55},{72.0747,266,3991.85},{74.8443,266,3958.31},{77.6043,266,4067.92},{80.3739,266,4037.5},{83.1531,266,4061.26},{85.9227,266,4010.08},{88.7019,266,4017.95},{91.4715,266,3975.01},{94.2315,266,3989.08},{22.1161,473,31725.2},{24.8088,473,107589.},{27.6072,473,30182.4},{30.3384,473,34274.7},{33.1176,473,29972.},{36.0314,473,34408.8},{38.801,473,32074.1},{41.5802,473,33704.1},{44.3499,473,76050.7},{47.1483,473,31513.8},{49.8987,473,28513.6},{52.6683,473,28577.3},{55.4379,473,30210.},{58.2267,473,31476.3},{60.9963,473,39518.9},{63.7755,473,56068.2},{66.5547,473,68312.5},{69.3147,473,74598.4},{72.0747,473,77597.6},{74.8443,473,79565.8},{77.6043,473,84727.},{80.3739,473,87251.4},{83.1531,473,88683.7},{85.9227,473,88388.4},{88.7019,473,89189.9},{91.4715,473,90222.7},{94.2315,473,91797.6}},
-						{Celsius,Nanometer,ArbitraryUnit}
-					]
-				|>
-			]
+				{
+					<|
+						Name -> "PlotAbsorbanceThermodynamics test 3D data "<>$SessionUUID,
+						Object -> data1,
+						Type -> Object[Data, MeltingCurve],
+						MinWavelength -> 300 Nanometer,
+						MaxWavelength -> 500 Nanometer,
+						MeltingCurve3D -> QuantityArray[
+							{{22.1161, 266, 3334.89}, {24.8088, 266, 3322.31}, {27.6072, 266, 3342.07}, {30.3384, 266, 3328.32}, {33.1176, 266, 3287.77}, {36.0314, 266, 3299.14}, {38.801, 266, 3324.75}, {41.5802, 266, 3324.39}, {44.3499, 266, 3283.66}, {47.1483, 266, 3267.2}, {49.8987, 266, 3311.95}, {52.6683, 266, 3247.77}, {55.4379, 266, 3271.48}, {58.2267, 266, 3358.25}, {60.9963, 266, 3463.33}, {63.7755, 266, 3674.1}, {66.5547, 266, 3833.56}, {69.3147, 266, 3930.55}, {72.0747, 266, 3991.85}, {74.8443, 266, 3958.31}, {77.6043, 266, 4067.92}, {80.3739, 266, 4037.5}, {83.1531, 266, 4061.26}, {85.9227, 266, 4010.08}, {88.7019, 266, 4017.95}, {91.4715, 266, 3975.01}, {94.2315, 266, 3989.08}, {22.1161, 473, 31725.2}, {24.8088, 473, 107589.}, {27.6072, 473, 30182.4}, {30.3384, 473, 34274.7}, {33.1176, 473, 29972.}, {36.0314, 473, 34408.8}, {38.801, 473, 32074.1}, {41.5802, 473, 33704.1}, {44.3499, 473, 76050.7}, {47.1483, 473, 31513.8}, {49.8987, 473, 28513.6}, {52.6683, 473, 28577.3}, {55.4379, 473, 30210.}, {58.2267, 473, 31476.3}, {60.9963, 473, 39518.9}, {63.7755, 473, 56068.2}, {66.5547, 473, 68312.5}, {69.3147, 473, 74598.4}, {72.0747, 473, 77597.6}, {74.8443, 473, 79565.8}, {77.6043, 473, 84727.}, {80.3739, 473, 87251.4}, {83.1531, 473, 88683.7}, {85.9227, 473, 88388.4}, {88.7019, 473, 89189.9}, {91.4715, 473, 90222.7}, {94.2315, 473, 91797.6}},
+							{Celsius, Nanometer, ArbitraryUnit}
+						]
+					|>,
+					<|
+						Name -> "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID,
+						Object -> data2,
+						Type -> Object[Data, MeltingCurve],
+						MeltingCurve -> QuantityArray[{#, RandomReal[1]} & /@ Range[10, 70], {Celsius, ArbitraryUnit}],
+						CoolingCurve -> QuantityArray[{#, RandomReal[1]} & /@ Reverse[Range[10, 70]], {Celsius, ArbitraryUnit}]
+					|>,
+					<|
+						Name -> "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 2 " <> $SessionUUID,
+						Object -> data3,
+						Type -> Object[Data, MeltingCurve],
+						MeltingCurve3D -> QuantityArray[MapThread[{#1, #2, RandomReal[1000]} &, {Range[10, 70], Range[300, 360]}], {Celsius, Nanometer, ArbitraryUnit}]
+					|>
+				}
+			];
+
+			Upload[
+				{
+					<|
+						Name -> "UVMelting Protocol For PlotAbsorbanceThermodynamics Test 1 "<>$SessionUUID,
+						Object -> protocol1,
+						Type -> Object[Protocol, UVMelting],
+						Replace[Data] -> {Link[data2, Protocol]}
+					|>,
+					<|
+						Name -> "ThermalShift Protocol For PlotAbsorbanceThermodynamics Test 1 "<>$SessionUUID,
+						Object -> protocol2,
+						Type -> Object[Protocol, ThermalShift],
+						Replace[Data] -> {Link[data3, Protocol]}
+					|>
+				}
+			];
 		]
 	),
 	SymbolTearDown:>Module[{objsToErase},
 		objsToErase=Flatten[{
 			$CreatedObjects,
-			Object[Data,MeltingCurve,"PlotAbsorbanceThermodynamics test 3D data"]
+			Object[Data, MeltingCurve, "PlotAbsorbanceThermodynamics test 3D data " <> $SessionUUID],
+			Object[Data, MeltingCurve, "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID],
+			Object[Data, MeltingCurve, "MeltingCurve Data for PlotAbsorbanceThermodynamics Test 2 " <> $SessionUUID],
+			Object[Protocol, UVMelting, "UVMelting Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID],
+			Object[Protocol, ThermalShift, "ThermalShift Protocol For PlotAbsorbanceThermodynamics Test 1 " <> $SessionUUID]
 		}];
 
 		EraseObject[

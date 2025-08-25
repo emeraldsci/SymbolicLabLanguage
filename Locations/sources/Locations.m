@@ -2037,7 +2037,7 @@ DefineOptions[plotContainer,
 		{
 			OptionName->Highlight,
 			Default->{},
-			Description->"What Object(s) will be highlighted on the plot.",
+			Description->"What Object(s) will be highlighted on the plot. Note that if this option and the HighlightStyle option are both specified and have the same length, each value of HighlightStyle will be applied to each highlighting in an index matching fashion.",
 			AllowNull->True,
 			Category->"Data Specifications",
 			Widget->Alternatives[Adder[
@@ -2079,6 +2079,14 @@ DefineOptions[plotContainer,
 			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
 		},
 		{
+			OptionName->LabelFluidContainerPositions,
+			Default->False,
+			Description->"Determines whether text labels will be placed at the center of every position in fluid containers.  This overrides LabelPositions if it is set to False.",
+			AllowNull->False,
+			Category->"Plot Labeling",
+			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+		},
+		{
 			OptionName->ResolvedHighlight,
 			Default->{},
 			Description->"What Object(s) will be highlighted on the plot, with items outside the scope of a given plot replaced by the lowest item that contains them (where possible).",
@@ -2109,12 +2117,12 @@ DefineOptions[plotContainer,
 		{
 			OptionName->HighlightStyle,
 			Default->Automatic,
-			Description->"The style that will be applied to boxes highlighting selected Objects. If Automatic, coloring and transparency are set based on the PlotType option to optimize visibility of all plotted elements.",
+			Description->"The style that will be applied to boxes highlighting selected Objects. If Automatic, coloring and transparency are set based on the PlotType option to optimize visibility of all plotted elements. Note that if this option and the Highlight option are both specified and have the same length, each value of HighlightStyle will be applied to each highlighting in an index matching fashion  Note also that for this index matching to work, HighlightStyle must consist only a list of the form {EdgeForm[___]..}.",
 			AllowNull->False,
 			Category->"Plot Style",
 			Widget->Alternatives[
 				Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]],
-				Widget[Type->Expression,Pattern:>ListableP[ EdgeForm[ListableP[EdgeFormP]] | FaceForm[ListableP[FaceFormP]] |EdgeFormP],Size->Line]
+				Widget[Type->Expression,Pattern:>ListableP[EdgeForm[ListableP[EdgeFormP]] | FaceForm[ListableP[FaceFormP]] |EdgeFormP],Size->Line]
 			]
 		},
 		{
@@ -2184,6 +2192,14 @@ DefineOptions[plotContainer,
 				}
 			]
 		},
+		{
+			OptionName -> Grayscale,
+			Default -> False,
+			Description -> "Indicates if all containers and positions are set to shades of gray (except for those specified with the highlighting options).  If set to False, a more colorful scheme will be used in which instruments are blue, flammable cabinets are yellow, waste bins are brown, and other containers are gray).",
+			AllowNull -> False,
+			Category -> "Plot Labeling",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
+		},
 
 		CacheOption,
 		FastTrackOption,
@@ -2252,12 +2268,36 @@ DefineOptions[plotContainer,
 			Widget->Widget[Type->Enumeration,Pattern:>Alternatives[PlotLocation,PlotContents]]
 		},
 		{
-			OptionName->DrawPositions,
-			Default->True,
-			Description->"If False, position graphics will not be drawn at any level below the topmost container in any given plot.",
-			AllowNull->False,
-			Category->"Hidden",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+			OptionName -> DrawPositions,
+			Default -> True,
+			Description -> "If False, position graphics will not be drawn at any level below the topmost container in any given plot.",
+			AllowNull -> False,
+			Category -> "Hidden",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
+		},
+		{
+			OptionName -> DrawOccupiedPositions,
+			Default -> False,
+			Description -> "Indicates if a position should be drawn if something is already in that position.  Default is False, but could want to be True if you have a tiny thing in a big position like a BSC or benchtop and not drawing it is confusing.",
+			AllowNull -> False,
+			Category -> "Hidden",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
+		},
+		{
+			OptionName -> RequiredPositions,
+			Default -> All,
+			Description -> "Indicates the positions that should be plotted.  Any positions that are not specified will not be plotted.  Note that if specified directly (and not just with the default All), this will override DrawOccupiedPositions being False.",
+			AllowNull -> False,
+			Category -> "Hidden",
+			Widget -> Alternatives[
+				Widget[Type -> Enumeration, Pattern :> Alternatives[All]],
+				Adder[Widget[
+					Type -> String,
+					Pattern :> LocationPositionP,
+					Size->Line,
+					PatternTooltip -> "Any position matching LocationPositionP is allowed."
+				]]
+			]
 		}
 	},
 	SharedOptions :> {
@@ -2296,14 +2336,15 @@ plotContainer[myItems:{ObjectP[LocationTypes]..}, myOps:OptionsPattern[]] := Mod
 	{safeOps, databaseMemberBools, incomingCache, plot3DBool, containerStyleOption, positionStyleOption,
 	highlightStyleOption, liveDisplayOption, highlightOption, levelsUpOption, levelsDownOption, itemObjects,
 	objectFields, modelFields, fieldsList, assembledPlotFields, adjacencyLists, packetLists, flatPacketsList,
+	findHaltingPosition,extractDataToHalt,haltingUpPositions, nearestDownHaltingCondition,
 	masterAdjacencyGraph, minimalSetOfGraphs, gatheredInputs, ctrTrees, objectToPacketRules, completeTrees,
 	objsToHighlight, topContainerPackets, topContainerObjects, plotUnits, frameLabels, anchorPoints, plotRanges,
-	allPlotGraphics, highlightedGraphics, notHighlightedGraphics, allPlotGraphicsRearranged, graphicsHead,
-	plots, targetUnitsOption, nearestUpHaltingCondition, nearestDownHaltingCondition,
-	recursiveContainerSpec, recursiveContentsSpec, inputsWithoutTrees, inputsWithoutTreesGraphs,
-	inputsWithoutTreesPositions, graphsWithBareInputs, packetValidityBools, inputsWithoutTreesNotInMergedGraphs,
-	functionHead, highlightObjects, plotDownloadResult, highlightDownloadResult, rectifiedHighlightOption,
-	highlightInputOption, invalidPackets, invalidObjects, validObjectAdjacencyLists, validInputsWithoutTrees},
+	allPlotGraphics, graphicsHead, plots, targetUnitsOption, recursiveContainerSpec, recursiveContentsSpec, nearestUp,
+	firstContainerUpDownload,plotResultUpFiltered,
+	inputsWithoutTrees, inputsWithoutTreesGraphs, inputsWithoutTreesPositions, graphsWithBareInputs, packetValidityBools,
+	inputsWithoutTreesNotInMergedGraphs, functionHead, highlightObjects, plotDownloadResult, highlightDownloadResult,
+	rectifiedHighlightOption, highlightInputOption, invalidPackets, invalidObjects, validObjectAdjacencyLists,
+	validInputsWithoutTrees},
 
 	(* ----- Resolve relevant options and do validity checks ----- *)
 
@@ -2396,18 +2437,6 @@ plotContainer[myItems:{ObjectP[LocationTypes]..}, myOps:OptionsPattern[]] := Mod
 	modelFields = {Positions, PositionPlotting, Dimensions, CrossSectionalShape, Shape2D, Shape3D};
 	fieldsList = Join[objectFields, Model/@modelFields];
 
-	(* Generate patterns of types on which to continue traversal in each direction;
-		Only matching by '==' works for Alternatives, so must get Complement of all possible Types;
-		Must run Types on NearestUp/NearestDown option values to expand all subtypes (e.g. Object[Instrument]) *)
-	nearestUpHaltingCondition = If[!MatchQ[Lookup[safeOps, NearestUp],{}],
-		Type == Alternatives@@Select[Complement[Types[{Object[Container],Object[Instrument]}],Types[ToList[Lookup[safeOps, NearestUp]]]],(Length[#]>1&)],
-		None
-	];
-	nearestDownHaltingCondition = If[!MatchQ[Lookup[safeOps, NearestDown],{}],
-		Type == Alternatives@@Select[Complement[Types[{Object[Container],Object[Instrument],Object[Part], Object[Sensor],Object[Item],Object[Plumbing],Object[Wiring],Object[Sample]}],Types[ToList[Lookup[safeOps, NearestDown]]]],(Length[#]>1&)],
-		None
-	];
-
 	recursiveContainerSpec = If[levelsUpOption == Infinity,
 		Repeated[Container],
 		Repeated[Container, levelsUpOption]
@@ -2425,20 +2454,34 @@ plotContainer[myItems:{ObjectP[LocationTypes]..}, myOps:OptionsPattern[]] := Mod
 		recursiveContentsSpec[Model[modelFields]]
 	};
 
+	nearestDownHaltingCondition = If[!MatchQ[Lookup[safeOps, NearestDown],{}],
+		Type == Alternatives@@Select[Complement[Types[{Object[Container],Object[Instrument],Object[Part], Object[Sensor],Object[Item],Object[Plumbing],Object[Wiring],Object[Sample]}],Types[ToList[Lookup[safeOps, NearestDown]]]],(Length[#]>1&)],
+		None
+	];
+
+	(* Find position of our first recursive download *)
+	(* If we change Download structure we must also change this calculation! *)
+	firstContainerUpDownload=Length[fieldsList]+1;
+
 	(* Perform the Download operation, ignoring warnings for nonexistent fields.
 			The first set of results will consist of all information required for plotting, for the items being plotted.
 			The second set of results will consist of Container trees for the items being highlighted. These trees will be
 				used below to highlight the nearest container if an item requested for highlighting is not within the scope
 				of the generated plot(s) based on Level/Nearest options. *)
+	(* Note: We do not use halting up conditions in Download b/c they do not return container when the first object downloaded satisfies the halting condition *)
 	{plotDownloadResult, highlightDownloadResult} = Quiet[
 		Download[
 			{itemObjects, highlightObjects},
 			{assembledPlotFields,{Repeated[Container][Object]}},
 			{
-				(* No halting conditions are required for non-traversal field specs *)
-				{None,None,None,None,None,None,None,None,None,None,None,None,None,
-				(* Apply NearestUp conditions to Container traversals and NearestDown conditions to Contents traversals *)
-				Evaluate[nearestUpHaltingCondition], Evaluate[nearestUpHaltingCondition], Evaluate[nearestDownHaltingCondition], Evaluate[nearestDownHaltingCondition]},
+				{
+					(* No halting conditions are required for non-traversal field specs *)
+					None,None,None,None,None,None,None,None,None,None,None,None,None,
+					(* Manually handle NearestUp since there's a download bug *)
+					None,None,
+					(* Apply NearestDown conditions to Contents traversals *)
+					Evaluate[nearestDownHaltingCondition], Evaluate[nearestDownHaltingCondition]
+				},
 				{None}
 			},
 			HaltingCondition->Inclusive,
@@ -2456,12 +2499,42 @@ plotContainer[myItems:{ObjectP[LocationTypes]..}, myOps:OptionsPattern[]] := Mod
 		]
 	];
 
+	(* Grab our halting condition (we show only container up to and including these object types) *)
+	nearestUp=Lookup[safeOps,NearestUp];
+
+	(* == Filter data according to halting conditions == *)
+	(* We do this manually due to Download halting condition bug when downloading Container recursively *)
+
+	(* =Define Function: We want to stop as soon as we see our halting condition and include this and all data up to that point *)
+	(* If our download return $Failed or otherwise we didn't get a list then we will leave it unchanged *)
+	findHaltingPosition[data:Except[_List],types:{}]:=Null;
+	findHaltingPosition[data_List,types:{}]:=Length[data];
+	findHaltingPosition[data_List,types:(TypeP[]|{TypeP[]..})]:=FirstPosition[data,{ObjectP[types],___},{Length[data]},{1}][[1]];
+
+	(* =Define Function: Pull out data up to halting position - If findHaltingPosition returned Null leave data unchanged  *)
+	extractDataToHalt[data_,haltingPosition_Integer]:=data[[1;;haltingPosition]];
+	extractDataToHalt[data_,haltingPosition_Null]:=data;
+
+	(* Figure out when our Container.. hits our halting condition *)
+	haltingUpPositions=findHaltingPosition[#[[firstContainerUpDownload]],nearestUp]&/@plotDownloadResult;
+
+	(* We are working around halting condition bug in Download - need to get all instances up-to and including our first excluded type *)
+	plotResultUpFiltered=MapThread[
+		ReplacePart[#1,
+			{
+				firstContainerUpDownload -> extractDataToHalt[#1[[firstContainerUpDownload]],#2],
+				(firstContainerUpDownload+1) -> extractDataToHalt[#1[[firstContainerUpDownload+1]],#2]
+			}
+		]&,
+		{plotDownloadResult,haltingUpPositions}
+	];
+
 	(* Parse the downloaded information to generate:
 		1) A list of adjacency lists, one for each input
 		2) A list of lists of partial packets for each object *)
 	{adjacencyLists,packetLists} = Transpose[Map[
 		buildContainerTree[#, objectFields, modelFields]&,
-		plotDownloadResult
+		plotResultUpFiltered
 	]];
 
 	(* Flatten the list of lists of packets for handling all at once *)
@@ -2659,12 +2732,28 @@ plotContainer[myItems:{ObjectP[LocationTypes]..}, myOps:OptionsPattern[]] := Mod
 	allPlotGraphics = MapThread[
 		Function[
 			{ctrTree, anchorPoint, highlighted, units, inputObj},
-			containerAndPositionGraphics[First[ctrTree], anchorPoint, {}, 1,
-				Highlight->highlightOption, ResolvedHighlight->highlighted, Units->units, InputObjects->inputObj, PlotType->Lookup[safeOps, PlotType],
-				LabelPositions->Lookup[safeOps, LabelPositions], HighlightStyle->highlightStyleOption,
-				ContainerStyle->containerStyleOption, PositionStyle->positionStyleOption, LiveDisplay->liveDisplayOption,
-				PositionTooltips->Lookup[safeOps, PositionTooltips], FunctionHead->Lookup[safeOps, FunctionHead],
-				DrawPositions->Lookup[safeOps, DrawPositions]
+			containerAndPositionGraphics[
+				First[ctrTree],
+				anchorPoint,
+				{},
+				1,
+				Highlight->highlightOption,
+				ResolvedHighlight->highlighted,
+				Units->units,
+				InputObjects->inputObj,
+				PlotType->Lookup[safeOps, PlotType],
+				LabelPositions->Lookup[safeOps, LabelPositions],
+				HighlightStyle->highlightStyleOption,
+				ContainerStyle->containerStyleOption,
+				PositionStyle->positionStyleOption,
+				LiveDisplay->liveDisplayOption,
+				PositionTooltips->Lookup[safeOps, PositionTooltips],
+				FunctionHead->Lookup[safeOps, FunctionHead],
+				DrawPositions->Lookup[safeOps, DrawPositions],
+				DrawOccupiedPositions -> Lookup[safeOps, DrawOccupiedPositions],
+				RequiredPositions -> Lookup[safeOps, RequiredPositions],
+				Grayscale -> Lookup[safeOps, Grayscale],
+				LabelFluidContainerPositions -> Lookup[safeOps, LabelFluidContainerPositions]
 			]
 		],
 		{completeTrees, anchorPoints, objsToHighlight, plotUnits, gatheredInputs}
@@ -2810,7 +2899,15 @@ PlotLocation[myItems:ListableP[ObjectP[LocationTypes]] | ListableP[{ObjectRefere
 (*PlotContents*)
 
 DefineOptions[PlotContents,
-	Options:>{OutputOption},
+	Options:>{
+
+		ModifyOptions[plotContainer,
+			{
+				{OptionName -> DrawPositions, Default -> False}
+			}
+		],
+		OutputOption
+	},
 	SharedOptions :> {
 
 		(* Modify some of the ListPlotOptions options *)
@@ -2853,7 +2950,7 @@ PlotContents::InvalidObject = "The following objects or their models are missing
 PlotContents::InvalidPosition = "The following {object, position} pairs cannot be plotted because the specified positions are not defined in their container's model: `1`.";
 
 PlotContents[myItems:ListableP[ObjectP[LocationTypes]] | ListableP[{ObjectReferenceP[LocationContainerTypes], _String}], myOps:OptionsPattern[PlotContents]] := Module[
-	{safeOps, levelsUpOption, levelsDownOption,output,plot},
+	{safeOps, levelsUpOption, levelsDownOption,output,originalOps, passingOps, plots},
 
 	(* Pass the Contents-plotting-standard LevelsUp option UNLESS the user has specified it *)
 	levelsUpOption = If[!MemberQ[ToList[myOps], HoldPattern[LevelsUp->_]],
@@ -2872,7 +2969,7 @@ PlotContents[myItems:ListableP[ObjectP[LocationTypes]] | ListableP[{ObjectRefere
 
 	safeOps = SafeOptions[
 		PlotContents,
-		ToList[ReplaceRule[ToList[myOps], {levelsUpOption, levelsDownOption, FunctionHead->PlotContents, DrawPositions->False}]]
+		ToList[ReplaceRule[ToList[myOps], {levelsUpOption, levelsDownOption, FunctionHead->PlotContents}]]
 	];
 
 	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
@@ -3125,16 +3222,13 @@ PlotContents[myModels:{ObjectP[LocationContainerModelTypes]..}, myOps:OptionsPat
 (* ::Subsubsection:: *)
 (*buildContainerTree*)
 
-Error::ModelessItemsCannotBePlotted="The following objects, `1`, do not have a Model and therefore do not have defined Positions/Dimensions/etc that are required for plotting. Please correct the Model field for these objects.";
-
 (* Takes the results of plotContainer Download call for a single object (i.e., container and contents tree for a single object).
 	Each element will consist of a set of bare field results for the focal object, followed by four recursive result lists
 	Return will be: 1) Full adjacency list (up and down containers included); 2) List of packets for items in the adjacency list *)
 buildContainerTree[downloadResult_List, objectFields_List, modelFields_List] := Module[
 	{combinedFieldNames, focalObjectFields, focalModelFields, containerObjectFields, containerModelFields,
-	contentsObjectFields, contentsModelFields, itemsWithoutModels, containerPackets, containerPacketsDescendingOrder,
-	fullNestedObjectFieldsTree, fullNestedModelFieldsTree, containersGraph,
-	contentsPackets, contentsGraph},
+	contentsObjectFields, contentsModelFields, containerPackets, containerPacketsDescendingOrder,
+	containersGraph, contentsPackets, contentsGraph},
 
 	combinedFieldNames = Join[objectFields, modelFields];
 
@@ -3150,18 +3244,8 @@ buildContainerTree[downloadResult_List, objectFields_List, modelFields_List] := 
 		For the contents query results, the focal object information must be added as the outermost level of nested information *)
 	containerObjectFields = Prepend[downloadResult[[-4]], focalObjectFields];
 	containerModelFields = Prepend[downloadResult[[-3]], focalModelFields];
-	contentsObjectFields = {{focalObjectFields, Cases[downloadResult[[-2]], Except[Null]]}};
-	contentsModelFields = {{focalModelFields, Cases[downloadResult[[-1]], Except[Null]]}};
-
-	(* NOTE: If there are any model-less instruments/parts/items, this will cause PlotContents to wall of red. *)
-	(* Try to catch this. *)
-	itemsWithoutModels=Cases[Transpose[{downloadResult[[-2]], downloadResult[[-1]]}], {_, Null}][[All,1]][[All,1]];
-
-	If[Length[itemsWithoutModels]>0,
-		Message[Error::ModelessItemsCannotBePlotted, ECL`InternalUpload`ObjectToString[itemsWithoutModels]];
-
-		Abort[];
-	];
+	contentsObjectFields = {{focalObjectFields, downloadResult[[-2]]}};
+	contentsModelFields = {{focalModelFields, downloadResult[[-1]]}};
 
 	(* --- Parse 'upward' traversals (flat list) --- *)
 
@@ -3317,13 +3401,18 @@ containerAndPositionGraphics[
 	myIterationNumber:GreaterP[0,1],
 	myOps:OptionsPattern[]
 ] := Module[
-	{opsList, terminalItemBool, focalPacket, downstreamContents, containerPrimitiveOptions, positionPrimitiveOptions,
-	focalObject, focalObjectUnit, unitScalar, plot3DBool, focalObjectBottomLeftCorner, outlineGraphic,
-	positionDefinitions, sortedPositionDefinitions, sortedPositionNames, sortedPositionRotations,
-	sortedPositionOffsetAnchorPoints, sortedPositionContents, positionPrimitives, sortedNextLevelContents,
-	sortedNextLevelContentsPositionNames, sortedNextLevelContentsRotations, sortedNextLevelContentsAnchors,
-	fixedNextLevelContents, typeSpecificColor, liveDisplayFunctionCall, combinedPrimitives, downstreamContainerObjects,
-	plotPositionBools, invalidPositionContents, contentsLookup},
+	{
+		opsList, terminalItemBool, focalPacket, downstreamContents, containerPrimitiveOptions, positionPrimitiveOptions,
+		focalObject, focalObjectUnit, unitScalar, plot3DBool, focalObjectBottomLeftCorner, outlineGraphic,
+		positionDefinitions, sortedPositionDefinitions, sortedPositionNames, sortedPositionRotations, itemsToHighlight,
+		sortedPositionOffsetAnchorPoints, sortedPositionContents, positionPrimitives, sortedNextLevelContents,
+		sortedNextLevelContentsPositionNames, sortedNextLevelContentsRotations, sortedNextLevelContentsAnchors,
+		fixedNextLevelContents, typeSpecificColor, drawPositions, combinedPrimitives, downstreamContainerObjects,
+		plotPositionBools, invalidPositionContents, contentsLookup, drawOccupiedPostions, labelFluidContainerPositions,
+		requiredPositions, grayscaleQ, allContainerPrimitiveOptions, labelPositions, objsToHighlight, resolvedHighlight,
+		highlightStyle, highlightStyleIndexMatchingQ, highlightStyleToUse, containerPrimStyle, itemsToHighlightLocations,
+		joinedHighlightStyle, joinedResolvedHighlight, itemsToHighlightLocationRules, itemHighlightStyles, itemsToHighlightQs
+	},
 
 	(* ---------------------- Pull and calculate basic information about this container/instrument ---------------------- *)
 
@@ -3336,9 +3425,20 @@ containerAndPositionGraphics[
 	focalPacket = If[terminalItemBool, myTree, First[myTree]];
 	downstreamContents = If[terminalItemBool, {}, Last[myTree]];
 
+	(* pull out if we're putting everything except what we're highlighting in gray *)
+	grayscaleQ = Lookup[opsList, Grayscale];
+
+	(* indicate if we're labeling the fluid container positions *)
+	labelFluidContainerPositions = Lookup[opsList, LabelFluidContainerPositions];
+	labelPositions = Lookup[opsList, LabelPositions];
+
+	(* get the objects we need to worry about highlighting (don't worry about the positions for now) *)
+	objsToHighlight = Download[Cases[Flatten[Lookup[opsList, ResolvedHighlight]], ObjectP[]], Object];
+
 	(* Generate option sets for each graphics-generating function so they don't have to be recalculated for each call *)
-	containerPrimitiveOptions = PassOptions[containerAndPositionGraphics, containerPrimitive, opsList];
-	positionPrimitiveOptions = PassOptions[containerAndPositionGraphics, positionPrimitive, opsList];
+	(* doing this instead of PassOptions becuase this way we don't have the stupid string option names, even though it means we have the ugly Warning Quiet here *)
+	containerPrimitiveOptions = Quiet[SafeOptions[containerPrimitive, opsList], Warning::UnknownOption];
+	positionPrimitiveOptions = Quiet[SafeOptions[positionPrimitive, opsList], Warning::UnknownOption];
 
 	(* Get the focal object reference *)
 	focalObject = Lookup[focalPacket, Object];
@@ -3350,39 +3450,70 @@ containerAndPositionGraphics[
 	If[MatchQ[focalObjectUnit, Null|_Missing], Return[{}]];
 
 	(* Figure out unit conversion -- generate a conversion scalar *)
-	unitScalar = Unitless[Convert[focalObjectUnit, OptionValue[Units]]];
+	unitScalar = Unitless[Convert[focalObjectUnit, Lookup[opsList, Units]]];
 
 	(* Figure out whether we're plotting in 3D *)
-	plot3DBool = MatchQ[OptionValue[PlotType], Plot3D];
+	plot3DBool = MatchQ[Lookup[opsList, PlotType], Plot3D];
 
 	(* Calculate this container's bottom-left corner (offsetAnchorPoint - {1/2 DimX,1/2 DimY,0})*)
 	focalObjectBottomLeftCorner = bottomLeftCorner[focalPacket, myOffsetAnchorPoint, unitScalar];
 
+	{resolvedHighlight, highlightStyle} = ToList /@ Lookup[opsList, {ResolvedHighlight, HighlightStyle}];
+	highlightStyleIndexMatchingQ = And[
+		ListQ[resolvedHighlight] && ListQ[highlightStyle],
+		SameLengthQ[resolvedHighlight, highlightStyle],
+		MatchQ[highlightStyle, {EdgeForm[___]..}]
+	];
 
 	(* ------------------------------ Draw graphics primitives for outline of focal object ----------------------------- *)
 
-	typeSpecificColor = containerColor[focalPacket, plot3DBool];
+	typeSpecificColor = containerColor[focalPacket, plot3DBool, grayscaleQ];
+
+	(* determine the container primitive style *)
+	(* this is complicated *)
+	(* note that resolvedHighlight could be a position *)
+	(* 1.) If the focal object is not in ResolvedHighlight, then we don't need to add any highlighting *)
+	(* 2.) If the focal object is in ResolvedHighlight but ResolvedHighlight/HighlightStyle are not index matching, then just add the entirety of HighlightStyle *)
+	(* 3.) otherwise, find the index matching highlight style and only do that one *)
+	highlightStyleToUse = Which[
+		Not[MemberQ[Flatten[resolvedHighlight], focalObject]], Nothing,
+		MemberQ[Flatten[resolvedHighlight], focalObject] && Not[highlightStyleIndexMatchingQ], highlightStyle,
+		True,
+			ToList[First[PickList[highlightStyle, resolvedHighlight, focalObject|_?(MemberQ[#, focalObject]&)]]]
+	];
+	containerPrimStyle = Append[
+		(* doing this instead of just Join[] around it directly becuase if highlightStyleToUse is Nothing (which it frequently is) then this will work; if we did it with Join, it would fail to evalaute *)
+		Join @@ {
+			Lookup[opsList, ContainerStyle],
+			highlightStyleToUse
+		},
+		typeSpecificColor
+	];
+
+	(* get the containerPrimitive options, combining the inherited ones from the parent function and the ones we're specifying here *)
+	allContainerPrimitiveOptions = ReplaceRule[
+		containerPrimitiveOptions,
+		{
+			UnitScalar->unitScalar,
+			Tooltip->assembleTooltip[focalPacket,0.5],
+			Style->containerPrimStyle,
+			Object->focalObject,
+			ClickFunction -> If[!Lookup[opsList, LiveDisplay],
+				(* Do nothing on click if LiveDisplay is disabled *)
+				Null,
+				(* Otherwise, set up re-zooming on click.
+					Pass unresolved Highlight option here to allow for re-resolution upon re-plotting. *)
+				assembleClickFunction[focalObject, Lookup[opsList, Highlight], Lookup[opsList, FunctionHead]]
+			]
+		}
+	];
 
 	(* Generate a graphics primitive for the outline of the thing *)
 	outlineGraphic = containerPrimitive[
 		focalPacket,
 		myOffsetAnchorPoint,
 		myRotations,
-		UnitScalar->unitScalar,
-		Tooltip->assembleTooltip[focalPacket,0.5],
-		Style->If[MemberQ[ToList[OptionValue[ResolvedHighlight]], focalObject],
-			Append[Join[OptionValue[ContainerStyle],OptionValue[HighlightStyle]], typeSpecificColor],
-			Append[OptionValue[ContainerStyle], typeSpecificColor]
-		],
-		Object->focalObject,
-		ClickFunction -> If[!OptionValue[LiveDisplay],
-	   		(* Do nothing on click if LiveDisplay is disabled *)
-	   		Null,
-			(* Otherwise, set up re-zooming on click.
-				Pass unresolved Highlight option here to allow for re-resolution upon re-plotting. *)
-			assembleClickFunction[focalObject, OptionValue[Highlight], OptionValue[FunctionHead]]
-		],
-		containerPrimitiveOptions
+		allContainerPrimitiveOptions
 	];
 
 
@@ -3446,48 +3577,121 @@ containerAndPositionGraphics[
 		Except[ObjectP[LocationNonContainerTypes]]
 	];
 
+	(* decide if we need DrawPositions or not *)
+	drawPositions = Lookup[opsList, DrawPositions];
+
+	(* decide if a position being occupied means we don't draw the position; sometimes this is helpful but sometimes it looks dumb to not draw it *)
+	drawOccupiedPostions = Lookup[opsList, DrawOccupiedPositions];
+
+	(* if the user provided us with a list of positions they want us to draw, then _only_ draw those positions *)
+	(* All is the default *)
+	requiredPositions = Lookup[opsList, RequiredPositions];
+
 	(* For each position, decide whether or not to plot it *)
-	plotPositionBools = Map[
-		If[Or[terminalItemBool, Length[#]==0],
-			(* If this is the last level being plotted or the position has no contents, plot it *)
-			True,
-			(* Otherwise, only plot the position if none of its contents are going to be plotted in future iterations *)
-			Length[Intersection[#, downstreamContainerObjects]] == 0
-		]&,
-		sortedPositionContents
+	plotPositionBools = MapThread[
+		Function[{contents, position},
+			Which[
+				(* if we are always drawing and either we're at the last level being plotted, or we have no contents at that position, or if we are drawing occupied positions, always True*)
+				MatchQ[requiredPositions, All] && (terminalItemBool || Length[contents] == 0 || drawOccupiedPostions), True,
+
+				(* if RequiredPositions is something else and our position matches that, then draw regardless of occupancy if drawOccupiedPositions is true *)
+				(* note that RequiredPositions overrides drawOccupiedPositions and will always draw what you're asking for *)
+				Not[MatchQ[requiredPositions, All]] && MemberQ[requiredPositions, position], True,
+
+				(* if RequiredPositions is not All and our position is not required then don't show it *)
+				Not[MatchQ[requiredPositions, All]], False,
+
+				(* Otherwise, only plot the position if none of its contents are going to be plotted in future iterations (i.e., only plot if not occupied) *)
+				True, Length[Intersection[contents, downstreamContainerObjects]] == 0
+			]
+		],
+		{sortedPositionContents, Lookup[sortedPositionDefinitions, Name]}
 	];
 
-	(* Draw graphics for each position;
-		Only draw position primitives if this is the top-level object being plotted. *)
-	positionPrimitives = If[Or[myIterationNumber == 1, OptionValue[DrawPositions]],
+	(* Draw graphics for each position; *)
+
+	(* find the highlighted object that are not container or instrument. the position of this objects will be highlighted, not the item itself *)
+	itemsToHighlightQs = MatchQ[#, Except[ObjectP[LocationContainerTypes], ObjectP[LocationTypes]]]& /@ objsToHighlight;
+	itemsToHighlight = PickList[objsToHighlight, itemsToHighlightQs];
+
+	(* get the specified highlight styles for items *)
+	itemHighlightStyles = If[highlightStyleIndexMatchingQ,
+		PickList[highlightStyle, itemsToHighlightQs],
+		highlightStyle
+	];
+
+	(* if the highlighted item is in the current focalObject, find its position. this position will be highlighted *)
+	itemsToHighlightLocationRules = Cases[Lookup[focalPacket, Contents, {}], {position_String, object:ObjectP[itemsToHighlight]} :> (object[Object] -> {focalObject, position})];
+	itemsToHighlightLocations = itemsToHighlight /. itemsToHighlightLocationRules;
+
+	(* join the new highlight positions to the original highlight positions *)
+	joinedResolvedHighlight = Join[resolvedHighlight, itemsToHighlightLocations];
+
+	(* join the highlight styles of the new added positions to the original highlight styles *)
+	joinedHighlightStyle = Join[highlightStyle, itemHighlightStyles];
+
+	(* Only draw position primitives if this is the top-level object being plotted. *)
+	positionPrimitives = If[Or[myIterationNumber == 1, Lookup[opsList, DrawPositions]],
 		MapThread[
 			Function[
 				{currentPositionDefinition, currentPositionAnchorPoint, currentPositionContentsObjects, plotPositionBool},
 				If[plotPositionBool,
-					positionPrimitive[
-						currentPositionDefinition,
-						focalObjectUnit,
-						currentPositionAnchorPoint,
-						addRotation[myRotations,Lookup[currentPositionDefinition, Rotation], currentPositionAnchorPoint, plot3DBool],
-						UnitScalar -> unitScalar,
-						Tooltip -> If[OptionValue[PositionTooltips],
-							assembleTooltip[focalObject, Lookup[currentPositionDefinition, Name], currentPositionContentsObjects, 0.2],
-							Null
-						],
-						(* Not sure if {focalObject, Lookup[currentPositionDefinition, Name]} would ever match the format of ResolvedHighlight but leaving it since it was there *)
-						Style -> If[MemberQ[OptionValue[ResolvedHighlight], Alternatives[{focalObject, Lookup[currentPositionDefinition, Name]},Sequence@@currentPositionContentsObjects]],
-							Join[OptionValue[PositionStyle],OptionValue[HighlightStyle]],
-							OptionValue[PositionStyle]
-						],
-						Object -> focalObject,
-						ClickFunction -> If[!OptionValue[LiveDisplay],
-							(* Do nothing on click if LiveDisplay is disabled or the object currently being plotted is the original input object *)
-							Null,
-							(* Otherwise, set up re-zooming on click.
-								Pass unresolved Highlight option here to allow for re-resolution upon re-plotting. *)
-							assembleClickFunction[{focalObject, Lookup[currentPositionDefinition, Name]}, OptionValue[Highlight], OptionValue[FunctionHead]]
-						],
-						positionPrimitiveOptions
+
+					Module[{allPositionPrimitiveOptions, positionHighlightStyleToUse, posPrimStyle},
+
+						positionHighlightStyleToUse = Which[
+							Not[MemberQ[joinedResolvedHighlight, {focalObject, Lookup[currentPositionDefinition, Name]}]],
+								Nothing,
+
+							MemberQ[joinedResolvedHighlight, {focalObject, Lookup[currentPositionDefinition, Name]}] && Not[highlightStyleIndexMatchingQ],
+								highlightStyle,
+
+							True,
+								ToList[First[PickList[joinedHighlightStyle, joinedResolvedHighlight, {focalObject, Lookup[currentPositionDefinition, Name]}]]]
+						];
+						(* doing this instead of just Join[] around it directly becuase if positionHighlightStyleToUse is Nothing (which it frequently is) then this will work; if we did it with Join, it would fail to evalaute*)
+						posPrimStyle = Join @@ {
+							Lookup[opsList, PositionStyle],
+							positionHighlightStyleToUse
+						};
+
+						allPositionPrimitiveOptions = ReplaceRule[
+							positionPrimitiveOptions,
+							{
+								UnitScalar -> unitScalar,
+								Tooltip -> If[Lookup[opsList, PositionTooltips],
+									assembleTooltip[focalObject, Lookup[currentPositionDefinition, Name], currentPositionContentsObjects, 0.2],
+									Null
+								],
+								(* this is different from before; here we are only highlighting positions that we are explicitly handed in the highlighting option.  We do NOT just highlight postions holding things that we're highlighting*)
+								Style -> posPrimStyle,
+								Object -> focalObject,
+								ClickFunction -> If[!Lookup[opsList, LiveDisplay],
+									(* Do nothing on click if LiveDisplay is disabled or the object currently being plotted is the original input object *)
+									Null,
+									(* Otherwise, set up re-zooming on click.
+										Pass unresolved Highlight option here to allow for re-resolution upon re-plotting. *)
+									assembleClickFunction[{focalObject, Lookup[currentPositionDefinition, Name]}, Lookup[opsList, Highlight], Lookup[opsList, FunctionHead]]
+								],
+								(* decide how  we're actually going to label the position; intention here is if LabelFluidContainerPositions is False, we don't label the positions inside a fluid container *)
+								(* thus, you wouldn't label every position of a plate, or just A1 of a vessel *)
+								LabelPositions -> Which[
+									(* if LabelPositions -> False, then it's False *)
+									Not[labelPositions], False,
+									(* if it's True, but LabelFluidContainerPositions is False and the focal object is a fluid container, then it's False *)
+									labelPositions && Not[labelFluidContainerPositions] && MatchQ[focalObject, FluidContainerP], False,
+									True, True
+								]
+							}
+						];
+
+						positionPrimitive[
+							currentPositionDefinition,
+							focalObjectUnit,
+							currentPositionAnchorPoint,
+							addRotation[myRotations,Lookup[currentPositionDefinition, Rotation], currentPositionAnchorPoint, plot3DBool],
+							allPositionPrimitiveOptions
+						]
 					],
 					Nothing
 				]
@@ -3549,7 +3753,7 @@ containerAndPositionGraphics[
 		sortedNextLevelContentsPositionNames
 	];
 
-	combinedPrimitives = If[OptionValue[PositionTooltips],
+	combinedPrimitives = If[Lookup[opsList, PositionTooltips],
 		{outlineGraphic, positionPrimitives},
 		{positionPrimitives, outlineGraphic}
 	];
@@ -3563,12 +3767,39 @@ containerAndPositionGraphics[
 		MapThread[
 			Function[
 				{contentsItem, posName, rotation, anchorPt},
-				containerAndPositionGraphics[
-					contentsItem,
-					anchorPt,
-					addRotation[myRotations,rotation,anchorPt,plot3DBool],
-					myIterationNumber + 1,
-					Sequence@@opsList
+				(* only go deeper if we're in one of the required positions *)
+				(* only can do this check at the top level because once we go deeper, posName will always change, but RequiredPositions never does and only refers to the top level *)
+				(* thus: *)
+				(* 1.) We plotting the contents of the top level container *)
+				(* two possible branches: *)
+				(* 2a.) RequiredPositions is something besides All *)
+				(* 3a.) The position we're iterating over is NOT in the RequiredPositions *)
+				(* OR *)
+				(* 2b.) We're plotting a BSC *)
+				(* 2c.) the position we're plotting is Work Surface, Clean Zone Slot, Working Zone Slot, or Dirty Zone Slot *)
+				(* 2d.) any highlighted items are not in this position in particular (need to look through the contents tree to determine this) *)
+				If[
+					And[
+						myIterationNumber == 1,
+						Or[
+							Not[MatchQ[requiredPositions, All]] && Not[MemberQ[requiredPositions, posName]],
+							And[
+								MatchQ[focalPacket, ObjectP[Object[Instrument, BiosafetyCabinet]]],
+								MatchQ[posName, "Work Surface" | "Clean Zone Slot" | "Working Zone Slot" | "Dirty Zone Slot"],
+								With[{packetsInTree = Cases[contentsItem, PacketP[], All]},
+									Not[MemberQ[Lookup[packetsInTree, Object, {}], Alternatives @@ objsToHighlight]]
+								]
+							]
+						]
+					],
+					Nothing,
+					containerAndPositionGraphics[
+						contentsItem,
+						anchorPt,
+						addRotation[myRotations,rotation,anchorPt,plot3DBool],
+						myIterationNumber + 1,
+						Sequence@@opsList
+					]
 				]
 			],
 			{fixedNextLevelContents, sortedNextLevelContentsPositionNames, sortedNextLevelContentsRotations, sortedNextLevelContentsAnchors}
@@ -4006,14 +4237,14 @@ addClickEvent[item_, functionCall_Hold] := MouseAppearance[
 
 
 (* Give type-specific colors to container outlines to make the map more readable *)
-containerColor[myPacket:PacketP[],myPlot3DBool:BooleanP] := Switch[Lookup[myPacket, Type],
+containerColor[myPacket:PacketP[],myPlot3DBool:BooleanP,grayscaleQ:BooleanP] := Switch[Lookup[myPacket, Type],
 	Object[Container,Bench], Gray,
 	Object[Container,Shelf], Gray,
 	Object[Container,Room], If[myPlot3DBool, Nothing, Lighter[LightGray]],
-	Object[Container,FlammableCabinet], Lighter[Lighter[Yellow]],
-	Object[Instrument,__], Lighter[Lighter[Blue]],
-	Object[Container,WasteBin], Lighter[Brown],
-	Object[Sample,__], Green,
+	Object[Container,FlammableCabinet], If[grayscaleQ, Gray, Lighter[Lighter[Yellow]]],
+	Object[Instrument,__], If[grayscaleQ, LightGray, Lighter[Lighter[Blue]]],
+	Object[Container,WasteBin], If[grayscaleQ, LightGray, Lighter[Brown]],
+	Object[Sample,__], If[grayscaleQ, LightGray, Green],
 	_, LightGray
 ];
 
@@ -4188,11 +4419,11 @@ generateRegularRackPositions::DimensionsIncomplete="One or more of the X, Y, and
 (* Given a Model[Container,Plate] or Model[Container, Rack], extracts the needed parameters and generates positions *)
 generateRegularRackPositions[modelObj:ObjectP[Model[Container]], wellShape:(Circle|Rectangle), wellFootprint:(FootprintP|Null)]:=Module[
 	{downloadResult,rackDimensions,wellDimensions,
-	wellDimensionZ,wellPitchX,wellPitchY,wellOffsetX,wellOffsetY,wellOffsetZ,numRows,numCols},
+	wellDimensionZ,wellPitchX,wellPitchY,wellOffsetX,wellOffsetY,wellOffsetZ,numRows,numCols,wellDiameter},
 
 	(* Extract Model's dimensions *)
-	{rackDimensions,wellDimensions,wellDimensionZ,wellPitchX,wellPitchY,wellOffsetX,wellOffsetY,wellOffsetZ,numRows,numCols} = Download[modelObj,
-		{Dimensions,WellDimensions,WellDepth,HorizontalPitch,VerticalPitch,HorizontalMargin,VerticalMargin,DepthMargin,Rows,Columns}
+	{rackDimensions,wellDimensions,wellDimensionZ,wellPitchX,wellPitchY,wellOffsetX,wellOffsetY,wellOffsetZ,numRows,numCols,wellDiameter} = Download[modelObj,
+		{Dimensions,WellDimensions,WellDepth,HorizontalPitch,VerticalPitch,HorizontalMargin,VerticalMargin,DepthMargin,Rows,Columns,WellDiameter}
 	];
 
 	(* If any of the Model's dimensions are Null, return an error message *)
@@ -4204,7 +4435,8 @@ generateRegularRackPositions[modelObj:ObjectP[Model[Container]], wellShape:(Circ
 		numRows,
 		numCols,
 		Sequence@@rackDimensions,
-		Sequence@@wellDimensions,
+		(* if the field WellDimensions is Null then use WellDiameter for both dimensions instead *)
+		If[!NullQ[wellDimensions],Sequence@@wellDimensions,Sequence@@{wellDiameter,wellDiameter}],
 		wellDimensionZ, (* All positions are given zero height for ease of plotting *)
 		wellPitchX,
 		wellPitchY,
@@ -4285,6 +4517,7 @@ generateRegularRackPositions[
 
 
 ToBarcode[objects:ListableP[ObjectReferenceP[]]]:=Download[objects,ID];
+ToBarcode[position_String,container:ObjectReferenceP[]]:=StringJoin[ToBarcode[container], "[", position, "]"];
 
 
 (* ::Subsection::Closed:: *)

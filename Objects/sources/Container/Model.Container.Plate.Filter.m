@@ -68,14 +68,6 @@ DefineObjectType[Model[Container, Plate, Filter], {
 			Category -> "Physical Properties",
 			Developer -> True
 		},
-		KitProductsContainers -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][KitComponents, ProductModel],
-			Description -> "Products ordering information for this filter plate container with its supplied storage buffer solution as part of one or more kits.",
-			Category -> "Inventory"
-		},
 		MaxPressure -> {
 			Format -> Single,
 			Class -> Real,

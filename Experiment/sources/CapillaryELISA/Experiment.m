@@ -333,7 +333,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->CustomCaptureAntibody,
 				Default->Automatic,
-				Description->"For each experiment sample, the capture antibody sample used in the sandwich ELISA experiment to bind with the present analytes through specific antigen-antibody interaction. The capture antibody must be labeled with digoxigenin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. During the experiment, digoxigenin-labeled capture antibody sample first flows in the fluidic circuit to allow its binding to the immobilized anti-digoxigenin monoclonal antibody in the capillaries. Then the diluted input samples are applied to allow the binding to capture antibody for immobilization. The provided CustomCaptureAntibody can be resuspended into solution, bioconjugated with digoxigenin and diluted as desired using the related options. Please note that if the same capture antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of digoxigenin-labeled capture antibody is performed together. Please consider using ExperimentSampleManipulation for more customized capture antibody preparation.",
+				Description->"For each experiment sample, the capture antibody sample used in the sandwich ELISA experiment to bind with the present analytes through specific antigen-antibody interaction. The capture antibody must be labeled with digoxigenin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. During the experiment, digoxigenin-labeled capture antibody sample first flows in the fluidic circuit to allow its binding to the immobilized anti-digoxigenin monoclonal antibody in the capillaries. Then the diluted input samples are applied to allow the binding to capture antibody for immobilization. The provided CustomCaptureAntibody can be resuspended into solution, bioconjugated with digoxigenin and diluted as desired using the related options. Please note that if the same capture antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of digoxigenin-labeled capture antibody is performed together. Please consider using ExperimentSamplePreparation for more customized capture antibody preparation.",
 				ResolutionDescription->"If a customizable cartridge is used, CustomCaptureAntibody is automatically set based on the Analytes option. The Antibodies or SecondaryAntibodies field in Model[Molecule] of Analytes is inspected. If available, the DefaultSampleModel of a digoxigenin-labeled antibody is automatically selected as CustomCaptureAntibody. If no digoxigenin-labeled antibody is available, the DefaultSampleModel of an antibody with different epitopes with CustomDetectionAntibody (if uploaded) is automatically selected as CustomCaptureAntibody. If neither CustomCaptureAntibody or CustomDetectionAntibody has been specified and two antibodies with different epitopes are available for the analyte, the DefaultSampleModel of a polyclonal antibody is preferably selected for CustomCaptureAntibody.",
 				AllowNull->True,
 				Widget->Widget[
@@ -571,7 +571,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->CaptureAntibodyTargetConcentration,
 				Default->Automatic,
-				Description->"The desired concentration of digoxigenin-labeled capture antibody after dilution. The initial mass concentration of digoxigenin-labeled capture antibody sample is acquired from the composition of the liquid state CustomCaptureAntibody sample or the CaptureAntibdoyResuspension of the solid state CustomCaptureAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
+				Description->"The desired concentration of digoxigenin-labeled capture antibody after dilution. The initial mass concentration of digoxigenin-labeled capture antibody sample is acquired from the composition of the liquid state CustomCaptureAntibody sample or the CaptureAntibodyResuspension of the solid state CustomCaptureAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
 				(*
 				Description->"The desired concentration of the digoxigenin-labeled capture antibody after dilution. The initial mass concentration of digoxigenin-labeled capture antibody sample is calculated by its absorbance at 280 nm and the average antibody absorbance coefficient - 1.35 (mL/mg)/cm.",
 				*)
@@ -606,7 +606,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->CustomDetectionAntibody,
 				Default->Automatic,
-				Description->"The detection antibody sample used in the sandwich ELISA experiment. After immobilization of the analytes in the microfluidic channels, the detection antibodies bind to analyte epitopes distinct from the capture antibodies through antigen-antibody interaction. Then the streptavidin-conjugated fluorescent dyes can be attached through biotin-streptavidin interaction for data acquiring. The detection antibody must be modified with biotin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. The provided CustomDetectionAntibody can be resuspended into solution, bioconjugated with biotin and diluted as desired using the related options. Please note that if the same detection antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of biotinylated detection antibody is performed together. Please consider using ExperimentSampleManipulation for more customized detection antibody preparation.",
+				Description->"The detection antibody sample used in the sandwich ELISA experiment. After immobilization of the analytes in the microfluidic channels, the detection antibodies bind to analyte epitopes distinct from the capture antibodies through antigen-antibody interaction. Then the streptavidin-conjugated fluorescent dyes can be attached through biotin-streptavidin interaction for data acquiring. The detection antibody must be modified with biotin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. The provided CustomDetectionAntibody can be resuspended into solution, bioconjugated with biotin and diluted as desired using the related options. Please note that if the same detection antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of biotinylated detection antibody is performed together. Please consider using ExperimentSamplePreparation for more customized detection antibody preparation.",
 				ResolutionDescription->"If a customizable cartridge is used, CustomDetectionAntibody is automatically set based on the Analytes option. The Antibodies or SecondaryAntibodies field in Model[Molecule] of Analytes is inspected. If available, the DefaultSampleModel of a biotinylated antibody is automatically selected as CustomDetectionAntibody. If no biotinylated antibody is available, the DefaultSampleModel of an antibody with different epitopes with CustomCaptureAntibody (if specified) is automatically selected as CustomDetectionAntibody. If neither CustomCaptureAntibody or CustomDetectionAntibody has been specified and two antibodies with different epitopes are available for the analyte, the DefaultSampleModel of a monoclonal antibody is preferably selected for CustomDetectionAntibody.",
 				AllowNull->True,
 				Widget->Widget[
@@ -843,7 +843,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->DetectionAntibodyTargetConcentration,
 				Default->Automatic,
-				Description->"The desired concentration of biotinylated detection antibody after dilution. The initial mass concentration of biotinylated detection antibody sample is acquired from the composition of the liquid state CustomDetectionAntibody sample or the DetectionAntibdoyResuspension of the solid state CustomDetectionAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
+				Description->"The desired concentration of biotinylated detection antibody after dilution. The initial mass concentration of biotinylated detection antibody sample is acquired from the composition of the liquid state CustomDetectionAntibody sample or the DetectionAntibodyResuspension of the solid state CustomDetectionAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
 				(*
 				Description->"The desired concentration of biotinylated detection antibody after dilution. The initial mass concentration of biotinylated detection antibody sample is calculated by its absorbance at 280 nm and the average antibody absorbance coefficient - 1.35 (mL/mg)/cm.",
 				*)
@@ -1133,7 +1133,7 @@ DefineOptions[ExperimentCapillaryELISA,
             {
                 OptionName->StandardCaptureAntibody,
                 Default->Automatic,
-				Description->"The standard capture antibody sample used in the sandwich ELISA experiment to bind with analytes in the standard sample through specific antigen-antibody interaction. The standard capture antibody must be labeled with digoxigenin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. During the experiment, digoxigenin-labeled standard capture antibody sample first flows in the fluidic circuit to allow its binding to the immobilized anti-digoxigenin monoclonal antibody in the capillaries. Then the diluted standard samples are applied to allow the binding to standard capture antibody for immobilization. The provided StandardCaptureAntibody can be resuspended into solution, bioconjugated with digoxigenin and diluted as desired using the related options. Please note that if the same capture antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of digoxigenin-labeled capture antibody is performed together. Please consider using ExperimentSampleManipulation for more customized standard capture antibody preparation.",
+				Description->"The standard capture antibody sample used in the sandwich ELISA experiment to bind with analytes in the standard sample through specific antigen-antibody interaction. The standard capture antibody must be labeled with digoxigenin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. During the experiment, digoxigenin-labeled standard capture antibody sample first flows in the fluidic circuit to allow its binding to the immobilized anti-digoxigenin monoclonal antibody in the capillaries. Then the diluted standard samples are applied to allow the binding to standard capture antibody for immobilization. The provided StandardCaptureAntibody can be resuspended into solution, bioconjugated with digoxigenin and diluted as desired using the related options. Please note that if the same capture antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of digoxigenin-labeled capture antibody is performed together. Please consider using ExperimentSamplePreparation for more customized standard capture antibody preparation.",
 				ResolutionDescription->"If a customizable cartridge is used, StandardCaptureAntibody is automatically set based on the presented analyte (from Analytes option) in the standard sample. The Antibodies or SecondaryAntibodies field in Model[Molecule] of the analyte is inspected. If available, the DefaultSampleModel of a digoxigenin-labeled antibody is automatically selected as StandardCaptureAntibody. If no digoxigenin-labeled antibody is available, the DefaultSampleModel of an antibody with different epitopes with StandardDetectionAntibody (if uploaded) is automatically selected as StandardCaptureAntibody. If neither StandardCaptureAntibody or StandardDetectionAntibody has been specified and two antibodies with different epitopes are available for the analyte, the DefaultSampleModel of a polyclonal antibody is preferably selected for StandardCaptureAntibody.",
                 AllowNull->True,
                 Widget->Widget[
@@ -1371,7 +1371,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->StandardCaptureAntibodyTargetConcentration,
 				Default->Automatic,
-				Description->"The desired concentration of digoxigenin-labeled standard capture antibody after dilution. The initial mass concentration of digoxigenin-labeled standard capture antibody sample is acquired from the composition of the liquid state StandardCaptureAntibody sample or the StandardCaptureAntibdoyResuspension of the solid state StandardCaptureAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
+				Description->"The desired concentration of digoxigenin-labeled standard capture antibody after dilution. The initial mass concentration of digoxigenin-labeled standard capture antibody sample is acquired from the composition of the liquid state StandardCaptureAntibody sample or the StandardCaptureAntibodyResuspension of the solid state StandardCaptureAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
 				(*
 				Description->"The desired concentration of digoxigenin-labeled standard capture antibody after dilution. The initial mass concentration of digoxigenin-labeled standard capture antibody sample is calculated by its absorbance at 280 nm and the average antibody absorbance coefficient - 1.35 (mL/mg)/cm.",
 				*)
@@ -1406,7 +1406,7 @@ DefineOptions[ExperimentCapillaryELISA,
             {
                 OptionName->StandardDetectionAntibody,
                 Default->Automatic,
-				Description->"The standard detection antibody sample used in the sandwich ELISA experiment. After immobilization of the analytes in the microfluidic channels, the standard detection antibodies bind to analyte epitopes distinct from the standard capture antibodies through antigen-antibody interaction. Then the streptavidin-conjugated fluorescent dyes can be attached through biotin-streptavidin interaction for data acquiring. The standard detection antibody must be modified with biotin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. The provided StandardDetectionAntibody can be resuspended into solution, bioconjugated with biotin and diluted as desired using the related options. Please note that if the same detection antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of biotinylated detection antibody is performed together. Please consider using ExperimentSampleManipulation for more customized standard detection antibody preparation.",
+				Description->"The standard detection antibody sample used in the sandwich ELISA experiment. After immobilization of the analytes in the microfluidic channels, the standard detection antibodies bind to analyte epitopes distinct from the standard capture antibodies through antigen-antibody interaction. Then the streptavidin-conjugated fluorescent dyes can be attached through biotin-streptavidin interaction for data acquiring. The standard detection antibody must be modified with biotin, purified and diluted to preferably 3.5 Microgram/Milliliter before loading into the capillary ELISA cartridge. The provided StandardDetectionAntibody can be resuspended into solution, bioconjugated with biotin and diluted as desired using the related options. Please note that if the same detection antibody preparation options are specified for multiple samples (standard samples and/or input samples), the preparation of biotinylated detection antibody is performed together. Please consider using ExperimentSamplePreparation for more customized standard detection antibody preparation.",
 				ResolutionDescription->"If a customizable cartridge is used, StandardDetectionAntibody is automatically set based on the presented analyte (from Analytes option) in the standard sample. The Antibodies or SecondaryAntibodies field in Model[Molecule] of the main analyte is inspected. If available, the DefaultSampleModel of a biotinylated antibody is automatically selected as StandardDetectionAntibody. If no biotinylated antibody is available, the DefaultSampleModel of an antibody with different epitopes with StandardCaptureAntibody (if specified) is automatically selected as CustomDetectionAntibody. If neither StandardCaptureAntibody or StandardDetectionAntibody has been specified and two antibodies with different epitopes are available for the analyte, the DefaultSampleModel of a monoclonal antibody is preferably selected for StandardDetectionAntibody.",
                 AllowNull->True,
                 Widget->Widget[
@@ -1643,7 +1643,7 @@ DefineOptions[ExperimentCapillaryELISA,
 			{
 				OptionName->StandardDetectionAntibodyTargetConcentration,
 				Default->Automatic,
-				Description->"The desired concentration of biotinylated standard detection antibody after dilution. The initial mass concentration of biotinylated standard detection antibody sample is acquired from the composition of the liquid state StandardDetectionAntibody sample or the StandardDetectionAntibdoyResuspension of the solid state StandardDetectionAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
+				Description->"The desired concentration of biotinylated standard detection antibody after dilution. The initial mass concentration of biotinylated standard detection antibody sample is acquired from the composition of the liquid state StandardDetectionAntibody sample or the StandardDetectionAntibodyResuspension of the solid state StandardDetectionAntibody sample. A 50% concentration loss is factored in if conjugation is performed in the experiment.",
 				(*
 				Description->"The desired concentration of biotinylated standard detection antibody after dilution. The initial mass concentration of biotinylated standard detection antibody sample is calculated by its absorbance at 280 nm and the average antibody absorbance coefficient - 1.35 (mL/mg)/cm.",
 				*)
@@ -1835,9 +1835,11 @@ DefineOptions[ExperimentCapillaryELISA,
 			}
         ],
 
-        FuntopiaSharedOptions,
+		ModelInputOptions,
+    NonBiologyFuntopiaSharedOptions,
+    SimulationOption,
 		AnalyticalNumberOfReplicatesOption,
-        SamplesInStorageOptions
+    SamplesInStorageOptions
         (*No SampleOut*)
     }
 
@@ -1848,7 +1850,7 @@ DefineOptions[ExperimentCapillaryELISA,
 (* ::Subsubsection::Closed:: *)
 (* ExperimentCapillaryELISA Error Messages *)
 
-Error::TooManyCapillaryELISAInputSamples="The maximum number of input samples for one CapillaryELISA protocol is 72. Please enter fewer input samples, delete number of replciates, or queue an additional experiment for the excess input samples.";
+Error::TooManyCapillaryELISAInputSamples="The maximum number of input samples for one CapillaryELISA protocol is 72. Please enter fewer input samples, delete number of replicates, or queue an additional experiment for the excess input samples.";
 Error::RetiredCapillaryELISAInstrument="The specified capillary ELISA instrument `1` cannot be retired. Please specify a capillary ELISA instrument that is not retired.";
 Error::DeprecatedCapillaryELISAInstrumentModel="The model of the specified capillary ELISA instrument `1` cannot be deprecated. Please specify a capillary ELISA instrument model that is not deprecated.";
 Error::DiscardedCapillaryELISACartridge="The specified capillary ELISA cartridge `1` cannot be discarded. The capillary ELISA cartridges are single use and are marked as discarded after one capillary ELISA protocol. Please specify a capillary ELISA cartridge that is not discarded.";
@@ -1857,7 +1859,7 @@ Error::ExceedCapillaryELISACartridgeCapacity="The total number of loading sample
 Error::CannotCreateNewCustomizableCartridge="If Cartridge is set to Null, CartridgeType cannot be set to Customizable as the customizable cartridge model already exists in the database. To use a Customizable cartridge, please make sure the total number of samples is below 48 and set Cartridge to Model[Container,Plate,Irregular,CapillaryELISA,\"Human 48-Digoxigenin Cartridge\"].";
 Error::ConflictCartridgeAndCartridgeType="The specified CartridgeType must be the same as the CartridgeType of the specified Cartridge option. Please match the two options or set CartridgeType option to Default to continue.";
 Error::ConflictCartridgeAndAnalytes="The specified Analytes must be the same as the Analytes of the specified Cartridge option. Please match the two options or set Analytes option to Default to continue.";
-Error::ConflictPreLoadedAnalytes="All samples must be subject to the same analyates in a capillary ELISA experiment using a pre-loaded capillary ELISA cartridge. Please make sure the same Analytes are selected.";
+Error::ConflictPreLoadedAnalytes="All samples must be subject to the same analytes in a capillary ELISA experiment using a pre-loaded capillary ELISA cartridge. Please make sure the same Analytes are selected.";
 Error::ExceedLengthAnalytesForCustomizableCartridge="In a customizable cartridge, only 1 analyte can be tested for a single sample in a capillary ELISA cartridge. Please choose only 1 analyte for the samples `1` or use a pre-loaded multi-analyte cartridge.";
 Error::CannotUseMultiPlex32X8CartridgeForNonHuman="MultiPlex32X8 cartridge is for Pro-Inflammation and Oncology panel only and cannot be used for non-human species. Please correct CartridgeType option or Species option to continue.";
 Error::DuplicatedAnalytes="The specified Analytes option for a pre-loaded capillary ELISA cartridge should not have duplicated members `1`.";
@@ -1960,7 +1962,7 @@ Warning::NonOptimalStandardDetectionAntibodyDiluent="The StandardDetectionAntibo
 Error::MustSpecifyStandardDetectionAntibodyLoadingVolume="When a customizable cartridge is used, the StandardDetectionAntibodyLoadingVolume option is not Null for the standard detection antibody samples `1`, used for ELISA assay of `2`.";
 Warning::NonOptimalWashBuffer="The wash buffer should be Model[Sample,\"Simple Plex Wash Buffer\"] or an object with this model, as provided by the assay developer, for the best washing result.";
 Warning::LongLeadTimeCartridge="The cartridge is a pre-loaded cartridge that is not in stock at ECL and may take 14 days to arrive. To start the experiment sooner, please consider testing a total of fewer than 48 samples and selecting Model[Container,Plate,Irregular,\"Human 48-Digoxigenin Cartridge\"] as the Cartridge.";
-Error::MustSpecifyPreLoadedCartridgeAnalytes="To create a new pre-loaded capillay ELISA cartridge, Analytes must be specified with supported ExperimentCapillaryELISA pre-loaded cartridge analytes to create a new pre-loaded cartridge. Please check documentation of ExperimentCapillaryELISA for the list of current supported analytes and select the desired targets in Analytes options. If a customizable cartridge is desired, please make sure the total number of samples (including all dilutions and the standard samples) is fewer than 48 and select CartridgeType Customizable.";
+Error::MustSpecifyPreLoadedCartridgeAnalytes="To create a new pre-loaded capillary ELISA cartridge, Analytes must be specified with supported ExperimentCapillaryELISA pre-loaded cartridge analytes to create a new pre-loaded cartridge. Please check documentation of ExperimentCapillaryELISA for the list of current supported analytes and select the desired targets in Analytes options. If a customizable cartridge is desired, please make sure the total number of samples (including all dilutions and the standard samples) is fewer than 48 and select CartridgeType Customizable.";
 Warning::EmptyCartridgeChannel="The selected CartridgeType can test up to `1` analytes but only `2` are specified. To fill up the empty capillary channels, please consider selecting additional supported ExperimentCapillaryELISA pre-loaded cartridge analytes. Please check ExperimentCapillaryELISA help file for the list of current supported analytes.";
 Error::InvalidStandardOptionLength="The specified Standard related options is longer than the automatically selected Standard. Please specify desired samples in Standard option to match the length of the Standard related options.";
 Error::ConflictCapillaryELISAAntibodyObjectSample="The same solid state Object[Sample] `1` are not used as both capture antibody and detection antibody in the experiment. Please specify a different antibody sample to continue.";
@@ -1999,7 +2001,7 @@ Error::ExceedCaptureAntibodyPurificationColumnCapacity="The MaxVolume `3` of the
 Error::ExceedDetectionAntibodyPurificationColumnCapacity="The MaxVolume `3` of the specified DetectionAntibodyPurificationColumn must be smaller than the total conjugation preparation volume `4` of detection antibody samples `1`, used for ELISA assay of `2`. Please specify a different DetectionAntibodyPurificationColumn with larger MaxVolume capacity (for example, `5`).";
 Error::TooHighCaptureAntibodyDilution="The specified CaptureAntibodyTargetConcentration for the capture antibody samples `1` cannot be higher than the CaptureAntibodyResuspensionConcentration. These capture antibody samples are used for ELISA assays of `2`. Please specify a lower concentration.";
 Error::TooHighDetectionAntibodyDilution="The specified DetectionAntibodyTargetConcentration for the detection antibody samples `1` cannot be higher than the DetectionAntibodyResuspensionConcentration. These detection antibody samples are used for ELISA assays of `2`. Please specify a lower concentration.";
-Warning::NonOptimalCaptureAntibodyDilution="The specified CaptureAntibodyTargetCconcentration for the capture antibody samples `1` is higher than 50 Microgram/Milliliter. These capture antibody samples are used for ELISA assays of `2`. Please specify a lower concentration to achieve better ELISA test results.";
+Warning::NonOptimalCaptureAntibodyDilution="The specified CaptureAntibodyTargetConcentration for the capture antibody samples `1` is higher than 50 Microgram/Milliliter. These capture antibody samples are used for ELISA assays of `2`. Please specify a lower concentration to achieve better ELISA test results.";
 Warning::NonOptimalDetectionAntibodyDilution="The specified DetectionAntibodyTargetConcentration for the detection antibody samples `1` is higher than 50 Microgram/Milliliter. These capture antibody samples are used for ELISA assays of `2`. Please specify a lower concentration to achieve better ELISA test results.";
 Error::CapillaryELISAConflictingStorageConditions="The samples `1` are given different storage conditions in `2` options. Please make sure they match and only one storage condition is specified per identical sample.";
 
@@ -2018,12 +2020,12 @@ ExperimentCapillaryELISA[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
     {
         listedSamples,listedOptions,outputSpecification,output,gatherTests,
         suppliedStandard,listedStandard,listedIndexMatchingParentOptions,processedListedOptions,
-        validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
+        validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
         safeOpsNamed,safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,tempExpandedSafeOps,expandedSafeOps,
         instrumentFields,modelInstrumentFields,objectSampleFields,modelSampleFields,analyteFields,antibodyFields,sampleObjectContainerFields,sampleModelContainerFields,sampleAllFields,modelSampleAllFields,identityModelFields,cartridgeFields,modelCartridgeFields,manufacturingSpecificationFields,objectContainerFields,modelContainerFields,containerAllFields,modelContainerAllFields,
         optionsWithObjects,potentialIdentityModels,potentialInstruments,potentialCartridges,potentialModelCartridges,potentialReagents,potentialContainers,liquidHandlerCompatibleContainers,potentialManufacturingSpecifications,potentialSpinColumns,
-        allObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,moleculeObjects,sampleObjects,modelSampleObjects,instrumentObjects,modelInstrumentObjects,cartridgeObjects,cartridgeModelObjects,manufacturingSpecificationObjects,containerObjects,modelContainerObjects,
-        cacheBall, samplePreparationFastAssoc,
+        allObjects,moleculeObjects,sampleObjects,modelSampleObjects,instrumentObjects,modelInstrumentObjects,cartridgeObjects,cartridgeModelObjects,manufacturingSpecificationObjects,containerObjects,modelContainerObjects,
+        cacheBall,updatedSimulation,cache,
         resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests
     },
 
@@ -2037,6 +2039,7 @@ ExperimentCapillaryELISA[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
     (* Make sure we're working with a list of samples and options *)
     (* Remove temporal links and named objects. *)
     {listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
+    cache = Lookup[listedOptions, Cache, {}];
 
 	(* Add a special step here to make sure we are working on a list of Standard because they are index matching parents in ExperimentCapillaryELISA. If they are not in a list, the ValidInputLengthsQ may not be able to catch the length conflict in the options. Also the ExpandIndexMatchedInputs cannot successfully expand the options into a list either.
 For example, if we have Standard->Model[Sample,"Milli-Q water"],StandardResuspension->{True,False}, ValidInputLengthsQ cannot recognize the issue.
@@ -2060,20 +2063,20 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 	(* Simulate our sample preparation. *)
     validSamplePreparationResult=Check[
         (* Simulate sample preparation. *)
-        {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+        {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
             ExperimentCapillaryELISA,
             listedSamples,
             ToList[processedListedOptions]
         ],
         $Failed,
-        {Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
     ];
 
     (* If we are given an invalid define name, return early. *)
     If[MatchQ[validSamplePreparationResult,$Failed],
         (* Return early. *)
         (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-	    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+	    ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
     ];
 
     (* Call SafeOptions to make sure all options match pattern *)
@@ -2082,23 +2085,23 @@ We do not worry about input samples because our option is from myOptionsWithPrep
         {SafeOptions[ExperimentCapillaryELISA,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
     ];
 
-    {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
+    {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+
+	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	If[MatchQ[safeOps,$Failed],
+		Return[outputSpecification/.{
+			Result->$Failed,
+			Tests->safeOpsTests,
+			Options->$Failed,
+			Preview->Null
+		}]
+	];
 
     (* Call ValidInputLengthsQ to make sure all options are the right length *)
     (* Note that even if we don't check the Null index matching parents here. The problem with other index matching options with different lengths are still caught. It is not an issue. We check in our resolver that when parents are Null, the index matching options are also Null. *)
     {validLengths,validLengthTests}=If[gatherTests,
         ValidInputLengthsQ[ExperimentCapillaryELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
         {ValidInputLengthsQ[ExperimentCapillaryELISA,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-    ];
-
-    (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-    If[MatchQ[safeOps,$Failed],
-        Return[outputSpecification/.{
-            Result->$Failed,
-            Tests->safeOpsTests,
-            Options->$Failed,
-            Preview->Null
-        }]
     ];
 
     (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -2142,7 +2145,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     (* Fields to download from instrument objects *)
     instrumentFields={
         Packet[Model,Status,Name],
-        Packet[Model[{Depracated,Name}]]
+        Packet[Model[{Deprecated,Name}]]
     };
 
     (* Fields to download from instrument models *)
@@ -2241,7 +2244,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     };
 
     (* Fields to download from all capillary ELISA cartridge manufacturing specification objects *)
-	(* Because we allow the input of CapillaryELISAAanalyteP as Analytes, when it is used for customizable cartridge, we can throw only a warning message and use the corresponding identity model as the analyte to resolve antibodies *)
+	(* Because we allow the input of CapillaryELISAAnalyteP as Analytes, when it is used for customizable cartridge, we can throw only a warning message and use the corresponding identity model as the analyte to resolve antibodies *)
     manufacturingSpecificationFields={
         Packet[Name,AnalyteName,AnalyteMolecule,CartridgeType,Species,RecommendedMinDilutionFactor,RecommendedDiluent,IncompatibleAnalytes,UpperQuantitationLimit,LowerQuantitationLimit],
         Packet[AnalyteMolecule[analyteFields]],
@@ -2334,7 +2337,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 		liquidHandlerCompatibleContainers
 	];
 
-    (* All the possible spin columns. We only automatically resolve to these three. We also will hard-code some parameters into the resolver/ resource packets/ procedure before we have a better plan for using these as a standard part of ExperimentFilter or Filter primitives for ExperimentSampleManipulation. We do also support 7K MWCO spin desalting columns but we will NOT resolve to them. *)
+    (* All the possible spin columns. We only automatically resolve to these three. We also will hard-code some parameters into the resolver/ resource packets/ procedure before we have a better plan for using these as a standard part of ExperimentFilter or Filter primitives for ExperimentSamplePreparation. We do also support 7K MWCO spin desalting columns but we will NOT resolve to them. *)
     potentialSpinColumns=Search[Model[Container,Vessel,Filter],MembraneMaterial==ZebaDesaltingResin];
     
     (* All the available manufacturing specifications. We have to get all of them as it might be possible to resolve to any of these. *)
@@ -2361,68 +2364,6 @@ We do not worry about input samples because our option is from myOptionsWithPrep
         ]
     ];
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				listedSamples,
-				(* All options that could have an object *)
-				Lookup[expandedSafeOps,optionsWithObjects]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* make a fast association to quickly pull stuff out of the sample preparation cache *)
-	samplePreparationFastAssoc = makeFastAssocFromCache[samplePreparationCache];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ=Map[
-		Lookup[
-			fetchPacketFromFastAssoc[#,samplePreparationFastAssoc],
-			Simulated,
-			False
-		]&,
-		userSpecifiedObjects
-	];
-	objectsExistQs=DatabaseMemberQ[
-		PickList[userSpecifiedObjects,simulatedSampleQ,False]
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
-
 	(* Isolate objects of particular types so we can build an indexed-download call *)
     moleculeObjects=Cases[allObjects,ObjectP[Model[Molecule]]];
 	sampleObjects=Cases[allObjects,ObjectP[Object[Sample]]];
@@ -2439,7 +2380,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     cacheBall=Quiet[
         FlattenCachePackets[
             {
-                samplePreparationCache,
+                cache,
                 Download[
                     {
 						moleculeObjects,
@@ -2465,7 +2406,8 @@ We do not worry about input samples because our option is from myOptionsWithPrep
                         containerAllFields,
                         modelContainerAllFields
                     },
-                    Cache->samplePreparationCache,
+                    Cache->cache,
+                    Simulation->updatedSimulation,
                     Date->Now
                 ]
             }
@@ -2476,7 +2418,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     (* Build the resolved options *)
     resolvedOptionsResult=If[gatherTests,
         (* We are gathering tests. This silences any messages being thrown. *)
-        {resolvedOptions,resolvedOptionsTests}=resolveExperimentCapillaryELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+        {resolvedOptions,resolvedOptionsTests}=resolveExperimentCapillaryELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
         (* Therefore, we have to run the tests to see if we encountered a failure. *)
         If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -2486,7 +2428,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
         (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
         Check[
-            {resolvedOptions,resolvedOptionsTests}={resolveExperimentCapillaryELISAOptions[listedSamples,expandedSafeOps,Cache->cacheBall],{}},
+            {resolvedOptions,resolvedOptionsTests}={resolveExperimentCapillaryELISAOptions[listedSamples,expandedSafeOps,Simulation->updatedSimulation,Cache->cacheBall],{}},
             $Failed,
             {Error::InvalidInput,Error::InvalidOption}
         ]
@@ -2504,7 +2446,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     If[MatchQ[resolvedOptionsResult,$Failed],
         Return[outputSpecification/.{
             Result -> $Failed,
-            Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests],
+            Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
             Options->RemoveHiddenOptions[ExperimentCapillaryELISA,collapsedResolvedOptions],
             Preview->Null
         }]
@@ -2512,15 +2454,15 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
     (* Build packets with resources *)
     {resourcePackets,resourcePacketTests} = If[gatherTests,
-      capillaryELISAResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-      {capillaryELISAResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+      capillaryELISAResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+      {capillaryELISAResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
     ];
 
     (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
     If[!MemberQ[output,Result],
       Return[outputSpecification/.{
         Result -> Null,
-        Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests,resourcePacketTests}],
+        Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
         Options -> RemoveHiddenOptions[ExperimentCapillaryELISA,collapsedResolvedOptions],
         Preview -> Null
       }]
@@ -2532,13 +2474,15 @@ We do not worry about input samples because our option is from myOptionsWithPrep
         	resourcePackets,
         	Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+      CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,CapillaryELISA],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+      Simulation->updatedSimulation
 		],
 		$Failed
     ];
@@ -2546,7 +2490,7 @@ We do not worry about input samples because our option is from myOptionsWithPrep
     (* Return requested output *)
     outputSpecification/.{
         Result->protocolObject,
-        Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests,resourcePacketTests}],
+        Tests->Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
         Options->RemoveHiddenOptions[ExperimentCapillaryELISA,collapsedResolvedOptions],
         Preview->Null
     }
@@ -2558,11 +2502,11 @@ We do not worry about input samples because our option is from myOptionsWithPrep
 
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentCapillaryELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentCapillaryELISA[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
     {
         listedOptions,outputSpecification,output,gatherTests,
-        validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,objectsExistQs,objectsExistTests,containerToSampleCache,
-        samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache
+        validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation,containerToSampleSimulation,
+        containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache
     },
 	
 
@@ -2579,68 +2523,32 @@ ExperimentCapillaryELISA[myContainers:ListableP[ObjectP[{Object[Container],Objec
     (* First, simulate our sample preparation. *)
     validSamplePreparationResult=Check[
         (* Simulate sample preparation. *)
-        {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+        {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
             ExperimentCapillaryELISA,
             ToList[myContainers],
             ToList[myOptions]
         ],
         $Failed,
-        {Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
     ];
 
     (* If we are given an invalid define name, return early. *)
     If[MatchQ[validSamplePreparationResult,$Failed],
         (* Return early. *)
         (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-	    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+	    ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
     ];
-
-	(* Before we turn containers into samples, we want to check that all containers exist in the database. We don't check any other option objects as they will be checked in our main Sample overload. We don't want random result to be returned from containerToSample function *)
-	objectsExistQs=DatabaseMemberQ[ToList[myContainers]];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[ToList[myContainers],objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[ToList[myContainers],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[ToList[myContainers],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->objectsExistTests,
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
 
 
 	(* Convert our given containers into samples and sample index-matched options. *)
     containerToSampleResult=If[gatherTests,
         (* We are gathering tests. This silences any messages being thrown. *)
-        {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+        {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
             ExperimentCapillaryELISA,
             mySamplesWithPreparedSamples,
             myOptionsWithPreparedSamples,
-            Output->{Result,Tests},
-            Cache->samplePreparationCache
+            Output->{Result,Tests,Simulation},
+            Simulation->updatedSimulation
         ];
 
         (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -2651,40 +2559,33 @@ ExperimentCapillaryELISA[myContainers:ListableP[ObjectP[{Object[Container],Objec
 
         (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
         Check[
-            containerToSampleOutput=containerToSampleOptions[
+          {containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
                 ExperimentCapillaryELISA,
                 mySamplesWithPreparedSamples,
                 myOptionsWithPreparedSamples,
-                Output->Result,
-                Cache->samplePreparationCache
+                Output->{Result,Simulation},
+                Simulation->updatedSimulation
             ],
             $Failed,
             {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
         ]
     ];
 
-    (* Update our cache with our new simulated values. *)
-    (* It is important that the sample preparation cache appears first in the cache ball. *)
-    updatedCache=Flatten[{
-        samplePreparationCache,
-        Lookup[listedOptions,Cache,{}]
-    }];
-
     (* If we were given an empty container, return early. *)
     If[MatchQ[containerToSampleResult,$Failed],
         (* containerToSampleOptions failed - return $Failed *)
         outputSpecification/.{
             Result->$Failed,
-            Tests->Join[objectsExistTests,containerToSampleTests],
+            Tests->containerToSampleTests,
             Options->$Failed,
             Preview->Null
         },
         (* Split up our containerToSample result into the samples and sampleOptions. *)
-        {samples,sampleOptions,sampleCache}=containerToSampleOutput;
+        {samples,sampleOptions}=containerToSampleOutput;
 
         (* Call our main function with our samples and converted options. *)
         (* Note that unlike the main function, we don't turn index matching parent options into lists in this overload as our options are transferred into the main function and are processed there. *)
-        ExperimentCapillaryELISA[samples,ReplaceRule[sampleOptions,Cache->Flatten[updatedCache,sampleCache]]]
+        ExperimentCapillaryELISA[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
     ]
 ];
 
@@ -2694,15 +2595,15 @@ ExperimentCapillaryELISA[myContainers:ListableP[ObjectP[{Object[Container],Objec
 
 DefineOptions[
 	resolveExperimentCapillaryELISAOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentCapillaryELISAOptions]]:=Module[
     {
         (* Preparation *)
         outputSpecification,output,gatherTests,messages,cache,
-        samplePrepOptions,capillaryELISAOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
-        capillaryELISAOptionsAssociation,standardOptions,standardAntibodyOptions,antibodyOptions,spikeOptions, simulatedFastAssoc,
+        samplePrepOptions,capillaryELISAOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,
+        capillaryELISAOptionsAssociation,standardOptions,standardAntibodyOptions,antibodyOptions,spikeOptions, fastAssoc,
 
         (* All option variables *)
 		suppliedInstrument,suppliedCartridgeType,suppliedCartridge,suppliedSpecies,suppliedAnalytes,processedSuppliedAnalytes,
@@ -2728,7 +2629,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		resolvedLoadingVolume,resolvedCaptureAntibodyLoadingVolume,resolvedDetectionAntibodyLoadingVolume,resolvedStandardLoadingVolume,resolvedStandardCaptureAntibodyLoadingVolume,resolvedStandardDetectionAntibodyLoadingVolume,
 		resolvedStandardComposition,resolvedSpikeConcentration,
 		resolvedNumberOfReplicates,
-        resolvedConfirm,resolvedName,resolvedTemplate,resolvedSamplesInStorageCondition,resolvedPreparatoryPrimitives,resolvedCache,resolvedFastTrack,resolvedOperator,resolvedOutput,resolvedParentProtocol,resolvedUpload,
+        resolvedConfirm,resolvedCanaryBranch,resolvedName,resolvedTemplate,resolvedSamplesInStorageCondition,resolvedPreparatoryPrimitives,resolvedCache,resolvedFastTrack,resolvedOperator,resolvedOutput,resolvedParentProtocol,resolvedUpload,
 
         (* Download *)
         simulatedSamplePackets,simulatedSampleContainers,simulatedSampleContainerModels,samplePackets,
@@ -2754,7 +2655,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         validNameQ,nameInvalidOption,validNameTest,notRetiredInstrumentQ,notDeprecatedInstrumentQ,instrumentInvalidOption,notRetiredInstrumentTests,notDeprecatedInstrumentTests,discardedCartridgeInvalidOption,discardedCartridgeInvalidTest,totalNumberOfSamples,tooManyLoadingSamplesOptions,tooManyLoadingSamplesTests,cartridgeSamplesCapacity,exceedCartridgeCapacityOption,exceedCartridgeCapacityTests,
         invalidCustomizableCartridgeTypeOptions,invalidCustomizableCartridgeTypeTests,suppliedCartridgeTypeFromCartridge,conflictCartridgeTypeQ,conflictCartridgeTypeOptions,conflictCartridgeTypeTests,suppliedAnalyteNamesFromCartridge,suppliedAnalyteMoleculesFromCartridge,conflictCartridgeAndAnalytesQ,conflictCartridgeAndAnalytesOptions,conflictCartridgeAndAnalytesTests,conflictPreLoadedAnalytesQ,conflictPreLoadedAnalytesOptions,conflictPreLoadedAnalytesTests,exceedLengthAnalytesQ,exceedLengthAnalytesSamples,exceedLengthAnalytesOptions,exceedLengthAnalytesTests,conflictMultiPlexCartridgeTypeOptions,conflictMultiPlexCartridgeTypeTests,
 		duplicatedAnalyteIdentityModels,duplicatedAnalytes,duplicatedAnalytesOption,duplicatedAnalytesTests,totalNumberOfPreLoadedAnalytes,recommendedCartridgeType,tooManyAnalytesOption,tooManyAnalytesTests,tooManyAnalytesForSampleNumberQ,tooManyAnalytesForSampleNumberOption,tooManyAnalytesForSampleNumberTests,unsupportedAnalytes,supportedAnalytes,unsupportedAnalytesOption,unsupportedAnalytesTests,analyteSpecies,wrongAnalytesSpeciesQ,wrongSpeciesAnalytes,wrongSpeciesAnalytesOption,wrongSpeciesAnalytesTests,analyteCartridgeTypes,analyteMultiPlexQ,wrongCartridgeTypeAnalytes,wrongCartridgeTypeAnalytesOption,wrongCartridgeTypeAnalytesTests,analyteDiluents,analyteAllDiluents,analyteCommonDiluentQ,analyteMinDilutionFactors,analyteAllMinDilutionFactors,analyteCommonMinDilutionFactorQ,analyteIncompatibleAnalytes,incompatibleAnalyteQ,incompatibleAnalyteDiluentOption,incompatibleAnalyteMinDilutionFactorOption,incompatibleAnalytesOption,incompatibleAnalyteDiluentTests,incompatibleAnalyteDilutionFactorTests,incompatibleAnalytesTests,
-		invalidSpikeOptionChecks,invalidSpikeOptionInputs,invalidSpikeOptions,invalidSpikeTests,nonLiquidSpikeQ,nonLiquidSpikeOption,nonLiquidSpikeTests,missingSpikeVolumeChecks,missingSpikeOptionsChecks,missingSpikeOptionInputs,missingSpikeOptionSpikes,missingSpikeOptions,missingSpikeOptionTests,wrongAnalyteSpikeConcentrationQ,wrongAnalyteSpikeConcentrationOption,wrongAnalyteSpikeConcentrationTests,notEnoughSampleSpikeVolumeQ,notEnoughSampleSpikeVolumeSamples,notEnoughSampleSpikeVolumeOptions,notEnoughSampleSpikeVolumeTests,
+		invalidSpikeOptionChecks,invalidSpikeOptionInputs,invalidSpikeOptions,invalidSpikeTests,nonLiquidSpikeQ,nonLiquidSpikeOption,nonLiquidSpikeTests,missingSpikeOptionsChecks,missingSpikeOptionInputs,missingSpikeOptionSpikes,missingSpikeOptions,missingSpikeOptionTests,wrongAnalyteSpikeConcentrationQ,wrongAnalyteSpikeConcentrationOption,wrongAnalyteSpikeConcentrationTests,notEnoughSampleSpikeVolumeQ,notEnoughSampleSpikeVolumeSamples,notEnoughSampleSpikeVolumeOptions,notEnoughSampleSpikeVolumeTests,
 		conflictDilutionCurveQ,conflictDilutionCurveOptions,conflictDilutionCurveTests,mandatoryDilutionQ,mandatoryDilutionSamples,mandatoryDilutionProvidedOptions,mandatoryDilutionAutomaticOptions,mandatoryDilutionTests,nonOptimalLoadingVolumeQ,nonOptimalLoadingVolumeTests,exceedDilutionLoadingVolumeQ,exceedDilutionLoadingVolumeSamples,exceedDilutionLoadingVolumes,exceedDilutionLoadingVolumeOptions,exceedDilutionLoadingVolumeTests,invalidDilutionCurveQ,invalidDilutionCurveOption,invalidDilutionCurveTests,invalidDilutionMixVolumeQ,invalidDilutionMixVolumeSamples,invalidDilutionMixVolumeOption,invalidDilutionMixVolumeTests,
 		invalidAntibodyRelatedOptionChecks,invalidAntibodyRelatedOptionSamples,invalidAntibodyRelatedOptions,invalidAntibodyRelatedTests,
 		captureAntibodyStates,solidCaptureAntibodyResuspensionValidQ,liquidCaptureAntibodyResuspensionValidQ,solidCaptureAntibodyResuspensionInvalidSamples,solidCaptureAntibodyResuspensionInvalidAntibodies,liquidCaptureAntibodyResuspensionInvalidSamples,liquidCaptureAntibodyResuspensionInvalidAntibodies,captureAntibodyResuspensionInvalidSamples,captureAntibodyResuspensionInvalidAntibodies,solidCaptureAntibodyResuspensionInvalidOption,liquidCaptureAntibodyResuspensionInvalidOption,captureAntibodyResuspensionInvalidTests,captureAntibodyResuspensionOptions, invalidCaptureAntibodyResuspensionRelatedOptionChecks,invalidCaptureAntibodyResuspensionRelatedOptionLiquidChecks,invalidCaptureAntibodyResuspensionRelatedOptionSamples,invalidCaptureAntibodyResuspensionRelatedOptionAntibodies,invalidCaptureAntibodyResuspensionOptions,invalidCaptureAntibodyResuspensionTests,missingCaptureAntibodyResuspensionOptionChecks,missingCaptureAntibodyResuspensionOptionSolidChecks,missingCaptureAntibodyResuspensionSamples,missingCaptureAntibodyResuspensionAntibodies,missingCaptureAntibodyResuspensionOptions,missingCaptureAntibodyResuspensionTests,
@@ -2764,7 +2665,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		detectionAntibodyConjugationOptions,invalidDetectionAntibodyConjugationRelatedOptionChecks,invalidDetectionAntibodyConjugationRelatedOptionSamples,invalidDetectionAntibodyConjugationRelatedOptionAntibodies,invalidDetectionAntibodyConjugationOptions,invalidDetectionAntibodyConjugationTests,missingDetectionAntibodyConjugationRelatedOptionChecks,missingDetectionAntibodyConjugationRelatedOptionSamples,missingDetectionAntibodyConjugationRelatedOptionAntibodies,missingDetectionAntibodyConjugationOptions,missingDetectionAntibodyConjugationTests,detectionAntibodyConjugationOptionValues,detectionAntibodyConjugationOptionConflictQ,detectionAntibodyConjugationOptionConflictSamples,detectionAntibodyConjugationOptionConflictAntibodies,detectionAntibodyConjugationConflictOptions,detectionAntibodyConjugationOptionConflictTests,suppliedDetectionAntibodyPurificationColumnMWCO,unsupportedDetectionAntibodyPurificationColumnOption,unsupportedDetectionAntibodyPurificationColumnTests,nonOptimalDetectionAntibodyPurificationColumnTests,
 		detectionAntibodyDilutionOptions,invalidDetectionAntibodyDilutionRelatedOptionChecks,invalidDetectionAntibodyDilutionRelatedOptionSamples,invalidDetectionAntibodyDilutionRelatedOptionAntibodies,invalidDetectionAntibodyDilutionOptions,invalidDetectionAntibodyDilutionTests,missingRecommendedDetectionAntibodyDilutionQ,missingRecommendedDetectionAntibodyDilutionSamples,missingRecommendedDetectionAntibodyDilutionAntibodies,missingRecommendedDetectionAntibodyDilutionTests,missingDetectionAntibodyDilutionOptionsChecks,missingDetectionAntibodyDilutionOptionsSamples,missingDetectionAntibodyDilutionOptionsAntibodies,missingDetectionAntibodyDilutionOptions,missingDetectionAntibodyDilutionOptionTests,detectionAntibodyDilutionOptionValues,detectionAntibodyDilutionOptionConflictQ,detectionAntibodyDilutionOptionConflictSamples,detectionAntibodyDilutionOptionConflictAntibodies,detectionAntibodyDilutionConflictOptions,detectionAntibodyDilutionOptionConflictTests,nonOptimalDetectionAntibodyDiluentQ,nonOptimalDetectionAntibodyDiluentSamples,nonOptimalDetectionAntibodyDiluentAntibodies,nonOptimalDetectionAntibodyDiluentTests,missingDetectionAntibodyLoadingVolumeChecks,missingDetectionAntibodyLoadingVolumeSamples,missingDetectionAntibodyLoadingVolumeAntibodies,missingDetectionAntibodyLoadingVolumeOption,missingDetectionAntibodyLoadingVolumeTests,
 		nullStandardMemberOption,nullStandardMemberTests,nullStandardRelatedOptionsQ,invalidStandardOptions,invalidStandardTests,
-		standardStates,solidStandardResuspensionValidQ,liquidStandardResuspensionValidQ,solidStandardResuspensionInvalidSamples,liquidStandardResuspensionInvalidSamples,standardResuspensionInvalidSamples,solidStandardResuspensionInvalidOption,liquidStandardResuspensionInvalidOption,standardResuspensionInvalidTests,standardResuspensionOptions,invalidStandardResuspensionRelatedOptionChecks,invalidStandardResuspensionRelatedOptionLiquidChecks,invalidStandardResuspensionRelatedOptionSamples,invalidStandardResuspensionOptions,invalidStandardResuspensionTests,missingStandardResuspensionOptionChecks,missingStandardResuspensionOptionSolidChecks,missingStandardResuspensionSamples,missingStandardResuspensionAntibodies,missingStandardResuspensionOptions,missingStandardResuspensionTests,
+		standardStates,solidStandardResuspensionValidQ,liquidStandardResuspensionValidQ,solidStandardResuspensionInvalidSamples,liquidStandardResuspensionInvalidSamples,standardResuspensionInvalidSamples,solidStandardResuspensionInvalidOption,liquidStandardResuspensionInvalidOption,standardResuspensionInvalidTests,standardResuspensionOptions,invalidStandardResuspensionRelatedOptionChecks,invalidStandardResuspensionRelatedOptionLiquidChecks,invalidStandardResuspensionRelatedOptionSamples,invalidStandardResuspensionOptions,invalidStandardResuspensionTests,missingStandardResuspensionOptionChecks,missingStandardResuspensionOptionSolidChecks,missingStandardResuspensionSamples,missingStandardResuspensionOptions,missingStandardResuspensionTests,
 		missingStandardRelatedOptionsChecks,missingStandardRelatedOptionsSamples,missingStandardRelatedOptions,missingStandardRelatedOptionsTests,conflictStandardDilutionCurveQ,conflictStandardDilutionCurveOptions,conflictStandardDilutionCurveTests,mandatoryStandardDilutionQ,mandatoryStandardDilutionSamples,mandatoryStandardDilutionProvidedOptions,mandatoryStandardDilutionAutomaticOptions,mandatoryStandardDilutionTests,nonOptimalStandardDilutionCurveQ,nonOptimalStandardDilutionCurveTests,nonOptimalStandardLoadingVolumeQ,nonOptimalStandardLoadingVolumeTests,exceedStandardDilutionLoadingVolumeQ,exceedStandardDilutionLoadingVolumes,exceedStandardDilutionNonAutomaticLoadingVolumes,exceedStandardDilutionLoadingVolumeSamples,exceedStandardDilutionLoadingVolumeOptions,exceedStandardDilutionLoadingVolumeTests,invalidStandardDilutionCurveQ,invalidStandardDilutionCurveOption,invalidStandardDilutionCurveTests,invalidStandardDilutionMixVolumeQ,invalidStandardDilutionMixVolumeSamples,invalidStandardDilutionMixVolumeOption,invalidStandardDilutionMixVolumeTests,conflictStandardStandardCompositionQ,conflictStandardCompositionTests,exceedStandardStandardCompositionQ,exceedStandardStandardCompositionOption,exceedStandardStandardCompositionTests,wrongAnalyteStandardCompositionQ,wrongAnalyteStandardCompositionOption,wrongAnalyteStandardCompositionTests,
 		invalidStandardAntibodyRelatedOptionChecks,invalidStandardAntibodyRelatedOptionSamples,invalidStandardAntibodyRelatedOptions,invalidStandardAntibodyRelatedTests,
 		standardCaptureAntibodyStates,solidStandardCaptureAntibodyResuspensionValidQ,liquidStandardCaptureAntibodyResuspensionValidQ,solidStandardCaptureAntibodyResuspensionInvalidSamples,solidStandardCaptureAntibodyResuspensionInvalidAntibodies,liquidStandardCaptureAntibodyResuspensionInvalidSamples,liquidStandardCaptureAntibodyResuspensionInvalidAntibodies,standardCaptureAntibodyResuspensionInvalidSamples,standardCaptureAntibodyResuspensionInvalidAntibodies, solidStandardCaptureAntibodyResuspensionInvalidOption,liquidStandardCaptureAntibodyResuspensionInvalidOption,standardCaptureAntibodyResuspensionInvalidTests,standardCaptureAntibodyResuspensionOptions, invalidStandardCaptureAntibodyResuspensionRelatedOptionChecks,invalidStandardCaptureAntibodyResuspensionRelatedOptionLiquidChecks,invalidStandardCaptureAntibodyResuspensionRelatedOptionSamples,invalidStandardCaptureAntibodyResuspensionRelatedOptionAntibodies,invalidStandardCaptureAntibodyResuspensionOptions,invalidStandardCaptureAntibodyResuspensionTests,missingStandardCaptureAntibodyResuspensionOptionChecks,missingStandardCaptureAntibodyResuspensionOptionSolidChecks,missingStandardCaptureAntibodyResuspensionSamples,missingStandardCaptureAntibodyResuspensionAntibodies,missingStandardCaptureAntibodyResuspensionOptions,missingStandardCaptureAntibodyResuspensionTests,
@@ -2790,7 +2691,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         invalidInputs,invalidOptions,
 		requiredSampleVolumes,targetContainers,
         resolvedAliquotOptions,aliquotTests,aliquotOptionsToBeRounded,aliquotPrecisions,roundedAliquotOptions,
-		resolvedPostProcessingOptions,resolvedOptions,allOptions,allTests
+		resolvedPostProcessingOptions,resolvedOptions,allOptions,allTests,simulation,updatedSimulation
     },
 
     (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -2807,25 +2708,24 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Fetch our cache from the parent function. *)
     cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+    simulation=Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
 
-    (* Separate out our CapillaryELISA options from our Sample Prep options. Since myOptions are expanded for index matching, the new capillaryELISAOptios and capillaryELISAOptionsAssocation are also expanded. *)
+    (* Separate out our CapillaryELISA options from our Sample Prep options. Since myOptions are expanded for index matching, the new capillaryELISAOptions and capillaryELISAOptionsAssocation are also expanded. *)
     {samplePrepOptions,capillaryELISAOptions}=splitPrepOptions[myOptions];
 
     (* Resolve our sample prep options *)
-    {{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-        resolveSamplePrepOptions[ExperimentCapillaryELISA,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-        {resolveSamplePrepOptions[ExperimentCapillaryELISA,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+    {{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+        resolveSamplePrepOptionsNew[ExperimentCapillaryELISA,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+        {resolveSamplePrepOptionsNew[ExperimentCapillaryELISA,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
     ];
 
     (* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
     capillaryELISAOptionsAssociation=Association[capillaryELISAOptions];
 
 	(* make a fast association to quickly pull stuff out of the simulated cache *)
-	simulatedFastAssoc = makeFastAssocFromCache[simulatedCache];
+	fastAssoc = makeFastAssocFromCache[cache];
 
     (* Extract the packets that we need from our downloaded cache. *)
-    (* Remember to download from simulatedSamples, using our simulatedCache *)
-    (* Quiet[Download[...,Cache->simulatedCache],Download::FieldDoesntExist] *)
 
     (* Note: Due to the speciality of ExperimentCapillaryELISA,
     Download part here first covers the cases for samplePackets and simulatedPackets.
@@ -2838,34 +2738,30 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* An alternative method to Download from Cache - fetchPacketFromFastAssoc function - in shared Experiment Framework - to get information from cache *)
     (* Fetch simulated samples *)
-    simulatedSamplePackets=Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@simulatedSamples;
+    simulatedSamplePackets=Download[simulatedSamples, Simulation -> updatedSimulation];
 
     (* Get information about the containers of the simulated samples *)
     simulatedSampleContainers=Lookup[simulatedSamplePackets,Container];
 
-    simulatedSampleContainerModels=Map[
-      Experiment`Private`fastAssocLookup[simulatedFastAssoc,#, {Model,Object}]&,
-      simulatedSampleContainers
-    ];
-
+    simulatedSampleContainerModels=Download[simulatedSampleContainers, {Model, Object}, Simulation -> updatedSimulation];
 
     (* Extract downloaded mySamples packets *)
-    samplePackets=Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@mySamples;
+    samplePackets=Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@mySamples;
 
     (* Get information for the instrument and cartridge for option conflict checks *)
     (* If Instrument is specified by the user, download from cache *)
     suppliedInstrument=Lookup[capillaryELISAOptionsAssociation,Instrument];
     (* Fetch instrument object packet *)
     suppliedInstrumentPacket=If[MatchQ[suppliedInstrument,ObjectP[Object[Instrument,CapillaryELISA]]],
-        Experiment`Private`fetchPacketFromFastAssoc[suppliedInstrument,simulatedFastAssoc],
+        Experiment`Private`fetchPacketFromFastAssoc[suppliedInstrument,fastAssoc],
         Null
     ];
     (* Fetch instrument model packet *)
     suppliedInstrumentModelPacket=Which[
         MatchQ[suppliedInstrument,ObjectP[Object[Instrument,CapillaryELISA]]],
-        Experiment`Private`fetchPacketFromFastAssoc[Lookup[suppliedInstrumentPacket,Model],simulatedFastAssoc],
+        Experiment`Private`fetchPacketFromFastAssoc[Lookup[suppliedInstrumentPacket,Model],fastAssoc],
         MatchQ[suppliedInstrument,ObjectP[Model[Instrument,CapillaryELISA]]],
-        Experiment`Private`fetchPacketFromFastAssoc[suppliedInstrument,simulatedFastAssoc],
+        Experiment`Private`fetchPacketFromFastAssoc[suppliedInstrument,fastAssoc],
         True,
         Null
     ];
@@ -2873,7 +2769,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     (* If Cartridge is specified by the user, download from the cache *)
     suppliedCartridge=Lookup[capillaryELISAOptionsAssociation,Cartridge];
     suppliedCartridgePacket=If[!MatchQ[suppliedCartridge,Automatic|Null],
-		Experiment`Private`fetchPacketFromFastAssoc[suppliedCartridge, simulatedFastAssoc],
+		Experiment`Private`fetchPacketFromFastAssoc[suppliedCartridge, fastAssoc],
         <||>
     ];
 
@@ -2907,7 +2803,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			Download[
 				Lookup[
 					FirstCase[
-						simulatedCache,
+						cache,
 						KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->#}],
 						<||>
 					],
@@ -2915,7 +2811,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					Null
 				],
 				Object,
-				Cache->simulatedCache
+				Cache->cache,
+        		Simulation->updatedSimulation
 			],
 			(* For the other cases, we get a list. Get its first member*)
 			MatchQ[FirstOrDefault[#],ObjectP[Model[Molecule]]],First[#],
@@ -2923,7 +2820,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			Download[
 				Lookup[
 					FirstCase[
-						simulatedCache,
+						cache,
 						KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->First[#]}],
 						<||>
 					],
@@ -2931,7 +2828,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					Null
 				],
 				Object,
-				Cache->simulatedCache
+				Cache->cache,
+				Simulation->updatedSimulation
 			],
 			True,Null
 		]&,
@@ -2955,7 +2853,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Map[
 			DeleteDuplicates[
 				Cases[
-					simulatedCache,
+					cache,
 					KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->#}]
 				]
 			]&,
@@ -2965,7 +2863,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Map[
 			DeleteDuplicates[
 				Cases[
-					simulatedCache,
+					cache,
 					KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteMolecule->LinkP[#]}]
 				]
 			]&,
@@ -2989,7 +2887,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Download[
 					Lookup[
 						FirstCase[
-							simulatedCache,
+							cache,
 							KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->#}],
 							<||>
 						],
@@ -3009,13 +2907,13 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Get the supplied SpikeSample packets for Model[Sample] or Object[Sample]. Spike is index matched to input samples so they must be a list. *)
 	suppliedSpikeSample=Lookup[capillaryELISAOptionsAssociation,SpikeSample];
-	suppliedSpikePackets=Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@suppliedSpikeSample;
+	suppliedSpikePackets=Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@suppliedSpikeSample;
 
 	(* Get the supplied Diluent packets *)
 	suppliedDiluent=Lookup[capillaryELISAOptionsAssociation,Diluent];
 	suppliedDiluentPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedDiluent]
@@ -3033,7 +2931,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedCustomCaptureAntibody=Lookup[capillaryELISAOptionsAssociation,CustomCaptureAntibody];
 	suppliedCustomCaptureAntibodyPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedCustomCaptureAntibody]
@@ -3043,7 +2941,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedCaptureAntibodyPurificationColumn=Lookup[capillaryELISAOptionsAssociation,CaptureAntibodyPurificationColumn];
 	suppliedCaptureAntibodyPurificationColumnPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedCaptureAntibodyPurificationColumn]
@@ -3053,7 +2951,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedCaptureAntibodyDiluent=Lookup[capillaryELISAOptionsAssociation,CaptureAntibodyDiluent];
 	suppliedCaptureAntibodyDiluentPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedCaptureAntibodyDiluent]
@@ -3070,7 +2968,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedCustomDetectionAntibody=Lookup[capillaryELISAOptionsAssociation,CustomDetectionAntibody];
 	suppliedCustomDetectionAntibodyPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedCustomDetectionAntibody]
@@ -3080,7 +2978,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedDetectionAntibodyPurificationColumn=Lookup[capillaryELISAOptionsAssociation,DetectionAntibodyPurificationColumn];
 	suppliedDetectionAntibodyPurificationColumnPackets=Map[
 		If[!MatchQ[#,Automatic|Null],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedDetectionAntibodyPurificationColumn]
@@ -3090,7 +2988,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	suppliedDetectionAntibodyDiluent=Lookup[capillaryELISAOptionsAssociation,DetectionAntibodyDiluent];
 	suppliedDetectionAntibodyDiluentPackets=Map[
 		If[!MatchQ[#,Automatic|Null|{}],
-			Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+			Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
 			<||>
 		]&,
 		ToList[suppliedDetectionAntibodyDiluent]
@@ -3109,14 +3007,14 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandard=Lookup[capillaryELISAOptionsAssociation,Standard];
     suppliedStandardPackets=If[MatchQ[suppliedStandard,Automatic|Null|{}],
 		{},
-        Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@ToList[suppliedStandard]
+        Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@ToList[suppliedStandard]
     ];
 
     (* Get the supplied StandardDiluent packets *)
     suppliedStandardDiluent=Lookup[capillaryELISAOptionsAssociation,StandardDiluent];
     suppliedStandardDiluentPackets=Map[
         If[!MatchQ[#,Automatic|Null],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardDiluent]
@@ -3136,7 +3034,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardCaptureAntibody=Lookup[capillaryELISAOptionsAssociation,StandardCaptureAntibody];
     suppliedStandardCaptureAntibodyPackets=Map[
         If[!MatchQ[#,Automatic|Null],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardCaptureAntibody]
@@ -3146,7 +3044,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardCaptureAntibodyPurificationColumn=Lookup[capillaryELISAOptionsAssociation,StandardCaptureAntibodyPurificationColumn];
     suppliedStandardCaptureAntibodyPurificationColumnPackets=Map[
         If[!MatchQ[#,Automatic|Null],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardCaptureAntibodyPurificationColumn]
@@ -3157,7 +3055,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardCaptureAntibodyDiluent=Lookup[capillaryELISAOptionsAssociation,StandardCaptureAntibodyDiluent];
     suppliedStandardCaptureAntibodyDiluentPackets=Map[
         If[!MatchQ[#,Automatic|Null],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardCaptureAntibodyDiluent]
@@ -3175,7 +3073,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardDetectionAntibody=Lookup[capillaryELISAOptionsAssociation,StandardDetectionAntibody];
     suppliedStandardDetectionAntibodyPackets=Map[
         If[!MatchQ[#,Automatic|Null],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardDetectionAntibody]
@@ -3185,7 +3083,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardDetectionAntibodyPurificationColumn=Lookup[capillaryELISAOptionsAssociation,StandardDetectionAntibodyPurificationColumn];
     suppliedStandardDetectionAntibodyPurificationColumnPackets=Map[
       If[!MatchQ[#,Automatic|Null],
-        Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+        Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
         <||>
       ]&,
       ToList[suppliedStandardDetectionAntibodyPurificationColumn]
@@ -3195,7 +3093,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     suppliedStandardDetectionAntibodyDiluent=Lookup[capillaryELISAOptionsAssociation,StandardDetectionAntibodyDiluent];
     suppliedStandardDetectionAntibodyDiluentPackets=Map[
         If[!MatchQ[#,Automatic|Null|{}],
-            Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc],
+            Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc],
             <||>
         ]&,
         ToList[suppliedStandardDetectionAntibodyDiluent]
@@ -3211,7 +3109,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	
     (* Get the supplied WashBuffer packet *)
     suppliedWashBuffer=Lookup[capillaryELISAOptionsAssociation,WashBuffer];
-    suppliedWashBufferPacket=Experiment`Private`fetchPacketFromFastAssoc[suppliedWashBuffer,simulatedFastAssoc];
+    suppliedWashBufferPacket=Experiment`Private`fetchPacketFromFastAssoc[suppliedWashBuffer,fastAssoc];
     suppliedWashBufferModel=If[MatchQ[suppliedWashBuffer,ObjectP[Model[Sample]]],
         suppliedWashBuffer,
         Lookup[suppliedWashBufferPacket,Model,Null]
@@ -3220,7 +3118,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Get the information about potential spin columns *)
 	potentialSpinColumns=Search[Model[Container,Vessel,Filter],MembraneMaterial==ZebaDesaltingResin];
 	potential40KSpinColumns=Search[Model[Container,Vessel,Filter],MembraneMaterial==ZebaDesaltingResin&&MolecularWeightCutoff==40000Dalton];
-	potential40KSpinColumnPackets=Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@potential40KSpinColumns;
+	potential40KSpinColumnPackets=Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@potential40KSpinColumns;
 	(* Get the MaxVolume of the 40K spin column for resolver *)
 	potential40KSpinColumnMaxVolumes=Lookup[potential40KSpinColumnPackets,{Object,MaxVolume}];
 	(* Sort the spin columns by MaxVolume *)
@@ -3397,7 +3295,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
     If[Length[discardedInvalidInputs]>0&&messages,
-        Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+        Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->cache,
+Simulation->updatedSimulation]]
     ];
 
     (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3406,12 +3305,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
             failingTest=If[Length[discardedInvalidInputs]==0,
                 Nothing,
-                Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+                Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" are not discarded:",True,False]
             ];
 
             passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
                 Nothing,
-                Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+                Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Simulation->updatedSimulation]<>" are not discarded:",True,True]
             ];
 
             {failingTest,passingTest}
@@ -3438,7 +3337,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* If there are invalid inputs and we are throwing messages,do so *)
     If[Length[nonLiquidSampleInvalidInputs]>0&&messages,
-        Message[Error::NonCapillaryELISALiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]];
+        Message[Error::NonCapillaryELISALiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]];
     ];
 
     (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3447,12 +3346,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
             failingTest=If[Length[nonLiquidSampleInvalidInputs]==0,
                 Nothing,
-                Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]<>" are not in solid state:",True,False]
+                Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]<>" are not in solid state:",True,False]
             ];
 
             passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[mySamples],
                 Nothing,
-                Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidSampleInvalidInputs],Cache->simulatedCache]<>" are not in solid state:",True,True]
+                Test["Our input samples "<>ObjectToString[Complement[mySamples,nonLiquidSampleInvalidInputs],Simulation->updatedSimulation]<>" are not in solid state:",True,True]
             ];
 
             {failingTest,passingTest}
@@ -3490,7 +3389,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
 
             failingTest=If[Length[tooManyInvalidInputs]==Length[simulatedSamples],
-                Test["There are 72 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Cache->simulatedCache]<>" (including NumberOfReplicates).",True,False],
+                Test["There are 72 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Simulation->updatedSimulation]<>" (including NumberOfReplicates).",True,False],
                 Nothing
             ];
 
@@ -3591,7 +3490,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         {dilutionCurveOptions,dilutionCurveValues,dilutionCurveDilutionFactorValuePositions}
     ];
 
-    (* Pass built volume and diluiton factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
+    (* Pass built volume and dilution factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
     {dilutionCurveVolumeRoundedAssociation,dilutionCurveVolumePrecisionTests}=If[gatherTests,
         RoundOptionPrecision[
             dilutionCurveVolumeValueAssociation,
@@ -3717,7 +3616,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         {serialDilutionCurveOptions,serialDilutionCurveValues,serialDilutionCurveDilutionFactorValuePositions}
     ];
 
-    (* Pass built volume and diluiton factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
+    (* Pass built volume and dilution factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
     {serialDilutionCurveVolumeRoundedAssociation,serialDilutionCurveVolumePrecisionTests}=If[gatherTests,
         RoundOptionPrecision[
             serialDilutionCurveVolumeValueAssociation,
@@ -3820,7 +3719,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		{concentrationOptions,concentrationOptionValues,massConcentrationValuePositions}
 	];
 
-	(* Pass built volume and diluiton factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
+	(* Pass built volume and dilution factor value association into RoundOptionPrecision to get processed. Gather tests if needed. *)
 	(* When we don't have molar/mass concentration values, we don't gather tests anyway. *)
 	{molarRoundedAssociation,molarPrecisionTests}=If[gatherTests&&!MatchQ[Flatten[molarValuePositions],{}],
 		RoundOptionPrecision[
@@ -3943,7 +3842,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         }
     ];
 
-    (* Put all rounding results together. The new rounded values overwrite the old user-supllied values. *)
+    (* Put all rounding results together. The new rounded values overwrite the old user-supplied values. *)
     roundedCapillaryELISAOptionsAssociation=Join[
         capillaryELISAOptionsAssociation,
         roundedOtherCapillaryELISAOptions,
@@ -4020,6 +3919,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		resolvedParentProtocol,
 		resolvedOperator,
         resolvedConfirm,
+    resolvedCanaryBranch,
 		resolvedName,
 		resolvedUpload,
 		resolvedOutput,
@@ -4033,6 +3933,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			ParentProtocol,
 			Operator,
 			Confirm,
+      CanaryBranch,
 			Name,
 			Upload,
 			Output,
@@ -4078,9 +3979,9 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Keep track of invalid instrument option and return error message if we need to do so *)
     instrumentInvalidOption=Which[
-        !notRetiredInstrumentQ&&!notDeprecatedInstrumentQ&&messages,Message[Error::RetiredCapillaryELISAInstrument,ObjectToString[suppliedInstrument,Cache->simulatedCache]];Message[Error::DeprecatedCapillaryELISAInstrumentModel,ObjectToString[Lookup[suppliedInstrumentModelPacket,Object]]];{Instrument},
-        !notRetiredInstrumentQ&&messages,Message[Error::RetiredCapillaryELISAInstrument,ObjectToString[suppliedInstrument,Cache->simulatedCache]];{Instrument},
-        !notDeprecatedInstrumentQ&&messages,Message[Error::DeprecatedCapillaryELISAInstrumentModel,ObjectToString[Lookup[suppliedInstrumentModelPacket,Object]]];{Instrument},
+        !notRetiredInstrumentQ&&!notDeprecatedInstrumentQ&&messages,Message[Error::RetiredCapillaryELISAInstrument,ObjectToString[suppliedInstrument,Simulation->updatedSimulation]];Message[Error::DeprecatedCapillaryELISAInstrumentModel,ObjectToString[Lookup[suppliedInstrumentModelPacket,Object]]];{Instrument},
+        !notRetiredInstrumentQ&&messages,Message[Error::RetiredCapillaryELISAInstrument,ObjectToString[suppliedInstrument,Simulation->updatedSimulation]];{Instrument},
+        !notDeprecatedInstrumentQ&&messages,Message[Error::DeprecatedCapillaryELISAInstrumentModel,ObjectToString[Lookup[suppliedInstrumentModelPacket,Object],Simulation->updatedSimulation]];{Instrument},
         True,{}
     ];
 
@@ -4098,7 +3999,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     (* 3 Cartridge Check *)
     (* The specified Cartridge cannot be discarded *)
     discardedCartridgeInvalidOption=If[MatchQ[Lookup[suppliedCartridgePacket,Status,Null],Discarded]&&messages,
-        Message[Error::DiscardedCapillaryELISACartridge,ObjectToString[Lookup[suppliedCartridgePacket,Object],Cache->simulatedCache]];{Cartridge},
+        Message[Error::DiscardedCapillaryELISACartridge,ObjectToString[Lookup[suppliedCartridgePacket,Object],Simulation->updatedSimulation]];{Cartridge},
         {}
     ];
 
@@ -4310,7 +4211,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* If we need to gather tests, generate tests for conflicting Analytes *)
 	conflictPreLoadedAnalytesTests=If[gatherTests,
-		Test["All samples must be subject to the same analyates in a capillary ELISA experiment using a pre-loaded capillary ELISA cartridge:",conflictPreLoadedAnalytesQ,False],
+		Test["All samples must be subject to the same analytes in a capillary ELISA experiment using a pre-loaded capillary ELISA cartridge:",conflictPreLoadedAnalytesQ,False],
 		{}
 	];
 
@@ -4320,14 +4221,14 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     (* 1 - get the total number of samples, considering all dilutions and all standard samples. This is already done as totalNumberOfSamples from option conflict check *)
 
     (* 2 - get the ELISA analytes from the input samples, one packet for the pre-loaded cartridge and one packet for the customizable cartridge - the customizable packet is not used to determine the cartridge but used for the selection of antibodies instead, which happens later *)
-    {preLoadedAnalytes,customizableAnalytes}=selectCapillaryELISAAnalyteFromSample[simulatedSamples,Cache->simulatedCache];
+    {preLoadedAnalytes,customizableAnalytes}=selectCapillaryELISAAnalyteFromSample[simulatedSamples,Cache->cache,Simulation->updatedSimulation];
 
     (* 3 - rank the pre-loaded cartridge analytes from all input samples from the most to the least. Get the corresponding manufacturing specifications *)
     rankedPreLoadedAnalytes=ReverseSortBy[Tally[preLoadedAnalytes],Last][[All,1]];
     rankedPreLoadedAnalytesManufacturingSpecifications=Map[
         DeleteDuplicates[
             Cases[
-                simulatedCache,
+                cache,
                 KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteMolecule->LinkP[#]}]
             ]
         ]&,
@@ -4349,10 +4250,10 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
         (* If Cartridge is not set by the user, call helper function resolveCapillaryELISACartridge with the ranked pre-loaded cartridge analyte list, the number of samples and the user-supplied options *)
         True,
-        resolveCapillaryELISACartridge[rankedPreLoadedAnalytes,totalNumberOfSamples,suppliedCartridgeType,suppliedPreLoadedAnalyteMolecules]
+      resolveCapillaryELISACartridge[rankedPreLoadedAnalytes,totalNumberOfSamples,suppliedCartridgeType,suppliedPreLoadedAnalyteMolecules]
     ];
 
-    resolvedCartridgePacket=Experiment`Private`fetchPacketFromFastAssoc[resolvedCartridge,simulatedFastAssoc];
+    resolvedCartridgePacket=Experiment`Private`fetchPacketFromFastAssoc[resolvedCartridge,fastAssoc];
 
     (* Throw warning messages if we get a pre-loaded cartridge that is not in stock *)
     longLeadTimeCartridgeQ=If[!MatchQ[$ECLApplication,Engine],
@@ -4419,7 +4320,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message if we have conflicting Analytes *)
 	exceedLengthAnalytesOptions=If[MemberQ[exceedLengthAnalytesQ,True],
-		Message[Error::ExceedLengthAnalytesForCustomizableCartridge,ObjectToString[exceedLengthAnalytesSamples,Cache->simulatedCache]];
+		Message[Error::ExceedLengthAnalytesForCustomizableCartridge,ObjectToString[exceedLengthAnalytesSamples,Simulation->updatedSimulation]];
 		{Analytes},
 		{}
 	];
@@ -4429,11 +4330,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{failingTest,passingTest},
 			failingTest=If[!MemberQ[exceedLengthAnalytesQ,True],
 				Nothing,
-				Test["In a customizable cartridge, only 1 analyte can be tested for the samples "<>ObjectToString[exceedLengthAnalytesSamples,Cache->simulatedCache]<>" in a capillary ELISA experiment:",True,False]
+				Test["In a customizable cartridge, only 1 analyte can be tested for the samples "<>ObjectToString[exceedLengthAnalytesSamples,Simulation->updatedSimulation]<>" in a capillary ELISA experiment:",True,False]
 			];
 			passingTest=If[!MemberQ[exceedLengthAnalytesQ,False],
 				Nothing,
-				Test["In a customizable cartridge, only 1 analyte can be tested for the samples "<>ObjectToString[PickList[mySamples,exceedLengthAnalytesQ,False],Cache->simulatedCache]<>" in a capillary ELISA experiment:",True,True]
+				Test["In a customizable cartridge, only 1 analyte can be tested for the samples "<>ObjectToString[PickList[mySamples,exceedLengthAnalytesQ,False],Simulation->updatedSimulation]<>" in a capillary ELISA experiment:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -4477,7 +4378,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* If we have duplicated members, throw error message. *)
     duplicatedAnalytesOption=If[!MatchQ[duplicatedAnalytes,{}]&&messages,
-        Message[Error::DuplicatedAnalytes,ObjectToString[duplicatedAnalytes,Cache->simulatedCache]];{Analytes},
+        Message[Error::DuplicatedAnalytes,ObjectToString[duplicatedAnalytes,Simulation->updatedSimulation]];{Analytes},
         {}
     ];
 
@@ -4541,7 +4442,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         MatchQ[resolvedCartridgeType,Customizable],{},
         (* If the analytes are provided as CapillaryELISAAnalyteP, they are definitely supported. We don't worry about turning the identity models back to CapillaryELISAAnalyteP here. *)
         MatchQ[suppliedAnalytesNoDuplicates,ListableP[ObjectP[Model[Molecule]]]],
-        DeleteCases[ToList[suppliedAnalytesNoDuplicates],ObjectP[findPreLoadedCartridgeAnalytes[Cache->simulatedCache]]],
+        DeleteCases[ToList[suppliedAnalytesNoDuplicates],ObjectP[findPreLoadedCartridgeAnalytes[Simulation->updatedSimulation]]],
         True,{}
     ];
     supportedAnalytes=Which[
@@ -4563,7 +4464,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         MatchQ[resolvedCartridgeType,Customizable],{},
         MatchQ[suppliedPreLoadedAnalytes,Automatic],{},
         !MatchQ[unsupportedAnalytes,{}]&&messages,
-        Message[Error::UnsupportedAnalytes,ObjectToString[unsupportedAnalytes,Cache->simulatedCache]];{Analytes},
+        Message[Error::UnsupportedAnalytes,ObjectToString[unsupportedAnalytes,Simulation->updatedSimulation]];{Analytes},
         True,{}
     ];
 
@@ -4576,11 +4477,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[supportedAnalytes]==0,
                 Nothing,
 				True,
-                Test["The specified Analytes "<>ObjectToString[supportedAnalytes,Cache->simulatedCache]<>" are supported by the assay developer for pre-loaded capillary ELISA cartridges:",True,True]
+                Test["The specified Analytes "<>ObjectToString[supportedAnalytes,Simulation->updatedSimulation]<>" are supported by the assay developer for pre-loaded capillary ELISA cartridges:",True,True]
             ];
             failingTest=If[Length[unsupportedAnalytes]==0,
                 Nothing,
-                Test["The specified Analytes "<>ObjectToString[unsupportedAnalytes,Cache->simulatedCache]<>" are supported by the assay developer for pre-loaded capillary ELISA cartridges:",True,False]
+                Test["The specified Analytes "<>ObjectToString[unsupportedAnalytes,Simulation->updatedSimulation]<>" are supported by the assay developer for pre-loaded capillary ELISA cartridges:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -4621,7 +4522,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         MatchQ[suppliedAnalytes,{Automatic..}],{},
 
         !MatchQ[wrongSpeciesAnalytes,{}]&&messages,
-        Message[Error::AnalytesSpeciesUnavailable,ObjectToString[wrongSpeciesAnalytes,Cache->simulatedCache]];{Analytes,Species},
+        Message[Error::AnalytesSpeciesUnavailable,ObjectToString[wrongSpeciesAnalytes,Simulation->updatedSimulation]];{Analytes,Species},
         True,{}
     ];
 
@@ -4634,11 +4535,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 MatchQ[Complement[suppliedPreLoadedAnalytes,wrongSpeciesAnalytes],{}],
                 Nothing,
                 True,
-                Test["The specified Analytes "<>ObjectToString[Complement[suppliedPreLoadedAnalytes,wrongSpeciesAnalytes],Cache->simulatedCache]<>" are in accordance with the specified Species:",True,True]
+                Test["The specified Analytes "<>ObjectToString[Complement[suppliedPreLoadedAnalytes,wrongSpeciesAnalytes],Simulation->updatedSimulation]<>" are in accordance with the specified Species:",True,True]
             ];
             failingTest=If[MatchQ[wrongSpeciesAnalytes,{}],
                 Nothing,
-                Test["The specified Analytes "<>ObjectToString[wrongSpeciesAnalytes,Cache->simulatedCache]<>" are in accordance with the specified Species:",True,False]
+                Test["The specified Analytes "<>ObjectToString[wrongSpeciesAnalytes,Simulation->updatedSimulation]<>" are in accordance with the specified Species:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -4678,7 +4579,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
         (* Check this when MultiPlex32X8 is selected *)
         MemberQ[analyteMultiPlexQ,False]&&MatchQ[resolvedCartridgeType,MultiPlex32X8]&&messages,
-        Message[Error::AnalytesIncompatibleWithCartridgeType,ObjectToString[wrongCartridgeTypeAnalytes,Cache->simulatedCache]];{Analytes},
+        Message[Error::AnalytesIncompatibleWithCartridgeType,ObjectToString[wrongCartridgeTypeAnalytes,Simulation->updatedSimulation]];{Analytes},
 
         True,{}
     ];
@@ -4692,11 +4593,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 MatchQ[Complement[suppliedAnalytesNoDuplicates,wrongCartridgeTypeAnalytes],{}],
                 Nothing,
                 True,
-                Test["The specified Analytes "<>ObjectToString[Complement[suppliedAnalytesNoDuplicates,wrongCartridgeTypeAnalytes],Cache->simulatedCache]<>" are available for MultiPlex32X8 cartridge:",True,True]
+                Test["The specified Analytes "<>ObjectToString[Complement[suppliedAnalytesNoDuplicates,wrongCartridgeTypeAnalytes],Simulation->updatedSimulation]<>" are available for MultiPlex32X8 cartridge:",True,True]
             ];
             failingTest=If[MatchQ[wrongCartridgeTypeAnalytes,{}],
                 Nothing,
-                Test["The specified Analytes "<>ObjectToString[wrongCartridgeTypeAnalytes,Cache->simulatedCache]<>" are available for MultiPlex32X8 cartridge:",True,False]
+                Test["The specified Analytes "<>ObjectToString[wrongCartridgeTypeAnalytes,Simulation->updatedSimulation]<>" are available for MultiPlex32X8 cartridge:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -4759,7 +4660,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Download[
 			Lookup[#,IncompatibleAnalytes,{}],
 			Object,
-			Cache->simulatedCache
+			Simulation->updatedSimulation
 		]&,
 		suppliedAnalytesManufacturingSpecificationPackets,
         {2}
@@ -4770,22 +4671,22 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         True,
         ContainsNone[
             Flatten[analyteIncompatibleAnalytes],
-            Download[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,Cache->simulatedCache]
+            Download[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,Simulation->updatedSimulation]
         ]
     ];
 
     (* If any of the Diluent, MinDilutionFactor and IncompatibleAnalytes checks failed, throw error messages *)
     (* TODO: If I get more details from ProteinSimple, these messages and tests will be updated*)
     incompatibleAnalyteDiluentOption=If[!analyteCommonDiluentQ&&messages,
-        Message[Error::NoCommonDiluentForAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Cache->simulatedCache]];{Analytes},
+        Message[Error::NoCommonDiluentForAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Simulation->updatedSimulation]];{Analytes},
 		{}
     ];
     incompatibleAnalyteMinDilutionFactorOption=If[!analyteCommonMinDilutionFactorQ&&messages,
-        Message[Error::NoCommonMinDilutionFactorForAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Cache->simulatedCache]];{Analytes},
+        Message[Error::NoCommonMinDilutionFactorForAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Simulation->updatedSimulation]];{Analytes},
 		{}
     ];
     incompatibleAnalytesOption=If[!incompatibleAnalyteQ&&messages,
-        Message[Error::IncompatibleAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Cache->simulatedCache]];{Analytes},
+        Message[Error::IncompatibleAnalytes,ObjectToString[Lookup[Flatten[suppliedAnalytesManufacturingSpecificationPackets],Object,{}],Simulation->updatedSimulation]];{Analytes},
 		{}
     ];
 
@@ -4816,7 +4717,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidSpikeOptions,{}]&&messages,
-		Message[Error::CannotSpecifySpikeOptions,ObjectToString[invalidSpikeOptionInputs,Cache->simulatedCache],ToString[invalidSpikeOptions]];invalidSpikeOptions,
+		Message[Error::CannotSpecifySpikeOptions,ObjectToString[invalidSpikeOptionInputs,Simulation->updatedSimulation],ToString[invalidSpikeOptions]];invalidSpikeOptions,
 		{}
 	];
 
@@ -4829,7 +4730,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidSpikeOptions]==0,
 				Nothing,
-				Test["The SpikeSample related options "<>ToString[invalidSpikeOptions]<>" are Null for the samples "<>ObjectToString[invalidSpikeOptionInputs,Cache->simulatedCache]<>" with SpikeSample set to Null:",True,False]
+				Test["The SpikeSample related options "<>ToString[invalidSpikeOptions]<>" are Null for the samples "<>ObjectToString[invalidSpikeOptionInputs,Simulation->updatedSimulation]<>" with SpikeSample set to Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -4848,7 +4749,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Keep track of invalid option and throw error message if we need to do so *)
 	nonLiquidSpikeOption=If[MemberQ[nonLiquidSpikeQ,True]&&messages,
-		Message[Error::NonLiquidSpike,ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ],Cache->simulatedCache],ObjectToString[PickList[mySamples,nonLiquidSpikeQ],Cache->simulatedCache]];{SpikeSample},
+		Message[Error::NonLiquidSpike,ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,nonLiquidSpikeQ],Simulation->updatedSimulation]];{SpikeSample},
 		{}
 	];
 
@@ -4857,11 +4758,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{failingTest,passingTest},
 			failingTest=If[!MemberQ[nonLiquidSpikeQ,True],
 				Nothing,
-				Test["The SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ],Cache->simulatedCache]<>" to be mix with "<>ObjectToString[PickList[mySamples,nonLiquidSpikeQ],Cache->simulatedCache]<>" are not in solid state:",True,False]
+				Test["The SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ],Simulation->updatedSimulation]<>" to be mix with "<>ObjectToString[PickList[mySamples,nonLiquidSpikeQ],Simulation->updatedSimulation]<>" are not in solid state:",True,False]
 			];
 			passingTest=If[!MemberQ[nonLiquidSpikeQ,False],
 				Nothing,
-				Test["The SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ,False],Cache->simulatedCache]<>" to be mix with "<>ObjectToString[PickList[mySamples,nonLiquidSpikeQ,False],Cache->simulatedCache]<>" are not in solid state:",True,True]
+				Test["The SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,nonLiquidSpikeQ,False],Simulation->updatedSimulation]<>" to be mix with "<>ObjectToString[PickList[mySamples,nonLiquidSpikeQ,False],Simulation->updatedSimulation]<>" are not in solid state:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -4879,7 +4780,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingSpikeOptionInputs,{}]&&messages,
-		Message[Error::MustSpecifySpikeOptions,ObjectToString[missingSpikeOptionInputs,Cache->simulatedCache],ObjectToString[missingSpikeOptionSpikes,Cache->simulatedCache],ToString[missingSpikeOptions]];missingSpikeOptions,
+		Message[Error::MustSpecifySpikeOptions,ObjectToString[missingSpikeOptionInputs,Simulation->updatedSimulation],ObjectToString[missingSpikeOptionSpikes,Simulation->updatedSimulation],ToString[missingSpikeOptions]];missingSpikeOptions,
 		{}
 	];
 
@@ -4888,11 +4789,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[missingSpikeOptions]==3,
 				Nothing,
-				Test["The SpikeSample related options and SampleVolume are not Null for the samples "<>ObjectToString[Complement[mySamples,missingSpikeOptionInputs],Cache->simulatedCache]<>"when SpikeSample is not Null:",True,True]
+				Test["The SpikeSample related options and SampleVolume are not Null for the samples "<>ObjectToString[Complement[mySamples,missingSpikeOptionInputs],Simulation->updatedSimulation]<>"when SpikeSample is not Null:",True,True]
 			];
 			failingTest=If[Length[missingSpikeOptions]==0,
 				Nothing,
-				Test["The SpikeSample related options and SampleVolume "<>ToString[missingSpikeOptions]<>" are not Null for the SpikeSample "<>ObjectToString[missingSpikeOptionSpikes,Cache->simulatedCache]<>" (to be mixed with the samples "<>ObjectToString[missingSpikeOptionInputs,Cache->simulatedCache]<>") when SpikeSample is not Null:",True,False]
+				Test["The SpikeSample related options and SampleVolume "<>ToString[missingSpikeOptions]<>" are not Null for the SpikeSample "<>ObjectToString[missingSpikeOptionSpikes,Simulation->updatedSimulation]<>" (to be mixed with the samples "<>ObjectToString[missingSpikeOptionInputs,Simulation->updatedSimulation]<>") when SpikeSample is not Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -4931,7 +4832,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw error message for wrong analyte concentration of spike sample for a non-customizable cartridge *)
 	wrongAnalyteSpikeConcentrationOption=If[MemberQ[wrongAnalyteSpikeConcentrationQ,True]&&messages,
-		Message[Error::IncosistentAnalyteAndSpikeConcentration,ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ],Cache->simulatedCache],ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ],Cache->simulatedCache]];{SpikeConcentration},
+		Message[Error::IncosistentAnalyteAndSpikeConcentration,ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ],Simulation->updatedSimulation]];{SpikeConcentration},
 		{}
 	];
 
@@ -4939,11 +4840,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	wrongAnalyteSpikeConcentrationTests=If[gatherTests,
 		Module[{passingTest,failingTest},
 			passingTest=If[MemberQ[wrongAnalyteSpikeConcentrationQ,False],
-				Test["The SpikeConcentration shows the concentration of analytes for the SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ,False],Cache->simulatedCache]<>" to be mixed with the input samples"<>ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ,False],Cache->simulatedCache],True,True],
+				Test["The SpikeConcentration shows the concentration of analytes for the SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ,False],Simulation->updatedSimulation]<>" to be mixed with the input samples"<>ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ,False],Simulation->updatedSimulation],True,True],
 				Nothing
 			];
 			failingTest=If[MemberQ[wrongAnalyteSpikeConcentrationQ,True],
-				Test["The SpikeConcentration shows the concentration of analytes for the SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ],Cache->simulatedCache]<>" to be mixed with the input samples"<>ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ],Cache->simulatedCache],True,False],
+				Test["The SpikeConcentration shows the concentration of analytes for the SpikeSample "<>ObjectToString[PickList[suppliedSpikeSample,wrongAnalyteSpikeConcentrationQ],Simulation->updatedSimulation]<>" to be mixed with the input samples"<>ObjectToString[PickList[mySamples,wrongAnalyteSpikeConcentrationQ],Simulation->updatedSimulation],True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -4975,7 +4876,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw message for not enough sample volume *)
 	notEnoughSampleSpikeVolumeOptions=If[MemberQ[notEnoughSampleSpikeVolumeQ,True],
-		Message[Error::NotEnoughSampleVolumeAndSpikeVolume,ObjectToString[notEnoughSampleSpikeVolumeSamples,Cache->simulatedCache]];{SpikeVolume,SampleVolume},
+		Message[Error::NotEnoughSampleVolumeAndSpikeVolume,ObjectToString[notEnoughSampleSpikeVolumeSamples,Simulation->updatedSimulation]];{SpikeVolume,SampleVolume},
 		{}
 	];
 
@@ -4984,11 +4885,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[notEnoughSampleSpikeVolumeSamples]==Length[mySamples],
 				Nothing,
-				Test["The given SampleVolume (plus SpikeVolume, if applicable) is larger than the required volume used to make the specified dilution curves for "<>ObjectToString[Complement[mySamples,notEnoughSampleSpikeVolumeSamples],Cache->simulatedCache],True,True]
+				Test["The given SampleVolume (plus SpikeVolume, if applicable) is larger than the required volume used to make the specified dilution curves for "<>ObjectToString[Complement[mySamples,notEnoughSampleSpikeVolumeSamples],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[Length[notEnoughSampleSpikeVolumeSamples]==0,
 				Nothing,
-				Test["The given SampleVolume (plus SpikeVolume, if applicable) is larger than the required volume used to make the specified dilution curves for "<>ObjectToString[notEnoughSampleSpikeVolumeSamples,Cache->simulatedCache],True,False]
+				Test["The given SampleVolume (plus SpikeVolume, if applicable) is larger than the required volume used to make the specified dilution curves for "<>ObjectToString[notEnoughSampleSpikeVolumeSamples,Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5005,7 +4906,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw error message for conflicting dilution curve options *)
 	conflictDilutionCurveOptions=If[MemberQ[conflictDilutionCurveQ,True]&&messages,
-		Message[Error::ConflictDilutionCurve,ObjectToString[PickList[mySamples,conflictDilutionCurveQ],Cache->simulatedCache]];{DilutionCurve,SerialDilutionCurve},
+		Message[Error::ConflictDilutionCurve,ObjectToString[PickList[mySamples,conflictDilutionCurveQ],Simulation->updatedSimulation]];{DilutionCurve,SerialDilutionCurve},
 		{}
 	];
 
@@ -5013,11 +4914,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	conflictDilutionCurveTests=If[gatherTests,
 		Module[{passingTest,failingTest},
 			passingTest=If[MemberQ[conflictDilutionCurveQ,False],
-				Test["Only one of DilutionCurve and SerialDilutionCurve can be specified or Null for samples "<>ObjectToString[PickList[mySamples,conflictDilutionCurveQ,False],Cache->simulatedCache],True,True],
+				Test["Only one of DilutionCurve and SerialDilutionCurve can be specified or Null for samples "<>ObjectToString[PickList[mySamples,conflictDilutionCurveQ,False],Simulation->updatedSimulation],True,True],
 				Nothing
 			];
 			failingTest=If[MemberQ[conflictDilutionCurveQ,True],
-				Test["Only one of DilutionCurve and SerialDilutionCurve can be specified or Null for samples "<>ObjectToString[PickList[mySamples,conflictDilutionCurveQ],Cache->simulatedCache],True,False],
+				Test["Only one of DilutionCurve and SerialDilutionCurve can be specified or Null for samples "<>ObjectToString[PickList[mySamples,conflictDilutionCurveQ],Simulation->updatedSimulation],True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -5041,7 +4942,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	mandatoryDilutionAutomaticOptions=PickList[mandatoryDilutionQ[[All,3]],mandatoryDilutionQ,{True,_,_}];
 
 	If[MemberQ[mandatoryDilutionQ,{True,_,_}]&&messages,
-		Message[Warning::CapillaryELISASampleDilution,ObjectToString[mandatoryDilutionSamples,Cache->simulatedCache],ToString[mandatoryDilutionProvidedOptions],ToString[mandatoryDilutionAutomaticOptions]],
+		Message[Warning::CapillaryELISASampleDilution,ObjectToString[mandatoryDilutionSamples,Simulation->updatedSimulation],ToString[mandatoryDilutionProvidedOptions],ToString[mandatoryDilutionAutomaticOptions]],
 		{}
 	];
 
@@ -5049,11 +4950,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	mandatoryDilutionTests=If[gatherTests,
 		Module[{passingTest,failingTest},
 			failingTest=If[MemberQ[mandatoryDilutionQ,{True,_,_}],
-				Test["Dilution is required for the samples "<>ObjectToString[PickList[mySamples,mandatoryDilutionQ,{True,_,_}],Cache->simulatedCache]<>" even if one of the dilution options is set to Null:",True,False],
+				Test["Dilution is required for the samples "<>ObjectToString[PickList[mySamples,mandatoryDilutionQ,{True,_,_}],Simulation->updatedSimulation]<>" even if one of the dilution options is set to Null:",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[mandatoryDilutionQ,{False,_,_}],
-				Test["Dilution is required for the samples "<>ObjectToString[mandatoryDilutionSamples,Cache->simulatedCache]<>" even if one of the dilution options is set to Null:",True,True],
+				Test["Dilution is required for the samples "<>ObjectToString[mandatoryDilutionSamples,Simulation->updatedSimulation]<>" even if one of the dilution options is set to Null:",True,True],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -5071,7 +4972,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message for non optimal loading volume *)
 	If[MemberQ[nonOptimalLoadingVolumeQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalLoadingVolume,ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ],Cache->simulatedCache]];{LoadingVolume},
+		Message[Warning::NonOptimalLoadingVolume,ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ],Simulation->updatedSimulation]];{LoadingVolume},
 		{}
 	];
 
@@ -5079,11 +4980,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	nonOptimalLoadingVolumeTests=If[gatherTests,
 		Module[{passingTest,failingTest},
 			passingTest=If[MemberQ[nonOptimalLoadingVolumeQ,False],
-				Test["The loading volume of samples "<>ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ,False],Cache->simulatedCache]<>" should be larger than 50 Microliter for optimized results:",True,True],
+				Test["The loading volume of samples "<>ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ,False],Simulation->updatedSimulation]<>" should be larger than 50 Microliter for optimized results:",True,True],
 				Nothing
 			];
 			failingTest=If[MemberQ[nonOptimalLoadingVolumeQ,True],
-				Test["The loading volume of samples "<>ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ],Cache->simulatedCache]<>" should be larger than 50 Microliter for optimized results:",True,False],
+				Test["The loading volume of samples "<>ObjectToString[PickList[mySamples,nonOptimalLoadingVolumeQ],Simulation->updatedSimulation]<>" should be larger than 50 Microliter for optimized results:",True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -5103,7 +5004,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw message for too small preparation volume *)
 	exceedDilutionLoadingVolumeOptions=If[MemberQ[exceedDilutionLoadingVolumeQ,True]&&messages,
-		Message[Error::NotEnoughDilutionPreparationVolume,ObjectToString[exceedDilutionLoadingVolumeSamples,Cache->simulatedCache],ToString[exceedDilutionLoadingVolumes]];{DilutionCurve,SerialDilutionCurve,LoadingVolume},
+		Message[Error::NotEnoughDilutionPreparationVolume,ObjectToString[exceedDilutionLoadingVolumeSamples,Simulation->updatedSimulation],ToString[exceedDilutionLoadingVolumes]];{DilutionCurve,SerialDilutionCurve,LoadingVolume},
 		{}
 	];
 
@@ -5112,11 +5013,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[exceedDilutionLoadingVolumeSamples]==Length[mySamples],
 				Nothing,
-				Test["The prepared volume of each diluted sample "<>ObjectToString[Complement[mySamples,exceedDilutionLoadingVolumeSamples],Cache->simulatedCache]<>" is larger than the loading volume plus 5 Microliter:",True,True]
+				Test["The prepared volume of each diluted sample "<>ObjectToString[Complement[mySamples,exceedDilutionLoadingVolumeSamples],Simulation->updatedSimulation]<>" is larger than the loading volume plus 5 Microliter:",True,True]
 			];
 			failingTest=If[Length[exceedDilutionLoadingVolumeSamples]==0,
 				Nothing,
-				Test["The prepared volume of each diluted sample "<>ObjectToString[exceedDilutionLoadingVolumeSamples,Cache->simulatedCache]<>" is larger than the loading volume plus 5 Microliter:",True,False]
+				Test["The prepared volume of each diluted sample "<>ObjectToString[exceedDilutionLoadingVolumeSamples,Simulation->updatedSimulation]<>" is larger than the loading volume plus 5 Microliter:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5138,8 +5039,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Track invalid option and throw message for invalid dilution curve *)
     (* TODO Incorrect message here because this pattern for DilutionCurve is disabled. This message should not be thrown. *)
 	invalidDilutionCurveOption=If[MemberQ[invalidDilutionCurveQ,True]&&messages,
-        (* Message[Error::InvalidCapillaryELISASampleDilutionCurve,ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Cache->simulatedCache]]; *)
-		Message[Error::TooLargeDilutionMixVolumeForCapillaryELISASample,ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Cache->simulatedCache]];{DilutionCurve},
+        (* Message[Error::InvalidCapillaryELISASampleDilutionCurve,ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Simulation->updatedSimulation]]; *)
+		Message[Error::TooLargeDilutionMixVolumeForCapillaryELISASample,ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Simulation->updatedSimulation]];{DilutionCurve},
 		{}
 	];
 
@@ -5148,11 +5049,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[!MemberQ[invalidDilutionCurveQ,False],
 				Nothing,
-				Test["The provided linear DilutionCurve for samples "<>ObjectToString[PickList[mySamples,invalidDilutionCurveQ,False],Cache->simulatedCache]<>" do not yield a diluted sample with dilution factor larger than 1:",True,True]
+				Test["The provided linear DilutionCurve for samples "<>ObjectToString[PickList[mySamples,invalidDilutionCurveQ,False],Simulation->updatedSimulation]<>" do not yield a diluted sample with dilution factor larger than 1:",True,True]
 			];
 			failingTest=If[!MemberQ[invalidDilutionCurveQ,True],
 				Nothing,
-				Test["The provided linear DilutionCurve for samples "<>ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Cache->simulatedCache]<>" do not yield a diluted sample with dilution factor larger than 1:",True,False]
+				Test["The provided linear DilutionCurve for samples "<>ObjectToString[PickList[mySamples,invalidDilutionCurveQ],Simulation->updatedSimulation]<>" do not yield a diluted sample with dilution factor larger than 1:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5172,7 +5073,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Track invalid option and throw message for too small preparation volume *)
     invalidDilutionMixVolumeOption=If[MemberQ[invalidDilutionMixVolumeQ,True]&&messages,
-        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISASample,ObjectToString[invalidDilutionMixVolumeSamples,Cache->simulatedCache]];{DilutionCurve,SerialDilutionCurve,DilutionMixVolume},
+        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISASample,ObjectToString[invalidDilutionMixVolumeSamples,Simulation->updatedSimulation]];{DilutionCurve,SerialDilutionCurve,DilutionMixVolume},
         {}
     ];
 
@@ -5181,11 +5082,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         Module[{passingTest,failingTest},
             passingTest=If[Length[invalidDilutionMixVolumeSamples]==Length[mySamples],
                 Nothing,
-                Test["The prepared volume of each diluted sample "<>ObjectToString[Complement[mySamples,invalidDilutionMixVolumeSamples],Cache->simulatedCache]<>" is larger than the dilution mix volume:",True,True]
+                Test["The prepared volume of each diluted sample "<>ObjectToString[Complement[mySamples,invalidDilutionMixVolumeSamples],Simulation->updatedSimulation]<>" is larger than the dilution mix volume:",True,True]
             ];
             failingTest=If[Length[invalidDilutionMixVolumeSamples]==0,
                 Nothing,
-                Test["The prepared volume of each diluted sample "<>ObjectToString[invalidDilutionMixVolumeSamples,Cache->simulatedCache]<>" is larger than the dilution mix volume:",True,False]
+                Test["The prepared volume of each diluted sample "<>ObjectToString[invalidDilutionMixVolumeSamples,Simulation->updatedSimulation]<>" is larger than the dilution mix volume:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -5207,7 +5108,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidAntibodyRelatedOptions,{}]&&messages,
-		Message[Error::CannotSpecifyAntibodyOptions,ObjectToString[invalidAntibodyRelatedOptionSamples,Cache->simulatedCache],ToString[invalidAntibodyRelatedOptions]];invalidAntibodyRelatedOptions,
+		Message[Error::CannotSpecifyAntibodyOptions,ObjectToString[invalidAntibodyRelatedOptionSamples,Simulation->updatedSimulation],ToString[invalidAntibodyRelatedOptions]];invalidAntibodyRelatedOptions,
 		{}
 	];
 
@@ -5220,7 +5121,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidAntibodyRelatedOptions]==0,
 				Nothing,
-				Test["The CustomCaptureAntibody and CustomDetectionAntibody related options "<>ToString[invalidAntibodyRelatedOptions]<>" are Null for the samples "<>ObjectToString[invalidAntibodyRelatedOptionSamples]<>" when the cartridge is not customizable:",True,False]
+				Test["The CustomCaptureAntibody and CustomDetectionAntibody related options "<>ToString[invalidAntibodyRelatedOptions]<>" are Null for the samples "<>ObjectToString[invalidAntibodyRelatedOptionSamples,Simulation->updatedSimulation]<>" when the cartridge is not customizable:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5272,11 +5173,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw messages *)
 	solidCaptureAntibodyResuspensionInvalidOption=If[!MatchQ[solidCaptureAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidCaptureAntibodyResuspensionForSolid,ObjectToString[solidCaptureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[solidCaptureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{CaptureAntibodyResuspension},
+		Message[Error::InvalidCaptureAntibodyResuspensionForSolid,ObjectToString[solidCaptureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[solidCaptureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{CaptureAntibodyResuspension},
 		{}
 	];
 	liquidCaptureAntibodyResuspensionInvalidOption=If[!MatchQ[liquidCaptureAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidCaptureAntibodyResuspensionForLiquid,ObjectToString[liquidCaptureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[liquidCaptureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{CaptureAntibodyResuspension},
+		Message[Error::InvalidCaptureAntibodyResuspensionForLiquid,ObjectToString[liquidCaptureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[liquidCaptureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{CaptureAntibodyResuspension},
 		{}
 	];
 
@@ -5289,11 +5190,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[captureAntibodyResuspensionInvalidSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["CaptureAntibodyResuspension is True for solid state capture antibody samples and not True for liquid state capture antibody samples "<>ObjectToString[Complement[mySamples,captureAntibodyResuspensionInvalidSamples],Cache->simulatedCache]<>" (used for ELISA assay of the samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,captureAntibodyResuspensionInvalidAntibodies],Cache->simulatedCache]<>") to resuspend only solid state samples:",True,True]
+				Test["CaptureAntibodyResuspension is True for solid state capture antibody samples and not True for liquid state capture antibody samples "<>ObjectToString[Complement[mySamples,captureAntibodyResuspensionInvalidSamples],Simulation->updatedSimulation]<>" (used for ELISA assay of the samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,captureAntibodyResuspensionInvalidAntibodies],Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,True]
 			];
 			failingTest=If[Length[captureAntibodyResuspensionInvalidSamples]==0,
 				Nothing,
-				Test["CaptureAntibodyResuspension is True for solid state capture antibody samples and not True for liquid state capture antibody samples "<>ObjectToString[captureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]<>" (used for ELISA assay of the samples "<>ObjectToString[captureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache]<>") to resuspend only solid state samples:",True,False]
+				Test["CaptureAntibodyResuspension is True for solid state capture antibody samples and not True for liquid state capture antibody samples "<>ObjectToString[captureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]<>" (used for ELISA assay of the samples "<>ObjectToString[captureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5320,7 +5221,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidCaptureAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyCaptureAntibodyResuspensionOptions,ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidCaptureAntibodyResuspensionOptions],ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]];invalidCaptureAntibodyResuspensionOptions,
+		Message[Error::CannotSpecifyCaptureAntibodyResuspensionOptions,ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidCaptureAntibodyResuspensionOptions],ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]];invalidCaptureAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -5333,7 +5234,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidCaptureAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The capture antibody resuspension related options "<>ToString[invalidCaptureAntibodyResuspensionOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]<>") with a liquid state or CaptureAntibodyResuspension option set to False or Null:",True,False]
+				Test["The capture antibody resuspension related options "<>ToString[invalidCaptureAntibodyResuspensionOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]<>") with a liquid state or CaptureAntibodyResuspension option set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5357,7 +5258,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingCaptureAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::MustSpecifyCaptureAntibodyResuspensionOptions,ObjectToString[missingCaptureAntibodyResuspensionAntibodies,Cache->simulatedCache],ToString[missingCaptureAntibodyResuspensionOptions],ObjectToString[missingCaptureAntibodyResuspensionSamples,Cache->simulatedCache]];missingCaptureAntibodyResuspensionOptions,
+		Message[Error::MustSpecifyCaptureAntibodyResuspensionOptions,ObjectToString[missingCaptureAntibodyResuspensionAntibodies,Simulation->updatedSimulation],ToString[missingCaptureAntibodyResuspensionOptions],ObjectToString[missingCaptureAntibodyResuspensionSamples,Simulation->updatedSimulation]];missingCaptureAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -5370,7 +5271,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingCaptureAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The CaptureAntibodyResuspension related options "<>ToString[missingCaptureAntibodyResuspensionOptions]<>" are not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyResuspensionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[missingCaptureAntibodyResuspensionSamples,Cache->simulatedCache]<>") with solid state or with CaptureAntibodyResuspension option set to True:",True,False]
+				Test["The CaptureAntibodyResuspension related options "<>ToString[missingCaptureAntibodyResuspensionOptions]<>" are not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyResuspensionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[missingCaptureAntibodyResuspensionSamples,Simulation->updatedSimulation]<>") with solid state or with CaptureAntibodyResuspension option set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5405,7 +5306,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidCaptureAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::CannotSpecifyCaptureAntibodyConjugationOptions,ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidCaptureAntibodyConjugationOptions],ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];invalidCaptureAntibodyConjugationOptions,
+		Message[Error::CannotSpecifyCaptureAntibodyConjugationOptions,ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidCaptureAntibodyConjugationOptions],ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];invalidCaptureAntibodyConjugationOptions,
 		{}
 	];
 
@@ -5418,7 +5319,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidCaptureAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The capture antibody Conjugation related options "<>ToString[invalidCaptureAntibodyConjugationOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with CaptureAntibodyConjugation set to False or Null:",True,False]
+				Test["The capture antibody Conjugation related options "<>ToString[invalidCaptureAntibodyConjugationOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with CaptureAntibodyConjugation set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5438,7 +5339,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get missing samples and options *)
 	If[!MatchQ[missingCaptureAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::MustSpecifyCaptureAntibodyConjugationOptions,ObjectToString[missingCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[missingCaptureAntibodyConjugationOptions],ObjectToString[missingCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];missingCaptureAntibodyConjugationOptions,
+		Message[Error::MustSpecifyCaptureAntibodyConjugationOptions,ObjectToString[missingCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[missingCaptureAntibodyConjugationOptions],ObjectToString[missingCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];missingCaptureAntibodyConjugationOptions,
 		{}
 	];
 
@@ -5451,7 +5352,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingCaptureAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The capture antibody Conjugation related options "<>ToString[missingCaptureAntibodyConjugationOptions]<>" are Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[missingCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with CaptureAntibodyConjugation set to True:",True,False]
+				Test["The capture antibody Conjugation related options "<>ToString[missingCaptureAntibodyConjugationOptions]<>" are Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[missingCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with CaptureAntibodyConjugation set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5481,7 +5382,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	captureAntibodyConjugationConflictOptions=If[!MatchQ[captureAntibodyConjugationOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictCaptureAntibodyConjugationOptions,ObjectToString[captureAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[captureAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]];captureAntibodyConjugationOptions,
+		Message[Error::ConflictCaptureAntibodyConjugationOptions,ObjectToString[captureAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[captureAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]];captureAntibodyConjugationOptions,
 		{}
 	];
 
@@ -5490,11 +5391,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[captureAntibodyConjugationOptionConflictSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["CaptureAntibodyConjugation related options should be all Null or not Null for capture antibody samples "<>ObjectToString[PickList[mySamples,captureAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,captureAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>") so the value of CaptureAntibodyConjugation option can be selected:",True,True]
+				Test["CaptureAntibodyConjugation related options should be all Null or not Null for capture antibody samples "<>ObjectToString[PickList[mySamples,captureAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,captureAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of CaptureAntibodyConjugation option can be selected:",True,True]
 			];
 			failingTest=If[Length[captureAntibodyConjugationOptionConflictSamples]==0,
 				Nothing,
-				Test["CaptureAntibodyConjugation related options should be all Null or not Null for capture antibody samples "<>ObjectToString[captureAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[captureAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]<>") so the value of CaptureAntibodyConjugation option can be selected:",True,False]
+				Test["CaptureAntibodyConjugation related options should be all Null or not Null for capture antibody samples "<>ObjectToString[captureAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[captureAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of CaptureAntibodyConjugation option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5505,7 +5406,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Note that we check the reaction ratio of antibody sample and conjugation reagent in the MapThread to avoid resolving the concentrations twice. *)
 	(* Note that we check whether the total preparation volume of each conjugated capture antibody sample is larger than the MaxVolume of the specified CaptureAntibodyConjugationContainer, the specified CaptureAntibodyPurificationColumn and the specified CaptureAntibodyStorageContainer also within the MapThread. Because we need to resolve the concentrations and volumes, we don't want to perform the process twice for conflicting check. *)
 
-	(* The specified CaptureAntibodyPurificationColumn is a supported spin column, preferrably 40 K MWCO *)
+	(* The specified CaptureAntibodyPurificationColumn is a supported spin column, preferably 40 K MWCO *)
 
 	(* Right now, It is NOT a good idea to support regular filter as it will require getting the redundant at the top of the filter. Also, washing/collection of the sample will need more manipulations. *)
 	(* We only support 6 different types of 7K/40K MWCO spin column, with different capacities. *)
@@ -5541,13 +5442,13 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message if we find a purification column that is not supported. *)
 	unsupportedCaptureAntibodyPurificationColumnOption=If[MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}]&&messages,
-		Message[Error::UnsupportedCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]];{CaptureAntibodyPurificationColumn},
+		Message[Error::UnsupportedCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]];{CaptureAntibodyPurificationColumn},
 		Nothing
 	];
 
 	(* Throw a warning message if we find a purification column that is not 40K MWCO. We only throw warning when an error is not thrown*)
 	If[MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{True,False}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]],
+		Message[Warning::NonOptimalCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -5560,11 +5461,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{True,_}],
 				Nothing,
 				True,
-				Test["The specified CaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache],True,True]
+				Test["The specified CaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],
 				Nothing,
-				Test["The specified CaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],True,False]
+				Test["The specified CaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5580,11 +5481,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{True,True}],
 				Nothing,
 				True,
-				Test["The specified CaptureAntibodyPurificationColumn is 40K MWCO for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache],True,True]
+				Test["The specified CaptureAntibodyPurificationColumn is 40K MWCO for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedCaptureAntibodyPurificationColumnMWCO,{_,False}],
 				Nothing,
-				Test["The specified CaptureAntibodyPurificationColumn is 40K MWCO for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache],True,False]
+				Test["The specified CaptureAntibodyPurificationColumn is 40K MWCO for the capture antibody samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,suppliedCaptureAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedCaptureAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5607,7 +5508,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidCaptureAntibodyDilutionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyCaptureAntibodyDilutionOptions,ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidCaptureAntibodyDilutionOptions],ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]];invalidCaptureAntibodyDilutionOptions,
+		Message[Error::CannotSpecifyCaptureAntibodyDilutionOptions,ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidCaptureAntibodyDilutionOptions],ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]];invalidCaptureAntibodyDilutionOptions,
 		{}
 	];
 
@@ -5620,7 +5521,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidCaptureAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The capture antibody Dilution related options "<>ToString[invalidCaptureAntibodyDilutionOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]<>") with CaptureAntibodyDilution set to Null or False:",True,False]
+				Test["The capture antibody Dilution related options "<>ToString[invalidCaptureAntibodyDilutionOptions]<>" are Null for the capture antibody samples "<>ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidCaptureAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]<>") with CaptureAntibodyDilution set to Null or False:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5639,7 +5540,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message if we get samples for which a dilution is recommended *)
 	If[!MatchQ[missingRecommendedCaptureAntibodyDilutionSamples,{}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::CaptureAntibodyDilutionRecommended,ObjectToString[missingRecommendedCaptureAntibodyDilutionAntibodies,Cache->simulatedCache],ObjectToString[missingRecommendedCaptureAntibodyDilutionSamples,Cache->simulatedCache]],
+		Message[Warning::CaptureAntibodyDilutionRecommended,ObjectToString[missingRecommendedCaptureAntibodyDilutionAntibodies,Simulation->updatedSimulation],ObjectToString[missingRecommendedCaptureAntibodyDilutionSamples,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -5652,11 +5553,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingRecommendedCaptureAntibodyDilutionSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["The CaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,missingRecommendedCaptureAntibodyDilutionAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,missingRecommendedCaptureAntibodyDilutionSamples],Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,True]
+				Test["The CaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,missingRecommendedCaptureAntibodyDilutionAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,missingRecommendedCaptureAntibodyDilutionSamples],Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,True]
 			];
 			failingTest=If[Length[invalidCaptureAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The CaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[missingRecommendedCaptureAntibodyDilutionAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedCaptureAntibodyDilutionSamples,Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,False]
+				Test["The CaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[missingRecommendedCaptureAntibodyDilutionAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedCaptureAntibodyDilutionSamples,Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5676,9 +5577,9 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingCaptureAntibodyDilutionOptions,{}]&&messages,
 		Message[Error::MustSpecifyCaptureAntibodyDilutionOptions,
-			ObjectToString[missingCaptureAntibodyDilutionOptionsAntibodies,Cache->simulatedCache],
+			ObjectToString[missingCaptureAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation],
 			missingCaptureAntibodyDilutionOptions,
-			ObjectToString[missingCaptureAntibodyDilutionOptionsSamples,Cache->simulatedCache]];missingCaptureAntibodyDilutionOptions,
+			ObjectToString[missingCaptureAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]];missingCaptureAntibodyDilutionOptions,
 		{}
 	];
 
@@ -5691,7 +5592,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingCaptureAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The CaptureAntibodyDiluent options "<>ToString[missingCaptureAntibodyDilutionOptions]<>" are not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyDilutionOptionsAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingCaptureAntibodyDilutionOptionsSamples,Cache->simulatedCache]<>") when its CaptureAntibodyDilution is not Null:",True,False]
+				Test["The CaptureAntibodyDiluent options "<>ToString[missingCaptureAntibodyDilutionOptions]<>" are not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingCaptureAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]<>") when its CaptureAntibodyDilution is not Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5712,7 +5613,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	captureAntibodyDilutionConflictOptions=If[!MatchQ[captureAntibodyDilutionOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictCaptureAntibodyDilutionOptions,ObjectToString[captureAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[captureAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]];captureAntibodyDilutionOptions,
+		Message[Error::ConflictCaptureAntibodyDilutionOptions,ObjectToString[captureAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[captureAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]];captureAntibodyDilutionOptions,
 		{}
 	];
 
@@ -5721,11 +5622,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[captureAntibodyDilutionOptionConflictSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["CaptureAntibodyTargetConcentration and CaptureAntibodyDiluent options should be both Null or not Null for capture antibody samples "<>ObjectToString[PickList[mySamples,captureAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,captureAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>") so the value of CaptureAntibodyDilution option can be selected:",True,True]
+				Test["CaptureAntibodyTargetConcentration and CaptureAntibodyDiluent options should be both Null or not Null for capture antibody samples "<>ObjectToString[PickList[mySamples,captureAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomCaptureAntibody,captureAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of CaptureAntibodyDilution option can be selected:",True,True]
 			];
 			failingTest=If[Length[captureAntibodyDilutionOptionConflictSamples]==0,
 				Nothing,
-				Test["CaptureAntibodyTargetConcentration and CaptureAntibodyDiluent options should be both Null or not Null for capture antibody samples "<>ObjectToString[captureAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[captureAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]<>") so the value of CaptureAntibodyDilution option can be selected:",True,False]
+				Test["CaptureAntibodyTargetConcentration and CaptureAntibodyDiluent options should be both Null or not Null for capture antibody samples "<>ObjectToString[captureAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[captureAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of CaptureAntibodyDilution option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5744,7 +5645,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message is we get a non-optimal diluent *)
 	If[MemberQ[nonOptimalCaptureAntibodyDiluentQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalCaptureAntibodyDiluent,ObjectToString[nonOptimalCaptureAntibodyDiluentAntibodies,Cache->simulatedCache],ObjectToString[nonOptimalCaptureAntibodyDiluentSamples,Cache->simulatedCache]];{CaptureAntibodyDiluent},
+		Message[Warning::NonOptimalCaptureAntibodyDiluent,ObjectToString[nonOptimalCaptureAntibodyDiluentAntibodies,Simulation->updatedSimulation],ObjectToString[nonOptimalCaptureAntibodyDiluentSamples,Simulation->updatedSimulation]];{CaptureAntibodyDiluent},
 		{}
 	];
 
@@ -5757,11 +5658,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[nonOptimalCaptureAntibodyDiluentSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["The CaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,nonOptimalCaptureAntibodyDiluentAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,nonOptimalCaptureAntibodyDiluentSamples],Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,True]
+				Test["The CaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,nonOptimalCaptureAntibodyDiluentAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,nonOptimalCaptureAntibodyDiluentSamples],Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,True]
 			];
 			failingTest=If[Length[nonOptimalCaptureAntibodyDiluentSamples]==0,
 				Nothing,
-				Test["The CaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the capture antibody samples "<>ObjectToString[nonOptimalCaptureAntibodyDiluentAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[nonOptimalCaptureAntibodyDiluentSamples,Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,False]
+				Test["The CaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the capture antibody samples "<>ObjectToString[nonOptimalCaptureAntibodyDiluentAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[nonOptimalCaptureAntibodyDiluentSamples,Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5777,7 +5678,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	missingCaptureAntibodyLoadingVolumeOption=If[!MatchQ[missingCaptureAntibodyLoadingVolumeSamples,{}]&&messages,
-		Message[Error::MustSpecifyCaptureAntibodyLoadingVolume,ObjectToString[missingCaptureAntibodyLoadingVolumeAntibodies,Cache->simulatedCache],ObjectToString[missingCaptureAntibodyLoadingVolumeSamples,Cache->simulatedCache]];{CaptureAntibodyLoadingVolume},
+		Message[Error::MustSpecifyCaptureAntibodyLoadingVolume,ObjectToString[missingCaptureAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation],ObjectToString[missingCaptureAntibodyLoadingVolumeSamples,Simulation->updatedSimulation]];{CaptureAntibodyLoadingVolume},
 		{}
 	];
 
@@ -5790,11 +5691,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingCaptureAntibodyLoadingVolumeSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["When a customizable cartridge is used, the CaptureAntibodyLoadingVolume option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,missingCaptureAntibodyLoadingVolumeAntibodies],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[Complement[mySamples,missingCaptureAntibodyLoadingVolumeSamples],Cache->simulatedCache],True,True]
+				Test["When a customizable cartridge is used, the CaptureAntibodyLoadingVolume option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedCustomCaptureAntibody,missingCaptureAntibodyLoadingVolumeAntibodies],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[Complement[mySamples,missingCaptureAntibodyLoadingVolumeSamples],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[Length[missingCaptureAntibodyLoadingVolumeSamples]==0,
 				Nothing,
-				Test["When a customizable cartridge is used, the CaptureAntibodyLoadingVolume option is not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyLoadingVolumeAntibodies,Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[missingCaptureAntibodyLoadingVolumeSamples,Cache->simulatedCache],True,False]
+				Test["When a customizable cartridge is used, the CaptureAntibodyLoadingVolume option is not Null for the capture antibody samples "<>ObjectToString[missingCaptureAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[missingCaptureAntibodyLoadingVolumeSamples,Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5845,11 +5746,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw messages *)
 	solidDetectionAntibodyResuspensionInvalidOption=If[!MatchQ[solidDetectionAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidDetectionAntibodyResuspensionForSolid,ObjectToString[solidDetectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[solidDetectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{DetectionAntibodyResuspension},
+		Message[Error::InvalidDetectionAntibodyResuspensionForSolid,ObjectToString[solidDetectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[solidDetectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{DetectionAntibodyResuspension},
 		{}
 	];
 	liquidDetectionAntibodyResuspensionInvalidOption=If[!MatchQ[liquidDetectionAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidDetectionAntibodyResuspensionForLiquid,ObjectToString[liquidDetectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[liquidDetectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{DetectionAntibodyResuspension},
+		Message[Error::InvalidDetectionAntibodyResuspensionForLiquid,ObjectToString[liquidDetectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[liquidDetectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{DetectionAntibodyResuspension},
 		{}
 	];
 
@@ -5862,11 +5763,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[detectionAntibodyResuspensionInvalidSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["DetectionAntibodyResuspension is True for solid state detection antibody samples and not True for liquid state detection antibody samples "<>ObjectToString[Complement[mySamples,detectionAntibodyResuspensionInvalidSamples],Cache->simulatedCache]<>" (used for ELISA assay of the samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,detectionAntibodyResuspensionInvalidAntibodies],Cache->simulatedCache]<>") to resuspend only solid state samples:",True,True]
+				Test["DetectionAntibodyResuspension is True for solid state detection antibody samples and not True for liquid state detection antibody samples "<>ObjectToString[Complement[mySamples,detectionAntibodyResuspensionInvalidSamples],Simulation->updatedSimulation]<>" (used for ELISA assay of the samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,detectionAntibodyResuspensionInvalidAntibodies],Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,True]
 			];
 			failingTest=If[Length[detectionAntibodyResuspensionInvalidSamples]==0,
 				Nothing,
-				Test["DetectionAntibodyResuspension is True for solid state detection antibody samples and not True for liquid state detection antibody samples "<>ObjectToString[detectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]<>" (used for ELISA assay of the samples "<>ObjectToString[detectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache]<>") to resuspend only solid state samples:",True,False]
+				Test["DetectionAntibodyResuspension is True for solid state detection antibody samples and not True for liquid state detection antibody samples "<>ObjectToString[detectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]<>" (used for ELISA assay of the samples "<>ObjectToString[detectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5893,7 +5794,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidDetectionAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyDetectionAntibodyResuspensionOptions,ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidDetectionAntibodyResuspensionOptions],ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]];invalidDetectionAntibodyResuspensionOptions,
+		Message[Error::CannotSpecifyDetectionAntibodyResuspensionOptions,ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidDetectionAntibodyResuspensionOptions],ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]];invalidDetectionAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -5906,7 +5807,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidDetectionAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The detection antibody resuspension related options "<>ToString[invalidDetectionAntibodyResuspensionOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]<>") with a liquid state or DetectionAntibodyResuspension option set to False or Null:",True,False]
+				Test["The detection antibody resuspension related options "<>ToString[invalidDetectionAntibodyResuspensionOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]<>") with a liquid state or DetectionAntibodyResuspension option set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5930,7 +5831,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingDetectionAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::MustSpecifyDetectionAntibodyResuspensionOptions,ObjectToString[missingDetectionAntibodyResuspensionAntibodies,Cache->simulatedCache],ToString[missingDetectionAntibodyResuspensionOptions],ObjectToString[missingDetectionAntibodyResuspensionSamples,Cache->simulatedCache]];missingDetectionAntibodyResuspensionOptions,
+		Message[Error::MustSpecifyDetectionAntibodyResuspensionOptions,ObjectToString[missingDetectionAntibodyResuspensionAntibodies,Simulation->updatedSimulation],ToString[missingDetectionAntibodyResuspensionOptions],ObjectToString[missingDetectionAntibodyResuspensionSamples,Simulation->updatedSimulation]];missingDetectionAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -5943,7 +5844,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingDetectionAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The DetectionAntibodyResuspension related options "<>ToString[missingDetectionAntibodyResuspensionOptions]<>" are not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyResuspensionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[missingDetectionAntibodyResuspensionSamples,Cache->simulatedCache]<>") with DetectionAntibodyResuspension set to True:",True,False]
+				Test["The DetectionAntibodyResuspension related options "<>ToString[missingDetectionAntibodyResuspensionOptions]<>" are not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyResuspensionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[missingDetectionAntibodyResuspensionSamples,Simulation->updatedSimulation]<>") with DetectionAntibodyResuspension set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -5978,7 +5879,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidDetectionAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::CannotSpecifyDetectionAntibodyConjugationOptions,ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidDetectionAntibodyConjugationOptions],ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];invalidDetectionAntibodyConjugationOptions,
+		Message[Error::CannotSpecifyDetectionAntibodyConjugationOptions,ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidDetectionAntibodyConjugationOptions],ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];invalidDetectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -5991,7 +5892,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidDetectionAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The detection antibody Conjugation related options "<>ToString[invalidDetectionAntibodyConjugationOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with DetectionAntibodyConjugation set to False or Null:",True,False]
+				Test["The detection antibody Conjugation related options "<>ToString[invalidDetectionAntibodyConjugationOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with DetectionAntibodyConjugation set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6011,7 +5912,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get missing samples and options *)
 	If[!MatchQ[missingDetectionAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::MustSpecifyDetectionAntibodyConjugationOptions,ObjectToString[missingDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[missingDetectionAntibodyConjugationOptions],ObjectToString[missingDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];missingDetectionAntibodyConjugationOptions,
+		Message[Error::MustSpecifyDetectionAntibodyConjugationOptions,ObjectToString[missingDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[missingDetectionAntibodyConjugationOptions],ObjectToString[missingDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];missingDetectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -6024,7 +5925,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingDetectionAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The detection antibody Conjugation related options "<>ToString[missingDetectionAntibodyConjugationOptions]<>" are Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[missingDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with DetectionAntibodyConjugation set to True:",True,False]
+				Test["The detection antibody Conjugation related options "<>ToString[missingDetectionAntibodyConjugationOptions]<>" are Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[missingDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with DetectionAntibodyConjugation set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6054,7 +5955,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	detectionAntibodyConjugationConflictOptions=If[!MatchQ[detectionAntibodyConjugationOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictDetectionAntibodyConjugationOptions,ObjectToString[detectionAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[detectionAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]];detectionAntibodyConjugationOptions,
+		Message[Error::ConflictDetectionAntibodyConjugationOptions,ObjectToString[detectionAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[detectionAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]];detectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -6063,11 +5964,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[detectionAntibodyConjugationOptionConflictSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["DetectionAntibodyConjugation related options should be all Null or not Null for detection antibody samples "<>ObjectToString[PickList[mySamples,detectionAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,detectionAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>") so the value of DetectionAntibodyConjugation option can be selected:",True,True]
+				Test["DetectionAntibodyConjugation related options should be all Null or not Null for detection antibody samples "<>ObjectToString[PickList[mySamples,detectionAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,detectionAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of DetectionAntibodyConjugation option can be selected:",True,True]
 			];
 			failingTest=If[Length[detectionAntibodyConjugationOptionConflictSamples]==0,
 				Nothing,
-				Test["DetectionAntibodyConjugation related options should be all Null or not Null for detection antibody samples "<>ObjectToString[detectionAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[detectionAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]<>") so the value of DetectionAntibodyConjugation option can be selected:",True,False]
+				Test["DetectionAntibodyConjugation related options should be all Null or not Null for detection antibody samples "<>ObjectToString[detectionAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[detectionAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of DetectionAntibodyConjugation option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6078,7 +5979,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Note that we check the reaction ratio of antibody sample and conjugation reagent in the MapThread to avoid resolving the concentrations twice. *)
 	(* Note that we check whether the total preparation volume of each conjugated detection antibody sample is larger than the MaxVolume of the specified DetectionAntibodyConjugationContainer, the specified DetectionAntibodyPurificationColumn and the specified DetectionAntibodyStorageContainer also within the MapThread. Because we need to resolve the concentrations and volumes, we don't want to perform the process twice for conflicting check. *)
 
-	(* The specified DetectionAntibodyPurificationColumn is a supported spin column, preferrably 40 K MWCO *)
+	(* The specified DetectionAntibodyPurificationColumn is a supported spin column, preferably 40 K MWCO *)
 	(* TODO If we have a better plan later to put these spin columns into SPE, we can avoid hard-coding this list of supported spin columns. *)
 
 	(* Right now, It is NOT a good idea to support regular filter as it will require getting the redundant at the top of the filter. Also, washing/collection of the sample will need more manipulations. *)
@@ -6114,13 +6015,13 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message if we find a purification column that is not supported. *)
 	unsupportedDetectionAntibodyPurificationColumnOption=If[MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}]&&messages,
-		Message[Error::UnsupportedDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]];{DetectionAntibodyPurificationColumn},
+		Message[Error::UnsupportedDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]];{DetectionAntibodyPurificationColumn},
 		Nothing
 	];
 
 	(* Throw a warning message if we find a purification column that is not 40K MWCO. We only throw warning when an error is not thrown*)
 	If[MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{True,False}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]],
+		Message[Warning::NonOptimalDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -6133,11 +6034,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{True,_}],
 				Nothing,
 				True,
-				Test["The specified DetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache],True,True]
+				Test["The specified DetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],
 				Nothing,
-				Test["The specified DetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],True,False]
+				Test["The specified DetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6153,11 +6054,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{True,True}],
 				Nothing,
 				True,
-				Test["The specified DetectionAntibodyPurificationColumn is 40K MWCO for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache],True,True]
+				Test["The specified DetectionAntibodyPurificationColumn is 40K MWCO for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedDetectionAntibodyPurificationColumnMWCO,{_,False}],
 				Nothing,
-				Test["The specified DetectionAntibodyPurificationColumn is 40K MWCO for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache],True,False]
+				Test["The specified DetectionAntibodyPurificationColumn is 40K MWCO for the detection antibody samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,suppliedDetectionAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[mySamples,suppliedDetectionAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6180,7 +6081,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidDetectionAntibodyDilutionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyDetectionAntibodyDilutionOptions,ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidDetectionAntibodyDilutionOptions],ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]];invalidDetectionAntibodyDilutionOptions,
+		Message[Error::CannotSpecifyDetectionAntibodyDilutionOptions,ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidDetectionAntibodyDilutionOptions],ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]];invalidDetectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -6193,7 +6094,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The detection antibody Dilution related options "<>ToString[invalidDetectionAntibodyDilutionOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]<>") with DetectionAntibodyDilution set to Null or False:",True,False]
+				Test["The detection antibody Dilution related options "<>ToString[invalidDetectionAntibodyDilutionOptions]<>" are Null for the detection antibody samples "<>ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidDetectionAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]<>") with DetectionAntibodyDilution set to Null or False:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6212,7 +6113,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message if we get samples for which a dilution is recommended *)
 	If[!MatchQ[missingRecommendedDetectionAntibodyDilutionSamples,{}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::DetectionAntibodyDilutionRecommended,ObjectToString[missingRecommendedDetectionAntibodyDilutionAntibodies,Cache->simulatedCache],ObjectToString[missingRecommendedDetectionAntibodyDilutionSamples,Cache->simulatedCache]],
+		Message[Warning::DetectionAntibodyDilutionRecommended,ObjectToString[missingRecommendedDetectionAntibodyDilutionAntibodies,Simulation->updatedSimulation],ObjectToString[missingRecommendedDetectionAntibodyDilutionSamples,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -6225,11 +6126,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingRecommendedDetectionAntibodyDilutionSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["The DetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,missingRecommendedDetectionAntibodyDilutionAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,missingRecommendedDetectionAntibodyDilutionSamples],Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,True]
+				Test["The DetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,missingRecommendedDetectionAntibodyDilutionAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,missingRecommendedDetectionAntibodyDilutionSamples],Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,True]
 			];
 			failingTest=If[Length[invalidDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The DetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[missingRecommendedDetectionAntibodyDilutionAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedDetectionAntibodyDilutionSamples,Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,False]
+				Test["The DetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[missingRecommendedDetectionAntibodyDilutionAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedDetectionAntibodyDilutionSamples,Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6249,9 +6150,9 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingDetectionAntibodyDilutionOptions,{}]&&messages,
 		Message[Error::MustSpecifyDetectionAntibodyDilutionOptions,
-			ObjectToString[missingDetectionAntibodyDilutionOptionsAntibodies,Cache->simulatedCache],
+			ObjectToString[missingDetectionAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation],
 			missingDetectionAntibodyDilutionOptions,
-			ObjectToString[missingDetectionAntibodyDilutionOptionsSamples,Cache->simulatedCache]];missingDetectionAntibodyDilutionOptions,
+			ObjectToString[missingDetectionAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]];missingDetectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -6264,7 +6165,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The DetectionAntibodyDiluent options "<>ToString[missingDetectionAntibodyDilutionOptions]<>" are not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyDilutionOptionsAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingDetectionAntibodyDilutionOptionsSamples,Cache->simulatedCache]<>") when its DetectionAntibodyDilution is not Null:",True,False]
+				Test["The DetectionAntibodyDiluent options "<>ToString[missingDetectionAntibodyDilutionOptions]<>" are not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingDetectionAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]<>") when its DetectionAntibodyDilution is not Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6285,7 +6186,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	detectionAntibodyDilutionConflictOptions=If[!MatchQ[detectionAntibodyDilutionOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictDetectionAntibodyDilutionOptions,ObjectToString[detectionAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[detectionAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]];detectionAntibodyDilutionOptions,
+		Message[Error::ConflictDetectionAntibodyDilutionOptions,ObjectToString[detectionAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[detectionAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]];detectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -6294,11 +6195,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[detectionAntibodyDilutionOptionConflictSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["DetectionAntibodyTargetConcentration and DetectionAntibodyDiluent options should be both Null or not Null for detection antibody samples "<>ObjectToString[PickList[mySamples,detectionAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,detectionAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>") so the value of DetectionAntibodyDilution option can be selected:",True,True]
+				Test["DetectionAntibodyTargetConcentration and DetectionAntibodyDiluent options should be both Null or not Null for detection antibody samples "<>ObjectToString[PickList[mySamples,detectionAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedCustomDetectionAntibody,detectionAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of DetectionAntibodyDilution option can be selected:",True,True]
 			];
 			failingTest=If[Length[detectionAntibodyDilutionOptionConflictSamples]==0,
 				Nothing,
-				Test["DetectionAntibodyTargetConcentration and DetectionAntibodyDiluent options should be both Null or not Null for detection antibody samples "<>ObjectToString[detectionAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[detectionAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]<>") so the value of DetectionAntibodyDilution option can be selected:",True,False]
+				Test["DetectionAntibodyTargetConcentration and DetectionAntibodyDiluent options should be both Null or not Null for detection antibody samples "<>ObjectToString[detectionAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[detectionAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of DetectionAntibodyDilution option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6317,7 +6218,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message is we get a non-optimal diluent *)
 	If[MemberQ[nonOptimalDetectionAntibodyDiluentQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalDetectionAntibodyDiluent,ObjectToString[nonOptimalDetectionAntibodyDiluentAntibodies,Cache->simulatedCache],ObjectToString[nonOptimalDetectionAntibodyDiluentSamples,Cache->simulatedCache]];{DetectionAntibodyDiluent},
+		Message[Warning::NonOptimalDetectionAntibodyDiluent,ObjectToString[nonOptimalDetectionAntibodyDiluentAntibodies,Simulation->updatedSimulation],ObjectToString[nonOptimalDetectionAntibodyDiluentSamples,Simulation->updatedSimulation]];{DetectionAntibodyDiluent},
 		{}
 	];
 
@@ -6330,11 +6231,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[nonOptimalDetectionAntibodyDiluentSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["The DetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,nonOptimalDetectionAntibodyDiluentAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,nonOptimalDetectionAntibodyDiluentSamples],Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,True]
+				Test["The DetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,nonOptimalDetectionAntibodyDiluentAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[mySamples,nonOptimalDetectionAntibodyDiluentSamples],Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,True]
 			];
 			failingTest=If[Length[nonOptimalDetectionAntibodyDiluentSamples]==0,
 				Nothing,
-				Test["The DetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the detection antibody samples "<>ObjectToString[nonOptimalDetectionAntibodyDiluentAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[nonOptimalDetectionAntibodyDiluentSamples,Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,False]
+				Test["The DetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the detection antibody samples "<>ObjectToString[nonOptimalDetectionAntibodyDiluentAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[nonOptimalDetectionAntibodyDiluentSamples,Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6350,7 +6251,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	missingDetectionAntibodyLoadingVolumeOption=If[!MatchQ[missingDetectionAntibodyLoadingVolumeSamples,{}]&&messages,
-		Message[Error::MustSpecifyDetectionAntibodyLoadingVolume,ObjectToString[missingDetectionAntibodyLoadingVolumeAntibodies,Cache->simulatedCache],ObjectToString[missingDetectionAntibodyLoadingVolumeSamples,Cache->simulatedCache]];{DetectionAntibodyLoadingVolume},
+		Message[Error::MustSpecifyDetectionAntibodyLoadingVolume,ObjectToString[missingDetectionAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation],ObjectToString[missingDetectionAntibodyLoadingVolumeSamples,Simulation->updatedSimulation]];{DetectionAntibodyLoadingVolume},
 		{}
 	];
 
@@ -6363,11 +6264,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingDetectionAntibodyLoadingVolumeSamples]==Length[simulatedSamples],
 				Nothing,
 				True,
-				Test["When a customizable cartridge is used, the DetectionAntibodyLoadingVolume option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,missingDetectionAntibodyLoadingVolumeAntibodies],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[Complement[mySamples,missingDetectionAntibodyLoadingVolumeSamples],Cache->simulatedCache],True,True]
+				Test["When a customizable cartridge is used, the DetectionAntibodyLoadingVolume option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedCustomDetectionAntibody,missingDetectionAntibodyLoadingVolumeAntibodies],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[Complement[mySamples,missingDetectionAntibodyLoadingVolumeSamples],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[Length[missingDetectionAntibodyLoadingVolumeSamples]==0,
 				Nothing,
-				Test["When a customizable cartridge is used, the DetectionAntibodyLoadingVolume option is not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyLoadingVolumeAntibodies,Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[missingDetectionAntibodyLoadingVolumeSamples,Cache->simulatedCache],True,False]
+				Test["When a customizable cartridge is used, the DetectionAntibodyLoadingVolume option is not Null for the detection antibody samples "<>ObjectToString[missingDetectionAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[missingDetectionAntibodyLoadingVolumeSamples,Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6473,11 +6374,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     
     (* Track the invalid option and throw messages *)
     solidStandardResuspensionInvalidOption=If[!MatchQ[solidStandardResuspensionInvalidSamples,{}]&&messages,
-        Message[Error::InvalidStandardResuspensionForSolid,ObjectToString[solidStandardResuspensionInvalidSamples,Cache->simulatedCache]];{StandardResuspension},
+        Message[Error::InvalidStandardResuspensionForSolid,ObjectToString[solidStandardResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardResuspension},
 		{}
     ];
     liquidStandardResuspensionInvalidOption=If[!MatchQ[liquidStandardResuspensionInvalidSamples,{}]&&messages,
-        Message[Error::InvalidStandardResuspensionForLiquid,ObjectToString[liquidStandardResuspensionInvalidSamples,Cache->simulatedCache]];{StandardResuspension},
+        Message[Error::InvalidStandardResuspensionForLiquid,ObjectToString[liquidStandardResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardResuspension},
 		{}
     ];
 
@@ -6490,11 +6391,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 Length[standardResuspensionInvalidSamples]==Length[suppliedStandard],
                 Nothing,
                 True,
-                Test["StandardResuspension is True for solid state standard samples and not True for liquid state standard samples "<>ObjectToString[Complement[suppliedStandard,standardResuspensionInvalidSamples],Cache->simulatedCache]<>" to resuspend only solid state samples:",True,True]
+                Test["StandardResuspension is True for solid state standard samples and not True for liquid state standard samples "<>ObjectToString[Complement[suppliedStandard,standardResuspensionInvalidSamples],Simulation->updatedSimulation]<>" to resuspend only solid state samples:",True,True]
             ];
             failingTest=If[Length[standardResuspensionInvalidSamples]==0,
                 Nothing,
-                Test["StandardResuspension is True for solid state standard samples and not True for liquid state standard samples "<>ObjectToString[standardResuspensionInvalidSamples,Cache->simulatedCache]<>" to resuspend only solid state samples:",True,False]
+                Test["StandardResuspension is True for solid state standard samples and not True for liquid state standard samples "<>ObjectToString[standardResuspensionInvalidSamples,Simulation->updatedSimulation]<>" to resuspend only solid state samples:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -6531,7 +6432,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get invalid samples and options *)
     If[!MatchQ[invalidStandardResuspensionOptions,{}]&&messages,
-        Message[Error::CannotSpecifyStandardResuspensionOptions,ObjectToString[invalidStandardResuspensionRelatedOptionSamples,Cache->simulatedCache],ToString[invalidStandardResuspensionOptions]];invalidStandardResuspensionOptions,
+        Message[Error::CannotSpecifyStandardResuspensionOptions,ObjectToString[invalidStandardResuspensionRelatedOptionSamples,Simulation->updatedSimulation],ToString[invalidStandardResuspensionOptions]];invalidStandardResuspensionOptions,
         {}
     ];
 
@@ -6544,7 +6445,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
             failingTest=If[Length[invalidStandardResuspensionOptions]==0,
                 Nothing,
-                Test["The standard resuspension related options "<>ToString[invalidStandardResuspensionOptions]<>" are Null for the samples "<>ObjectToString[invalidStandardResuspensionRelatedOptionSamples,Cache->simulatedCache]<>" with a liquid state or with StandardResuspension option set to False or Null:",True,False]
+                Test["The standard resuspension related options "<>ToString[invalidStandardResuspensionOptions]<>" are Null for the samples "<>ObjectToString[invalidStandardResuspensionRelatedOptionSamples,Simulation->updatedSimulation]<>" with a liquid state or with StandardResuspension option set to False or Null:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -6578,7 +6479,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingStandardResuspensionOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardResuspensionOptions,ObjectToString[missingStandardResuspensionSamples,Cache->simulatedCache],ToString[missingStandardResuspensionOptions]];missingStandardResuspensionOptions,
+		Message[Error::MustSpecifyStandardResuspensionOptions,ObjectToString[missingStandardResuspensionSamples,Simulation->updatedSimulation],ToString[missingStandardResuspensionOptions]];missingStandardResuspensionOptions,
 		{}
 	];
 
@@ -6591,7 +6492,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingStandardResuspensionOptions]==0,
 				Nothing,
-				Test["The StandardResuspension related options "<>ToString[missingStandardResuspensionOptions]<>" are not Null for the standard samples "<>ObjectToString[missingStandardResuspensionSamples,Cache->simulatedCache]<>" with StandardResuspension set to True:",True,False]
+				Test["The StandardResuspension related options "<>ToString[missingStandardResuspensionOptions]<>" are not Null for the standard samples "<>ObjectToString[missingStandardResuspensionSamples,Simulation->updatedSimulation]<>" with StandardResuspension set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6624,7 +6525,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw message for incomplete Standard *)
 	If[!MatchQ[missingStandardRelatedOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardOptions,ToString[missingStandardRelatedOptions],ObjectToString[missingStandardRelatedOptionsSamples,Cache->simulatedCache]],
+		Message[Error::MustSpecifyStandardOptions,ToString[missingStandardRelatedOptions],ObjectToString[missingStandardRelatedOptionsSamples,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -6637,7 +6538,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidStandardOptions]==0,
 				Nothing,
-				Test["The standard related options "<>ToString[invalidStandardOptions]<>" are not Null for standard samples "<>ObjectToString[missingStandardRelatedOptionsSamples,Cache->simulatedCache],True,False]
+				Test["The standard related options "<>ToString[invalidStandardOptions]<>" are not Null for standard samples "<>ObjectToString[missingStandardRelatedOptionsSamples,Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6655,7 +6556,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw error message for conflicting standard dilution curve options *)
 	conflictStandardDilutionCurveOptions=If[MemberQ[conflictStandardDilutionCurveQ,True]&&messages,
-		Message[Error::ConflictStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ],Cache->simulatedCache]];{StandardDilutionCurve,StandardSerialDilutionCurve},
+		Message[Error::ConflictStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ],Simulation->updatedSimulation]];{StandardDilutionCurve,StandardSerialDilutionCurve},
 		{}
 	];
 
@@ -6666,12 +6567,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["Only one of StandardDilutionCurve and StandardSerialDilutionCurve can be specified or Null for standard samples:",True,True],
 				MemberQ[conflictStandardDilutionCurveQ,False],
-				Test["Only one of StandardDilutionCurve and StandardSerialDilutionCurve can be specified or Null for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ,False],Cache->simulatedCache],True,True],
+				Test["Only one of StandardDilutionCurve and StandardSerialDilutionCurve can be specified or Null for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ,False],Simulation->updatedSimulation],True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[conflictStandardDilutionCurveQ,True],
-				Test["Only one of StandardDilutionCurve and StandardSerialDilutionCurve can be specified or Null for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ],Cache->simulatedCache],True,False],
+				Test["Only one of StandardDilutionCurve and StandardSerialDilutionCurve can be specified or Null for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardDilutionCurveQ],Simulation->updatedSimulation],True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -6707,7 +6608,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	];
 
 	If[MemberQ[mandatoryStandardDilutionQ,{True,_,_}]&&messages,
-		Message[Warning::CapillaryELISAStandardDilution,ObjectToString[mandatoryStandardDilutionSamples,Cache->simulatedCache],ToString[mandatoryStandardDilutionProvidedOptions],ToString[mandatoryStandardDilutionAutomaticOptions]],
+		Message[Warning::CapillaryELISAStandardDilution,ObjectToString[mandatoryStandardDilutionSamples,Simulation->updatedSimulation],ToString[mandatoryStandardDilutionProvidedOptions],ToString[mandatoryStandardDilutionAutomaticOptions]],
 		{}
 	];
 
@@ -6718,12 +6619,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["Dilution is required for every standard sample:",True,True],
 				MemberQ[mandatoryStandardDilutionQ,{False,_,_}],
-				Test["Dilution is required for the standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],mandatoryStandardDilutionQ,{False,_,_}],Cache->simulatedCache]<>" even if one of the dilution options is set to Null:",True,False],
+				Test["Dilution is required for the standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],mandatoryStandardDilutionQ,{False,_,_}],Simulation->updatedSimulation]<>" even if one of the dilution options is set to Null:",True,False],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[mandatoryStandardDilutionQ,{True,_,_}],
-				Test["Dilution is required for the standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],mandatoryStandardDilutionQ,{True,_,_}],Cache->simulatedCache]<>" even if one of the dilution options is set to Null:",True,False],
+				Test["Dilution is required for the standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],mandatoryStandardDilutionQ,{True,_,_}],Simulation->updatedSimulation]<>" even if one of the dilution options is set to Null:",True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -6743,7 +6644,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message for non optimal standard dilution curve options *)
 	If[MemberQ[nonOptimalStandardDilutionCurveQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ],Cache->simulatedCache]];{StandardDilutionCurve,StandardSerialDilutionCurve},
+		Message[Warning::NonOptimalStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ],Simulation->updatedSimulation]];{StandardDilutionCurve,StandardSerialDilutionCurve},
 		{}
 	];
 
@@ -6754,12 +6655,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Automatic|Null|{}],
 				Test["The total number of dilutions for standard samples should be larger than 5 to generate a valid standard curve:",True,True],
 				MemberQ[nonOptimalStandardDilutionCurveQ,False],
-				Test["The total number of dilutions for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ,False],Cache->simulatedCache]<>" should be larger than 5 to generate a valid standard curve:",True,True],
+				Test["The total number of dilutions for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ,False],Simulation->updatedSimulation]<>" should be larger than 5 to generate a valid standard curve:",True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[nonOptimalStandardDilutionCurveQ,True],
-				Test["The total number of dilutions for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ],Cache->simulatedCache]<>" should be larger than 5 to generate a valid standard curve:",True,False],
+				Test["The total number of dilutions for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardDilutionCurveQ],Simulation->updatedSimulation]<>" should be larger than 5 to generate a valid standard curve:",True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -6780,7 +6681,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message for non optimal standard loading volume *)
 	If[MemberQ[nonOptimalStandardLoadingVolumeQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardLoadingVolume,ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ],Cache->simulatedCache]];{StandardLoadingVolume},
+		Message[Warning::NonOptimalStandardLoadingVolume,ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ],Simulation->updatedSimulation]];{StandardLoadingVolume},
 		{}
 	];
 
@@ -6791,12 +6692,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["The loading volume of standard samples should be larger than 50 Microliter for optimized results:",True,True],
 				MemberQ[nonOptimalStandardLoadingVolumeQ,False],
-				Test["The loading volume of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ,False],Cache->simulatedCache]<>" should be larger than 50 Microliter for optimized results:",True,True],
+				Test["The loading volume of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ,False],Simulation->updatedSimulation]<>" should be larger than 50 Microliter for optimized results:",True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[nonOptimalStandardLoadingVolumeQ,True],
-				Test["The loading volume of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ],Cache->simulatedCache]<>" should be larger than 50 Microliter for optimized results:",True,False],
+				Test["The loading volume of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],nonOptimalStandardLoadingVolumeQ],Simulation->updatedSimulation]<>" should be larger than 50 Microliter for optimized results:",True,False],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -6831,7 +6732,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw message for too small preparation volume *)
 	exceedStandardDilutionLoadingVolumeOptions=If[MemberQ[exceedStandardDilutionLoadingVolumeQ,True]&&messages,
-		Message[Error::NotEnoughStandardDilutionPreparationVolume,ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Cache->simulatedCache],ToString[exceedStandardDilutionNonAutomaticLoadingVolumes]];{StandardDilutionCurve,StandardSerialDilutionCurve,StandardLoadingVolume},
+		Message[Error::NotEnoughStandardDilutionPreparationVolume,ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Simulation->updatedSimulation],ToString[exceedStandardDilutionNonAutomaticLoadingVolumes]];{StandardDilutionCurve,StandardSerialDilutionCurve,StandardLoadingVolume},
 		{}
 	];
 
@@ -6844,11 +6745,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[exceedStandardDilutionLoadingVolumeSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["The prepared volume of each diluted standard sample "<>ObjectToString[Complement[suppliedStandard,exceedStandardDilutionLoadingVolumeSamples],Cache->simulatedCache]<>" is larger than the loading volume plus 5 Microliter:",True,True]
+				Test["The prepared volume of each diluted standard sample "<>ObjectToString[Complement[suppliedStandard,exceedStandardDilutionLoadingVolumeSamples],Simulation->updatedSimulation]<>" is larger than the loading volume plus 5 Microliter:",True,True]
 			];
 			failingTest=If[Length[exceedStandardDilutionLoadingVolumeSamples]==0,
 				Nothing,
-				Test["The prepared volume of each diluted standard sample "<>ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Cache->simulatedCache]<>" is larger than the loading volume plus 5 Microliter:",True,False]
+				Test["The prepared volume of each diluted standard sample "<>ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Simulation->updatedSimulation]<>" is larger than the loading volume plus 5 Microliter:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6869,8 +6770,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw message for invalid standard dilution curve *)
 	invalidStandardDilutionCurveOption=If[MemberQ[invalidStandardDilutionCurveQ,True]&&messages,
-        (* Message[Error::InvalidCapillaryELISASampleStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Cache->simulatedCache]]; *)
-        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISAStandard,ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Cache->simulatedCache]];{StandardDilutionCurve},
+        (* Message[Error::InvalidCapillaryELISASampleStandardDilutionCurve,ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Simulation->updatedSimulation]]; *)
+        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISAStandard,ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Simulation->updatedSimulation]];{StandardDilutionCurve},
 		{}
 	];
 
@@ -6883,11 +6784,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[invalidStandardDilutionCurveQ,False],
 				Nothing,
 				True,
-				Test["The provided linear StandardDilutionCurve for samples "<>ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ,False],Cache->simulatedCache]<>" do not yield a diluted sample with standard dilution factor larger than 1:",True,True]
+				Test["The provided linear StandardDilutionCurve for samples "<>ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ,False],Simulation->updatedSimulation]<>" do not yield a diluted sample with standard dilution factor larger than 1:",True,True]
 			];
 			failingTest=If[!MemberQ[invalidStandardDilutionCurveQ,True],
 				Nothing,
-				Test["The provided linear StandardDilutionCurve for samples "<>ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Cache->simulatedCache]<>" do not yield a diluted sample with standard dilution factor larger than 1:",True,False]
+				Test["The provided linear StandardDilutionCurve for samples "<>ObjectToString[PickList[ToList[suppliedStandard],invalidStandardDilutionCurveQ],Simulation->updatedSimulation]<>" do not yield a diluted sample with standard dilution factor larger than 1:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -6916,7 +6817,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Track invalid option and throw message for too small preparation volume *)
     invalidStandardDilutionMixVolumeOption=If[MemberQ[invalidStandardDilutionMixVolumeQ,True]&&messages,
-        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISAStandard,ObjectToString[invalidStandardDilutionMixVolumeSamples,Cache->simulatedCache]];{StandardDilutionCurve,StandardSerialDilutionCurve,StandardDilutionMixVolume},
+        Message[Error::TooLargeDilutionMixVolumeForCapillaryELISAStandard,ObjectToString[invalidStandardDilutionMixVolumeSamples,Simulation->updatedSimulation]];{StandardDilutionCurve,StandardSerialDilutionCurve,StandardDilutionMixVolume},
         {}
     ];
 
@@ -6929,11 +6830,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 Length[invalidStandardDilutionMixVolumeSamples]==Length[suppliedStandard],
                 Nothing,
                 True,
-                Test["The prepared volume of each diluted standard sample "<>ObjectToString[Complement[suppliedStandard,exceedStandardDilutionLoadingVolumeSamples],Cache->simulatedCache]<>" is larger than the standard dilution mix volume:",True,True]
+                Test["The prepared volume of each diluted standard sample "<>ObjectToString[Complement[suppliedStandard,exceedStandardDilutionLoadingVolumeSamples],Simulation->updatedSimulation]<>" is larger than the standard dilution mix volume:",True,True]
             ];
             failingTest=If[Length[exceedStandardDilutionLoadingVolumeSamples]==0,
                 Nothing,
-                Test["The prepared volume of each diluted standard sample "<>ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Cache->simulatedCache]<>" is larger than the dilution mix volume:",True,False]
+                Test["The prepared volume of each diluted standard sample "<>ObjectToString[exceedStandardDilutionLoadingVolumeSamples,Simulation->updatedSimulation]<>" is larger than the dilution mix volume:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -6956,7 +6857,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track invalid option and throw warning message for conflicting known concentration *)
 	If[MemberQ[conflictStandardStandardCompositionQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::ConflictCapillaryELISAStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ],Cache->simulatedCache]]
+		Message[Warning::ConflictCapillaryELISAStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, generate tests for conflicting StandardComposition options *)
@@ -6966,12 +6867,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["StandardComposition of standard samples are the same as StandardResuspensionConcentration when resuspension of solid sample is performed in this protocol:",True,True],
 				MemberQ[conflictStandardStandardCompositionQ,False],
-				Test["StandardComposition of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ,False],Cache->simulatedCache]<>" are the same as StandardResuspensionConcentration when resuspension of solid sample is performed in this protocol:",True,True],
+				Test["StandardComposition of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ,False],Simulation->updatedSimulation]<>" are the same as StandardResuspensionConcentration when resuspension of solid sample is performed in this protocol:",True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[conflictStandardStandardCompositionQ,True],
-				Test["StandardComposition of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ],Cache->simulatedCache]<>" are the same as StandardResuspensionConcentration when resuspension of solid sample is performed in this protocol:",True,True],
+				Test["StandardComposition of standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],conflictStandardStandardCompositionQ],Simulation->updatedSimulation]<>" are the same as StandardResuspensionConcentration when resuspension of solid sample is performed in this protocol:",True,True],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -6993,7 +6894,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw error message for exceeded known concentration of standard sample for a customizable cartridge *)
 	exceedStandardStandardCompositionOption=If[MemberQ[exceedStandardStandardCompositionQ,True]&&messages,
-		Message[Error::ExceedStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ],Cache->simulatedCache]];{StandardComposition},
+		Message[Error::ExceedStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ],Simulation->updatedSimulation]];{StandardComposition},
 		{}
 	];
 
@@ -7004,12 +6905,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["If the cartridge is customizable, only one StandardComposition is provided for standard samples:",True,True],
 				MemberQ[exceedStandardStandardCompositionQ,False],
-				Test["If the cartridge is customizable, only one StandardComposition is provided for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ,False],Cache->simulatedCache],True,True],
+				Test["If the cartridge is customizable, only one StandardComposition is provided for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ,False],Simulation->updatedSimulation],True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[exceedStandardStandardCompositionQ,True],
-				Test["If the cartridge is customizable, only one StandardComposition is provided for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ],Cache->simulatedCache],True,True],
+				Test["If the cartridge is customizable, only one StandardComposition is provided for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],exceedStandardStandardCompositionQ],Simulation->updatedSimulation],True,True],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -7026,7 +6927,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				(* We get Analyte Molecules from the Cartridge *)
 				!MatchQ[suppliedAnalyteMoleculesFromCartridge,Null],
 				MatchQ[Intersection[#[[All,2]],suppliedAnalyteMoleculesFromCartridge],{}],
-				(* We get Analyte Molecules from the ANalytes *)
+				(* We get Analyte Molecules from the Analytes *)
 				!MatchQ[suppliedPreLoadedAnalyteMolecules,Automatic],
 				MatchQ[Intersection[#[[All,2]],suppliedPreLoadedAnalyteMolecules],{}],
 				True,False
@@ -7038,7 +6939,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw error message for wrong analyte known concentration of standard sample for a non-customizable cartridge *)
 	wrongAnalyteStandardCompositionOption=If[MemberQ[wrongAnalyteStandardCompositionQ,True]&&messages,
-		Message[Error::AnalyteUnavailableInStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ],Cache->simulatedCache]];{StandardComposition},
+		Message[Error::AnalyteUnavailableInStandardComposition,ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ],Simulation->updatedSimulation]];{StandardComposition},
 		{}
 	];
 
@@ -7049,12 +6950,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[suppliedStandard,Null|{}|Automatic],
 				Test["If the cartridge is not customizable, the StandardComposition shows the concentration of at least one cartridge analyte for standard samples:",True,True],
 				MemberQ[wrongAnalyteStandardCompositionQ,False],
-				Test["If the cartridge is not customizable, the StandardComposition shows the concentration of at least one cartridge analyte for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ,False],Cache->simulatedCache],True,True],
+				Test["If the cartridge is not customizable, the StandardComposition shows the concentration of at least one cartridge analyte for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ,False],Simulation->updatedSimulation],True,True],
 				True,
 				Nothing
 			];
 			failingTest=If[MemberQ[wrongAnalyteStandardCompositionQ,True],
-				Test["If the cartridge is not customizable, the StandardComposition shows the concentration of at least one cartridge analyte for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ],Cache->simulatedCache],True,True],
+				Test["If the cartridge is not customizable, the StandardComposition shows the concentration of at least one cartridge analyte for standard samples "<>ObjectToString[PickList[ToList[suppliedStandard],wrongAnalyteStandardCompositionQ],Simulation->updatedSimulation],True,True],
 				Nothing
 			];
 			{passingTest,failingTest}
@@ -7081,7 +6982,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get invalid samples and options *)
     If[!MatchQ[invalidStandardAntibodyRelatedOptions,{}]&&messages,
-        Message[Error::CannotSpecifyStandardAntibodyOptions,ObjectToString[invalidStandardAntibodyRelatedOptionSamples,Cache->simulatedCache],ToString[invalidStandardAntibodyRelatedOptions]];invalidStandardAntibodyRelatedOptions,
+        Message[Error::CannotSpecifyStandardAntibodyOptions,ObjectToString[invalidStandardAntibodyRelatedOptionSamples,Simulation->updatedSimulation],ToString[invalidStandardAntibodyRelatedOptions]];invalidStandardAntibodyRelatedOptions,
         {}
     ];
 
@@ -7094,7 +6995,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
             failingTest=If[Length[invalidStandardAntibodyRelatedOptions]==0,
                 Nothing,
-                Test["The StandardCaptureAntibody and StandardDetectionAntibody related options "<>ToString[invalidStandardAntibodyRelatedOptions]<>" are Null for the standard samples "<>ObjectToString[invalidStandardAntibodyRelatedOptionSamples,Cache->simulatedCache]<>" when the cartridge is not customizable:",True,False]
+                Test["The StandardCaptureAntibody and StandardDetectionAntibody related options "<>ToString[invalidStandardAntibodyRelatedOptions]<>" are Null for the standard samples "<>ObjectToString[invalidStandardAntibodyRelatedOptionSamples,Simulation->updatedSimulation]<>" when the cartridge is not customizable:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7151,11 +7052,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw messages *)
 	solidStandardCaptureAntibodyResuspensionInvalidOption=If[!MatchQ[solidStandardCaptureAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidStandardCaptureAntibodyResuspensionForSolid,ObjectToString[solidStandardCaptureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[solidStandardCaptureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{StandardCaptureAntibodyResuspension},
+		Message[Error::InvalidStandardCaptureAntibodyResuspensionForSolid,ObjectToString[solidStandardCaptureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[solidStandardCaptureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardCaptureAntibodyResuspension},
 		{}
 	];
 	liquidStandardCaptureAntibodyResuspensionInvalidOption=If[!MatchQ[liquidStandardCaptureAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidStandardCaptureAntibodyResuspensionForLiquid,ObjectToString[liquidStandardCaptureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[liquidStandardCaptureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{StandardCaptureAntibodyResuspension},
+		Message[Error::InvalidStandardCaptureAntibodyResuspensionForLiquid,ObjectToString[liquidStandardCaptureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[liquidStandardCaptureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardCaptureAntibodyResuspension},
 		{}
 	];
 
@@ -7168,11 +7069,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardCaptureAntibodyResuspensionInvalidSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardCaptureAntibodyResuspension is True for solid state standard capture antibody samples and not True for liquid state standard capture antibody samples "<>ObjectToString[Complement[suppliedStandard,standardCaptureAntibodyResuspensionInvalidSamples],Cache->simulatedCache]<>" (used for ELISA assay of the standard samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,standardCaptureAntibodyResuspensionInvalidAntibodies],Cache->simulatedCache]<>") to resuspend only solid state samples:",True,True]
+				Test["StandardCaptureAntibodyResuspension is True for solid state standard capture antibody samples and not True for liquid state standard capture antibody samples "<>ObjectToString[Complement[suppliedStandard,standardCaptureAntibodyResuspensionInvalidSamples],Simulation->updatedSimulation]<>" (used for ELISA assay of the standard samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,standardCaptureAntibodyResuspensionInvalidAntibodies],Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,True]
 			];
 			failingTest=If[Length[standardCaptureAntibodyResuspensionInvalidSamples]==0,
 				Nothing,
-				Test["StandardCaptureAntibodyResuspension is True for solid state standard capture antibody samples and not True for liquid state standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyResuspensionInvalidSamples,Cache->simulatedCache]<>" (used for ELISA assay of the standard samples "<>ObjectToString[standardCaptureAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache]<>") to resuspend only solid state samples:",True,False]
+				Test["StandardCaptureAntibodyResuspension is True for solid state standard capture antibody samples and not True for liquid state standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]<>" (used for ELISA assay of the standard samples "<>ObjectToString[standardCaptureAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7211,7 +7112,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidStandardCaptureAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyStandardCaptureAntibodyResuspensionOptions,ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardCaptureAntibodyResuspensionOptions],ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]];invalidStandardCaptureAntibodyResuspensionOptions,
+		Message[Error::CannotSpecifyStandardCaptureAntibodyResuspensionOptions,ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardCaptureAntibodyResuspensionOptions],ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardCaptureAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -7224,7 +7125,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidStandardCaptureAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The standard capture antibody resuspension related options "<>ToString[invalidStandardCaptureAntibodyResuspensionOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]<>") with a liquid state or StandardCaptureAntibodyResuspension option set to False or Null:",True,False]
+				Test["The standard capture antibody resuspension related options "<>ToString[invalidStandardCaptureAntibodyResuspensionOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidStandardCaptureAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]<>") with a liquid state or StandardCaptureAntibodyResuspension option set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7260,7 +7161,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingStandardCaptureAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardCaptureAntibodyResuspensionOptions,ObjectToString[missingStandardCaptureAntibodyResuspensionAntibodies,Cache->simulatedCache],ToString[missingStandardCaptureAntibodyResuspensionOptions],ObjectToString[missingStandardCaptureAntibodyResuspensionSamples,Cache->simulatedCache]];missingStandardCaptureAntibodyResuspensionOptions,
+		Message[Error::MustSpecifyStandardCaptureAntibodyResuspensionOptions,ObjectToString[missingStandardCaptureAntibodyResuspensionAntibodies,Simulation->updatedSimulation],ToString[missingStandardCaptureAntibodyResuspensionOptions],ObjectToString[missingStandardCaptureAntibodyResuspensionSamples,Simulation->updatedSimulation]];missingStandardCaptureAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -7269,11 +7170,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[missingStandardCaptureAntibodyResuspensionOptions]==Length[standardCaptureAntibodyResuspensionOptions]+1,
 				Nothing,
-				Test["The StandardCaptureAntibodyResuspension related options "<>ToString[Complement[standardCaptureAntibodyResuspensionOptions,missingStandardCaptureAntibodyResuspensionOptions]]<>" are not Null for the stanadard samples with solid state or with StandardCaptureAntibodyResuspension option set to True:",True,True]
+				Test["The StandardCaptureAntibodyResuspension related options "<>ToString[Complement[standardCaptureAntibodyResuspensionOptions,missingStandardCaptureAntibodyResuspensionOptions]]<>" are not Null for the standard samples with solid state or with StandardCaptureAntibodyResuspension option set to True:",True,True]
 			];
 			failingTest=If[Length[missingStandardCaptureAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The StandardCaptureAntibodyResuspension related options "<>ToString[missingStandardCaptureAntibodyResuspensionOptions]<>" are not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyResuspensionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyResuspensionSamples,Cache->simulatedCache]<>") with solid state or with StandardCaptureAntibodyResuspension option set to True:",True,False]
+				Test["The StandardCaptureAntibodyResuspension related options "<>ToString[missingStandardCaptureAntibodyResuspensionOptions]<>" are not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyResuspensionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyResuspensionSamples,Simulation->updatedSimulation]<>") with solid state or with StandardCaptureAntibodyResuspension option set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7317,7 +7218,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get invalid samples and options *)
     If[!MatchQ[invalidStandardCaptureAntibodyConjugationOptions,{}]&&messages,
-        Message[Error::CannotSpecifyStandardCaptureAntibodyConjugationOptions,ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardCaptureAntibodyConjugationOptions],ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];invalidStandardCaptureAntibodyConjugationOptions,
+        Message[Error::CannotSpecifyStandardCaptureAntibodyConjugationOptions,ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardCaptureAntibodyConjugationOptions],ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardCaptureAntibodyConjugationOptions,
         {}
     ];
 
@@ -7330,7 +7231,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
             failingTest=If[Length[invalidStandardCaptureAntibodyConjugationOptions]==0,
                 Nothing,
-                Test["The standard capture antibody Conjugation related options "<>ToString[invalidStandardCaptureAntibodyConjugationOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with StandardCaptureAntibodyConjugation set to False or Null:",True,False]
+                Test["The standard capture antibody Conjugation related options "<>ToString[invalidStandardCaptureAntibodyConjugationOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardCaptureAntibodyConjugation set to False or Null:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7359,7 +7260,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get missing samples and options *)
     If[!MatchQ[missingStandardCaptureAntibodyConjugationOptions,{}]&&messages,
-        Message[Error::MustSpecifyStandardCaptureAntibodyConjugationOptions,ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[missingStandardCaptureAntibodyConjugationOptions],ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];missingStandardCaptureAntibodyConjugationOptions,
+        Message[Error::MustSpecifyStandardCaptureAntibodyConjugationOptions,ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[missingStandardCaptureAntibodyConjugationOptions],ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];missingStandardCaptureAntibodyConjugationOptions,
         {}
     ];
 
@@ -7372,7 +7273,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
             failingTest=If[Length[missingStandardCaptureAntibodyConjugationOptions]==0,
                 Nothing,
-                Test["The standard capture antibody Conjugation related options "<>ToString[missingStandardCaptureAntibodyConjugationOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with StandardCaptureAntibodyConjugation set to True:",True,False]
+                Test["The standard capture antibody Conjugation related options "<>ToString[missingStandardCaptureAntibodyConjugationOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[missingStandardCaptureAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardCaptureAntibodyConjugation set to True:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7414,7 +7315,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	standardCaptureAntibodyConjugationConflictOptions=If[!MatchQ[standardCaptureAntibodyConjugationOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictStandardCaptureAntibodyConjugationOptions,ObjectToString[standardCaptureAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[standardCaptureAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]];standardCaptureAntibodyConjugationOptions,
+		Message[Error::ConflictStandardCaptureAntibodyConjugationOptions,ObjectToString[standardCaptureAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[standardCaptureAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]];standardCaptureAntibodyConjugationOptions,
 		{}
 	];
 
@@ -7427,11 +7328,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardCaptureAntibodyConjugationOptionConflictSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardCaptureAntibodyConjugation related options should be all Null or not Null for standard capture antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardCaptureAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,standardCaptureAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>") so the value of StandardCaptureAntibodyConjugation option can be selected:",True,True]
+				Test["StandardCaptureAntibodyConjugation related options should be all Null or not Null for standard capture antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardCaptureAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,standardCaptureAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of StandardCaptureAntibodyConjugation option can be selected:",True,True]
 			];
 			failingTest=If[Length[standardCaptureAntibodyConjugationOptionConflictSamples]==0,
 				Nothing,
-				Test["StandardCaptureAntibodyConjugation related options should be all Null or not Null for standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[standardCaptureAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]<>") so the value of StandardCaptureAntibodyConjugation option can be selected:",True,False]
+				Test["StandardCaptureAntibodyConjugation related options should be all Null or not Null for standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[standardCaptureAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of StandardCaptureAntibodyConjugation option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7442,7 +7343,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Note that we check the reaction ratio of antibody sample and conjugation reagent in the MapThread to avoid resolving the concentrations twice. *)
 	(* Note that we check whether the total preparation volume of each conjugated standard capture antibody sample is larger than the MaxVolume of the specified StandardCaptureAntibodyConjugationContainer, the specified StandardCaptureAntibodyPurificationColumn and the specified StandardCaptureAntibodyStorageContainer also within the MapThread. Because we need to resolve the concentrations and volumes, we don't want to perform the process twice for conflicting check. *)
 
-	(* The specified StandardCaptureAntibodyPurificationColumn is a supported spin column, preferrably 40 K MWCO *)
+	(* The specified StandardCaptureAntibodyPurificationColumn is a supported spin column, preferably 40 K MWCO *)
 	(* TODO If we have a better plan later to put these spin columns into SPE, we can avoid hard-coding this list of supported spin columns. *)
 
 	(* Right now, It is NOT a good idea to support regular filter as it will require getting the redundant at the top of the filter. Also, washing/collection of the sample will need more manipulations. *)
@@ -7481,16 +7382,16 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message if we find a purification column that is not supported. *)
 	unsupportedStandardCaptureAntibodyPurificationColumnOption=If[MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}]&&messages,
-		Message[Error::UnsupportedStandardCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]];{StandardCaptureAntibodyPurificationColumn},
+		Message[Error::UnsupportedStandardCaptureAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]];{StandardCaptureAntibodyPurificationColumn},
 		Nothing
 	];
 
 	(* Throw a warning message if we find a purification column that is not 40K MWCO. We only throw warning when an error is not thrown*)
 	If[MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,False}]&&!MatchQ[$ECLApplication,Engine]&&messages,
 		Message[Warning::NonOptimalStandardCaptureAntibodyPurificationColumn,
-			ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],
-			ObjectToString[potential40KSpinColumns,Cache->simulatedCache]],
+			ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],
+			ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -7503,11 +7404,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,_}],
 				Nothing,
 				True,
-				Test["The specified StandardCaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache],True,True]
+				Test["The specified StandardCaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],
 				Nothing,
-				Test["The specified StandardCaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],True,False]
+				Test["The specified StandardCaptureAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7523,11 +7424,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,True}],
 				Nothing,
 				True,
-				Test["The specified StandardCaptureAntibodyPurificationColumn is 40K MWCO for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache],True,True]
+				Test["The specified StandardCaptureAntibodyPurificationColumn is 40K MWCO for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedStandardCaptureAntibodyPurificationColumnMWCO,{_,False}],
 				Nothing,
-				Test["The specified StandardCaptureAntibodyPurificationColumn is 40K MWCO for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache],True,False]
+				Test["The specified StandardCaptureAntibodyPurificationColumn is 40K MWCO for the standard capture antibody samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,suppliedStandardCaptureAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardCaptureAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7559,7 +7460,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get invalid samples and options *)
     If[!MatchQ[invalidStandardCaptureAntibodyDilutionOptions,{}]&&messages,
-        Message[Error::CannotSpecifyStandardCaptureAntibodyDilutionOptions,ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardCaptureAntibodyDilutionOptions],ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]];invalidStandardCaptureAntibodyDilutionOptions,
+        Message[Error::CannotSpecifyStandardCaptureAntibodyDilutionOptions,ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardCaptureAntibodyDilutionOptions],ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardCaptureAntibodyDilutionOptions,
         {}
     ];
 
@@ -7576,7 +7477,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             ];
             failingTest=If[Length[invalidStandardCaptureAntibodyDilutionOptions]==0,
                 Nothing,
-                Test["The standard capture antibody Dilution related options "<>ToString[invalidStandardCaptureAntibodyDilutionOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]<>") with StandardCaptureAntibodyDilution set to Null or False:",True,False]
+                Test["The standard capture antibody Dilution related options "<>ToString[invalidStandardCaptureAntibodyDilutionOptions]<>" are Null for the standard capture antibody samples "<>ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardCaptureAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardCaptureAntibodyDilution set to Null or False:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7604,7 +7505,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw warning message if we get samples for which a dilution is recommended *)
     If[!MatchQ[missingRecommendedStandardCaptureAntibodyDilutionSamples,{}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-        Message[Warning::StandardCaptureAntibodyDilutionRecommended,ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionAntibodies,Cache->simulatedCache],ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionSamples,Cache->simulatedCache]],
+        Message[Warning::StandardCaptureAntibodyDilutionRecommended,ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionAntibodies,Simulation->updatedSimulation],ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionSamples,Simulation->updatedSimulation]],
         Nothing
     ];
 
@@ -7617,11 +7518,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 Length[missingRecommendedStandardCaptureAntibodyDilutionSamples]==Length[suppliedStandard],
                 Nothing,
                 True,
-                Test["The StandardCaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,missingRecommendedStandardCaptureAntibodyDilutionAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingRecommendedStandardCaptureAntibodyDilutionSamples],Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,True]
+                Test["The StandardCaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,missingRecommendedStandardCaptureAntibodyDilutionAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingRecommendedStandardCaptureAntibodyDilutionSamples],Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,True]
             ];
             failingTest=If[Length[invalidStandardCaptureAntibodyDilutionOptions]==0,
                 Nothing,
-                Test["The StandardCaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionSamples,Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,False]
+                Test["The StandardCaptureAntibodyDilution option is not Null for the capture antibody samples "<>ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedStandardCaptureAntibodyDilutionSamples,Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7649,7 +7550,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingStandardCaptureAntibodyDilutionOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardCaptureAntibodyDilutionOptions,ObjectToString[missingStandardCaptureAntibodyDilutionOptionsAntibodies,Cache->simulatedCache],ToString[missingStandardCaptureAntibodyDilutionOptions],ObjectToString[missingStandardCaptureAntibodyDilutionOptionsSamples,Cache->simulatedCache]];missingStandardCaptureAntibodyDilutionOptions,
+		Message[Error::MustSpecifyStandardCaptureAntibodyDilutionOptions,ObjectToString[missingStandardCaptureAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation],ToString[missingStandardCaptureAntibodyDilutionOptions],ObjectToString[missingStandardCaptureAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]];missingStandardCaptureAntibodyDilutionOptions,
 		{}
 	];
 
@@ -7666,7 +7567,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingStandardCaptureAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The StandardCaptureAntibodyDiluent options "<>ToString[missingStandardCaptureAntibodyDilutionOptions]<>" are not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyDilutionOptionsAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyDilutionOptionsSamples,Cache->simulatedCache]<>") when its StandardCaptureAntibodyDilution is not Null:",True,False]
+				Test["The StandardCaptureAntibodyDiluent options "<>ToString[missingStandardCaptureAntibodyDilutionOptions]<>" are not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]<>") when its StandardCaptureAntibodyDilution is not Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7696,7 +7597,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	standardCaptureAntibodyDilutionConflictOptions=If[!MatchQ[standardCaptureAntibodyDilutionOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictStandardCaptureAntibodyDilutionOptions,ObjectToString[standardCaptureAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[standardCaptureAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]];standardCaptureAntibodyDilutionOptions,
+		Message[Error::ConflictStandardCaptureAntibodyDilutionOptions,ObjectToString[standardCaptureAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[standardCaptureAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]];standardCaptureAntibodyDilutionOptions,
 		{}
 	];
 
@@ -7709,11 +7610,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardCaptureAntibodyDilutionOptionConflictSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardCaptureAntibodyTargetConcentration and StandardCaptureAntibodyDiluent options should be both Null or not Null for standard capture antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardCaptureAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,standardCaptureAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>") so the value of StandardCaptureAntibodyDilution option can be selected:",True,True]
+				Test["StandardCaptureAntibodyTargetConcentration and StandardCaptureAntibodyDiluent options should be both Null or not Null for standard capture antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardCaptureAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardCaptureAntibody,standardCaptureAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of StandardCaptureAntibodyDilution option can be selected:",True,True]
 			];
 			failingTest=If[Length[standardCaptureAntibodyDilutionOptionConflictSamples]==0,
 				Nothing,
-				Test["StandardCaptureAntibodyTargetConcentration and StandardCaptureAntibodyDiluent options should be both Null or not Null for standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[standardCaptureAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]<>") so the value of StandardCaptureAntibodyDilution option can be selected:",True,False]
+				Test["StandardCaptureAntibodyTargetConcentration and StandardCaptureAntibodyDiluent options should be both Null or not Null for standard capture antibody samples "<>ObjectToString[standardCaptureAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[standardCaptureAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of StandardCaptureAntibodyDilution option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7741,7 +7642,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw warning message is we get a non-optimal diluent *)
     If[MemberQ[nonOptimalStandardCaptureAntibodyDiluentQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-      Message[Warning::NonOptimalStandardCaptureAntibodyDiluent,ObjectToString[nonOptimalStandardCaptureAntibodyDiluentAntibodies,Cache->simulatedCache],ObjectToString[nonOptimalStandardCaptureAntibodyDiluentSamples,Cache->simulatedCache]];{StandardCaptureAntibodyDiluent},
+      Message[Warning::NonOptimalStandardCaptureAntibodyDiluent,ObjectToString[nonOptimalStandardCaptureAntibodyDiluentAntibodies,Simulation->updatedSimulation],ObjectToString[nonOptimalStandardCaptureAntibodyDiluentSamples,Simulation->updatedSimulation]];{StandardCaptureAntibodyDiluent},
       {}
     ];
 
@@ -7754,11 +7655,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[nonOptimalStandardCaptureAntibodyDiluentSamples]==Length[suppliedStandard],
                 Nothing,
 				True,
-                Test["The StandardCaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,nonOptimalStandardCaptureAntibodyDiluentAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,nonOptimalStandardCaptureAntibodyDiluentSamples],Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,True]
+                Test["The StandardCaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,nonOptimalStandardCaptureAntibodyDiluentAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,nonOptimalStandardCaptureAntibodyDiluentSamples],Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,True]
             ];
             failingTest=If[Length[missingStandardCaptureAntibodyDiluentSamples]==0,
                 Nothing,
-                Test["The StandardCaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard capture antibody samples "<>ObjectToString[nonOptimalStandardCaptureAntibodyDiluentAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[nonOptimalStandardCaptureAntibodyDiluentSamples,Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,False]
+                Test["The StandardCaptureAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard capture antibody samples "<>ObjectToString[nonOptimalStandardCaptureAntibodyDiluentAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[nonOptimalStandardCaptureAntibodyDiluentSamples,Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7783,7 +7684,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw error message if we get invalid samples and options *)
     missingStandardCaptureAntibodyLoadingVolumeOption=If[!MatchQ[missingStandardCaptureAntibodyLoadingVolumeSamples,{}]&&messages,
-        Message[Error::MustSpecifyStandardCaptureAntibodyLoadingVolume,ObjectToString[missingStandardCaptureAntibodyLoadingVolumeAntibodies,Cache->simulatedCache],ObjectToString[missingStandardCaptureAntibodyLoadingVolumeSamples,Cache->simulatedCache]];{StandardCaptureAntibodyLoadingVolume},
+        Message[Error::MustSpecifyStandardCaptureAntibodyLoadingVolume,ObjectToString[missingStandardCaptureAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation],ObjectToString[missingStandardCaptureAntibodyLoadingVolumeSamples,Simulation->updatedSimulation]];{StandardCaptureAntibodyLoadingVolume},
         {}
     ];
 
@@ -7796,11 +7697,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingStandardCaptureAntibodyDilutionStorageConditionSamples]==Length[suppliedStandard],
                 Nothing,
 				True,
-                Test["When a customizable cartridge is used, the StandardCaptureAntibodyLoadingVolume option is not Null for the standard capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,missingStandardCaptureAntibodyLoadingVolumeAntibodies],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingStandardCaptureAntibodyLoadingVolumeSamples],Cache->simulatedCache],True,True]
+                Test["When a customizable cartridge is used, the StandardCaptureAntibodyLoadingVolume option is not Null for the standard capture antibody samples "<>ObjectToString[Complement[suppliedStandardCaptureAntibody,missingStandardCaptureAntibodyLoadingVolumeAntibodies],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingStandardCaptureAntibodyLoadingVolumeSamples],Simulation->updatedSimulation],True,True]
             ];
             failingTest=If[Length[missingStandardCaptureAntibodyDilutionStorageConditionSamples]==0,
                 Nothing,
-                Test["When a customizable cartridge is used, the StandardCaptureAntibodyLoadingVolume option is not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyLoadingVolumeAntibodies,Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyLoadingVolumeSamples,Cache->simulatedCache],True,False]
+                Test["When a customizable cartridge is used, the StandardCaptureAntibodyLoadingVolume option is not Null for the standard capture antibody samples "<>ObjectToString[missingStandardCaptureAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[missingStandardCaptureAntibodyLoadingVolumeSamples,Simulation->updatedSimulation],True,False]
             ];
             {passingTest,failingTest}
         ],
@@ -7856,11 +7757,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Track the invalid option and throw messages *)
 	solidStandardDetectionAntibodyResuspensionInvalidOption=If[!MatchQ[solidStandardDetectionAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidStandardDetectionAntibodyResuspensionForSolid,ObjectToString[solidStandardDetectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[solidStandardDetectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{StandardDetectionAntibodyResuspension},
+		Message[Error::InvalidStandardDetectionAntibodyResuspensionForSolid,ObjectToString[solidStandardDetectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[solidStandardDetectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardDetectionAntibodyResuspension},
 		{}
 	];
 	liquidStandardDetectionAntibodyResuspensionInvalidOption=If[!MatchQ[liquidStandardDetectionAntibodyResuspensionInvalidSamples,{}]&&messages,
-		Message[Error::InvalidStandardDetectionAntibodyResuspensionForLiquid,ObjectToString[liquidStandardDetectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache],ObjectToString[liquidStandardDetectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]];{StandardDetectionAntibodyResuspension},
+		Message[Error::InvalidStandardDetectionAntibodyResuspensionForLiquid,ObjectToString[liquidStandardDetectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation],ObjectToString[liquidStandardDetectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]];{StandardDetectionAntibodyResuspension},
 		{}
 	];
 
@@ -7873,11 +7774,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardDetectionAntibodyResuspensionInvalidSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardDetectionAntibodyResuspension is True for solid state standard detection antibody samples and not True for liquid state standard detection antibody samples "<>ObjectToString[Complement[suppliedStandard,standardDetectionAntibodyResuspensionInvalidSamples],Cache->simulatedCache]<>" (used for ELISA assay of the standard samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,standardDetectionAntibodyResuspensionInvalidAntibodies],Cache->simulatedCache]<>") to resuspend only solid state samples:",True,True]
+				Test["StandardDetectionAntibodyResuspension is True for solid state standard detection antibody samples and not True for liquid state standard detection antibody samples "<>ObjectToString[Complement[suppliedStandard,standardDetectionAntibodyResuspensionInvalidSamples],Simulation->updatedSimulation]<>" (used for ELISA assay of the standard samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,standardDetectionAntibodyResuspensionInvalidAntibodies],Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,True]
 			];
 			failingTest=If[Length[standardDetectionAntibodyResuspensionInvalidSamples]==0,
 				Nothing,
-				Test["StandardDetectionAntibodyResuspension is True for solid state standard detection antibody samples and not True for liquid state standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyResuspensionInvalidSamples,Cache->simulatedCache]<>" (used for ELISA assay of the standard samples "<>ObjectToString[standardDetectionAntibodyResuspensionInvalidAntibodies,Cache->simulatedCache]<>") to resuspend only solid state samples:",True,False]
+				Test["StandardDetectionAntibodyResuspension is True for solid state standard detection antibody samples and not True for liquid state standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyResuspensionInvalidSamples,Simulation->updatedSimulation]<>" (used for ELISA assay of the standard samples "<>ObjectToString[standardDetectionAntibodyResuspensionInvalidAntibodies,Simulation->updatedSimulation]<>") to resuspend only solid state samples:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7916,7 +7817,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidStandardDetectionAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyStandardDetectionAntibodyResuspensionOptions,ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardDetectionAntibodyResuspensionOptions],ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]];invalidStandardDetectionAntibodyResuspensionOptions,
+		Message[Error::CannotSpecifyStandardDetectionAntibodyResuspensionOptions,ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardDetectionAntibodyResuspensionOptions],ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardDetectionAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -7929,7 +7830,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidStandardDetectionAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The standard detection antibody resuspension related options "<>ToString[invalidStandardDetectionAntibodyResuspensionOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionSamples,Cache->simulatedCache]<>") with a liquid state or StandardDetectionAntibodyResuspension option set to False or Null:",True,False]
+				Test["The standard detection antibody resuspension related options "<>ToString[invalidStandardDetectionAntibodyResuspensionOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[invalidStandardDetectionAntibodyResuspensionRelatedOptionSamples,Simulation->updatedSimulation]<>") with a liquid state or StandardDetectionAntibodyResuspension option set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -7965,7 +7866,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingStandardDetectionAntibodyResuspensionOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardDetectionAntibodyResuspensionOptions,ObjectToString[missingStandardDetectionAntibodyResuspensionAntibodies,Cache->simulatedCache],ToString[missingStandardDetectionAntibodyResuspensionOptions],ObjectToString[missingStandardDetectionAntibodyResuspensionSamples,Cache->simulatedCache]];missingStandardDetectionAntibodyResuspensionOptions,
+		Message[Error::MustSpecifyStandardDetectionAntibodyResuspensionOptions,ObjectToString[missingStandardDetectionAntibodyResuspensionAntibodies,Simulation->updatedSimulation],ToString[missingStandardDetectionAntibodyResuspensionOptions],ObjectToString[missingStandardDetectionAntibodyResuspensionSamples,Simulation->updatedSimulation]];missingStandardDetectionAntibodyResuspensionOptions,
 		{}
 	];
 
@@ -7974,11 +7875,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Module[{passingTest,failingTest},
 			passingTest=If[Length[missingStandardDetectionAntibodyResuspensionOptions]==Length[standardDetectionAntibodyResuspensionOptions]+1,
 				Nothing,
-				Test["The StandardDetectionAntibodyResuspension related options "<>ToString[Complement[standardDetectionAntibodyResuspensionOptions,missingStandardDetectionAntibodyResuspensionOptions]]<>" are not Null for the stanadard samples with solid state or with StandardDetectionAntibodyResuspension option set to True:",True,True]
+				Test["The StandardDetectionAntibodyResuspension related options "<>ToString[Complement[standardDetectionAntibodyResuspensionOptions,missingStandardDetectionAntibodyResuspensionOptions]]<>" are not Null for the standard samples with solid state or with StandardDetectionAntibodyResuspension option set to True:",True,True]
 			];
 			failingTest=If[Length[missingStandardDetectionAntibodyResuspensionOptions]==0,
 				Nothing,
-				Test["The StandardDetectionAntibodyResuspension related options "<>ToString[missingStandardDetectionAntibodyResuspensionOptions]<>" are not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyResuspensionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyResuspensionSamples,Cache->simulatedCache]<>") with solid state or with StandardDetectionAntibodyResuspension option set to True:",True,False]
+				Test["The StandardDetectionAntibodyResuspension related options "<>ToString[missingStandardDetectionAntibodyResuspensionOptions]<>" are not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyResuspensionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyResuspensionSamples,Simulation->updatedSimulation]<>") with solid state or with StandardDetectionAntibodyResuspension option set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8022,7 +7923,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidStandardDetectionAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::CannotSpecifyStandardDetectionAntibodyConjugationOptions,ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardDetectionAntibodyConjugationOptions],ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];invalidStandardDetectionAntibodyConjugationOptions,
+		Message[Error::CannotSpecifyStandardDetectionAntibodyConjugationOptions,ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardDetectionAntibodyConjugationOptions],ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardDetectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -8035,7 +7936,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidStandardDetectionAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The standard detection antibody Conjugation related options "<>ToString[invalidStandardDetectionAntibodyConjugationOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with StandardDetectionAntibodyConjugation set to False or Null:",True,False]
+				Test["The standard detection antibody Conjugation related options "<>ToString[invalidStandardDetectionAntibodyConjugationOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardDetectionAntibodyConjugation set to False or Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8064,7 +7965,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get missing samples and options *)
 	If[!MatchQ[missingStandardDetectionAntibodyConjugationOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardDetectionAntibodyConjugationOptions,ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache],ToString[missingStandardDetectionAntibodyConjugationOptions],ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]];missingStandardDetectionAntibodyConjugationOptions,
+		Message[Error::MustSpecifyStandardDetectionAntibodyConjugationOptions,ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[missingStandardDetectionAntibodyConjugationOptions],ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]];missingStandardDetectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -8077,7 +7978,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingStandardDetectionAntibodyConjugationOptions]==0,
 				Nothing,
-				Test["The standard detection antibody Conjugation related options "<>ToString[missingStandardDetectionAntibodyConjugationOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionSamples,Cache->simulatedCache]<>") with StandardDetectionAntibodyConjugation set to True:",True,False]
+				Test["The standard detection antibody Conjugation related options "<>ToString[missingStandardDetectionAntibodyConjugationOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[missingStandardDetectionAntibodyConjugationRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardDetectionAntibodyConjugation set to True:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8119,7 +8020,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	standardDetectionAntibodyConjugationConflictOptions=If[!MatchQ[standardDetectionAntibodyConjugationOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictStandardDetectionAntibodyConjugationOptions,ObjectToString[standardDetectionAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[standardDetectionAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]];standardDetectionAntibodyConjugationOptions,
+		Message[Error::ConflictStandardDetectionAntibodyConjugationOptions,ObjectToString[standardDetectionAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[standardDetectionAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]];standardDetectionAntibodyConjugationOptions,
 		{}
 	];
 
@@ -8132,11 +8033,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardDetectionAntibodyConjugationOptionConflictSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardDetectionAntibodyConjugation related options should be all Null or not Null for standard detection antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardDetectionAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,standardDetectionAntibodyConjugationOptionConflictQ,False],Cache->simulatedCache]<>") so the value of StandardDetectionAntibodyConjugation option can be selected:",True,True]
+				Test["StandardDetectionAntibodyConjugation related options should be all Null or not Null for standard detection antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardDetectionAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,standardDetectionAntibodyConjugationOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of StandardDetectionAntibodyConjugation option can be selected:",True,True]
 			];
 			failingTest=If[Length[standardDetectionAntibodyConjugationOptionConflictSamples]==0,
 				Nothing,
-				Test["StandardDetectionAntibodyConjugation related options should be all Null or not Null for standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyConjugationOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[standardDetectionAntibodyConjugationOptionConflictSamples,Cache->simulatedCache]<>") so the value of StandardDetectionAntibodyConjugation option can be selected:",True,False]
+				Test["StandardDetectionAntibodyConjugation related options should be all Null or not Null for standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyConjugationOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[standardDetectionAntibodyConjugationOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of StandardDetectionAntibodyConjugation option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8147,7 +8048,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Note that we check the reaction ratio of antibody sample and conjugation reagent in the MapThread to avoid resolving the concentrations twice. *)
 	(* Note that we check whether the total preparation volume of each conjugated standard detection antibody sample is larger than the MaxVolume of the specified StandardDetectionAntibodyConjugationContainer, the specified StandardDetectionAntibodyPurificationColumn and the specified StandardDetectionAntibodyStorageContainer also within the MapThread. Because we need to resolve the concentrations and volumes, we don't want to perform the process twice for conflicting check. *)
 
-	(* The specified StandardDetectionAntibodyPurificationColumn is a supported spin column, preferrably 40 K MWCO *)
+	(* The specified StandardDetectionAntibodyPurificationColumn is a supported spin column, preferably 40 K MWCO *)
 	(* TODO If we have a better plan later to put these spin columns into SPE, we can avoid hard-coding this list of supported spin columns. *)
 
 	(* Right now, It is NOT a good idea to support regular filter as it will require getting the redundant at the top of the filter. Also, washing/collection of the sample will need more manipulations. *)
@@ -8186,13 +8087,13 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message if we find a purification column that is not supported. *)
 	unsupportedStandardDetectionAntibodyPurificationColumnOption=If[MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}]&&messages,
-		Message[Error::UnsupportedStandardDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]];{StandardDetectionAntibodyPurificationColumn},
+		Message[Error::UnsupportedStandardDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]];{StandardDetectionAntibodyPurificationColumn},
 		Nothing
 	];
 
 	(* Throw a warning message if we find a purification column that is not 40K MWCO. We only throw warning when an error is not thrown*)
 	If[MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,False}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,False}],Cache->simulatedCache],ObjectToString[potential40KSpinColumns,Cache->simulatedCache]],
+		Message[Warning::NonOptimalStandardDetectionAntibodyPurificationColumn,ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,False}],Simulation->updatedSimulation],ObjectToString[potential40KSpinColumns,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -8205,11 +8106,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,_}],
 				Nothing,
 				True,
-				Test["The specified StandardDetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,_}],Cache->simulatedCache],True,True]
+				Test["The specified StandardDetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,_}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],
 				Nothing,
-				Test["The specified StandardDetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Cache->simulatedCache],True,False]
+				Test["The specified StandardDetectionAntibodyPurificationColumn is a supported Zeba spin column (preferably 40K MWCO) for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{False,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8225,11 +8126,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,True}],
 				Nothing,
 				True,
-				Test["The specified StandardDetectionAntibodyPurificationColumn is 40K MWCO for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,True}],Cache->simulatedCache],True,True]
+				Test["The specified StandardDetectionAntibodyPurificationColumn is 40K MWCO for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{True,True}],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[!MemberQ[suppliedStandardDetectionAntibodyPurificationColumnMWCO,{_,False}],
 				Nothing,
-				Test["The specified StandardDetectionAntibodyPurificationColumn is 40K MWCO for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{_,False}],Cache->simulatedCache],True,False]
+				Test["The specified StandardDetectionAntibodyPurificationColumn is 40K MWCO for the standard detection antibody samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,suppliedStandardDetectionAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation]<>", used for ELISA assay of the samples "<>ObjectToString[PickList[ToList[suppliedStandard],suppliedStandardDetectionAntibodyPurificationColumnMWCO,{_,False}],Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8261,7 +8162,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[invalidStandardDetectionAntibodyDilutionOptions,{}]&&messages,
-		Message[Error::CannotSpecifyStandardDetectionAntibodyDilutionOptions,ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache],ToString[invalidStandardDetectionAntibodyDilutionOptions],ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]];invalidStandardDetectionAntibodyDilutionOptions,
+		Message[Error::CannotSpecifyStandardDetectionAntibodyDilutionOptions,ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation],ToString[invalidStandardDetectionAntibodyDilutionOptions],ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]];invalidStandardDetectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -8278,7 +8179,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[invalidStandardDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The standard detection antibody Dilution related options "<>ToString[invalidStandardDetectionAntibodyDilutionOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionSamples,Cache->simulatedCache]<>") with StandardDetectionAntibodyDilution set to Null or False:",True,False]
+				Test["The standard detection antibody Dilution related options "<>ToString[invalidStandardDetectionAntibodyDilutionOptions]<>" are Null for the standard detection antibody samples "<>ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with standard samples "<>ObjectToString[invalidStandardDetectionAntibodyDilutionRelatedOptionSamples,Simulation->updatedSimulation]<>") with StandardDetectionAntibodyDilution set to Null or False:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8306,7 +8207,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message if we get samples for which a dilution is recommended *)
 	If[!MatchQ[missingRecommendedStandardDetectionAntibodyDilutionSamples,{}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::StandardDetectionAntibodyDilutionRecommended,ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionAntibodies,Cache->simulatedCache],ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionSamples,Cache->simulatedCache]],
+		Message[Warning::StandardDetectionAntibodyDilutionRecommended,ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionAntibodies,Simulation->updatedSimulation],ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionSamples,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -8319,11 +8220,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingRecommendedStandardDetectionAntibodyDilutionSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["The StandardDetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,missingRecommendedStandardDetectionAntibodyDilutionAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingRecommendedStandardDetectionAntibodyDilutionSamples],Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,True]
+				Test["The StandardDetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,missingRecommendedStandardDetectionAntibodyDilutionAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingRecommendedStandardDetectionAntibodyDilutionSamples],Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,True]
 			];
 			failingTest=If[Length[invalidStandardDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The StandardDetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionSamples,Cache->simulatedCache]<>") when it is either resuspended or conjugated in this protocol:",True,False]
+				Test["The StandardDetectionAntibodyDilution option is not Null for the detection antibody samples "<>ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingRecommendedStandardDetectionAntibodyDilutionSamples,Simulation->updatedSimulation]<>") when it is either resuspended or conjugated in this protocol:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8351,7 +8252,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	If[!MatchQ[missingStandardDetectionAntibodyDilutionOptions,{}]&&messages,
-		Message[Error::MustSpecifyStandardDetectionAntibodyDilutionOptions,ObjectToString[missingStandardDetectionAntibodyDilutionOptionsAntibodies,Cache->simulatedCache],ToString[missingStandardDetectionAntibodyDilutionOptions],ObjectToString[missingStandardDetectionAntibodyDilutionOptionsSamples,Cache->simulatedCache]];missingStandardDetectionAntibodyDilutionOptions,
+		Message[Error::MustSpecifyStandardDetectionAntibodyDilutionOptions,ObjectToString[missingStandardDetectionAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation],ToString[missingStandardDetectionAntibodyDilutionOptions],ObjectToString[missingStandardDetectionAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]];missingStandardDetectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -8368,7 +8269,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 			];
 			failingTest=If[Length[missingStandardDetectionAntibodyDilutionOptions]==0,
 				Nothing,
-				Test["The StandardDetectionAntibodyDiluent options "<>ToString[missingStandardDetectionAntibodyDilutionOptions]<>" are not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyDilutionOptionsAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyDilutionOptionsSamples,Cache->simulatedCache]<>") when its StandardDetectionAntibodyDilution is not Null:",True,False]
+				Test["The StandardDetectionAntibodyDiluent options "<>ToString[missingStandardDetectionAntibodyDilutionOptions]<>" are not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyDilutionOptionsAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyDilutionOptionsSamples,Simulation->updatedSimulation]<>") when its StandardDetectionAntibodyDilution is not Null:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8398,7 +8299,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	standardDetectionAntibodyDilutionConflictOptions=If[!MatchQ[standardDetectionAntibodyDilutionOptionConflictSamples,{}]&&messages,
-		Message[Error::ConflictStandardDetectionAntibodyDilutionOptions,ObjectToString[standardDetectionAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache],ObjectToString[standardDetectionAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]];standardDetectionAntibodyDilutionOptions,
+		Message[Error::ConflictStandardDetectionAntibodyDilutionOptions,ObjectToString[standardDetectionAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation],ObjectToString[standardDetectionAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]];standardDetectionAntibodyDilutionOptions,
 		{}
 	];
 
@@ -8411,11 +8312,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[standardDetectionAntibodyDilutionOptionConflictSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["StandardDetectionAntibodyTargetConcentration and StandardDetectionAntibodyDiluent options should be both Null or not Null for standard detection antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardDetectionAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,standardDetectionAntibodyDilutionOptionConflictQ,False],Cache->simulatedCache]<>") so the value of StandardDetectionAntibodyDilution option can be selected:",True,True]
+				Test["StandardDetectionAntibodyTargetConcentration and StandardDetectionAntibodyDiluent options should be both Null or not Null for standard detection antibody samples "<>ObjectToString[PickList[ToList[suppliedStandard],standardDetectionAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[PickList[suppliedStandardDetectionAntibody,standardDetectionAntibodyDilutionOptionConflictQ,False],Simulation->updatedSimulation]<>") so the value of StandardDetectionAntibodyDilution option can be selected:",True,True]
 			];
 			failingTest=If[Length[standardDetectionAntibodyDilutionOptionConflictSamples]==0,
 				Nothing,
-				Test["StandardDetectionAntibodyTargetConcentration and StandardDetectionAntibodyDiluent options should be both Null or not Null for standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyDilutionOptionConflictAntibodies,Cache->simulatedCache]<>" (used for ELISA assay with samples "<>ObjectToString[standardDetectionAntibodyDilutionOptionConflictSamples,Cache->simulatedCache]<>") so the value of StandardDetectionAntibodyDilution option can be selected:",True,False]
+				Test["StandardDetectionAntibodyTargetConcentration and StandardDetectionAntibodyDiluent options should be both Null or not Null for standard detection antibody samples "<>ObjectToString[standardDetectionAntibodyDilutionOptionConflictAntibodies,Simulation->updatedSimulation]<>" (used for ELISA assay with samples "<>ObjectToString[standardDetectionAntibodyDilutionOptionConflictSamples,Simulation->updatedSimulation]<>") so the value of StandardDetectionAntibodyDilution option can be selected:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8443,7 +8344,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw warning message is we get a non-optimal diluent *)
 	If[MemberQ[nonOptimalStandardDetectionAntibodyDiluentQ,True]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardDetectionAntibodyDiluent,ObjectToString[nonOptimalStandardDetectionAntibodyDiluentAntibodies,Cache->simulatedCache],ObjectToString[nonOptimalStandardDetectionAntibodyDiluentSamples,Cache->simulatedCache]];{StandardDetectionAntibodyDiluent},
+		Message[Warning::NonOptimalStandardDetectionAntibodyDiluent,ObjectToString[nonOptimalStandardDetectionAntibodyDiluentAntibodies,Simulation->updatedSimulation],ObjectToString[nonOptimalStandardDetectionAntibodyDiluentSamples,Simulation->updatedSimulation]];{StandardDetectionAntibodyDiluent},
 		{}
 	];
 
@@ -8456,11 +8357,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[nonOptimalStandardDetectionAntibodyDiluentSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["The StandardDetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDiluentAntibodies],Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,nonOptimalStandardDetectionAntibodyDiluentSamples],Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,True]
+				Test["The StandardDetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDiluentAntibodies],Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,nonOptimalStandardDetectionAntibodyDiluentSamples],Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,True]
 			];
 			failingTest=If[Length[missingStandardDetectionAntibodyDiluentSamples]==0,
 				Nothing,
-				Test["The StandardDetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard detection antibody samples "<>ObjectToString[nonOptimalStandardDetectionAntibodyDiluentAntibodies,Cache->simulatedCache]<>" (for ELISA assay of "<>ObjectToString[nonOptimalStandardDetectionAntibodyDiluentSamples,Cache->simulatedCache]<>") for optimized dilution and ELISA results:",True,False]
+				Test["The StandardDetectionAntibodyDiluent option is kept as Model[Sample,\"Simple Plex Reagent Diluent\"] or a sample with this model for the standard detection antibody samples "<>ObjectToString[nonOptimalStandardDetectionAntibodyDiluentAntibodies,Simulation->updatedSimulation]<>" (for ELISA assay of "<>ObjectToString[nonOptimalStandardDetectionAntibodyDiluentSamples,Simulation->updatedSimulation]<>") for optimized dilution and ELISA results:",True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8485,7 +8386,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw error message if we get invalid samples and options *)
 	missingStandardDetectionAntibodyLoadingVolumeOption=If[!MatchQ[missingStandardDetectionAntibodyLoadingVolumeSamples,{}]&&messages,
-		Message[Error::MustSpecifyStandardDetectionAntibodyLoadingVolume,ObjectToString[missingStandardDetectionAntibodyLoadingVolumeAntibodies,Cache->simulatedCache],ObjectToString[missingStandardDetectionAntibodyLoadingVolumeSamples,Cache->simulatedCache]];{StandardDetectionAntibodyLoadingVolume},
+		Message[Error::MustSpecifyStandardDetectionAntibodyLoadingVolume,ObjectToString[missingStandardDetectionAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation],ObjectToString[missingStandardDetectionAntibodyLoadingVolumeSamples,Simulation->updatedSimulation]];{StandardDetectionAntibodyLoadingVolume},
 		{}
 	];
 
@@ -8498,11 +8399,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				Length[missingStandardDetectionAntibodyDilutionStorageConditionSamples]==Length[suppliedStandard],
 				Nothing,
 				True,
-				Test["When a customizable cartridge is used, the StandardDetectionAntibodyLoadingVolume option is not Null for the standard detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,missingStandardDetectionAntibodyLoadingVolumeAntibodies],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingStandardDetectionAntibodyLoadingVolumeSamples],Cache->simulatedCache],True,True]
+				Test["When a customizable cartridge is used, the StandardDetectionAntibodyLoadingVolume option is not Null for the standard detection antibody samples "<>ObjectToString[Complement[suppliedStandardDetectionAntibody,missingStandardDetectionAntibodyLoadingVolumeAntibodies],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[Complement[suppliedStandard,missingStandardDetectionAntibodyLoadingVolumeSamples],Simulation->updatedSimulation],True,True]
 			];
 			failingTest=If[Length[missingStandardDetectionAntibodyDilutionStorageConditionSamples]==0,
 				Nothing,
-				Test["When a customizable cartridge is used, the StandardDetectionAntibodyLoadingVolume option is not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyLoadingVolumeAntibodies,Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyLoadingVolumeSamples,Cache->simulatedCache],True,False]
+				Test["When a customizable cartridge is used, the StandardDetectionAntibodyLoadingVolume option is not Null for the standard detection antibody samples "<>ObjectToString[missingStandardDetectionAntibodyLoadingVolumeAntibodies,Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[missingStandardDetectionAntibodyLoadingVolumeSamples,Simulation->updatedSimulation],True,False]
 			];
 			{passingTest,failingTest}
 		],
@@ -8674,7 +8575,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	objectSampleDetectionAntibodies=objectSampleDetectionAntibodyOptionValues[[All,1]];
 
 	conflictAntibodyObjectSampleOptions=If[!MatchQ[Intersection[objectSampleCaptureAntibodies,objectSampleDetectionAntibodies],{}],
-		Message[Error::ConflictCapillaryELISAAntibodyObjectSample,ObjectToString[Intersection[objectSampleCaptureAntibodies,objectSampleDetectionAntibodies],Cache->simulatedCache]];{CustomCaptureAntibody,CustomDetectionAntibody,StandardCaptureAntibody,StandardDetectionAntibody},
+		Message[Error::ConflictCapillaryELISAAntibodyObjectSample,ObjectToString[Intersection[objectSampleCaptureAntibodies,objectSampleDetectionAntibodies],Simulation->updatedSimulation]];{CustomCaptureAntibody,CustomDetectionAntibody,StandardCaptureAntibody,StandardDetectionAntibody},
 		{}
 	];
 
@@ -8719,7 +8620,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Throw an error message when we get an invalid antibody sample *)
 	conflictOptionValueAntibodyOptions=If[!MatchQ[conflictOptionAntibodyObjectSamples,{}],
-		Message[Error::ConflictCapillaryELISAAntibodyOptions,ObjectToString[conflictOptionAntibodyObjectSamples,Cache->simulatedCache]];{CustomCaptureAntibody,CustomDetectionAntibody,StandardCaptureAntibody,StandardDetectionAntibody},
+		Message[Error::ConflictCapillaryELISAAntibodyOptions,ObjectToString[conflictOptionAntibodyObjectSamples,Simulation->updatedSimulation]];{CustomCaptureAntibody,CustomDetectionAntibody,StandardCaptureAntibody,StandardDetectionAntibody},
 		{}
 	];
 
@@ -8757,7 +8658,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         !MatchQ[resolvedCartridge,Null],Lookup[resolvedCartridgePacket,AnalyteNames],
 
         (* Set the members of rankedPreLoadedAnalytes to be Analytes. Call helper function with information about cartridge type, species and available analytes *)
-        True, First@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,rankedPreLoadedAnalytes,Cache->simulatedCache]
+        True, First@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,rankedPreLoadedAnalytes,Simulation->updatedSimulation]
 
     ];
 
@@ -8771,10 +8672,10 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		resolvedCustomizableCartridgeQ,Null,
 
 		(* If resolvedCartridge is not Null, set to its AnalyteMolecules *)
-		!MatchQ[resolvedCartridge,Null],Download[Lookup[resolvedCartridgePacket,AnalyteMolecules],Object,Cache->simulatedCache],
+		!MatchQ[resolvedCartridge,Null],Download[Lookup[resolvedCartridgePacket,AnalyteMolecules],Object,Simulation->updatedSimulation],
 
 		(* Set the members of rankedPreLoadedAnalytes to be Analytes. Call helper function with information about cartridge type, species and available analytes *)
-		True,Last@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,rankedPreLoadedAnalytes,Cache->simulatedCache]
+		True,Last@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,rankedPreLoadedAnalytes,Simulation->updatedSimulation]
 
 	];
 
@@ -8783,7 +8684,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	resolvedPreLoadedAnalyteNames=If[MatchQ[resolvedPreLoadedAnalytes,ListableP[ObjectP[Model[Molecule]]]],
 
 		(* Turn AnalyteMolecules into AnalyteNames. All errors should have been thrown earlier so it is safe to use our helper function for this purpose. *)
-		First@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,resolvedPreLoadedAnalytes,Cache->simulatedCache],
+		First@resolvePreLoadedCartridgeAnalytes[resolvedCartridgeType,resolvedSpecies,resolvedPreLoadedAnalytes,Cache->cache],
 
 		(* Keep the AnalyteNames or Null or {} *)
 		resolvedPreLoadedAnalytes
@@ -8830,7 +8731,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     ];
 
 	(* Resolve Customizable Analytes for each sample. Keep the first value of user provided or our resolved analyte *)
-	(* PLease note that this is not the analytes that we are going to return as we are not suppposed to change user-defined option values. *)
+	(* PLease note that this is not the analytes that we are going to return as we are not supposed to change user-defined option values. *)
 	resolvedCustomizableAnalytes=MapThread[
 		If[MatchQ[#1,Automatic],
 			#2,
@@ -8839,7 +8740,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		{suppliedCustomizableAnalytes,customizableAnalytes}
 	];
 
-    (* INFORMATION ABOUT DIILUENT AND MINDILUTIONFACTOR *)
+    (* INFORMATION ABOUT DILUENT AND MINDILUTIONFACTOR *)
     (* We also want to gather information about diluent and minimum dilution factor before we enter the 2 map threads. This will help us decide the options *)
 	(* All the analytes should share the same information. Get the first member of resolvedPreLoadedAnalyteNames and get information from there *)
 	firstPreLoadedAnalyteName=If[MatchQ[resolvedPreLoadedAnalyteNames,{}|Null],
@@ -8848,7 +8749,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	];
 
 	firstPreLoadedAnalyteManufacturingSpecification=FirstCase[
-		simulatedCache,
+		cache,
 		KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->firstPreLoadedAnalyteName}],
 		<||>
 	];
@@ -8861,7 +8762,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		MatchQ[firstPreLoadedAnalyteName,Null],Model[Sample, "id:eGakldJEGX4o"], (* Model[Sample, "Simple Plex Sample Diluent 13"] *)
 
 		(* Otherwise we can use the diluent from analytes *)
-		True,Download[Lookup[firstPreLoadedAnalyteManufacturingSpecification,RecommendedDiluent,Model[Sample, "id:eGakldJEGX4o"]],Object,Cache->simulatedCache,Date->Now] (* Model[Sample, "Simple Plex Sample Diluent 13"] *)
+		True,Download[Lookup[firstPreLoadedAnalyteManufacturingSpecification,RecommendedDiluent,Model[Sample, "id:eGakldJEGX4o"]],Object,Simulation->updatedSimulation,Date->Now] (* Model[Sample, "Simple Plex Sample Diluent 13"] *)
 
 	];
 
@@ -8880,8 +8781,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Get the default sample model of the resolved analytes *)
     resolvedAnalytePackets=If[resolvedCustomizableCartridgeQ,
-		Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@resolvedCustomizableAnalytes,
-		Experiment`Private`fetchPacketFromFastAssoc[#,simulatedFastAssoc]&/@resolvedPreLoadeAnalyteMolecules
+		Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@resolvedCustomizableAnalytes,
+		Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc]&/@resolvedPreLoadeAnalyteMolecules
 	];
     resolvedAnalyteDefaultModels=If[!MatchQ[resolvedAnalytePackets,Null|{}],
       Map[
@@ -8890,7 +8791,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             defaultSampleModel = Lookup[#,DefaultSampleModel,Null];
             If[MatchQ[defaultSampleModel,Null],
               Null,
-              Experiment`Private`fastAssocLookup[simulatedFastAssoc,defaultSampleModel,Object]
+              Experiment`Private`fastAssocLookup[fastAssoc,defaultSampleModel,Object]
             ]
           ],
           Null
@@ -8955,7 +8856,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Map[
 			If[MatchQ[#,Null],
 				{},
-				selectCapillaryELISAAnalyteFromSample[#,Cache->simulatedCache][[1]]
+				selectCapillaryELISAAnalyteFromSample[#,Cache->cache,Simulation->updatedSimulation][[1]]
 			]&,
 			ToList[resolvedStandard]
 		]
@@ -8966,7 +8867,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Map[
 			If[MatchQ[#,Null],
 				Null,
-				FirstOrDefault[selectCapillaryELISAAnalyteFromSample[#,Cache->simulatedCache][[2]]]
+				FirstOrDefault[selectCapillaryELISAAnalyteFromSample[#,Cache->cache,Simulation->updatedSimulation][[2]]]
 			]&,
 			ToList[resolvedStandard]
 		]
@@ -9014,7 +8915,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		Function[
 			{singleOption},
 			Module[{optionSymbol,optionValues,optionSymbolList},
-				(* Seperate out the option symbol from the option values. *)
+				(* Separate out the option symbol from the option values. *)
 				optionSymbol=singleOption[[1]];
 				optionValues=ToList[singleOption[[2]]];
 
@@ -9052,96 +8953,96 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* -- RESOLVE ALL OPTIONS RELATED TO STANDARD -- *)
     {
-        resolvedStandardResuspension,
-        resolvedStandardResuspensionConcentration,
-        resolvedStandardResuspensionDiluent,
-		resolvedStandardStorageCondition,
-        resolvedStandardDilutionCurve,
-        resolvedStandardSerialDilutionCurve,
-        resolvedStandardDiluent,
-        resolvedStandardDilutionMixVolume,
-        resolvedStandardDilutionNumberOfMixes,
-        resolvedStandardDilutionMixRate,
-        resolvedStandardCaptureAntibody,
-        resolvedStandardCaptureAntibodyResuspension,
-        resolvedStandardCaptureAntibodyResuspensionConcentration,
-        resolvedStandardCaptureAntibodyResuspensionDiluent,
-        resolvedStandardCaptureAntibodyStorageCondition,
-        resolvedStandardCaptureAntibodyConjugation,
-        resolvedStandardCaptureAntibodyVolume,
-        resolvedStandardDigoxigeninReagent,
-        resolvedStandardDigoxigeninReagentVolume,
-        resolvedStandardCaptureAntibodyConjugationBuffer,
-        resolvedStandardCaptureAntibodyConjugationBufferVolume,
-        resolvedStandardCaptureAntibodyConjugationContainer,
-        resolvedStandardCaptureAntibodyConjugationTime,
-        resolvedStandardCaptureAntibodyConjugationTemperature,
-        resolvedStandardCaptureAntibodyPurificationColumn,
-        resolvedStandardCaptureAntibodyColumnWashBuffer,
-        resolvedStandardCaptureAntibodyConjugationStorageCondition,
-        resolvedStandardCaptureAntibodyDilution,
-		resolvedStandardCaptureAntibodyTargetConcentration,
-        resolvedStandardCaptureAntibodyDiluent,
-        resolvedStandardDetectionAntibody,
-        resolvedStandardDetectionAntibodyResuspension,
-        resolvedStandardDetectionAntibodyResuspensionConcentration,
-        resolvedStandardDetectionAntibodyResuspensionDiluent,
-        resolvedStandardDetectionAntibodyStorageCondition,
-        resolvedStandardDetectionAntibodyConjugation,
-        resolvedStandardDetectionAntibodyVolume,
-        resolvedStandardBiotinReagent,
-        resolvedStandardBiotinReagentVolume,
-        resolvedStandardDetectionAntibodyConjugationBuffer,
-        resolvedStandardDetectionAntibodyConjugationBufferVolume,
-        resolvedStandardDetectionAntibodyConjugationContainer,
-        resolvedStandardDetectionAntibodyConjugationTime,
-        resolvedStandardDetectionAntibodyConjugationTemperature,
-        resolvedStandardDetectionAntibodyPurificationColumn,
-        resolvedStandardDetectionAntibodyColumnWashBuffer,
-        resolvedStandardDetectionAntibodyConjugationStorageCondition,
-        resolvedStandardDetectionAntibodyDilution,
-		resolvedStandardDetectionAntibodyTargetConcentration,
-        resolvedStandardDetectionAntibodyDiluent,
-		resolvedStandardLoadingVolume,
-		resolvedStandardCaptureAntibodyLoadingVolume,
-        resolvedStandardDetectionAntibodyLoadingVolume,
-		resolvedStandardComposition,
-		nonOptimalStandardResuspensionWarnings,
-		incompleteResolvedStandardCompositionErrors,
-		nonOptimalStandardDiluentWarnings,
-        conflictStandardAntibodyEpitopeWarnings,
-		standardCaptureAntibodyAssayTypeWarnings,
-		standardDetectionAntibodyAssayTypeWarnings,
-        missingStandardCaptureAntibodyErrors,
-        missingStandardDetectionAntibodyErrors,
-        missingStandardDigoxigeninReagentVolumeErrors,
-        missingStandardBiotinReagentVolumeErrors,
-		notEnoughStandardDigoxigeninReagentVolumeWarnings,
-		notEnoughStandardBiotinReagentVolumeWarnings,
-		exceedStandardCaptureAntibodyConjugationContainerErrors,
-		exceedStandardDetectionAntibodyConjugationContainerErrors,
-		exceedStandardCaptureAntibodyPurificationColumnErrors,
-		exceedStandardDetectionAntibodyPurificationColumnErrors,
-		invalidStandardCaptureAntibodyDilutionErrors,
-		invalidStandardDetectionAntibodyDilutionErrors,
-		nonOptimalStandardCaptureAntibodyDilutionWarnings,
-		nonOptimalStandardDetectionAntibodyDilutionWarnings,
-		standardUpperQuantitationLimits,
-		standardCaptureAntibodyConjuationReactionVolumes,
-		standardCaptureAntibodyConjugationContainerMaxVolumes,
-		standardCaptureAntibodyPurificationColumnMaxVolumes,
-		preferredStandardCaptureAntibodyPurificationColumns,
-		standardDetectionAntibodyConjuationReactionVolumes,
-		standardDetectionAntibodyConjugationContainerMaxVolumes,
-		standardDetectionAntibodyPurificationColumnMaxVolumes,
-		preferredStandardDetectionAntibodyPurificationColumns
-    }=If[MatchQ[resolvedStandard,Null|{}],
+    (*1*)resolvedStandardResuspension,
+    (*2*)resolvedStandardResuspensionConcentration,
+    (*3*)resolvedStandardResuspensionDiluent,
+    (*4*)resolvedStandardStorageCondition,
+    (*5*)resolvedStandardDilutionCurve,
+    (*6*)resolvedStandardSerialDilutionCurve,
+    (*7*)resolvedStandardDiluent,
+    (*8*)resolvedStandardDilutionMixVolume,
+    (*9*)resolvedStandardDilutionNumberOfMixes,
+    (*10*)resolvedStandardDilutionMixRate,
+    (*11*)resolvedStandardCaptureAntibody,
+    (*12*)resolvedStandardCaptureAntibodyResuspension,
+    (*13*)resolvedStandardCaptureAntibodyResuspensionConcentration,
+    (*14*)resolvedStandardCaptureAntibodyResuspensionDiluent,
+    (*15*)resolvedStandardCaptureAntibodyStorageCondition,
+    (*16*)resolvedStandardCaptureAntibodyConjugation,
+    (*17*)resolvedStandardCaptureAntibodyVolume,
+    (*18*)resolvedStandardDigoxigeninReagent,
+    (*19*)resolvedStandardDigoxigeninReagentVolume,
+    (*20*)resolvedStandardCaptureAntibodyConjugationBuffer,
+    (*21*)resolvedStandardCaptureAntibodyConjugationBufferVolume,
+    (*22*)resolvedStandardCaptureAntibodyConjugationContainer,
+    (*23*)resolvedStandardCaptureAntibodyConjugationTime,
+    (*24*)resolvedStandardCaptureAntibodyConjugationTemperature,
+    (*25*)resolvedStandardCaptureAntibodyPurificationColumn,
+    (*26*)resolvedStandardCaptureAntibodyColumnWashBuffer,
+    (*27*)resolvedStandardCaptureAntibodyConjugationStorageCondition,
+    (*28*)resolvedStandardCaptureAntibodyDilution,
+    (*29*)resolvedStandardCaptureAntibodyTargetConcentration,
+    (*30*)resolvedStandardCaptureAntibodyDiluent,
+    (*31*)resolvedStandardDetectionAntibody,
+    (*32*)resolvedStandardDetectionAntibodyResuspension,
+    (*33*)resolvedStandardDetectionAntibodyResuspensionConcentration,
+    (*34*)resolvedStandardDetectionAntibodyResuspensionDiluent,
+    (*35*)resolvedStandardDetectionAntibodyStorageCondition,
+    (*36*)resolvedStandardDetectionAntibodyConjugation,
+    (*37*)resolvedStandardDetectionAntibodyVolume,
+    (*38*)resolvedStandardBiotinReagent,
+    (*39*)resolvedStandardBiotinReagentVolume,
+    (*40*)resolvedStandardDetectionAntibodyConjugationBuffer,
+    (*41*)resolvedStandardDetectionAntibodyConjugationBufferVolume,
+    (*42*)resolvedStandardDetectionAntibodyConjugationContainer,
+    (*43*)resolvedStandardDetectionAntibodyConjugationTime,
+    (*44*)resolvedStandardDetectionAntibodyConjugationTemperature,
+    (*45*)resolvedStandardDetectionAntibodyPurificationColumn,
+    (*46*)resolvedStandardDetectionAntibodyColumnWashBuffer,
+    (*47*)resolvedStandardDetectionAntibodyConjugationStorageCondition,
+    (*48*)resolvedStandardDetectionAntibodyDilution,
+    (*49*)resolvedStandardDetectionAntibodyTargetConcentration,
+    (*50*)resolvedStandardDetectionAntibodyDiluent,
+    (*51*)resolvedStandardLoadingVolume,
+    (*52*)resolvedStandardCaptureAntibodyLoadingVolume,
+    (*53*)resolvedStandardDetectionAntibodyLoadingVolume,
+    (*54*)resolvedStandardComposition,
+    (*55*)nonOptimalStandardResuspensionWarnings,
+    (*56*)incompleteResolvedStandardCompositionErrors,
+    (*57*)nonOptimalStandardDiluentWarnings,
+    (*58*)conflictStandardAntibodyEpitopeWarnings,
+    (*59*)standardCaptureAntibodyAssayTypeWarnings,
+    (*60*)standardDetectionAntibodyAssayTypeWarnings,
+    (*61*)missingStandardCaptureAntibodyErrors,
+    (*62*)missingStandardDetectionAntibodyErrors,
+    (*63*)missingStandardDigoxigeninReagentVolumeErrors,
+    (*64*)missingStandardBiotinReagentVolumeErrors,
+    (*65*)notEnoughStandardDigoxigeninReagentVolumeWarnings,
+    (*66*)notEnoughStandardBiotinReagentVolumeWarnings,
+    (*67*)exceedStandardCaptureAntibodyConjugationContainerErrors,
+    (*68*)exceedStandardDetectionAntibodyConjugationContainerErrors,
+    (*69*)exceedStandardCaptureAntibodyPurificationColumnErrors,
+    (*70*)exceedStandardDetectionAntibodyPurificationColumnErrors,
+    (*71*)invalidStandardCaptureAntibodyDilutionErrors,
+    (*72*)invalidStandardDetectionAntibodyDilutionErrors,
+    (*73*)nonOptimalStandardCaptureAntibodyDilutionWarnings,
+    (*74*)nonOptimalStandardDetectionAntibodyDilutionWarnings,
+    (*75*)standardUpperQuantitationLimits,
+    (*76*)standardCaptureAntibodyConjuationReactionVolumes,
+    (*77*)standardCaptureAntibodyConjugationContainerMaxVolumes,
+    (*78*)standardCaptureAntibodyPurificationColumnMaxVolumes,
+    (*79*)preferredStandardCaptureAntibodyPurificationColumns,
+    (*80*)standardDetectionAntibodyConjuationReactionVolumes,
+    (*81*)standardDetectionAntibodyConjugationContainerMaxVolumes,
+    (*82*)standardDetectionAntibodyPurificationColumnMaxVolumes,
+    (*83*)preferredStandardDetectionAntibodyPurificationColumns
+    } = If[MatchQ[resolvedStandard, Null|{}],
 
-        (* No need to do MapThread when Standard is Null or empty list. Just keep user-defined options or set to Null. Error message has been thrown in Option Conflict Check stage *)
-        Join[
-			userDefinedOrDefault[Lookup[roundedCapillaryELISAOptionsAssociation,standardOptions],Null],
-			ConstantArray[{},29]
-		],
+      (* No need to do MapThread when Standard is Null or empty list. Just keep user-defined options or set to Null. Error message has been thrown in Option Conflict Check stage *)
+      Join[
+        userDefinedOrDefault[Lookup[roundedCapillaryELISAOptionsAssociation, standardOptions], Null],
+        ConstantArray[{}, 29]
+      ],
 
         (* When Standard is not Null, MapThread over each of our standard samples. *)
         Transpose[
@@ -9160,7 +9061,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
                             (* All other variables *)
 							myStandardPacket,myStandardState,presentedStandardPreLoadedAnalyte,presentedStandardPreLoadedAnalyteName,presentedStandardPreLoadedAnalyteSpec,standardUpperQuantitationLimit,resolvedStandardDiluentPacket,resolvedStandardDiluentModel,standardCaptureAntibodyNewRules,standardDetectionAntibodyNewRules,processedMyMapThreadOptions,bestStandardDilutionMixVolume,
-							captureAntibodyAverageMolecularWeight,captureAntibodyConjugatedQ,captureAntibodyIdentityModels,captureAntibodyIdentityModelPacket,captureAntibodySecondaryAntibidies,captureAntibodyMolecularWeights,standardDigoxigeninReagentComposition,standardDigoxigeninReagentConcentration,standardDigoxigeninReagentPacket,digoxigeninMoleculeMolecularWeight,captureAntibodyPacket,captureAntibodyState,standardCaptureAntibodyConcentration,standardCaptureAntibodyMassConcentration,preferredStandardCaptureAntibodyPurificationColumn,standardCaptureAntibodyConjugationContainerPacket,standardCaptureAntibodyConjugationContainerMaxVolume,standardCaptureAntibodyPurificationColumnPacket,standardCaptureAntibodyPurificationColumnModel,standardCaptureAntibodyPurificationColumnMaxVolume,standardCaptureAntibodyTargetMassConcentration,
+							captureAntibodyAverageMolecularWeight,captureAntibodyConjugatedQ,captureAntibodyIdentityModels,captureAntibodyIdentityModelPacket,captureAntibodySecondaryAntibodies,captureAntibodyMolecularWeights,standardDigoxigeninReagentComposition,standardDigoxigeninReagentConcentration,standardDigoxigeninReagentPacket,digoxigeninMoleculeMolecularWeight,captureAntibodyPacket,captureAntibodyState,standardCaptureAntibodyConcentration,standardCaptureAntibodyMassConcentration,preferredStandardCaptureAntibodyPurificationColumn,standardCaptureAntibodyConjugationContainerPacket,standardCaptureAntibodyConjugationContainerMaxVolume,standardCaptureAntibodyPurificationColumnPacket,standardCaptureAntibodyPurificationColumnModel,standardCaptureAntibodyPurificationColumnMaxVolume,standardCaptureAntibodyTargetMassConcentration,
 							detectionAntibodyAverageMolecularWeight,detectionAntibodyConjugatedQ,detectionAntibodyIdentityModels,detectionAntibodyIdentityModelPacket,detectionAntibodyTargets,detectionAntibodyMolecularWeights,standardBiotinReagentComposition,standardBiotinReagentConcentration,standardBiotinReagentPacket,biotinMoleculeMolecularWeight,detectionAntibodyPacket,detectionAntibodyState,standardDetectionAntibodyConcentration,standardDetectionAntibodyMassConcentration,standardDetectionAntibodyConjugationContainerPacket,standardDetectionAntibodyConjugationContainerMaxVolume,standardDetectionAntibodyPurificationColumnPacket,standardDetectionAntibodyPurificationColumnModel,standardDetectionAntibodyPurificationColumnMaxVolume,standardDetectionAntibodyTargetMassConcentration
                         },
 
@@ -9168,7 +9069,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         {nonOptimalStandardResuspensionWarning,incompleteResolvedStandardCompositionError,nonOptimalStandardDiluentWarning,conflictStandardAntibodyEpitopeWarning,standardCaptureAntibodyAssayTypeWarning,standardDetectionAntibodyAssayTypeWarning,missingStandardCaptureAntibodyError,missingStandardDetectionAntibodyError,missingStandardDigoxigeninReagentVolumeError,missingStandardBiotinReagentVolumeError,notEnoughStandardDigoxigeninReagentVolumeWarning,notEnoughStandardBiotinReagentVolumeWarning,exceedStandardCaptureAntibodyConjugationContainerError,exceedStandardDetectionAntibodyConjugationContainerError,exceedStandardCaptureAntibodyPurificationColumnError,exceedStandardDetectionAntibodyPurificationColumnError,invalidStandardCaptureAntibodyDilutionError,invalidStandardDetectionAntibodyDilutionError,nonOptimalStandardCaptureAntibodyDilutionWarning,nonOptimalStandardDetectionAntibodyDilutionWarning}=ConstantArray[False,20];
                             
                         (* Get the packet of myStandardSample *)
-                        myStandardPacket=Experiment`Private`fetchPacketFromFastAssoc[myStandardSample,simulatedFastAssoc];
+                        myStandardPacket=Experiment`Private`fetchPacketFromFastAssoc[myStandardSample,fastAssoc];
 
                         (* Check the state of the sample - Solid or Liquid *)
                         myStandardState=If[MatchQ[myStandardPacket,Null],
@@ -9199,7 +9100,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						(* Get the analyte manufacturing specification *)
 						presentedStandardPreLoadedAnalyteSpec=If[!MatchQ[presentedStandardPreLoadedAnalyte,Null],
 							FirstCase[
-								simulatedCache,
+								cache,
 								KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteName->presentedStandardPreLoadedAnalyteName}],
 								{}
 							],
@@ -9281,25 +9182,23 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                             (* Otherwise we throw an error if it is resuspended but we cannot figure out which analyte it is for *)
                             MatchQ[standardResuspension,True],Null,
 
-                            (* If we have got a liquid state sample and we don't have a customizable cartridge, we can try to find the concentration from its composition field. This can be an empty list *)
-                            !resolvedCustomizableCartridgeQ&&!MatchQ[resolvedPreLoadeAnalyteMolecules,Null|{}],
-							Map[
-								Function[
-									{comp},
-									{First[comp],Download[Last[comp],Object,Cache->simulatedCache]}
-								],
-								Select[Lookup[myStandardPacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[resolvedPreLoadedAnalytes]}]&]
-							],
+    (* If we have got a liquid state sample and we don't have a customizable cartridge, we can try to find the concentration from its composition field. This can be an empty list *)
+    !resolvedCustomizableCartridgeQ&&!MatchQ[resolvedPreLoadeAnalyteMolecules,Null|{}],
+            Map[
+              Function[{comp},
+                {First[comp],Download[comp[[2]],Object,Simulation->updatedSimulation]}
+              ],
+              Select[Lookup[myStandardPacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[resolvedPreLoadedAnalytes]}|{Except[Null],ObjectP[resolvedPreLoadedAnalytes],_}]&]
+            ],
 
-                            (* If we have got a liquid state sample and we got a customizable cartridge, we can try to find the concentration from its composition field *)
-                            resolvedCustomizableCartridgeQ&&!MatchQ[standardCustomizableAnalyte,Null],
-							Map[
-								Function[
-									{comp},
-									{First[comp],Download[Last[comp],Object,Cache->simulatedCache]}
-								],
-								Select[Lookup[myStandardPacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[standardCustomizableAnalyte]}]&]
-							],
+    (* If we have got a liquid state sample and we got a customizable cartridge, we can try to find the concentration from its composition field *)
+    resolvedCustomizableCartridgeQ&&!MatchQ[standardCustomizableAnalyte,Null],
+            Map[
+              Function[{comp},
+                {First[comp],Download[comp[[2]],Object,Simulation->updatedSimulation]}
+              ],
+              Select[Lookup[myStandardPacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[standardCustomizableAnalyte]}|{Except[Null],ObjectP[standardCustomizableAnalyte],_}]&]
+            ],
 
                             (* Return Null if we cannot find anything *)
                             True,Null
@@ -9352,7 +9251,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         ];
 
 						(* Set the error tracking boolean to True if we get a non-optimal diluent *)
-						resolvedStandardDiluentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDiluent,simulatedFastAssoc];
+						resolvedStandardDiluentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDiluent,fastAssoc];
 						resolvedStandardDiluentModel=Which[
 							MatchQ[standardDiluent,ObjectP[Model[Sample]]],standardDiluent,
 							MatchQ[standardDiluent,Null],Null,
@@ -9382,7 +9281,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 							],
 
                             (* Otherwise we call our big helper function to resolve the antibody pair. It also returns epitope conflicting information. We will check whether we are able to resolve both capture antibody and detection antibody in the following step. *)
-                            True,findAntibodyPairs[standardCustomizableAnalyte,Lookup[myMapThreadOptions,StandardCaptureAntibody],Lookup[myMapThreadOptions,StandardDetectionAntibody]]
+                            True,findAntibodyPairs[standardCustomizableAnalyte,Lookup[myMapThreadOptions,StandardCaptureAntibody],Lookup[myMapThreadOptions,StandardDetectionAntibody],Simulation->updatedSimulation]
                         ];
 
                         (* If we cannot resolve any of the antibody, we are going to return errors *)
@@ -9420,7 +9319,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						(* StandardCaptureAntibody OPTIONS *)
                         (* Get the packet of standardCaptureAntibody *)
                         captureAntibodyPacket=If[!MatchQ[standardCaptureAntibody,Null],
-                            Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibody,simulatedFastAssoc],
+                            Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibody,fastAssoc],
                             {}
                         ];
 
@@ -9447,7 +9346,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         ];
 
                         (* Find all identity models of the capture antibody *)
-                        captureAntibodyIdentityModels=Select[Lookup[captureAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&];
+                        captureAntibodyIdentityModels=Select[Lookup[captureAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody],_]}]&];
 
                         (* Get the concentration of the capture antibody. Make sure we get the correct unit *)
                         standardCaptureAntibodyConcentration=Which[
@@ -9462,7 +9361,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 						(* Check the packet of the capture antibody for modification *)
 						captureAntibodyIdentityModelPacket=If[!MatchQ[captureAntibodyIdentityModels,{}],
-							Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyIdentityModels[[1]][[2]],simulatedFastAssoc],
+							Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyIdentityModels[[1]][[2]],fastAssoc],
 							<||>
 						];
 
@@ -9471,12 +9370,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         (* Find all molecular weights of all identity models *)
                         captureAntibodyMolecularWeights=DeleteCases[
                           Map[
-                            Experiment`Private`fastAssocLookup[simulatedFastAssoc,#,{Object,MolecularWeight}]&,
+                            Experiment`Private`fastAssocLookup[fastAssoc,#,{Object,MolecularWeight}]&,
                             captureAntibodyIdentityModels[[All,2]]
                           ],
                           Null
                         ];
-                        (* Use the average molecular weight or 150000 Dalton for caculation *)
+                        (* Use the average molecular weight or 150000 Dalton for calculation *)
                         captureAntibodyAverageMolecularWeight=If[MatchQ[captureAntibodyMolecularWeights,{}],
                             150000Dalton,
                             Mean[captureAntibodyMolecularWeights]
@@ -9507,11 +9406,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         ];
 
                         (* Get the packet of standardDigoxigeninReagent *)
-                        standardDigoxigeninReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDigoxigeninReagent,simulatedFastAssoc];
+                        standardDigoxigeninReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDigoxigeninReagent,fastAssoc];
 
                         (* Get the composition of standardDigoxigeninReagent with the one for Model[Molecule,"Digoxigenin NHS ester"]. We currently may not be able to search for another Digoxigenin modification molecule as its reaction mechanism may be completely different and the ratio must also be adjusted. *)
                         standardDigoxigeninReagentComposition=If[!MatchQ[standardDigoxigeninReagentPacket,Null],
-                            Select[Lookup[standardDigoxigeninReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]]}]&], (* Model[Molecule, "Digoxigenin NHS ester"] *)
+                            Select[Lookup[standardDigoxigeninReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]]}|{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]],_}]&], (* Model[Molecule, "Digoxigenin NHS ester"] *)
 							{}
 						];
 
@@ -9660,7 +9559,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         ];
 
 						(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification column *)
-						standardCaptureAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyConjugationContainer,simulatedFastAssoc];
+						standardCaptureAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyConjugationContainer,fastAssoc];
 						standardCaptureAntibodyConjugationContainerMaxVolume=If[MatchQ[standardCaptureAntibodyConjugationContainerPacket,Null],
 							Infinity*Microliter,
 							Lookup[standardCaptureAntibodyConjugationContainerPacket,MaxVolume,Infinity*Microliter]
@@ -9673,7 +9572,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						];
 
 						(* Get the packet with purification column information *)
-						standardCaptureAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyPurificationColumn,simulatedFastAssoc];
+						standardCaptureAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyPurificationColumn,fastAssoc];
 
 						(* Get the model of the purification column *)
 						standardCaptureAntibodyPurificationColumnModel=Which[
@@ -9686,7 +9585,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						standardCaptureAntibodyPurificationColumnMaxVolume=If[NullQ[standardCaptureAntibodyPurificationColumnModel],
 							Infinity*Microliter,
 							Lookup[
-								Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyPurificationColumnModel,simulatedFastAssoc],
+								Experiment`Private`fetchPacketFromFastAssoc[standardCaptureAntibodyPurificationColumnModel,fastAssoc],
 								MaxVolume,
 								Infinity*Microliter
 							]
@@ -9752,7 +9651,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						invalidStandardCaptureAntibodyDilutionError=Which[
 							!MatchQ[standardCaptureAntibodyTargetConcentration,GreaterEqualP[0Microgram/Milliliter]|GreaterEqualP[0Molar]],False,
 
-							(* Comment out the estimation of conjguation loss *)
+							(* Comment out the estimation of conjugation loss *)
 							(*
 							(* We get both concentrations in the same units but conjugation set as True *)
 							MatchQ[standardCaptureAntibodyTargetMassConcentration,GreaterEqualP[0Microgram/Milliliter]]&&MatchQ[standardCaptureAntibodyMassConcentration,GreaterEqualP[0Milligram/Milliliter]]&&MatchQ[standardCaptureAntibodyConjugation,True],
@@ -9788,7 +9687,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						(* StandardDetectionAntibody OPTIONS *)
 						(* Get the packet of standardDetectionAntibody *)
 						detectionAntibodyPacket=If[!MatchQ[standardDetectionAntibody,Null],
-							Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibody,simulatedFastAssoc],
+							Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibody,fastAssoc],
 							{}
 						];
 
@@ -9815,7 +9714,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						];
 
 						(* Find all identity models of the detection antibody *)
-						detectionAntibodyIdentityModels=Select[Lookup[detectionAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&];
+						detectionAntibodyIdentityModels=Select[Lookup[detectionAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&];
 
 						(* Get the concentration of the detection antibody. Make sure we get the correct unit *)
 						standardDetectionAntibodyConcentration=Which[
@@ -9830,7 +9729,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 						(* Check the packet of the detection antibody for modification *)
 						detectionAntibodyIdentityModelPacket=If[!MatchQ[detectionAntibodyIdentityModels,{}],
-							Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyIdentityModels[[1]][[2]],simulatedFastAssoc],
+							Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyIdentityModels[[1]][[2]],fastAssoc],
 							<||>
 						];
 
@@ -9840,12 +9739,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						(* Find all molecular weights of all identity models *)
 						detectionAntibodyMolecularWeights=DeleteCases[
               Map[
-                Experiment`Private`fastAssocLookup[simulatedFastAssoc,#,{Object,MolecularWeight}]&,
+                Experiment`Private`fastAssocLookup[fastAssoc,#,{Object,MolecularWeight}]&,
                 detectionAntibodyIdentityModels[[All,2]]
               ]
               ,Null
             ];
-						(* Use the average molecular weight or 150000 Dalton for caculation *)
+						(* Use the average molecular weight or 150000 Dalton for calculation *)
 						detectionAntibodyAverageMolecularWeight=If[MatchQ[detectionAntibodyMolecularWeights,{}],
 							150000Dalton,
 							Mean[detectionAntibodyMolecularWeights]
@@ -9876,11 +9775,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						];
 
 						(* Get the packet of standardBiotinReagent *)
-						standardBiotinReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardBiotinReagent,simulatedFastAssoc];
+						standardBiotinReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[standardBiotinReagent,fastAssoc];
 
 						(* Get the composition of standardBiotinReagent with the one for Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"]. We currently may not be able to search for another Biotin modification molecule as its reaction mechanism may be completely different and the ratio must also be adjusted. *)
 						standardBiotinReagentComposition=If[!MatchQ[standardBiotinReagentPacket,Null],
-							Select[Lookup[standardBiotinReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]]}]&], (* Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"] *)
+							Select[Lookup[standardBiotinReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]]}|{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]],_}]&], (* Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"] *)
 							{}
 						];
 
@@ -10030,8 +9929,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 							preferredStandardDetectionAntibodyPurificationColumn
 						];
 
-						(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification colume *)
-						standardDetectionAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyConjugationContainer,simulatedFastAssoc];
+						(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification volume *)
+						standardDetectionAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyConjugationContainer,fastAssoc];
 						standardDetectionAntibodyConjugationContainerMaxVolume=If[MatchQ[standardDetectionAntibodyConjugationContainerPacket,Null],
 							Infinity*Microliter,
 							Lookup[standardDetectionAntibodyConjugationContainerPacket,MaxVolume,Infinity*Microliter]
@@ -10044,7 +9943,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						];
 
 						(* Get the packet with purification column information *)
-						standardDetectionAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyPurificationColumn,simulatedFastAssoc];
+						standardDetectionAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyPurificationColumn,fastAssoc];
 
 						(* Get the model of the purification column *)
 						standardDetectionAntibodyPurificationColumnModel=Which[
@@ -10057,7 +9956,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						standardDetectionAntibodyPurificationColumnMaxVolume=If[NullQ[standardDetectionAntibodyPurificationColumnModel],
 							Infinity*Microliter,
 							Lookup[
-								Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyPurificationColumnModel,simulatedFastAssoc],
+								Experiment`Private`fetchPacketFromFastAssoc[standardDetectionAntibodyPurificationColumnModel,fastAssoc],
 								MaxVolume,
 								Infinity*Microliter
 							]
@@ -10103,7 +10002,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 							!MatchQ[Lookup[processedMyMapThreadOptions,StandardDetectionAntibodyTargetConcentration],Automatic],Lookup[processedMyMapThreadOptions,StandardDetectionAntibodyTargetConcentration],
 							!resolvedCustomizableCartridgeQ,Null,
 							missingStandardDetectionAntibodyError,Null,
-							!MatchQ[standardDetectionAntibodyDilution,True],True,
+							!MatchQ[standardDetectionAntibodyDilution,True],Null,
 
 							(* If we find a concentration for the standard detection antibody sample and it's below 3.5 Microgram/Milliliter, we set the target concentration to 1/2 of its original concentration *)
 							(* This is a randomly selected number to cover the loss of conjugation/purification - Typically a Zeba spin column has a recovery % of over 80% *)
@@ -10123,7 +10022,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						invalidStandardDetectionAntibodyDilutionError=Which[
 							!MatchQ[standardDetectionAntibodyTargetConcentration,GreaterEqualP[0Microgram/Milliliter]|GreaterEqualP[0Molar]],False,
 
-							(* Comment out the estimation of conjguation loss *)
+							(* Comment out the estimation of conjugation loss *)
 							(*
 							(* We get both concentrations in the same units but conjugation set as True *)
 							MatchQ[standardDetectionAntibodyTargetMassConcentration,GreaterEqualP[0Microgram/Milliliter]]&&MatchQ[standardDetectionAntibodyMassConcentration,GreaterEqualP[0Milligram/Milliliter]]&&MatchQ[standardDetectionAntibodyConjugation,True],
@@ -10155,185 +10054,182 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 							!resolvedCustomizableCartridgeQ,Null,
 							True,50Microliter
 						];
-
-                        
                         (* We now have all the Standard related options resolved and we are ready to return everything back to MapThread *)
                         {
-							standardResuspension,
-							standardResuspensionConcentration,
-							standardResuspensionDiluent,
-							standardStorageCondition,
-							standardDilutionCurve,
-							standardSerialDilutionCurve,
-							standardDiluent,
-							standardDilutionMixVolume,
-							standardDilutionNumberOfMixes,
-							standardDilutionMixRate,
-							standardCaptureAntibody,
-							standardCaptureAntibodyResuspension,
-							standardCaptureAntibodyResuspensionConcentration,
-							standardCaptureAntibodyResuspensionDiluent,
-							standardCaptureAntibodyStorageCondition,
-							standardCaptureAntibodyConjugation,
-							standardCaptureAntibodyVolume,
-							standardDigoxigeninReagent,
-							standardDigoxigeninReagentVolume,
-							standardCaptureAntibodyConjugationBuffer,
-							standardCaptureAntibodyConjugationBufferVolume,
-							standardCaptureAntibodyConjugationContainer,
-							standardCaptureAntibodyConjugationTime,
-							standardCaptureAntibodyConjugationTemperature,
-							standardCaptureAntibodyPurificationColumn,
-							standardCaptureAntibodyColumnWashBuffer,
-							standardCaptureAntibodyConjugationStorageCondition,
-							standardCaptureAntibodyDilution,
-							standardCaptureAntibodyTargetConcentration,
-							standardCaptureAntibodyDiluent,
-							standardDetectionAntibody,
-							standardDetectionAntibodyResuspension,
-							standardDetectionAntibodyResuspensionConcentration,
-							standardDetectionAntibodyResuspensionDiluent,
-							standardDetectionAntibodyStorageCondition,
-							standardDetectionAntibodyConjugation,
-							standardDetectionAntibodyVolume,
-							standardBiotinReagent,
-							standardBiotinReagentVolume,
-							standardDetectionAntibodyConjugationBuffer,
-							standardDetectionAntibodyConjugationBufferVolume,
-							standardDetectionAntibodyConjugationContainer,
-							standardDetectionAntibodyConjugationTime,
-							standardDetectionAntibodyConjugationTemperature,
-							standardDetectionAntibodyPurificationColumn,
-							standardDetectionAntibodyColumnWashBuffer,
-							standardDetectionAntibodyConjugationStorageCondition,
-							standardDetectionAntibodyDilution,
-							standardDetectionAntibodyTargetConcentration,
-							standardDetectionAntibodyDiluent,
-							standardLoadingVolume,
-							standardCaptureAntibodyLoadingVolume,
-							standardDetectionAntibodyLoadingVolume,
-							standardComposition,
-							nonOptimalStandardResuspensionWarning,
-							incompleteResolvedStandardCompositionError,
-							nonOptimalStandardDiluentWarning,
-							conflictStandardAntibodyEpitopeWarning,
-							standardCaptureAntibodyAssayTypeWarning,
-							standardDetectionAntibodyAssayTypeWarning,
-							missingStandardCaptureAntibodyError,
-							missingStandardDetectionAntibodyError,
-							missingStandardDigoxigeninReagentVolumeError,
-							missingStandardBiotinReagentVolumeError,
-							notEnoughStandardDigoxigeninReagentVolumeWarning,
-							notEnoughStandardBiotinReagentVolumeWarning,
-							exceedStandardCaptureAntibodyConjugationContainerError,
-							exceedStandardDetectionAntibodyConjugationContainerError,
-							exceedStandardCaptureAntibodyPurificationColumnError,
-							exceedStandardDetectionAntibodyPurificationColumnError,
-							invalidStandardCaptureAntibodyDilutionError,
-							invalidStandardDetectionAntibodyDilutionError,
-							nonOptimalStandardCaptureAntibodyDilutionWarning,
-							nonOptimalStandardDetectionAntibodyDilutionWarning,
-							standardUpperQuantitationLimit,
-							totalStandardCaptureAntibodyConjugationVolume,
-							standardCaptureAntibodyConjugationContainerMaxVolume,
-							standardCaptureAntibodyPurificationColumnMaxVolume,
-							preferredStandardCaptureAntibodyPurificationColumn,
-							totalStandardDetectionAntibodyConjugationVolume,
-							standardDetectionAntibodyConjugationContainerMaxVolume,
-							standardDetectionAntibodyPurificationColumnMaxVolume,
-							preferredStandardDetectionAntibodyPurificationColumn
-                        }
+    (*1*)standardResuspension,
+    (*2*)standardResuspensionConcentration,
+    (*3*)standardResuspensionDiluent,
+    (*4*)standardStorageCondition,
+    (*5*)standardDilutionCurve,
+    (*6*)standardSerialDilutionCurve,
+    (*7*)standardDiluent,
+    (*8*)standardDilutionMixVolume,
+    (*9*)standardDilutionNumberOfMixes,
+    (*10*)standardDilutionMixRate,
+    (*11*)standardCaptureAntibody,
+    (*12*)standardCaptureAntibodyResuspension,
+    (*13*)standardCaptureAntibodyResuspensionConcentration,
+    (*14*)standardCaptureAntibodyResuspensionDiluent,
+    (*15*)standardCaptureAntibodyStorageCondition,
+    (*16*)standardCaptureAntibodyConjugation,
+    (*17*)standardCaptureAntibodyVolume,
+    (*18*)standardDigoxigeninReagent,
+    (*19*)standardDigoxigeninReagentVolume,
+    (*20*)standardCaptureAntibodyConjugationBuffer,
+    (*21*)standardCaptureAntibodyConjugationBufferVolume,
+    (*22*)standardCaptureAntibodyConjugationContainer,
+    (*23*)standardCaptureAntibodyConjugationTime,
+    (*24*)standardCaptureAntibodyConjugationTemperature,
+    (*25*)standardCaptureAntibodyPurificationColumn,
+    (*26*)standardCaptureAntibodyColumnWashBuffer,
+    (*27*)standardCaptureAntibodyConjugationStorageCondition,
+    (*28*)standardCaptureAntibodyDilution,
+    (*29*)standardCaptureAntibodyTargetConcentration,
+    (*30*)standardCaptureAntibodyDiluent,
+    (*31*)standardDetectionAntibody,
+    (*32*)standardDetectionAntibodyResuspension,
+    (*33*)standardDetectionAntibodyResuspensionConcentration,
+    (*34*)standardDetectionAntibodyResuspensionDiluent,
+    (*35*)standardDetectionAntibodyStorageCondition,
+    (*36*)standardDetectionAntibodyConjugation,
+    (*37*)standardDetectionAntibodyVolume,
+    (*38*)standardBiotinReagent,
+    (*39*)standardBiotinReagentVolume,
+    (*40*)standardDetectionAntibodyConjugationBuffer,
+    (*41*)standardDetectionAntibodyConjugationBufferVolume,
+    (*42*)standardDetectionAntibodyConjugationContainer,
+    (*43*)standardDetectionAntibodyConjugationTime,
+    (*44*)standardDetectionAntibodyConjugationTemperature,
+    (*45*)standardDetectionAntibodyPurificationColumn,
+    (*46*)standardDetectionAntibodyColumnWashBuffer,
+    (*47*)standardDetectionAntibodyConjugationStorageCondition,
+    (*48*)standardDetectionAntibodyDilution,
+    (*49*)standardDetectionAntibodyTargetConcentration,
+    (*50*)standardDetectionAntibodyDiluent,
+    (*51*)standardLoadingVolume,
+    (*52*)standardCaptureAntibodyLoadingVolume,
+    (*53*)standardDetectionAntibodyLoadingVolume,
+    (*54*)standardComposition,
+    (*55*)nonOptimalStandardResuspensionWarning,
+    (*56*)incompleteResolvedStandardCompositionError,
+    (*57*)nonOptimalStandardDiluentWarning,
+    (*58*)conflictStandardAntibodyEpitopeWarning,
+    (*59*)standardCaptureAntibodyAssayTypeWarning,
+    (*60*)standardDetectionAntibodyAssayTypeWarning,
+    (*61*)missingStandardCaptureAntibodyError,
+    (*62*)missingStandardDetectionAntibodyError,
+    (*63*)missingStandardDigoxigeninReagentVolumeError,
+    (*64*)missingStandardBiotinReagentVolumeError,
+    (*65*)notEnoughStandardDigoxigeninReagentVolumeWarning,
+    (*66*)notEnoughStandardBiotinReagentVolumeWarning,
+    (*67*)exceedStandardCaptureAntibodyConjugationContainerError,
+    (*68*)exceedStandardDetectionAntibodyConjugationContainerError,
+    (*69*)exceedStandardCaptureAntibodyPurificationColumnError,
+    (*70*)exceedStandardDetectionAntibodyPurificationColumnError,
+    (*71*)invalidStandardCaptureAntibodyDilutionError,
+    (*72*)invalidStandardDetectionAntibodyDilutionError,
+    (*73*)nonOptimalStandardCaptureAntibodyDilutionWarning,
+    (*74*)nonOptimalStandardDetectionAntibodyDilutionWarning,
+    (*75*)standardUpperQuantitationLimit,
+    (*76*)totalStandardCaptureAntibodyConjugationVolume,
+    (*77*)standardCaptureAntibodyConjugationContainerMaxVolume,
+    (*78*)standardCaptureAntibodyPurificationColumnMaxVolume,
+    (*79*)preferredStandardCaptureAntibodyPurificationColumn,
+    (*80*)totalStandardDetectionAntibodyConjugationVolume,
+    (*81*)standardDetectionAntibodyConjugationContainerMaxVolume,
+    (*82*)standardDetectionAntibodyPurificationColumnMaxVolume,
+    (*83*)preferredStandardDetectionAntibodyPurificationColumn
+                      }
+                  ]
+              ],
 
-                    ]
-                ],
-
-				(* MapThread on our resolvedStandard, the resolved standard analytes and the map thread friendly options *)
-				{ToList[resolvedStandard],resolvedPreLoadedStandardAnalytes,resolvedCustomizableStandardAnalytes,standardMapThreadFriendlyOptions}
-            ]
-        ]
+      (* MapThread on our resolvedStandard, the resolved standard analytes and the map thread friendly options *)
+      {ToList[resolvedStandard],resolvedPreLoadedStandardAnalytes,resolvedCustomizableStandardAnalytes,standardMapThreadFriendlyOptions}
+          ]
+      ]
     ];
 
 
     (* -- RESOLVE ALL MAPTHREAD OPTIONS -- *)
 	(* Note that SpikeSample is not an automatic option. We can just use the user-defined value as input for MapThread *)
     {
-		resolvedAnalytes,
-        resolvedSampleVolume,
-        resolvedSpikeVolume,
-        resolvedDilutionCurve,
-        resolvedSerialDilutionCurve,
-        resolvedDiluent,
-		resolvedDilutionMixVolume,
-		resolvedCustomCaptureAntibody,
-        resolvedCaptureAntibodyResuspension,
-        resolvedCaptureAntibodyResuspensionConcentration,
-        resolvedCaptureAntibodyResuspensionDiluent,
-        resolvedCaptureAntibodyStorageCondition,
-        resolvedCaptureAntibodyConjugation,
-        resolvedCaptureAntibodyVolume,
-        resolvedDigoxigeninReagent,
-        resolvedDigoxigeninReagentVolume,
-        resolvedCaptureAntibodyConjugationBuffer,
-        resolvedCaptureAntibodyConjugationBufferVolume,
-        resolvedCaptureAntibodyConjugationContainer,
-        resolvedCaptureAntibodyConjugationTime,
-        resolvedCaptureAntibodyConjugationTemperature,
-        resolvedCaptureAntibodyPurificationColumn,
-        resolvedCaptureAntibodyColumnWashBuffer,
-        resolvedCaptureAntibodyConjugationStorageCondition,
-        resolvedCaptureAntibodyDilution,
-		resolvedCaptureAntibodyTargetConcentration,
-        resolvedCaptureAntibodyDiluent,
-		resolvedCustomDetectionAntibody,
-		resolvedDetectionAntibodyResuspension,
-		resolvedDetectionAntibodyResuspensionConcentration,
-		resolvedDetectionAntibodyResuspensionDiluent,
-		resolvedDetectionAntibodyStorageCondition,
-		resolvedDetectionAntibodyConjugation,
-		resolvedDetectionAntibodyVolume,
-		resolvedBiotinReagent,
-		resolvedBiotinReagentVolume,
-		resolvedDetectionAntibodyConjugationBuffer,
-		resolvedDetectionAntibodyConjugationBufferVolume,
-		resolvedDetectionAntibodyConjugationContainer,
-		resolvedDetectionAntibodyConjugationTime,
-		resolvedDetectionAntibodyConjugationTemperature,
-		resolvedDetectionAntibodyPurificationColumn,
-		resolvedDetectionAntibodyColumnWashBuffer,
-		resolvedDetectionAntibodyConjugationStorageCondition,
-		resolvedDetectionAntibodyDilution,
-		resolvedDetectionAntibodyTargetConcentration,
-		resolvedDetectionAntibodyDiluent,
-		resolvedCaptureAntibodyLoadingVolume,
-		resolvedDetectionAntibodyLoadingVolume,
-		resolvedSpikeConcentration,
-		incompleteResolvedSpikeConcentrationErrors,
-		nonOptimalDilutionWarnings,
-		conflictAntibodyEpitopeWarnings,
-		captureAntibodyAssayTypeWarnings,
-		detectionAntibodyAssayTypeWarnings,
-		missingCaptureAntibodyErrors,
-		missingDetectionAntibodyErrors,
-		missingDigoxigeninReagentVolumeErrors,
-		missingBiotinReagentVolumeErrors,
-		notEnoughDigoxigeninReagentVolumeWarnings,
-		notEnoughBiotinReagentVolumeWarnings,
-		exceedCaptureAntibodyConjugationContainerErrors,
-		exceedDetectionAntibodyConjugationContainerErrors,
-		exceedCaptureAntibodyPurificationColumnErrors,
-		exceedDetectionAntibodyPurificationColumnErrors,
-		invalidCaptureAntibodyDilutionErrors,
-		invalidDetectionAntibodyDilutionErrors,
-		nonOptimalCaptureAntibodyDilutionWarnings,
-		nonOptimalDetectionAntibodyDilutionWarnings,
-		captureAntibodyConjuationReactionVolumes,
-		captureAntibodyConjugationContainerMaxVolumes,
-		captureAntibodyPurificationColumnMaxVolumes,
-		preferredCaptureAntibodyPurificationColumns,
-		detectionAntibodyConjuationReactionVolumes,
-		detectionAntibodyConjugationContainerMaxVolumes,
-		detectionAntibodyPurificationColumnMaxVolumes,
-		preferredDetectionAntibodyPurificationColumns
+      (*1*)resolvedAnalytes,
+      (*2*)resolvedSampleVolume,
+      (*3*)resolvedSpikeVolume,
+      (*4*)resolvedDilutionCurve,
+      (*5*)resolvedSerialDilutionCurve,
+      (*6*)resolvedDiluent,
+      (*7*)resolvedDilutionMixVolume,
+      (*8*)resolvedCustomCaptureAntibody,
+      (*9*)resolvedCaptureAntibodyResuspension,
+      (*10*)resolvedCaptureAntibodyResuspensionConcentration,
+      (*11*)resolvedCaptureAntibodyResuspensionDiluent,
+      (*12*)resolvedCaptureAntibodyStorageCondition,
+      (*13*)resolvedCaptureAntibodyConjugation,
+      (*14*)resolvedCaptureAntibodyVolume,
+      (*15*)resolvedDigoxigeninReagent,
+      (*16*)resolvedDigoxigeninReagentVolume,
+      (*17*)resolvedCaptureAntibodyConjugationBuffer,
+      (*18*)resolvedCaptureAntibodyConjugationBufferVolume,
+      (*19*)resolvedCaptureAntibodyConjugationContainer,
+      (*20*)resolvedCaptureAntibodyConjugationTime,
+      (*21*)resolvedCaptureAntibodyConjugationTemperature,
+      (*22*)resolvedCaptureAntibodyPurificationColumn,
+      (*23*)resolvedCaptureAntibodyColumnWashBuffer,
+      (*24*)resolvedCaptureAntibodyConjugationStorageCondition,
+      (*25*)resolvedCaptureAntibodyDilution,
+      (*26*)resolvedCaptureAntibodyTargetConcentration,
+      (*27*)resolvedCaptureAntibodyDiluent,
+      (*28*)resolvedCustomDetectionAntibody,
+      (*29*)resolvedDetectionAntibodyResuspension,
+      (*30*)resolvedDetectionAntibodyResuspensionConcentration,
+      (*31*)resolvedDetectionAntibodyResuspensionDiluent,
+      (*32*)resolvedDetectionAntibodyStorageCondition,
+      (*33*)resolvedDetectionAntibodyConjugation,
+      (*34*)resolvedDetectionAntibodyVolume,
+      (*35*)resolvedBiotinReagent,
+      (*36*)resolvedBiotinReagentVolume,
+      (*37*)resolvedDetectionAntibodyConjugationBuffer,
+      (*38*)resolvedDetectionAntibodyConjugationBufferVolume,
+      (*39*)resolvedDetectionAntibodyConjugationContainer,
+      (*40*)resolvedDetectionAntibodyConjugationTime,
+      (*41*)resolvedDetectionAntibodyConjugationTemperature,
+      (*42*)resolvedDetectionAntibodyPurificationColumn,
+      (*43*)resolvedDetectionAntibodyColumnWashBuffer,
+      (*44*)resolvedDetectionAntibodyConjugationStorageCondition,
+      (*45*)resolvedDetectionAntibodyDilution,
+      (*46*)resolvedDetectionAntibodyTargetConcentration,
+      (*47*)resolvedDetectionAntibodyDiluent,
+      (*48*)resolvedCaptureAntibodyLoadingVolume,
+      (*49*)resolvedDetectionAntibodyLoadingVolume,
+      (*50*)resolvedSpikeConcentration,
+      (*51*)incompleteResolvedSpikeConcentrationErrors,
+      (*52*)nonOptimalDilutionWarnings,
+      (*53*)conflictAntibodyEpitopeWarnings,
+      (*54*)captureAntibodyAssayTypeWarnings,
+      (*55*)detectionAntibodyAssayTypeWarnings,
+      (*56*)missingCaptureAntibodyErrors,
+      (*57*)missingDetectionAntibodyErrors,
+      (*58*)missingDigoxigeninReagentVolumeErrors,
+      (*59*)missingBiotinReagentVolumeErrors,
+      (*60*)notEnoughDigoxigeninReagentVolumeWarnings,
+      (*61*)notEnoughBiotinReagentVolumeWarnings,
+      (*62*)exceedCaptureAntibodyConjugationContainerErrors,
+      (*63*)exceedDetectionAntibodyConjugationContainerErrors,
+      (*64*)exceedCaptureAntibodyPurificationColumnErrors,
+      (*65*)exceedDetectionAntibodyPurificationColumnErrors,
+      (*66*)invalidCaptureAntibodyDilutionErrors,
+      (*67*)invalidDetectionAntibodyDilutionErrors,
+      (*68*)nonOptimalCaptureAntibodyDilutionWarnings,
+      (*69*)nonOptimalDetectionAntibodyDilutionWarnings,
+      (*70*)captureAntibodyConjuationReactionVolumes,
+      (*71*)captureAntibodyConjugationContainerMaxVolumes,
+      (*72*)captureAntibodyPurificationColumnMaxVolumes,
+      (*73*)preferredCaptureAntibodyPurificationColumns,
+      (*74*)detectionAntibodyConjuationReactionVolumes,
+      (*75*)detectionAntibodyConjugationContainerMaxVolumes,
+      (*76*)detectionAntibodyPurificationColumnMaxVolumes,
+      (*77*)preferredDetectionAntibodyPurificationColumns
     }=Transpose[
         MapThread[
             Function[
@@ -10350,22 +10246,22 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						incompleteResolvedSpikeConcentrationError,nonOptimalDilutionWarning,conflictAntibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning,missingCaptureAntibodyError,missingDetectionAntibodyError,missingDigoxigeninReagentVolumeError,missingBiotinReagentVolumeError,notEnoughDigoxigeninReagentVolumeWarning,notEnoughBiotinReagentVolumeWarning,exceedCaptureAntibodyConjugationContainerError,exceedDetectionAntibodyConjugationContainerError,exceedCaptureAntibodyPurificationColumnError,exceedDetectionAntibodyPurificationColumnError,invalidCaptureAntibodyDilutionError,invalidDetectionAntibodyDilutionError,nonOptimalCaptureAntibodyDilutionWarning,nonOptimalDetectionAntibodyDilutionWarning,
 
                         (* All other variables *)
-                        mySamplePacket,spikeSample,spikePacket,spikeAnalyte,bestDilutionMixVolume,captureAntibodyNewRules,detectionAntibodyNewRules,processedMyMapThreadOptions,captureAntibodyPacket,captureAntibodyState,captureAntibodyIdentityModels,captureAntibodyIdentityModelPacket,captureAntibodyConcentration,captureAntibodySecondaryAntibidies,captureAntibodyMolecularWeights,captureAntibodyAverageMolecularWeight,captureAntibodyConjugatedQ,digoxigeninReagentPacket,digoxigeninReagentComposition,digoxigeninReagentConcentration,digoxigeninMoleculeMolecularWeight,captureAntibodyPurificationColumnPacket,preferredCaptureAntibodyPurificationColumn,captureAntibodyPurificationColumnModel,captureAntibodyConjugationContainerPacket,captureAntibodyConjugationContainerMaxVolume,captureAntibodyPurificationColumnMaxVolume,captureAntibodyMassConcentration,captureAntibodyTargetMassConcentration,detectionAntibodyPacket,detectionAntibodyState,detectionAntibodyIdentityModels,detectionAntibodyIdentityModelPacket,detectionAntibodyConcentration,detectionAntibodyTargets,detectionAntibodyMolecularWeights,detectionAntibodyAverageMolecularWeight,detectionAntibodyConjugatedQ,biotinReagentPacket,biotinReagentComposition,biotinReagentConcentration,biotinMoleculeMolecularWeight,detectionAntibodyPurificationColumnPacket,detectionAntibodyPurificationColumnModel,preferredDetectionAntibodyPurificationColumn,detectionAntibodyConjugationContainerPacket,detectionAntibodyConjugationContainerMaxVolume,detectionAntibodyPurificationColumnMaxVolume,detectionAntibodyMassConcentration,detectionAntibodyTargetMassConcentration
+                        mySamplePacket,spikeSample,spikePacket,spikeAnalyte,bestDilutionMixVolume,captureAntibodyNewRules,detectionAntibodyNewRules,processedMyMapThreadOptions,captureAntibodyPacket,captureAntibodyState,captureAntibodyIdentityModels,captureAntibodyIdentityModelPacket,captureAntibodyConcentration,captureAntibodySecondaryAntibodies,captureAntibodyMolecularWeights,captureAntibodyAverageMolecularWeight,captureAntibodyConjugatedQ,digoxigeninReagentPacket,digoxigeninReagentComposition,digoxigeninReagentConcentration,digoxigeninMoleculeMolecularWeight,captureAntibodyPurificationColumnPacket,preferredCaptureAntibodyPurificationColumn,captureAntibodyPurificationColumnModel,captureAntibodyConjugationContainerPacket,captureAntibodyConjugationContainerMaxVolume,captureAntibodyPurificationColumnMaxVolume,captureAntibodyMassConcentration,captureAntibodyTargetMassConcentration,detectionAntibodyPacket,detectionAntibodyState,detectionAntibodyIdentityModels,detectionAntibodyIdentityModelPacket,detectionAntibodyConcentration,detectionAntibodyTargets,detectionAntibodyMolecularWeights,detectionAntibodyAverageMolecularWeight,detectionAntibodyConjugatedQ,biotinReagentPacket,biotinReagentComposition,biotinReagentConcentration,biotinMoleculeMolecularWeight,detectionAntibodyPurificationColumnPacket,detectionAntibodyPurificationColumnModel,preferredDetectionAntibodyPurificationColumn,detectionAntibodyConjugationContainerPacket,detectionAntibodyConjugationContainerMaxVolume,detectionAntibodyPurificationColumnMaxVolume,detectionAntibodyMassConcentration,detectionAntibodyTargetMassConcentration
                     },
 
                     (* Setup our error tracking variables *)
                     {incompleteResolvedSpikeConcentrationError,nonOptimalDilutionWarning,conflictAntibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning,missingCaptureAntibodyError,missingDetectionAntibodyError,missingDigoxigeninReagentVolumeError,missingBiotinReagentVolumeError,notEnoughDigoxigeninReagentVolumeWarning,notEnoughBiotinReagentVolumeWarning,exceedCaptureAntibodyConjugationContainerError,exceedDetectionAntibodyConjugationContainerError,exceedCaptureAntibodyPurificationColumnError,exceedDetectionAntibodyPurificationColumnError,invalidCaptureAntibodyDilutionError,invalidDetectionAntibodyDilutionError,nonOptimalCaptureAntibodyDilutionWarning,nonOptimalDetectionAntibodyDilutionWarning}=ConstantArray[False,19];
 
                     (* Get the packet of mySample *)
-                    mySamplePacket=Experiment`Private`fetchPacketFromFastAssoc[mySample,simulatedFastAssoc];
+                    mySamplePacket=Experiment`Private`fetchPacketFromFastAssoc[mySample,fastAssoc];
 
                     (* Check whether we have got a spike sample and get the packet *)
 					spikeSample=Lookup[myMapThreadOptions,SpikeSample];
-                    spikePacket=Experiment`Private`fetchPacketFromFastAssoc[spikeSample,simulatedFastAssoc];
+                    spikePacket=Experiment`Private`fetchPacketFromFastAssoc[spikeSample,fastAssoc];
 
                     (* Find the analyte of the spike sample. We only keep the part from customizable analyte - the most common analyte in the sample. We can use it to resolve the analyte of the sample if needed *)
                     spikeAnalyte=If[!MatchQ[spikeSample,Null],
-						FirstOrDefault[selectCapillaryELISAAnalyteFromSample[spikeSample,Cache->simulatedCache][[2]]],
+						FirstOrDefault[selectCapillaryELISAAnalyteFromSample[spikeSample,Cache->cache,Simulation->updatedSimulation][[2]]],
 						Null
 					];
 
@@ -10433,11 +10329,10 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                         (* If we don't have a customizable cartridge, we can try to find the concentration from its composition field. This can be an empty list *)
                         True,
 						Map[
-							Function[
-								{comp},
-								{First[comp],Download[Last[comp],Object,Cache->simulatedCache]}
+							Function[{comp},
+								{First[comp],Download[comp[[2]],Object,Simulation->updatedSimulation]}
 							],
-							Select[Lookup[spikePacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[analyteMolecule]}]&]
+							Select[Lookup[spikePacket,Composition,{}],MatchQ[#,{Except[Null],ObjectP[analyteMolecule]}|{Except[Null],ObjectP[analyteMolecule],_}]&]
 						]
 
 
@@ -10503,7 +10398,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						],
 
 						(* Otherwise we call our big helper function to resolve the antibody pair. It also returns epitope conflicting information. We will check whether we are able to resolve both capture antibody and detection antibody in the following step. *)
-						True,findAntibodyPairs[FirstOrDefault[ToList[analyteMolecule]],Lookup[myMapThreadOptions,CustomCaptureAntibody],Lookup[myMapThreadOptions,CustomDetectionAntibody],Cache->simulatedCache]
+						True,findAntibodyPairs[FirstOrDefault[ToList[analyteMolecule]],Lookup[myMapThreadOptions,CustomCaptureAntibody],Lookup[myMapThreadOptions,CustomDetectionAntibody],Simulation->updatedSimulation]
 					];
 
 					(* If we cannot resolve any of the antibody, we are going to return errors *)
@@ -10539,7 +10434,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					(* CaptureAntibody OPTIONS *)
 					(* Get the packet of customCaptureAntibody *)
 					captureAntibodyPacket=If[!MatchQ[customCaptureAntibody,Null],
-						Experiment`Private`fetchPacketFromFastAssoc[customCaptureAntibody,simulatedFastAssoc],
+						Experiment`Private`fetchPacketFromFastAssoc[customCaptureAntibody,fastAssoc],
 						{}
 					];
 
@@ -10566,7 +10461,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Find all identity models of the capture antibody *)
-					captureAntibodyIdentityModels=Select[Lookup[captureAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&];
+					captureAntibodyIdentityModels=Select[Lookup[captureAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&];
 
 					(* Get the concentration of the capture antibody *)
 					captureAntibodyConcentration=Which[
@@ -10581,28 +10476,28 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 					(* Check the packet of the capture antibody for modification *)
 					captureAntibodyIdentityModelPacket=If[!MatchQ[captureAntibodyIdentityModels,{}],
-						Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyIdentityModels[[1]][[2]],simulatedFastAssoc],
+						Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyIdentityModels[[1]][[2]],fastAssoc],
 						<||>
 					];
 
 					(* Find all molecules of the identity models *)
-					captureAntibodySecondaryAntibidies=Lookup[captureAntibodyIdentityModelPacket,SecondaryAntibodies,{}];
+					captureAntibodySecondaryAntibodies=Lookup[captureAntibodyIdentityModelPacket,SecondaryAntibodies,{}];
 
 					(* Find all molecular weights of all identity models *)
           captureAntibodyMolecularWeights=DeleteCases[Map[
-            Experiment`Private`fastAssocLookup[simulatedFastAssoc,#,{Object,MolecularWeight}]&,
+            Experiment`Private`fastAssocLookup[fastAssoc,#,{Object,MolecularWeight}]&,
             captureAntibodyIdentityModels[[All,2]]
           ],
           Null];
 
-					(* Use the average molecular weight or 150000 Dalton for caculation *)
+					(* Use the average molecular weight or 150000 Dalton for calculation *)
 					captureAntibodyAverageMolecularWeight=If[MatchQ[captureAntibodyMolecularWeights,{}],
 						150000Dalton,
 						Mean[captureAntibodyMolecularWeights]
 					];
 
 					(* Check whether one of the targets is anti-digoxigenin *)
-					captureAntibodyConjugatedQ=MemberQ[captureAntibodySecondaryAntibidies,ObjectP[Model[Molecule, Protein, Antibody, "id:E8zoYvN9m4aA"]]]; (* Model[Molecule, Protein, Antibody, "Anti-Digoxigenin Antibody"] *)
+					captureAntibodyConjugatedQ=MemberQ[captureAntibodySecondaryAntibodies,ObjectP[Model[Molecule, Protein, Antibody, "id:E8zoYvN9m4aA"]]]; (* Model[Molecule, Protein, Antibody, "Anti-Digoxigenin Antibody"] *)
 
 					(* Resolve captureAntibodyConjugation based on the composition of the capture antibody sample. We also check whether any of the resuspension values are set to Null or populated to help resolving the conjugation boolean*)
 					captureAntibodyConjugation=Which[
@@ -10626,11 +10521,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Get the packet of digoxigeninReagent *)
-					digoxigeninReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[digoxigeninReagent,simulatedFastAssoc];
+					digoxigeninReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[digoxigeninReagent,fastAssoc];
 
 					(* Get the composition of digoxigeninReagent with the one for Model[Molecule,"Digoxigenin NHS ester"]. We currently may not be able to search for another Digoxigenin modification molecule as its reaction mechanism may be completely different and the ratio must also be adjusted. *)
 					digoxigeninReagentComposition=If[!MatchQ[digoxigeninReagentPacket,Null],
-						Select[Lookup[digoxigeninReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]]}]&], (* Model[Molecule, "Digoxigenin NHS ester"] *)
+						Select[Lookup[digoxigeninReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]]}|{_,ObjectP[Model[Molecule, "id:KBL5Dvwx7eq7"]],_}]&], (* Model[Molecule, "Digoxigenin NHS ester"] *)
 						{}
 					];
 
@@ -10777,8 +10672,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						preferredCaptureAntibodyPurificationColumn
 					];
 
-					(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification colume and storage container *)
-					captureAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyConjugationContainer,simulatedFastAssoc];
+					(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification column and storage container *)
+					captureAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyConjugationContainer,fastAssoc];
 					captureAntibodyConjugationContainerMaxVolume=If[MatchQ[captureAntibodyConjugationContainerPacket,Null],
 						Infinity*Microliter,
 						Lookup[captureAntibodyConjugationContainerPacket,MaxVolume,Infinity*Microliter]
@@ -10791,7 +10686,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Get the packet with purification column information *)
-					captureAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyPurificationColumn,simulatedFastAssoc];
+					captureAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyPurificationColumn,fastAssoc];
 
 					(* Get the model of the purification column *)
 					captureAntibodyPurificationColumnModel=Which[
@@ -10804,7 +10699,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					captureAntibodyPurificationColumnMaxVolume=If[NullQ[captureAntibodyPurificationColumnModel],
 						Infinity*Microliter,
 						Lookup[
-							Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyPurificationColumnModel,simulatedFastAssoc],
+							Experiment`Private`fetchPacketFromFastAssoc[captureAntibodyPurificationColumnModel,fastAssoc],
 							MaxVolume,
 							Infinity*Microliter
 						]
@@ -10871,7 +10766,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					invalidCaptureAntibodyDilutionError=Which[
 						!MatchQ[captureAntibodyTargetConcentration,GreaterEqualP[0Microgram/Milliliter]|GreaterEqualP[0Molar]],False,
 
-						(* Comment out the estimation of conjguation loss *)
+						(* Comment out the estimation of conjugation loss *)
 						(*
 						(* We get both concentrations in the same units but conjugation set as True *)
 						MatchQ[captureAntibodyTargetMassConcentration,GreaterEqualP[0Microgram/Milliliter]]&&MatchQ[captureAntibodyMassConcentration,GreaterEqualP[0Milligram/Milliliter]]&&MatchQ[captureAntibodyConjugation,True],
@@ -10909,7 +10804,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					(* DetectionAntibody OPTIONS *)
 					(* Get the packet of customDetectionAntibody *)
 					detectionAntibodyPacket=If[!MatchQ[customDetectionAntibody,Null],
-						Experiment`Private`fetchPacketFromFastAssoc[customDetectionAntibody,simulatedFastAssoc],
+						Experiment`Private`fetchPacketFromFastAssoc[customDetectionAntibody,fastAssoc],
 						{}
 					];
 
@@ -10936,7 +10831,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Find all identity models of the detection antibody *)
-					detectionAntibodyIdentityModels=Select[Lookup[detectionAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&];
+					detectionAntibodyIdentityModels=Select[Lookup[detectionAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&];
 
 					(* Get the concentration of the detection antibody *)
 					detectionAntibodyConcentration=Which[
@@ -10951,7 +10846,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 					(* Check the packet of the detection antibody for modification *)
 					detectionAntibodyIdentityModelPacket=If[!MatchQ[detectionAntibodyIdentityModels,{}],
-						Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyIdentityModels[[1]][[2]],simulatedFastAssoc],
+						Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyIdentityModels[[1]][[2]],fastAssoc],
 						<||>
 					];
 
@@ -10961,13 +10856,13 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					(* Find all molecular weights of all identity models *)
           detectionAntibodyMolecularWeights=DeleteCases[
             Map[
-              Experiment`Private`fastAssocLookup[simulatedFastAssoc,#,MolecularWeight]&,
+              Experiment`Private`fastAssocLookup[fastAssoc,#,MolecularWeight]&,
               detectionAntibodyIdentityModels[[All,2]]
             ],
             Null
           ];
 
-					(* Use the average molecular weight or 150000 Dalton for caculation *)
+					(* Use the average molecular weight or 150000 Dalton for calculation *)
 					detectionAntibodyAverageMolecularWeight=If[MatchQ[detectionAntibodyMolecularWeights,{}],
 						150000Dalton,
 						Mean[detectionAntibodyMolecularWeights]
@@ -10999,11 +10894,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Get the packet of biotinReagent *)
-					biotinReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[biotinReagent,simulatedFastAssoc];
+					biotinReagentPacket=Experiment`Private`fetchPacketFromFastAssoc[biotinReagent,fastAssoc];
 
 					(* Get the composition of biotinReagent with the one for Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"]. We currently may not be able to search for another Biotin modification molecule as its reaction mechanism may be completely different and the ratio must also be adjusted. *)
 					biotinReagentComposition=If[!MatchQ[biotinReagentPacket,Null],
-						Select[Lookup[biotinReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]]}]&], (* Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"] *)
+						Select[Lookup[biotinReagentPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]]}|{_,ObjectP[Model[Molecule, "id:1ZA60vLKWYD8"]],_}]&], (* Model[Molecule,"Biotinamidohexanoyl-6-aminohexanoic acid N-hydroxysuccinimide ester"] *)
 						{}
 					];
 
@@ -11152,8 +11047,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						preferredDetectionAntibodyPurificationColumn
 					];
 
-					(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification colume and storage container *)
-					detectionAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyConjugationContainer,simulatedFastAssoc];
+					(* We want to check whether the volume of the conjugation reaction is above the MaxVolume of any containers - conjugation container, purification column and storage container *)
+					detectionAntibodyConjugationContainerPacket=Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyConjugationContainer,fastAssoc];
 					detectionAntibodyConjugationContainerMaxVolume=If[MatchQ[detectionAntibodyConjugationContainerPacket,Null],
 						Infinity*Microliter,
 						Lookup[detectionAntibodyConjugationContainerPacket,MaxVolume,Infinity*Microliter]
@@ -11166,7 +11061,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					];
 
 					(* Get the packet with purification column information *)
-					detectionAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyPurificationColumn,simulatedFastAssoc];
+					detectionAntibodyPurificationColumnPacket=Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyPurificationColumn,fastAssoc];
 
 					(* Get the model of the purification column *)
 					detectionAntibodyPurificationColumnModel=Which[
@@ -11179,7 +11074,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					detectionAntibodyPurificationColumnMaxVolume=If[NullQ[detectionAntibodyPurificationColumnModel],
 						Infinity*Microliter,
 						Lookup[
-							Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyPurificationColumnModel,simulatedFastAssoc],
+							Experiment`Private`fetchPacketFromFastAssoc[detectionAntibodyPurificationColumnModel,fastAssoc],
 							MaxVolume,
 							Infinity*Microliter
 						]
@@ -11221,18 +11116,19 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 						True,False
 					];
 
-					detectionAntibodyTargetConcentration=Which[
-						!MatchQ[Lookup[processedMyMapThreadOptions,DetectionAntibodyTargetConcentration],Automatic],Lookup[processedMyMapThreadOptions,DetectionAntibodyTargetConcentration],
-						!resolvedCustomizableCartridgeQ,Null,
-						missingDetectionAntibodyError,Null,
-						!MatchQ[detectionAntibodyDilution,True],True,
+					detectionAntibodyTargetConcentration = Which[
+						!MatchQ[Lookup[processedMyMapThreadOptions, DetectionAntibodyTargetConcentration], Automatic],
+							Lookup[processedMyMapThreadOptions, DetectionAntibodyTargetConcentration],
+						!resolvedCustomizableCartridgeQ, Null,
+						missingDetectionAntibodyError, Null,
+						!MatchQ[detectionAntibodyDilution, True], Null,
 
 						(* If we find a concentration for the standard detection antibody sample and it's below 3.5 Microgram/Milliliter, we set the target concentration to 1/2 of its original concentration *)
 						(* This is a randomly selected number to cover the loss of conjugation/purification - Typically a Zeba spin column has a recovery % of over 80% *)
-						TrueQ[detectionAntibodyMassConcentration<=3.5Microgram/Milliliter],detectionAntibodyConcentration/2,
+						TrueQ[detectionAntibodyMassConcentration <= 3.5Microgram / Milliliter], detectionAntibodyConcentration / 2,
 
 						(* Otherwise we dilute to 3.5 Microgram/Milliliter *)
-						True,3.5 Microgram/Milliliter
+						True, 3.5 Microgram / Milliliter
 					];
 
 					(* Here we add two checks to make sure the dilution is valid. We use the resuspension concentration with an estimated loss to 50% during conjugation and purification - this covers the dilution from conjugation reaction and also the loss from spin column *)
@@ -11245,7 +11141,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 					invalidDetectionAntibodyDilutionError=Which[
 						!MatchQ[detectionAntibodyTargetConcentration,GreaterEqualP[0Microgram/Milliliter]|GreaterEqualP[0Molar]],False,
 
-						(* Comment out the estimation of conjguation loss *)
+						(* Comment out the estimation of conjugation loss *)
 						(*
 						(* We get both concentrations in the same units but conjugation set as True *)
 						MatchQ[detectionAntibodyTargetMassConcentration,GreaterEqualP[0Microgram/Milliliter]]&&MatchQ[detectionAntibodyMassConcentration,GreaterEqualP[0Milligram/Milliliter]]&&MatchQ[detectionAntibodyConjugation,True],
@@ -11280,83 +11176,83 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
                     (* We now have all the map thread options resolved and we are ready to return everything back *)
                     {
-						analyte,
-						sampleVolume,
-						spikeVolume,
-						dilutionCurve,
-						serialDilutionCurve,
-						diluent,
-						dilutionMixVolume,
-						customCaptureAntibody,
-						captureAntibodyResuspension,
-						captureAntibodyResuspensionConcentration,
-						captureAntibodyResuspensionDiluent,
-						captureAntibodyStorageCondition,
-						captureAntibodyConjugation,
-						captureAntibodyVolume,
-						digoxigeninReagent,
-						digoxigeninReagentVolume,
-						captureAntibodyConjugationBuffer,
-						captureAntibodyConjugationBufferVolume,
-						captureAntibodyConjugationContainer,
-						captureAntibodyConjugationTime,
-						captureAntibodyConjugationTemperature,
-						captureAntibodyPurificationColumn,
-						captureAntibodyColumnWashBuffer,
-						captureAntibodyConjugationStorageCondition,
-						captureAntibodyDilution,
-						captureAntibodyTargetConcentration,
-						captureAntibodyDiluent,
-						customDetectionAntibody,
-						detectionAntibodyResuspension,
-						detectionAntibodyResuspensionConcentration,
-						detectionAntibodyResuspensionDiluent,
-						detectionAntibodyStorageCondition,
-						detectionAntibodyConjugation,
-						detectionAntibodyVolume,
-						biotinReagent,
-						biotinReagentVolume,
-						detectionAntibodyConjugationBuffer,
-						detectionAntibodyConjugationBufferVolume,
-						detectionAntibodyConjugationContainer,
-						detectionAntibodyConjugationTime,
-						detectionAntibodyConjugationTemperature,
-						detectionAntibodyPurificationColumn,
-						detectionAntibodyColumnWashBuffer,
-						detectionAntibodyConjugationStorageCondition,
-						detectionAntibodyDilution,
-						detectionAntibodyTargetConcentration,
-						detectionAntibodyDiluent,
-						captureAntibodyLoadingVolume,
-						detectionAntibodyLoadingVolume,
-						spikeConcentration,
-						incompleteResolvedSpikeConcentrationError,
-						nonOptimalDilutionWarning,
-						conflictAntibodyEpitopeWarning,
-						captureAntibodyAssayTypeWarning,
-						detectionAntibodyAssayTypeWarning,
-						missingCaptureAntibodyError,
-						missingDetectionAntibodyError,
-						missingDigoxigeninReagentVolumeError,
-						missingBiotinReagentVolumeError,
-						notEnoughDigoxigeninReagentVolumeWarning,
-						notEnoughBiotinReagentVolumeWarning,
-						exceedCaptureAntibodyConjugationContainerError,
-						exceedDetectionAntibodyConjugationContainerError,
-						exceedCaptureAntibodyPurificationColumnError,
-						exceedDetectionAntibodyPurificationColumnError,
-						invalidCaptureAntibodyDilutionError,
-						invalidDetectionAntibodyDilutionError,
-						nonOptimalCaptureAntibodyDilutionWarning,
-						nonOptimalDetectionAntibodyDilutionWarning,
-						totalCaptureAntibodyConjugationVolume,
-						captureAntibodyConjugationContainerMaxVolume,
-						captureAntibodyPurificationColumnMaxVolume,
-						preferredCaptureAntibodyPurificationColumn,
-						totalDetectionAntibodyConjugationVolume,
-						detectionAntibodyConjugationContainerMaxVolume,
-						detectionAntibodyPurificationColumnMaxVolume,
-						preferredDetectionAntibodyPurificationColumn
+						(*1*)analyte,
+						(*2*)sampleVolume,
+						(*3*)spikeVolume,
+						(*4*)dilutionCurve,
+						(*5*)serialDilutionCurve,
+						(*6*)diluent,
+						(*7*)dilutionMixVolume,
+						(*8*)customCaptureAntibody,
+						(*9*)captureAntibodyResuspension,
+						(*10*)captureAntibodyResuspensionConcentration,
+						(*11*)captureAntibodyResuspensionDiluent,
+						(*12*)captureAntibodyStorageCondition,
+						(*13*)captureAntibodyConjugation,
+						(*14*)captureAntibodyVolume,
+						(*15*)digoxigeninReagent,
+						(*16*)digoxigeninReagentVolume,
+						(*17*)captureAntibodyConjugationBuffer,
+						(*18*)captureAntibodyConjugationBufferVolume,
+						(*19*)captureAntibodyConjugationContainer,
+						(*20*)captureAntibodyConjugationTime,
+						(*21*)captureAntibodyConjugationTemperature,
+						(*22*)captureAntibodyPurificationColumn,
+						(*23*)captureAntibodyColumnWashBuffer,
+						(*24*)captureAntibodyConjugationStorageCondition,
+						(*25*)captureAntibodyDilution,
+						(*26*)captureAntibodyTargetConcentration,
+						(*27*)captureAntibodyDiluent,
+						(*28*)customDetectionAntibody,
+						(*29*)detectionAntibodyResuspension,
+						(*30*)detectionAntibodyResuspensionConcentration,
+						(*31*)detectionAntibodyResuspensionDiluent,
+						(*32*)detectionAntibodyStorageCondition,
+						(*33*)detectionAntibodyConjugation,
+						(*34*)detectionAntibodyVolume,
+						(*35*)biotinReagent,
+						(*36*)biotinReagentVolume,
+						(*37*)detectionAntibodyConjugationBuffer,
+						(*38*)detectionAntibodyConjugationBufferVolume,
+						(*39*)detectionAntibodyConjugationContainer,
+						(*40*)detectionAntibodyConjugationTime,
+						(*41*)detectionAntibodyConjugationTemperature,
+						(*42*)detectionAntibodyPurificationColumn,
+						(*43*)detectionAntibodyColumnWashBuffer,
+						(*44*)detectionAntibodyConjugationStorageCondition,
+						(*45*)detectionAntibodyDilution,
+						(*46*)detectionAntibodyTargetConcentration,
+						(*47*)detectionAntibodyDiluent,
+						(*48*)captureAntibodyLoadingVolume,
+						(*49*)detectionAntibodyLoadingVolume,
+						(*50*)spikeConcentration,
+						(*51*)incompleteResolvedSpikeConcentrationError,
+						(*52*)nonOptimalDilutionWarning,
+						(*53*)conflictAntibodyEpitopeWarning,
+						(*54*)captureAntibodyAssayTypeWarning,
+						(*55*)detectionAntibodyAssayTypeWarning,
+						(*56*)missingCaptureAntibodyError,
+						(*57*)missingDetectionAntibodyError,
+						(*58*)missingDigoxigeninReagentVolumeError,
+						(*59*)missingBiotinReagentVolumeError,
+						(*60*)notEnoughDigoxigeninReagentVolumeWarning,
+						(*61*)notEnoughBiotinReagentVolumeWarning,
+						(*62*)exceedCaptureAntibodyConjugationContainerError,
+						(*63*)exceedDetectionAntibodyConjugationContainerError,
+						(*64*)exceedCaptureAntibodyPurificationColumnError,
+						(*65*)exceedDetectionAntibodyPurificationColumnError,
+						(*66*)invalidCaptureAntibodyDilutionError,
+						(*67*)invalidDetectionAntibodyDilutionError,
+						(*68*)nonOptimalCaptureAntibodyDilutionWarning,
+						(*69*)nonOptimalDetectionAntibodyDilutionWarning,
+						(*70*)totalCaptureAntibodyConjugationVolume,
+						(*71*)captureAntibodyConjugationContainerMaxVolume,
+						(*72*)captureAntibodyPurificationColumnMaxVolume,
+						(*73*)preferredCaptureAntibodyPurificationColumn,
+						(*74*)totalDetectionAntibodyConjugationVolume,
+						(*75*)detectionAntibodyConjugationContainerMaxVolume,
+						(*76*)detectionAntibodyPurificationColumnMaxVolume,
+						(*77*)preferredDetectionAntibodyPurificationColumn
                     }
                 ]
             ],
@@ -11371,7 +11267,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal standard resuspension concentration warnings. Throw warning message for True members *)
 	If[(Or@@nonOptimalStandardResuspensionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardResuspensionConcentration,ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings],Cache->simulatedCache],ToString[PickList[standardUpperQuantitationLimits,nonOptimalStandardResuspensionWarnings]]],
+		Message[Warning::NonOptimalStandardResuspensionConcentration,ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings],Simulation->updatedSimulation],ToString[PickList[standardUpperQuantitationLimits,nonOptimalStandardResuspensionWarnings]]],
 		Nothing
 	];
 
@@ -11385,12 +11281,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalStandardResuspensionWarnings,False],
 				Nothing,
 				True,
-				Test["To achieve the best standard curve through sample manipulation of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings,False],Cache->simulatedCache]<>", it is recommended to set the resuspension concentrations to 10 times of the Upper Limit of Quantitation of their analytes:",True,True]
+				Test["To achieve the best standard curve through sample manipulation of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings,False],Simulation->updatedSimulation]<>", it is recommended to set the resuspension concentrations to 10 times of the Upper Limit of Quantitation of their analytes:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalStandardResuspensionWarnings,True],
 				Nothing,
-				Test["To achieve the best standard curve through sample manipulation of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings],Cache->simulatedCache]<>", it is recommended to set the resuspension concentrations to 10 times of the Upper Limit of Quantitation of their analytes:",False,True]
+				Test["To achieve the best standard curve through sample manipulation of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardResuspensionWarnings],Simulation->updatedSimulation]<>", it is recommended to set the resuspension concentrations to 10 times of the Upper Limit of Quantitation of their analytes:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11400,7 +11296,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for incomplete resolved known concentration errors - in the cases where we cannot find the concentrations. Throw error message for True members *)
 	incompleteResolvedStandardCompositionOption=If[(Or@@incompleteResolvedStandardCompositionErrors)&&messages,
-		Message[Error::IncompleteResolvedStandardComposition,ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors],Cache->simulatedCache]];{StandardComposition},
+		Message[Error::IncompleteResolvedStandardComposition,ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors],Simulation->updatedSimulation]];{StandardComposition},
 		{}
 	];
 
@@ -11414,12 +11310,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[incompleteResolvedStandardCompositionErrors,False],
 				Nothing,
 				True,
-				Test["The StandardComposition of analytes of interest must be provided for standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors,False],Cache->simulatedCache]<>" to be used for data processing:",True,True]
+				Test["The StandardComposition of analytes of interest must be provided for standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors,False],Simulation->updatedSimulation]<>" to be used for data processing:",True,True]
 			];
 
 			failingTest=If[!MemberQ[incompleteResolvedStandardCompositionErrors,True],
 				Nothing,
-				Test["The KnownConcentration of analytes of interest is provided for standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors],Cache->simulatedCache]<>" to be used for data processing:",True,False]
+				Test["The KnownConcentration of analytes of interest is provided for standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],incompleteResolvedStandardCompositionErrors],Simulation->updatedSimulation]<>" to be used for data processing:",True,False]
 			];
 
 			{failingTest,passingTest}
@@ -11429,7 +11325,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal standard diluent warnings. Throw warning message for True members *)
 	If[(Or@@nonOptimalStandardDiluentWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardDiluent,ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings],Cache->simulatedCache],ObjectToString[bestDiluent,Cache->simulatedCache]],
+		Message[Warning::NonOptimalStandardDiluent,ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings],Simulation->updatedSimulation],ObjectToString[bestDiluent,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11443,12 +11339,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalStandardDiluentWarnings,False],
 				Nothing,
 				True,
-				Test["The StandardDiluent option for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings,False],Cache->simulatedCache]<>" is kept as the preferred diluent "<>ObjectToString[bestDiluent,Cache->simulatedCache]<>" of the cartridge to achieve the best ELISA results:",True,True]
+				Test["The StandardDiluent option for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings,False],Simulation->updatedSimulation]<>" is kept as the preferred diluent "<>ObjectToString[bestDiluent,Simulation->updatedSimulation]<>" of the cartridge to achieve the best ELISA results:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalStandardDiluentWarnings,True],
 				Nothing,
-				Test["The StandardDiluent option for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings],Cache->simulatedCache]<>" is kept as the preferred diluent "<>ObjectToString[bestDiluent,Cache->simulatedCache]<>" of the cartridge to achieve the best ELISA results:",False,True]
+				Test["The StandardDiluent option for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDiluentWarnings],Simulation->updatedSimulation]<>" is kept as the preferred diluent "<>ObjectToString[bestDiluent,Simulation->updatedSimulation]<>" of the cartridge to achieve the best ELISA results:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11458,7 +11354,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for conflicting epitope warnings. Throw warning message for True members *)
 	If[(Or@@conflictStandardAntibodyEpitopeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::ConflictStandardAntibodyEpitopes,ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings],Cache->simulatedCache]],
+		Message[Warning::ConflictStandardAntibodyEpitopes,ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11472,12 +11368,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[conflictStandardAntibodyEpitopeWarnings,False],
 				Nothing,
 				True,
-				Test["The StandardCaptureAntibody and StandardDetectionAntibody of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings,False],Cache->simulatedCache]<>" do not share the same binding epitopes on the analytes:",True,True]
+				Test["The StandardCaptureAntibody and StandardDetectionAntibody of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings,False],Simulation->updatedSimulation]<>" do not share the same binding epitopes on the analytes:",True,True]
 			];
 
 			failingTest=If[!MemberQ[conflictStandardAntibodyEpitopeWarnings,True],
 				Nothing,
-				Test["The StandardCaptureAntibody and StandardDetectionAntibody of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings],Cache->simulatedCache]<>" do not share the same binding epitopes on the analytes:",False,True]
+				Test["The StandardCaptureAntibody and StandardDetectionAntibody of the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],conflictStandardAntibodyEpitopeWarnings],Simulation->updatedSimulation]<>" do not share the same binding epitopes on the analytes:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11523,7 +11419,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	];
 
 	If[!MatchQ[antibodyAssayTypeDisQualified,{}]&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NoELISAAssayTypeForAntibodySamples,ObjectToString[antibodyAssayTypeDisQualified,Cache->simulatedCache]],
+		Message[Warning::NoELISAAssayTypeForAntibodySamples,ObjectToString[antibodyAssayTypeDisQualified,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11537,12 +11433,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				MatchQ[antibodyAssayTypeQualified,{}],
 				Nothing,
 				True,
-				Test["ELISA is not a member of AssayTypes for the antibody samples "<>ObjectToString[antibodyAssayTypeDisQualified,Cache->simulatedCache],True,True]
+				Test["ELISA is not a member of AssayTypes for the antibody samples "<>ObjectToString[antibodyAssayTypeDisQualified,Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[MatchQ[antibodyAssayTypeDisQualified,{}],
 				Nothing,
-				Test["ELISA is not a member of AssayTypes for the antibody samples "<>ObjectToString[antibodyAssayTypeQualified,Cache->simulatedCache],False,True]
+				Test["ELISA is not a member of AssayTypes for the antibody samples "<>ObjectToString[antibodyAssayTypeQualified,Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11553,7 +11449,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved standard capture antibody errors. Throw error message for True members *)
 	missingStandardCaptureAntibodyOptions=If[(Or@@missingStandardCaptureAntibodyErrors)&&messages,
-		Message[Error::MustSpecifyStandardCaptureAntibody,ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors],Cache->simulatedCache]];{StandardCaptureAntibody},
+		Message[Error::MustSpecifyStandardCaptureAntibody,ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors],Simulation->updatedSimulation]];{StandardCaptureAntibody},
 		{}
 	];
 
@@ -11567,12 +11463,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[missingStandardCaptureAntibodyErrors,False],
 				Nothing,
 				True,
-				Test["The StandardCaptureAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors,False],Cache->simulatedCache]<>" when the cartridge is customizable:",True,True]
+				Test["The StandardCaptureAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors,False],Simulation->updatedSimulation]<>" when the cartridge is customizable:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingStandardCaptureAntibodyErrors,True],
 				Nothing,
-				Test["The StandardCaptureAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors],Cache->simulatedCache]<>" when the cartridge is customizable:",False,True]
+				Test["The StandardCaptureAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardCaptureAntibodyErrors],Simulation->updatedSimulation]<>" when the cartridge is customizable:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11582,7 +11478,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved standard detection antibody errors. Throw error message for True members *)
 	missingStandardDetectionAntibodyOptions=If[(Or@@missingStandardDetectionAntibodyErrors)&&messages,
-		Message[Error::MustSpecifyStandardDetectionAntibody,ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors],Cache->simulatedCache]];{StandardDetectionAntibody},
+		Message[Error::MustSpecifyStandardDetectionAntibody,ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors],Simulation->updatedSimulation]];{StandardDetectionAntibody},
 		{}
 	];
 
@@ -11596,12 +11492,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[missingStandardDetectionAntibodyErrors,False],
 				Nothing,
 				True,
-				Test["The StandardDetectionAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors,False],Cache->simulatedCache]<>" when the cartridge is customizable:",True,True]
+				Test["The StandardDetectionAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors,False],Simulation->updatedSimulation]<>" when the cartridge is customizable:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingStandardDetectionAntibodyErrors,True],
 				Nothing,
-				Test["The StandardDetectionAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors],Cache->simulatedCache]<>" when the cartridge is customizable:",False,True]
+				Test["The StandardDetectionAntibody must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDetectionAntibodyErrors],Simulation->updatedSimulation]<>" when the cartridge is customizable:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11611,7 +11507,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved standard digoxigenin reagent volume errors. This can happen because of unresolvable antibody concentration or unresolvable digoxigenin-NHS concentration. Throw error message for True members *)
 	missingStandardDigoxigeninReagentVolumeOptions=If[(Or@@missingStandardDigoxigeninReagentVolumeErrors)&&messages,
-		Message[Error::MustSpecifyStandardDigoxigeninReagentVolume,ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors],Cache->simulatedCache]];{StandardDigoxigeninReagentVolume},
+		Message[Error::MustSpecifyStandardDigoxigeninReagentVolume,ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors],Simulation->updatedSimulation]];{StandardDigoxigeninReagentVolume},
 		{}
 	];
 
@@ -11625,12 +11521,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[missingStandardDigoxigeninReagentVolumeErrors,False],
 				Nothing,
 				True,
-				Test["The StandardDigoxigeninReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors,False],Cache->simulatedCache]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",True,True]
+				Test["The StandardDigoxigeninReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors,False],Simulation->updatedSimulation]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingStandardDigoxigeninReagentVolumeErrors,True],
 				Nothing,
-				Test["The StandardDigoxigeninReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors],Cache->simulatedCache]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",False,True]
+				Test["The StandardDigoxigeninReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardDigoxigeninReagentVolumeErrors],Simulation->updatedSimulation]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11640,7 +11536,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved standard biotin reagent volume errors. This can happen because of unresolvable antibody concentration or unresolvable biotin-XX concentration. Throw error message for True members *)
 	missingStandardBiotinReagentVolumeOptions=If[(Or@@missingStandardBiotinReagentVolumeErrors)&&messages,
-		Message[Error::MustSpecifyStandardBiotinReagentVolume,ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors],Cache->simulatedCache]];{StandardBiotinReagentVolume},
+		Message[Error::MustSpecifyStandardBiotinReagentVolume,ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors],Simulation->updatedSimulation]];{StandardBiotinReagentVolume},
 		{}
 	];
 
@@ -11654,12 +11550,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[missingStandardBiotinReagentVolumeErrors,False],
 				Nothing,
 				True,
-				Test["The StandardBiotinReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors,False],Cache->simulatedCache]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",True,True]
+				Test["The StandardBiotinReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors,False],Simulation->updatedSimulation]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingStandardBiotinReagentVolumeErrors,True],
 				Nothing,
-				Test["The StandardBiotinReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors],Cache->simulatedCache]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",False,True]
+				Test["The StandardBiotinReagentVolume must be specified for the standard samples "<>ObjectToString[PickList[ToList[resolvedStandard],missingStandardBiotinReagentVolumeErrors],Simulation->updatedSimulation]<>" to perform bioconjugation when StandardCaptureAntibodyConjugation is True:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11669,7 +11565,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for not enough standard digoxigenin reagent volume. This happens when the amount of digoxigenin is less than amount of antibody. Throw warning message for True members *)
 	If[(Or@@notEnoughStandardDigoxigeninReagentVolumeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NotEnoughStandardDigoxigeninReagentVolume,ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings],Cache->simulatedCache],ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings],Cache->simulatedCache]],
+		Message[Warning::NotEnoughStandardDigoxigeninReagentVolume,ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation],ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11683,12 +11579,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[notEnoughStandardDigoxigeninReagentVolumeWarnings,False],
 				Nothing,
 				True,
-				Test["The StandardDigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to StandardCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings,False],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings,False],Cache->simulatedCache],True,True]
+				Test["The StandardDigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to StandardCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings,False],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[notEnoughStandardDigoxigeninReagentVolumeWarnings,True],
 				Nothing,
-				Test["The StandardDigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to StandardCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings],Cache->simulatedCache],False,True]
+				Test["The StandardDigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to StandardCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,notEnoughStandardDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11698,7 +11594,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for not enough standard biotin reagent volume. This happens when the amount of biotin is less than amount of antibody. Throw warning message for True members *)
 	If[(Or@@notEnoughStandardBiotinReagentVolumeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NotEnoughStandardBiotinReagentVolume,ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings],Cache->simulatedCache],ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings],Cache->simulatedCache]],
+		Message[Warning::NotEnoughStandardBiotinReagentVolume,ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings],Simulation->updatedSimulation],ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11712,12 +11608,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[notEnoughStandardBiotinReagentVolumeWarnings,False],
 				Nothing,
 				True,
-				Test["The StandardBiotinReagentVolume should provide excess amount of biotin reagent compared to StandardDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings,False],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings,False],Cache->simulatedCache],True,True]
+				Test["The StandardBiotinReagentVolume should provide excess amount of biotin reagent compared to StandardDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings,False],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[notEnoughStandardBiotinReagentVolumeWarnings,True],
 				Nothing,
-				Test["The StandardBiotinReagentVolume should provide excess amount of biotin reagent compared to StandardDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings],Cache->simulatedCache],False,True]
+				Test["The StandardBiotinReagentVolume should provide excess amount of biotin reagent compared to StandardDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,notEnoughStandardBiotinReagentVolumeWarnings],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],notEnoughStandardBiotinReagentVolumeWarnings],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11733,11 +11629,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	exceedStandardCaptureAntibodyConjugationContainerOption=If[(Or@@exceedStandardCaptureAntibodyConjugationContainerErrors)&&messages,
 		Message[Error::ExceedStandardCaptureAntibodyConjugationContainerCapacity,
-			ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
 			ToString[PickList[standardCaptureAntibodyConjugationContainerMaxVolumes,exceedStandardCaptureAntibodyConjugationContainerErrors]],
 			ToString[PickList[standardCaptureAntibodyConjuationReactionVolumes,exceedStandardCaptureAntibodyConjugationContainerErrors]],
-			ObjectToString[preferredStandardCaptureAntibodyConjugationContainers,Cache->simulatedCache]
+			ObjectToString[preferredStandardCaptureAntibodyConjugationContainers,Simulation->updatedSimulation]
 		];
 		{StandardCaptureAntibodyConjugationContainer},
 		{}
@@ -11753,12 +11649,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedStandardCaptureAntibodyConjugationContainerErrors,False],
 				Nothing,
 				True,
-				Test["The MaxVolume of the specified StandardCaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors,False],Cache->simulatedCache],True,True]
+				Test["The MaxVolume of the specified StandardCaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedStandardCaptureAntibodyConjugationContainerErrors,True],
 				Nothing,
-				Test["The MaxVolume of the specified StandardCaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],False,True]
+				Test["The MaxVolume of the specified StandardCaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11774,11 +11670,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	exceedStandardDetectionAntibodyConjugationContainerOption=If[(Or@@exceedStandardDetectionAntibodyConjugationContainerErrors)&&messages,
 		Message[Error::ExceedStandardDetectionAntibodyConjugationContainerCapacity,
-			ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
 			ToString[PickList[standardDetectionAntibodyConjugationContainerMaxVolumes,exceedStandardDetectionAntibodyConjugationContainerErrors]],
 			ToString[PickList[standardDetectionAntibodyConjuationReactionVolumes,exceedStandardDetectionAntibodyConjugationContainerErrors]],
-			ObjectToString[preferredStandardDetectionAntibodyConjugationContainers,Cache->simulatedCache]
+			ObjectToString[preferredStandardDetectionAntibodyConjugationContainers,Simulation->updatedSimulation]
 		];
 		{StandardDetectionAntibodyConjugationContainer},
 		{}
@@ -11794,12 +11690,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedStandardDetectionAntibodyConjugationContainerErrors,False],
 				Nothing,
 				True,
-				Test["The MaxVolume of the specified StandardDetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors,False],Cache->simulatedCache],True,True]
+				Test["The MaxVolume of the specified StandardDetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedStandardDetectionAntibodyConjugationContainerErrors,True],
 				Nothing,
-				Test["The MaxVolume of the specified StandardDetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],False,True]
+				Test["The MaxVolume of the specified StandardDetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11810,11 +11706,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Check for the errors in cases that the total conjugation preparation volumes are over the MaxVolume of the purification column. Throw error message for True members *)
 	exceedStandardCaptureAntibodyPurificationColumnOption=If[(Or@@exceedStandardCaptureAntibodyPurificationColumnErrors)&&messages,
 		Message[Error::ExceedStandardCaptureAntibodyPurificationColumnCapacity,
-			ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
 			ToString[PickList[standardCaptureAntibodyPurificationColumnMaxVolumes,exceedStandardCaptureAntibodyPurificationColumnErrors]],
 			ToString[PickList[standardCaptureAntibodyConjuationReactionVolumes,exceedStandardCaptureAntibodyPurificationColumnErrors]],
-			ObjectToString[PickList[preferredStandardCaptureAntibodyPurificationColumns,exceedStandardCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache]
+			ObjectToString[PickList[preferredStandardCaptureAntibodyPurificationColumns,exceedStandardCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation]
 		];
 		{StandardCaptureAntibodyPurificationColumn},
 		{}
@@ -11830,12 +11726,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedStandardCaptureAntibodyPurificationColumnErrors,False],
 				Nothing,
 				True,
-				Test["The MaxVolume of the specified StandardCaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors,False],Cache->simulatedCache],True,True]
+				Test["The MaxVolume of the specified StandardCaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedStandardCaptureAntibodyPurificationColumnErrors,True],
 				Nothing,
-				Test["The MaxVolume of the specified StandardCaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],False,True]
+				Test["The MaxVolume of the specified StandardCaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,exceedStandardCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11846,17 +11742,17 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Check for the errors in cases that the total conjugation preparation volumes are over the MaxVolume of the purification column. Throw error message for True members *)
 	exceedStandardDetectionAntibodyPurificationColumnOption=If[(Or@@exceedStandardDetectionAntibodyPurificationColumnErrors)&&messages,
 		Message[Error::ExceedStandardDetectionAntibodyPurificationColumnCapacity,
-			ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
 			ToString[PickList[standardDetectionAntibodyPurificationColumnMaxVolumes,exceedStandardDetectionAntibodyPurificationColumnErrors]],
 			ToString[PickList[standardDetectionAntibodyConjuationReactionVolumes,exceedStandardDetectionAntibodyPurificationColumnErrors]],
-			ObjectToString[PickList[preferredStandardDetectionAntibodyPurificationColumns,exceedStandardDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache]
+			ObjectToString[PickList[preferredStandardDetectionAntibodyPurificationColumns,exceedStandardDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation]
 		];
 		{StandardDetectionAntibodyPurificationColumn},
 		{}
 	];
 
-	(* Create the corresponding tests for exceeding stanadrd detection antibody purification column errors *)
+	(* Create the corresponding tests for exceeding standard detection antibody purification column errors *)
 	exceedStandardDetectionAntibodyPurificationColumnTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 
@@ -11866,12 +11762,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedStandardDetectionAntibodyPurificationColumnErrors,False],
 				Nothing,
 				True,
-				Test["The MaxVolume of the specified StandardDetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors,False],Cache->simulatedCache],True,True]
+				Test["The MaxVolume of the specified StandardDetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedStandardDetectionAntibodyPurificationColumnErrors,True],
 				Nothing,
-				Test["The MaxVolume of the specified StandardDetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],False,True]
+				Test["The MaxVolume of the specified StandardDetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,exceedStandardDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],exceedStandardDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11882,8 +11778,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Check for the too high dilution concentration errors that are over the resuspension concentrations of the standard capture antibody samples. Throw error message for True members *)
 	tooHighStandardCaptureAntibodyDilutionOption=If[(Or@@invalidStandardCaptureAntibodyDilutionErrors)&&messages,
 		Message[Error::TooHighStandardCaptureAntibodyDilution,
-			ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors],Cache->simulatedCache],
-			ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors],Cache->simulatedCache]
+			ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]
 		];{StandardCaptureAntibodyTargetConcentration},
 		{}
 	];
@@ -11898,12 +11794,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[invalidStandardCaptureAntibodyDilutionErrors,False],
 				Nothing,
 				True,
-				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors,False],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors,False],Cache->simulatedCache]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",True,True]
+				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",True,True]
 			];
 
 			failingTest=If[!MemberQ[invalidStandardCaptureAntibodyDilutionErrors,True],
 				Nothing,
-				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors],Cache->simulatedCache]<>") is not too high and can be achieved after the resuspension and/or conjugation processes of the samples.",False,True]
+				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardCaptureAntibody,invalidStandardCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]<>") is not too high and can be achieved after the resuspension and/or conjugation processes of the samples.",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11913,7 +11809,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for the too high dilution concentration errors that are over the resuspension concentrations of the standard detection antibody samples. Throw error message for True members *)
 	tooHighStandardDetectionAntibodyDilutionOption=If[(Or@@invalidStandardDetectionAntibodyDilutionErrors)&&messages,
-		Message[Error::TooHighStandardDetectionAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors],Cache->simulatedCache],ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors],Cache->simulatedCache]];{StandardDetectionAntibodyTargetConcentration},
+		Message[Error::TooHighStandardDetectionAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors],Simulation->updatedSimulation],ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]];{StandardDetectionAntibodyTargetConcentration},
 		{}
 	];
 
@@ -11927,12 +11823,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[invalidStandardDetectionAntibodyDilutionErrors,False],
 				Nothing,
 				True,
-				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors,False],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors,False],Cache->simulatedCache]<>") is not too high and can be achieved after the resuspension and/or conjugation processes of the samples.",True,True]
+				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>") is not too high and can be achieved after the resuspension and/or conjugation processes of the samples.",True,True]
 			];
 
 			failingTest=If[!MemberQ[invalidStandardDetectionAntibodyDilutionErrors,True],
 				Nothing,
-				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors],Cache->simulatedCache]<>") is not too high and can be after the resuspension and/or conjugation processes of the samples.",False,True]
+				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,invalidStandardDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[ToList[resolvedStandard],invalidStandardDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]<>") is not too high and can be after the resuspension and/or conjugation processes of the samples.",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11942,7 +11838,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal standard antibody dilution warnings - higher than 50Microgram/Milliliter. Throw warning message for True members *)
 	If[(Or@@nonOptimalStandardCaptureAntibodyDilutionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardCaptureAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings],Cache->simulatedCache],ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings],Cache->simulatedCache]],
+		Message[Warning::NonOptimalStandardCaptureAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation],ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11956,12 +11852,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalStandardCaptureAntibodyDilutionWarnings,False],
 				Nothing,
 				True,
-				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings,False],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings,False],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",True,True]
+				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalStandardCaptureAntibodyDilutionWarnings,True],
 				Nothing,
-				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",False,True]
+				Test["The specified StandardCaptureAntibodyTargetConcentration for the standard capture antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -11971,7 +11867,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal standard antibody dilution warnings - higher than 50Microgram/Milliliter. Throw warning message for True members *)
 	If[(Or@@nonOptimalStandardDetectionAntibodyDilutionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalStandardDetectionAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings],Cache->simulatedCache],ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings],Cache->simulatedCache]],
+		Message[Warning::NonOptimalStandardDetectionAntibodyDilution,ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation],ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -11985,12 +11881,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalStandardDetectionAntibodyDilutionWarnings,False],
 				Nothing,
 				True,
-				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings,False],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings,False],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",True,True]
+				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalStandardDetectionAntibodyDilutionWarnings,True],
 				Nothing,
-				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",False,True]
+				Test["The specified StandardDetectionAntibodyTargetConcentration for the standard detection antibody samples "<>ObjectToString[PickList[resolvedStandardDetectionAntibody,nonOptimalStandardDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[ToList[resolvedStandard],nonOptimalStandardDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12000,7 +11896,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for incomplete resolved spike concentration errors - in the cases where we cannot find the concentrations. Throw error message for True members *)
 	incompleteResolvedSpikeConcentrationOption=If[(Or@@incompleteResolvedSpikeConcentrationErrors)&&messages,
-		Message[Error::IncompleteResolvedSpikeConcentration,ObjectToString[PickList[resolvedSpikeSample,incompleteResolvedSpikeConcentrationErrors],Cache->simulatedCache],ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors],Cache->simulatedCache]];{SpikeConcentration},
+		Message[Error::IncompleteResolvedSpikeConcentration,ObjectToString[PickList[resolvedSpikeSample,incompleteResolvedSpikeConcentrationErrors],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors],Simulation->updatedSimulation]];{SpikeConcentration},
 		{}
 	];
 
@@ -12010,12 +11906,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[incompleteResolvedSpikeConcentrationErrors,False],
 				Nothing,
-				Test["The SpikeConcentration of analytes of interest in the SpikeSample is provided for the samples "<>ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors,False],Cache->simulatedCache],True,True]
+				Test["The SpikeConcentration of analytes of interest in the SpikeSample is provided for the samples "<>ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[incompleteResolvedSpikeConcentrationErrors,True],
 				Nothing,
-				Test["The SpikeConcentration of analytes of interest in the SpikeSample "<>ObjectToString[PickList[resolvedSpikeSample,incompleteResolvedSpikeConcentrationErrors],Cache->simulatedCache]<>" is provided for the samples "<>ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors],Cache->simulatedCache],True,False]
+				Test["The SpikeConcentration of analytes of interest in the SpikeSample "<>ObjectToString[PickList[resolvedSpikeSample,incompleteResolvedSpikeConcentrationErrors],Simulation->updatedSimulation]<>" is provided for the samples "<>ObjectToString[PickList[mySamples,incompleteResolvedSpikeConcentrationErrors],Simulation->updatedSimulation],True,False]
 			];
 
 			{failingTest,passingTest}
@@ -12025,7 +11921,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optional dilutions (higher than recommended minimum dilution factor). Throw warning message for True members *)
 	If[(Or@@nonOptimalDilutionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalCapillaryELISASampleDilution,ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings],Cache->simulatedCache],ToString[bestMinDilutionFactor]],
+		Message[Warning::NonOptimalCapillaryELISASampleDilution,ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings],Simulation->updatedSimulation],ToString[bestMinDilutionFactor]],
 		Nothing
 	];
 
@@ -12035,12 +11931,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[nonOptimalDilutionWarnings,False],
 				Nothing,
-				Test["The samples "<>ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings,False],Cache->simulatedCache]<>" are diluted to at least the recommended dilution factor "<>ToString[bestMinDilutionFactor],True,True]
+				Test["The samples "<>ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings,False],Simulation->updatedSimulation]<>" are diluted to at least the recommended dilution factor "<>ToString[bestMinDilutionFactor],True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalDilutionWarnings,True],
 				Nothing,
-				Test["The samples "<>ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings],Cache->simulatedCache]<>" are diluted to at least the recommended dilution factor "<>ToString[bestMinDilutionFactor],True,False]
+				Test["The samples "<>ObjectToString[PickList[mySamples,nonOptimalDilutionWarnings],Simulation->updatedSimulation]<>" are diluted to at least the recommended dilution factor "<>ToString[bestMinDilutionFactor],True,False]
 			];
 
 			{failingTest,passingTest}
@@ -12050,7 +11946,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for conflicting epitope warnings. Throw warning message for True members *)
 	If[(Or@@conflictAntibodyEpitopeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::ConflictAntibodyEpitopes,ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings],Cache->simulatedCache]],
+		Message[Warning::ConflictAntibodyEpitopes,ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -12060,12 +11956,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[conflictAntibodyEpitopeWarnings,False],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the CustomCaptureAntibody and CustomDetectionAntibody of the samples "<>ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings,False],Cache->simulatedCache]<>" do not share the same binding epitopes on the analytes:",True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the CustomCaptureAntibody and CustomDetectionAntibody of the samples "<>ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings,False],Simulation->updatedSimulation]<>" do not share the same binding epitopes on the analytes:",True,True]
 			];
 
 			failingTest=If[!MemberQ[conflictAntibodyEpitopeWarnings,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the CustomCaptureAntibody and CustomDetectionAntibody of the samples "<>ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings],Cache->simulatedCache]<>" do not share the same binding epitopes on the analytes:",False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the CustomCaptureAntibody and CustomDetectionAntibody of the samples "<>ObjectToString[PickList[mySamples,conflictAntibodyEpitopeWarnings],Simulation->updatedSimulation]<>" do not share the same binding epitopes on the analytes:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12075,7 +11971,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved capture antibody errors. Throw error message for True members *)
 	missingCaptureAntibodyOptions=If[(Or@@missingCaptureAntibodyErrors)&&messages,
-		Message[Error::MustSpecifyCaptureAntibody,ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors],Cache->simulatedCache]];{CustomCaptureAntibody},
+		Message[Error::MustSpecifyCaptureAntibody,ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors],Simulation->updatedSimulation]];{CustomCaptureAntibody},
 		{}
 	];
 
@@ -12085,12 +11981,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[missingCaptureAntibodyErrors,False],
 				Nothing,
-				Test["The CustomCaptureAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors,False],Cache->simulatedCache]<>" when the cartridge is customizable:",True,True]
+				Test["The CustomCaptureAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors,False],Simulation->updatedSimulation]<>" when the cartridge is customizable:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingCaptureAntibodyErrors,True],
 				Nothing,
-				Test["The CustomCaptureAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors],Cache->simulatedCache]<>" when the cartridge is customizable:",False,True]
+				Test["The CustomCaptureAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingCaptureAntibodyErrors],Simulation->updatedSimulation]<>" when the cartridge is customizable:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12100,7 +11996,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved detection antibody errors. Throw error message for True members *)
 	missingDetectionAntibodyOptions=If[(Or@@missingDetectionAntibodyErrors)&&messages,
-		Message[Error::MustSpecifyDetectionAntibody,ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors],Cache->simulatedCache]];{CustomDetectionAntibody},
+		Message[Error::MustSpecifyDetectionAntibody,ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors],Simulation->updatedSimulation]];{CustomDetectionAntibody},
 		{}
 	];
 
@@ -12110,12 +12006,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[missingDetectionAntibodyErrors,False],
 				Nothing,
-				Test["The CustomDetectionAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors,False],Cache->simulatedCache]<>" when the cartridge is customizable:",True,True]
+				Test["The CustomDetectionAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors,False],Simulation->updatedSimulation]<>" when the cartridge is customizable:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingDetectionAntibodyErrors,True],
 				Nothing,
-				Test["The CustomDetectionAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors],Cache->simulatedCache]<>" when the cartridge is customizable:",False,True]
+				Test["The CustomDetectionAntibody must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDetectionAntibodyErrors],Simulation->updatedSimulation]<>" when the cartridge is customizable:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12125,7 +12021,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved digoxigenin reagent volume errors. This can happen because of unresolvable antibody concentration or unresolvable digoxigenin-NHS concentration. Throw error message for True members *)
 	missingDigoxigeninReagentVolumeOptions=If[(Or@@missingDigoxigeninReagentVolumeErrors)&&messages,
-		Message[Error::MustSpecifyDigoxigeninReagentVolume,ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors],Cache->simulatedCache]];{DigoxigeninReagentVolume},
+		Message[Error::MustSpecifyDigoxigeninReagentVolume,ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors],Simulation->updatedSimulation]];{DigoxigeninReagentVolume},
 		{}
 	];
 
@@ -12135,12 +12031,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[missingDigoxigeninReagentVolumeErrors,False],
 				Nothing,
-				Test["The DigoxigeninReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors,False],Cache->simulatedCache]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",True,True]
+				Test["The DigoxigeninReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors,False],Simulation->updatedSimulation]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingDigoxigeninReagentVolumeErrors,True],
 				Nothing,
-				Test["The DigoxigeninReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors],Cache->simulatedCache]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",False,True]
+				Test["The DigoxigeninReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingDigoxigeninReagentVolumeErrors],Simulation->updatedSimulation]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12150,7 +12046,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for unresolved biotin reagent volume errors. This can happen because of unresolvable antibody concentration or unresolvable biotin-XX concentration. Throw error message for True members *)
 	missingBiotinReagentVolumeOptions=If[(Or@@missingBiotinReagentVolumeErrors)&&messages,
-		Message[Error::MustSpecifyBiotinReagentVolume,ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors],Cache->simulatedCache]];{BiotinReagentVolume},
+		Message[Error::MustSpecifyBiotinReagentVolume,ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors],Simulation->updatedSimulation]];{BiotinReagentVolume},
 		{}
 	];
 
@@ -12160,12 +12056,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[missingBiotinReagentVolumeErrors,False],
 				Nothing,
-				Test["The BiotinReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors,False],Cache->simulatedCache]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",True,True]
+				Test["The BiotinReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors,False],Simulation->updatedSimulation]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",True,True]
 			];
 
 			failingTest=If[!MemberQ[missingBiotinReagentVolumeErrors,True],
 				Nothing,
-				Test["The BiotinReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors],Cache->simulatedCache]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",False,True]
+				Test["The BiotinReagentVolume must be specified for the samples "<>ObjectToString[PickList[mySamples,missingBiotinReagentVolumeErrors],Simulation->updatedSimulation]<>" to perform bioconjugation when CaptureAntibodyConjugation is True:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12175,7 +12071,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for not enough digoxigenin reagent volume. This happens when the amount of digoxigenin is less than amount of antibody. Throw warning message for True members *)
 	If[(Or@@notEnoughDigoxigeninReagentVolumeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NotEnoughDigoxigeninReagentVolume,ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings],Cache->simulatedCache],ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings],Cache->simulatedCache]],
+		Message[Warning::NotEnoughDigoxigeninReagentVolume,ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -12189,12 +12085,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[notEnoughDigoxigeninReagentVolumeWarnings,False],
 				Nothing,
 				True,
-				Test["When a customizable capillary ELISA cartridge is used, the DigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to CustomCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings,False],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the DigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to CustomCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings,False],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[notEnoughDigoxigeninReagentVolumeWarnings,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the DigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to CustomCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the DigoxigeninReagentVolume should provide excess amount of digoxigenin reagent compared to CustomCaptureAntibody in the bioconjugation process to achieve the best conjugation efficiency for capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,notEnoughDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughDigoxigeninReagentVolumeWarnings],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12204,7 +12100,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for not enough biotin reagent volume. This happens when the amount of biotin is less than amount of antibody. Throw warning message for True members *)
 	If[(Or@@notEnoughBiotinReagentVolumeWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NotEnoughBiotinReagentVolume,ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings],Cache->simulatedCache],ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings],Cache->simulatedCache]],
+		Message[Warning::NotEnoughBiotinReagentVolume,ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -12214,12 +12110,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[notEnoughBiotinReagentVolumeWarnings,False],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the BiotinReagentVolume should provide excess amount of biotin reagent compared to CustomDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings,False],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the BiotinReagentVolume should provide excess amount of biotin reagent compared to CustomDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings,False],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[notEnoughBiotinReagentVolumeWarnings,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the BiotinReagentVolume should provide excess amount of biotin reagent compared to CustomDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings],Cache->simulatedCache]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the BiotinReagentVolume should provide excess amount of biotin reagent compared to CustomDetectionAntibody in the bioconjugation process to achieve the best conjugation efficiency for detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,notEnoughBiotinReagentVolumeWarnings],Simulation->updatedSimulation]<>" used for ELISA experiment of "<>ObjectToString[PickList[mySamples,notEnoughBiotinReagentVolumeWarnings],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12235,11 +12131,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	exceedCaptureAntibodyConjugationContainerOption=If[(Or@@exceedCaptureAntibodyConjugationContainerErrors)&&messages,
 		Message[Error::ExceedCaptureAntibodyConjugationContainerCapacity,
-			ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],
-			ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
 			ToString[PickList[captureAntibodyConjugationContainerMaxVolumes,exceedCaptureAntibodyConjugationContainerErrors]],
 			ToString[PickList[captureAntibodyConjuationReactionVolumes,exceedCaptureAntibodyConjugationContainerErrors]],
-			ObjectToString[preferredCaptureAntibodyConjugationContainers,Cache->simulatedCache]
+			ObjectToString[preferredCaptureAntibodyConjugationContainers,Simulation->updatedSimulation]
 		];
 		{CaptureAntibodyConjugationContainer},
 		{}
@@ -12255,12 +12151,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedCaptureAntibodyConjugationContainerErrors,False],
 				Nothing,
 				True,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedCaptureAntibodyConjugationContainerErrors,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyConjugationContainer must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyConjugationContainerErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12276,11 +12172,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	exceedDetectionAntibodyConjugationContainerOption=If[(Or@@exceedDetectionAntibodyConjugationContainerErrors)&&messages,
 		Message[Error::ExceedDetectionAntibodyConjugationContainerCapacity,
-			ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],
-			ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],
 			ToString[PickList[detectionAntibodyConjugationContainerMaxVolumes,exceedDetectionAntibodyConjugationContainerErrors]],
 			ToString[PickList[detectionAntibodyConjuationReactionVolumes,exceedDetectionAntibodyConjugationContainerErrors]],
-			ObjectToString[preferredDetectionAntibodyConjugationContainers,Cache->simulatedCache]
+			ObjectToString[preferredDetectionAntibodyConjugationContainers,Simulation->updatedSimulation]
 		];
 		{DetectionAntibodyConjugationContainer},
 		{}
@@ -12292,12 +12188,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 			passingTest=If[!MemberQ[exceedDetectionAntibodyConjugationContainerErrors,False],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedDetectionAntibodyConjugationContainerErrors,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyConjugationContainer must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyConjugationContainerErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12308,11 +12204,11 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Check for the errors in cases that the total conjugation preparation volumes are over the MaxVolume of the purification column. Throw error message for True members *)
 	exceedCaptureAntibodyPurificationColumnOption=If[(Or@@exceedCaptureAntibodyPurificationColumnErrors)&&messages,
 		Message[Error::ExceedCaptureAntibodyPurificationColumnCapacity,
-			ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],
-			ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
 			ToString[PickList[captureAntibodyPurificationColumnMaxVolumes,exceedCaptureAntibodyPurificationColumnErrors]],
 			ToString[PickList[captureAntibodyConjuationReactionVolumes,exceedCaptureAntibodyPurificationColumnErrors]],
-			ObjectToString[PickList[preferredCaptureAntibodyPurificationColumns,exceedCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache]
+			ObjectToString[PickList[preferredCaptureAntibodyPurificationColumns,exceedCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation]
 		];
 		{CaptureAntibodyPurificationColumn},
 		{}
@@ -12328,12 +12224,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[exceedCaptureAntibodyPurificationColumnErrors,False],
 				Nothing,
 				True,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedCaptureAntibodyPurificationColumnErrors,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified CaptureAntibodyPurificationColumn must be larger than the total conjugation preparation volume of capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,exceedCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedCaptureAntibodyPurificationColumnErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12344,28 +12240,28 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 	(* Check for the errors in cases that the total conjugation preparation volumes are over the MaxVolume of the purification column. Throw error message for True members *)
 	exceedDetectionAntibodyPurificationColumnOption=If[(Or@@exceedDetectionAntibodyPurificationColumnErrors)&&messages,
 		Message[Error::ExceedDetectionAntibodyPurificationColumnCapacity,
-			ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],
-			ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],
+			ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
+			ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],
 			ToString[PickList[detectionAntibodyPurificationColumnMaxVolumes,exceedDetectionAntibodyPurificationColumnErrors]],
 			ToString[PickList[detectionAntibodyConjuationReactionVolumes,exceedDetectionAntibodyPurificationColumnErrors]],
-			ObjectToString[PickList[preferredDetectionAntibodyPurificationColumns,exceedDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache]
+			ObjectToString[PickList[preferredDetectionAntibodyPurificationColumns,exceedDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation]
 		];
 		{DetectionAntibodyPurificationColumn},
 		{}
 	];
 
-	(* Create the corresponding tests for exceeding stanadrd detection antibody purification column errors *)
+	(* Create the corresponding tests for exceeding standard detection antibody purification column errors *)
 	exceedDetectionAntibodyPurificationColumnTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 
 			passingTest=If[!MemberQ[exceedDetectionAntibodyPurificationColumnErrors,False],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors,False],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors,False],Cache->simulatedCache],True,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors,False],Simulation->updatedSimulation],True,True]
 			];
 
 			failingTest=If[!MemberQ[exceedDetectionAntibodyPurificationColumnErrors,True],
 				Nothing,
-				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors],Cache->simulatedCache],False,True]
+				Test["When a customizable capillary ELISA cartridge is used, the MaxVolume of the specified DetectionAntibodyPurificationColumn must be larger than the total conjugation preparation volume of detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,exceedDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation]<>", used for ELISA assay of "<>ObjectToString[PickList[mySamples,exceedDetectionAntibodyPurificationColumnErrors],Simulation->updatedSimulation],False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12375,7 +12271,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for the too high dilution concentration errors that are over the resuspension concentrations of the capture antibody samples. Throw error message for True members *)
 	tooHighCaptureAntibodyDilutionOption=If[(Or@@invalidCaptureAntibodyDilutionErrors)&&messages,
-		Message[Error::TooHighCaptureAntibodyDilution,ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors],Cache->simulatedCache],ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors],Cache->simulatedCache]];{CaptureAntibodyDilution},
+		Message[Error::TooHighCaptureAntibodyDilution,ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]];{CaptureAntibodyDilution},
 		{}
 	];
 
@@ -12389,12 +12285,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[invalidCaptureAntibodyDilutionErrors,False],
 				Nothing,
 				True,
-				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors,False],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors,False],Cache->simulatedCache]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",True,True]
+				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",True,True]
 			];
 
 			failingTest=If[!MemberQ[invalidCaptureAntibodyDilutionErrors,True],
 				Nothing,
-				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors],Cache->simulatedCache]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",False,True]
+				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomCaptureAntibody,invalidCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidCaptureAntibodyDilutionErrors],Simulation->updatedSimulation]<>") is not too high and can achieved after the resuspension and/or conjugation processes of the samples:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12404,7 +12300,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for the too high dilution concentration errors that are over the resuspension concentrations of the detection antibody samples. Throw error message for True members *)
 	tooHighDetectionAntibodyDilutionOption=If[(Or@@invalidDetectionAntibodyDilutionErrors)&&messages,
-		Message[Error::TooHighDetectionAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors],Cache->simulatedCache],ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors],Cache->simulatedCache]];{DetectionAntibodyDilution},
+		Message[Error::TooHighDetectionAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]];{DetectionAntibodyDilution},
 		{}
 	];
 
@@ -12418,12 +12314,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[invalidDetectionAntibodyDilutionErrors,False],
 				Nothing,
 				True,
-				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors,False],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors,False],Cache->simulatedCache]<>") is too high and cannot be achieved after the resuspension and/or conjugation processes of the samples.",True,True]
+				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors,False],Simulation->updatedSimulation]<>") is too high and cannot be achieved after the resuspension and/or conjugation processes of the samples.",True,True]
 			];
 
 			failingTest=If[!MemberQ[invalidDetectionAntibodyDilutionErrors,True],
 				Nothing,
-				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors],Cache->simulatedCache]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors],Cache->simulatedCache]<>") is too high and cannot be achieved after the resuspension and/or conjugation processes of the samples.",False,True]
+				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,invalidDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]<>" (used for ELISA assay of "<>ObjectToString[PickList[mySamples,invalidDetectionAntibodyDilutionErrors],Simulation->updatedSimulation]<>") is too high and cannot be achieved after the resuspension and/or conjugation processes of the samples.",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12433,7 +12329,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal antibody dilution warnings - higher than 50Microgram/Milliliter. Throw warning message for True members *)
 	If[(Or@@nonOptimalCaptureAntibodyDilutionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalCaptureAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings],Cache->simulatedCache],ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings],Cache->simulatedCache]],
+		Message[Warning::NonOptimalCaptureAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -12447,12 +12343,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalCaptureAntibodyDilutionWarnings,False],
 				Nothing,
 				True,
-				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings,False],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings,False],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",True,True]
+				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalCaptureAntibodyDilutionWarnings,True],
 				Nothing,
-				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",False,True]
+				Test["The specified CaptureAntibodyTargetConcentration for the capture antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalCaptureAntibodyDilutionWarnings],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12462,7 +12358,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 	(* Check for non-optimal antibody dilution warnings - higher than 50Microgram/Milliliter. Throw warning message for True members *)
 	If[(Or@@nonOptimalDetectionAntibodyDilutionWarnings)&&!MatchQ[$ECLApplication,Engine]&&messages,
-		Message[Warning::NonOptimalDetectionAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings],Cache->simulatedCache],ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings],Cache->simulatedCache]],
+		Message[Warning::NonOptimalDetectionAntibodyDilution,ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation],ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -12476,12 +12372,12 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 				!MemberQ[nonOptimalDetectionAntibodyDilutionWarnings,False],
 				Nothing,
 				True,
-				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings,False],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings,False],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",True,True]
+				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings,False],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",True,True]
 			];
 
 			failingTest=If[!MemberQ[nonOptimalDetectionAntibodyDilutionWarnings,True],
 				Nothing,
-				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings],Cache->simulatedCache]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings],Cache->simulatedCache]<>") is close to 3.5 Microgram/Milliliter:",False,True]
+				Test["The specified DetectionAntibodyTargetConcentration for the detection antibody samples "<>ObjectToString[PickList[resolvedCustomDetectionAntibody,nonOptimalDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]<>" (used for ELISA experiment of "<>ObjectToString[PickList[mySamples,nonOptimalDetectionAntibodyDilutionWarnings],Simulation->updatedSimulation]<>") is close to 3.5 Microgram/Milliliter:",False,True]
 			];
 
 			{failingTest,passingTest}
@@ -12491,8 +12387,8 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
 
     (* Check the SamplesIn storage condition validation *)
-    (* For our antibody samples, we already did the checks earlier to make sure we are not doing different processing for the same objects. When different processings are required, we get separate resources in resource packets *)
-    (* Get all samples - SamplesIn, Standard and SpikeSample together with their storage conditiond *)
+    (* For our antibody samples, we already did the checks earlier to make sure we are not doing different processing for the same objects. When different processing is required, we get separate resources in resource packets *)
+    (* Get all samples - SamplesIn, Standard and SpikeSample together with their storage conditions *)
     allSamples=Join[
       simulatedSamples,
       ToList[resolvedStandard/.Null->{}],
@@ -12535,7 +12431,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     };
 
     If[Length[conflictSamplesWithStorageConditions]>0,
-      Message[Error::CapillaryELISAConflictingStorageConditions,ObjectToString[conflictSamplesWithStorageConditions,Cache->simulatedCache],ToString[conflictSampleStorageOptions]]
+      Message[Error::CapillaryELISAConflictingStorageConditions,ObjectToString[conflictSamplesWithStorageConditions,Simulation->updatedSimulation],ToString[conflictSampleStorageOptions]]
     ];
 
     (* Generate the tests *)
@@ -12547,9 +12443,9 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
     uniqueStorageConditionsForContainerCheck=DeleteCases[Flatten[uniqueSamplesWithStorageConditions,1],{_,Null}][[All,2]];
     {validContainerStorageConditionResult,validContainerStorageConditionTests}=Which[
       !gatherTests&&!MatchQ[uniqueSamplesForContainerCheck,{}],
-      {ValidContainerStorageConditionQ[uniqueSamplesForContainerCheck,uniqueStorageConditionsForContainerCheck,Output->Result,Cache->simulatedCache],{}},
+      {ValidContainerStorageConditionQ[uniqueSamplesForContainerCheck,uniqueStorageConditionsForContainerCheck,Output->Result,Simulation->updatedSimulation],{}},
       gatherTests&&!MatchQ[uniqueSamplesForContainerCheck,{}],
-      ValidContainerStorageConditionQ[uniqueSamplesForContainerCheck,uniqueStorageConditionsForContainerCheck,Output->{Result,Tests},Cache->simulatedCache],
+      ValidContainerStorageConditionQ[uniqueSamplesForContainerCheck,uniqueStorageConditionsForContainerCheck,Output->{Result,Tests},Simulation->updatedSimulation],
       True,{{},{}}
     ];
 
@@ -12701,7 +12597,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
     (* Throw Error::InvalidInput if there are invalid inputs. *)
     If[Length[invalidInputs]>0&&!gatherTests,
-        Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+        Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
     ];
 
     (* Throw Error::InvalidOption if there are invalid options. *)
@@ -12753,9 +12649,10 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
             mySamples,
             simulatedSamples,
             ReplaceRule[myOptions,resolvedSamplePrepOptions],
-            Cache->simulatedCache,
+            Cache->cache,
             RequiredAliquotAmounts->requiredSampleVolumes,
             RequiredAliquotContainers->targetContainers,
+			Simulation -> updatedSimulation,
             Output->{Result,Tests}
         ],
         {
@@ -12764,9 +12661,10 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
                 mySamples,
                 simulatedSamples,
                 ReplaceRule[myOptions,resolvedSamplePrepOptions],
-                Cache->simulatedCache,
+                Cache->cache,
                 RequiredAliquotAmounts->requiredSampleVolumes,
                 RequiredAliquotContainers->targetContainers,
+				Simulation -> updatedSimulation,
                 Output->Result
             ],
             {}
@@ -12910,6 +12808,7 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
 		SpikeConcentration->resolvedSpikeConcentration,
 		SamplesInStorageCondition->resolvedSamplesInStorageCondition,
 		Confirm->resolvedConfirm,
+    CanaryBranch->resolvedCanaryBranch,
         Name->resolvedName,
         Template->resolvedTemplate,
         SamplesInStorageCondition->resolvedSamplesInStorageCondition,
@@ -12920,7 +12819,6 @@ resolveExperimentCapillaryELISAOptions[mySamples:{ObjectP[Object[Sample]]...},my
         ParentProtocol->resolvedParentProtocol,
         Upload->resolvedUpload,
 		PreparatoryUnitOperations->resolvedPreparatoryPrimitives,
-      PreparatoryPrimitives->Lookup[roundedCapillaryELISAOptionsAssociation, PreparatoryPrimitives],
 		NumberOfReplicates->resolvedNumberOfReplicates
     };
 
@@ -12967,24 +12865,25 @@ The function is similar to Experiment`Private`selectAnalyteFromSample in Experim
 
 DefineOptions[findPreLoadedCartridgeAnalytes,
     Options:>{
-        CacheOption
+        CacheOption,
+		SimulationOption
     }
 ];
 
 findPreLoadedCartridgeAnalytes[ops:OptionsPattern[]]:=Module[
 
-    {safeOps,cache,allAnalytes},
+    {safeOps,cache,allAnalytes,simulation},
 
     (* Get the Cache option *)
     safeOps=SafeOptions[findPreLoadedCartridgeAnalytes,ToList[ops]];
-    cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
 	allAnalytes=DeleteDuplicates[
         (* Delete Null from the available Analytes, just in case this happens *)
         DeleteCases[
 
             (* Get all identity models from Analyte field in Object[ManufacturingSpecification,CapillaryELISACartridge]. *)
-            Download[Search[Object[ManufacturingSpecification,CapillaryELISACartridge]],AnalyteMolecule[Object],Cache->cache,Date->Now],
+            Download[Search[Object[ManufacturingSpecification,CapillaryELISACartridge]],AnalyteMolecule[Object],Cache->cache,Simulation->simulation,Date->Now],
             Null
         ]
     ]
@@ -12992,7 +12891,8 @@ findPreLoadedCartridgeAnalytes[ops:OptionsPattern[]]:=Module[
 
 DefineOptions[selectCapillaryELISAAnalyteFromSample,
     Options:>{
-        CacheOption
+        CacheOption,
+      SimulationOption
     }
 ];
 
@@ -13001,12 +12901,13 @@ selectCapillaryELISAAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[
     {
         safeOps,cache,fastCacheLookup,
         proteinAnalyteP,preLoadedCartridgeAnalytes,preLoadedCartridgeAnalyteP,allPackets,analyteObjs,compositionObjs,
-        preLoadedAnalytesToUse,customizableAnalytesToUse
+        preLoadedAnalytesToUse,customizableAnalytesToUse,simulation
     },
 
     (* Get the Cache option *)
     safeOps=SafeOptions[selectCapillaryELISAAnalyteFromSample,ToList[ops]];
     cache=Lookup[safeOps,Cache];
+    simulation=Lookup[safeOps,Simulation,Simulation[]];
     fastCacheLookup=makeFastAssocFromCache[cache];
 
     (* Identity model of Model[Molecule,Protein] or Model[Molecule,Protein,Antibody] to be used for Customizable cartridge analytes - so that we can automatically resolve its Antibodies. If other types of identity models are somehow analyzed in capillary ELISA, we cannot resolve the antibodies as there is not Antibodies/SecondaryAntibodies field. *)
@@ -13017,7 +12918,7 @@ selectCapillaryELISAAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[
     preLoadedCartridgeAnalyteP=ObjectP[preLoadedCartridgeAnalytes];
 
     (* Get the composition and analytes fields from all the input samples or models *)
-    allPackets=Experiment`Private`fetchPacketFromFastAssoc[#,fastCacheLookup]&/@mySamples;
+    allPackets=Download[mySamples, Cache->cache, Simulation->simulation];
 
     (* Get the analyte objects and the composition objects *)
     analyteObjs=Download[Lookup[#,Analytes],Object]&/@allPackets;
@@ -13040,7 +12941,7 @@ selectCapillaryELISAAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[
 
     (* For customizable cartridge, pick an analyte that matches proteinAnalyteP *)
     (* If Analytes field is populated, pick the first value that matches proteinAnalyteP if available *)
-    (* If no qualified member is available from Analytes field, pick the first prteinAnalyteP identity model in the Composition field *)
+    (* If no qualified member is available from Analytes field, pick the first proteinAnalyteP identity model in the Composition field *)
     (* Otherwise, pick Null *)
 
     (* Parse the Analytes and Composition fields to find the correct analytes to use *)
@@ -13546,7 +13447,7 @@ cartridgeCapacity[cartridgeType:ELISACartridgeTypeP]:=Module[
 (* ::Subsubsubsection::Closed:: *)
 (* deleteIncompatibleMemberQ *)
 
-(* Helper function to provide boolean about whether to delete a member from workingList due to its incompatiblilty shown in incompatibleList *)
+(* Helper function to provide boolean about whether to delete a member from workingList due to its incompatibility shown in incompatibleList *)
 (* workingList is a list of members like {a,b,c,..}. incompatibleList is a list of list like {{z,y},{x},{},..}. This means that a cannot be in the same list as z and y, etc. Either of each pair must be deleted. *)
 
 deleteIncompatibleMemberQ[workingList_List,incompatibleList_List]:=Module[
@@ -13595,7 +13496,8 @@ deleteIncompatibleMemberQ[workingList_List,incompatibleList_List]:=Module[
 
 DefineOptions[resolvePreLoadedCartridgeAnalytes,
     Options:>{
-        CacheOption
+        CacheOption,
+      	SimulationOption
     }
 ];
 
@@ -13605,13 +13507,13 @@ resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELIS
 
 resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELISASpeciesP,analytes:{ObjectP[Model[Molecule]]...},ops:OptionsPattern[]]:=Module[
     {
-        safeOps,cache,
+        safeOps,cache,simulation,
         analyteSpecs,analytesCartridgeTypes,analyteQualifyCartridgeTypeQ,analyteSpecies,analyteSpeciesQ,analyteQualifyQ,qualifiedAnalyteSpecs,maxNumberOfAnalytes,analyteDiluents,analytesMinDilutionFactor,analyteInformationMatrix,gatheredAnalyteInformation,gatheredAnalyteSpecs,gatheredAnalyteSpecObjects,incompatibleAnalyteSpecs,deleteAnalyteSpecQ,compatibleGatheredAnalyteInformation,compatibleGatheredAnalyteMoleculeInformation,noDuplicateCompatibleGatheredAnalyteMoleculeInformation,bestAnalytesInformation,bestAnalyteSpecs,bestAnalytes,finalAnalyteSpecs,finalAnalytes,finalAnalyteNames
     },
 
-    (* get the Cache option *)
+    (* get the Cache and simulation options *)
     safeOps=SafeOptions[resolvePreLoadedCartridgeAnalytes, ToList[ops]];
-    cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
     (* get all the manufacturing specifications from cache. We can flatten them into a list so we can easily operate. *)
     analyteSpecs=DeleteDuplicates[Flatten[Cases[cache,KeyValuePattern[{Type->Object[ManufacturingSpecification,CapillaryELISACartridge],AnalyteMolecule->LinkP[#]}]]&/@analytes]];
@@ -13642,10 +13544,7 @@ resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELIS
     qualifiedAnalyteSpecs=PickList[analyteSpecs,analyteQualifyQ,True];
 
     (* Get the available diluents for each analyte *)
-    analyteDiluents=Map[
-		Download[#,RecommendedDiluent[Object],Cache->cache,Date->Now]&,
-		qualifiedAnalyteSpecs
-    ];
+    analyteDiluents=Download[qualifiedAnalyteSpecs,RecommendedDiluent[Object],Cache->cache,Simulation->simulation,Date->Now];
 
     (* Get the available minimum dilution factors for each analyte *)
     analytesMinDilutionFactor=Lookup[#,RecommendedMinDilutionFactor,Null]&/@qualifiedAnalyteSpecs;
@@ -13662,7 +13561,7 @@ resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELIS
 
     (* Get the incompatible analyte list for each analyte spec. *)
     incompatibleAnalyteSpecs=Map[
-		Download[#,IncompatibleAnalytes[Object],Date->Now]&,
+		Download[#,IncompatibleAnalytes[Object],Simulation->simulation,Date->Now]&,
 		gatheredAnalyteSpecs,
 		{2}
 	];
@@ -13686,7 +13585,7 @@ resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELIS
 			Module[
 				{analyteSpec,analyteMoleculeModel,joinedInfoList,noDuplicateInfoList},
 				analyteSpec=First[infoList];
-				analyteMoleculeModel=Download[analyteSpec,AnalyteMolecule[Object],Cache->cache,Date->Now];
+				analyteMoleculeModel=Download[analyteSpec,AnalyteMolecule[Object],Cache->cache,Simulation->simulation,Date->Now];
 				joinedInfoList=Join[{analyteMoleculeModel},infoList]
 			]
 		],
@@ -13741,7 +13640,7 @@ resolvePreLoadedCartridgeAnalytes[cartridgeType:ELISACartridgeTypeP,species:ELIS
 (* Because our parent function has the association expanded, we don't need to worry that the options are not of same length. *)
 mustNullOptionCheck[myParentOption_,myTargetParentOptionValue_,myChildOptions_List,myOptionAssociation_Association]:=Module[
     {
-        myParentOptionValues,myChildOptionValues,allOptionValueChecks,invalidParentOptionCheck,invalidChildOptionsCheck,invalidParentOptionPositions,invalidChildOptions
+        myParentOptionValues,myChildOptionValues,allOptionValueChecks,invalidParentOptionCheck,invalidChildOptionsCheck,invalidChildOptions
     },
 
     (* Get all the values for the parent option *)
@@ -13782,7 +13681,7 @@ mustNullOptionCheck[myParentOption_,myTargetParentOptionValue_,myChildOptions_Li
 (* Because our parent function has the association expanded, we don't need to worry that the options are not of same length. *)
 mustNotNullOptionCheck[myParentOption_,myTargetParentOptionValue_,myChildOptions_List,myOptionAssociation_Association]:=Module[
     {
-        myParentOptionValues,myChildOptionValues,allOptionValueChecks,invalidParentOptionCheck,invalidChildOptionsCheck,invalidParentOptionPositions,invalidChildOptions
+        myParentOptionValues,myChildOptionValues,allOptionValueChecks,invalidParentOptionCheck,invalidChildOptionsCheck,invalidChildOptions
     },
 
     (* Get all the values for the parent option *)
@@ -13912,7 +13811,8 @@ findBestCandidateForCapillaryELISAAntibodies[myBooleanRules:{{BooleanP...}...}]:
 
 DefineOptions[findAntibodyPairs,
     Options:>{
-        CacheOption
+        CacheOption,
+		SimulationOption
     }
 ];
 
@@ -13921,22 +13821,23 @@ DefineOptions[findAntibodyPairs,
 (* TODO Combine some of the overloads to make the entire function simpler. *)
 (* return user-defined value when it is not automatic. a quick check of epitopes is done. *)
 findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{Model[Sample],Object[Sample]}]|Null,myDetectionAntibody:ObjectP[{Model[Sample],Object[Sample]}]|Null,ops:OptionsPattern[]]:=Module[
-
-    {
-        safeOps,cache,
-        captureAntibodyIdentityModel,detectionAntibodyIdentityModel,captureAntibodyPacket,detectionAntibodyPacket,captureAntibodyIdentityModelPackets,detectionAntibodyIdentityModelPackets,captureAntibodyBindingAreas,detectionAntibodyBindingAreas,antibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning
-    },
+  {
+    safeOps, cache, simulation, captureAntibodyIdentityModel, detectionAntibodyIdentityModel, captureAntibodyIdentityModelPackets,
+    detectionAntibodyIdentityModelPackets, captureAntibodyBindingAreas, detectionAntibodyBindingAreas, antibodyEpitopeWarning,
+    captureAntibodyAssayTypeWarning, detectionAntibodyAssayTypeWarning
+  },
 
     (* get the Cache option *)
     safeOps=SafeOptions[findAntibodyPairs, ToList[ops]];
     cache=Lookup[safeOps,Cache];
+	simulation=Lookup[safeOps,Simulation];
 
     (* get the antibody identity models and packets *)
-    captureAntibodyIdentityModel=Cases[Download[myCaptureAntibody,Composition[[All,2]][Object],Cache->cache,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
-    captureAntibodyIdentityModelPackets=Download[captureAntibodyIdentityModel,Packet[Targets,Epitopes,AssayTypes],Cache->cache,Date->Now];
+    captureAntibodyIdentityModel=Cases[Download[myCaptureAntibody,Composition[[All,2]][Object],Cache->cache,Simulation->simulation,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
+    captureAntibodyIdentityModelPackets=Download[captureAntibodyIdentityModel,Packet[Targets,Epitopes,AssayTypes],Cache->cache,Simulation->simulation,Date->Now];
 
-    detectionAntibodyIdentityModel=Cases[Download[myDetectionAntibody,Composition[[All,2]][Object],Cache->cache,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
-    detectionAntibodyIdentityModelPackets=Download[detectionAntibodyIdentityModel,Packet[Targets,Epitopes,AssayTypes],Cache->cache,Date->Now];
+    detectionAntibodyIdentityModel=Cases[Download[myDetectionAntibody,Composition[[All,2]][Object],Cache->cache,Simulation->simulation,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
+    detectionAntibodyIdentityModelPackets=Download[detectionAntibodyIdentityModel,Packet[Targets,Epitopes,AssayTypes],Cache->cache,Simulation->simulation,Date->Now];
 
     (* call helper function to find binding area for each antibody identity model and union them together*)
     captureAntibodyBindingAreas=IntervalUnion@@Map[
@@ -13972,7 +13873,7 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{
 (* resolve capture antibody when detection antibody is populated or Null  *)
 findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic,myDetectionAntibody:ObjectP[{Model[Sample],Object[Sample]}]|Null,ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,cache,
+		safeOps,cache,simulation,
 		detectionAntibodyIdentityModel,detectionAntibodyIdentityModelPackets,detectionAntibodyBindingArea,
 		analytePacket,possibleAntibodies,compatibleAntibodies,compatibleAntibodyDefaultModels,compatibleAntibodyBindingAreas,epitopeOverlapQ,digoxigeninModifiedQ,polyclonalQ,
 		bestAntibodyPosition,bestCaptureAntibodyIdentityModelPacket,bestCaptureAntibody,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning,antibodyEpitopeWarning
@@ -13981,10 +13882,11 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 	(* get the Cache option *)
 	safeOps=SafeOptions[findAntibodyPairs, ToList[ops]];
 	cache=Lookup[safeOps,Cache];
+	simulation=Lookup[safeOps,Simulation];
 
 	(* get the detection antibody identity models *)
-	detectionAntibodyIdentityModel=Cases[Download[myDetectionAntibody,Composition[[All,2]][Object],Cache->cache,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
-	detectionAntibodyIdentityModelPackets=Download[detectionAntibodyIdentityModel,Packet[Targets,Epitopes,SecondaryAntibodies,AssayTypes],Cache->cache,Date->Now];
+	detectionAntibodyIdentityModel=Cases[Download[myDetectionAntibody,Composition[[All,2]][Object],Cache->cache,Simulation->simulation,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
+	detectionAntibodyIdentityModelPackets=Download[detectionAntibodyIdentityModel,Packet[Targets,Epitopes,SecondaryAntibodies,AssayTypes],Cache->cache,Simulation->simulation,Date->Now];
 
 	(* call helper function to find binding area for each antibody identity model and union them together. Even if myDetectionAntibody is Null, this will work as the helper function should return Interval[] regardless *)
 	detectionAntibodyBindingArea=IntervalUnion@@Map[
@@ -13994,8 +13896,8 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 
 	(* get the analyte packet with information of interest *)
 	analytePacket=Which[
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Date->Now],
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Simulation->simulation,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Simulation->simulation,Date->Now],
 		True,{}
 	];
 
@@ -14011,8 +13913,8 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 
 	(* get the default sample models for all the compatible antibodies *)
 	compatibleAntibodyDefaultModels=If[MatchQ[compatibleAntibodies,{}],
-		Download[possibleAntibodies,DefaultSampleModel[Object],Cache->cache,Date->Now],
-		Download[compatibleAntibodies,DefaultSampleModel[Object],Cache->cache,Date->Now]
+		Download[possibleAntibodies,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now],
+		Download[compatibleAntibodies,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now]
 	];
 
 	(* get the epitope binding position information for every member of compatibleAntibodies *)
@@ -14094,7 +13996,7 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 (* resolve Detection Antibody when myCaptureAntibody is not Automatic *)
 findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{Model[Sample],Object[Sample]}]|Null,myDetectionAntibody:Automatic,ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,cache,
+		safeOps,cache,simulation,
 		captureAntibodyIdentityModel,captureAntibodyIdentityModelPackets,captureAntibodyBindingArea,
 		analytePacket,possibleAntibodies,compatibleAntibodies,compatibleAntibodyDefaultModels,compatibleAntibodyBindingAreas,epitopeOverlapQ,biotinModifiedQ,monoclonalQ,
 		bestAntibodyPosition,bestDetectionAntibodyIdentityModelPacket,bestDetectionAntibody,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning,antibodyEpitopeWarning
@@ -14102,11 +14004,11 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{
 
 	(* get the Cache option *)
 	safeOps=SafeOptions[findAntibodyPairs, ToList[ops]];
-	cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
 	(* get the capture antibody identity models *)
-	captureAntibodyIdentityModel=Cases[Download[myCaptureAntibody,Composition[[All,2]][Object],Cache->cache,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
-	captureAntibodyIdentityModelPackets=Download[captureAntibodyIdentityModel,Packet[Targets,Epitopes,SecondaryAntibodies,AssayTypes],Cache->cache,Date->Now];
+	captureAntibodyIdentityModel=Cases[Download[myCaptureAntibody,Composition[[All,2]][Object],Cache->cache,Simulation->simulation,Date->Now],ObjectP[Model[Molecule,Protein,Antibody]]];
+	captureAntibodyIdentityModelPackets=Download[captureAntibodyIdentityModel,Packet[Targets,Epitopes,SecondaryAntibodies,AssayTypes],Cache->cache,Simulation->simulation,Date->Now];
 
 	(* call helper function to find binding area for each antibody identity model and union them together. Even if myDetectionAntibody is Null, this will work as the helper function should return Interval[] regardless *)
 	captureAntibodyBindingArea=IntervalUnion@@Map[
@@ -14116,8 +14018,8 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{
 
 	(* get the analyte packet with information of interest *)
 	analytePacket=Which[
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Date->Now],
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Simulation->simulation,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{AssayTypes,Clonality,Epitopes,Molecule,DefaultSampleModel,Targets,SecondaryAntibodies}]]},Cache->cache,Simulation->simulation,Date->Now],
 		True,{}
 	];
 
@@ -14132,8 +14034,8 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{
 
 	(* get the default sample models for all the compatible antibodies *)
 	compatibleAntibodyDefaultModels=If[MatchQ[compatibleAntibodies,{}],
-		Download[possibleAntibodies,DefaultSampleModel[Object],Cache->cache,Date->Now],
-		Download[compatibleAntibodies,DefaultSampleModel[Object],Cache->cache,Date->Now]
+		Download[possibleAntibodies,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now],
+		Download[compatibleAntibodies,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now]
 	];
 
 	(* get the epitope binding position information for every member of compatibleAntibodies *)
@@ -14216,19 +14118,19 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:ObjectP[{
 (* when both capture antibody and detection antibody are automatic *)
 findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic,myDetectionAntibody:Automatic,ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,cache,
+		safeOps,cache,simulation,
 		analytePacket,possibleAntibodies,compatibleAntibodies,digoxigeninModifiedQ,biotinModifiedQ,polyclonalQ,monoclonalQ,
 		bestCaptureAntibody,bestDetectionAntibody,antibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning
 	},
 
 	(* get the Cache option *)
 	safeOps=SafeOptions[findAntibodyPairs,ToList[ops]];
-	cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
 	(* get the analyte packet with information of interest *)
 	analytePacket=Which[
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{SecondaryAntibodies,AssayTypes,Clonality,Epitopes,Molecule,Targets,DefaultSampleModel}]]},Cache->cache,Date->Now],
-		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{SecondaryAntibodies,AssayTypes,Clonality,Epitopes,Molecule,Targets,DefaultSampleModel}]]},Cache->cache,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein,Antibody]]],Download[myAnalyte,{Packet[SecondaryAntibodies],Packet[SecondaryAntibodies[{SecondaryAntibodies,AssayTypes,Clonality,Epitopes,Molecule,Targets,DefaultSampleModel}]]},Cache->cache,Simulation->simulation,Date->Now],
+		MatchQ[myAnalyte,ObjectP[Model[Molecule,Protein]]],Download[myAnalyte,{Packet[Antibodies],Packet[Antibodies[{SecondaryAntibodies,AssayTypes,Clonality,Epitopes,Molecule,Targets,DefaultSampleModel}]]},Cache->cache,Simulation->simulation,Date->Now],
 		True,{}
 	];
 
@@ -14298,29 +14200,29 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 
 		(* All the following cases are actually over-complicated. These may take some time to evaluate. However, we should expect this list to be fairly short so the running time is not very long. We are calling the list version of the function that has capture antibody/ detection antibody fixed, which has the weight value transferred for comparison. *)
 		(* If we have digoxigenin-modified antibody, assign it as the capture antibody and the problem becomes similar to the overload above with one defined by the user. Map through all digoxigenin-modified antibody. *)
-		TrueQ[Count[digoxigeninModifiedQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,digoxigeninModifiedQ],PickList[compatibleAntibodies,digoxigeninModifiedQ,False],Cache->cache],
+		TrueQ[Count[digoxigeninModifiedQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,digoxigeninModifiedQ],PickList[compatibleAntibodies,digoxigeninModifiedQ,False],Cache->cache,Simulation->simulation],
 
 		(* Same for biotin-modified antibody *)
-		TrueQ[Count[biotinModifiedQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,biotinModifiedQ,False],PickList[compatibleAntibodies,biotinModifiedQ],Cache->cache],
+		TrueQ[Count[biotinModifiedQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,biotinModifiedQ,False],PickList[compatibleAntibodies,biotinModifiedQ],Cache->cache,Simulation->simulation],
 
 		(* Then we can check clonality *)
-		TrueQ[Count[polyclonalQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,polyclonalQ],compatibleAntibodies,Cache->cache],
-		TrueQ[Count[monoclonalQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,compatibleAntibodies,PickList[compatibleAntibodies,monoclonalQ],Cache->cache],
+		TrueQ[Count[polyclonalQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[compatibleAntibodies,polyclonalQ],compatibleAntibodies,Cache->cache,Simulation->simulation],
+		TrueQ[Count[monoclonalQ,True]>=1]&&!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,compatibleAntibodies,PickList[compatibleAntibodies,monoclonalQ],Cache->cache,Simulation->simulation],
 
 		(* Finally we are going to randomly choose a combination. *)
-		!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,compatibleAntibodies,compatibleAntibodies,Cache->cache],
+		!MatchQ[compatibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,compatibleAntibodies,compatibleAntibodies,Cache->cache,Simulation->simulation],
 
 		(* Repeat the checks when we don't have assay types populated *)
-		TrueQ[Count[digoxigeninModifiedQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[possibleAntibodies,digoxigeninModifiedQ],PickList[possibleAntibodies,digoxigeninModifiedQ,False],Cache->cache],
+		TrueQ[Count[digoxigeninModifiedQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[possibleAntibodies,digoxigeninModifiedQ],PickList[possibleAntibodies,digoxigeninModifiedQ,False],Cache->cache,Simulation->simulation],
 
 		(* Same for biotin-modified antibody *)
-		TrueQ[Count[biotinModifiedQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte,PickList[possibleAntibodies,biotinModifiedQ,False],PickList[possibleAntibodies,biotinModifiedQ],Cache->cache],
+		TrueQ[Count[biotinModifiedQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte,PickList[possibleAntibodies,biotinModifiedQ,False],PickList[possibleAntibodies,biotinModifiedQ],Cache->cache,Simulation->simulation],
 
 		(* Then we can check clonality *)
-		TrueQ[Count[polyclonalQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[possibleAntibodies,polyclonalQ],possibleAntibodies,Cache->cache],
-		TrueQ[Count[monoclonalQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,possibleAntibodies,PickList[possibleAntibodies,monoclonalQ],Cache->cache],
+		TrueQ[Count[polyclonalQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,PickList[possibleAntibodies,polyclonalQ],possibleAntibodies,Cache->cache,Simulation->simulation],
+		TrueQ[Count[monoclonalQ,True]>=1]&&!MatchQ[possibleAntibodies,{}],findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,possibleAntibodies,PickList[possibleAntibodies,monoclonalQ],Cache->cache,Simulation->simulation],
 
-		True,findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,possibleAntibodies,possibleAntibodies,Cache->cache]
+		True,findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte,possibleAntibodies,possibleAntibodies,Cache->cache,Simulation->simulation]
 
 	];
 
@@ -14332,14 +14234,14 @@ findAntibodyPairs[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:Automatic
 (* resolve the best Capture Antibody when myDetectionAntibody has a list of equivalent options to choose from *)
 findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:{PacketP[Model[Molecule]]..},myDetectionAntibody:{PacketP[Model[Molecule]]..},ops:OptionsPattern[]]:=Module[
     {
-        safeOps,cache,detectionAntibodyBindingArea,captureAntibodyDefaultModels,detectionAntibodyDefaultModels,captureAntibodyBindingAreas,
+        safeOps,cache,simulation,detectionAntibodyBindingArea,captureAntibodyDefaultModels,detectionAntibodyDefaultModels,captureAntibodyBindingAreas,
         epitopeOverlapQ,digoxigeninModifiedQ,expandedDigoxigeninModifiedQ,polyclonalQ,expandedPolyclonalQ,
         bestAntibodyPositionForAllDetectionAntibody,bestAntibodyPosition,bestDetectionAntibody,bestCaptureAntibody,bestCaptureAntibodyIdentityModelPacket,bestDetectionAntibodyIdentityModelPacket,antibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning
     },
 
     (* get the Cache option *)
     safeOps=SafeOptions[findAntibodyPairs, ToList[ops]];
-    cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
     (* call helper function to find binding area for each antibody identity model and union them together. Even if myDetectionAntibody is Null, this will work as the helper function should return Interval[] regardless *)
     detectionAntibodyBindingArea=Map[
@@ -14351,8 +14253,8 @@ findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte:ObjectP[Model[Molecu
     ];
 
     (* get the default sample models for all the possible capture and detection antibodies *)
-    captureAntibodyDefaultModels=Download[myCaptureAntibody,DefaultSampleModel[Object],Cache->cache,Date->Now];
-    detectionAntibodyDefaultModels=Download[myDetectionAntibody,DefaultSampleModel[Object],Cache->cache,Date->Now];
+    captureAntibodyDefaultModels=Download[myCaptureAntibody,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now];
+    detectionAntibodyDefaultModels=Download[myDetectionAntibody,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now];
 
     (* get the epitope binding position information for every member of myCaptureAntibody *)
     captureAntibodyBindingAreas=Map[
@@ -14427,7 +14329,7 @@ findAntibodyPairsFromListDetectionAntibodyOptions[myAnalyte:ObjectP[Model[Molecu
 (* resolve the best Detection Antibody when myCaptureAntibody has a list of equivalent options to choose from *)
 findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte:ObjectP[Model[Molecule]],myCaptureAntibody:{PacketP[Model[Molecule]]..},myDetectionAntibody:{PacketP[Model[Molecule]]..},ops:OptionsPattern[]]:=Module[
     {
-        safeOps,cache,captureAntibodyBindingArea,captureAntibodyDefaultModels,detectionAntibodyDefaultModels,detectionAntibodyBindingAreas,
+        safeOps,cache,simulation,captureAntibodyBindingArea,captureAntibodyDefaultModels,detectionAntibodyDefaultModels,detectionAntibodyBindingAreas,
         epitopeOverlapQ,biotinModifiedQ,expandedBiotinModifiedQ,monoclonalQ,expandedMonoclonalQ,
         bestAntibodyPositionForAllCaptureAntibody,bestAntibodyPosition,bestDetectionAntibody,bestCaptureAntibody,bestCaptureAntibodyIdentityModelPacket,bestDetectionAntibodyIdentityModelPacket,antibodyEpitopeWarning,captureAntibodyAssayTypeWarning,detectionAntibodyAssayTypeWarning
 
@@ -14435,7 +14337,7 @@ findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte:ObjectP[Model[Molecule
 
     (* get the Cache option *)
     safeOps=SafeOptions[findAntibodyPairs, ToList[ops]];
-    cache=Lookup[safeOps,Cache];
+	{cache,simulation}=Lookup[safeOps, {Cache,Simulation}];
 
     (* call helper function to find binding area for each antibody identity model and union them together. Even if myDetectionAntibody is Null, this will work as the helper function should return Interval[] regardless *)
     captureAntibodyBindingArea=Map[
@@ -14447,8 +14349,8 @@ findAntibodyPairsFromListCaptureAntibodyOptions[myAnalyte:ObjectP[Model[Molecule
     ];
 
     (* get the default sample models for all the possible capture antibodies *)
-	captureAntibodyDefaultModels=Download[myCaptureAntibody,DefaultSampleModel[Object],Cache->cache,Date->Now];
-	detectionAntibodyDefaultModels=Download[myDetectionAntibody,DefaultSampleModel[Object],Cache->cache,Date->Now];
+	captureAntibodyDefaultModels=Download[myCaptureAntibody,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now];
+	detectionAntibodyDefaultModels=Download[myDetectionAntibody,DefaultSampleModel[Object],Cache->cache,Simulation->simulation,Date->Now];
 
     (* get the epitope binding position information for every member of myDetectionAntibody *)
     detectionAntibodyBindingAreas=Map[
@@ -14575,7 +14477,7 @@ calculateBiotinVolume[molecularWeight:GreaterEqualP[0Dalton],biotinMolecularWeig
 
 DefineOptions[
 	capillaryELISAResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 
@@ -14650,7 +14552,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
         customizableCartridgeQ,standardQ,pickingResourcesTime,returningResourcesTime,sampleManipulationTime,samplePreparationTime,standardPreparationTime,antibodyResuspensionTime,antibodyConjugationIncubationTime,antibodyConjugationTime,standardResuspensionTime,antibodyDilutionTime,samplePreparationTotalTime,sampleManipulationTotalTime,
 
         (* Output *)
-        protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,testsRule,resultRule
+        protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,simulation
     },
 
     (* Expand the resolved options if they weren't expanded already. This also covers the other index matching options. We always want to look up from expendedResolvedOptions *)
@@ -14674,6 +14576,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 
     (* Get the inherited cache *)
     inheritedCache = Lookup[ToList[ops],Cache];
+    simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* make a fast association to quickly pull stuff out of the inherited cache *)
 	inheritedFastAssoc = makeFastAssocFromCache[inheritedCache];
@@ -14899,7 +14802,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 	standardIdentityModels=Map[
 		Function[
 			{singleStandardPacket},
-			Select[Lookup[singleStandardPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&]
+			Select[Lookup[singleStandardPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&]
 		],
 		standardPackets
 	];
@@ -14922,7 +14825,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 		standardIdentityModels
 	];
 
-	(* Use the average molecular weight or 150000 Dalton for caculation *)
+	(* Use the average molecular weight or 150000 Dalton for calculation *)
 	standardAverageMolecularWeight=Map[
 		If[MatchQ[#,{}],
 			150000Dalton,
@@ -15140,7 +15043,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 			{singleAntibodyPacket},
 			If[NullQ[singleAntibodyPacket],
 				{},
-				Select[Lookup[singleAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&]
+				Select[Lookup[singleAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&]
 			]
 		],
 		joinedCaptureAntibodyPackets
@@ -15164,7 +15067,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 		joinedCaptureAntibodyIdentityModels
 	];
 
-	(* Use the first molecular weight - consistent with the concentration value origin or 150000 Dalton for caculation *)
+	(* Use the first molecular weight - consistent with the concentration value origin or 150000 Dalton for calculation *)
 	jointCaptureAntibodyAverageMolecularWeight=Map[
 		FirstOrDefault[#,150000Dalton]&,
 		jointCaptureAntibodyMolecularWeights
@@ -15421,7 +15324,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 			{singleAntibodyPacket},
 			If[NullQ[singleAntibodyPacket],
 				{},
-				Select[Lookup[singleAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}]&]
+				Select[Lookup[singleAntibodyPacket,Composition,{}],MatchQ[#,{_,ObjectP[Model[Molecule,Protein,Antibody]]}|{_,ObjectP[Model[Molecule,Protein,Antibody]],_}]&]
 			]
 		],
 		joinedDetectionAntibodyPackets
@@ -15445,7 +15348,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
     joinedDetectionAntibodyIdentityModels
   ];
 
-	(* Use the first molecular weight - consistent with the concentration value origin or 150000 Dalton for caculation *)
+	(* Use the first molecular weight - consistent with the concentration value origin or 150000 Dalton for calculation *)
 	jointDetectionAntibodyAverageMolecularWeight=Map[
 		FirstOrDefault[#,150000Dalton]&,
 		jointDetectionAntibodyMolecularWeights
@@ -16185,7 +16088,7 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 	];
 
 	(* DilutionContainer *)
-	(* ExperimentCapillaryELISA only allows up to 72 samples - one SpikeContainer of 96-well is enough for all samples and standard samples - Pick one plate as our resrouce *)
+	(* ExperimentCapillaryELISA only allows up to 72 samples - one SpikeContainer of 96-well is enough for all samples and standard samples - Pick one plate as our resource *)
 	dilutionContainer=PreferredContainer[0Microliter,Type->Plate];
 
 	dilutionContainerResource=Link[Resource[Sample->dilutionContainer,Name->ToString[Unique[]]]];
@@ -17785,21 +17688,21 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 		Replace[SpikeConcentrations]->spikeConcentration,
 
 		Replace[Checkpoints]->{
-			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->45 Minute]]},
-			{"Picking Resources",pickingResourcesTime,"Samples and containers required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->pickingResourcesTime]]},
-			{"Sample Preparation",samplePreparationTotalTime,"The antibody samples are resuspended and conjugated and the standard samples are resuspended.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->samplePreparationTotalTime]]},
-			{"Cartridge Loading",sampleManipulationTotalTime,"The experiment samples are mixed with spike samples and then diluted. The standard samples and the antibody samples are diluted. The samples and antibodies are loaded in the capillary ELISA cartridge.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->sampleManipulationTotalTime]]},
-			(* This will be put as part of the maintanence or qualifiaction. *)
+			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]},
+			{"Picking Resources",pickingResourcesTime,"Samples and containers required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->pickingResourcesTime]]},
+			{"Sample Preparation",samplePreparationTotalTime,"The antibody samples are resuspended and conjugated and the standard samples are resuspended.",Link[Resource[Operator->$BaselineOperator,Time->samplePreparationTotalTime]]},
+			{"Cartridge Loading",sampleManipulationTotalTime,"The experiment samples are mixed with spike samples and then diluted. The standard samples and the antibody samples are diluted. The samples and antibodies are loaded in the capillary ELISA cartridge.",Link[Resource[Operator->$BaselineOperator,Time->sampleManipulationTotalTime]]},
+			(* This will be put as part of the maintenance or qualification. *)
 			(*
-			{"Capillary ELISA Instrument Self Test",1 Hour,"The self test of capillary ELISA instrument is performed with a verification cartridge, provided by ProteinSimple, the manufacturer of the instrument.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1Hour]]},
+			{"Capillary ELISA Instrument Self Test",1 Hour,"The self test of capillary ELISA instrument is performed with a verification cartridge, provided by ProteinSimple, the manufacturer of the instrument.",Link[Resource[Operator->$BaselineOperator,Time->1Hour]]},
 			*)
-			{"Capillary ELISA Run",2.5 Hour,"The capillary ELISA experiment is run on the cartridge, loaded with experiment samples.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->2Hour]]},
-			{"Returning Materials",returningResourcesTime,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"], Time->returningResourcesTime]]}
+			{"Capillary ELISA Run",2.5 Hour,"The capillary ELISA experiment is run on the cartridge, loaded with experiment samples.",Link[Resource[Operator->$BaselineOperator,Time->2Hour]]},
+			{"Returning Materials",returningResourcesTime,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator, Time->returningResourcesTime]]}
 		}
 	|>;
 
     (* generate a packet with the shared fields *)
-    sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+    sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Simulation->simulation];
 
     (* Merge the shared fields with the specific fields *)
     finalizedPacket=Join[sharedFieldPacket, protocolPacket];
@@ -17812,8 +17715,8 @@ capillaryELISAResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolve
 	(* call fulfillableResourceQ on all the resources we created *)
     {fulfillable,frqTests}=Which[
       MatchQ[$ECLApplication,Engine],{True,{}},
-      gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-      True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+      gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Simulation->simulation],
+      True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Simulation->simulation],Null}
     ];
 
 
@@ -17860,7 +17763,7 @@ DefineOptions[ExperimentCapillaryELISAOptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentCapillaryELISAOptions[
-	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],
+	mySamples:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[{Object[Sample], Model[Sample]}]|_String)],
 	myOptions:OptionsPattern[ExperimentCapillaryELISAOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -17895,7 +17798,7 @@ DefineOptions[ValidExperimentCapillaryELISAQ,
 	SharedOptions:>{ExperimentCapillaryELISA}
 ];
 
-ValidExperimentCapillaryELISAQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryELISAQ]]:=Module[
+ValidExperimentCapillaryELISAQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentCapillaryELISAQ]]:=Module[
 	{listedOptions,preparedOptions,capillaryELISATests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)
@@ -17914,7 +17817,7 @@ ValidExperimentCapillaryELISAQ[mySamples:ListableP[ObjectP[{Object[Container],Ob
 	allTests=If[MatchQ[capillaryELISATests,$Failed],
 		{Test[initialTestDescription,False,True]},
 		Module[
-			{initialTest,validObjectBooleans,voqWarnings,testResults},
+			{initialTest,validObjectBooleans,voqWarnings},
 
 			(* Generate the initial test, which we know will pass if we got this far (hopefully) *)
 			initialTest=Test[initialTestDescription,True,True];
@@ -17951,7 +17854,7 @@ DefineOptions[ExperimentCapillaryELISAPreview,
 	SharedOptions:>{ExperimentCapillaryELISA}
 ];
 
-ExperimentCapillaryELISAPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryELISAPreview]]:=Module[
+ExperimentCapillaryELISAPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentCapillaryELISAPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];

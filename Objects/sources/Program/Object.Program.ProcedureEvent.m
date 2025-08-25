@@ -8,6 +8,7 @@ DefineObjectType[Object[Program, ProcedureEvent], {
 	Description->"Single log entry in the ProcedureLog for a protocol. Records information necessary for tracking progress of a protocol through a procedure and is used when resuming a protocol to the correct place.",
 	CreatePrivileges->None,
 	Cache->Session,
+	FlatTable -> True,
 	Fields -> {
 		
 		Procedure -> {
@@ -42,7 +43,8 @@ DefineObjectType[Object[Program, ProcedureEvent], {
 				Object[User],
 				Object[Protocol],
 				Object[Qualification],
-				Object[Maintenance]
+				Object[Maintenance],
+				Object[Repair]
 			],
 			Description -> "The person or protocol which generated this log entry.",
 			Category -> "Organizational Information",

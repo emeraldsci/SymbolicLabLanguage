@@ -21,7 +21,7 @@ DefineUsage[ValidExperimentDegasQ,
 							Description->"The samples or containers that will be degassed.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,
@@ -47,7 +47,7 @@ DefineUsage[ValidExperimentDegasQ,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
+		Author->{"lige.tonggu", "eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
 	}
 ];
 
@@ -70,7 +70,7 @@ DefineUsage[ExperimentDegasPreview,
 							Description->"The samples or containers containing samples that will be degassed.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,
@@ -96,13 +96,13 @@ DefineUsage[ExperimentDegasPreview,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
+		Author->{"lige.tonggu", "eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
 	}
 ];
 
 
 (* ::Subsubsection:: *)
-(*ExperimentDegasPreview*)
+(*ExperimentDegasOptions*)
 
 
 DefineUsage[ExperimentDegasOptions,
@@ -118,7 +118,7 @@ DefineUsage[ExperimentDegasOptions,
 							Description->"The samples or containers containing the samples that will be degassed.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+								Pattern:>ObjectP[{Object[Sample],Object[Container],Model[Sample]}],
 								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
 							],
 							Expandable->False,
@@ -144,6 +144,6 @@ DefineUsage[ExperimentDegasOptions,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
+		Author->{"lige.tonggu", "eunbin.go", "axu", "boris.brenerman", "cgullekson", "marie.wu"}
 	}
 ];

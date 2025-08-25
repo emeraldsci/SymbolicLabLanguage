@@ -24,9 +24,9 @@ Error::DefaultContainerModel="Products that are self-contained must not have the
 Error::ProductAmount="If this product is self contained, Amount must not be specified. If this product is not self contained, Amount must be specified. Please change the values of these options.";
 Error::EmeraldSuppliedProductSamples="If Emerald Cloud Lab is the supplier of this product, NumberOfItems must be 1. Currently, its value is `1`. Please change the value of this option.";
 Error::EmeraldSuppliedProductContainer="If Emerald Cloud Lab is the supplier of this product, DefaultContainerModel must be a preferred vessel. To see the possible preferred vessels, evaluate PreferredContainer[All]. Please change the value of this option.";
-Error::AmountUnitState="The option Amount must match the model's state of matter. Currently, Amount is `1` and the product model's state of matter is `2`. This does not match. Please change the value of these options.";
+Error::AmountUnitState="The option Amount must match the model's state of matter. Currently, Amount is `1` and the product model's state of matter is `2`. This does not match. Liquid can have amount specified as Mass if Density is informed. Please change the value of these options.";
 Error::PricePerUnitRequired="If `1` is not supplied by Emerald Cloud Lab, the Price option must be specified. Please change the value of this option.";
-Error::TabletFields="The options Amount and CountPerSample cannot both be informed at the same time, unless the product model is a Model[Sample] that is a Tablet. Please change the value of these fields.";
+Error::TabletSachetFields="The options Amount and CountPerSample cannot both be informed at the same time, unless the product model is a Model[Sample] that is a Tablet or Sachet. Please change the value of these fields.";
 Error::InvalidKitOptions="If the KitComponents option was specified and not Null, the following options must also be specified: `1`.  These options must be Null if creating a kit.";
 Error::InvalidSampleType="The KitComponents option was specified, but the SampleType option was not set to Kit.  This option must be set to Kit if creating a kit.";
 Error::SingleKitComponent="The KitComponents option was specified, but only one component was provided.  A kit must have at least two separate components; if only one component is desired, use the non-kit options.";
@@ -36,12 +36,18 @@ Error::KitModelAlreadyHasProduct="The KitComponents option was specified, but fo
 Error::StickerKitInParallelUnused="StickerKitInParallel can only be set if KitComponents is supplied. Please check these values for `1`.";
 Error::InvalidProductSite="The Site field is not a member of the ExperimentSites of `1`. The value of Site can be `2` or Null if the product pricing is not site dependent.";
 Error::DefaultContainerModelTooManyPositions="If DefaultContainerModel is specified as a Model[Container,Plate], then the plate can not have more than 1 well.";
+Error::UnsupportedAsepticReceiving="`1`, indicating the use of aseptic sample receiving techniques; however, `2`, indicating the use of standard receiving techniques. If aseptic receiving techniques are desired, please set `3`. If standard receiving techniques are desired, please set `4`.";
+Error::IncompatibleAsepticShippingAndReceiving="`1`";
+Error::AsepticRebaggingContainerTypeRequired="`1`";
+Error::CountedProduct="`1` must have CountPerSample when the associated product model is marked as counted. Otherwise CountPerSample can't be provided.";
 
 validProductQTests[packet : PacketP[Object[Product]]] := Module[
 	{
-		supplier,identifier,resolvedKitComponents,kitQ,validContainerIndex,validVesselIndex,nameAlreadyExistsQ,prodExistsQ,
-		existingInventoryObjs,prodModelPacket,defaultContainerModelPacket,allTypes,disallowedPublicSamples,openContainer,
-		experimentSites
+		supplier,identifier,resolvedKitComponents,kitProductModels,kitQ,validContainerIndex,validVesselIndex,nameAlreadyExistsQ,prodExistsQ,
+		existingInventoryObjs,prodModelPacket,kitModelCounts,defaultContainerModelPacket,allTypes,disallowedPublicSamples,openContainer,
+		experimentSites,asepticReceivingIndicatedString,standardReceivingIndicatedString,asepticReceivingCorrectionString,
+		standardReceivingCorrectionString,incompatibleAsepticShippingAndReceivingString,
+		asepticRebaggingContainerTypeRequiredString
 	},
 
 	(* Stash the object reference of the supplier but with the Name and not the ID *)
@@ -51,6 +57,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 
 	(* pull out KitComponents because that changes a lot of what we do below *)
 	resolvedKitComponents = Lookup[packet, KitComponents];
+	kitProductModels = Lookup[resolvedKitComponents, ProductModel, Null];
 	kitQ = MatchQ[resolvedKitComponents, {(_Association)..}];
 
 	(* figure out if we're making a new product or not, and if something with this name already exists  *)
@@ -98,12 +105,14 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 	(* get all the stuff I need for future Downloads *)
 	{
 		prodModelPacket,
+		kitModelCounts,
 		defaultContainerModelPacket,
 		experimentSites
 	} = Quiet[Download[
 		packet,
 		{
-			Packet[ProductModel[{Tablet,State,Notebook,OpenContainer}]],
+			Packet[ProductModel[{Tablet,Sachet,State,Notebook,OpenContainer,Counted}]],
+			KitComponents[[All,ProductModel]][Counted],
 			Packet[DefaultContainerModel[{Deprecated,OpenContainer,Positions}]],
 			Notebook[Financers][ExperimentSites][Object]
 		}
@@ -147,6 +156,131 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				duplicatedIndices
 			]
 		]
+	];
+
+	(* Define a helper function to help generate better error messages *)
+	fancyRiffle[stringList:{_String..},separatorWord_String]:=Switch[Length[stringList],
+		LessP[2],
+			First[stringList],
+		EqualP[2],
+			StringRiffle[stringList," " <> separatorWord <> " "],
+		_,
+			Module[{riffledString},
+				riffledString = StringRiffle[stringList,", " <> separatorWord <> " "];
+				StringReplace[riffledString,", " <> separatorWord <> " " -> ", ",Length[stringList] - 2]
+			]
+	];
+
+	(* Set error string variables for aseptic rebagging tests *)
+	(* Error::UnsupportedAsepticReceiving *)
+	{
+		asepticReceivingIndicatedString,
+		standardReceivingIndicatedString,
+		asepticReceivingCorrectionString,
+		standardReceivingCorrectionString
+	} = Module[
+		{
+			asepticReceivingIndicatedStrings,standardReceivingIndicatedStrings
+		},
+
+		asepticReceivingIndicatedStrings = {
+			If[TrueQ[Lookup[packet,Sterile]] && MatchQ[Lookup[packet,SealedContainer],False | Null],
+				{
+					(* What is set *)
+					"Sterile is specified as True",
+					(* Correction for standard receiving *)
+					"Sterile to False"
+				},
+				Nothing
+			],
+			If[!NullQ[Lookup[packet,AsepticShippingContainerType]],
+				{
+					(* What is set *)
+					"AsepticShippingContainerType is specified as " <> ToString[Lookup[packet,AsepticShippingContainerType]],
+					(* Correction for standard receiving *)
+					"AsepticShippingContainerType to Null"
+				},
+				Nothing
+			],
+			If[!NullQ[Lookup[packet,AsepticRebaggingContainerType]],
+				{
+					(* What is set *)
+					"AsepticRebaggingContainerType is specified as " <> ToString[Lookup[packet,AsepticRebaggingContainerType]],
+					(* Correction for standard receiving *)
+					"AsepticRebaggingContainerType to Null"
+				},
+				Nothing
+			]
+		};
+
+		standardReceivingIndicatedStrings = {
+			If[TrueQ[Lookup[packet,SealedContainer]],
+				{
+					(* What is set *)
+					"SealedContainer is specified as True",
+					(* Correction for aseptic receiving *)
+					"SealedContainer to False"
+				},
+				Nothing
+			],
+			If[MatchQ[Lookup[packet,Sterile],False],
+				{
+					(* What is set *)
+					"Sterile is specified as False",
+					(* Correction for aseptic receiving *)
+					"Sterile to True"
+				},
+				Nothing
+			],
+			If[NullQ[Lookup[packet,AsepticShippingContainerType]],
+				{
+					(* What is set *)
+					"AsepticShippingContainerType is specified as Null",
+					(* Correction for aseptic receiving *)
+					"AsepticShippingContainerType to a non null value"
+				},
+				Nothing
+			]
+		};
+
+		If[
+			And[
+				Length[asepticReceivingIndicatedStrings] > 0,
+				Length[standardReceivingIndicatedStrings] > 0
+			],
+			{
+				fancyRiffle[asepticReceivingIndicatedStrings[[All,1]], "and"],
+				fancyRiffle[standardReceivingIndicatedStrings[[All,1]], "and"],
+				fancyRiffle[standardReceivingIndicatedStrings[[All,2]], "and"],
+				fancyRiffle[asepticReceivingIndicatedStrings[[All,2]], "and"]
+			},
+			{"","","",""}
+		]
+	];
+
+	(* Error::IncompatibleAsepticShippingAndReceiving *)
+	incompatibleAsepticShippingAndReceivingString = If[
+		And[
+			MatchQ[Lookup[packet,AsepticShippingContainerType],Individual|ResealableBulk],
+			MatchQ[Lookup[packet,AsepticRebaggingContainerType],Except[Null]]
+		],
+		"AsepticShippingContainerType is specified as " <> ToString[Lookup[packet,AsepticShippingContainerType]] <> " and AsepticRebaggingContainerType is specified as " <> ToString[Lookup[packet,AsepticRebaggingContainerType]] <> ". Rebagging is only supported for non resealable bulk shipping containers.",
+		""
+	];
+
+	(* Error::AsepticRebaggingContainerTypeRequired *)
+	asepticRebaggingContainerTypeRequiredString = Switch[
+		{
+			Lookup[packet,AsepticShippingContainerType],
+			Lookup[packet,AsepticRebaggingContainerType]
+		},
+		{NonResealableBulk,Null},
+			"AsepticShippingContainerType is specified as NonResealableBulk; however, AsepticRebaggingContainerType is Null. AsepticRebaggingContainerType must be specified if AsepticShippingContainerType is NonResealableBulk.",
+		(* Error::AsepticRebaggingContainerTypeRequired *)
+		{None,Null},
+			"AsepticShippingContainerType is specified as None, indicating uncertainty in the shipping container type; however, AsepticRebaggingContainerType is Null. AsepticRebaggingContainerType must be specified if AsepticShippingContainerType is None in case rebagging is required when the shipping container type is determined upon package arrival.",
+		{_,_},
+			""
 	];
 
 	{
@@ -260,10 +394,34 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			MessageArguments -> {identifier}
 		],
 
-		Test["Amount and CountPerSample cannot both be informed at the same time except for when it's a Sample Chemical and the sample contains Tablets:",
+		Test["CountPerSample is provided if and only if the product model is counted:",
+			(* Samples have Tablet field which is similar to Counted, but has its own checks. Kits also get their own test *)
+			If[kitQ || MatchQ[prodModelPacket, ObjectP[Model[Sample]]],
+				True,
+				MatchQ[
+					{Lookup[prodModelPacket, Counted], Lookup[packet, CountPerSample, Null]},
+					{Null|False|$Failed, Null} | {True, _Integer}
+				]
+			],
+			True,
+			Message -> Hold[Error::CountedProduct],
+			MessageArguments -> {identifier}
+		],
+
+		Test["Kits can't have any counted models as the product has no way to track the initial count:",
+			If[kitQ,
+				!MemberQ[kitModelCounts,True],
+				True
+			],
+			True,
+			Message -> Hold[Error::CountedKitProduct],
+			MessageArguments -> {identifier}
+		],
+
+		Test["Amount and CountPerSample cannot both be informed at the same time except for when it's a Sample Chemical and the sample contains Tablets or Sachets:",
 			{
 				If[MatchQ[prodModelPacket, ObjectP[Model[Sample]]],
-					Lookup[prodModelPacket, Tablet],
+					MemberQ[Lookup[prodModelPacket, {Tablet, Sachet}, Null], True],
 					False
 				],
 				Lookup[packet, Amount, Null],
@@ -276,14 +434,14 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				{True, NullP, _},
 				{True, Except[NullP], _}
 			],
-			Message -> Hold[Error::TabletFields],
+			Message -> Hold[Error::TabletSachetFields],
 			MessageArguments -> {identifier}
 		],
 
-		Test["If the product is for a sample that is not self-contained, Amount is informed (unless the sample contains Tablets):",
+		Test["If the product is for a sample that is not self-contained, Amount is informed (unless the sample contains Tablets or Sachets):",
 			If[!kitQ && MatchQ[Lookup[packet, ProductModel], ObjectP[Model[Sample]]],
 				MatchQ[
-					{Lookup[prodModelPacket, Object], If[MatchQ[prodModelPacket, ObjectP[Model[Sample]]], Lookup[prodModelPacket, Tablet], Null], Lookup[packet, Amount, Null]},
+					{Lookup[prodModelPacket, Object], If[MatchQ[prodModelPacket, ObjectP[Model[Sample]]], MemberQ[Lookup[prodModelPacket, {Tablet, Sachet}, Null], True], Null], Lookup[packet, Amount, Null]},
 					Alternatives[
 						{SelfContainedSampleModelP, NullP, NullP},
 						(* Make a hard-coded exception for packing peanuts, which are a consumable but need Amount for pricing *)
@@ -372,7 +530,7 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 			],
 			True,
 			Message -> Hold[Error::AmountUnitState],
-			MessageArguments -> {identifier,If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null]}
+			MessageArguments -> {Lookup[packet,Amount],If[MatchQ[prodModelPacket,PacketP[]],Lookup[prodModelPacket,State],Null]}
 		],
 
 		(* If product isn't supplied by ET / ECL, it must have a list price *)
@@ -492,6 +650,33 @@ validProductQTests[packet : PacketP[Object[Product]]] := Module[
 				]
 			],
 			True
+		],
+
+		(* -- Aseptic Receiving Tests -- *)
+		Test["Ambiguous Aseptic Receiving specified. Please adjust the Sterile, SealedContainer, AsepticShippingContainerType, or AsepticRebaggingContainerType fields.",
+			MatchQ[asepticReceivingIndicatedString,""],
+			True,
+			MessageArguments -> {
+				asepticReceivingIndicatedString,
+				standardReceivingIndicatedString,
+				asepticReceivingCorrectionString,
+				standardReceivingCorrectionString
+			},
+			Message->Hold[Error::UnsupportedAsepticReceiving]
+		],
+
+		Test["Rebagging is only supported for non resealable bulk containers",
+			MatchQ[incompatibleAsepticShippingAndReceivingString,""],
+			True,
+			MessageArguments -> {incompatibleAsepticShippingAndReceivingString},
+			Message -> Hold[Error::IncompatibleAsepticShippingAndReceiving]
+		],
+
+		Test["Rebagging is required for unknown and nonresealable bulk aseptic shipping containers:",
+			MatchQ[asepticRebaggingContainerTypeRequiredString,""],
+			True,
+			MessageArguments -> {asepticRebaggingContainerTypeRequiredString},
+			Message -> Hold[Error::AsepticRebaggingContainerTypeRequired]
 		]
 	}
 ];
@@ -512,7 +697,7 @@ errorToOptionMap[Object[Product]] := {
 	"Error::SingleKitComponent" -> {KitComponents},
 	"Error::InvalidContainerIndexPosition" -> {KitComponents, ContainerIndex, Position},
 	"Error::NameIsPartOfSynonyms" -> {Name, Synonyms},
-	"Error::TabletFields" -> {Amount, CountPerSample},
+	"Error::TabletSachetFields" -> {Amount, CountPerSample},
 	"Error::DefaultContainerModel" -> {ProductModel, "NonSelfContainedSampleModelP"},
 	"Error::EmeraldSuppliedProductSamples" -> {Supplier, NumberOfItems},
 	"Error::AmountUnitState" -> {Amount,State},
@@ -520,7 +705,9 @@ errorToOptionMap[Object[Product]] := {
 	"Error::ProductAmount" -> {Amount},
 	"Error::InvalidContainerIndexPosition" -> {ContainerIndex, Position},
 	"Error::KitModelAlreadyHasProduct" -> KitComponents,
-	"Error::NonUniqueName" -> Name
+	"Error::NonUniqueName" -> Name,
+	"Error::UnsupportedAsepticReceiving" -> {Sterile, SealedContainer, AsepticShippingContainerType},
+	"Error::IncompatibleAsepticShippingAndReceiving" -> {AsepticShippingContainerType,AsepticRebaggingContainerType}
 };
 
 

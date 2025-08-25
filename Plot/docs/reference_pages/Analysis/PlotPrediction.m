@@ -80,13 +80,7 @@ DefineUsage[PlotPrediction,
     "PlotDistribution",
     "AnalyzeFit"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad",
-		"thomas",
-		"alice",
-		"qian"
-	},
+	Author -> {"dirk.schild", "amir.saadat", "brad", "thomas", "alice", "qian"},
 	Sync->Automatic,
 	Preview->True
 }];

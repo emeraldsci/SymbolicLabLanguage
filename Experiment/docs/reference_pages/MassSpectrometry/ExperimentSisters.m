@@ -13,9 +13,16 @@ DefineUsage[ExperimentMassSpectrometryPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
+							Widget -> Alternatives[
+								"Sample" ->  Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample]}]
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -85,9 +92,16 @@ DefineUsage[ExperimentMassSpectrometryOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
+							Widget -> Alternatives[
+								"Sample" ->  Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample]}]
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -157,9 +171,16 @@ DefineUsage[ValidExperimentMassSpectrometryQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples to be analyzed using mass spectrometry.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample]}]
+							Widget -> Alternatives[
+								"Sample" ->  Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample]}]
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

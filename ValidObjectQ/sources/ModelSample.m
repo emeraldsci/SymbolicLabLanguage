@@ -99,9 +99,12 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 				MatchQ[Lookup[packet, Notebook, $Notebook], ObjectP[]],
 				MatchQ[Lookup[packet, Composition, {}], {}],
 				MatchQ[Lookup[packet, Composition], {{Null, Null} ..}],
-				And[
-					MatchQ[Lookup[packet, Notebook, $Notebook], Null],
-					MatchQ[compositionNotebookPackets,{(Null|KeyValuePattern[{Notebook->Null}]|$Failed)..}]
+				Or[
+					!ProductionQ[],
+					And[
+						MatchQ[Lookup[packet, Notebook, $Notebook], Null],
+						MatchQ[compositionNotebookPackets,{(Null|KeyValuePattern[{Notebook->Null}]|$Failed)..}]
+					]
 				]
 			],
 			True
@@ -126,7 +129,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			_?(MemberQ[#, {Null | False, Null | False, True, Null}]&)
 		],
 
-		(* If Expires \[Equal] True, then either ShelfLife or UnsealedShelfLife must be informed. If either ShelfLife or UnsealedShelfLife is informed, then Expires must \[Equal] True. *)
+		(* If Expires \[Equal] True, then both ShelfLife and UnsealedShelfLife must be informed. If either ShelfLife or UnsealedShelfLife is informed, then Expires must \[Equal] True. *)
 		Test["ShelfLife and UnsealedShelfLife must be informed if Expires == True; if either ShelfLife or UnsealedShelfLife is informed, Expires must equal True for " <> ToString[identifier] <> ":",
 			Lookup[packet, {Expires, ShelfLife, UnsealedShelfLife}],
 			Alternatives[
@@ -158,20 +161,22 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 		],
 
 		Test["DefaultStorageCondition is consistent with model's safety requirements for " <> ToString[identifier] <> ":",
-			TrueQ /@ Lookup[packet, {Flammable, Acid, Base, Pyrophoric}],
-			TrueQ /@ Lookup[storageConditionPacketsToList, {Flammable, Acid, Base, Pyrophoric}],
-			Message -> Hold[Error::InconsistentDefaultStorageCondition],
-			MessageArguments -> {identifier}
-		],
-
-		(* TransportChilled must not be True if TransportWarmed is populated *)
-		Test["If TransportWarmed is populated, TransportChilled must not be True for " <> ToString[identifier] <> ":",
-			If[TemperatureQ[Lookup[packet, TransportWarmed]],
-				Not[TrueQ[Lookup[packet, TransportChilled]]],
-				True
+			Module[
+				{storageCondition, flammable, acid, base, pyrophoric},
+				(* Get the storage condition model and the safety information from the *)
+				storageCondition = Lookup[storageConditionPacketsToList, Object];
+				{flammable, acid, base, pyrophoric} = Lookup[packet, {Flammable, Acid, Base, Pyrophoric}];
+				(* Make a correction to allow for flammable AND non flammable samples to be stored in DeepFreezer or CryogenicStorage. *)
+				If[MatchQ[storageCondition, Alternatives[Model[StorageCondition, "id:xRO9n3BVOe3z"], Model[StorageCondition, "id:6V0npvmE09vG"]]],
+					TrueQ /@ {True, acid, base, pyrophoric},
+					TrueQ /@ {flammable, acid, base, pyrophoric}
+				]
 			],
-			True,
-			Message -> Hold[Error::ConflictingTransportCondition],
+			If[MatchQ[Lookup[storageConditionPacketsToList, Object], Alternatives[Model[StorageCondition, "id:xRO9n3BVOe3z"], Model[StorageCondition, "id:6V0npvmE09vG"]]],
+				{True, Sequence @@ (TrueQ /@ Lookup[storageConditionPacketsToList, {Acid, Base, Pyrophoric}])},
+				TrueQ /@ Lookup[storageConditionPacketsToList, {Flammable, Acid, Base, Pyrophoric}]
+			],
+			Message -> Hold[Error::InconsistentDefaultStorageCondition],
 			MessageArguments -> {identifier}
 		],
 
@@ -251,19 +256,6 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 		],
 
 		(* Other tests *)
-		Test["If MeltingPoint and BoilingPoint are both provided, BoilingPoint must be above MeltingPoint for " <> ToString[identifier] <> ":",
-			Module[{meltingPoint, boilingPoint},
-				{meltingPoint, boilingPoint} = Lookup[packet, {MeltingPoint, BoilingPoint}];
-				If[!NullQ[meltingPoint] && !NullQ[boilingPoint],
-					(meltingPoint) <= (boilingPoint),
-					True
-				]
-			],
-			True,
-			Message -> Hold[Error::MeltingBoilingPoint],
-			MessageArguments -> {identifier}
-		],
-
 		(* Solvent Tests *)
 		Test["If UsedAsSolvent is True, State must be Liquid for " <> ToString[identifier] <> ":",
 			If[MatchQ[Lookup[packet,UsedAsSolvent], True],
@@ -305,8 +297,8 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			MessageArguments -> {identifier}
 		],
 
-		Test["If UsedAsMedia is set to True, then UsedAsSolvent must also be set to True for " <> ToString[identifier] <> ":",
-			If[MatchQ[Lookup[packet, UsedAsMedia], True],
+		Test["If UsedAsMedia is set to True and State is Liquid, then UsedAsSolvent must also be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, UsedAsMedia], True] && MatchQ[Lookup[packet, State], Liquid],
 				MatchQ[Lookup[packet,UsedAsSolvent], True],
 				True
 			],
@@ -345,12 +337,109 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			True
 		],
 
+		Test["If Living is set to True, then the CellType should also be informed for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet,Living], True],
+				MatchQ[Lookup[packet, CellType], Except[Null]],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True, then neither DrainDisposal nor LabWasteDisposal can be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet,Living], True],
+				!(MatchQ[Lookup[packet, DrainDisposal], True] || MatchQ[Lookup[packet, LabWasteDisposal], True]),
+				True
+			],
+			True
+		],
+
+		Test["If PrepareSterile is set to True, then Sterile must be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, PrepareSterile], True],
+				MatchQ[Lookup[packet, Sterile], True],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True and CellType is set to Bacterial/Yeast, then Sterile cannot be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, Living], True] && MatchQ[Lookup[packet, CellType], MicrobialCellTypeP],
+				!MatchQ[Lookup[packet, Sterile], True],
+				True
+			],
+			True
+		],
+
+		Test["If Living is set to True, then AsepticHandling must be set to True for " <> ToString[identifier] <> ":",
+			If[MatchQ[Lookup[packet, Living], True],
+				MatchQ[Lookup[packet, AsepticHandling], True],
+				True
+			],
+			True
+		],
+
 		Test["If Tablet is True, the State must be Solid:",
 			If[TrueQ[Lookup[packet, Tablet]],
 				SameQ[Lookup[packet, State], Solid],
 				True
 			],
 			True
+		],
+
+		Test["If Sachet is True, the State must be Solid:",
+			If[TrueQ[Lookup[packet, Sachet]],
+				SameQ[Lookup[packet, State], Solid],
+				True
+			],
+			True,
+			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {identifier, Sachet,
+			"the State has to be Solid but is set to " <> ToString[Lookup[packet, State]]}
+		],
+
+		Test["If Sachet is True, the SolidUnitWeight must be populated:",
+			If[TrueQ[Lookup[packet, Sachet]],
+				MatchQ[Lookup[packet, SolidUnitWeight], MassP],
+				True
+			],
+			True,
+			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {
+			identifier, Sachet,
+			"the SolidUnitWeight has to be populated but is set to " <> ToString[Lookup[packet, SolidUnitWeight]]}
+		],
+
+		Test["If Sachet is True, the DefaultSachetPouch must be populated:",
+			If[TrueQ[Lookup[packet, Sachet]],
+				MatchQ[Lookup[packet, DefaultSachetPouch], ObjectP[]],
+				True
+			],
+			True,
+			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {
+			identifier, Sachet,
+			"the DefaultSachetPouch has to be populated but is set to " <> ToString[Lookup[packet, DefaultSachetPouch]]
+		}
+		],
+
+		Test["If SolidUnitWeight or SolidUnitWeightDistribution is populated, the sample must be Sachet or Tablet:",
+			If[!NullQ[Lookup[packet, SolidUnitWeight]] || !NullQ[Lookup[packet, SolidUnitWeightDistribution]],
+				TrueQ[Lookup[packet, Sachet]] || TrueQ[Lookup[packet, Tablet]],
+				True
+			],
+			True,
+			Message -> Hold[Error::SampleTypeOptionMismatch],
+			MessageArguments -> {
+				identifier,
+				"neither Tablet nor Sachet",
+				"the SolidUnitWeight and SolidUnitWeightDistribution have to be Null but are set to " <> ToString[Lookup[packet, {SolidUnitWeight, SolidUnitWeightDistribution}]]
+			}
+		],
+
+		Test["If Sachet is True, the Composition must container an entry of a Model[Material] for the pouch:",
+			If[TrueQ[Lookup[packet, Sachet]],
+				MemberQ[Lookup[packet, Composition][[All,2]],ObjectP[Model[Material]]],
+				True
+			],
+			True,
+			Message -> Hold[Error::SampleTypeOptionMismatch], MessageArguments -> {identifier, Sachet,
+			"the Composition has to contain an entry of Model[Material] for the pouch but is set to " <> ToString[Lookup[packet, Composition]]}
 		],
 
 		Test["If Fiber is True, the State must be Solid:",
@@ -361,8 +450,8 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			True
 		],
 
-		Test["Fiber and Tablet must not be True at the same time:",
-			If[TrueQ[Lookup[packet, Fiber]]&&TrueQ[Lookup[packet, Tablet]],
+		Test["Fiber, Sachet, and Tablet must not be True at the same time:",
+			If[Length[Cases[Lookup[packet, {Fiber, Tablet, Sachet}],True]] > 1,
 				False,
 				True
 			],
@@ -384,10 +473,10 @@ Error::SampleExpires="For the input(s), `1`, the options {ShelfLife, UnsealedShe
 Error::NonUniqueSampleName="There already exists an object with the given name for input(s), `1`. Please choose a different name or use the already uploaded model.";
 Error::BothProductsAndKitProducts="The inputs, `1`, cannot be purchased via both a normal product and a kit product ( Products and KitProducts cannot both be populated). Please change these options to upload a valid sample.";
 Error::InconsistentDefaultStorageCondition="The input(s), `1`, have a DefaultStorageCondition that is not consistent with the options {Flammable, Acid, Basic, Pyrophoric}. Please make sure that these options match in order to upload a valid model.";
-Error::ConflictingTransportCondition="The input(s), `1`, have both TransportChilled and TransportWarmed set. Please only set one transport condition in order to upload a valid model.";
 Error::UsedAsSolventSolid="The input(s), `1`, have UsedAsSolvent set as True, but have a Solid State. A sample must have Liquid State if it is UsedAsSolvent. Please change the State or UsedAsSolvent fields.";
 Error::NonSolventConcentratedBufferDiluent="The input(s), `1`, have a ConcentratedBufferDiluent that is not UsedAsSolvent -> True. The ConcentratedBufferDiluent of a sample must be a solvent. Please change this option to a valid sample.";
 Error::UsedAsSolventOrMediaTrueAndPopulatedSolventOrMedia="The input(s), `1`, have UsedAsSolvent set as True or have UsedAsMedia set to True and have a non Null Solvent or a non Null Media. If either UsedAsMedia or UsedAsSolvent are set to true for the sample, then Solvent and Media must both be Null. Please change the Solvent, Media, UsedAsMedia, and UsedAsSolvent fields.";
+Error::SampleTypeOptionMismatch = "For the input(s), `1`, the type is set to `2`. For this type of sample: `3`. Please change these options to upload a valid sample.";
 
 (* Rest of the options are shared with Model[Molecule]. *)
 
@@ -400,16 +489,15 @@ errorToOptionMap[Model[Sample]]:={
 	"Error::NameIsNotPartOfSynonyms"->{Name, Synonyms},
 	"Error::RequiredMSDSOptions"-> {MSDSRequired,Flammable,MSDSFile,NFPA,DOTHazardClass},
 	"Error::IncompatibleMaterials"->{IncompatibleMaterials},
-	"Error::MeltingBoilingPoint"->{MeltingPoint, BoilingPoint},
 
 	"Error::SampleExpires"->{ShelfLife, UnsealedShelfLife, Expires},
 	"Error::BothProductsAndKitProducts"->{Products,KitProducts},
 	"Error::InconsistentDefaultStorageCondition"->{DefaultStorageCondition, Flammable, Acid, Base, Pyrophoric},
-	"Error::ConflictingTransportCondition"->{TransportWarmed, TransportChilled},
 
 	(* NOTE: this error is not from a VOQ test, but is for UploadSampleModel.*)
 	(* It has to live in this map due for the automatic upload function framework to detect it as an invalid option *)
-	"Error::MissingLivingOption"->{Living}
+	"Error::MissingLivingOption"->{Living},
+	"Error::SampleTypeOptionMismatch" -> {Sachet}
 };
 
 
@@ -436,8 +524,12 @@ validModelSampleMatrixQTests[packet:PacketP[Model[Sample,Matrix]]]:= {
 	],
 
 	(* physical fields filled in *)
-	Test["State is a Solid if it has no solvent and only solid components, and Liquid otherwise:",
-		If[NullQ[Lookup[packet, FillToVolumeSolvent]] && MatchQ[Lookup[packet, Formula][[All, 1]], {MassP..}],
+	Test["State is Solid if the substance contains only solid components without a solvent, or if it includes both a solvent and a gelling agent. Otherwise, the State is Liquid:",
+		If[Or[
+			NullQ[Lookup[packet, FillToVolumeSolvent]] && MatchQ[Lookup[packet, Formula][[All, 1]], {MassP..}],
+			MemberQ[Lookup[packet, Formula][[All, 1]], VolumeP] && MemberQ[Lookup[packet, Formula][[All, 2]], GellingAgentsP],
+			MemberQ[Lookup[packet, Composition][[All, 2]], GellingMoleculesP]
+		],
 			MatchQ[Lookup[packet, State], Solid],
 			MatchQ[Lookup[packet, State], Liquid]
 		],
@@ -602,7 +694,7 @@ validModelSampleMatrixQTests[packet:PacketP[Model[Sample,Matrix]]]:= {
 			];
 
 			(* get the object packets that are not developer objects and came from actual stock solution protocols or transactions *)
-			(* in case the stock solution was automatically generated in a SampleManipulation TotalVolume isn't going to be populated and that's okay *)
+			(* in case the stock solution was automatically generated in a SamplePreparation protocol TotalVolume isn't going to be populated and that's okay *)
 			actualObjectPackets = Select[objectPackets, Not[TrueQ[Lookup[#, DeveloperObject]]] && MatchQ[Lookup[#, Source], ObjectP[{Object[Protocol, StockSolution], Object[Transaction, Order]}]]&];
 
 			If[
@@ -807,8 +899,12 @@ validModelSampleMediaQTests[packet:PacketP[Model[Sample, Media]]]:={
 	],
 
 	(* Safety fields filled in *)
-	Test["State is a Solid if it has no solvent and only solid components, and Liquid otherwise:",
-		If[NullQ[Lookup[packet, FillToVolumeSolvent]] && MatchQ[Lookup[packet, Formula][[All, 1]], {MassP..}],
+	Test["State is Solid if the substance contains only solid components without a solvent, or if it includes both a solvent and a gelling agent. Otherwise, the State is Liquid:",
+		If[Or[
+			NullQ[Lookup[packet, FillToVolumeSolvent]] && MatchQ[Lookup[packet, Formula][[All, 1]], {MassP..}],
+			MemberQ[Lookup[packet, Formula][[All, 1]], VolumeP] && MemberQ[Lookup[packet, Formula][[All, 2]], GellingAgentsP],
+			MemberQ[Lookup[packet, Composition][[All, 2]], GellingMoleculesP]
+		],
 			MatchQ[Lookup[packet, State], Solid],
 			MatchQ[Lookup[packet, State], Liquid]
 		],
@@ -839,7 +935,7 @@ validModelSampleMediaQTests[packet:PacketP[Model[Sample, Media]]]:={
 			];
 
 			(* get the object packets that are not developer objects and came from actual stock solution protocols or transactions *)
-			(* in case the stock solution was automatically generated in a SampleManipulation TotalVolume isn't going to be populated and that's okay *)
+			(* in case the stock solution was automatically generated in a SamplePreparation protocol TotalVolume isn't going to be populated and that's okay *)
 			actualObjectPackets = Select[objectPackets, Not[TrueQ[Lookup[#, DeveloperObject]]] && MatchQ[Lookup[#, Source], ObjectP[{Object[Protocol, StockSolution], Object[Transaction, Order]}]]&];
 
 			If[
@@ -1126,7 +1222,7 @@ validModelSampleReactionQTests[packet:PacketP[Model[Reaction]]]:={
 
 validModelSampleStockSolutionQTests[packet : PacketP[Model[Sample, StockSolution]]] := {
 	(* --- shared fields --- *)
-	Test["State is a Solid if it has no solvent and only solid components, and Liquid otherwise:",
+	Test["State is Solid if the substance contains only solid components without a solvent. Otherwise, the State is Liquid::",
 		If[NullQ[Lookup[packet, FillToVolumeSolvent]] && MatchQ[Lookup[packet, Formula][[All, 1]], {MassP..}],
 			MatchQ[Lookup[packet, State], Solid],
 			MatchQ[Lookup[packet, State], Liquid]
@@ -1161,9 +1257,15 @@ validModelSampleStockSolutionQTests[packet : PacketP[Model[Sample, StockSolution
 		True
 	],
 
-	Test["The model must have either Formula or UnitOperations specified, not both:",
-		Lookup[packet, {Formula, UnitOperations}],
-		{{}|NullP, Except[NullP | {}]} | {Except[NullP | {}], {}|NullP}
+	If[!MatchQ[Lookup[packet,PreparationType],SupplierPrepared],
+		Test["The model must have either Formula or UnitOperations specified, not both if PreparationType isn't SupplierPrepared:",
+			Lookup[packet, {Formula, UnitOperations}],
+			{{}|NullP, Except[NullP | {}]} | {Except[NullP | {}], {}|NullP}
+		],
+		Test["If PreparationType is SupplierPrepared, Formula and UnitOperations should be Null:",
+			Lookup[packet, {Formula, UnitOperations}],
+			{{}|Null,{}|Null}
+		]
 	],
 
 	(*Null*)
@@ -1238,7 +1340,7 @@ validModelSampleStockSolutionQTests[packet : PacketP[Model[Sample, StockSolution
 			];
 
 			(* get the object packets that are not developer objects and came from actual stock solution protocols or transactions *)
-			(* in case the stock solution was automatically generated in a SampleManipulation TotalVolume isn't going to be populated and that's okay *)
+			(* in case the stock solution was automatically generated in a SamplePreparation protocol TotalVolume isn't going to be populated and that's okay *)
 			actualObjectPackets = Select[objectPackets, Not[TrueQ[Lookup[#, DeveloperObject]]] && MatchQ[Lookup[#, Source], ObjectP[{Object[Protocol, StockSolution], Object[Transaction, Order]}]]&];
 
 			If[
@@ -1555,7 +1657,7 @@ validModelSampleStockSolutionStandardQTests[packet:PacketP[Model[Sample,StockSol
 {
 	NotNullFieldTest[packet,{StandardComponents,Preparable}],
 
-	AnyInformedTest[packet,{StandardMolecularWeights,StandardConcentrations,StandardLengths,StandardMassConcentrations,ReferencePeaksNegativeMode,ReferencePeaksPositiveMode}],
+	AnyInformedTest[packet,{StandardMolecularWeights,StandardConcentrations,StandardLengths,StandardMassConcentrations,ReferencePeaksNegativeMode,ReferencePeaksPositiveMode, StandardDifferentialRefractiveIndex, StandardHydrodynamicRadius, StandardIntrinsicViscosity, StandardColloidalStabilityA2}],
 
 	Test["If ReferencePeaksPositiveMode or ReferencePeaksNegativeMode is populated, CompatibleIonSource must be populated (and vice versa):",
 		Lookup[packet, {ReferencePeaksPositiveMode, ReferencePeaksNegativeMode, CompatibleIonSource}],
@@ -1573,7 +1675,21 @@ validModelSampleStockSolutionStandardQTests[packet:PacketP[Model[Sample,StockSol
 			{ESI,Null,{}},
 			{Null,_,_}
 		]
-	]
+	],
+	(* If PreparationType is SupplierPrepared, run these tests. *)
+	If[MatchQ[Lookup[packet, PreparationType],SupplierPrepared],
+		(
+			Test["If PreparationType is Null, Preparable should be False:",
+				Lookup[packet,Preparable],
+				False
+			];
+			(* UnitOperations and Formula should be Null if PreparationType is Null *)
+			NullFieldTest[packet, {UnitOperations, Formula}];
+		),
+		Nothing
+	],
+
+	RequiredTogetherTest[packet,{StandardDifferentialRefractiveIndex, StandardColloidalStabilityA2}]
 
 };
 

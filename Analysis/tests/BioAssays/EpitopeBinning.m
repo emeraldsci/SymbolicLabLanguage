@@ -463,7 +463,7 @@ DefineTests[AnalyzeEpitopeBinning,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawTandemWellInfo = Table[
           {
             assay,
@@ -586,7 +586,7 @@ DefineTests[AnalyzeEpitopeBinning,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawsandwichWellInfo = Table[
           {
             assay,
@@ -709,7 +709,7 @@ DefineTests[AnalyzeEpitopeBinning,
           {3,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawpremixWellInfo = Table[
           {
             assay,
@@ -1417,7 +1417,7 @@ DefineTests[ValidAnalyzeEpitopeBinningQ,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawTandemWellInfo = Table[
           {
             assay,
@@ -1540,7 +1540,7 @@ DefineTests[ValidAnalyzeEpitopeBinningQ,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawsandwichWellInfo = Table[
           {
             assay,
@@ -1663,7 +1663,7 @@ DefineTests[ValidAnalyzeEpitopeBinningQ,
           {3,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawpremixWellInfo = Table[
           {
             assay,
@@ -2114,7 +2114,7 @@ DefineTests[AnalyzeEpitopeBinningOptions,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawTandemWellInfo = Table[
           {
             assay,
@@ -2239,7 +2239,7 @@ DefineTests[AnalyzeEpitopeBinningOptions,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawsandwichWellInfo = Table[
           {
             assay,
@@ -2700,7 +2700,7 @@ DefineTests[AnalyzeEpitopeBinningPreview,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawTandemWellInfo = Table[
           {
             assay,
@@ -2824,7 +2824,7 @@ DefineTests[AnalyzeEpitopeBinningPreview,
           {5,_, 7}-> fakeSample7
         };
 
-        (* generate teh well info sorted in the same order that is parsed *)
+        (* generate the well info sorted in the same order that is parsed *)
         rawsandwichWellInfo = Table[
           {
             assay,

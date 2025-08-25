@@ -23,6 +23,6 @@ DefineUsage[checkLysisConflictingOptions,
       {"lysisConflictingOptionsTest", {TestP...}, "A list of tests checking if there are conflicting lysis options for the input samples."}
     },
     SeeAlso -> {"checkSolidMedia", "checkPurificationConflictingOptions"},
-    Author -> {"josh.kenchel"}
+    Author -> {"taylor.hochuli", "josh.kenchel"}
   }
 ]

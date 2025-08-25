@@ -55,6 +55,30 @@ DefineObjectType[Object[Instrument, Balance], {
 			Description -> "Maximum mass the instrument can weigh.",
 			Category -> "Operating Limits",
 			Abstract -> True
+		},
+		BalanceCleaningBrush -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Consumable],
+			Description -> "The brush used to dust off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		WaterBasedCleaningWipes -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Consumable],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		AlcoholBasedCleaningWipes -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item,Consumable],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
 		}
 	}
 }];

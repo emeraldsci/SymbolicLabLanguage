@@ -17,8 +17,12 @@ DefineOptions[ExperimentAcousticLiquidHandlingPreview,
 ];
 
 (* ---overloads--- *)
-ExperimentAcousticLiquidHandlingPreview[myPrimitive:SampleManipulationP,myOptions:OptionsPattern[]]:=ExperimentAcousticLiquidHandlingPreview[{myPrimitive},myOptions];
-ExperimentAcousticLiquidHandlingPreview[myPrimitives:{SampleManipulationP..},myOptions:OptionsPattern[]]:=Module[
+ExperimentAcousticLiquidHandlingPreview[
+	mySources:ListableP[acousticLHSourceSingletonPattern],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:OptionsPattern[]
+]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
@@ -28,7 +32,7 @@ ExperimentAcousticLiquidHandlingPreview[myPrimitives:{SampleManipulationP..},myO
 	noOutputOptions=DeleteCases[listedOptions,Output->_];
 
 	(* return only the preview for ExperimentAcousticLiquidHandling *)
-	ExperimentAcousticLiquidHandling[myPrimitives,Append[noOutputOptions,Output->Preview]]
+	ExperimentAcousticLiquidHandling[mySources,myDestinations,myAmounts,Append[noOutputOptions,Output->Preview]]
 ];
 
 
@@ -50,8 +54,12 @@ DefineOptions[ExperimentAcousticLiquidHandlingOptions,
 ];
 
 (* ---overloads--- *)
-ExperimentAcousticLiquidHandlingOptions[myPrimitive:SampleManipulationP,myOptions:OptionsPattern[]]:=ExperimentAcousticLiquidHandlingOptions[{myPrimitive},myOptions];
-ExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP..},myOptions:OptionsPattern[]]:=Module[
+ExperimentAcousticLiquidHandlingOptions[
+	mySources:ListableP[acousticLHSourceSingletonPattern],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:OptionsPattern[]
+]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -61,7 +69,7 @@ ExperimentAcousticLiquidHandlingOptions[myPrimitives:{SampleManipulationP..},myO
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentAcousticLiquidHandling *)
-	options=ExperimentAcousticLiquidHandling[myPrimitives,Append[noOutputOptions,Output->Options]];
+	options=ExperimentAcousticLiquidHandling[mySources,myDestinations,myAmounts,Append[noOutputOptions,Output->Options]];
 
 	(* Return the option as a list or table *)
 	If[MatchQ[Lookup[listedOptions,OutputFormat,Table],Table],
@@ -84,12 +92,16 @@ DefineOptions[ValidExperimentAcousticLiquidHandlingQ,
 ];
 
 (* ---overloads--- *)
-ValidExperimentAcousticLiquidHandlingQ[myPrimitive:SampleManipulationP,myOptions:OptionsPattern[ValidExperimentAcousticLiquidHandlingQ]]:=ValidExperimentAcousticLiquidHandlingQ[{myPrimitive},myOptions];
-ValidExperimentAcousticLiquidHandlingQ[myPrimitives:{SampleManipulationP..},myOptions:OptionsPattern[ValidExperimentAcousticLiquidHandlingQ]]:=Module[
+ValidExperimentAcousticLiquidHandlingQ[
+	mySources:ListableP[acousticLHSourceSingletonPattern],
+	myDestinations:ListableP[acousticLHDestinationSingletonPattern],
+	myAmounts:ListableP[acousticLHAmountSingletonPattern],
+	myOptions:OptionsPattern[]
+]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat},
 
 	(* extract all the objects from our primitives to run VOQ*)
-	listedInput=Cases[myPrimitives,ObjectP[],Infinity];
+	listedInput=Cases[Flatten[{mySources, myDestinations}],ObjectP[],Infinity];
 
 	(* make sure our options is in a list *)
 	listedOptions=ToList[myOptions];
@@ -98,7 +110,7 @@ ValidExperimentAcousticLiquidHandlingQ[myPrimitives:{SampleManipulationP..},myOp
 	preparedOptions=Normal@KeyDrop[Append[listedOptions,Output->Tests],{Verbose,OutputFormat}];
 
 	(* Call the function to get a list of tests *)
-	functionTests=ExperimentAcousticLiquidHandling[myPrimitives,preparedOptions];
+	functionTests=ExperimentAcousticLiquidHandling[mySources,myDestinations,myAmounts,preparedOptions];
 
 	initialTestDescription="All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
 
@@ -147,7 +159,8 @@ DefineOptions[resolveAcousticLiquidHandlingSamplePrepOptions,
 		SamplePrepOptions,
 		AliquotOptions,
 		CacheOption,
-		OutputOption
+		OutputOption,
+		SimulationOption
 	}
 ];
 
@@ -155,7 +168,7 @@ DefineOptions[resolveAcousticLiquidHandlingSamplePrepOptions,
 resolveAcousticLiquidHandlingSamplePrepOptions[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedOptions,outputSpecification,output,gatherTests,cache,collapsedOptions,expandedOptions,samplePrepOptions,
-		aliquotOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests
+		aliquotOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,simulation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -172,6 +185,7 @@ resolveAcousticLiquidHandlingSamplePrepOptions[mySamples:ListableP[ObjectP[Objec
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[listedOptions],Cache,{}];
+	simulation=Lookup[ToList[listedOptions],Simulation,Simulation[]];
 
 	(* collapse our index-matched options so that we can re-expand since SamplesIn length may have changed *)
 	collapsedOptions=CollapseIndexMatchedOptions[
@@ -191,19 +205,21 @@ resolveAcousticLiquidHandlingSamplePrepOptions[mySamples:ListableP[ObjectP[Objec
 
 	(* Resolve our sample prep options *)
 	(* TODO: samplePrepTests seems to be returned as {}. double check if this happens in every cases *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		Experiment`Private`resolveSamplePrepOptions[
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		Experiment`Private`resolveSamplePrepOptionsNew[
 			resolveAcousticLiquidHandlingSamplePrepOptions,
 			mySamples,
 			samplePrepOptions,
 			Cache->cache,
+			Simulation->simulation,
 			Output->{Result,Tests}
 		],
-		{Experiment`Private`resolveSamplePrepOptions[
+		{Experiment`Private`resolveSamplePrepOptionsNew[
 			resolveAcousticLiquidHandlingSamplePrepOptions,
 			mySamples,
 			samplePrepOptions,
 			Cache->cache,
+			Simulation->simulation,
 			Output->Result],{}}
 	];
 
@@ -213,10 +229,9 @@ resolveAcousticLiquidHandlingSamplePrepOptions[mySamples:ListableP[ObjectP[Objec
 		{
 			simulatedSamples,
 			Flatten[{resolvedSamplePrepOptions,aliquotOptions}],
-			FlattenCachePackets[simulatedCache]
+			updatedSimulation
 		},
 		samplePrepTests
 	}
-
 ];
 

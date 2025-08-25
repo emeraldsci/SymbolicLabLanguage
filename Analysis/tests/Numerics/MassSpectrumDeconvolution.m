@@ -16,7 +16,6 @@ DefineTests[AnalyzeMassSpectrumDeconvolution,
       AnalyzeMassSpectrumDeconvolution[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload->False],
       {ObjectP[Object[Analysis, MassSpectrumDeconvolution]]..},
       TimeConstraint -> 1800,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
       Stubs :> {
         Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}, Data] =
             {{Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Object[Data, MassSpectrometry, "id:rea9jla4N43O"]}}
@@ -26,7 +25,6 @@ DefineTests[AnalyzeMassSpectrumDeconvolution,
       AnalyzeMassSpectrumDeconvolution[Object[Protocol, LCMS, "AMSD Test Object"], Upload->False],
       {ObjectP[Object[Analysis, MassSpectrumDeconvolution]]..},
       TimeConstraint -> 1800,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
       Stubs :> {
         Download[{Object[Protocol, LCMS, "AMSD Test Object"]}, Data] =
             {{Object[Data, ChromatographyMassSpectra, "id:J8AY5jAWBBpj"], Object[Data, ChromatographyMassSpectra, "id:J8AY5jAWBBpj"]}}
@@ -235,7 +233,6 @@ DefineTests[AnalyzeMassSpectrumDeconvolutionOptions,
     Example[{Basic, "Run deconvolution analysis for a single Object[Protocol, MassSpectrometry]:"},
       AnalyzeMassSpectrumDeconvolutionOptions[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload -> False],
       _Grid | _List,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
       TimeConstraint -> 1800,
       Stubs :> {
         Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}, Data] =
@@ -259,90 +256,6 @@ DefineTests[ValidAnalyzeMassSpectrumDeconvolutionQ,
     Example[{Basic, "Run deconvolution analysis for a single Object[Protocol, MassSpectrometry], and run the tests:"},
       ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload -> False],
       True,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
-      TimeConstraint -> 1800,
-      Stubs :> {
-        (* ValidQ function will also try to download and validate the entire protocol object. Stub a simple placeholder object for the check. *)
-        Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}] =
-            {<|Type -> Object[Data], Object -> Object[Data, "id:1"], DateCreated -> Now|>},
-        Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}, Data] =
-            {{Object[Data, MassSpectrometry, "id:rea9jla4N43O"]}}
-      }
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, MassSpectrometry], and print the test outputs:"},
-      ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Upload -> False, Verbose->True],
-      True
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, MassSpectrometry], and return the test summary:"},
-      ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Upload -> False, OutputFormat->TestSummary],
-      _EmeraldTestSummary
-    ]
-  }
-];
-
-
-(* Not using DefineTestsWithCompanions because I needed to do work outside the framework for preview to be speedy in main function. *)
-DefineTests[AnalyzeMassSpectrumDeconvolutionPreview,
-  {
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, MassSpectrometry]:"},
-      AnalyzeMassSpectrumDeconvolutionPreview[Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Upload -> False],
-      ValidGraphicsP[]
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, ChromatographyMassSpectra]:"},
-      AnalyzeMassSpectrumDeconvolutionPreview[Object[Data, ChromatographyMassSpectra, "id:J8AY5jAWBBpj"], Upload -> False],
-      ValidGraphicsP[]
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Protocol, MassSpectrometry]:"},
-      AnalyzeMassSpectrumDeconvolutionPreview[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload -> False],
-      ValidGraphicsP[],
-      TimeConstraint -> 1800,
-      Stubs :> {
-        Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}, Data] =
-            {{Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Object[Data, MassSpectrometry, "id:rea9jla4N43O"]}}
-      }
-    ]
-  }
-];
-
-
-DefineTests[AnalyzeMassSpectrumDeconvolutionOptions,
-  {
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, MassSpectrometry]:"},
-      AnalyzeMassSpectrumDeconvolutionOptions[Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Upload -> False],
-      _Grid | _List
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, ChromatographyMassSpectra]:"},
-      AnalyzeMassSpectrumDeconvolutionOptions[Object[Data, ChromatographyMassSpectra, "id:J8AY5jAWBBpj"], Upload -> False],
-      _Grid | _List
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Protocol, MassSpectrometry]:"},
-      AnalyzeMassSpectrumDeconvolutionOptions[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload -> False],
-      _Grid | _List,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
-      TimeConstraint -> 1800,
-      Stubs :> {
-        Download[{Object[Protocol, MassSpectrometry, "AMSD Test Object"]}, Data] =
-            {{Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Object[Data, MassSpectrometry, "id:rea9jla4N43O"]}}
-      }
-    ]
-  }
-];
-
-
-DefineTests[ValidAnalyzeMassSpectrumDeconvolutionQ,
-  {
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, MassSpectrometry], and run the tests:"},
-      ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Data, MassSpectrometry, "id:rea9jla4N43O"], Upload -> False],
-      True
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Data, ChromatographyMassSpectra], and run the tests:"},
-      ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Data, ChromatographyMassSpectra, "id:J8AY5jAWBBpj"], Upload -> False],
-      True
-    ],
-    Example[{Basic, "Run deconvolution analysis for a single Object[Protocol, MassSpectrometry], and run the tests:"},
-      ValidAnalyzeMassSpectrumDeconvolutionQ[Object[Protocol, MassSpectrometry, "AMSD Test Object"], Upload -> False],
-      True,
-      Messages :> {AnalyzeMassSpectrumDeconvolution::ProtocolObject},
       TimeConstraint -> 1800,
       Stubs :> {
         (* ValidQ function will also try to download and validate the entire protocol object. Stub a simple placeholder object for the check. *)

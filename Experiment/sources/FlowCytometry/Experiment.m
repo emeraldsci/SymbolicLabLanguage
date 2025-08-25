@@ -684,7 +684,7 @@ DefineOptions[ExperimentFlowCytometry,
     ],
 
     (*===Shared Options===*)
-    FuntopiaSharedOptions,
+    NonBiologyFuntopiaSharedOptions,
     SimulationOption,
     SubprotocolDescriptionOption,
     SamplesInStorageOption,
@@ -712,9 +712,9 @@ ExperimentFlowCytometry[myContainers:ListableP[ObjectP[{Object[Container],Object
   gatherTests=MemberQ[output,Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
-  (* Fetch teh cache from listedOptions *)
+  (* Fetch the cache from listedOptions *)
   cache=ToList[Lookup[listedOptions, Cache, {}]];
 
   (* First, simulate our sample preparation. *)
@@ -726,7 +726,7 @@ ExperimentFlowCytometry[myContainers:ListableP[ObjectP[{Object[Container],Object
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
@@ -828,7 +828,7 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
       ToList[listedOptions]
     ],
     $Failed,
-    {Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
@@ -845,13 +845,7 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
   ];
 
   (*change all Names to objects *)
-  {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentFlowCytometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentFlowCytometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-  ];
+  {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -861,6 +855,12 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
       Options->$Failed,
       Preview->Null
     }]
+  ];
+  
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentFlowCytometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentFlowCytometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -936,7 +936,7 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
   objectContainerFields=Join[SamplePreparationCacheFields[Object[Container]], {VacuumCentrifugeCompatibility}];
   modelContainerFields=Join[SamplePreparationCacheFields[Model[Container]], {VacuumCentrifugeCompatibility}];
 
-  (*seperate the objects to download specific fields*)
+  (*separate the objects to download specific fields*)
   containerObjects= Cases[allObjects,ObjectP[Object[Container]]];
   modelContainerObjects= Cases[allObjects,ObjectP[Model[Container]]];
   instrumentObjects = Cases[allObjects,ObjectP[Object[Instrument]]];
@@ -1100,7 +1100,7 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
       resolvedOptions,
       Cache->cacheBall,
       Simulation->updatedSimulation],
-    {Null, Null}
+    {Null, updatedSimulation}
   ];
 
 
@@ -1133,9 +1133,10 @@ ExperimentFlowCytometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
         Cache -> cacheBall,
         Upload->Lookup[safeOps,Upload],
         Confirm->Lookup[safeOps,Confirm],
+        CanaryBranch->Lookup[safeOps,CanaryBranch],
         ParentProtocol->Lookup[safeOps,ParentProtocol],
         ConstellationMessage->Object[Protocol,FlowCytometry],
-        Simulation->updatedSimulation
+        Simulation->simulation
       ]
     ];
 
@@ -1192,7 +1193,7 @@ Error::FlowCytometerLaserPowerTooHigh="The power `1` for the `2` laser is set ab
 
 resolveExperimentFlowCytometryOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentFlowCytometryOptions]]:=Module[
     {
-      outputSpecification,output,gatherTests,inheritedCache,samplePrepOptions,flowCytometryOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+      outputSpecification,output,gatherTests,inheritedCache,samplePrepOptions,flowCytometryOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,
       flowCytometryOptionsAssociation,invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests,numberOfReplicates,
       messages, fastTrack,allTests,testsRule,resultRule,simulation,updatedSimulation,
 
@@ -1272,7 +1273,7 @@ resolveExperimentFlowCytometryOptions[mySamples:{ObjectP[Object[Sample]]...},myO
       resolvedInjectionTableErrorTests,resolvedSampleVolume,samplesVolumes,
 
       (*aliquot and post processing*)
-      resolvedPostProcessingOptions,confirm,template,cache,operator,upload,outputOption,subprotocolDescription,
+      resolvedPostProcessingOptions,confirm,canaryBranch,template,cache,operator,upload,outputOption,subprotocolDescription,
       samplePreparation,email,samplesInStorage,samplesOutStorage,compatibleMaterialsBool, compatibleMaterialsTests,compatibleMaterialsInvalidOption,
       validContainerStorageConditionBool, validContainerStorageConditionTests,
       validContainerStoragConditionInvalidOptions,requiredAliquotAmounts,imageSample,measureWeight,measureVolume,
@@ -1294,7 +1295,7 @@ resolveExperimentFlowCytometryOptions[mySamples:{ObjectP[Object[Sample]]...},myO
   fastTrack = Lookup[ToList[myResolutionOptions], FastTrack, False];
   simulation=Lookup[ToList[myResolutionOptions],Simulation];
 
-  (* Seperate out our FlowCytometry options from our Sample Prep options. *)
+  (* Separate out our FlowCytometry options from our Sample Prep options. *)
   {samplePrepOptions,flowCytometryOptions}=splitPrepOptions[myOptions];
 
   (* Resolve our sample prep options *)
@@ -1380,7 +1381,7 @@ resolveExperimentFlowCytometryOptions[mySamples:{ObjectP[Object[Sample]]...},myO
   (* split out the information *)
   {sampleDownloadValues, instrumentModelPackets, instrumentPackets, optionSampleModelPackets,optionSamplePackets,methodPackets, moleculePackets} = allDownloadValues;
 
-  (*join the seperate model/object packets*)
+  (*join the separate model/object packets*)
   allInstrumentModelPackets=Flatten[Join[{instrumentModelPackets, instrumentPackets}]];
   allOptionSampleModelPackets=Flatten[Join[{optionSampleModelPackets,optionSamplePackets[[All,1]]}]];
 
@@ -3896,7 +3897,7 @@ samples in a high-throughput run must use the same target flow rate. 0.5-2.5 µl
 
   (* get the rest directly *)
   (*Pull out the shared options*)
-  {confirm,template,cache,operator,upload,outputOption,subprotocolDescription,samplePreparation,samplesInStorage,samplesOutStorage}=Lookup[myOptions,{Confirm,Template,Cache,Operator,Upload,Output,SubprotocolDescription,PreparatoryUnitOperations,SamplesInStorageCondition,SamplesOutStorageCondition}];
+  {confirm,canaryBranch,template,cache,operator,upload,outputOption,subprotocolDescription,samplePreparation,samplesInStorage,samplesOutStorage}=Lookup[myOptions,{Confirm,CanaryBranch,Template,Cache,Operator,Upload,Output,SubprotocolDescription,PreparatoryUnitOperations,SamplesInStorageCondition,SamplesOutStorageCondition}];
 
   (* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
   email = Which[
@@ -4102,8 +4103,8 @@ samples in a high-throughput run must use the same target flow rate. 0.5-2.5 µl
   (* Resolve Aliquot Options *)
   {resolvedAliquotOptions,aliquotTests}=If[gatherTests,
     (* Note: Also include AllowSolids\[Rule]True as an option to this function if your experiment function can take solid samples as input. Otherwise, resolveAliquotOptions will throw an error if solid samples will be given as input to your function. *)
-    resolveAliquotOptions[ExperimentFlowCytometry,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->requiredAliquotAmounts,Output->{Result,Tests}],
-    {resolveAliquotOptions[ExperimentFlowCytometry,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->requiredAliquotAmounts,Output->Result],{}}
+    resolveAliquotOptions[ExperimentFlowCytometry,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,Simulation->Simulation[cacheBall],RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->requiredAliquotAmounts,Output->{Result,Tests}],
+    {resolveAliquotOptions[ExperimentFlowCytometry,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache -> cacheBall,Simulation->Simulation[cacheBall],RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->requiredAliquotAmounts,Output->Result],{}}
   ];
 
   (* --- Resolve Label Options *)
@@ -4213,6 +4214,7 @@ samples in a high-throughput run must use the same target flow rate. 0.5-2.5 µl
     resolvedSamplePrepOptions,
     resolvedAliquotOptions,
     Confirm -> confirm,
+    CanaryBranch -> canaryBranch,
     Name -> name,
     Template -> template,
     Email -> email,
@@ -4223,7 +4225,6 @@ samples in a high-throughput run must use the same target flow rate. 0.5-2.5 µl
     SubprotocolDescription->subprotocolDescription,
     Upload -> upload,
     PreparatoryUnitOperations-> samplePreparation,
-    PreparatoryPrimitives -> Lookup[myOptions, PreparatoryPrimitives],
     SamplesInStorageCondition -> samplesInStorage,
     SamplesOutStorageCondition -> samplesOutStorage,
     Cache -> inheritedCache,
@@ -4743,7 +4744,7 @@ flowCytometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
       nonHiddenFlowOptions=DeleteCases[Lookup[
         Cases[OptionDefinition[ExperimentFlowCytometry], KeyValuePattern["Category"->Except["Hidden"]]],
         "OptionSymbol"
-      ],PreparatoryPrimitives|PreparatoryUnitOperations|Name];
+      ],PreparatoryUnitOperations|Name];
 
       UploadUnitOperation[
         FlowCytometry@@Join[
@@ -4823,12 +4824,12 @@ flowCytometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
     Replace[SampleVolumes]->Lookup[optionsWithReplicates, SampleVolume],
     Replace[InjectionContainers]->If[MatchQ[injectionContainerResources,{}|Null],Link@containersIn,Link@injectionContainerResources],
     Replace[Checkpoints] -> {
-      {"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-      {"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
+      {"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+      {"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
       {"Preparing Plate",2*Hour,"The measurement plates are loaded with the diluted samples and calibrants.",Null},
-      {"Acquiring Data",instrumentTime,"The surface tensions of the samples in the plate are acquired.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]]},
-      {"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1*Hour]]},
-      {"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+      {"Acquiring Data",instrumentTime,"The surface tensions of the samples in the plate are acquired.",Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+      {"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1*Hour]]},
+      {"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]}
     },
     Replace[SamplesInStorage] -> Lookup[optionsWithReplicates,SamplesInStorageCondition],
     Replace[SamplesOutStorage] -> Lookup[optionsWithReplicates,SamplesOutStorageCondition],
@@ -4924,7 +4925,7 @@ ExperimentFlowCytometryOptions[myInputs:ListableP[ObjectP[{Object[Container],Obj
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+  (* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
   (* get only the options *)
@@ -4963,7 +4964,7 @@ ValidExperimentFlowCytometryQ[myInput:ListableP[ObjectP[{Object[Container]}]] | 
   listedOptions = ToList[myOptions];
   listedInput = ToList[myInput];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
   (* return only the tests for ExperimentFlowCytometry *)

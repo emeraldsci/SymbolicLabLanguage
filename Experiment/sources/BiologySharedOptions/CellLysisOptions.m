@@ -42,8 +42,8 @@ DefineOptionSet[
       AllowNull -> True,
       Widget -> Widget[
         Type -> Quantity,
-        Pattern :> GreaterP[Quantity[0, IndependentUnit["Cells"]]],
-        Units -> Quantity[1, IndependentUnit["Cells"]]
+        Pattern :> GreaterP[0 EmeraldCell, 1 EmeraldCell],
+        Units -> EmeraldCell
       ],
       Description -> "The number of cells in the experiment prior to the addition of LysisSolution. Note that the TargetCellCount, if specified, is obtained by aliquoting rather than by cell culture.",
       ResolutionDescription -> "Automatically calculated from the composition of the cell sample and LysisAliquotAmount if sufficient cell count or concentration data is available. If the cell count cannot be calculated from the available sample information, TargetCellCount is automatically set to Null.",
@@ -55,8 +55,8 @@ DefineOptionSet[
       AllowNull -> True,
       Widget -> Widget[
         Type -> Quantity,
-        Pattern :> GreaterP[Quantity[0, IndependentUnit["Cells"]]/Milliliter],
-        Units -> Quantity[1, IndependentUnit["Cells"]] / Milliliter
+        Pattern :> GreaterP[0 (EmeraldCell/Milliliter), 1 (EmeraldCell/Milliliter)],
+        Units -> (EmeraldCell/Milliliter)
       ],
       Description -> "The concentration of cells in the experiment prior to the addition of LysisSolution. Note that the TargetCellConcentration, if specified, is obtained by aliquoting and optional dilution rather than by cell culture.",
       ResolutionDescription -> "Automatically calculated from the composition of the cell sample, LysisAliquotAmount, and any additional solution volumes added to the experiment if sufficient cell count or concentration data is available. If the cell concentration cannot be calculated from the available sample information, TargetCellConcentration is automatically set to Null.",
@@ -2879,3 +2879,21 @@ lyseCellsSharedOptionsUnitTests[myFunction_Symbol, adherentMammalianCellSampleIn
       ]
 
     };
+
+(* ::Subsection::Closed:: *)
+(* Helper function shared by LyseCells and extraction experiments to convert input options such as TargetCellConcentration and CellCount to allowed precision*)
+(* SafeRound TargetCellCount and TargetCellConcentration to integers before SafeOptions call *)
+(* For these 2 example options that might involve calculating big numbers, we cannot use RoundOptionPrecision to risk throwing a non-sense warning due to how MM store numbers. E.g. 2.3*10^5 is 229999.99999...7*)
+(* So we define the widgets to allow only increment of 1 and here we are sure the overly precise numbers are not what user gives us *)
+preProcessOptionPrecision[optionsList:{(_Rule)...}, optionKeys_List, optionAllowedPrecisions_List] := ReplaceRule[
+  optionsList,
+  MapThread[
+    Function[{key, precision},
+      If[KeyExistsQ[optionsList, key],
+        key -> SafeRound[Lookup[optionsList, key], precision],
+        Nothing
+      ]
+    ],
+    {optionKeys, optionAllowedPrecisions}
+  ]
+];

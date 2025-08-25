@@ -36,7 +36,7 @@ DefineOptions[PlotSubprotocols,
 
 PlotSubprotocols::NoSubprotocols = "`1` does not have any subprotocols.";
 
-PlotSubprotocols[protocol:ObjectP[ProtocolTypes[]], ops:OptionsPattern[PlotSubprotocols]]:=Module[
+PlotSubprotocols[protocol:ObjectP[ProtocolTypes[Output -> Short]], ops:OptionsPattern[PlotSubprotocols]]:=Module[
 	{safeOps, rawoutput, rawcolorfunction, rawGraphLayout, graphLayout, output, colorfunction, allSubs, firstSubsGraph, flatSubs, flatSubsOpsStatus, flatSubsStatus, subsGraph},
 
 	(*get the output option*)
@@ -63,7 +63,7 @@ PlotSubprotocols[protocol:ObjectP[ProtocolTypes[]], ops:OptionsPattern[PlotSubpr
 
 		Module[{listUnits, graph},
 			(* pull out each set of protocol/subprotocol pairings *)
-			listUnits = Cases[allSubs, {ObjectP[ProtocolTypes[]], _List}, Infinity];
+			listUnits = Cases[allSubs, {ObjectP[ProtocolTypes[Output -> Short]], _List}, Infinity];
 
 			(* generate the realtionships and append the initial realtionship to the parent protocol *)
 			graph = Join[
@@ -92,7 +92,7 @@ PlotSubprotocols[protocol:ObjectP[ProtocolTypes[]], ops:OptionsPattern[PlotSubpr
 		Module[{statusMap, opsStatusMap, vertexStyle},
 
 			statusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsStatus}]/.{Null -> Grey,InCart -> Blue, Backlogged -> Yellow, ShippingMaterials ->Orange, Processing -> Green, Completed -> Black, Aborted->Red, Canceled->Pink};
-			opsStatusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsOpsStatus}]/.{Null -> Grey,None ->Black, OperatorStart -> Blue, OperatorProcessing -> Green, InstrumentProcessing ->Green, OperatorReady ->Green, Troubleshooting->Red};
+			opsStatusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsOpsStatus}]/.{Null -> Grey,None ->Black, OperatorStart -> Blue, OperatorProcessing -> Green, InstrumentProcessing ->Green, OperatorReady ->Green, ScientificSupport->Red};
 
 			(* select the vertex color map to use based on the option value *)
 			vertexStyle = Which[

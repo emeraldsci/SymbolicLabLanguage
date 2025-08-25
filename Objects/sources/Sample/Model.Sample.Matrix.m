@@ -56,7 +56,7 @@ $ModelSampleStockSolutionSharedFields={
 		Format->Single,
 		Class->Boolean,
 		Pattern:>BooleanP,
-		Description->"Indicates if the final stock solution is made sterile by autoclaving, sterile filtration, or mixing exclusively sterile components using sterile techniques.",
+		Description->"Indicates if this model sample is made free of both microbial contamination and any microbial cell samples by employing aseptic techniques. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 		Category->"Sample Preparation"
 	},
 	OrderOfOperations->{
@@ -77,8 +77,8 @@ $ModelSampleStockSolutionSharedFields={
 	PreparationType->{
 		Format->Single,
 		Class->Expression,
-		Pattern:>Alternatives[Formula,UnitOperations],
-		Description->"The method by which this stock solution model is defined. .",
+		Pattern:>Alternatives[Formula,UnitOperations,SupplierPrepared],
+		Description->"The method by which this stock solution model is defined.",
 		Category->"Formula"
 	},
 	HeatSensitiveReagents->{
@@ -180,7 +180,7 @@ $ModelSampleStockSolutionSharedFields={
 		Class->Real,
 		Pattern:>GreaterP[0*RPM],
 		Units->RPM,
-		Description->"The frequency of rotation the mixing instrument uses to mix the stock solution following component combination and filling to volume with solvent.",
+		Description->"The frequency of rotation the mixing instrument uses to mix the stock solution following component combination and filling to volume with solvent. When the MixType is set to Stir, the mix rate may be adjusted to match the container's MaxOverheadMixRate in order to prevent overflow or spillage.",
 		Category->"Mixing"
 	},
 	NumberOfMixes->{
@@ -464,6 +464,14 @@ $ModelSampleStockSolutionSharedFields={
 		Description->"The list of containers that should be chosen first, if possible, when choosing a container to store the sample in.",
 		Category->"Storage Information"
 	},
+	DiscardThreshold -> {
+		Format -> Single,
+		Class -> Real,
+		Pattern :> RangeP[0 Percent, 100 Percent],
+		Units -> Percent,
+		Description -> "The percent of the total initial volume of samples of this stock solution below which the stock solution will automatically marked as AwaitingDisposal.  For instance, if DiscardThreshold is set to 5% and the initial volume of the stock solution was set to 100 mL, that stock solution sample is automatically marked as AwaitingDisposal once its volume is below 5mL.",
+		Category -> "Storage Information"
+	},
 	(* Inventory information *)
 	Inventories->{
 		Format->Multiple,
@@ -473,7 +481,6 @@ $ModelSampleStockSolutionSharedFields={
 		Description->"The inventory objects responsible for keeping this media in stock.",
 		Category->"Inventory"
 	},
-
 	(* Pricing information *)
 	Price->{
 		Format->Single,

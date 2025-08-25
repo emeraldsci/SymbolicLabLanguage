@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Subsubsection:: *)
@@ -18,7 +18,7 @@ DefineUsage[ExperimentFreezeCells,
 					IndexMatching[
 						{
 							InputName -> "Samples",
-							Description-> "The mammalian cell samples whose contents are to be frozen via controlled rate freezing for long-term cryogenic storage.",
+							Description-> "The cell samples whose contents are to be frozen for long-term cryogenic storage.",
 							Widget->Widget[
 								Type->Object,
 								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
@@ -47,7 +47,7 @@ DefineUsage[ExperimentFreezeCells,
 			"ExperimentFreezeCellsOptions",
 			"StoreSamples"
 		},
-		Author -> {"eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
 	}
 ];
 
@@ -61,7 +61,7 @@ DefineUsage[ValidExperimentFreezeCellsQ,
 					IndexMatching[
 						{
 							InputName -> "Samples",
-							Description ->"The mammalian cell samples whose contents are to be frozen via controlled rate freezing for long-term cryogenic storage.",
+							Description ->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
 							Widget -> Widget[
 								Type -> Object,
 								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
@@ -89,7 +89,7 @@ DefineUsage[ValidExperimentFreezeCellsQ,
 			"ExperimentFreezeCells",
 			"ExperimentFreezeCellsOptions"
 		},
-		Author -> {"eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
 	}
 ];
 
@@ -103,7 +103,7 @@ DefineUsage[ExperimentFreezeCellsOptions,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The mammalian cell samples whose contents are to be frozen via controlled rate freezing for long-term cryogenic storage.",
+							Description->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
 							Widget->Widget[
 								Type->Object,
 								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
@@ -131,7 +131,7 @@ DefineUsage[ExperimentFreezeCellsOptions,
 			"ExperimentFreezeCells",
 			"ValidExperimentFreezeCellsQ"
 		},
-		Author->{"eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
 	}
 ];
 
@@ -145,7 +145,7 @@ DefineUsage[ExperimentFreezeCellsPreview,
 					IndexMatching[
 						{
 							InputName->"Samples",
-							Description->"The mammalian cell samples whose contents are to be frozen via controlled rate freezing for long-term cryogenic storage.",
+							Description->"The cell samples whose contents are to be frozen for long-term cryogenic storage.",
 							Widget->Widget[
 								Type->Object,
 								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
@@ -174,26 +174,6 @@ DefineUsage[ExperimentFreezeCellsPreview,
 			"ValidExperimentFreezeCellsQ",
 			"ExperimentFreezeCellsOptions"
 		},
-		Author->{"eunbin.go", "jihan.kim", "gokay.yamankurt"}
-	}
-];
-
-DefineUsage[freezeCellsPreviewGenerator,
-	{
-		BasicDefinitions->{
-			{"freezeCellsPreviewGenerator[options]","plots","outputs temperature plots as a function of time for ExperimentFreezeCells with the provided options."}
-		},
-		Input:>{
-			{"options",{_Rule..},"A list of resolved options for ExperimentFreezeCells."}
-		},
-		Output:>{
-			{"plots",{_Graphics..},"Temperature vs time plots for each resolved batch given the specified options."}
-		},
-		SeeAlso->{
-			"ExperimentFreezeCells",
-			"ValidExperimentFreezeCellsQ",
-			"ExperimentFreezeCellsOptions"
-		},
-		Author->{"eunbin.go", "jihan.kim", "gokay.yamankurt"}
+		Author -> {"tyler.pabst", "eunbin.go", "jihan.kim", "gokay.yamankurt"}
 	}
 ];

@@ -39,7 +39,15 @@ DefineOptions[ExperimentAutoclave,
 			Category->"Method",
 			Widget->Widget[
 				Type->Object,
-				Pattern:>ObjectP[{Object[Instrument,Autoclave],Model[Instrument,Autoclave]}]
+				Pattern:>ObjectP[{Object[Instrument,Autoclave],Model[Instrument,Autoclave]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Sanitary Devices",
+						"Autoclaves"
+					}
+				}
 			]
 		},
 		IndexMatching[
@@ -53,14 +61,23 @@ DefineOptions[ExperimentAutoclave,
 				Category->"Method",
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[{Model[Container,Bag,Autoclave],Object[Container,Bag,Autoclave]}]
+					Pattern:>ObjectP[{Model[Container,Bag,Autoclave],Object[Container,Bag,Autoclave]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Cleaning Supplies",
+							"Autoclave Supplies"
+						}
+					}
 				]
 			}
 		],
-
-		FuntopiaSharedOptions,
+		SimulationOption,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
-		SamplesInStorageOptions
+		SamplesInStorageOptions,
+		ModelInputOptions
 	}
 ];
 
@@ -99,13 +116,13 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 	{
 		listedOptions,listedInputs,outputSpecification,output,gatherTests,safeOps,safeOpsTests,validLengths,validLengthTests,
 		mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,
-		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
+		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,itemInputs,containerInputs,
 		sterilizationBagOption,bagModelInputs,bagObjectInputs,bagModelDownloadFields,bagObjectDownloadFields,bagModelPacketsNested,bagObjectPacketsNested,
 		instrumentOption,instrumentDownloadFields,allPossibleInstrumentModels,
 		possibleAutoclaveBagModels,possibleAutoclaveBagDownloadFields,possibleAutoclaveBagModelPacketsNested,possibleAutoclaveBagModelPackets,
 		possibleInstrumentDownloadFields,objectSamplePacketFields,modelSamplePacketFields,objectSampleFields,possibleInstrumentPackets,
-		instrumentOptionPackets,objectContainerPacketFields,modelContainerFields,
+		instrumentOptionPackets,objectContainerPacketFields,modelContainerFields, updatedSimulation,
 		listedSamplePackets,listedContainerPackets,preferredContainersPackets,preferredContainers,inputsInOrder,cacheBall,inputObjects,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,preferredContainersPacketsNested
 	},
@@ -121,22 +138,22 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 	{listedInputs,listedOptions}=removeLinks[ToList[myInputs],ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentAutoclave,
 			listedInputs,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -146,13 +163,7 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentAutoclave,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentAutoclave,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -162,6 +173,12 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentAutoclave,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentAutoclave,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -303,13 +320,14 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 				bagModelDownloadFields,
 				bagObjectDownloadFields
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache -> Lookup[expandedSafeOps, Cache, {}],
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
 	];
 
-	cacheBall=FlattenCachePackets[{samplePreparationCache,listedSamplePackets,listedContainerPackets}];
+	cacheBall = FlattenCachePackets[{listedSamplePackets, listedContainerPackets}];
 
 	inputObjects=Lookup[Flatten[inputsInOrder],Object];
 
@@ -321,7 +339,7 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentAutoclaveOptions[inputObjects,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentAutoclaveOptions[inputObjects, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -331,7 +349,7 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentAutoclaveOptions[inputObjects,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentAutoclaveOptions[inputObjects, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -357,8 +375,8 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		autoclaveResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{autoclaveResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+		autoclaveResourcePackets[inputObjects, templatedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{autoclaveResourcePackets[inputObjects, templatedOptions, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> Result], {}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -377,13 +395,14 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,Autoclave],
-			Cache->samplePreparationCache
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -398,10 +417,10 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 ];
 
 (* --- ExperimentAutoclave overload that takes all objects and all samples --- *)
-ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedOptions,listedInputs,outputSpecification,output,gatherTests,messages,allInputSamples,nonSelfContainedSamples,nonSelfContainedSampleContainers,validSampleInputs,invalidSampleInputs,
-		inputSampleContainerTests,sampleToContainerReplaceRules,myNewInputs,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,updatedCache
+		inputSampleContainerTests,sampleToContainerReplaceRules,myNewInputs,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples, updatedSimulation
 	},
 
 	(* Make sure we're working with a list of options and list of inputs *)
@@ -418,20 +437,20 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentAutoclave,
 			listedInputs,
-			ToList[myOptions]
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Make a list of the non-container inputs (not containers containing input samples) *)
@@ -442,7 +461,7 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 
 	(* Download the container of the non-self-contained samples*)
 	nonSelfContainedSampleContainers=Quiet[
-		Download[nonSelfContainedSamples,Container[Object]],
+		Download[nonSelfContainedSamples,Container[Object], Simulation -> updatedSimulation],
 		{Download::ObjectDoesNotExist}
 	];
 
@@ -454,7 +473,7 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 
 	(* If we are throwing messages, throw two error messages if there are any invalid sample inputs *)
 	If[Length[invalidSampleInputs]>0&&messages,
-		{Message[Error::InvalidAutoclaveContainer,ObjectToString[invalidSampleInputs]],Message[Error::InvalidInput,ObjectToString[invalidSampleInputs]]}
+		{Message[Error::InvalidAutoclaveContainer,ObjectToString[invalidSampleInputs, Simulation -> updatedSimulation]],Message[Error::InvalidInput,ObjectToString[invalidSampleInputs, Simulation -> updatedSimulation]]}
 	];
 
 	(* If we are gathering tests, define the tests the user will see to check if the nonselfcontainedsample inputs are in appropriate containers *)
@@ -462,11 +481,11 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 		Module[{passingTest,failingTest},
 			failingTest=If[Length[invalidSampleInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[invalidSampleInputs]<>" are in Containers of Model[Container,Vessel]:",True,False]
+				Test["The input samples "<>ObjectToString[invalidSampleInputs, Simulation -> updatedSimulation]<>" are in Containers of Model[Container,Vessel]:",True,False]
 			];
 			passingTest=If[Length[validSampleInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[validSampleInputs]<>" are in Containers of Model[Container,Vessel]:",True,True]
+				Test["The input samples "<>ObjectToString[validSampleInputs, Simulation -> updatedSimulation]<>" are in Containers of Model[Container,Vessel]:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -493,14 +512,8 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 			Preview->Null
 		},
 
-		(* Update our cache with our new simulated values. *)
-		updatedCache=Flatten[{
-			samplePreparationCache,
-			Lookup[listedOptions,Cache,{}]
-		}];
-
 		(* Otherwise, call the core function with nonSelfContainedSamples replaced by their containers *)
-		ExperimentAutoclave[myNewInputs,ReplaceRule[listedOptions,Cache->updatedCache]]
+		ExperimentAutoclave[myNewInputs, ReplaceRule[myOptionsWithPreparedSamples, Simulation -> updatedSimulation]]
 	]
 ];
 
@@ -511,13 +524,13 @@ ExperimentAutoclave[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[
 
 DefineOptions[
 	resolveExperimentAutoclaveOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]],myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentAutoclaveOptions]]:=Module[
 	{
 		outputSpecification,output,listedInputs,gatherTests,messages,notInEngine,cache,samplePrepOptions,autoclaveOptions,simulatedSamples,
-		resolvedSamplePrepOptions,simulatedCache,autoclaveOptionsAssociation,autoclaveProgramOption,name,itemInputs,containerInputs,
+		resolvedSamplePrepOptions,autoclaveOptionsAssociation,autoclaveProgramOption,name,itemInputs,containerInputs,
 		sterilizationBagOption,bagModelInputs,bagObjectInputs,bagModelDownloadFields,bagObjectDownloadFields,bagModelPacketsNested,bagModelPackets,bagObjectPacketsNested,
 		instrumentOption,instrumentDownloadFields,
 		allPossibleInstrumentModels,possibleInstrumentDownloadFields,objectSamplePacketFields,modelSamplePacketFields,objectSampleFields,
@@ -544,14 +557,14 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		invalidAutoclaveProgramOption,validAutoclaveProgramTests,resolvedAutoclaveProgram,
 		sterilizationMethodWarningInputs,sterilizationMethodWarningBags,sterilizationMethodWarningResolvedBags,sterilizationMethodTest,
 		sterilizationBagModelField,resolvedSterilizationBag,
-		bagModels,bagDimensions,bagHeights,bagWidths,bagLengths,bagSizes,tightnessFactor,sterilizationMethodWarnings,inputTooLargeErrors,noBagModelsErrors,
+		bagModels,bagPositions,bagDimensions,bagHeights,bagWidths,bagLengths,bagSizes,tightnessFactor,sterilizationMethodWarnings,inputTooLargeErrors,noBagModelsErrors,
 		tooLargeForBagInvalidInputs,invalidInputBags,tooLargeForBagTest,noBagModelsInvalidInputs,noBagModelsTest,
-		containerTooFullTests,
+		containerTooFullTests, simulation, updatedSimulation, samplePrepTests,
 		nonAutoclavableLiquidContainerTests,selfContainedSampleTargetContainerReplaceRules,emptyContainerTargetContainerReplaceRules,containerWithSolidTargetContainerReplaceRules,autoclaveBagTargetContainerReplaceRules,
 		containersWithLiquidsThatNeedToBeTransferred,containersWithLiquidsDontNeedToTransfer,noTransferLiquidContainerReplaceRules,simulatedSamplesToTransfer,volumeOfTransfers,
 		safePreferredTransferContainers,transferLiquidContainerReplaceRules,allAliquotContainerReplaceRules,
 		invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests,email,preResolvedPostProcessingOptions,resolvedPostProcessingOptions,
-		confirm,template,fastTrack,operator,parentProtocol,upload,outputOption,cacheOption,preferredContainersPackets,preferredContainers,autoclavablePreferredContainerPackets,preferredContainersPacketsNested,findPreferredAutoclavableContainer,
+		confirm,canaryBranch,template,fastTrack,operator,parentProtocol,upload,outputOption,cacheOption,preferredContainersPackets,preferredContainers,autoclavablePreferredContainerPackets,preferredContainersPacketsNested,findPreferredAutoclavableContainer,
 		samplesInStorage,objectContainerPacketFields,modelContainerFields
 	},
 
@@ -572,13 +585,17 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	notInEngine=Not[MatchQ[$ECLApplication,Engine]];
 
 	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our Autoclave options from our Sample Prep options. *)
 	{samplePrepOptions,autoclaveOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentAutoclave,listedInputs,samplePrepOptions,Cache->cache];
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentAutoclave, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentAutoclave, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
+	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	autoclaveOptionsAssociation=Association[autoclaveOptions];
@@ -609,10 +626,10 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	]&/@sterilizationBagOption;
 
 	(* Choose the fields we download from the autoclave bag based on if the given option is a Model versus an Object *)
-	bagModelDownloadFields={Packet@@Append[SamplePreparationCacheFields[Model[Container]],SterilizationMethods]};
+	bagModelDownloadFields={Packet@@Join[SamplePreparationCacheFields[Model[Container]], {Positions, SterilizationMethods}]};
 	bagObjectDownloadFields={
 		Packet@@Append[SamplePreparationCacheFields[Object[Container]],Model],
-		Packet[Model@@Append[SamplePreparationCacheFields[Model[Container]],SterilizationMethods]]
+		Packet[Model@@Join[SamplePreparationCacheFields[Model[Container]], {SterilizationMethods, Positions}]]
 	};
 
 	(* get the Instrument option from the Safe ops *)
@@ -638,7 +655,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	possibleInstrumentDownloadFields={Packet[Name,InternalDimensions]};
 
 	(* Fields to download from autoclave bag models *)
-	possibleAutoclaveBagDownloadFields={Packet@@Join[SamplePreparationCacheFields[Object[Container]],{SterilizationMethods,Dimensions}]};
+	possibleAutoclaveBagDownloadFields={Packet@@Join[SamplePreparationCacheFields[Object[Container]],{SterilizationMethods,Dimensions,Positions}]};
 
 	(* Create the Packet and List Download syntax for our Object and Model samples and containers *)
 	objectSampleFields=Flatten[{Flammable,Acid,Base,Pyrophoric,WaterReactive,Radioactive,SamplePreparationCacheFields[Object[Sample]]}];
@@ -693,7 +710,8 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 				bagModelDownloadFields,
 				bagObjectDownloadFields
 			},
-			Cache->simulatedCache,
+			Cache -> cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -726,7 +744,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	];
 
 	(* --- stitch together the various sample and container packets so that they are in the correct order (order of myInputs) --- *)
-	(* First, join each type of packet together, for joinedContentsModelPackets and joinedContentsObjectOackets, we join a list of empty lists to to it, since sample inputs dont have contents, and we need these lists to be the same length for tranpose *)
+	(* First, join each type of packet together, for joinedContentsModelPackets and joinedContentsObjectPackets, we join a list of empty lists to to it, since sample inputs don't have contents, and we need these lists to be the same length for transpose *)
 	joinedObjectPackets=Join[sampleObjectPackets,containerObjectPackets];
 	joinedModelPackets=Join[sampleModelPackets,containerModelPackets];
 	joinedContentsObjectPackets=Join[Table[{},Length[itemInputs]],containerContentsObjectPackets];
@@ -767,7 +785,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If there are discarded invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -775,12 +793,12 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our inputs and their contents "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our inputs and their contents " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 
 			passingTest=If[Length[nonDiscardedInputs]==0,
 				Nothing,
-				Test["Our inputs and their contents "<>ObjectToString[nonDiscardedInputs,Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our inputs and their contents " <> ObjectToString[nonDiscardedInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 
 			{failingTest,passingTest}
@@ -796,7 +814,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If there are duplicate inputs, then throw error *)
 	If[Length[duplicateInvalidInputs]>0&&messages,
-		Message[Error::DuplicateAutoclaveInputs,ObjectToString[duplicateInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DuplicateAutoclaveInputs, ObjectToString[duplicateInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* Define the user-facing tests if we are gathering tests *)
@@ -804,12 +822,12 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[duplicateInvalidInputs]==0,
 				Nothing,
-				Test["The input object(s) "<>ObjectToString[duplicateInvalidInputs,Cache->simulatedCache]<>" is only present once in the list of input objects:",True,False]
+				Test["The input object(s) " <> ObjectToString[duplicateInvalidInputs, Simulation -> updatedSimulation] <> " is only present once in the list of input objects:", True, False]
 			];
 
 			passingTest=If[Length[duplicateValidInputs]==0,
 				Nothing,
-				Test["The input object(s) "<>ObjectToString[duplicateValidInputs,Cache->simulatedCache]<>"is only present once in the list of input objects:",True,True]
+				Test["The input object(s) " <> ObjectToString[duplicateValidInputs, Simulation -> updatedSimulation] <> "is only present once in the list of input objects:", True, True]
 			];
 
 			{failingTest,passingTest}
@@ -840,7 +858,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If any of the empty containers are not safe to autoclave, and we are throwing messages, throw an Error *)
 	If[Length[invalidEmptyContainerInputs]>0&&messages,
-		Message[Error::InvalidEmptyAutoclaveContainer,ObjectToString[invalidEmptyContainerInputs,Cache->simulatedCache]]
+		Message[Error::InvalidEmptyAutoclaveContainer, ObjectToString[invalidEmptyContainerInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If gathering tests, write user-facing tests for InvalidEmptyContainer Error *)
@@ -849,11 +867,11 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 			failingTest=If[Length[invalidEmptyContainerInputs]==0,
 				Nothing,
-				Test["The input empty container(s) "<>ObjectToString[invalidEmptyContainerInputs,Cache->simulatedCache]<>" have MaxTemperatures greater or equal to 120 C and are safe to autoclave:",True,False]
+				Test["The input empty container(s) " <> ObjectToString[invalidEmptyContainerInputs, Simulation -> updatedSimulation] <> " have MaxTemperatures greater or equal to 120 C and are safe to autoclave:", True, False]
 			];
 			passingTest=If[Length[validEmptyContainerInputs]==0,
 				Nothing,
-				Test["The input empty container(s) "<>ObjectToString[validEmptyContainerInputs,Cache->simulatedCache]<>" have MaxTemperatures greater or equal to 120 C and are safe to autoclave:",True,True]
+				Test["The input empty container(s) " <> ObjectToString[validEmptyContainerInputs, Simulation -> updatedSimulation] <> " have MaxTemperatures greater or equal to 120 C and are safe to autoclave:", True, True]
 			];
 			{failingTest,passingTest}
 		],
@@ -884,7 +902,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	validUnsafeContentsInputs=PickList[simulatedSamples,contentsSafetyBooleans,False];
 
 	If[Length[invalidUnsafeContentsInputs]>0&&messages,
-		Message[Error::UnsafeAutoclaveContainerContents,ObjectToString[invalidUnsafeContentsInputs,Cache->simulatedCache]]
+		Message[Error::UnsafeAutoclaveContainerContents, ObjectToString[invalidUnsafeContentsInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, define the user-facing tests for Error::UnsafeAutoclaveContainerContents *)
@@ -893,11 +911,11 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 			failingTest=If[Length[invalidUnsafeContentsInputs]==0,
 				Nothing,
-				Test["The input container(s), "<>ObjectToString[invalidUnsafeContentsInputs,Cache->simulatedCache]<>", have Contents that are safe to autoclave, because none of the following Fields are True: Flammable, Acid, Base, Pyrophoric, WaterReactive, Radioactive:",True,False]
+				Test["The input container(s), " <> ObjectToString[invalidUnsafeContentsInputs, Simulation -> updatedSimulation] <> ", have Contents that are safe to autoclave, because none of the following Fields are True: Flammable, Acid, Base, Pyrophoric, WaterReactive, Radioactive:", True, False]
 			];
 			passingTest=If[Length[validUnsafeContentsInputs]==0,
 				Nothing,
-				Test["The input(s), "<>ObjectToString[validUnsafeContentsInputs,Cache->simulatedCache]<>", are safe to autoclave because they either have no Contents, or their Contents have False for all of the following Fields:Flammable, Acid, Base, Pyrophoric, WaterReactive, Radioactive:",True,True]
+				Test["The input(s), " <> ObjectToString[validUnsafeContentsInputs, Simulation -> updatedSimulation] <> ", are safe to autoclave because they either have no Contents, or their Contents have False for all of the following Fields:Flammable, Acid, Base, Pyrophoric, WaterReactive, Radioactive:", True, True]
 			];
 			{failingTest,passingTest}
 		],
@@ -951,7 +969,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	validNonEmptyContainerInputs=Cases[nonEmptyContainers,ObjectP[Object[Container,Vessel]]];
 
 	If[Length[invalidNonEmptyContainerInputs]>0&&messages,
-		Message[Error::InvalidAutoclaveContainer,ObjectToString[invalidNonEmptyContainerInputs,Cache->simulatedCache]]
+		Message[Error::InvalidAutoclaveContainer, ObjectToString[invalidNonEmptyContainerInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result *)
@@ -959,7 +977,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidNonEmptyContainerInputs]==0,
 				Nothing,
-				Test["The input non-empty containers "<>ObjectToString[invalidNonEmptyContainerInputs,Cache->simulatedCache]<>" are not suitable for autoclave since there are not Object[Container,Vessel]:",True,False]
+				Test["The input non-empty containers " <> ObjectToString[invalidNonEmptyContainerInputs, Simulation -> updatedSimulation] <> " are not suitable for autoclave since there are not Object[Container,Vessel]:", True, False]
 			];
 			passingTest=If[Length[validNonEmptyContainerInputs]==0,
 				Nothing,
@@ -1022,8 +1040,9 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	TODO: throw error if SterilizationBag tries to resolve to a bag type, but possibleAutoclaveBagModelPackets is {} *)
 	bagModels=Lookup[possibleAutoclaveBagModelPackets,Object,{Null}];
 
-	(* Lookup the dimensions of the possible autoclave bags *)
-	bagDimensions=Lookup[possibleAutoclaveBagModelPackets,Dimensions,{{0 Meter,0 Meter,0 Meter}}];
+	(* Lookup the positions instead of dimensions of the possible autoclave bags, because the dimensions are set to smaller values in order to store them folded *)
+	bagPositions = First[Lookup[#,Positions,{<|Name -> "A1", Footprint -> Open, MaxWidth -> 0*Meter, MaxDepth -> 0*Meter, MaxHeight -> 0*Meter|>}]]&/@(possibleAutoclaveBagModelPackets/.{}->{<||>});
+	bagDimensions = Lookup[#, {MaxWidth, MaxDepth, MaxHeight}] & /@ bagPositions;
 
 	(* Label the dimensions using the convention: height <= width <= length *)
 	{bagHeights,bagWidths,bagLengths}=Transpose[Sort/@bagDimensions];
@@ -1221,9 +1240,9 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* If at least one specified autoclave bag is incompatible with autoclaving, throw a warning *)
 	If[Or@@sterilizationMethodWarnings&&messages&&notInEngine,
 		Message[Warning::IncompatibleSterilizationMethods,
-			ObjectToString[sterilizationMethodWarningInputs,Cache->simulatedCache],
-			ObjectToString[sterilizationMethodWarningBags,Cache->simulatedCache],
-			ObjectToString[sterilizationMethodWarningResolvedBags,Cache->simulatedCache]
+			ObjectToString[sterilizationMethodWarningInputs, Simulation -> updatedSimulation],
+			ObjectToString[sterilizationMethodWarningBags, Simulation -> updatedSimulation],
+			ObjectToString[sterilizationMethodWarningResolvedBags, Simulation -> updatedSimulation]
 		]
 	];
 
@@ -1247,8 +1266,8 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* If at least one input was too large for its assigned bag, throw an error *)
 	If[Or@@inputTooLargeErrors&&messages,
 		Message[Error::InputTooLargeForAutoclaveBag,
-			ObjectToString[tooLargeForBagInvalidInputs,Cache->simulatedCache],
-			ObjectToString[invalidInputBags,Cache->simulatedCache]
+			ObjectToString[tooLargeForBagInvalidInputs, Simulation -> updatedSimulation],
+			ObjectToString[invalidInputBags, Simulation -> updatedSimulation]
 		]
 	];
 
@@ -1269,7 +1288,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* If at least one input would have been assigned an autoclave bag, but none exist, throw an error *)
 	If[Or@@noBagModelsErrors&&messages,
 		Message[Error::NoValidAutoclaveBagModels,
-			ObjectToString[noBagModelsInvalidInputs,Cache->simulatedCache]
+			ObjectToString[noBagModelsInvalidInputs, Simulation -> updatedSimulation]
 		]
 	];
 
@@ -1358,7 +1377,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* Make a list of the max temperatures of the non-empty containers - doing this to check if any of them arent safe to put in the autoclave - would aliquot out *)
 	listOfMaxTemperatures=Lookup[nonEmptyContainerModelPackets,MaxTemperature,{}];
 
-	(* Any containers that have stuff in them and cannot safely be autoclaved must have their contents aliquotted to a new container*)
+	(* Any containers that have stuff in them and cannot safely be autoclaved must have their contents aliquoted to a new container*)
 	nonEmptyContainersWithTooLowMaxTemp=PickList[nonEmptyContainers,listOfMaxTemperatures,LessP[120*Celsius]];
 
 	(* If there are any non-solids in containers that are not compatible with the autoclave, we must transfer them to autoclave-safe containers *)
@@ -1399,20 +1418,20 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If we are throwing messages, throw an error if there are any containers that are not autoclave safe with solid contents *)
 	If[Length[invalidContainersSolidInputs]>0&&messages,
-		Message[Error::ContainerWithSolidContentsNotAutoclaveSafe,ObjectToString[invalidContainersSolidInputs,Cache->simulatedCache]]
-	];
+    Message[Error::ContainerWithSolidContentsNotAutoclaveSafe, ObjectToString[invalidContainersSolidInputs, Simulation -> updatedSimulation]]
+  ];
 
 	(* If we are gathering tests, generate the user-facing tests *)
 	validSolidContainersTests=If[gatherTests&&Length[nonEmptyContainersWithSolids]>0,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidContainersSolidInputs]==0,
 				Nothing,
-				Test["The following containers with contents that are Solid are safe to autoclave, "<>ObjectToString[invalidContainersSolidInputs,Cache->simulatedCache]<>":",True,False]
-			];
+        Test["The following containers with contents that are Solid are safe to autoclave, " <> ObjectToString[invalidContainersSolidInputs, Simulation -> updatedSimulation] <> ":", True, False]
+      ];
 			passingTest=If[Length[validContainersSolidInputs]==0,
 				Nothing,
-				Test["The following containers with contents that are Solid are safe to autoclave, "<>ObjectToString[validContainersSolidInputs,Cache->simulatedCache]<>":",True,True]
-			];
+        Test["The following containers with contents that are Solid are safe to autoclave, " <> ObjectToString[validContainersSolidInputs, Simulation -> updatedSimulation] <> ":", True, True]
+      ];
 			{failingTest,passingTest}
 		],
 		Nothing
@@ -1421,20 +1440,20 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* --- Here determine if we need to transfer contents due to containers with stuff in them either having MaxTemps that are too low, or contents volumes that are too high --- *)
 	(* If any container has non-solid inputs that have volumes greater than 3/4 of the max volume of the container they are in, they will need to be transferred during aliquotting, throw warning *)
 	If[Length[tooFullContainers]>0&&messages&&notInEngine,
-		Message[Warning::AutoclaveContainerTooFull,ObjectToString[tooFullContainers,Cache->simulatedCache],ObjectToString[safeTooFullTransferContainers,Cache->simulatedCache]]
-	];
+    Message[Warning::AutoclaveContainerTooFull, ObjectToString[tooFullContainers, Simulation -> updatedSimulation], ObjectToString[safeTooFullTransferContainers, Simulation -> updatedSimulation]]
+  ];
 
 	(* If we are gathering tests, and there are non empty containers with liquids that didnt undergo Aliquot simulation, generate the user-facing tests for the previous message *)
-	containerTooFullTests=If[gatherTests&&Length[nonEmptyContainers]>0,
+	containerTooFullTests=If[gatherTests&&Length[tooFullContainers]>0,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[tooFullContainers]==0,
 				Nothing,
-				Test["The following containers have non-Solid Contents that take up less than 3/4 the MaxVolume of the container "<>ObjectToString[tooFullContainers,Cache->simulatedCache]<>":",True,False]
-			];
+        Test["The following containers have non-Solid Contents that take up less than 3/4 the MaxVolume of the container " <> ObjectToString[tooFullContainers, Simulation -> updatedSimulation] <> ":", True, False]
+      ];
 			passingTest=If[Length[notTooFullContainers]==0,
 				Nothing,
-				Test["The following containers have Contents that take up less than 3/4 the MaxVolume of the container "<>ObjectToString[notTooFullContainers,Cache->simulatedCache]<>":",True,True]
-			];
+        Test["The following containers have Contents that take up less than 3/4 the MaxVolume of the container " <> ObjectToString[notTooFullContainers, Simulation -> updatedSimulation] <> ":", True, True]
+      ];
 			{failingTest,passingTest}
 		],
 		Nothing
@@ -1443,20 +1462,20 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* --- Here check if there are any nonSolid samples inside of containers that are not autoclave-safe - if so, we will need to aliquot these samples into autoclave-safe containers --- *)
 	(* If any containers containing liquids are not safe to autoclave, the contents will need to be transferred to an autoclave safe container during the aliquotting step *)
 	If[Length[nonAutoclavableContainersLiquidInputs]>0&&messages&&notInEngine,
-		Message[Warning::NonEmptyContainerNotAutoclaveSafe,ObjectToString[nonAutoclavableContainersLiquidInputs,Cache->simulatedCache],ObjectToString[safeNotAutoclaveSafeTransferContainers,Cache->simulatedCache]]
-	];
+    Message[Warning::NonEmptyContainerNotAutoclaveSafe, ObjectToString[nonAutoclavableContainersLiquidInputs, Simulation -> updatedSimulation], ObjectToString[safeNotAutoclaveSafeTransferContainers, Simulation -> updatedSimulation]]
+  ];
 
 	(* If we are gathering tests, and there are non empty containers with liquids that didnt undergo Aliquot simulation, generate the user-facing tests for the previous message *)
 	nonAutoclavableLiquidContainerTests=If[gatherTests&&Length[noAliquotNonEmptyLiquidContainers]>0,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[nonAutoclavableContainersLiquidInputs]==0,
 				Nothing,
-				Test["The following containers with non-Solid Contents are autoclave-safe "<>ObjectToString[nonAutoclavableContainersLiquidInputs,Cache->simulatedCache]<>":",True,False]
-			];
+        Test["The following containers with non-Solid Contents are autoclave-safe " <> ObjectToString[nonAutoclavableContainersLiquidInputs, Simulation -> updatedSimulation] <> ":", True, False]
+      ];
 			passingTest=If[Length[autoclavableContainersLiquidInputs]==0,
 				Nothing,
-				Test["The following containers with non-Solid Contents are autoclave-safe "<>ObjectToString[autoclavableContainersLiquidInputs,Cache->simulatedCache]<>":",True,True]
-			];
+        Test["The following containers with non-Solid Contents are autoclave-safe " <> ObjectToString[autoclavableContainersLiquidInputs, Simulation -> updatedSimulation] <> ":", True, True]
+      ];
 			{failingTest,passingTest}
 		],
 		Nothing
@@ -1498,8 +1517,8 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If all of the inputs together cannot fit into the autoclave, and we are throwing messages, throw an error *)
 	If[Length[notEnoughAutoclaveSpaceInvalidInputs]>0&&messages,
-		Message[Error::NotEnoughAutoclaveSpace,ObjectToString[notEnoughAutoclaveSpaceInvalidInputs,Cache->simulatedCache],totalFootprintArea]
-	];
+    Message[Error::NotEnoughAutoclaveSpace, ObjectToString[notEnoughAutoclaveSpaceInvalidInputs, Simulation -> updatedSimulation], totalFootprintArea]
+  ];
 
 	(* Define the user-facing tests if we are gathering tests *)
 	notEnoughAutoclaveSpaceTests=If[gatherTests,
@@ -1546,21 +1565,21 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* If any of the inputs cannot individually fit into the autoclave and we are throwing messages, throw an error *)
 	If[Length[invalidDimensionsInputs]>0&&messages,
-		Message[Error::InputTooLargeForAutoclave,ObjectToString[invalidDimensionsInputs,Cache->simulatedCache]]
-	];
+    Message[Error::InputTooLargeForAutoclave, ObjectToString[invalidDimensionsInputs, Simulation -> updatedSimulation]]
+  ];
 
 	inputTooLargeTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 
 			failingTest=If[Length[invalidDimensionsInputs]==0,
 				Nothing,
-				Test["The input(s) "<>ObjectToString[invalidDimensionsInputs,Cache->simulatedCache]<>" have no dimensions longer than 0.5 meters and can fit into the autoclave:",True,False]
-			];
+        Test["The input(s) " <> ObjectToString[invalidDimensionsInputs, Simulation -> updatedSimulation] <> " have no dimensions longer than 0.5 meters and can fit into the autoclave:", True, False]
+      ];
 
 			passingTest=If[Length[validDimensionsInputs]==0,
 				Nothing,
-				Test["The input(s) "<>ObjectToString[validDimensionsInputs,Cache->simulatedCache]<>" have no dimensions longer than 0.5 meters and can fit into the autoclave:",True,True]
-			];
+        Test["The input(s) " <> ObjectToString[validDimensionsInputs, Simulation -> updatedSimulation] <> " have no dimensions longer than 0.5 meters and can fit into the autoclave:", True, True]
+      ];
 			{failingTest,passingTest}
 		],
 		Nothing
@@ -1594,7 +1613,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	(* Create a list of containers with liquid contents that don't need to be transferred *)
 	containersWithLiquidsDontNeedToTransfer=Complement[nonEmptyContainersWithLiquids,containersWithLiquidsThatNeedToBeTransferred];
 
-	(* These containers with liquids that dont need to be transferred will get Null as Target Container *)
+	(* These containers with liquids that don't need to be transferred will get Null as Target Container *)
 	noTransferLiquidContainerReplaceRules=Map[(#->Null)&,containersWithLiquidsDontNeedToTransfer];
 
 	(* For the liquid contents that need to be transferred, get them in the correct order, so they will be index matched to the volumeOfTransfers below *)
@@ -1621,7 +1640,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		(volumeOfTransfers*1.5)
 	];
 
-	(* Set the replace rules for all of the simulatedsamples with liquid contents that need to be transferred *)
+	(* Set the replace rules for all of the simulated samples with liquid contents that need to be transferred *)
 	transferLiquidContainerReplaceRules=MapThread[
 		(#1->#2)&,
 		{simulatedSamplesToTransfer,safePreferredTransferContainers}
@@ -1643,8 +1662,8 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
-	];
+    Message[Error::InvalidInput, ObjectToString[invalidInputs, Simulation -> updatedSimulation]]
+  ];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
 	If[Length[invalidOptions]>0&&!gatherTests,
@@ -1659,8 +1678,9 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 			myInputs,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
-			RequiredAliquotContainers->targetContainers,
+      Cache -> cache,
+      Simulation -> updatedSimulation,
+      RequiredAliquotContainers->targetContainers,
 			RequiredAliquotAmounts->Null,
 			AliquotWarningMessage->Null,
 			AllowSolids->True,
@@ -1672,8 +1692,9 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 				myInputs,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
-				RequiredAliquotContainers->targetContainers,
+        Cache -> cache,
+        Simulation -> updatedSimulation,
+        RequiredAliquotContainers->targetContainers,
 				RequiredAliquotAmounts->Null,
 				AliquotWarningMessage->Null,
 				AllowSolids->True,
@@ -1690,7 +1711,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	];
 
 	(* Pre-resolve Post Processing Options *)
-	preResolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	preResolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions,Sterile->True];
 
 	(* ExperimentImageSample, ExperimentMeasureVolume, and ExperimentMeasureWeight don't take Object[Item] as input. *)
 	(* So if any of the inputs is an Item... *)
@@ -1709,7 +1730,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 	];
 
 	(* get the rest directly *)
-	{confirm,template,fastTrack,operator,parentProtocol,upload,outputOption,cacheOption,samplesInStorage}=Lookup[myOptions,{Confirm,Template,FastTrack,Operator,ParentProtocol,Upload,Output,Cache,SamplesInStorageCondition}];
+	{confirm,canaryBranch,template,fastTrack,operator,parentProtocol,upload,outputOption,cacheOption,samplesInStorage}=Lookup[myOptions,{Confirm,CanaryBranch,Template,FastTrack,Operator,ParentProtocol,Upload,Output,Cache,SamplesInStorageCondition}];
 
 	(* Return our resolved options and/or tests. *)
 	outputSpecification/.{
@@ -1719,6 +1740,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 				Instrument->resolvedInstrument,
 				SterilizationBag->resolvedSterilizationBag,
 				Confirm->confirm,
+				CanaryBranch->canaryBranch,
 				Name->name,
 				Template->template,
 				Cache->cacheOption,
@@ -1733,7 +1755,7 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 		],
 		Tests->Cases[Flatten[
 			{
-				discardedTests,duplicateInputTests,notEnoughAutoclaveSpaceTests,inputTooLargeTests,invalidEmptyContainerTests,
+				samplePrepTests, discardedTests,duplicateInputTests,notEnoughAutoclaveSpaceTests,inputTooLargeTests,invalidEmptyContainerTests,
 				invalidUnsafeContentsTests,invalidNonEmptyContainersTest, invalidAutoclaveProgramForBagsTest,validAutoclaveProgramTests,
 				sterilizationMethodTest,tooLargeForBagTest,noBagModelsTest,validNameTest,validSolidContainersTests,containerTooFullTests,
 				nonAutoclavableLiquidContainerTests,aliquotTests
@@ -1752,13 +1774,13 @@ resolveExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,V
 
 DefineOptions[
 	autoclaveResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 (* Private function to generate the list of protocol packets containing resource blobs *)
 autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]],myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myResourceOptions:OptionsPattern[autoclaveResourcePackets]]:=Module[
 	{
-		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,cache,listedInputs,itemInputs,containerInputs,
+		expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,cache,simulation,listedInputs,itemInputs,containerInputs,
 		aliquotVolumes,autoclaveInstrument,autoclaveProgram,autoclaveBag,
 		autoclaveResource,steamIntegrator,steamIntegratorResource,aluminumFoilResource,autoclaveTapeResource,sterilizationTime,sterilizationTemperature,secondaryContainerResource,listedSamplePackets,listedContainerPackets,
 		sampleObjectPackets,sampleModelPackets,containerObjectPackets,containerModelPackets,containerContentsObjectPackets,joinedObjectPackets,joinedModelPackets,
@@ -1770,8 +1792,7 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 		nonAliquotSampleResourceLinks,nonAliquotSampleResourceReplaceRules,samplesInReplaceRules,samplesInLinks,
 		autoclaveBagsResources,autoclaveBagsLinksIndexMatched,inputsInLinksIndexMatched,autoclaveBagsLinks,baggedInputsLinks,baggedInputsNoBacklinks,autoclaveBagPositions,sterilizationBagPlacements,
 		autoclaveID,author,
-		protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,
-		samplesInStorage
+		protocolPacket,sharedFieldPacket,finalizedPacket,allResourceBlobs,fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule
 	},
 
 	(* Expand the resolved options *)
@@ -1793,8 +1814,9 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 	gatherTests=MemberQ[output,Tests];
 	messages=Not[gatherTests];
 
-	(* Get the cache *)
+	(* Get the cache and simulation *)
 	cache=Lookup[ToList[myResourceOptions],Cache];
+	simulation=Lookup[ToList[myResourceOptions],Simulation];
 
 	(* Make sure the inputs to this function are a list *)
 	listedInputs=ToList[myInputs];
@@ -1846,6 +1868,7 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 				}
 			},
 			Cache->cache,
+			Simulation->simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -1862,7 +1885,7 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 	containerContentsObjectPackets=listedContainerPackets[[All,3]];
 
 	(* --- stitch together the various sample and container packets so that they are in the correct order (order of myInputs) --- *)
-	(* First, join each type of packet together, for joinedContentsModelPackets and joinedContentsObjectOackets, we join a list of empty lists to to it, since sample inputs dont have contents, and we need these lists to be the same length for tranpose *)
+	(* First, join each type of packet together, for joinedContentsModelPackets and joinedContentsObjectPackets, we join a list of empty lists to to it, since sample inputs don't have contents, and we need these lists to be the same length for transpose *)
 	joinedObjectPackets=Join[sampleObjectPackets,containerObjectPackets];
 	joinedModelPackets=Join[sampleModelPackets,containerModelPackets];
 	joinedContentsObjectPackets=Join[Table[{},Length[itemInputs]],containerContentsObjectPackets];
@@ -1961,7 +1984,7 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 	(* Find the aliquot volumes of the samples to be aliquotted - need to request this amount in the resources for these samples *)
 	aliquotSampleRequiredVolumes=Cases[aliquotVolumes,Except[Null]];
 
-	(* Make the resources for the samples which need to be aliquotted *)
+	(* Make the resources for the samples which need to be aliquoted *)
 	aliquotSampleResources=MapThread[
 		Resource[
 			Sample->#1,
@@ -1977,15 +2000,15 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 		aliquotSampleResources
 	];
 
-	(* Define the SamplesIn replace rules for the container inputs with contents that are to be aliquotted *)
+	(* Define the SamplesIn replace rules for the container inputs with contents that are to be aliquoted *)
 	aliquotSampleResourceReplaceRules=MapThread[
 		(#1->#2)&,
 		{aliquottedContainerInputs,aliquotSampleResourceLinks}
 	];
 
-	(* - Next, define the repalce rules for any container inputs that have samples which do not require aliquotting - *)
+	(* - Next, define the replace rules for any container inputs that have samples which do not require aliquotting - *)
 
-	(* Find the containers which have samples inside that do not need to be aliquotted *)
+	(* Find the containers which have samples inside that do not need to be aliquoted *)
 	nonAliquotContainerInputs=Cases[containerInputs,Except[Alternatives@@Join[emptyContainers,aliquottedContainerInputs]]];
 
 	(* Make a list of the sample object packets inside of these containers *)
@@ -1994,7 +2017,7 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 	(* From these packets, make a list of the sample objects *)
 	nonAliquotSampleObjects=Lookup[Flatten[nonAliquotSamplePackets],Object,{}];
 
-	(* Make the resources for the samples that do not need to be aliquotted *)
+	(* Make the resources for the samples that do not need to be aliquoted *)
 	nonAliquotSampleResources=Map[
 		Resource[
 			Sample->#,
@@ -2094,14 +2117,14 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 			ParentProtocol->If[MatchQ[Lookup[myResolvedOptions,ParentProtocol],ObjectP[]],Link[Lookup[myResolvedOptions,ParentProtocol],Subprotocols]],
 			Author->If[MatchQ[Lookup[myResolvedOptions,ParentProtocol],ObjectP[]],Null,Link[author,ProtocolsAuthored]],
 			Replace[Checkpoints]->{
-				{"Preparing Samples",5 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->5 Minute]]},
-				{"Picking Resources",10*Minute,"Empty containers and resources required for the autoclave are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-				{"Loading",30Minute,"Samples are loaded into the autoclave instrument.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]]},
-				{"Autoclaving",90Minute,"Samples are autoclaved.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->90 Minute]]},
-				{"Unloading",15Minute,"Autoclaved samples are unloaded.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]]},
-				{"Cooling",30Minute,"Autoclaved samples are cooled down to ambient conditions.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]]},
-				{"Sample Post-Processing",30Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]]},
-				{"Returning Materials",15Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->15 Minute]]}
+				{"Preparing Samples",5 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->5 Minute]]},
+				{"Picking Resources",10*Minute,"Empty containers and resources required for the autoclave are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+				{"Loading",30Minute,"Samples are loaded into the autoclave instrument.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+				{"Autoclaving",90Minute,"Samples are autoclaved.",Link[Resource[Operator->$BaselineOperator,Time->90 Minute]]},
+				{"Unloading",15Minute,"Autoclaved samples are unloaded.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]},
+				{"Cooling",30Minute,"Autoclaved samples are cooled down to ambient conditions.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+				{"Sample Post-Processing",30Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+				{"Returning Materials",15Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]}
 			},
 			ImageSample->Lookup[expandedResolvedOptions,ImageSample],
 			Replace[SamplesInStorage]->Lookup[expandedResolvedOptions,SamplesInStorageCondition]
@@ -2122,8 +2145,8 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation -> Simulation[cache]],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache, Simulation -> Simulation[cache]],Null}
 	];
 
 	(* --- Output --- *)
@@ -2172,7 +2195,7 @@ DefineOptions[ExperimentAutoclaveOptions,
 	SharedOptions:>{ExperimentAutoclave}
 ];
 
-ExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentAutoclaveOptions[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -2203,7 +2226,7 @@ DefineOptions[ExperimentAutoclavePreview,
 	SharedOptions:>{ExperimentAutoclave}
 ];
 
-ExperimentAutoclavePreview[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentAutoclavePreview[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* Get the options as a list *)
@@ -2232,7 +2255,7 @@ DefineOptions[ValidExperimentAutoclaveQ,
 	SharedOptions:>{ExperimentAutoclave}
 ];
 
-ValidExperimentAutoclaveQ[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ValidExperimentAutoclaveQ[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Object[Container,Rack],Object[Sample],Object[Item],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,preparedOptions,experimentAutoclaveTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)

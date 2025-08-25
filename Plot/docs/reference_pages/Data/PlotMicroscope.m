@@ -102,14 +102,6 @@ DefineUsage[PlotMicroscope,{
 		"PlotObject",
 		"cellCounts"
 	},
-	Author -> {
-		"amir.saadat",
-		"wyatt",
-		"brad",
-		"Catherine",
-		"Sean",
-		"Ruben",
-		"derek.machalek"
-	},
+	Author -> {"dirk.schild", "amir.saadat", "wyatt", "brad", "Catherine", "Sean", "Ruben", "derek.machalek"},
 	Preview->True
 }];

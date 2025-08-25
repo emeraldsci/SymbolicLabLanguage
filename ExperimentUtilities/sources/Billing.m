@@ -74,7 +74,7 @@ runSyncBillingCore[teams:{ObjectP[Object[Team, Financing]]..}, ops:OptionsPatter
 
 	(* run the check for mismatches in the Object[Bill] and the Model[Pricing] associated with it *)
 	(* pass the same notification option that SyncBilling is getting *)
-	(* there is no reason this should hang, but since we dont want to prevent SyncBilling from running make it time constrained *)
+	(* there is no reason this should hang, but since we don't want to prevent SyncBilling from running make it time constrained *)
 	TimeConstrained[billPricingMatchQ[CreateTask -> notifyQ], 300];
 
 
@@ -204,6 +204,8 @@ SyncBilling::FinancingTeamDoesNotExist="The provided object `1` does not exist i
 SyncBilling::ActiveTeamsOnly="SyncBilling can not create new bills on non-active teams.";
 SyncBilling::PricingFunctionFailed="The following pricing functions were not able to properly evaluate: `1`. Investigate the specific error messages and contact ECL for assistance.";
 SyncBilling::NotConfiguredTeam="SyncBilling can not create new bills for a team without CurrentPricingScheme or NextBillingCycle.";
+SyncBilling::MultipleCleaningDiscounts="Either IncludedCleanings or IncludedCleaningFees must be applied. Populating both fields causes confusion about how to apply discount. Populating neither fields cause no discount mode to apply.";
+SyncBilling::MultipleStorageDiscounts="Either IncludedStorage or IncludedStorageFees must be applied. Populating both fields causes confusion about how to apply discount. Populating neither fields cause no discount mode to apply.";
 
 SyncBilling::PriceStorage="PriceStorage returned some unexpected values. Outputs must match `1`. Check `2`";
 SyncBilling::PriceTransactions="PriceTransactions returned some unexpected values. Outputs must match `1`. Check `2`";
@@ -215,8 +217,9 @@ SyncBilling::PriceOperatorTime="PriceOperatorTime returned some unexpected value
 SyncBilling::PriceInstrumentTime="PriceInstrumentTime returned some unexpected values. Outputs must match `1`. Check `2`";
 SyncBilling::PriceProtocol="PriceProtocol returned some unexpected values. Outputs must match `1`. Check `2`";
 
-(* Sync Billing should determine when a bill was last synced, and run PriceExperiment on the timeframe from that date to now *)
-(* it should take the output from PriceExperiment, sort it by the billing category, and upload to the appropriate field *)
+
+(* Sync Billing should determine when a bill was last synced, and run SummaryPrice on the timeframe from that date to now *)
+(* it should take the output from SummaryPrice, sort it by the billing category, and upload to the appropriate field *)
 (* it also needs to call PriceTransaction and PriceShipping to make sure that those fields are added *)
 (* if the bill is closed, we need to make sure to subtract their InstrumentTime etc allowance and not charge them for it *)
 (* the output of SyncBilling is a list of all the bills that were modified (either created or updated) *)
@@ -299,7 +302,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 	(*check if the team is active*)
 	activeTeamQ=MatchQ[Lookup[teamPacket, Status], Active];
 
-	(* if the team isn't active, we dont need to bill them *)
+	(* if the team isn't active, we don't need to bill them *)
 	If[MatchQ[activeTeamQ, Except[True]],
 		Message[SyncBilling::ActiveTeamsOnly];
 		Return[$Failed],
@@ -318,7 +321,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 
 	(* we need this to add Replace[] later on *)
 	billFieldDefinitions=ECL`Fields /. LookupTypeDefinition[Object[Bill]];
-
+	
 	(*if we're making a new bill, then we make a completely new packet, and inherit everything from the current pricing scheme*)
 	(*Do not try to inherit the Valid key*)
 	newBillPackets=If[newBillsQ,
@@ -349,7 +352,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 			priceSchemePackets]
 	];
 
-	(*DO NOT call PriceExperiment etc. on the freshly made Bill. It is not uploaded until the end and will cause the pricing functions to fail. *)
+	(*DO NOT call SummaryPrice etc. on the freshly made Bill. It is not uploaded until the end and will cause the pricing functions to fail. *)
 	(* This function is going to run nightly, so its fine to wait 24 hours to start tracking *)
 
 	(* ------------------------------------- *)
@@ -387,7 +390,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 	];
 
 	(* in order to be flexible with the billing time span (mid-month onboarding or changing billing cycles) we need to look at the  most recent closed bill*)
-	(*Note: we need to be really careful with teh way MM handles "1 Month" - as long as bills start on the 1st there are no issues, but bills that are closed at the end of the month will cause an issue. *)
+	(*Note: we need to be really careful with the way MM handles "1 Month" - as long as bills start on the 1st there are no issues, but bills that are closed at the end of the month will cause an issue. *)
 	(*There is now a way to easily update NextBillingCycle to the first so we can avoid this issue*)
 	(* this is not site-specific since all bills share the start/closing date across sites *)
 	startDate=Module[{startDateFromLastBill},
@@ -845,8 +848,8 @@ updateCurrentBillDiscounts[financingTeam:ObjectP[Object[Team,Financing]],ops:Opt
 	(* if the pricing scheme has entries in the NumberOfThreadsLog, update Object[Bill] to have proper discounts *)
 	{teamPacket,currentBillsPackets,pricingSchemePackets}=Download[financingTeam,{
 		Packet[NextBillingCycle,CurrentPriceSchemes,CurrentBills],
-		Packet[CurrentBills[[All,1]][{NumberOfThreads,IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleanings,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorage,IncludedShipmentFees,DateStarted}]],
-		Packet[CurrentPriceSchemes[[All,1]][{NumberOfThreads,NumberOfThreadsLog,IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleanings,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorage,IncludedShipmentFees,Site}]]
+		Packet[CurrentBills[[All,1]][{NumberOfThreads,IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleaningFees,IncludedCleanings,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorageFees,IncludedStorage,IncludedShipmentFees,DateStarted}]],
+		Packet[CurrentPriceSchemes[[All,1]][{NumberOfThreads,NumberOfThreadsLog,IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleaningFees,IncludedCleanings,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorageFees,IncludedStorage,IncludedShipmentFees,Site}]]
 	}];
 
 	safeOps=SafeOptions[updateCurrentBillDiscounts,ToList@ops];
@@ -922,15 +925,15 @@ updateCurrentBillDiscounts[financingTeam:ObjectP[Object[Team,Financing]],ops:Opt
 				newDiscountsNonNumber=Association@MapThread[
 					#1->(Lookup[priceSchemePacket,#1]/.Null->#2) / currentNumberOfThreads * observedThreadsAmount&,
 					{
-						{IncludedInstrumentHours,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorage,IncludedShipmentFees},
-						{0 Hour,0 USD,0 USD,0 Centimeter^3,0 USD}
+						{IncludedInstrumentHours,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorageFees,IncludedStorage,IncludedShipmentFees, IncludedCleaningFees},
+						{0 Hour,0 USD,0 USD,0 USD, 0 Centimeter^3,0 USD, 0 USD}
 					}
 				];
 
 				(*integers need to stay integers*)
 				newDiscountsNumber=Association@Map[
 					#->Round[(Lookup[priceSchemePacket,#]/.Null->0) / currentNumberOfThreads * observedThreadsAmount,1]&,
-					{IncludedPriorityProtocols,IncludedCleanings}
+					{IncludedPriorityProtocols, IncludedCleanings}
 				];
 
 				(* return new discounts to the relevant fields *)
@@ -1036,7 +1039,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			},
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedProtocolPricingPackets=Lookup[protocolPricingPackets,{Source,DateCompleted,Author,Priority,Price}]/.{"Priority"->True,"Regular"->False};
+			formattedProtocolPricingPackets=Lookup[protocolPricingPackets,{Protocol,DateCompleted,Author,Priority,Value}]/.{"Priority"->True,"Regular"->False};
 
 			(* determine their protocol allowance anc price *)
 			{includedPriorityProtocols,pricePerExperiment,pricePerPriorityExperiment}=Lookup[
@@ -1088,59 +1091,89 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			(* look up the fields from the helper function association *)
 			formattedInstrumentPricingPackets=Lookup[
 				instrumentPricingPackets,
-				{DateCompleted,Source,Instrument,PricingTier,Time,Price},
+				{DateCompleted, Site, Notebook, Protocol, Model, PricingTier, Time, ValueRate, Value},
 				Nothing
 			];
 
-			(* sort the instruments by tier *)
-			sortedInstrumentPricingPackets=ReverseSortBy[formattedInstrumentPricingPackets,#[[4]]&];
-
-			(* get the total amount of time spend for each *)
-			cumulativeInstrumentTimes=FoldList[Plus,sortedInstrumentPricingPackets[[All,5]]];
-
-			(* lookup the included hours *)
+			(* sort the instruments by model *)
+			sortedInstrumentPricingPackets=GatherBy[formattedInstrumentPricingPackets,#[[5]]&];
+		
+			(* get the total amount of time spend for each model group *)
+			cumulativeInstrumentTimes=Map[
+				FoldList[Plus,#[[All,7]]]&,
+				sortedInstrumentPricingPackets
+			];
+			
+			(* lookup the included hours of each model instrument *)
 			includedInstrumentTime=Lookup[currentBillPacket,IncludedInstrumentHours];
-
-			(* use the included instrument time to zero out all of the included hours *)
-			discountedPackets=PickList[sortedInstrumentPricingPackets,cumulativeInstrumentTimes,LessP[includedInstrumentTime]];
-			notDiscountedPackets=PickList[sortedInstrumentPricingPackets,cumulativeInstrumentTimes,GreaterEqualP[includedInstrumentTime]];
-
+			
+			(* pick the model group(s) that will end up not being charged since all hours are discounted and flatten into a list of packets *)
+			discountedPackets=Flatten[MapThread[
+				PickList[#1,#2,LessP[includedInstrumentTime]]&,
+				{
+					sortedInstrumentPricingPackets,
+					cumulativeInstrumentTimes
+				}
+			],1];
+			
+			(* pick the model group(s) that will have some/all charged if total hours for the model is greater than included hours *)
+			notDiscountedPackets=MapThread[
+				PickList[#1,#2,GreaterEqualP[includedInstrumentTime]]&,
+				{
+					sortedInstrumentPricingPackets,
+					cumulativeInstrumentTimes
+				}
+			];
+		
 			(* find the cumulative time for the first charged packet, subtract the free time *)
-			possiblyChargedTime=((FirstCase[cumulativeInstrumentTimes,GreaterEqualP[includedInstrumentTime]]/.{}->0 Minute) - includedInstrumentTime);
-
+			possiblyChargedTime=Map[
+				((FirstCase[#,GreaterEqualP[includedInstrumentTime]]/.{}->0 Minute) - includedInstrumentTime)&,
+				cumulativeInstrumentTimes
+			];
+			
 			(* update the discounted packets by zeroing them and recording the discounted time *)
 			updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
 				{},
-				Map[Join[#,{Last[#],0 * USD}]&,Most/@discountedPackets]
+				Map[Join[#,{0 * USD/Hour,0 * USD}]&,discountedPackets]
 			];
-
-			(* the first element of the nonDiscounted might be discounted *)
-			updatedNonDiscountedPackets=If[!MatchQ[notDiscountedPackets,{}],
-				(* we want to charge the fraction of the time that was not free = chargedTime/actual time *)
-				Prepend[
-					Map[Join[#[[1;;5]],{0 Hour,#[[6]]}]&,Rest[notDiscountedPackets]],
-					Join[
-						Most[First[notDiscountedPackets]],
-						{
-							Round[Abs[(notDiscountedPackets[[1,5]] - possiblyChargedTime)],1 Minute],
-							Round[Last[First[notDiscountedPackets]] * (possiblyChargedTime / notDiscountedPackets[[1,5]]),0.01 USD]
-						}
-					]
-				],
-				{}
-			];
-
+			
+			(* the first element of the nonDiscounted packets per Model might be discounted *)
+			updatedNonDiscountedPackets=Flatten[MapThread[
+				If[!MatchQ[#1,{}],
+					(* we want to charge the fraction of the time that was not free = chargedTime/actual time *)
+					Prepend[
+						(* For not discounted rows, charge = value and charge rate = value rate *)
+						Map[Join[#,#[[-2 ;;]]]&,Rest[#1]],
+						(* charge rate = value rate * (time after discounted/time before discounted)*)
+						Join[
+							First[#1],
+							{
+								Round[First[#1][[-2]] * (#2 / #1[[1,7]]), 0.01 USD/Hour],
+								Round[Last[First[#1]] * (#2 / #1[[1,7]]), 0.01 USD]
+							}
+						]
+					],
+					{}
+				]&,
+				{
+					notDiscountedPackets,
+					possiblyChargedTime
+				}
+			],1];
+			
 			(* sort by date to finish it off *)
-			sortedData=SortBy[Join[updatedDiscountedPackets,updatedNonDiscountedPackets],First];
+			sortedData=SortBy[Join[updatedDiscountedPackets,updatedNonDiscountedPackets],First]
 
+			(* We now collapse in PriceOperatorTime function
 			(* group by protocol and instrument *)
 			groupedData=GatherBy[sortedData,#[[2;;3]]&];
-
-			(* collapse all protocols:instrument into one line so that only one line per protocol shows up - price per operator is the same *)
-			Map[Flatten[{#[[1,1;;4]],Table[Total[#[[;;,n]]],{n,5,7}]}]&,groupedData]
+			
+			(* collapse all protocols:instrument into one line so that only one line per protocol shows up *)
+			Map[Flatten[{Delete[#[[1,1;;5]],4],Table[Total[#[[;;,n]]],{n,6,8}]}]&,groupedData]
+			*)
 		]
 	];
-
+	
 
 	(* -- Operator Charge -- *)
 	composedOperatorValues=If[noCurrentBillQ || MatchQ[operatorPricingPackets,{}],
@@ -1149,13 +1182,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 		Module[
 			{
 				formattedOperatorPricingPackets,sortedOperatorPricingPackets,
-				updatedNonDiscountedPackets,sortedResults,groupedResults
+				updatedDiscountedPackets,sortedResults,groupedResults
 			},
 
 			(* look up the fields from the helper function association *)
 			formattedOperatorPricingPackets=Lookup[
 				operatorPricingPackets,
-				{DateCompleted,Source,ModelName,Time,Price,PricePerHour},
+				{DateCompleted, Notebook, Protocol, ModelName, Time, ValueRate, Value},
 				Nothing
 			];
 
@@ -1163,20 +1196,23 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			sortedOperatorPricingPackets=Reverse[SortBy[formattedOperatorPricingPackets,Last]];
 
 			(* the first element of the nonDiscounted might be discounted *)
-			updatedNonDiscountedPackets=If[!MatchQ[sortedOperatorPricingPackets,{}],
-				(* we want to charge the fraction of the time that was not free = chargedTime/actual time *)
-				Map[Join[#[[1;;4]],{0.0 Hour,#[[5]]}]&,sortedOperatorPricingPackets],
+			updatedDiscountedPackets=If[!MatchQ[sortedOperatorPricingPackets,{}],
+				(* we set the charge to 0 USD and charge rate to 0 USD/h since all operator hours are not charged *)
+				Map[Join[#,{0 USD/Hour,0 * USD}]&,sortedOperatorPricingPackets],
 				{}
 			];
 
 			(* sort by date to finish it off *)
-			sortedResults=SortBy[updatedNonDiscountedPackets,First];
+			sortedResults=SortBy[updatedDiscountedPackets,First]
 
+			(* We now collapse in PriceOperatorTime function
 			(* group by protocol *)
-			groupedResults=GatherBy[sortedResults,#[[2]]&];
+			groupedResults=GatherBy[sortedResults,#[[3]]&];
 
 			(* collapse all protocols into one line so that only one line per protocol shows up - price per operator is the same *)
-			Map[Flatten[{#[[1,1;;3]],Table[Total[#[[;;,n]]],{n,4,6}]}]&,groupedResults]
+			(*{Notebook, Protocol, Operator, ModelName, Time, ValueRate, Value, ChargeRate, Charge}-- Time and Value are added. *)
+			Map[Flatten[{#[[1,1;;4]],Total[#[[;;,5]]], #[[1,6]], Total[#[[;;,7]]], #[[1, 8;;9]]}]&,groupedResults]
+			*)
 		]
 	];
 
@@ -1188,29 +1224,69 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 		Null,
 		Module[
 			{
-				formattedPackets,sortedPackets,includedCleanings,discountedPackets
+				formattedPackets,includedCleaningFees,includedCleanings, discountedPackets
 			},
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedPackets=Lookup[cleaningPricingPackets,{Date,Container,Source,CleaningCategory,Price}];
+			formattedPackets=Lookup[cleaningPricingPackets,{Date, Site, Notebook, Protocol, Material, CleaningCategory, Value}];
 
 			(* lookup included Cleanings *)
-			includedCleanings=Lookup[currentBillPacket,IncludedCleanings];
+			{includedCleaningFees, includedCleanings}=Lookup[currentBillPacket,{IncludedCleaningFees, IncludedCleanings}];
 
-			(* order cleanings by price, discount the most expensive ones *)
-			sortedPackets=Reverse[SortBy[formattedPackets,Last]];
+			discountedPackets = Which[
+				(* if includedCleanings is Null, we intend to use includedCleaningFees *)
+				(NullQ[includedCleanings])&&(!NullQ[includedCleaningFees]),
+				Module[{cumulativeCost, discountedPackets, notDiscountedPackets, possiblyChargedFee, updatedDiscountedPackets, updatedNonDiscountedPackets},
+					(* get the cumulative costs *)
+					cumulativeCost=FoldList[Plus,formattedPackets[[All,7]]];
 
-			(* discount the protocols by setting the cost to 0 for the discounted protocols *)
-			discountedPackets=MapIndexed[
-				If[MatchQ[First[#2],LessEqualP[includedCleanings]],
-					(* its free *)
-					Append[#1,0 USD],
-					(* charge whatever was charged *)
-					Append[#1,Last[#1]]
-				]&,
-				sortedPackets
+					(* determine which ones need discounting *)
+					(* use the IncludedCleaningFees to zero out all of the included cleanings *)
+					discountedPackets=PickList[formattedPackets,cumulativeCost,LessP[includedCleaningFees]];
+					notDiscountedPackets=PickList[formattedPackets,cumulativeCost,GreaterEqualP[includedCleaningFees]];
+
+					(* find the cumulative fee for the first charged packet, subtract the free amount *)
+					possiblyChargedFee=((FirstCase[cumulativeCost,GreaterEqualP[includedCleaningFees]]/.{}->0) - includedCleaningFees);
+
+					(* update the discounted packets by zeroing them *)
+					updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
+						{},
+						Map[Join[#,{0 * USD}]&,discountedPackets]
+					];
+
+					(* the first element of the nonDiscounted might be discounted *)
+					updatedNonDiscountedPackets=If[MatchQ[notDiscountedPackets,Except[{}]],
+						(* we want to charge the difference for that particular case *)
+						Prepend[
+							Map[Join[#,{#[[7]]}]&,Rest[notDiscountedPackets]],
+							Join[First[notDiscountedPackets],{possiblyChargedFee}]
+						],
+						notDiscountedPackets
+					];
+					Join[updatedDiscountedPackets,updatedNonDiscountedPackets]
+				],
+				(* if includedCleaningFees is Null, we intend to use includedCleanings *)
+				(NullQ[includedCleaningFees])&&(!NullQ[includedCleanings]),
+				Module[{sortedPackets},
+					(* order cleanings by price, discount the most expensive ones *)
+					sortedPackets=Reverse[SortBy[formattedPackets,Last]];
+
+					(* discount the protocols by setting the cost to 0 for the discounted protocols *)
+					MapIndexed[
+						If[MatchQ[First[#2],LessEqualP[includedCleanings]],
+							(* its free *)
+							Append[#1,0 USD],
+							(* charge whatever was charged *)
+							Append[#1,Last[#1]]
+						]&,
+						sortedPackets
+					]
+				],
+				(* if both of includedCleaningFees and includedCleanings are populated, or neither is populated, throw an error since we do not know how are we going to apply discount *)
+				True,
+				Message[SyncBilling::MultipleCleaningDiscounts];
+				Return[$Failed]
 			];
-
 			(* sort by date *)
 			SortBy[discountedPackets,First]
 		]
@@ -1227,13 +1303,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			},
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedPackets=Lookup[stockingPricingPackets,{Material,Volume,Source,StorageCondition,Price}];
+			formattedPackets=Lookup[stockingPricingPackets,{Notebook, Protocol, Site, Material, MaterialName, StorageCondition, Volume, ValueRate, Value}];
 
 			(* lookup included Stocking *)
 			includedStockingFees=Lookup[currentBillPacket,IncludedStockingFees];
 
 			(* get the cumulative costs *)
-			cumulativeCost=FoldList[Plus,formattedPackets[[All,5]]];
+			cumulativeCost=FoldList[Plus,formattedPackets[[All,9]]];
 
 			(* determine which ones need discounting *)
 			(* use the included Operator time to zero out all of the included hours *)
@@ -1246,21 +1322,23 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			(* update the discounted packets by zeroing them *)
 			updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
 				{},
-				Map[Join[#,{Last[#],0 * USD}]&,discountedPackets]
+				Map[Join[#,{0 *USD/(Centimeter^3),0 * USD}]&,discountedPackets]
 			];
 
 			(* the first element of the nonDiscounted might be discounted *)
 			updatedNonDiscountedPackets=If[MatchQ[notDiscountedPackets,Except[{}]],
 				(* we want to charge the difference for that particular case *)
 				Prepend[
-					Map[Join[#,{0 * USD,#[[5]]}]&,notDiscountedPackets],
-					Join[First[notDiscountedPackets],{Round[notDiscountedPackets[[1,5]] - possiblyChargedFee,0.01 * USD],possiblyChargedFee}]
+					(* For not discounted rows, charge = value and charge rate = value rate *)
+					Map[Join[#,#[[-2 ;;]]]&,Rest[notDiscountedPackets]],
+					(* charge rate = charge/ Volume*)
+					Join[First[notDiscountedPackets], {possiblyChargedFee/First[notDiscountedPackets][[9]], possiblyChargedFee}]
 				],
 				notDiscountedPackets
 			];
 
 			(* sort by source to finish it off *)
-			SortBy[Join[updatedDiscountedPackets,updatedNonDiscountedPackets],#[[3]]&]
+			SortBy[Join[updatedDiscountedPackets,updatedNonDiscountedPackets],#[[2]]&]
 		]
 	];
 
@@ -1275,13 +1353,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			},
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedPackets=Lookup[wastePricingPackets,{Date,Source,WasteType,Price}];
+			formattedPackets=Lookup[wastePricingPackets,{Notebook, Protocol, Site, WasteType, Weight, ValueRate, Value}];
 
 			(* lookup included Waste *)
 			includedWasteFees=Lookup[currentBillPacket,IncludedWasteDisposalFees];
 
 			(* get the cumulative costs *)
-			cumulativeCost=FoldList[Plus,formattedPackets[[All,4]]];
+			cumulativeCost=FoldList[Plus,formattedPackets[[All,7]]];
 
 			(* determine which ones need discounting *)
 			(* use the included Operator time to zero out all of the included hours *)
@@ -1294,16 +1372,16 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			(* update the discounted packets by zeroing them *)
 			updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
 				{},
-				Map[Append[#,0 * USD]&,discountedPackets]
+				Map[Join[#, {0 USD/Kilogram, 0*USD}]&,discountedPackets]
 			];
 
 			(* the first element of the nonDiscounted might be discounted *)
 			updatedNonDiscountedPackets=If[MatchQ[notDiscountedPackets,Except[{}]],
 				(* we want to charge the difference for that particular case *)
-				Prepend[
-					Map[Append[#,Last[#]]&,notDiscountedPackets],
-					Append[First[notDiscountedPackets],possiblyChargedFee]
-				],
+				(* For not discounted rows, charge = value and charge rate = value rate *)
+				Prepend[Map[Join[#, #[[-2 ;;]]] &, Rest[notDiscountedPackets]],
+					(* charge rate = charge/ weight *)
+					Join[First[notDiscountedPackets], {possiblyChargedFee/First[notDiscountedPackets][[5]], possiblyChargedFee}]],
 				notDiscountedPackets
 			];
 
@@ -1318,53 +1396,92 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 		Null,
 		Module[
 			{
-				realStoragePricingPackets,formattedPackets,discountedPackets,notDiscountedPackets,cumulativeVolume,possiblyChargedVolume,
-				updatedDiscountedPackets,updatedNonDiscountedPackets,includedStorage,sortedPackets
+				realStoragePricingPackets,formattedPackets, updatedDiscountedPackets,updatedNonDiscountedPackets,includedStorageFees, includedStorage
 			},
 
 			(* This is a safeguard that we should not ever trigger, but in a name of defensive programming we will make sure that we have some volume for the items *)
 			realStoragePricingPackets=DeleteCases[storagePricingPackets,KeyValuePattern[Volume->Quantity[0,"Centimeters"^3]]];
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedPackets=Lookup[realStoragePricingPackets,{DateLastUsed,Object,Source,StorageCondition,Volume,Time,Price,PricingRate}];
-
-			(* sort by the Pricing Rate so we apply discount to the most expensive storage first *)
-			sortedPackets=ReverseSortBy[formattedPackets,PricingRate][[All,1;;7]];
+			formattedPackets=Lookup[realStoragePricingPackets,{DateLastUsed, Notebook, Site, Protocol, Material, StorageCondition, Volume, Time, ValueRate, Value}];
 
 			(* lookup included Storage *)
-			includedStorage=Lookup[currentBillPacket,IncludedStorage];
+			{includedStorageFees, includedStorage}=Lookup[currentBillPacket,{IncludedStorageFees, IncludedStorage}];
 
-			(* get the cumulative costs *)
-			cumulativeVolume=FoldList[Plus,sortedPackets[[All,5]]];
+			{updatedDiscountedPackets, updatedNonDiscountedPackets} = Which[
+				(* if IncludedStorage is Null, we intend to use IncludedStorageFees *)
+				(NullQ[includedStorage])&&(!NullQ[includedStorageFees]),
+				Module[{cumulativeCost, discountedPackets, notDiscountedPackets, possiblyChargedFee, updatedDiscountedPacket, updatedNonDiscountedPacket},
+					(* get the cumulative costs *)
+					cumulativeCost=FoldList[Plus,formattedPackets[[All,10]]];
+					(* determine which ones need discounting *)
+					(* use the included storage space to zero out all of the included volumes *)
+					discountedPackets=PickList[formattedPackets,cumulativeCost,LessP[includedStorageFees]];
+					notDiscountedPackets=PickList[formattedPackets,cumulativeCost,GreaterEqualP[includedStorageFees]];
 
-			(* determine which ones need discounting *)
-			(* use the included storage space to zero out all of the included volumes *)
-			discountedPackets=PickList[sortedPackets,cumulativeVolume,LessP[includedStorage]];
-			notDiscountedPackets=PickList[sortedPackets,cumulativeVolume,GreaterEqualP[includedStorage]];
+					(* find the cumulative volume for the first charged packet, subtract the free amount *)
+					possiblyChargedFee=((FirstCase[cumulativeCost,GreaterEqualP[includedStorageFees]]/.{}->0) - includedStorageFees);
 
-			(* find the cumulative volume for the first charged packet, subtract the free amount *)
-			possiblyChargedVolume=((FirstCase[cumulativeVolume,GreaterEqualP[includedStorage]]/.{}->0) - includedStorage);
+					(* update the discounted packets by zeroing them *)
+					updatedDiscountedPacket=If[MatchQ[discountedPackets,{}],
+						{},
+						Map[Join[#,{0 USD/Month, 0 * USD}]&,discountedPackets]
+					];
 
-			(* update the discounted packets by zeroing them *)
-			updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
-				{},
-				Map[Join[#,{Last[#],0 * USD}]&,discountedPackets[[All,1;;7]]]
-			];
-
-			(* the first element of the nonDiscounted might be discounted *)
-			updatedNonDiscountedPackets=If[MatchQ[notDiscountedPackets,Except[{}]],
-				(* we want to charge the fraction of the time that was not free = chargedVolume/actual volume *)
-				Prepend[
-					Map[Join[#,{0 * USD,Last[#]}]&,Rest[notDiscountedPackets]],
-					Join[
-						First[notDiscountedPackets],
-						{
-							Round[Last[First[notDiscountedPackets]] * (1 - (possiblyChargedVolume / notDiscountedPackets[[1,5]])),0.01 USD],
-							Round[Last[First[notDiscountedPackets]] * (possiblyChargedVolume / notDiscountedPackets[[1,5]]),0.01 USD]
-						}
-					]
+					(* the first element of the nonDiscounted might be discounted *)
+					updatedNonDiscountedPacket=If[MatchQ[notDiscountedPackets,Except[{}]],
+						(* we want to charge the difference for that particular case *)
+						Prepend[
+							Map[Join[#, #[[-2 ;;]]] &, Rest[notDiscountedPackets]],
+							Join[First[notDiscountedPackets],{possiblyChargedFee/First[notDiscountedPackets][[8]], possiblyChargedFee}]
+						],
+						notDiscountedPackets
+					];
+					{updatedDiscountedPacket, updatedNonDiscountedPacket}
 				],
-				notDiscountedPackets
+				(* if includedCleaningFees is Null, we intend to use includedCleanings *)
+				(NullQ[includedStorageFees])&&(!NullQ[includedStorage]),
+				Module[{sortedPackets, cumulativeVolume, discountedPackets, notDiscountedPackets, possiblyChargedVolume, updatedDiscountedPacket, updatedNonDiscountedPacket},
+					(* sort by the Pricing Rate so we apply discount to the most expensive storage first *)
+					sortedPackets=ReverseSortBy[formattedPackets,ValueRate];
+					(* get the cumulative costs *)
+					cumulativeVolume=FoldList[Plus,sortedPackets[[All,7]]];
+
+					(* determine which ones need discounting *)
+					(* use the included storage space to zero out all of the included volumes *)
+					discountedPackets=PickList[sortedPackets,cumulativeVolume,LessP[includedStorage]];
+					notDiscountedPackets=PickList[sortedPackets,cumulativeVolume,GreaterEqualP[includedStorage]];
+
+					(* find the cumulative volume for the first charged packet, subtract the free amount *)
+					possiblyChargedVolume=((FirstCase[cumulativeVolume,GreaterEqualP[includedStorage]]/.{}->0) - includedStorage);
+
+					(* update the discounted packets by zeroing them *)
+					updatedDiscountedPacket=If[MatchQ[discountedPackets,{}],
+						{},
+						Map[Join[#,{0 USD/Month, 0 * USD}]&,discountedPackets]
+					];
+
+					(* the first element of the nonDiscounted might be discounted *)
+					updatedNonDiscountedPacket=If[MatchQ[notDiscountedPackets,Except[{}]],
+						(* we want to charge the fraction of the time that was not free = chargedVolume/actual volume *)
+						Prepend[
+							Map[Join[#, #[[-2 ;;]]] &, Rest[notDiscountedPackets]],
+							Join[
+								First[notDiscountedPackets],
+								{
+									notDiscountedPackets[[1,9]] * (possiblyChargedVolume / notDiscountedPackets[[1,7]]),
+									Round[Last[First[notDiscountedPackets]] * (possiblyChargedVolume / notDiscountedPackets[[1,7]]),0.01 USD]
+								}
+							]
+						],
+						notDiscountedPackets
+					];
+					{updatedDiscountedPacket, updatedNonDiscountedPacket}
+				],
+				(* if both of includedStorageFees and includedStorage are populated, or neither is populated, throw an error since we do not know how are we going to apply discount *)
+				True,
+				Message[SyncBilling::MultipleStorageDiscounts];
+				Return[$Failed]
 			];
 
 			(* sort by date to finish it off *)
@@ -1383,8 +1500,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 
 			(* convert the helper output into the correct fields for upload *)
 			(*this is done a little weird because the Amount may need ot get a unit and put in the middle position*)
-			formattedPacketsPartOne=Lookup[materialsPricingPackets,{DateCompleted,Material,Source,Notebook}];
-			formattedPacketsPartTwo=Lookup[materialsPricingPackets,{PricePerUnit,Price}];
+			formattedPacketsPartOne=Lookup[materialsPricingPackets,{Notebook, Protocol, Site, MaterialName}];
+			formattedPacketsPartTwo=Lookup[materialsPricingPackets,{ValueRate, Value, ChargeRate, Charge}];
 			allAmounts=Map[If[NumericQ[#],# * Unit,#] &,Lookup[materialsPricingPackets,Amount]];
 
 			formattedPackets=MapThread[Join[#1,{#2},#3]&,{formattedPacketsPartOne,allAmounts,formattedPacketsPartTwo}];
@@ -1405,13 +1522,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			},
 
 			(* convert the helper output into the correct fields for upload *)
-			formattedPackets=Lookup[transactionsPricingPackets,{DateCompleted,Source,Weight,Price,Tax}];
+			formattedPackets=Lookup[transactionsPricingPackets,{DateCompleted, Notebook, Transaction, ShippingType, Supplier, Destination, Speed, Weight, Value}];
 
 			(* lookup included Waste *)
 			includedShipmentFees=Lookup[currentBillPacket,IncludedShipmentFees];
 
 			(* get the cumulative costs *)
-			cumulativeCost=FoldList[Plus,Total/@formattedPackets[[All,4;;5]]];
+			cumulativeCost=FoldList[Plus,formattedPackets[[All,9]]];
 
 			(* determine which ones are overweight and are not eligible for discounting *)
 			discountedPackets=PickList[formattedPackets,cumulativeCost,LessP[includedShipmentFees]];
@@ -1423,15 +1540,15 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			(* update the discounted packets by zeroing them *)
 			updatedDiscountedPackets=If[MatchQ[discountedPackets,{}],
 				{},
-				Map[Join[#,{Total[#[[4;;5]]],0 * USD}]&,discountedPackets]
+				Map[Join[#,{0 * USD}]&,discountedPackets]
 			];
 
 			(* the first element of the nonDiscounted might be discounted *)
 			updatedNonDiscountedPackets=If[MatchQ[notDiscountedPackets,Except[{}]],
 				(* we want to charge the difference for that particular case *)
 				Prepend[
-					Map[Join[#,{0 * USD,Total[#[[4;;5]]]}]&,notDiscountedPackets],
-					Join[First[notDiscountedPackets],{Round[Total[notDiscountedPackets[[1,4;;5]]] - possiblyChargedFee,0.01 * USD],possiblyChargedFee}]
+					Map[Join[#,{#[[9]]}]&,Rest[notDiscountedPackets]],
+					Join[First[notDiscountedPackets],{possiblyChargedFee}]
 				],
 				notDiscountedPackets
 			];
@@ -1442,6 +1559,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 	];
 
 	(* -- Data Charge -- *)
+
+	(* Note: We currently do not charge user anything about constellation, but we decide to still keep the field of ConstellationPrice(price rate USD/Unit), ConstellationUsage and ConstellationStorage in case we want them in the future. IncludedConstellationStorage is comment out in Model[Price] and Object[Bill] since we do not use it at all. *)
 
 	(*this was originally outside the module and I didnt move the variables inside but its fine*)
 	If[noCurrentBillQ,
@@ -1466,10 +1585,15 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			composedConstellationObjects=First[Lookup[dataPricingPackets,NumberOfObjects,{0}]];
 
 			(* do the data discounting using the ConstellationPrice and IncludedConstellationStorage, which is in number of objects (not TB) *)
+			(* We currently do not charge user anything about constellation so modify this code to hard code everything to 0. The original code is comment out in case we want to revert this in the future *)
+			{includedConstellationObjects,constellationPricingRate}={0 Unit, 0 USD/Unit};
+			constellationDiscount = 0 USD;
+			composedConstellationStorage = rawConstellationStorage;
+			(*
 			{includedConstellationObjects,constellationPricingRate}=Lookup[currentBillPacket,{IncludedConstellationStorage,ConstellationPrice}];
 			constellationDiscount=(includedConstellationObjects/.Null->0 Unit) * constellationPricingRate;
 			composedConstellationStorage=(rawConstellationStorage - constellationDiscount)/.(LessP[0 USD]->0 USD);
-
+      *)
 			(* format number of objects into TB or GB *)
 			composedConstellationUsage=With[{storage=Quantity[(First@ToList@composedConstellationObjects) * 0.05 / (10^6),"Terabytes"]},
 				If[
@@ -1478,7 +1602,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 					Round[UnitConvert[storage,"Gigabytes"],Quantity[0.01,"Gigabytes"]]
 				]
 			];
-
+			composedConstellationDiscount = 0 Unit
+			(*
 			(*format the discounted number of objects into TB or GB*)
 			composedConstellationDiscount=With[{constDiscount=Quantity[Unitless[(includedConstellationObjects/.Null->0)] * 0.05 / (10^6),"Terabytes"]},
 				If[
@@ -1487,6 +1612,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 					Round[UnitConvert[constDiscount,"Gigabytes"],Quantity[0.01,"Gigabytes"]]
 				]
 			]
+			*)
 		]
 	];
 
@@ -1502,15 +1628,15 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 
 	(* pair the packets with the index holding the price *)
 	pairedValuePriceIndex={
-		{composedMaterialValues,7},
+		{composedMaterialValues,9},
 		{composedProtocolValues,6},
 		{composedOperatorValues,6},
-		{composedInstrumentValues,7},
-		{composedCleaningValues,6},
-		{composedStockingValues,6},
-		{composedWasteValues,5},
-		{composedStorageValues,9},
-		{composedShippingValues,7}
+		{composedInstrumentValues,11},
+		{composedCleaningValues,8},
+		{composedStockingValues,11},
+		{composedWasteValues,9},
+		{composedStorageValues,12},
+		{composedShippingValues,10}
 	};
 
 	(* extract the prices from values that have price *)
@@ -1542,8 +1668,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			safeComposedOperatorValues,safeComposedInstrumentValues,safeComposedProtocolValues,safeComposedCleaningValues,
 			safeComposedStockingValues,safeComposedWasteValues,safeComposedMaterialValues,safeComposedShippingValues,
 			safeComposedStorageValues,totalMaterialsPrice,totalMaterialsDiscount,totalProtocolPrice,totalProtocolDiscount,
-			priorityProtocols,priorityProtocolsDiscounted,priorityProtocolsCharged,totalOperatorTime,discountedOperatorTime,
-			totalInstrumentTime,discountedInstrumentTime,totalCleaningPrice,totalCleaningDiscount,totalStockingDiscount,
+			priorityProtocols,priorityProtocolsDiscounted,priorityProtocolsCharged,totalOperatorPrice,totalOperatorDiscount,
+			totalInstrumentPrice,totalInstrumentDiscount,totalCleaningPrice,totalCleaningDiscount,totalStockingDiscount,
 			totalStockingPrice,totalWastePrice,totalWasteDiscount,totalStoragePrice,totalStorageDiscount,
 			totalShippingPrice,totalShippingDiscount,instrumentTiersSubtotals,certificationCharges,privateTutoringFee,
 			formattedExtraUsers,formattedDiscountTuples,formattedDiscountTags,discountCharges,discountTags,
@@ -1591,7 +1717,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 
 			(*Materials*)
 			{totalMaterialsPrice,totalMaterialsDiscount,totalMaterialsCharge}={
-				Total[safeComposedMaterialValues[[All,-1]]],
+				Total[safeComposedMaterialValues[[All,-3]]],
 				0 * USD,
 				Total[safeComposedMaterialValues[[All,-1]]]
 			};
@@ -1626,20 +1752,21 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 			]];
 
 			(* operator *)
-			{totalOperatorTime,discountedOperatorTime,totalOperatorCharge}=
-				If[MatchQ[safeComposedOperatorValues,{}],{0 * Hour,0 * Hour,0 * USD},{
+			{totalOperatorPrice,totalOperatorDiscount,totalOperatorCharge}=
+				If[MatchQ[safeComposedOperatorValues,{}],
+					{0 * USD,0 * USD,0 * USD},{
 					Total[safeComposedOperatorValues[[All,-3]]],
-					Total[safeComposedOperatorValues[[All,-2]]],
+					(Total[safeComposedOperatorValues[[All,-3]]] - Total[safeComposedOperatorValues[[All,-1]]]),
 					Total[safeComposedOperatorValues[[All,-1]]]
 				}];
 
 			(*instrument*)
-			{totalInstrumentTime,discountedInstrumentTime,totalInstrumentCharge}=If[
+			{totalInstrumentPrice,totalInstrumentDiscount,totalInstrumentCharge}=If[
 				MatchQ[safeComposedInstrumentValues,{}],
-				{0 * Hour,0 * Hour,0 * USD},
+				{0 * USD,0 * USD,0 * USD},
 				{
 					Total[safeComposedInstrumentValues[[All,-3]]],
-					Total[safeComposedInstrumentValues[[All,-2]]],
+					(Total[safeComposedInstrumentValues[[All,-3]]] - Total[safeComposedInstrumentValues[[All,-1]]]),
 					Total[safeComposedInstrumentValues[[All,-1]]]
 				}];
 
@@ -1659,7 +1786,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{0 * USD,0 * USD,0 * USD},
 				{
 					Total[safeComposedStockingValues[[All,-3]]],
-					Total[safeComposedStockingValues[[All,-2]]],
+					(Total[safeComposedStockingValues[[All,-3]]] - Total[safeComposedStockingValues[[All,-1]]]),
 					Total[safeComposedStockingValues[[All,-1]]]
 				}];
 
@@ -1668,8 +1795,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				MatchQ[safeComposedWasteValues,{}],
 				{0 * USD,0 * USD,0 * USD},
 				{
-					Total[safeComposedWasteValues[[All,-2]]],
-					(Total[safeComposedWasteValues[[All,-2]]] - Total[safeComposedWasteValues[[All,-1]]]),
+					Total[safeComposedWasteValues[[All,-3]]],
+					(Total[safeComposedWasteValues[[All,-3]]] - Total[safeComposedWasteValues[[All,-1]]]),
 					Total[safeComposedWasteValues[[All,-1]]]
 				}];
 
@@ -1679,7 +1806,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{0 * USD,0 * USD,0 * USD},
 				{
 					Total[safeComposedStorageValues[[All,-3]]],
-					Total[safeComposedStorageValues[[All,-2]]],
+					(Total[safeComposedStorageValues[[All,-3]]] - Total[safeComposedStorageValues[[All,-1]]]),
 					Total[safeComposedStorageValues[[All,-1]]]
 				}];
 
@@ -1688,8 +1815,8 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				MatchQ[safeComposedShippingValues,{}],
 				{0 * USD,0 * USD,0 * USD},
 				{
-					Total[Total/@safeComposedShippingValues[[All,-3;;-4]]],
-					Total[safeComposedShippingValues[[All,-2]]],
+					Total[safeComposedStorageValues[[All,-2]]],
+					Total[safeComposedShippingValues[[All,-2]]] - Total[safeComposedShippingValues[[All,-1]]],
 					Total[safeComposedShippingValues[[All,-1]]]
 				}];
 
@@ -1752,7 +1879,9 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 					Flatten[{
 						composedOtherCharges,
 						composedCertificationCharges,
+						(* We currently do not really charge user anything for constellation usage
 						composedConstellationStorage,
+						*)
 						chargesFromPackets,
 						formattedDiscountTuples
 					}],
@@ -1829,9 +1958,11 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{totalStoragePrice,totalStorageDiscount,totalStorageCharge},
 				{totalStockingPrice,totalStockingDiscount,totalStockingCharge},
 				{totalShippingPrice,totalShippingDiscount,totalShippingCharge},
-				{UnitConvert[totalOperatorTime,"Hours"],UnitConvert[discountedOperatorTime,"Hours"],totalOperatorCharge},
-				{UnitConvert[totalInstrumentTime,"Hours"],UnitConvert[discountedInstrumentTime,"Hours"],totalInstrumentCharge},
+				{totalOperatorPrice,totalOperatorDiscount,totalOperatorCharge},
+				{totalInstrumentPrice, totalInstrumentDiscount,totalInstrumentCharge},
+				(* We currently do not really charge user anything for constellation usage
 				{composedConstellationUsage,composedConstellationDiscount,composedConstellationStorage},
+				*)
 				{priorityProtocols,priorityProtocolsDiscounted,priorityProtocolsCharged}
 			};
 
@@ -1845,7 +1976,9 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				"Shipping",
 				"Operator Time",
 				"Instrument Time",
+				(* We currently do not really charge user anything for constellation usage
 				"Constellation Storage",
+				*)
 				"Priority Experiments"
 			};
 
@@ -1866,7 +1999,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 									Flatten@{
 										totalProtocolCharge,totalMaterialsCharge,totalWasteCharge,totalCleaningCharge,
 										totalStorageCharge,totalStockingCharge,totalShippingCharge,totalOperatorCharge,
-										totalInstrumentCharge,composedConstellationStorage,discountCharges[[All,-1]]
+										totalInstrumentCharge,(*composedConstellationStorage,*)discountCharges[[All,-1]]
 									},
 									{0->0 USD},(* If any weird formatting comes up in the total table, this is the place to fix them *)
 									1
@@ -1901,7 +2034,7 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 								{"Total","","","","",Total[composedProtocolValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Protocol","Date Completed","Protocol Author","Priority","Price","Charge"}},
+						TableHeadings->{None,{"Protocol","Date Completed","Protocol Author","Priority","Value","Charge"}},
 						Title->"Experiment Fees",
 						UnitForm->False,
 						Round->0.01
@@ -1911,13 +2044,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedMaterialValues,Null],
-							{{"","","","",0,"",0 USD}},
+							{{"","","","",0,"",0 USD, "", 0 USD}},
 							Append[
 								composedMaterialValues,
-								{Total,"","","","","",Total[composedMaterialValues[[All,-1]]]}
+								{"Total","","","","","","","",Total[composedMaterialValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Date Purchased","Materials","Protocol/Transaction","Notebook","Amount","Price Per Unit","Total Cost"}},
+						TableHeadings->{None,{"Notebook", "Protocol","Site", "Material Name","Amount","Value Rate","Value", "Charge Rate","Charge"}},
 						Title->"Material Purchases",
 						UnitForm->False,
 						Round->0.01
@@ -1927,13 +2060,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedWasteValues,Null],
-							{{"","","",0 USD,0 USD}},
+							{{"","","","","",0 USD/Kilogram,0 USD,0 USD/Kilogram,0 USD}},
 							Append[
 								composedWasteValues,
-								{"Total","","","",Total[composedWasteValues[[All,-1]]]}
+								{"Total","","","","","","","", Total[composedWasteValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Date Disposed","Associated Protocol","Waste Type","Price","Charge"}},
+						TableHeadings->{None,{"Notebook","Associated Protocol","Site","Waste Type","Weight","Value Rate", "Value","Charge Rate", "Charge"}},
 						Title->"Waste",
 						UnitForm->False,
 						Round->0.01
@@ -1943,13 +2076,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedCleaningValues,Null],
-							{{"","","","",0 USD,0 USD}},
+							{{"","","","","","",0 USD,0 USD}},
 							Append[
 								composedCleaningValues,
-								{"Total","","","","",Total[composedCleaningValues[[All,-1]]]}
+								{"Total","","","","","","",Total[composedCleaningValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Date Cleaned","Material Cleaned","Associated Protocol/Maintenance","Cleaning Type","Price","Charge"}},
+						TableHeadings->{None,{"Date Cleaned","Site","Notebook","Protocol", "Material", "Cleaning Category","Value","Charge"}},
 						Title->"Cleaning",
 						UnitForm->False,
 						Round->0.01
@@ -1959,13 +2092,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedStockingValues,Null],
-							{{"","","","",0 USD,0 USD}},
+							{{"","","","","","","",0 USD/(Centimeter^3), 0 USD, 0 USD/(Centimeter^3),0 USD}},
 							Append[
-								Map[Flatten@{#[[1]],N@#[[2]],#[[3;;]]}&,composedStockingValues],
-								{"Total","","","","","",Total[composedStockingValues[[All,-1]]]}
+								Map[Flatten@{#[[;;6]],N@#[[7]],#[[8;;]]}&,composedStockingValues],
+								{"Total","","","","","","","","","",Total[composedStockingValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Material Stocked","Volume","Stocking Protocol/Maintenance","Storage Condition","Price","Discount","Charge"}},
+						TableHeadings->{None,{"Notebook","Protocol", "Site", "Material","Material Purchased","Storage Condition","Volume","Value Rate","Value","Charge Rate","Charge"}},
 						Title->"Stocking",
 						UnitForm->False,
 						Round->0.01
@@ -1975,13 +2108,13 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedOperatorValuesNotebook,Null],
-							{{"","","",0 Hour,0 Hour,0 USD}},
+							{{"","","","",0 Hour, 0 USD/Hour,0 USD,0 USD/Hour,0 USD}},
 							Append[
 								composedOperatorValuesNotebook,
-								{"Total","","","",Total[composedOperatorValuesNotebook[[All,-1]]]}
+								{"Total","","","","","","","",Total[composedOperatorValuesNotebook[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Date Completed","Protocol","Operator Time","Discounted Time","Charge"}},
+						TableHeadings->{None,{"Date Completed", "Notebook", "Protocol", "Operator Model", "Operator Time","Value Rate", "Value", "Charge Rate", "Charge"}},
 						Title->"Operator Time",
 						UnitForm->False,
 						Round->0.01
@@ -1991,15 +2124,15 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedInstrumentValues,Null],
-							{{"","","","",0 Hour,0 Hour,0 USD}},
+							{{"","","","","","", 0 Hour,0 USD/Hour,0 USD,0 USD/Hour,0 USD}},
 							(* scale units for Time and round them *)
 							Join[
-								Map[Flatten@{#[[1;;4]],UnitScale[#[[5]]],UnitScale[#[[6]]],#[[7]]}&,composedInstrumentValues],
+								Map[Flatten@{#[[1;;6]],UnitScale[#[[7]]],UnitScale[#[[8]]],UnitScale[#[[9]]],UnitScale[#[[10]]],UnitScale[#[[11]]]}&,composedInstrumentValues],
 								instrumentTiersSubtotals,
-								{{"Total","","","","","",Total[composedInstrumentValues[[All,-1]]]}}
+								{{"Total","","","","","","","","","", Total[composedInstrumentValues[[All,-1]]]}}
 							]
 						],
-						TableHeadings->{None,{"Date Completed","Protocol","Instrument","Instrument Tier","Instrument Time","Discounted Time","Charge"}},
+						TableHeadings->{None,{"Date Completed", "Site", "Protocol","Notebook","Instrument Model","Instrument Tier","Instrument Time","Value Rate","Value","Charge Rate","Charge"}},
 						Title->"Instrument Time",
 						UnitForm->False,
 						Round->0.01
@@ -2013,19 +2146,20 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 				{
 					PlotTable[
 						If[MatchQ[composedShippingValues,Null],
-							{{"","","",0 USD,0 USD,0 USD,0 USD}},
+							{{"","","","","","","","",0 USD,0 USD}},
 							Append[
 								composedShippingValues,
-								{"Total","","","","","",Total[composedShippingValues[[All,-1]]]}
+								{"Total","","","","","","","","",Total[composedShippingValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"Date of Shipment","Shipment","Shipment Weight","Price","Tax","Discount","Charge"}},
+						TableHeadings->{None,{"Date of Shipment", "Notebook", "Shipment", "Shipping Type", "Supplier", "Destination", "Shipping Speed", "Shipment Weight","Value", "Charge"}},
 						Title->"Shipping",
 						UnitForm->False,
 						Round->0.01
 					],
 					"Output"
 				},
+				(* We do not charge anything for constellation usage, so comment out this table
 				{
 					PlotTable[
 						{
@@ -2038,17 +2172,17 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 					],
 					"Output"
 				},
+				*)
 				{
 					PlotTable[
 						If[MatchQ[composedStorageValues,Null],
-							{{"","","","","","",0 USD,0 USD}},
-							(* scale units for Volume and Time and round them *)
+							{{"","","","","","","","",0 USD/Month,0 USD, 0 USD/Month, 0 USD}},
 							Append[
-								Map[{#[[1]],#[[2]],#[[3]],#[[4]],UnitScale[#[[5]]],UnitScale[#[[6]]],#[[7]],#[[8]],#[[9]]}&,composedStorageValues],
-								{"Total","","","","","","","",Total[composedStorageValues[[All,-1]]]}
+								composedStorageValues,
+								{"Total","","","","","","","","","","",Total[composedStorageValues[[All,-1]]]}
 							]
 						],
-						TableHeadings->{None,{"DateLastUsed","Object","Source","Storage Condition","Volume","Time in Storage","Price","Discount","Charge"}},
+						TableHeadings->{None,{"Date Last Used","Notebook", "Site", "Protocol", "Material", "Storage Condition","Capacity","Time in Storage","Value Rate","Value","Charge Rate", "Charge"}},
 						Title->"Storage",
 						UnitForm->False,
 						Round->0.01
@@ -2150,8 +2284,10 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 		{"Stocking",totalStockingCharge},
 		{"Shipping",totalShippingCharge},
 		{"Operator Time",totalOperatorCharge},
-		{"Instrument Time",totalInstrumentCharge},
+		{"Instrument Time",totalInstrumentCharge}
+		(*,
 		{"Constellation Storage",composedConstellationStorage}
+		*)
 	};
 
 
@@ -2164,10 +2300,11 @@ generateBillUpdates[currentBillPacket:(PacketP[Object[Bill]]|Null),
 		Association[
 			Object->Lookup[currentBillPacket,Object],
 
-			(* update the pricing, Null if needed *)
+			(* We currently do not charge user anything for constellation, but we can keep this comment for future checking.
 			ConstellationStorage->composedConstellationStorage,
 			ConstellationUsage->composedConstellationObjects,
-
+			*)
+			(* update the pricing, Null if needed *)
 			Replace[MaterialPurchases]->composedMaterialValues/.(x:ObjectP[]:>Link[x]),
 			Replace[ExperimentsCharged]->composedProtocolValues/.(x:ObjectP[]:>Link[x]),
 			Replace[OperatorTimeCharges]->composedOperatorValues/.(x:ObjectP[]:>Link[x]),
@@ -2360,6 +2497,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 		dateCompleted
 	}=rawDownloadData[[1;;3]];
 
+	(* we do not really charge for constellation, so constellationCharge is Null since we do not populate ConstellationStorage anymore *)
 	constellationCharge=rawDownloadData[[14]];
 
 	(* reformat the data - remove Link and use ObjectToString *)
@@ -2385,19 +2523,19 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 
 			(* adding Notebook as a last column to the data if data does not have it already*)
 			operatorTimeChargesNb=Map[
-				Flatten[{#, (#[[2]] /. notebookRules)}]&,
+				Flatten[{#, (#[[3]] /. notebookRules)}]&,
 				noLinksNotebooks[[1]]
 			];
 			instrumentTimeChargesNb=Map[
-				Flatten[{#, (#[[2]] /. notebookRules)}]&,
+				Flatten[{#, (#[[4]] /. notebookRules)}]&,
 				noLinksNotebooks[[2]]
 			];
 			cleanUpChargesNb=Map[
-				Flatten[{#, (#[[3]] /. notebookRules)}]&,
+				Flatten[{#, (#[[4]] /. notebookRules)}]&,
 				noLinksNotebooks[[3]]
 			];
 			stockingChargesNb=Map[
-				Flatten[{#, (#[[3]] /. notebookRules)}]&,
+				Flatten[{#, (#[[2]] /. notebookRules)}]&,
 				noLinksNotebooks[[4]]
 			];
 			wasteDisposalChargesNb=Map[
@@ -2405,11 +2543,11 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				noLinksNotebooks[[5]]
 			];
 			storageChargesNb=Map[
-				Flatten[{#, (#[[2]] /. notebookRules)}]&,
+				Flatten[{#, (#[[4]] /. notebookRules)}]&,
 				noLinksNotebooks[[6]]
 			];
 			shippingChargesNb=Map[
-				Flatten[{#, (#[[2]] /. notebookRules)}]&,
+				Flatten[{#, (#[[3]] /. notebookRules)}]&,
 				noLinksNotebooks[[7]]
 			];
 			certificationChargesNb=noLinksNotebooks[[8]];
@@ -2455,13 +2593,13 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 	objectModelMap=Module[
 		{allObject, allModels, allObjectsStrings},
 
-		(* all Objects for Instruments and Containers *)
-		allObjectsStrings=Flatten[{instrumentTimeCharges[[All, 3]], storageCharges[[All, 2]]}];
+		(* all Objects for Containers *)
+		allObjectsStrings=Flatten[storageCharges[[All, 5]]];
 
 		(* convert all strings to expressions *)
 		allObject=If[MatchQ[#, _String], ToExpression[#], #]& /@ allObjectsStrings;
 
-		(* models for the container and Instruments *)
+		(* models for the container *)
 		allModels=Flatten[Download[allObject, Model[Object]]];
 		ClearDownload[];
 
@@ -2481,16 +2619,16 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Protocol",
 				If[notebookQ, "Notebook", Nothing],
 				"Operator Time (Hours)",
-				"Discounted Time (Hours)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
 					DateString[#[[1]]],
-					#[[2]],
+					#[[3]],
 					If[notebookQ, #[[-1]], Nothing],
-					N@Unitless[UnitConvert[#[[4]], "Hours"]],
 					N@Unitless[UnitConvert[#[[5]], "Hours"]],
-					N@Unitless[#[[6]]]
+					N@Unitless[#[[7]]],
+					N@Unitless[#[[9]]]
 				}&,
 				operatorTimeCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
@@ -2509,18 +2647,18 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Instrument",
 				"Instrument Tier",
 				"Instrument Time (Hours)",
-				"Discounted Time (Hours)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
 					DateString[#[[1]]],
-					#[[2]],
-					If[notebookQ, #[[-1]], Nothing],
-					#[[3]],
 					#[[4]],
-					N@Unitless[UnitConvert[#[[5]], "Hours"]],
-					N@Unitless[UnitConvert[#[[6]], "Hours"]],
-					N@Unitless[#[[7]]]
+					If[notebookQ, #[[-1]], Nothing],
+					#[[5]],
+					#[[6]],
+					N@Unitless[UnitConvert[#[[7]], "Hours"]],
+					N@Unitless[#[[9]]],
+					N@Unitless[#[[11]]]
 				}&,
 				instrumentTimeCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
@@ -2529,6 +2667,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];
 
+	(* We should have already collapsed instrument
 	instrumentTimeChargesCollapsedFormatted=If[MatchQ[instrumentTimeCharges, {}],
 		{"No Data in the Object for this type of Charges"},
 		Module[
@@ -2579,7 +2718,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 					collapsedNamedData]
 			]]
 	];
-
+	*)
 	cleanUpChargesFormatted=If[MatchQ[cleanUpCharges, {}],
 		{"No Data in the Object for this type of Charges"},
 		Module[{titles, data, gatheredData, subtotals, total},
@@ -2589,17 +2728,17 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				If[notebookQ, "Notebook", Nothing],
 				"Associated Protocol/Maintenance",
 				"Cleaning Type",
-				"Price (USD)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
 					DateString[#[[1]]],
-					#[[2]],
+					#[[5]],
 					If[notebookQ, #[[-1]], Nothing],
-					#[[3]],
 					#[[4]],
-					N@Unitless[#[[5]]],
-					N@Unitless[#[[6]]]
+					#[[6]],
+					N@Unitless[#[[7]]],
+					N@Unitless[#[[8]]]
 				}&,
 				cleanUpCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
@@ -2617,23 +2756,21 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				If[notebookQ, "Notebook", Nothing],
 				"Stocking Protocol/Maintenance",
 				"Storage Condition",
-				"Price (USD)",
-				"Discount (USD)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
-					#[[1]],
-					N@Unitless[UnitConvert[#[[2]], "cm^3"]],
-					If[notebookQ, #[[-1]], Nothing],
-					#[[3]],
 					#[[4]],
-					N@Unitless[#[[5]]],
-					N@Unitless[#[[6]]],
-					N@Unitless[#[[7]]]
+					N@Unitless[UnitConvert[#[[7]], "cm^3"]],
+					If[notebookQ, #[[-1]], Nothing],
+					#[[2]],
+					#[[6]],
+					N@Unitless[#[[9]]],
+					N@Unitless[#[[11]]]
 				}&,
 				stockingCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
-			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", "", Round[Unitless[Total[#[[All, 6]]]], 0.01], Round[Unitless[Total[#[[All, 7]]]], 0.01], Round[Unitless[Total[#[[All, 8]]]], 0.01]}&, gatheredData], {}];
+			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", "", Round[Unitless[Total[#[[All, 6]]]], 0.01], Round[Unitless[Total[#[[All, 7]]]], 0.01]}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];
@@ -2642,24 +2779,22 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 		{"No Data in the Object for this type of Charges"},
 		Module[{titles, data, gatheredData, subtotals, total},
 			titles={{
-				"Date Disposed",
 				"Associated Protocol",
 				If[notebookQ, "Notebook", Nothing],
 				"Waste Type",
-				"Price (USD)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
-					DateString[#[[1]]],
 					#[[2]],
 					If[notebookQ, #[[-1]], Nothing],
-					#[[3]],
-					N@Unitless[#[[4]]],
-					N@Unitless[#[[5]]]
+					#[[4]],
+					N@Unitless[#[[7]]],
+					N@Unitless[#[[9]]]
 				}&,
 				wasteDisposalCharges];
-			gatheredData=GatherBy[data, #[[3]]&];
-			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", Round[Unitless[Total[#[[All, 5]]]], 0.01], Round[Unitless[Total[#[[All, 6]]]], 0.01]}&, gatheredData], {}];
+			gatheredData=GatherBy[data, #[[2]]&];
+			subtotals=If[notebookQ, Map[Flatten@{"Total", #[[1, 2]], "", Round[Unitless[Total[#[[All, 4]]]], 0.01], Round[Unitless[Total[#[[All, 5]]]], 0.01]}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];
@@ -2671,29 +2806,27 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Date Last Used",
 				"Material",
 				If[notebookQ, "Notebook", Nothing],
-				"Origin",
+				"Protocol",
 				"Storage Condition",
 				"Capacity Taken (cm^3)",
 				"Storage Time (Hours)",
-				"Price (USD)",
-				"Discount (USD)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
 					DateString[#[[1]]],
-					#[[2]],
+					#[[5]],
 					If[notebookQ, #[[-1]], Nothing],
-					#[[3]],
 					#[[4]],
-					N@Unitless[UnitConvert[#[[5]], "cm^3"]],
-					N@Unitless[UnitConvert[#[[6]], "Hours"]],
-					N@Unitless[#[[7]]],
-					N@Unitless[#[[8]]],
-					N@Unitless[#[[9]]]
+					#[[6]],
+					N@Unitless[UnitConvert[#[[7]], "cm^3"]],
+					N@Unitless[UnitConvert[#[[8]], "Hours"]],
+					N@Unitless[#[[10]]],
+					N@Unitless[#[[12]]]
 				}&,
 				storageCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
-			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", "", "", "", Round[Unitless[Total[#[[All, 8]]]], 0.01], Round[Unitless[Total[#[[All, 9]]]], 0.01], Round[Unitless[Total[#[[All, 10]]]], 0.01]}&, gatheredData], {}];
+			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", "", "", "", Round[Unitless[Total[#[[All, 8]]]], 0.01], Round[Unitless[Total[#[[All, 9]]]], 0.01]}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];
@@ -2705,10 +2838,11 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 			{modelsData, groupedData, collapsedData, collapsedNamedData, fullData},
 
 			(* change instrument Objects to Models *)
-			modelsData=storageCharges[[All, 2]] /. (x_ :> Lookup[objectModelMap, x]);
+			modelsData=storageCharges[[All, 5]] /. (x_ :> Lookup[objectModelMap, x]);
 
 			(* reassemble the data *)
-			fullData=MapThread[Flatten[{#1, #2[[{4, 5, 6, 8}]], Last[#2]}]&, {modelsData, storageCharges}];
+			(* model name, storage condition, capacity, time, value, charge*)
+			fullData=MapThread[Flatten[{#1, #2[[{6, 7, 8, 10}]], Last[#2]}]&, {modelsData, storageCharges}];
 
 			(*collapse all the data based on the Instrument Model and filter data*)
 			groupedData=If[notebookQ,
@@ -2754,20 +2888,16 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Shipment",
 				If[notebookQ, "Notebook", Nothing],
 				"Shipment Weight (kg)",
-				"Price (USD)",
-				"Tax (USD)",
-				"Discount (USD)",
+				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
 				{
 					DateString[#[[1]]],
-					#[[2]],
+					#[[3]],
 					If[notebookQ, #[[-1]], Nothing],
-					N@Unitless[UnitConvert[#[[3]], "Kilograms"]],
-					N@Unitless[#[[4]]],
-					N@Unitless[#[[5]]],
-					N@Unitless[#[[6]]],
-					N@Unitless[#[[7]]]
+					N@Unitless[UnitConvert[#[[8]], "Kilograms"]],
+					N@Unitless[#[[9]]],
+					N@Unitless[#[[10]]]
 				}&,
 				shippingCharges];
 			gatheredData=GatherBy[data, #[[3]]&];
@@ -2777,9 +2907,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				#[[1, 3]],
 				"",
 				Round[Unitless[Total[#[[All, 5]]]], 0.01],
-				Round[Unitless[Total[#[[All, 6]]]], 0.01],
-				Round[Unitless[Total[#[[All, 7]]]], 0.01],
-				Round[Unitless[Total[#[[All, 8]]]], 0.01]
+				Round[Unitless[Total[#[[All, 6]]]], 0.01]
 			}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
@@ -2810,7 +2938,6 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 		{"No Data in the Object for this type of Charges"},
 		Module[{titles, data, gatheredData, subtotals, total},
 			titles={{
-				"Date Purchased",
 				"Materials",
 				"Protocol/Transaction",
 				"Notebook",
@@ -2818,23 +2945,22 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Units",
 				"Price Per Unit",
 				"Price Per Unit Units",
-				"Total Cost (USD)"}};
+				"Total Charge (USD)"}};
 			data=Map[
 				{
-					DateString[#[[1]]],
-					#[[2]],
-					#[[3]],
 					#[[4]],
+					#[[2]],
+					#[[1]],
 					N@Unitless[UnitScale[#[[5]]]],
 					StringReplace[ToString@Units[UnitScale[#[[5]]]], {"1 " -> "", "US dollar" -> "USD", " per " -> "/", "unity" -> ""}],
 					N@Unitless[#[[6]]],
 					StringReplace[ToString@Units[#[[6]]], {"1 " -> "", "US dollar" -> "USD", " per " -> "/"}],
-					N@Unitless[#[[7]]]
+					N@Unitless[#[[9]]]
 				}&,
 				materialPurchases
 			];
-			gatheredData=GatherBy[data, #[[4]]&];
-			subtotals=If[notebookQ, Map[Flatten@{"Total", "", "", #[[1, 4]], "", "", "", "", Round[Unitless[Total[#[[All, 9]]]], 0.01]}&, gatheredData], {}];
+			gatheredData=GatherBy[data, #[[3]]&];
+			subtotals=If[notebookQ, Map[Flatten@{"Total", "", #[[1, 3]], "", "", "", "", Round[Unitless[Total[#[[All, 8]]]], 0.01]}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];
@@ -2846,10 +2972,11 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 			{modelsData, groupedData, collapsedData, collapsedNamedData, fullData},
 
 			(* change instrument Objects to Models *)
-			modelsData=materialPurchases[[All, 2]];
+			modelsData=materialPurchases[[All, 4]];
 
 			(* reassemble the data *)
-			fullData=MapThread[Flatten[{#1, #2[[{5, 7}]], #2[[4]]}]&, {modelsData, materialPurchases}];
+			(* material, amount, charge, notebook *)
+			fullData=MapThread[Flatten[{#1, #2[[{5, 9}]], #2[[1]]}]&, {modelsData, materialPurchases}];
 
 			(*collapse all the data based on the Instrument Model and filter data*)
 			groupedData=If[notebookQ,
@@ -2859,7 +2986,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 			(* collapse all the data based on the Storage Condition and container Model *)
 			collapsedData=Map[{
 				#[[1, 1]], (* material *)
-				Total[#[[All, 2]]] / 2, (* total amount purchased - divide by 2 since the tax has been previously broken out as a line item *)
+				Total[#[[All, 2]]], (* total amount purchased - we now do not have tax listed in column --only summed up at the very end in table *)
 				Total[#[[All, 3]]], (* total charge *)
 				If[notebookQ, #[[1, -1]], Nothing] (* notebook *)
 			}&, groupedData];
@@ -2959,7 +3086,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 	Export[FileNameJoin[{filePath, ToString[organizationName]<>DateString[If[NullQ[dateCompleted], (Now - Quantity[1, "Days"]), (dateCompleted - Quantity[1, "Days"])], {"Year", "MonthName", "Day"}]<>".xlsx"}],
 		"Sheets" -> {
 			"Bill overview" -> summaryPage,
-			"Collapsed Instrument Time" -> instrumentTimeChargesCollapsedFormatted,
+			"Collapsed Instrument Time" -> instrumentTimeChargesFormatted,
 			"Collapsed Materials" -> materialsChargesCollapsedFormatted,
 			"Stocking" -> stockingChargesFormatted,
 			"Collapsed Storage" -> storageChargesCollapsedFormatted,
@@ -3111,7 +3238,7 @@ billPricingMatchQ[bills:{ObjectP[Object[Bill]] ..}, ops:OptionsPattern[billPrici
 			{billValues, pricingValues, field, status},
 
 			(* do a quick up front check to look if everything is the same, if not then check each element *)
-			(*also dont check if there is an non open bill since it wont make sense to check that anyway*)
+			(*also don't check if there is an non open bill since it wont make sense to check that anyway*)
 			If[Or[MatchQ[billValues, pricingValues], MatchQ[status, Except[Open]]],
 				{},
 				PickList[field, MapThread[MatchQ[#1, #2] &, {billValues, pricingValues}], False]

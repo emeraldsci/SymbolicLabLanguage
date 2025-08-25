@@ -38,17 +38,33 @@ DefineUsage[PlotFluorescenceThermodynamics,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotFluorescenceThermodynamics[protocol]", "plot"},
+				Description -> "creates a 'plot' of the cooling and melting curves found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing fluorescence thermodynamics data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FluorescenceThermodynamics]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the fluorescence thermodynamics protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},		
 		SeeAlso -> {
 			"PlotFluorescenceIntensity",
 			"PlotFluorescenceKinetics"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"hayley",
-			"brad"			
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "hayley", "brad"},
 		Preview->True
 	}
 ];

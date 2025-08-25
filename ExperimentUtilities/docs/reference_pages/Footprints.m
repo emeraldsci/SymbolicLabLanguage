@@ -85,7 +85,7 @@ DefineUsage[CompatibleFootprintQ,
                             Description->"The sample that we want to put on 'myLocation'.",
                             Widget->Widget[
                                 Type->Expression,
-                                Pattern:>{ListableP[ObjectP[Object[Sample]]]},
+                                Pattern:>ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample], Model[Container]}]],
                                 Size->Line
                             ],
                             Expandable->False
@@ -107,7 +107,7 @@ DefineUsage[CompatibleFootprintQ,
             "UploadStorageCondition",
             "Upload"
         },
-        Author->{"waseem.vali", "malav.desai", "thomas", "wyatt"}
+        Author->{"xu.yi", "waseem.vali", "malav.desai", "thomas", "wyatt"}
     }];
 
 (* ::Subsection::Closed:: *)
@@ -144,5 +144,5 @@ DefineUsage[RackFinder,
         SeeAlso->{
             "CompatibleFootprintQ"
         },
-        Author->{"waseem.vali", "malav.desai", "steven"}
+        Author->{"xu.yi", "waseem.vali", "malav.desai", "steven"}
     }];

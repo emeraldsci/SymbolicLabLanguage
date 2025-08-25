@@ -69,6 +69,14 @@ DefineObjectType[Model[Maintenance, Handwash], {
 			Description -> "Instrument used to blow dry the interior of the washed containers by spraying them with a stream of nitrogen gas.",
 			Category -> "General"
 		},
+		CuvetteWasherModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument],
+			Description -> "Instrument that are used during cleaning of used cuvettes.",
+			Category -> "General"
+		},
 		ThermoplasticWrapModel -> {
 			Format -> Single,
 			Class -> Link,

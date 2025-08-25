@@ -22,8 +22,5 @@ DefineUsage[PlotSanMateoCOVIDCases,
 			"EmeraldHistogram",
 			"EmeraldListLinePlot"
 		},
-		Author -> {
-			"kevin.hou",
-			"hayley"
-		}
+		Author -> {"dirk.schild", "kevin.hou", "hayley"}
 	}];

@@ -10,10 +10,18 @@ DefineObjectType[Object[Sensor, Vibration], {
   Cache->Session,
   Fields -> {
 
+    VibrationSensorType -> {
+      Format -> Single,
+      Class -> Expression,
+      Pattern :> VibrationSensorTypeP,
+      Description -> "The aspect of vibration being measured by this sensor - acceleration or velocity.",
+      Category -> "Sensor Information",
+      Abstract -> True
+    },
     MaxVibration -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MaxVibration]],
-      Pattern :> GreaterEqualP[0*Millimeter/Second],
+      Pattern :> GreaterEqualP[0*Millimeter/Second]|GreaterEqualP[0* Meter/Second^2],
       Description -> "Maximum vibration that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
@@ -21,7 +29,7 @@ DefineObjectType[Object[Sensor, Vibration], {
     MinVibration -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MinVibration]],
-      Pattern :> UnitsP[Millimeter/Second],
+      Pattern :> UnitsP[Millimeter/Second]|UnitsP[0* Meter/Second^2],
       Description -> "Minimum vibration that can be reliably read by this model of sensor.",
       Category -> "Sensor Information",
       Abstract -> True
@@ -29,7 +37,7 @@ DefineObjectType[Object[Sensor, Vibration], {
     Resolution -> {
       Format -> Computable,
       Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],Resolution]],
-      Pattern :> GreaterP[0*Millimeter/Second],
+      Pattern :> GreaterEqualP[0*Millimeter/Second]|GreaterEqualP[0* Meter/Second^2],
       Description -> "This is the smallest change in vibration that corresponds to a change in displayed value. Also known as readability, increment, scale division.",
       Category -> "Sensor Information"
     },

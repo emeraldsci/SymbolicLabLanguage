@@ -78,7 +78,7 @@ DefineUsage[EmeraldListPointPlot3D,
 		"PlotObject"
 	},
 	Author -> {
-		"amir.saadat",
+		"scicomp",
 		"brad",
 		"hayley"
 	},

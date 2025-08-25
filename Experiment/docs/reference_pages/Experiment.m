@@ -18,11 +18,12 @@ DefineUsage[CompatibleMaterialsQ,
 		"Compares the IncompatibleMaterials field of the samples' models with the WettedMaterials field in the instrument or part. Any overlap is interpreted as a chemical incompatibility.",
 		"Chemical/material incompatibilities are based on a D rating (Severe Effect: Not recommended for any use) from this database: www.coleparmer.com/Chemical-Resistance",
 		"For a chemical model, a list of incompatible materials can be found in the IncompatibleMaterials field.",
-		"For an instruemnt or part model, a list of wetted materials can be found in the WettedMaterials field.",
-		"If no information about compatibility is available for a given chemical, this function will assume that the chemical is universally compatible."
+		"For an instrument or part model, a list of wetted materials can be found in the WettedMaterials field.",
+		"If no information about compatibility is available for a given chemical, this function will assume that the chemical is universally compatible.",
+		"Note that if multiple instruments and multiple samples are provided, an all vs all comparison is performed; the inputs are NOT index matching."
 	},
 	Input :> {
-		{"instrument or part", ObjectP[{Model[Instrument],Object[Instrument],Object[Part], Model[Part]}], "The instrument/part or instrument/part model for which to check chemical compatibility of wetted materials with the samples."},
+		{"instrument or part", ListableP[ObjectP[{Model[Instrument],Object[Instrument],Object[Part], Model[Part]}]], "The instrument/part or instrument/part model for which to check chemical compatibility of wetted materials with the samples."},
 		{"Samples", ListableP[ObjectP[{Object[Sample],Model[Sample]}]],"The samples and models for which to check chemical compatibiliy with the wetted materials of the instrument."}
 	},
 	Output :> {
@@ -31,7 +32,7 @@ DefineUsage[CompatibleMaterialsQ,
 	Sync -> Automatic,
 	SeeAlso -> {
 		"ExperimentStockSolution",
-		"ExperimentSampleManipulation"
+		"ExperimentSamplePreparation"
 	},
 	Author -> {"hayley", "mohamad.zandian"}
 }];

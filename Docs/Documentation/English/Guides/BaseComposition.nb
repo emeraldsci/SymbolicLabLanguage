@@ -1,3 +1,298 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:004b5675394b2a4bc30119631dfb00ac8f225ffd7103b1d128fca0402bad7242
-size 11593
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     11095,        288]
+NotebookOptionsPosition[      8140,        227]
+NotebookOutlinePosition[      9550,        263]
+CellTagsIndexPosition[      9507,        260]
+WindowTitle->Base Composition
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "219152fb-3a95-47dc-95c4-51acef36273c"]
+        }],ExpressionUUID->"398785b5-7438-4ae4-b462-4859468ee7be"],
+        StripOnInput->False], {"\<\"FractionAT\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionAT"], "\<\"FractionAU\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionAU"], "\<\"FractionGC\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionGC"], "\<\"FractionMono\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionMono"], "\<\"FractionPurine\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionPurine"], \
+"\<\"FractionPyrimidine\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/FractionPyrimidine"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "a3aca4ad-0122-4fa9-a0f2-e880882d29e9"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "0313f7b3-2521-44b4-8be4-e5559f1a1c05"]
+        }],ExpressionUUID->"ec8919cb-978e-43cf-a186-2b80df9ca660"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "7b7ea32b-87e7-4c31-8d4e-e970c3156c71"]
+    }], "AnchorBar",ExpressionUUID->"07d4aa68-671a-4dd9-9c5d-a8189b23ae8c"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"8e8dec90-9c0e-4f96-8a5c-b2ca227e39cd"],
+
+Cell["Base Composition", "GuideTitle",
+ CellID->14846264,ExpressionUUID->"af90e278-d20f-4097-a067-edec2426356d"],
+
+Cell["\<\
+Functions for calculating the fractional composition of bases in nucleic \
+acids sequences and strands.\
+\>", "GuideAbstract",
+ CellID->375351284,ExpressionUUID->"56febcd2-e6fe-467f-aa29-67161d4b1c6d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->333827783,ExpressionUUID->"51d7e4ea-41db-48fa-872b-c650f5961d3f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionAT"]],"paclet:NucleicAcids/ref/FractionAT"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "832988e5-330f-44c1-8650-7b11226c2ba8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of Adenosine and Thymine in a given sequence or \
+strand."
+}], "GuideText",
+ CellID->600922352,ExpressionUUID->"75c3b06a-0bc0-481c-b97a-891abeacb849"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionAU"]],"paclet:NucleicAcids/ref/FractionAU"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3337ea9c-7f5a-4665-a3d4-b8b53f8d44cf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of Adenosine and Uracil in a given sequence or strand."
+}], "GuideText",
+ CellID->31774853,ExpressionUUID->"6f375cc4-4634-46c1-b763-8540ceb6d9db"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionGC"]],"paclet:NucleicAcids/ref/FractionGC"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d4d18b4-0576-494b-9f25-d2dc0bc8d050"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of Guanine and Cytosine in a given sequence or strand."
+}], "GuideText",
+ CellID->44668142,ExpressionUUID->"14282ffa-e5b9-4e71-910e-0d4be11d1073"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionMono"]],"paclet:NucleicAcids/ref/FractionMono"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5ef89871-f7b5-4918-b609-4e3dd50ecb0b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of a given monomer in the provided sequence or strand."
+}], "GuideText",
+ CellID->812942713,ExpressionUUID->"185f5e7b-d161-4ea7-bc44-a0e4cc1f124f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionPurine"]],"paclet:NucleicAcids/ref/FractionPurine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "49f000f9-8934-4c3d-8033-9193a173e726"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of purine bases (Adenosine and Guanine) in the \
+provided sequence or strand."
+}], "GuideText",
+ CellID->736777971,ExpressionUUID->"e1e25a10-6446-4e46-a2e7-69c5af22182e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FractionPyrimidine"]],
+    "paclet:NucleicAcids/ref/FractionPyrimidine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7e8db382-26ec-459c-bd24-98b32ec39026"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the fraction of pyrimidine bases (Thymine and Cytosine) in the \
+provided sequence or strand."
+}], "GuideText",
+ CellID->1360961,ExpressionUUID->"3c6504d5-97f7-43d9-8a89-ffffac0495dd"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->210719951,ExpressionUUID->"c272d951-08c9-455a-8aa3-8c7b1f637d97"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"9b23a785-89f3-48b3-b63e-2af2b014ed24"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->84449078,ExpressionUUID->"76db64c1-ea86-4a4a-b540-316313638acd"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->42498841,ExpressionUUID->"43935a73-1616-47b8-ae8f-471c20cbabfd"],
+
+Cell["", "FooterCell",
+ CellID->736643706,ExpressionUUID->"f507d252-0723-42ca-b774-441553e56df8"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"Base Composition",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:24:42", "context" -> "Docs`", 
+    "keywords" -> {
+     "FractionAT", "FractionAU", "FractionGC", "FractionMono", 
+      "FractionPurine", "FractionPyrimidine"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Functions for calculating the fractional composition of bases in nucleic \
+acids sequences and strands.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "Base Composition", "title" -> "Base Composition", 
+    "type" -> "Guide", "uri" -> "Docs/guide/BaseComposition", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 3467, 87, 58, "AnchorBarGrid",ExpressionUUID->"8e8dec90-9c0e-4f96-8a5c-b2ca227e39cd",
+ CellID->1],
+Cell[4058, 110, 112, 1, 50, "GuideTitle",ExpressionUUID->"af90e278-d20f-4097-a067-edec2426356d",
+ CellID->14846264],
+Cell[4173, 113, 211, 4, 31, "GuideAbstract",ExpressionUUID->"56febcd2-e6fe-467f-aa29-67161d4b1c6d",
+ CellID->375351284],
+Cell[4387, 119, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"51d7e4ea-41db-48fa-872b-c650f5961d3f",
+ CellID->333827783],
+Cell[4503, 122, 474, 12, 35, "GuideText",ExpressionUUID->"75c3b06a-0bc0-481c-b97a-891abeacb849",
+ CellID->600922352],
+Cell[4980, 136, 470, 11, 35, "GuideText",ExpressionUUID->"6f375cc4-4634-46c1-b763-8540ceb6d9db",
+ CellID->31774853],
+Cell[5453, 149, 470, 11, 35, "GuideText",ExpressionUUID->"14282ffa-e5b9-4e71-910e-0d4be11d1073",
+ CellID->44668142],
+Cell[5926, 162, 475, 11, 35, "GuideText",ExpressionUUID->"185f5e7b-d161-4ea7-bc44-a0e4cc1f124f",
+ CellID->812942713],
+Cell[6404, 175, 502, 12, 58, "GuideText",ExpressionUUID->"e1e25a10-6446-4e46-a2e7-69c5af22182e",
+ CellID->736777971],
+Cell[6909, 189, 516, 13, 58, "GuideText",ExpressionUUID->"3c6504d5-97f7-43d9-8a89-ffffac0495dd",
+ CellID->1360961],
+Cell[7428, 204, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"c272d951-08c9-455a-8aa3-8c7b1f637d97",
+ CellID->210719951],
+Cell[7537, 207, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"76db64c1-ea86-4a4a-b540-316313638acd",
+ CellID->84449078],
+Cell[7931, 221, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"43935a73-1616-47b8-ae8f-471c20cbabfd",
+ CellID->42498841],
+Cell[8039, 224, 97, 1, 41, "FooterCell",ExpressionUUID->"f507d252-0723-42ca-b774-441553e56df8",
+ CellID->736643706]
+}
+]
+*)
+
+(* End of internal cache information *)
+

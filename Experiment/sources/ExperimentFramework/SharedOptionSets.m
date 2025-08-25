@@ -25,12 +25,28 @@ objectSpecificationWidgetPattern:=objectSpecificationWidgetPattern=Alternatives[
 			Model[Container,Vessel],
 			Model[Container,ReactionVessel],
 			Model[Container,Cuvette]
-		}]
+		}],
+		OpenPaths -> {
+			{
+				Object[Catalog, "Root"],
+				"Materials"
+			},
+			{
+				Object[Catalog, "Root"],
+				"Containers"
+			}
+		}
 	],
 	"Position" -> {
 		"Container" -> Widget[
 			Type -> Object,
-			Pattern :> ObjectP[{Object[Container],Model[Container]}]
+			Pattern :> ObjectP[{Object[Container],Model[Container]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Containers"
+				}
+			}
 		],
 		"Well" -> Widget[
 			Type -> String,
@@ -54,7 +70,14 @@ pipettingParameterWidgets:=pipettingParameterWidgets={
 			Type -> Object,
 			Pattern :> ObjectP[Model[Item,Tips]],
 			PatternTooltip -> "The tip model to use to transfer liquid in the manipulation.",
-			PreparedContainer -> False
+			PreparedContainer -> False,
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Labware",
+					"Pipette Tips"
+				}
+			}
 		]
 	],
 	Optional[TipSize] -> Widget[
@@ -236,7 +259,13 @@ sampleManipulationWidget=Adder[Widget[
 											Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
 											PatternTooltip -> "The sample or model object whose referenced name is defined by this Define primitive.",
 											PreparedSample -> False,
-											PreparedContainer -> False
+											PreparedContainer -> False,
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Materials"
+												}
+											}
 										],
 										"Position" -> {
 											"Container" -> Widget[
@@ -244,7 +273,13 @@ sampleManipulationWidget=Adder[Widget[
 												Pattern :> ObjectP[{Object[Container],Model[Container]}],
 												PatternTooltip -> "The container in a {container, well} position tuple which is referenced by the Name in this Define primitive.",
 												PreparedSample -> False,
-												PreparedContainer -> False
+												PreparedContainer -> False,
+												OpenPaths -> {
+													{
+														Object[Catalog, "Root"],
+														"Containers"
+													}
+												}
 											],
 											"Well" -> Widget[
 												Type -> String,
@@ -259,7 +294,13 @@ sampleManipulationWidget=Adder[Widget[
 										Pattern :> ObjectP[{Object[Container],Model[Container]}],
 										PatternTooltip -> "The container object whose reference name is defined by this Define primitive.",
 										PreparedSample -> False,
-										PreparedContainer -> False
+										PreparedContainer -> False,
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Containers"
+											}
+										}
 									],
 									Optional[Well] -> Widget[
 										Type -> String,
@@ -278,7 +319,13 @@ sampleManipulationWidget=Adder[Widget[
 										Pattern :> ObjectP[{Model[Sample]}],
 										PatternTooltip -> "If a new sample will be created in the defined position, this option specifies the model of the created sample.",
 										PreparedSample -> False,
-										PreparedContainer -> False
+										PreparedContainer -> False,
+										OpenPaths -> {
+											{
+												Object[Catalog, "Root"],
+												"Materials"
+											}
+										}
 									],
 									Optional[StorageCondition] -> Alternatives[
 										"Storage Type" -> Widget[
@@ -291,7 +338,13 @@ sampleManipulationWidget=Adder[Widget[
 											Pattern :> ObjectP[Model[StorageCondition]],
 											PatternTooltip -> "If a new sample will be created in the defined position, this option specifies the model representing the storage condition of the created sample.",
 											PreparedSample -> False,
-											PreparedContainer -> False
+											PreparedContainer -> False,
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Storage Conditions"
+												}
+											}
 										]
 									],
 									Optional[ExpirationDate] -> Widget[
@@ -300,7 +353,7 @@ sampleManipulationWidget=Adder[Widget[
 										TimeSelector -> True,
 										PatternTooltip -> "If a new sample will be created in the defined position, this option specifies the expiration date of the created sample."
 									],
-									Optional[TransportWarmed] -> Widget[
+									Optional[TransportTemperature] -> Widget[
 										Type -> Quantity,
 										Pattern :> GreaterP[0 Kelvin],
 										Units -> Celsius,
@@ -351,10 +404,16 @@ sampleManipulationWidget=Adder[Widget[
 											Pattern :> ObjectP[Model[StorageCondition]],
 											PatternTooltip -> "If a new sample will be created in the defined position, a new model will be created with this model representing the storage condition of the created sample.",
 											PreparedSample -> False,
-											PreparedContainer -> False
+											PreparedContainer -> False,
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Storage Conditions"
+												}
+											}
 										]
 									],
-									Optional[DefaultTransportWarmed] -> Widget[
+									Optional[DefaultTransportTemperature] -> Widget[
 										Type -> Quantity,
 										Pattern :> GreaterP[0 Kelvin],
 										Units -> Celsius,
@@ -447,7 +506,17 @@ sampleManipulationWidget=Adder[Widget[
 										Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 									],
 									Optional[IncubationInstrument] -> Alternatives[
-										Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+										Widget[
+											Type -> Object,
+											Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Instruments",
+													"Mixing Devices"
+												}
+											}
+										],
 										Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 									],
 									Optional[IncubationTemperature] -> Widget[Type -> Quantity,Pattern :> GreaterEqualP[4 Celsius],Units -> Celsius],
@@ -648,12 +717,32 @@ sampleManipulationWidget=Adder[Widget[
 									Optional[Instrument] -> Alternatives[
 										Adder[
 											Alternatives[
-												Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+												Widget[
+													Type -> Object,
+													Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+													OpenPaths -> {
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Mixing Devices"
+														}
+													}
+												],
 												Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 											]
 										],
 										Alternatives[
-											Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+											Widget[
+												Type -> Object,
+												Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+												OpenPaths -> {
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Mixing Devices"
+													}
+												}
+											],
 											Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 										]
 									],
@@ -794,12 +883,32 @@ sampleManipulationWidget=Adder[Widget[
 									Optional[Instrument] -> Alternatives[
 										Adder[
 											Alternatives[
-												Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+												Widget[
+													Type -> Object,
+													Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+													OpenPaths -> {
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Mixing Devices"
+														}
+													}
+												],
 												Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 											]
 										],
 										Alternatives[
-											Widget[Type -> Object,Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]],
+											Widget[
+												Type -> Object,
+												Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+												OpenPaths -> {
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Mixing Devices"
+													}
+												}
+											],
 											Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 										]
 									],
@@ -888,7 +997,14 @@ sampleManipulationWidget=Adder[Widget[
 									Optional[CollectionContainer] -> Alternatives[
 										"Object" -> Widget[
 											Type -> Object,
-											Pattern :> ObjectP[{Object[Container, Plate], Model[Container, Plate]}]
+											Pattern :> ObjectP[{Object[Container, Plate], Model[Container, Plate]}],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Containers",
+													"Plates"
+												}
+											}
 										],
 										"Defined Reference" -> Widget[
 											Type -> String,
@@ -906,7 +1022,19 @@ sampleManipulationWidget=Adder[Widget[
 												Object[Container, Vessel, Filter],
 												Model[Item,Filter],
 												Object[Item,Filter]
-											}]
+											}],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Containers",
+													"Filters"
+												},
+												{
+													Object[Catalog, "Root"],
+													"Labware",
+													"Filters"
+												}
+											}
 										],
 										"Defined Reference" -> Widget[
 											Type -> String,
@@ -942,7 +1070,14 @@ sampleManipulationWidget=Adder[Widget[
 									Optional[Instrument] -> Alternatives[
 										Widget[
 											Type -> Object,
-											Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+											Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Instruments",
+													"Mixing Devices"
+												}
+											}
 										],
 										Widget[Type -> Enumeration,Pattern :> Alternatives[Null,Automatic]]
 									],
@@ -952,7 +1087,14 @@ sampleManipulationWidget=Adder[Widget[
 											Pattern :> ObjectP[{
 												Model[Instrument,FilterHousing],
 												Object[Instrument,FilterHousing]
-											}]
+											}],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Instruments",
+													"Dead-End Filtering Devices"
+												}
+											}
 										],
 										"Automatic" -> Widget[
 											Type -> Enumeration,
@@ -965,7 +1107,14 @@ sampleManipulationWidget=Adder[Widget[
 											Pattern :> ObjectP[{
 												Model[Container,Syringe],
 												Object[Container,Syringe]
-											}]
+											}],
+											OpenPaths -> {
+												{
+													Object[Catalog, "Root"],
+													"Containers",
+													"Syringes"
+												}
+											}
 										],
 										"Automatic" -> Widget[
 											Type -> Enumeration,
@@ -1034,12 +1183,70 @@ sampleManipulationWidget=Adder[Widget[
 									Optional[Instrument] -> Alternatives[
 										Adder[
 											Alternatives[
-												Widget[Type -> Object,Pattern :> ObjectP[{Object[Instrument,Centrifuge],Model[Instrument,Centrifuge]}]],
+												Widget[
+													Type -> Object,
+													Pattern :> ObjectP[{Object[Instrument,Centrifuge],Model[Instrument,Centrifuge]}],
+													OpenPaths -> {
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Centrifugation",
+															"Centrifuges"
+														},
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Centrifugation",
+															"Microcentrifuges"
+														},
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Centrifugation",
+															"Robotic Compatible Microcentrifuges"
+														},
+														{
+															Object[Catalog, "Root"],
+															"Instruments",
+															"Centrifugation",
+															"Ultracentrifuges"
+														}
+													}
+												],
 												Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 											]
 										],
 										Alternatives[
-											Widget[Type -> Object,Pattern :> ObjectP[{Object[Instrument,Centrifuge],Model[Instrument,Centrifuge]}]],
+											Widget[
+												Type -> Object,
+												Pattern :> ObjectP[{Object[Instrument,Centrifuge],Model[Instrument,Centrifuge]}],
+												OpenPaths -> {
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Centrifugation",
+														"Centrifuges"
+													},
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Centrifugation",
+														"Microcentrifuges"
+													},
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Centrifugation",
+														"Robotic Compatible Microcentrifuges"
+													},
+													{
+														Object[Catalog, "Root"],
+														"Instruments",
+														"Centrifugation",
+														"Ultracentrifuges"
+													}
+												}
+											],
 											Widget[Type -> Enumeration,Pattern :> Alternatives[Null]]
 										]
 									],
@@ -1122,7 +1329,7 @@ DefineOptionSet[ParentProtocolOption:>{
 		Description -> "The protocol which is directly generating this experiment during execution.",
 		AllowNull -> True,
 		Category -> "Hidden",
-		Widget -> Widget[Type->Object,Pattern:>ObjectP[ProtocolTypes[]],ObjectTypes->ProtocolTypes[]]
+		Widget -> Widget[Type->Object,Pattern:>ObjectP[ProtocolTypes[Output -> Short]],ObjectTypes->ProtocolTypes[Output -> Short]]
 	}
 }];
 
@@ -1311,6 +1518,20 @@ DefineOptionSet[
 	}
 ];
 
+(*CanaryBranchOption*)
+DefineOptionSet[
+	CanaryBranchOption :> {
+		{
+			OptionName -> CanaryBranch,
+			Default -> Null,
+			AllowNull -> True,
+			Widget -> Widget[Type -> String, Pattern :> _?StringQ, Size -> Word],
+			Description -> "Specifies the canary branch from which the protocol should be run, if any.",
+			Category -> "Hidden"
+		}
+	}
+];
+
 
 (* ::Subsubsection::Closed:: *)
 (*ResolverOutputOption*)
@@ -1386,6 +1607,7 @@ DefineOptionSet[
 	}
 ];
 
+
 (* ::Subsubsection::Closed:: *)
 (*ProtocolOptions*)
 
@@ -1408,7 +1630,8 @@ DefineOptionSet[
 		PriorityOption,
 		StartDateOption,
 		QueuePositionOption,
-		SiteOption
+		SiteOption,
+		CanaryBranchOption
 	}
 ];
 
@@ -1551,7 +1774,14 @@ DefineOptionSet[
 				AllowNull -> True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description -> "The instrument used to perform the Mix and/or Incubation, prior to starting the experiment.",
 				ResolutionDescription -> "Automatically resolves based on the options Mix, Temperature, MixType and container of the sample.",
@@ -1572,7 +1802,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Incubation",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -1588,7 +1828,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -1721,7 +1967,14 @@ DefineOptionSet[
 				AllowNull -> True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description -> "The instrument used to perform the Mix and/or Incubation, prior to starting the experiment.",
 				ResolutionDescription -> "Automatically resolves based on the options Mix, Temperature, MixType and container of the sample.",
@@ -1744,7 +1997,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Incubation",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -1760,7 +2023,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -1947,7 +2216,36 @@ DefineOptionSet[
 				OptionName -> CentrifugeInstrument,
 				Default->Automatic,
 				AllowNull -> True,
-				Widget->Widget[Type->Object, Pattern:>ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Ultracentrifuges"
+						}
+					}
+				],
 				Category -> "Preparatory Centrifugation",
 				Description->"The centrifuge that will be used to spin the provided samples prior to starting the experiment."
 			},
@@ -1988,7 +2286,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Centrifugation",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -2004,7 +2312,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2073,7 +2387,36 @@ DefineOptionSet[
 				OptionName -> CentrifugeInstrument,
 				Default->Automatic,
 				AllowNull -> True,
-				Widget->Widget[Type->Object, Pattern:>ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Instrument, Centrifuge], Object[Instrument, Centrifuge]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Ultracentrifuges"
+						}
+					}
+				],
 				Category -> "Preparatory Centrifugation",
 				Description->"The centrifuge that will be used to spin the provided samples prior to starting the experiment.",
 				NestedIndexMatching -> True
@@ -2133,7 +2476,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Centrifugation",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -2149,7 +2502,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2217,7 +2576,9 @@ DefineOptionSet[
 				Description -> "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment.",
 				AllowNull -> True,
 				Category -> "Sample Preparation",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[{
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
 						Model[Container, Plate, Filter], Object[Container, Plate, Filter],
 						Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
 						Model[Item,Filter], Object[Item,Filter]
@@ -2226,6 +2587,18 @@ DefineOptionSet[
 						Model[Container, Plate, Filter], Object[Container, Plate, Filter],
 						Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
 						Model[Item,Filter], Object[Item,Filter]
+					},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
 					}
 				]
 			},
@@ -2256,7 +2629,13 @@ DefineOptionSet[
 					Widget[
 						Type -> Object,
 						Pattern :> ObjectP[{Model[Container], Object[Container]}],
-						ObjectTypes -> {Model[Container], Object[Container]}
+						ObjectTypes -> {Model[Container], Object[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
 					],
 					{
 						"Index" -> Alternatives[
@@ -2273,7 +2652,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2319,18 +2704,52 @@ DefineOptionSet[
 				OptionName->FilterInstrument,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Instrument,FilterBlock],
-					Object[Instrument,FilterBlock],
-					Model[Instrument,PeristalticPump],
-					Object[Instrument,PeristalticPump],
-					Model[Instrument,VacuumPump],
-					Object[Instrument,VacuumPump],
-					Model[Instrument,Centrifuge],
-					Object[Instrument,Centrifuge],
-					Model[Instrument,SyringePump],
-					Object[Instrument,SyringePump]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Instrument,FilterBlock],
+						Object[Instrument,FilterBlock],
+						Model[Instrument,PeristalticPump],
+						Object[Instrument,PeristalticPump],
+						Model[Instrument,VacuumPump],
+						Object[Instrument,VacuumPump],
+						Model[Instrument,Centrifuge],
+						Object[Instrument,Centrifuge],
+						Model[Instrument,SyringePump],
+						Object[Instrument,SyringePump]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Pumps",
+							"Vacuum Pumps"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						}
+					}
+				],
 				Description->"The instrument that should be used to perform the filtration.",
 				ResolutionDescription->"Will automatically resolved to an instrument appropriate for the filtration type.",
 				Category->"Preparatory Filtering"
@@ -2342,11 +2761,26 @@ DefineOptionSet[
 				ResolutionDescription->"Will automatically resolve to a filter appropriate for the filtration type and instrument.",
 				AllowNull -> True,
 				Category -> "Preparatory Filtering",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Plate,Filter],
-					Model[Container,Vessel,Filter],
-					Model[Item,Filter]
-				}]]
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Container,Plate,Filter],
+						Model[Container,Vessel,Filter],
+						Model[Item,Filter]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
+					}
+				]
 			},
 			{
 				OptionName -> FilterMaterial,
@@ -2389,10 +2823,20 @@ DefineOptionSet[
 				OptionName->FilterSyringe,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Syringe],
-					Object[Container,Syringe]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Container,Syringe],
+						Object[Container,Syringe]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Syringes"
+						}
+					}
+				],
 				Description->"The syringe used to force that sample through a filter.",
 				ResolutionDescription->"Resolves to an syringe appropriate to the volume of sample being filtered, if Filtration is set to True.",
 				Category->"Preparatory Filtering"
@@ -2401,12 +2845,22 @@ DefineOptionSet[
 				OptionName->FilterHousing,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Instrument, FilterHousing],
-					Object[Instrument, FilterHousing],
-					Model[Instrument, FilterBlock],
-					Object[Instrument, FilterBlock]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Instrument, FilterHousing],
+						Object[Instrument, FilterHousing],
+						Model[Instrument, FilterBlock],
+						Object[Instrument, FilterBlock]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						}
+					}
+				],
 				Description->"The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane.",
 				ResolutionDescription->"Resolve to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used and Filtration is set to True.",
 				Category->"Preparatory Filtering"
@@ -2455,7 +2909,13 @@ DefineOptionSet[
 					Widget[
 						Type -> Object,
 						Pattern :> ObjectP[{Model[Container], Object[Container]}],
-						ObjectTypes -> {Model[Container], Object[Container]}
+						ObjectTypes -> {Model[Container], Object[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
 					],
 					{
 						"Index" -> Alternatives[
@@ -2472,7 +2932,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2503,7 +2969,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Filtering",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -2519,7 +2995,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2595,18 +3077,52 @@ DefineOptionSet[
 				OptionName->FilterInstrument,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Instrument,FilterBlock],
-					Object[Instrument,FilterBlock],
-					Model[Instrument,PeristalticPump],
-					Object[Instrument,PeristalticPump],
-					Model[Instrument,VacuumPump],
-					Object[Instrument,VacuumPump],
-					Model[Instrument,Centrifuge],
-					Object[Instrument,Centrifuge],
-					Model[Instrument,SyringePump],
-					Object[Instrument,SyringePump]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Instrument,FilterBlock],
+						Object[Instrument,FilterBlock],
+						Model[Instrument,PeristalticPump],
+						Object[Instrument,PeristalticPump],
+						Model[Instrument,VacuumPump],
+						Object[Instrument,VacuumPump],
+						Model[Instrument,Centrifuge],
+						Object[Instrument,Centrifuge],
+						Model[Instrument,SyringePump],
+						Object[Instrument,SyringePump]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Pumps",
+							"Vacuum Pumps"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						}
+					}
+				],
 				Description->"The instrument that should be used to perform the filtration.",
 				ResolutionDescription->"Will automatically resolved to an instrument appropriate for the filtration type.",
 				NestedIndexMatching -> True,
@@ -2619,11 +3135,26 @@ DefineOptionSet[
 				ResolutionDescription->"Will automatically resolve to a filter appropriate for the filtration type and instrument.",
 				AllowNull -> True,
 				Category -> "Preparatory Filtering",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Plate,Filter],
-					Model[Container,Vessel,Filter],
-					Model[Item,Filter]
-				}]],
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Container,Plate,Filter],
+						Model[Container,Vessel,Filter],
+						Model[Item,Filter]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
+					}
+				],
 				NestedIndexMatching -> True
 			},
 			{
@@ -2671,10 +3202,20 @@ DefineOptionSet[
 				OptionName->FilterSyringe,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container,Syringe],
-					Object[Container,Syringe]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Container,Syringe],
+						Object[Container,Syringe]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Syringes"
+						}
+					}
+				],
 				Description->"The syringe used to force that sample through a filter.",
 				ResolutionDescription->"Resolves to an syringe appropriate to the volume of sample being filtered, if Filtration is set to True.",
 				NestedIndexMatching -> True,
@@ -2684,12 +3225,22 @@ DefineOptionSet[
 				OptionName->FilterHousing,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Instrument, FilterHousing],
-					Object[Instrument, FilterHousing],
-					Model[Instrument, FilterBlock],
-					Object[Instrument, FilterBlock]
-				}]],
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Instrument, FilterHousing],
+						Object[Instrument, FilterHousing],
+						Model[Instrument, FilterBlock],
+						Object[Instrument, FilterBlock]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						}
+					}
+				],
 				Description->"The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane.",
 				ResolutionDescription->"Resolve to an housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used and Filtration is set to True.",
 				NestedIndexMatching -> True,
@@ -2742,7 +3293,13 @@ DefineOptionSet[
 					Widget[
 						Type -> Object,
 						Pattern :> ObjectP[{Model[Container], Object[Container]}],
-						ObjectTypes -> {Model[Container], Object[Container]}
+						ObjectTypes -> {Model[Container], Object[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
 					],
 					{
 						"Index" -> Alternatives[
@@ -2759,7 +3316,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2792,7 +3355,17 @@ DefineOptionSet[
 				AllowNull -> True,
 				Category -> "Preparatory Filtering",
 				Widget -> Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[Container]],
+						ObjectTypes->{Model[Container]},
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
 					{
 						"Index" -> Alternatives[
 							Widget[
@@ -2808,7 +3381,13 @@ DefineOptionSet[
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Container], Object[Container]}],
-								ObjectTypes -> {Model[Container], Object[Container]}
+								ObjectTypes -> {Model[Container], Object[Container]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Containers"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -2855,23 +3434,6 @@ DefineOptionSet[
 
 
 (* ::Subsubsection::Closed:: *)
-(*PreparatoryPrimitivesOption*)
-
-DefineOptionSet[
-	PreparatoryPrimitivesOption:>{
-		{
-			OptionName->PreparatoryPrimitives,
-			Default->Null,
-			Description->"Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation.",
-			AllowNull->True,
-			Category->"Sample Preparation",
-			(* Our widget is the same as Sample Preparation's input widget. *)
-			Widget->sampleManipulationWidget
-		}
-	}
-];
-
-(* ::Subsubsection::Closed:: *)
 (*PreparatoryUnitOperationsOption*)
 
 DefineOptionSet[
@@ -2879,7 +3441,7 @@ DefineOptionSet[
 		{
 			OptionName->PreparatoryUnitOperations,
 			Default->Null,
-			Description->"Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSampleManipulation.",
+			Description->"Specifies a sequence of transferring, aliquoting, consolidating, or mixing of new or existing samples before the main experiment. These prepared samples can be used in the main experiment by referencing their defined name. For more information, please reference the documentation for ExperimentSamplePreparation.",
 			AllowNull->True,
 			Category->"Sample Preparation",
 			Widget->Adder[
@@ -2907,7 +3469,6 @@ DefineOptionSet[
 DefineOptionSet[
 	SamplePrepOptionsNestedIndexMatching:>{
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
 		IncubatePrepOptionsNestedIndexMatching,
 		CentrifugePrepOptionsNestedIndexMatching,
 		FilterPrepOptionsNestedIndexMatching
@@ -2918,7 +3479,6 @@ DefineOptionSet[
 DefineOptionSet[
 	SamplePrepOptions:>{
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
 		IncubatePrepOptionsNew,
 		CentrifugePrepOptionsNew,
 		FilterPrepOptionsNew
@@ -3048,7 +3608,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				]
 			},
 			{
@@ -3069,7 +3637,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -3081,7 +3657,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -3135,7 +3719,13 @@ DefineOptionSet[
 				Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Container], Object[Container]}],
-					ObjectTypes -> {Model[Container], Object[Container]}
+					ObjectTypes -> {Model[Container], Object[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Widget[
 					Type -> Enumeration,
@@ -3156,7 +3746,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3169,7 +3765,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3194,7 +3796,13 @@ DefineOptionSet[
 								Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Model[Container], Object[Container]}],
-									ObjectTypes -> {Model[Container], Object[Container]}
+									ObjectTypes -> {Model[Container], Object[Container]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Containers"
+										}
+									}
 								],
 								Widget[
 									Type -> Enumeration,
@@ -3353,7 +3961,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				]
 			},
 			{
@@ -3363,7 +3979,7 @@ DefineOptionSet[
 				ResolutionDescription -> "If ConcentratedBuffer is specified, automatically set to the ConcentratedBufferDilutionFactor of that sample; otherwise, set to Null.",
 				AllowNull -> True,
 				Category -> "Aliquoting",
-				Widget -> Widget[Type->Number,Pattern:>GreaterEqualP[1,1]]
+				Widget -> Widget[Type->Number,Pattern:>GreaterEqualP[1]]
 			},
 			{
 				OptionName -> BufferDiluent,
@@ -3374,7 +3990,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -3386,7 +4010,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -3440,7 +4072,13 @@ DefineOptionSet[
 				Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Container], Object[Container]}],
-					ObjectTypes -> {Model[Container], Object[Container]}
+					ObjectTypes -> {Model[Container], Object[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Widget[
 					Type -> Enumeration,
@@ -3461,7 +4099,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3474,7 +4118,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3499,7 +4149,13 @@ DefineOptionSet[
 								Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Model[Container], Object[Container]}],
-									ObjectTypes -> {Model[Container], Object[Container]}
+									ObjectTypes -> {Model[Container], Object[Container]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Containers"
+										}
+									}
 								],
 								Widget[
 									Type -> Enumeration,
@@ -3660,7 +4316,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers"
+						}
+					}
 				],
 				NestedIndexMatching -> True
 			},
@@ -3671,7 +4335,7 @@ DefineOptionSet[
 				ResolutionDescription -> "If ConcentratedBuffer is specified, automatically set to the ConcentratedBufferDilutionFactor of that sample; otherwise, set to Null.",
 				AllowNull -> True,
 				Category -> "Aliquoting",
-				Widget -> Widget[Type->Number,Pattern:>GreaterEqualP[1,1]],
+				Widget -> Widget[Type->Number,Pattern:>GreaterEqualP[1]],
 				NestedIndexMatching -> True
 			},
 			{
@@ -3683,7 +4347,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				],
 				NestedIndexMatching -> True
 			},
@@ -3696,7 +4368,15 @@ DefineOptionSet[
 				Category -> "Aliquoting",
 				Widget -> Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				],
 				NestedIndexMatching -> True
 			},
@@ -3735,40 +4415,9 @@ DefineOptionSet[
 							PatternTooltip -> "Enumeration must be any well from A1 to H12."
 						]
 					]
-				],
-				Adder[
-					Alternatives[
-						Alternatives[
-							Widget[
-								Type -> Enumeration,
-								Pattern :> Alternatives[Automatic,Null],
-								PatternTooltip -> "Enumeration must be any well from A1 to H12."
-							],
-							Widget[
-								Type -> String,
-								Pattern :> WellPositionP,
-								Size->Line,
-								PatternTooltip -> "Enumeration must be any well from A1 to H12."
-							]
-						],
-						Adder[
-							Alternatives[
-								Widget[
-									Type -> Enumeration,
-									Pattern :> Alternatives[Automatic,Null],
-									PatternTooltip -> "Enumeration must be any well from A1 to H12."
-								],
-								Widget[
-									Type -> String,
-									Pattern :> WellPositionP,
-									Size->Line,
-									PatternTooltip -> "Enumeration must be any well from A1 to H12."
-								]
-							]
-						]
-					]
 				]
 			],
+			NestedIndexMatching -> True,
 			Category -> "Aliquoting",
 			Description -> "The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed.",
 			ResolutionDescription -> "Automatically resolves to A1 in containers with only one position.  For plates, fills wells in the order provided by the function AllWells."
@@ -3780,11 +4429,18 @@ DefineOptionSet[
 			ResolutionDescription -> "Automatically set as the PreferredContainer for the AssayVolume of the sample.  For plates, attempts to fill all wells of a single plate with the same model before aliquoting into the next.",
 			AllowNull -> True,
 			Category -> "Aliquoting",
+			NestedIndexMatching -> True,
 			Widget -> Alternatives[
 				Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Container], Object[Container]}],
-					ObjectTypes -> {Model[Container], Object[Container]}
+					ObjectTypes -> {Model[Container], Object[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Widget[
 					Type -> Enumeration,
@@ -3805,7 +4461,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3818,7 +4480,13 @@ DefineOptionSet[
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
+							ObjectTypes -> {Model[Container], Object[Container]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Containers"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -3843,7 +4511,13 @@ DefineOptionSet[
 								Widget[
 									Type -> Object,
 									Pattern :> ObjectP[{Model[Container], Object[Container]}],
-									ObjectTypes -> {Model[Container], Object[Container]}
+									ObjectTypes -> {Model[Container], Object[Container]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Containers"
+										}
+									}
 								],
 								Widget[
 									Type -> Enumeration,
@@ -3856,51 +4530,7 @@ DefineOptionSet[
 							Pattern :> Alternatives[Automatic, Null]
 						]
 					]
-				],
-				Adder[Adder[
-					Alternatives[
-						Widget[
-							Type -> Object,
-							Pattern :> ObjectP[{Model[Container], Object[Container]}],
-							ObjectTypes -> {Model[Container], Object[Container]}
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Automatic,Null]
-						]
-					]
-				]],
-				Adder[Adder[
-					Alternatives[
-						{
-							"Index" -> Alternatives[
-								Widget[
-									Type -> Number,
-									Pattern :> GreaterEqualP[1, 1]
-								],
-								Widget[
-									Type -> Enumeration,
-									Pattern :> Alternatives[Automatic, Null]
-								]
-							],
-							"Container" -> Alternatives[
-								Widget[
-									Type -> Object,
-									Pattern :> ObjectP[{Model[Container], Object[Container]}],
-									ObjectTypes -> {Model[Container], Object[Container]}
-								],
-								Widget[
-									Type -> Enumeration,
-									Pattern :> Alternatives[Automatic, Null]
-								]
-							]
-						},
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Automatic, Null]
-						]
-					]
-				]]
+				]
 			]
 		},
 		{
@@ -4126,15 +4756,29 @@ DefineOptionSet[
 				Description -> "The filter that should be used to remove impurities from the AliquotSamples prior to starting the experiment.",
 				AllowNull -> True,
 				Category -> "AliquotPrep",
-				Widget -> Widget[Type->Object,Pattern:>ObjectP[{
-					Model[Container, Plate, Filter], Object[Container, Plate, Filter],
-					Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
-					Model[Item,Filter], Object[Item,Filter]
-				}],
+				Widget -> Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Container, Plate, Filter], Object[Container, Plate, Filter],
+						Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
+						Model[Item,Filter], Object[Item,Filter]
+					}],
 					ObjectTypes->{
 						Model[Container, Plate, Filter], Object[Container, Plate, Filter],
 						Model[Container, Vessel, Filter], Object[Container, Vessel, Filter],
 						Model[Item,Filter], Object[Item,Filter]
+					},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
 					}
 				]
 			},
@@ -4249,7 +4893,17 @@ DefineOptionSet[
 			Description -> "The desired container generated samples should be produced in or transferred into by the end of the experiment.",
 			AllowNull -> True,
 			Category -> "Post Experiment",
-			Widget -> Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}]
+			Widget -> Widget[
+				Type->Object,
+				Pattern:>ObjectP[Model[Container]],
+				ObjectTypes->{Model[Container]},
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers"
+					}
+				}
+			]
 		}
 	}
 ];
@@ -4305,6 +4959,22 @@ DefineOptionSet[
 			],
 			Description->"Model resources in the ParentProtocol that are being transferred into an appropriate container model by this experiment call.",
 			Category->"Hidden"
+		}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*OrderFulfilledOption*)
+
+DefineOptionSet[
+	OrderFulfilledOption :> {
+		{
+			OptionName -> OrderFulfilled,
+			Default -> Null,
+			AllowNull -> True,
+			Widget -> Widget[Type -> Object, Pattern :> ListableP[ObjectP[Object[Transaction, Order]]]],
+			Description -> "The inventory order that is requesting sample transfers.",
+			Category -> "Hidden"
 		}
 	}
 ];
@@ -4368,14 +5038,29 @@ DefineOptionSet[
 ];
 
 DefineOptionSet[
-	PostProcessingOptions:>{
+	NonBiologyPostProcessingOptions:>{
 		MeasureWeightOption,
 		MeasureVolumeOption,
 		ImageSampleOption
 	}
 ];
 
-
+DefineOptionSet[
+	BiologyPostProcessingOptions:>{
+		ModifyOptions[MeasureWeightOption,
+			MeasureWeight,
+			Default -> False
+		],
+		ModifyOptions[MeasureVolumeOption,
+			MeasureVolume,
+			Default -> False
+		],
+		ModifyOptions[ImageSampleOption,
+			ImageSample,
+			Default -> False
+		]
+	}
+];
 
 (* ::Subsection::Closed:: *)
 (*Prep Experiment Options*)
@@ -4552,13 +5237,31 @@ DefineOptionSet[
 			Widget -> Widget[Type -> Enumeration,Pattern :> STAR | bioSTAR | microbioSTAR],
 			AllowNull -> True,
 			Default -> Automatic,
-			Description -> "Indicates the work cell that this primitive will be run on if Preparation->Robotic.",
+			Description -> "The automated workstation with a collection of integrated instruments on which this unit operation will be will be performed if Preparation -> Robotic.",
 			Category -> "General",
 			ResolutionDescription -> "Automatically set to STAR if Preparation->Robotic."
 		}
 	}
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*BiologyWorkCellOption*)
+
+
+DefineOptionSet[
+	BiologyWorkCellOption :> {
+		{
+			OptionName -> WorkCell,
+			(* NOTE: Excluding STAR for biology experiments*)
+			Widget -> Widget[Type -> Enumeration,Pattern :> bioSTAR | microbioSTAR],
+			AllowNull -> True,
+			Default -> Automatic,
+			Description -> "Indicates the work cell that this primitive will be run on if Preparation->Robotic.",
+			Category -> "General",
+			ResolutionDescription -> "Automatically set to microbioSTAR when all samples' cell types are either Microbial or Null, otherwise set to bioSTAR when all samples' cell types are either Mammalian or Null, if Preparation->Robotic."
+		}
+	}
+];
 (* ::Subsection::Closed:: *)
 (*Assay Plate Options*)
 
@@ -4594,9 +5297,54 @@ DefineOptionSet[MoatOptions :> {
 		Default->Automatic,
 		Description->"Indicates the buffer which should be used to fill each moat well.",
 		AllowNull->True,
-		Widget->Widget[Type->Object,Pattern:>ObjectP[{Object[Sample],Model[Sample]}]],
+		Widget->Widget[
+			Type->Object,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			OpenPaths -> {
+				{
+					Object[Catalog, "Root"],
+					"Materials",
+					"Reagents",
+					"Buffers"
+				}
+			}
+		],
 		Category->"Sample Handling"
 	}
+}];
+
+(* ::Subsubsection:: *)
+(* SampleLabelOptions *)
+DefineOptionSet[SampleLabelOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> SampleLabel,
+			Default -> Automatic,
+			Description->"A user defined word or phrase used to identify the input samples, for use in downstream unit operations.",
+			AllowNull -> False,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			],
+			UnitOperation -> True
+		},
+		{
+			OptionName -> SampleContainerLabel,
+			Default -> Automatic,
+			Description->"A user defined word or phrase used to identify the containers of the input samples, for use in downstream unit operations.",
+			AllowNull -> False,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			],
+			UnitOperation -> True
+		}
+	]
 }];
 
 (* ::Subsubsection::Closed:: *)
@@ -4625,30 +5373,453 @@ DefineOptionSet[BlankLabelOptions :> {
 
 
 DefineOptionSet[
-	FuntopiaSharedOptions:>{
+	NonBiologyFuntopiaSharedOptions:>{
 		ProtocolOptions,
 		SamplePrepOptions,
 		AliquotOptions,
-		PostProcessingOptions
+		NonBiologyPostProcessingOptions
+	}
+];
+
+DefineOptionSet[
+	BiologyFuntopiaSharedOptions:>{
+		ProtocolOptions,
+		SamplePrepOptions,
+		AliquotOptions,
+		BiologyPostProcessingOptions
 	}
 ];
 
 
 DefineOptionSet[
-	FuntopiaSharedOptionsPooled:>{
+	NonBiologyFuntopiaSharedOptionsPooled:>{
 		ProtocolOptions,
 		SamplePrepOptionsNestedIndexMatching,
 		AliquotOptionsPooled,
-		PostProcessingOptions
+		NonBiologyPostProcessingOptions
 	}
 ];
 
+DefineOptionSet[
+	BiologyFuntopiaSharedOptionsPooled:>{
+		ProtocolOptions,
+		SamplePrepOptionsNestedIndexMatching,
+		AliquotOptionsPooled,
+		BiologyPostProcessingOptions
+	}
+];
 
 DefineOptionSet[
-	FuntopiaSharedOptionsNestedIndexMatching:>{
+	NonBiologyFuntopiaSharedOptionsNestedIndexMatching:>{
 		ProtocolOptions,
 		SamplePrepOptionsNestedIndexMatching,
 		AliquotOptionsNestedIndexMatching,
 		ImageSampleOption
 	}
-]
+];
+
+DefineOptionSet[
+	BiologyFuntopiaSharedOptionsNestedIndexMatching:>{
+		ProtocolOptions,
+		SamplePrepOptionsNestedIndexMatching,
+		AliquotOptionsNestedIndexMatching,
+		ModifyOptions[ImageSampleOption,
+			ImageSample,
+			Default -> False
+		]
+	}
+];
+
+(* ::Subsection::Closed:: *)
+(*ModelInputOptions*)
+
+DefineOptionSet[
+	ModelInputOptions :> {
+		IndexMatching[
+			IndexMatchingInput -> "experiment samples",
+			{
+				OptionName -> PreparedModelContainer,
+				Default -> Automatic,
+				Description -> "Indicates the container in which a Model[Sample] specified as input to the experiment function will be prepared.",
+				ResolutionDescription -> "If PreparedModelAmount is set to All and when the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise set to Model[Container, Vessel, \"2mL Tube\"].",
+				AllowNull -> True,
+				Category -> "Model Input",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Container]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
+				]
+			},
+			{
+				OptionName -> PreparedModelAmount,
+				Default -> Automatic,
+				Description -> "Indicates the amount of a Model[Sample] specified as input to the experiment function that will be prepared in the PreparedModelContainer. When set to All and the input model sample is not preparable, the entire amount of the input model sample that comes from one of the Products is prepared. The selected product must have both Amount and DefaultContainerModel populated, and it must not be a KitProduct. When set to All and the input model is preparable such as water, 1 Milliliter of the input model sample is prepared.",
+				ResolutionDescription -> "Automatically set to 1 Milliliter.",
+				AllowNull -> True,
+				Category -> "Model Input",
+				Widget -> Alternatives[
+					"Volume" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Microliter, 20 Liter],
+						Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
+					],
+					"Mass" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Milligram, 20 Kilogram],
+						Units -> {1, {Milligram, {Milligram, Gram, Kilogram}}}
+					],
+					"Count" -> Widget[
+						Type -> Quantity,
+						Pattern :> GreaterP[0 Unit, 1 Unit],
+						Units -> {1, {Unit, {Unit}}}
+					],
+					"Count" -> Widget[
+						Type -> Number,
+						Pattern :> GreaterP[0., 1.]
+					],
+					"All" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
+					]
+				]
+			}
+		]
+	}
+];
+
+
+
+(* ::Subsection:: *)
+(*Pipetting Parameters Option Set*)
+
+
+DefineOptionSet[
+	pipettingParameterOptions:>{
+		{
+			OptionName -> TipType,
+			Default -> Automatic,
+			Description -> "The tip to use to transfer liquid in the manipulation.",
+			ResolutionDescription -> "Automatically resolves based on the amount being transferred or TipSize specification.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Alternatives[
+				Widget[Type->Enumeration,Pattern:>TipTypeP],
+				Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Item,Tips]]
+				]
+			]
+		},
+		{
+			OptionName -> TipSize,
+			Default -> Automatic,
+			Description -> "The maximum volume of the tip used to transfer liquid in the manipulation.",
+			ResolutionDescription -> "Automatically resolves based on the amount being transferred orr the TipType specified.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Microliter],
+				Units -> {Microliter,{Microliter,Milliliter}}
+			]
+		},
+		{
+			OptionName -> AspirationRate,
+			Default -> Automatic,
+			Description -> "The speed at which liquid should be drawn up into the pipette tip.",
+			ResolutionDescription -> "Automatically resolves from DispenseRate if it is specified, otherwise resolves to 100 Microliter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Units -> CompoundUnit[
+					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> DispenseRate,
+			Default -> Automatic,
+			Description -> "The speed at which liquid should be expelled from the pipette tip.",
+			ResolutionDescription -> "Automatically resolves from AspirationRate if it is specified, otherwise resolves to 100 Microliter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Units -> CompoundUnit[
+					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> OverAspirationVolume,
+			Default -> Automatic,
+			Description -> "The volume of air drawn into the pipette tip at the end of the aspiration of a liquid.",
+			ResolutionDescription -> "Automatically resolves from OverDispenseVolume if it is specified, otherwise resolves to 5 Microliter.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Microliter,50 Microliter],
+				Units -> {Microliter,{Microliter,Milliliter}}
+			]
+		},
+		{
+			OptionName -> OverDispenseVolume,
+			Default -> Automatic,
+			Description -> "The volume of air blown out at the end of the dispensing of a liquid.",
+			ResolutionDescription -> "Automatically resolves to 5 Microliter.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Microliter,300 Microliter],
+				Units -> {Microliter,{Microliter,Milliliter}}
+			]
+		},
+		{
+			OptionName -> AspirationWithdrawalRate,
+			Default -> Automatic,
+			Description -> "The speed at which the pipette is removed from the liquid after an aspiration.",
+			ResolutionDescription -> "Automatically resolves from DispenseWithdrawalRate if it is specified, otherwise resolves to 2 Millimeter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.3 Millimeter/Second, 160 Millimeter/Second],
+				Units -> CompoundUnit[
+					{1,{Millimeter,{Millimeter,Micrometer}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> DispenseWithdrawalRate,
+			Default -> Automatic,
+			Description -> "The speed at which the pipette is removed from the liquid after a dispense.",
+			ResolutionDescription -> "Automatically resolves from AspirationWithdrawalRate if it is specified, otherwise resolves to 2 Millimeter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.3 Millimeter/Second, 160 Millimeter/Second],
+				Units -> CompoundUnit[
+					{1,{Millimeter,{Millimeter,Micrometer}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> AspirationEquilibrationTime,
+			Default -> Automatic,
+			Description -> "The delay length the pipette waits after aspirating before it is removed from the liquid.",
+			ResolutionDescription -> "Automatically resolves from DispenseEquilibrationTime if it is specified, otherwise resolves to 1 Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Second, 9.9 Second],
+				Units -> {Second,{Second,Minute}}
+			]
+		},
+		{
+			OptionName -> DispenseEquilibrationTime,
+			Default -> Automatic,
+			Description -> "The delay length the pipette waits after dispensing before it is removed from the liquid.",
+			ResolutionDescription -> "Automatically resolves from AspirationEquilibrationTime if it is specified, otherwise resolves to 1 Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Second, 9.9 Second],
+				Units -> {Second,{Second,Minute}}
+			]
+		},
+		{
+			OptionName -> AspirationMix,
+			Default -> Automatic,
+			Description -> "Indicates if the source should be mixed before it is aspirated.",
+			ResolutionDescription -> "Automatically resolves to True if other aspiration mix parameters are specified, otherwise False.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+		},
+		{
+			OptionName -> DispenseMix,
+			Default -> Automatic,
+			Description -> "Indicates if the destination should be mixed after the source is dispensed.",
+			ResolutionDescription -> "Automatically resolves to True if other dispense mix parameters are specified, otherwise False.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+		},
+		{
+			OptionName -> AspirationMixVolume,
+			Default -> Automatic,
+			Description -> "The volume quickly aspirated and dispensed to mix the source sample before it is aspirated.",
+			ResolutionDescription -> "Automatically resolves to half the volume of the source if AspirationMix is True.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Microliter,970 Microliter],
+				Units -> {Microliter,{Microliter,Milliliter}}
+			]
+		},
+		{
+			OptionName -> DispenseMixVolume,
+			Default -> Automatic,
+			Description -> "The volume quickly aspirated and dispensed to mix the destination sample after the source is dispensed.",
+			ResolutionDescription -> "Automatically resolves to half the volume of the destination if DispenseMix is True.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Microliter,970 Microliter],
+				Units -> {Microliter,{Microliter,Milliliter}}
+			]
+		},
+		{
+			OptionName -> AspirationNumberOfMixes,
+			Default -> Automatic,
+			Description -> "The number of times the source is quickly aspirated and dispensed to mix the source sample before it is aspirated.",
+			ResolutionDescription -> "Automatically resolves to three if AspirationMix is True.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[Type -> Number,Pattern :> GreaterEqualP[0]]
+		},
+		{
+			OptionName -> DispenseNumberOfMixes,
+			Default -> Automatic,
+			Description -> "The number of times the destination is quickly aspirated and dispensed to mix the destination sample after the source is dispensed.",
+			ResolutionDescription -> "Automatically resolves to three if DispenseMix is True.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[Type -> Number,Pattern :> GreaterEqualP[0]]
+		},
+		{
+			OptionName -> AspirationMixRate,
+			Default -> Automatic,
+			Description -> "The speed at which liquid is aspirated and dispensed in a liquid before it is aspirated.",
+			ResolutionDescription -> "Automatically resolves from DispenseMixRate or AspirationRate if either is specified, otherwise resolves to 100 Microliter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Units -> CompoundUnit[
+					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> DispenseMixRate,
+			Default -> Automatic,
+			Description -> "The speed at which liquid is aspirated and dispensed in a liquid after a dispense.",
+			ResolutionDescription -> "Automatically resolves from AspirationMixRate or DispenseRate if either is specified, otherwise resolves to 100 Microliter/Second.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Units -> CompoundUnit[
+					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
+					{-1,{Second,{Second,Minute}}}
+				]
+			]
+		},
+		{
+			OptionName -> AspirationPosition,
+			Default -> Automatic,
+			Description -> "The location from which liquid should be aspirated. Top will aspirate AspirationPositionOffset below the Top of the container, Bottom will aspirate AspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate AspirationPositionOffset below the liquid level of the sample in the container, and TouchOff will touch the bottom of the container before moving the specified AspirationPositionOffset above the bottom of the container to start aspirate the sample.",
+			ResolutionDescription -> "Automatically set to the AspirationPosition in the PipettingMethod if it is specified and Preparation->Robotic, otherwise resolves to LiquidLevel if Preparation->Robotic.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> PipettingPositionP
+			]
+		},
+		{
+			OptionName -> DispensePosition,
+			Default -> Automatic,
+			Description -> "The location from which liquid should be dispensed. Top will dispense DispensePositionOffset below the Top of the container, Bottom will dispense DispensePositionOffset above the Bottom of the container, LiquidLevel will dispense DispensePositionOffset below the liquid level of the sample in the container, and TouchOff will touch the bottom of the container before moving the specified DispensePositionOffset above the bottom of the container to start dispensing the sample.",
+			ResolutionDescription -> "Automatically set to the DispensePosition in the PipettingMethod if it is specified and Preparation->Robotic, otherwise resolves to LiquidLevel if Preparation->Robotic.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> PipettingPositionP
+			]
+		},
+		{
+			OptionName -> AspirationPositionOffset,
+			Default -> Automatic,
+			Description -> "The distance from the top or bottom of the container, depending on AspirationPosition, from which liquid should be aspirated.",
+			ResolutionDescription -> "Automatically resolves from DispensePositionOffset if it is specified, or if AspirationPosition is not Null resolves to 2 Millimeter, otherwise resolves to Null and is determined at runtime by inspecting a sample's container type.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterEqualP[0 Millimeter],
+				Units -> {Millimeter,{Millimeter}}
+			]
+		},
+		{
+			OptionName -> DispensePositionOffset,
+			Default -> Automatic,
+			Description -> "The distance from the top or bottom of the container, depending on DispensePosition, from which liquid should be dispensed.",
+			ResolutionDescription -> "Automatically resolves from AspirationPositionOffset if it is specified, or if DispensePosition is not Null resolves to 2 Millimeter, otherwise resolves to Null and is determined at runtime by inspecting a sample's container type.",
+			AllowNull -> True,
+			Category -> "Pipetting",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterEqualP[0 Millimeter],
+				Units -> {Millimeter,{Millimeter}}
+			]
+		},
+		{
+			OptionName -> CorrectionCurve,
+			Default -> Automatic,
+			AllowNull -> True,
+			Description -> "The relationship between a target volume and the corrected volume that needs to be aspirated or dispensed to reach the target volume.",
+			ResolutionDescription -> "Automatically resolves from PipettingMethod if it is specified, or the default correction curve empirically determined for water.",
+			Category -> "Pipetting",
+			Widget -> Adder[
+				{
+					"Target Volume" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Microliter, 1000 Microliter],
+						Units -> {Microliter,{Microliter,Milliliter}}
+					],
+					"Actual Volume" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Microliter, 1250 Microliter],
+						Units -> {Microliter,{Microliter,Milliliter}}
+					]
+				},
+				Orientation -> Vertical
+			]
+		},
+		{
+			OptionName -> DynamicAspiration,
+			Default -> Automatic,
+			Description -> "Indicates if droplet formation should be prevented during liquid transfer. This should only be used for solvents that have high vapor pressure.",
+			ResolutionDescription -> "Automatically resolves to False if unspecified.",
+			AllowNull -> False,
+			Category -> "Pipetting",
+			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+		}
+	}
+];
+

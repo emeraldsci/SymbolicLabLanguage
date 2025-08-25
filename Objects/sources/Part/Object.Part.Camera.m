@@ -45,6 +45,22 @@ DefineObjectType[Object[Part, Camera], {
 			Description -> "The sample inspector to which this camera is attached.",
 			Category -> "Part Specifications"
 		},
+		HandlingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HandlingStation][PipetteCamera],
+			Description -> "The handling station to which this camera is physically associated with for purposes of recording a pipette dial setting.",
+			Category -> "Part Specifications"
+		},
+		ConnectedInstruments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument][StreamCameras],
+			Description -> "The instruments to which this camera is physically associated with for purposes such as recording sample pH measurement process, or streams the operations inside the enclosure.",
+			Category -> "Part Specifications"
+		},
 		TargetSize -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],TargetSize]],

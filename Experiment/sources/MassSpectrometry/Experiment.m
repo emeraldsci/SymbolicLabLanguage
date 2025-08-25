@@ -167,7 +167,9 @@ DefineOptions[ExperimentMassSpectrometry,
 			ResolutionDescription->"Is automatically set to Model[Sample,StockSolution,\"20% Methanol in MilliQ Water\"] for FlowInjection ESI mass spectrometry, otherwise is set to Null.",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample],Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample],Model[Sample]}],
+				PreparedSample->False,
+				PreparedContainer->False
 			],
 			Category->"ESI Flow Injection"
 		},
@@ -314,7 +316,7 @@ DefineOptions[ExperimentMassSpectrometry,
 				Category -> "General",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.005 Millisecond,  10 Second],
+					Pattern :> RangeP[0.005 Millisecond,  195 Second],
 					Units -> {Millisecond, {Millisecond, Second}}
 				]
 			},
@@ -870,9 +872,22 @@ DefineOptions[ExperimentMassSpectrometry,
 			]
 		},
 
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
-
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 300 Microliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"HPLC vial (high recovery)\"]."
+			}
+		],
 		{
 			OptionName -> ImageSample,
 			Default -> True,
@@ -881,6 +896,7 @@ DefineOptions[ExperimentMassSpectrometry,
 			Category -> "Post Experiment",
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
 		},
+		SimulationOption,
 		AnalyticalNumberOfReplicatesOption (* ,
 		SubprotocolDescriptionOption,
 *)
@@ -938,6 +954,7 @@ Warning::CalibrantMassDetectionMismatch="For the following input samples, `1`, t
 Error::InvalidESIQTOFVoltagesOption="For ESI-QTOF Instruments, all Voltages input (ESICapillaryVoltages and StepwaveVoltages) should be positive, the input sample `1` has voltage options input `2` that are not positive. Please change them to a positive value or leave them as Automatic.";
 Error::InvalidESIQTOFGasOption="For ESI-QTOF Instruments, all Gas input (DesolvationGasFlow and ConeGasFlow) needs to be with a unit of flow rate (L/Min), the input sample `1` has gas options input `2` that have units of PSI. Please change the units to PSI or leave them as Automatic.";
 Error::InvalidESIQTOFMassDetectionOption="The following samples `1` have MassDetection input that is not a range of Masses, this input is not support by current instrument, if you want to run single mass selection please switch to ESI-QQQ";
+Error::InvalidESIQTOFScanTimeOption="The specified values for the the ScanTime option are `1`, but for ESI-QTOF instruments, the maximum allowed value for the ScanTime option is 10 seconds. Please reduce the specified scan time, or consider switching to ESI-QQQ."
 Error::OutRangedDesolvationTemperature="The following samples `1` have DesolvationTemperature input that higher than 650 Celsius, this temperature is too high for current instrument (ESI-QTOF), please switch to a smaller temperature (<650 Celsius) or leave this option as Automatic.";
 Error::MassSpectrometryNotEnoughVolume="The following sample `1` only have volumes `2`, thereby do not have enough volumes `3` to finish the experiment, consider using a different samples or dilute the sample to desired amount. If DirectInfusion is chosen as the InjectionMode, consider using FlowInjection which requires much smaller amount of sample to finish the experiment.";
 Warning::InfusionVolumeLessThanRunDurationTimesFlowRate = "The InfusionVolume for the sample(s) `1` is `2` which is unable to sustain a RunDuration of `3` at an InfusionFlowRate of `4`. Data generated late in the run from the sample(s) will contain only residual sample and background.";
@@ -950,7 +967,7 @@ Error::InvalidCalibrantLaserPowerRange="The min laser power used for the calibra
 Error::UnsupportedMALDIPlate="The requested MALDI plate is not supported. Please choose a plate with one the following models: `1`";
 Error::TooManyMALDISamples="The MALDI plate has `1` total wells, but the input samples (including any replicates) required `2` wells. Please consider splitting this into multiple protocols.";
 Error::UnableToCalibrate="In order to calibrate the instrument there must be at least one calibrant peak in the mass range. Please check the mass ranges for the following samples: `1`.";
-Warning::LimitedReferencePeaks="In order to calibrate the instrument it is recommended that there be at least 3 calibrant peaks in the specified mass ranges. Please consider adjusting the following mass ranges: `1`.";
+Error::NotEnoughReferencePeaks="In order to calibrate the instrument there must be at least 3 calibrant peaks in the specified mass ranges. Please adjust mass ranges for the following samples: `1`.";
 Error::SpottingInstrumentIncompatibleAliquots="There is no suitable aliquot container which can hold the requested aliquot volume and still fit on the robotic liquid handler used to prepare the MALDI plate. Please specify an AssayVolume/AliquotVolume below 50mL for `1`.";
 Error::ExceedsMALDIPlateCapacity="There are only `1` wells available with the given spotting pattern, but these protocol settings require `2` wells (`3` sample wells, `4` calibrant wells and `5` matrix control wells). Please consider splitting this into multiple protocols.";
 Error::invalidMALDITOFMassDetectionOption="The following samples `1` have MassDetection input that is not a range of Masses, this input is not support by current instrument, if you want to run single mass selection please switch to ESI-QQQ.";
@@ -965,93 +982,91 @@ Error::UninformedModelCalbirantMatrix="CalibrantMatrix must be models (or object
 (* ::Subsubsection::Closed:: *)
 (*ExperimentMassSpectrometry Experiment function*)
 
+(* Set a flag to determine whether we will do automatic MALDI calibration *)
+$AutomaticMALDICalibration=True;
 
 (* Experiment Function Container overload that takes containers (or containers and samples *)
-ExperimentMassSpectrometry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,sampleCache,
-		samples,sampleOptions,containerToSampleTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache,updatedCache},
+ExperimentMassSpectrometry[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+	{listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, containerToSampleOutput, sampleCache,
+		samples, sampleOptions, containerToSampleTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, updatedSimulation, updatedCache, containerToSampleSimulation},
 
-(* Make sure we're working with a list of options *)
-	listedOptions=ToList[myOptions];
+	(* Make sure we're working with a list of options *)
+	listedOptions = ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests=MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
 	(* First, simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
-	(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation. *)
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMassSpectrometry,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 300 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "HPLC vial (high recovery)"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
-	containerToSampleResult=If[gatherTests,
-	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+	containerToSampleResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentMassSpectrometry,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->containerToSampleTests|>,OutputFormat->SingleBoolean,Verbose->False],
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
 			Null,
 			$Failed
 		],
 
-	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentMassSpectrometry,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
-	If[MatchQ[containerToSampleResult,$Failed],
-	(* containerToSampleOptions failed - return $Failed *)
-		outputSpecification/.{
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
 			Preview -> Null
 		},
-	(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMassSpectrometry[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMassSpectrometry[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -1068,8 +1083,8 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 		calibrantModelPacket,calibrantDownloadPacket,gradientFields,availableESIInstrumentModels,instrumentFields,lcInstrumentFields,
 		matrixModelFields,downloadedPackets,cacheBall,resolvedOptionsResult,suppliedCalibrantSampleModels,allRelevantInstrumentModels,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolPacket,methodPackets,resourcePacketTests,protocolObject,
-		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
-		mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed,
+		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation,
+		mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, inheritedCache,
 		simulatedSampleIdentityModelFields,containerObjectFields,suppliedContainerModels,suppliedFilterSyringes,
 		suppliedInstrumentObject
 	},
@@ -1088,13 +1103,13 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMassSpectrometry,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1110,13 +1125,7 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 		{SafeOptions[ExperimentMassSpectrometry,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{mySamplesWithPreparedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOpsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMassSpectrometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMassSpectrometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1127,6 +1136,14 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 			Preview -> Null
 		}]
 	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMassSpectrometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMassSpectrometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+	];
+
+
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
@@ -1294,6 +1311,7 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 	suppliedInstrumentObject=Cases[Flatten[{Lookup[expandedSafeOps,Instrument]}],ObjectP[Object[Instrument]]];
 
 	(* -- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION -- *)
+	inheritedCache = Lookup[expandedSafeOps, Cache];
 	downloadedPackets=Check[
 		Quiet[
 			Download[
@@ -1339,7 +1357,8 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 					(*15*){Packet[Model]}
 				},
 				Date->Now,
-				Cache->samplePreparationCache
+				Cache->inheritedCache,
+				Simulation -> updatedSimulation
 			],
 			{Download::FieldDoesntExist,Download::NotLinkField}
 		],
@@ -1351,12 +1370,12 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 		Return[$Failed]
 	];
 
-	cacheBall=FlattenCachePackets[{samplePreparationCache,downloadedPackets}];
+	cacheBall=FlattenCachePackets[{inheritedCache, downloadedPackets}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveMassSpectrometryOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveMassSpectrometryOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation, Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1366,7 +1385,7 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveMassSpectrometryOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveMassSpectrometryOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1393,16 +1412,16 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 	(* Build packets with resources *)
 	{{protocolPacket,methodPackets},resourcePacketTests} = Switch[{Lookup[collapsedResolvedOptions,IonSource],Lookup[collapsedResolvedOptions,MassAnalyzer]},
 		{ESI,QTOF},If[gatherTests,
-			esiQTOFResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-			{esiQTOFResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+			esiQTOFResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}],
+			{esiQTOFResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 		],
 		{ESI,TripleQuadrupole},If[gatherTests,
-			esiTripleQuadResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-			{esiTripleQuadResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+			esiTripleQuadResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}],
+			{esiTripleQuadResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 		],
 		{MALDI,TOF},If[gatherTests,
-			maldiResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-			{maldiResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+			maldiResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}],
+			{maldiResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 		]
 	];
 
@@ -1424,13 +1443,15 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 			{Replace[methodPackets,{}->Null]},
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,MassSpectrometry],
-			Cache->samplePreparationCache,
+			Cache->cacheBall,
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
-			QueuePosition->Lookup[safeOps,QueuePosition]
+			QueuePosition->Lookup[safeOps,QueuePosition],
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -1457,7 +1478,7 @@ ExperimentMassSpectrometry[mySamples:ListableP[ObjectP[Object[Sample]]],myExperi
 
 DefineOptions[
 	resolveMassSpectrometryOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperimentOptions:{_Rule...},myResolverOptions:OptionsPattern[resolveMassSpectrometryOptions]]:=Module[{
@@ -1498,7 +1519,7 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	suppliedESIQTOFSpecificNames, suppliedESIQTOFSpecificOptions,nonDuplicatedUnneededSamples,unneededSamplesIonSourceAndMassAnalyzer,massAnalyzerIonSourceMismatchQ,massAnalyzerIonSourceMismatchTest,massAnalyzerIonSourceMismatchOptions,
 	(*MassAnalyzer specified TandemMass options*)
 	dominatingESIMassAnalyzer,instrumentModel,defaultMALDIInstrument,defaultESIQTOFInstrument,defaultESITripleQuadInstrument,preResolvedInstrumentSpecificTuple,
-	fastCacheBall, maxSpecifiedMassValue
+	fastCacheBall, maxSpecifiedMassValue, simulation, updatedSimulation
 },
 
 	(* -- SETUP OUR USER SPECIFIED OPTIONS AND CACHE -- *)
@@ -1513,15 +1534,16 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	outsideEngine=!MatchQ[$ECLApplication,Engine];
 
 	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myResolverOptions],Cache];
+	cache=Lookup[ToList[myResolverOptions],Cache, {}];
+	simulation = Lookup[ToList[myResolverOptions], Simulation, Simulation[]];
 
 	(* Separate out our MassSpectrometry options from our Sample Prep options. *)
 	{samplePrepOptions,massSpecSpecificOptions}=splitPrepOptions[myExperimentOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMassSpectrometry,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentMassSpectrometry,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMassSpectrometry,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMassSpectrometry,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1740,10 +1762,12 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 				(*9*){Packet[Model]}
 			},
 			Date->Now,
-			Cache->simulatedCache
+			Cache->cache,
+			Simulation -> updatedSimulation
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
 	];
+	simulatedCache = FlattenCachePackets[{cache, download, Lookup[First[updatedSimulation], Packets, {}]}];
 
 	(* Split up the download call into its individual packets *)
 	{
@@ -1782,7 +1806,7 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	];
 
 	(* Make fast cache *)
-	fastCacheBall = makeFastAssocFromCache[FlattenCachePackets[{cache, download}]];
+	fastCacheBall = makeFastAssocFromCache[simulatedCache];
 
 	(* --- Now resolve Instrument, MassAnalyzer and IonSource --- *)
 	suppliedInstrumentModel=If[MatchQ[suppliedInstrument,ObjectP[Object[Instrument]]],
@@ -1809,31 +1833,31 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	(* -- First we pre-resolve those options based on options that are not directly related to these options -- *)
 	(* -- Like number of supplied options, max supplied mass ranges and min sample volumes -- *)
 	(* -- Pre-resolved value will only be used when all 3 options (Instrument, MassAnalyzer, IonSource) are Automatic --*)
-	preResolvedInstrumentSpecificTuple=Which[
+	preResolvedInstrumentSpecificTuple = Which[
 
 		(* If user specified tandem mass spectrometry options, we use ESI-QQQ *)
-		(numberOfTandemMassAllowNullOptions>0),
-		{ESI,defaultESITripleQuadInstrument,TripleQuadrupole},
+		(numberOfTandemMassAllowNullOptions > 0),
+			{ESI, defaultESITripleQuadInstrument, TripleQuadrupole},
 
 		(* MALDI go first, if any MALDI option is specified, preresolved to new Microflex LRF MALDI *)
-		(numberOfSuppliedMALDIOptions>0) && (numberOfSuppliedMALDIOptions > numberOfSuppliedESIOptions) && (maxSpecifiedMassValue < 300000 Dalton),
-		{MALDI,defaultMALDIInstrument,TOF},
+		(numberOfSuppliedMALDIOptions > 0) && (numberOfSuppliedMALDIOptions > numberOfSuppliedESIOptions) && (maxSpecifiedMassValue < 300000 Dalton),
+			{MALDI, defaultMALDIInstrument, TOF},
 
 		(* If any MALDI option is specified, but the specified mass range is high, we use old MALDI *)
-		(numberOfSuppliedMALDIOptions>0) && (numberOfSuppliedMALDIOptions > numberOfSuppliedESIOptions),
-		{MALDI, Model[Instrument, MassSpectrometer,"Microflex LT"],TOF},
+		(numberOfSuppliedMALDIOptions > 0) && (numberOfSuppliedMALDIOptions > numberOfSuppliedESIOptions),
+			{MALDI, Model[Instrument, MassSpectrometer, "Microflex LT"], TOF},
 
 		(* Else if ESI options is specified, we will use ESI-QTOF *)
-		(numberOfSuppliedESIOptions>0) && (numberOfSuppliedESIOptions > numberOfSuppliedMALDIOptions),
-		{ESI,defaultESIQTOFInstrument,QTOF},
+		(numberOfSuppliedESIOptions > 0) && (numberOfSuppliedESIOptions > numberOfSuppliedMALDIOptions),
+			{ESI, defaultESIQTOFInstrument, QTOF},
 
-		(* If sample amount is too small, also use MALDI *)
-		Min[simulatedVolumes]< 20 Microliter,
-		{MALDI,defaultMALDIInstrument,TOF},
+		(* If sample amount is too small, also use MALDI. First make sure all samples are liquid and have volume data. If non-liquid samples exist, it will throw an error later *)
+		And @@ (VolumeQ /@ simulatedVolumes) && Min[simulatedVolumes] < 20 Microliter,
+			{MALDI, defaultMALDIInstrument, TOF},
 
 		(* Catch all *)
 		True,
-		{ESI,defaultESIQTOFInstrument,QTOF}
+			{ESI, defaultESIQTOFInstrument, QTOF}
 	];
 
 	(* Resolve the ion source and instrument Master Switches using a huge Switch *)
@@ -1947,13 +1971,12 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 		]
 	];
 
-	instrumentModel=If[
-		MatchQ[instrument,ObjectP[Object[Instrument]]],
-		Download[Lookup[fetchPacketFromFastAssoc[Download[instrument,Object],fastCacheBall],Model],Object],
-		Download[instrument,Object]
+	instrumentModel = If[MatchQ[instrument,ObjectP[Object[Instrument]]],
+		Download[fastAssocLookup[fastCacheBall, instrument, Model], Object],
+		Download[instrument, Object]
 	];
 
-	(*Collect resolved intrument packetet*)
+	(*Collect resolved instrument packetet*)
 	instrumentPacket = fetchPacketFromFastAssoc[instrumentModel,fastCacheBall];
 
 	(* -- RESOLVE ANALYTES OF INTEREST -- *)
@@ -2673,11 +2696,11 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	(* resolve the ESI or MALDI specific options using the helper functions *)
 	{ionSourceResolvedOptions,ionSourceSpecificTests,ionSourceSpecificInvalidOptions,ionSourceSpecificInvalidInputs}=Switch[{ionSource,massAnalyzer},
 		{MALDI,_},
-			resolveMALDIOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache],
+			resolveMALDIOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache,updatedSimulation],
 		{_,QTOF},
-			resolveESIQTOFOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache],
+			resolveESIQTOFOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache,updatedSimulation],
 		{_,TripleQuadrupole},
-			resolveESITripleQuadOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache],
+			resolveESITripleQuadOptions[mySamples,simulatedSamples,download,resolvedSamplePrepOptions,preResolvedExperimentOptions,filteredAnalytePackets,booleans,simulatedCache,updatedSimulation],
 		_,
 			{{},{},{},{}}
 	];
@@ -2702,8 +2725,8 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 			MatchQ[nonDiscardedSamples,{}],{{},{}},
 
 			(* If not, check their SamplesInStorageConditions *)
-			gatherTests, ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorages, Output -> {Result, Tests},Cache->simulatedCache],
-			True,{ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorages, Output -> Result,Cache->simulatedCache], {}}
+			gatherTests, ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorages, Output -> {Result, Tests},Cache->simulatedCache, Simulation -> updatedSimulation],
+			True,{ValidContainerStorageConditionQ[nonDiscardedSamples,nonDiscardedSampleStorages, Output -> Result,Cache->simulatedCache, Simulation -> updatedSimulation], {}}
 		];
 
 	(*Collect Invalide options SamplesInStorageCondition*)
@@ -2717,8 +2740,8 @@ resolveMassSpectrometryOptions[mySamples:{ObjectP[Object[Sample]]...},myExperime
 	{validCalibrantStorageConditionBool, validCalibrantStorageConditionTests} =
 		Which[
 			MatchQ[calibrantNoModels,{}],{{},{}},
-			gatherTests, ValidContainerStorageConditionQ[resolvedCalibrants,calibrantStorages, Output -> {Result, Tests},Cache->simulatedCache],
-			True, {ValidContainerStorageConditionQ[resolvedCalibrants,calibrantStorages, Output -> Result,Cache->simulatedCache], {}}
+			gatherTests, ValidContainerStorageConditionQ[resolvedCalibrants,calibrantStorages, Output -> {Result, Tests},Cache->simulatedCache, Simulation -> updatedSimulation],
+			True, {ValidContainerStorageConditionQ[resolvedCalibrants,calibrantStorages, Output -> Result,Cache->simulatedCache, Simulation -> updatedSimulation], {}}
 		];
 
 	(*Collect Invalide options SamplesInStorageCondition*)
@@ -2843,8 +2866,10 @@ resolveMALDIOptions[
 	mySuppliedExperimentOptions_,
 	myFilteredAnalytePackets_, (* {{PacketP[IdentityModelTypes]..}..} - our filtered analytes (all of the same general type) for each of our simulated samples that we use internally to our function. *)
 	myBooleans:{({BooleanP..}|BooleanP)..},
-	mySimulatedCache_
-]:=Module[{
+	mySimulatedCache_,
+	updatedSimulation:_Simulation|Null
+]:=Module[
+	{
 	gatherTests,discardedSamplesBools,nonLiquidSamplesBools,outOfMassRangeBools,ionSourceCalibrantMismatchBooleans,maxMassSupportedBools,
 	messages,simulatedCache,outsideEngine,samplePrepOptions,massSpecSpecificOptions,massSpecOptions,suppliedCalibrants,
 	suppliedMatrices,sampleDownload,suppliedCalibrantSampleDownload,suppliedCalibrantModelDownload,relevantCalibrantModelDownload,maldiPlatePacket,instrumentPacket,
@@ -2873,9 +2898,9 @@ resolveMALDIOptions[
 	(* post resolver *)
 	suppliedNumberOfReplicates,numberOfInputSamples,numberOfSampleSpots,numberOfAvailableSpots,tooManySamples,badCalibrantSamplePackets,
 	invalidReplicatesOption,tooManySamplesTest,uncalibratableSamplePackets,uncalibratableSamples,invalidCalibrationOption,
-	unableToCalibrateTests,hardToCalibrateSamplePackets,hardToCalibrateSamples,limitedReferencePeaksTests,outOfMassRangeSamplePackets,
+	unableToCalibrateTests,hardToCalibrateSamplePackets,hardToCalibrateSamples,limitedReferencePeaksTests,notEnoughReferencePeaksOptions,outOfMassRangeSamplePackets,
 	outOfCalibrantRangeSamplePackets,badVolumeSamplePackets,badVolumeSamples,invalidAliquotVolumeOption,invalidCalibrantTests,invalidCalibrantOptions,
-	assayVolumeOutOfSpottingInstrumentRangeTest,numberOfAliquots,targetContainers,relevantAliquotWarnings,aliquotWarningTests,
+	assayVolumeOutOfSpottingInstrumentRangeTest,numberOfAliquots,targetContainers,relevantAliquotWarnings,
 	suppliedConsolidation,resolvedConsolidation,suppliedAliquot,resolvedAliquot,aliquotOptions,resolvedAliquotOptions,aliquotTests,resolvedPostProcessingOptions,
 	maldiInvalidInputs,maldiInvalidOptions,maldiResolvedOptions,maldiTests,massInCalibrantRangeBools,outOfCalibrantRangeSamples,outOfRangeCalibrantTests,
 	fastCacheBall, suppliedInstrument
@@ -3743,12 +3768,13 @@ resolveMALDIOptions[
 	hardToCalibrateSamplePackets=Complement[PickList[simulatedSamplePackets,numbersOfPeaksInRange,1|2],badMassRangeSamplePackets];
 	hardToCalibrateSamples=Lookup[hardToCalibrateSamplePackets,Object,{}];
 
-	If[!MatchQ[hardToCalibrateSamplePackets,{}]&&messages&&outsideEngine,
-		Message[Warning::LimitedReferencePeaks,ObjectToString[hardToCalibrateSamplePackets,Cache->simulatedCache]];
+	If[!MatchQ[hardToCalibrateSamplePackets,{}]&&messages,
+		Message[Error::NotEnoughReferencePeaks,ObjectToString[hardToCalibrateSamplePackets,Cache->simulatedCache]];
 	];
 
 	(* Create a test for the valid samples and one for the invalid samples *)
-	limitedReferencePeaksTests=sampleTests[gatherTests,Warning,simulatedSamplePackets,hardToCalibrateSamplePackets,"There are at least 3 reference peaks in the mass range such that the instrument can be calibrated for `1`:",simulatedCache];
+	limitedReferencePeaksTests=sampleTests[gatherTests,Test,simulatedSamplePackets,hardToCalibrateSamplePackets,"There are at least 3 reference peaks in the mass range such that the instrument can be calibrated for `1`:",simulatedCache];
+	notEnoughReferencePeaksOptions=If[!MatchQ[hardToCalibrateSamplePackets,{}],MassRange];
 
 	(* Get the samples for which the mass range is invalid and samples out of calibrant peak range, so we can throw the below warning only when appropriate *)
 	outOfMassRangeSamplePackets=PickList[simulatedSamplePackets,outOfMassRangeBools,False];
@@ -3875,28 +3901,6 @@ resolveMALDIOptions[
 	(* we only want to throw the aliquot warning if we haven't already thrown the Discarded or NonLiquid error above *)
 	relevantAliquotWarnings=MapThread[#1&&!AnyTrue[{#2,#3},TrueQ]&,{aliquotWarnings,discardedSamplesBools,nonLiquidSamplesBools}];
 
-	(* Provide a warning/test indicating we're going to aliquot *)
-	(* We have to throw our own error here because we want to resolve ConsolidateAliquots
-	 	and sending this option to resolveAliquotOptions will make it think the user sent this and thus knows aliquoting will happen *)
-	aliquotWarningTests=Module[{badSamplePackets,currentContainers,newContainers},
-
-		badSamplePackets=PickList[simulatedSamplePackets,relevantAliquotWarnings,True];
-		currentContainers=PickList[containerModels,relevantAliquotWarnings,True];
-		newContainers=PickList[targetContainers,relevantAliquotWarnings,True];
-
-		If[MemberQ[relevantAliquotWarnings,True]&&!gatherTests,
-			Message[
-				Warning::AliquotRequired,
-				ObjectToString[badSamplePackets,Cache->simulatedCache],
-				ObjectToString[currentContainers,Cache->simulatedCache],
-				ObjectToString[newContainers,Cache->simulatedCache],
-				"because these samples will not be in containers compatible with the instrument which spots the MALDI plate."
-			]
-		];
-
-		sampleTests[gatherTests,Warning,simulatedSamplePackets,badSamplePackets,"`1` must be aliquoted because these samples will not be in containers compatible with the instrument which spots the MALDI plate:",simulatedCache]
-	];
-
 	(* If we're aliquoting and user hasn't supplied ConsolidateAliquots, set to True *)
 	(* Since we're going to take a small sample from the aliquots to spot onto the plate, no need for them to be in separate containers *)
 	suppliedConsolidation=Lookup[samplePrepOptions,ConsolidateAliquots];
@@ -3905,19 +3909,10 @@ resolveMALDIOptions[
 		suppliedConsolidation
 	];
 
-	suppliedAliquot=Lookup[samplePrepOptions,Aliquot];
-	resolvedAliquot=Map[
-		If[MatchQ[#,Automatic]&&MemberQ[preResolvedAliquots,True],
-			True,
-			#
-		]&,
-		suppliedAliquot
-	];
-
 	(* Prepare options to send to resolveAliquotOptions *)
 	aliquotOptions=ReplaceRule[
 		mySuppliedExperimentOptions,
-		Join[{Aliquot->resolvedAliquot,ConsolidateAliquots->resolvedConsolidation},myResolvedSamplePrepOptions]
+		Join[{ConsolidateAliquots->resolvedConsolidation},myResolvedSamplePrepOptions]
 	];
 
 	(* Somehow TransferDevices in would fail to populate the cache. A lot of different methods were try to fix this. *)
@@ -3930,17 +3925,18 @@ resolveMALDIOptions[
 
 	(* Resolve Aliquot Options for the MALDI experiment *)
 	(* Set warning message to Null since we're throwing our own message above *)
-	{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
+	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
 		resolveAliquotOptions[
 			ExperimentMassSpectrometry,
 			myNonSimulatedSamples,
 			mySimulatedSamples,
 			aliquotOptions,
-			RequiredAliquotContainers->targetContainers,
-			RequiredAliquotAmounts->requiredAliquotAmounts,
-			AliquotWarningMessage->Null,
-			Cache->simulatedCache,
-			Output->{Result,Tests}
+			RequiredAliquotContainers -> targetContainers,
+			RequiredAliquotAmounts -> requiredAliquotAmounts,
+			AliquotWarningMessage -> "because these samples will not be in containers compatible with the instrument which spots the MALDI plate.",
+			Cache -> simulatedCache,
+			Simulation -> updatedSimulation,
+			Output -> {Result, Tests}
 		],
 		{
 			resolveAliquotOptions[
@@ -3948,17 +3944,18 @@ resolveMALDIOptions[
 				myNonSimulatedSamples,
 				mySimulatedSamples,
 				aliquotOptions,
-				RequiredAliquotContainers->targetContainers,
-				RequiredAliquotAmounts->requiredAliquotAmounts,
-				AliquotWarningMessage->Null,
-				Cache->simulatedCache
+				RequiredAliquotContainers -> targetContainers,
+				RequiredAliquotAmounts -> requiredAliquotAmounts,
+				AliquotWarningMessage -> "because these samples will not be in containers compatible with the instrument which spots the MALDI plate.",
+				Cache -> simulatedCache,
+				Simulation -> updatedSimulation
 			],
 			{}
 		}
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[mySuppliedExperimentOptions];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[mySuppliedExperimentOptions];
 
 	(* -- GATHER THE OUTPUT -- *)
 
@@ -3974,6 +3971,7 @@ resolveMALDIOptions[
 		invalidAliquotVolumeOption,
 		invalidMALDITOFMassDetectionOptions,
 		invalidCalibrantOptions,
+		notEnoughReferencePeaksOptions,
 		invalidNumberOfShotsOption,
 		invalidCalibrantNumberOfShotsOption,
 		invalidMatrixOption,
@@ -4058,7 +4056,7 @@ resolveMALDIOptions[
 			noMolecularWeightTests,optionPrecisionTests,
 			badLaserPowerRangeTests,badCalibrantLaserPowerRangeTests,maldiPlateTest,
 			tooManySamplesTest,unableToCalibrateTests,limitedReferencePeaksTests,(*nonFlankingRangeTests, wideRangeTests,*)
-			assayVolumeOutOfSpottingInstrumentRangeTest,aliquotWarningTests,aliquotTests,
+			assayVolumeOutOfSpottingInstrumentRangeTest,aliquotTests,
 			invalidMALDITOFFMassDetectionOptionTests,outOfRangeCalibrantTests,invalidCalibrantTests,
 			numberOfShotsTest, calibrantNumberOfShotsTest
 		}
@@ -4087,8 +4085,10 @@ resolveESIQTOFOptions[
 	mySuppliedExperimentOptions_,
 	myFilteredAnalytePackets_, (* {{PacketP[IdentityModelTypes]..}..} - our filtered analytes (all of the same general type) for each of our simulated samples that we use internally to our function. *)
 	myBooleans:{({BooleanP..}|BooleanP)..},
-	mySimulatedCache_
-]:=Module[{
+	mySimulatedCache_,
+	updatedSimulation:_Simulation|Null
+]:=Module[
+	{
 	gatherTests,discardedSamplesBools,nonLiquidSamplesBools,outOfMassRangeBools,massInCalibrantRangeBools,ionSourceCalibrantMismatchBooleans,maxMassSupportedBools,
 	messages,outsideEngine,simulatedCache,samplePrepOptions,massSpecSpecificOptions,massSpecOptions,suppliedCalibrants,unroundedMassRanges,
 	sampleDownload,suppliedCalibrantSampleDownload,suppliedCalibrantModelDownload,relevantCalibrantModelDownload,maldiPlatePacket,instrumentPacket,allInstrumentPackets,
@@ -4122,7 +4122,9 @@ resolveESIQTOFOptions[
 	(*ESI_QTOF Tests*)
 	invalidESIQTOFVoltagesOptionTests,invalidESIQTOFGasOptionTests,invalidESIQTOFMassDetectionOptionTests,outRangedDesolvationTemperatureTests,invalidESIQTOFVoltagesOptions,
 	invalidESIQTOFGasOptions,invalidESIQTOFMassDetectionOptions,outRangedDesolvationTemperatureOptions,aliquotQList,requiredVolumes,invalidNonAliquotSampleVolumesQ,invalidNonAliquotSampleVolumeTests,
-	validCalibrantBools,outOfCalibrantRangeSamplePackets,outOfCalibrantRangeSamples,outOfRangeCalibrantTests,invalidCalibrantTests,invalidCalibrantOptions,badCalibrantSamplePackets
+	validCalibrantBools,outOfCalibrantRangeSamplePackets,outOfCalibrantRangeSamples,outOfRangeCalibrantTests,
+	invalidCalibrantTests,invalidCalibrantOptions,invalidScanTimeBool,invalidScanTimeTest,invalidScanTimeOptions,
+	badCalibrantSamplePackets
 },
 
 
@@ -4914,6 +4916,21 @@ resolveESIQTOFOptions[
 	invalidCalibrantTests=sampleTests[gatherTests,Test,simulatedSamplePackets,PickList[simulatedSamplePackets,validCalibrantBools,False],"For samples `1` in, the specified Calibrant is not valid:",simulatedCache];
 	invalidCalibrantOptions=If[!And@@validCalibrantBools,Calibrant];
 
+	(* Set a boolean if the specified scan time is invalid *)
+	(* 10 seconds was originally the upper bound for the ScanTime option for both QTOF and QQQ, but QQQ actually allows
+	scan times of up to 195 seconds, so the upper bound of the option was changed to 195 and this check was added for the QTOF *)
+	invalidScanTimeBool = MemberQ[scanTimes, GreaterP[10 Second]];
+
+	(* Check if user specified scan times are valid, if not we throw an error message.*)
+	If[invalidScanTimeBool && messages,
+		Message[Error::InvalidESIQTOFScanTimeOption, scanTimes]
+	];
+
+	(* Create a test for invalid scan times *)
+	invalidScanTimeTest=If[gatherTests,
+		Test["The specified ScanTime option values are all less than 10 seconds.",invalidScanTimeBool,False]
+	];
+	invalidScanTimeOptions=If[invalidScanTimeBool,ScanTime];
 
 	(* -- RESOLVE ALIQUOT OPTIONS -- *)
 
@@ -5065,8 +5082,8 @@ resolveESIQTOFOptions[
 
 			(* The containers that wil fit on the instrument's autosampler *)
 			{compatibleContainers,namedCompatibleContainers} = {
-				{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]},
-				{Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"]}
+				{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"], Model[Container, Vessel, "id:aXRlGnRE6A8m"], Model[Container, Vessel, "id:qdkmxz0A884Y"], Model[Container, Vessel, "id:o1k9jAoPw5RN"]},
+				{Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],Model[Container, Vessel, "PFAS Testing Vials, Agilent"]}
 			};
 
 			(* Extract list of bools *)
@@ -5078,11 +5095,11 @@ resolveESIQTOFOptions[
 				simulatedSampleContainerModels
 			];
 
-			(* Extract all samples that could be aliquotted *)
+			(* Extract all samples that could be aliquoted *)
 			(* NOTE: this doesn't consider samples that are aliquotted and NOT consolidated. Therefore the number could be higher! *)
 			uniqueAliquotableSamples = DeleteDuplicates@PickList[mySimulatedSamples,specifiedAliquotBools,True|Automatic];
 
-			(* Find plates and containers that definitely cannot be aliquotted because Aliquot was set to False *)
+			(* Find plates and containers that definitely cannot be aliquoted because Aliquot was set to False *)
 			uniqueNonAliquotablePlates = DeleteDuplicates@Cases[
 				PickList[simulatedSampleContainers,specifiedAliquotBools,False],
 				ObjectP[Object[Container,Plate]]
@@ -5252,6 +5269,7 @@ resolveESIQTOFOptions[
 				"because the given samples are not in containers that are compatible with the autosampler affiliated with the mass spectrometry instrument."
 			],
 			Cache->simulatedCache,
+			Simulation->Simulation[simulatedCache],
 			Output->{Result,Tests}
 		],
 		{
@@ -5266,7 +5284,8 @@ resolveESIQTOFOptions[
 					"because the given samples don't fit into the fluidics system of the mass spectrometer. If aliquotting is not desired, please move the samples to a suitable container prior to the experiment. Please refer to the documentation for a list of compatible containers.",
 					"because the given samples are not in containers that are compatible with the autosampler affiliated with the mass spectrometry instrument."
 				],
-				Cache->simulatedCache
+				Cache->simulatedCache,
+				Simulation->Simulation[simulatedCache]
 			],
 			{}
 		}
@@ -5326,7 +5345,8 @@ resolveESIQTOFOptions[
 			invalidESIQTOFGasOptions,
 			invalidESIQTOFMassDetectionOptions,
 			outRangedDesolvationTemperatureOptions,
-			invalidCalibrantOptions
+			invalidCalibrantOptions,
+			invalidScanTimeOptions
 		}
 	],
 		Null];
@@ -5423,7 +5443,8 @@ resolveESIQTOFOptions[
 		outRangedDesolvationTemperatureTests,
 		invalidNonAliquotSampleVolumeTests,
 		outOfRangeCalibrantTests,
-		invalidCalibrantTests
+		invalidCalibrantTests,
+		invalidScanTimeTest
 	}],_EmeraldTest];
 
 	(* Return the resolved options, the tests, the invalid input, and the invalid options gathered for MALDI *)
@@ -5450,8 +5471,10 @@ resolveESITripleQuadOptions[
 	mySuppliedExperimentOptions_,
 	myFilteredAnalytePackets_, (* {{PacketP[IdentityModelTypes]..}..} - our filtered analytes (all of the same general type) for each of our simulated samples that we use internally to our function. *)
 	myBooleans:{({BooleanP..}|BooleanP)..},
-	mySimulatedCache_
-]:=Module[{
+	mySimulatedCache_,
+	updatedSimulation:_Simulation|Null
+]:=Module[
+	{
 	gatherTests,discardedSamplesBools,nonLiquidSamplesBools,outOfMassRangeBools,massInCalibrantRangeBools,ionSourceCalibrantMismatchBooleans,maxMassSupportedBools,
 	messages,outsideEngine,simulatedCache,samplePrepOptions,massSpecSpecificOptions,massSpecOptions,suppliedCalibrants,unroundedMassRanges,
 	sampleDownload,suppliedCalibrantSampleDownload,suppliedCalibrantModelDownload,relevantCalibrantModelDownload,maldiPlatePacket,instrumentPacket,allInstrumentPackets,
@@ -7543,8 +7566,8 @@ resolveESITripleQuadOptions[
 
 			(* The containers that wil fit on the instrument's autosampler *)
 			{compatibleContainers,namedCompatibleContainers} = {
-				{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"]},
-				{Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"]}
+				{Model[Container, Plate, "id:L8kPEjkmLbvW"], Model[Container, Vessel, "id:jLq9jXvxr6OZ"], Model[Container, Vessel, "id:GmzlKjznOxmE"], Model[Container, Vessel, "id:3em6ZvL8x4p8"], Model[Container, Vessel, "id:aXRlGnRE6A8m"],Model[Container, Vessel, "id:qdkmxz0A884Y"], Model[Container, Vessel, "id:o1k9jAoPw5RN"]},
+				{Model[Container, Plate, "96-well 2mL Deep Well Plate"], Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],Model[Container, Vessel, "PFAS Testing Vials, Agilent"]}
 			};
 
 			(* Extract list of bools *)
@@ -7556,11 +7579,11 @@ resolveESITripleQuadOptions[
 				simulatedSampleContainerModels
 			];
 
-			(* Extract all samples that could be aliquotted *)
+			(* Extract all samples that could be aliquoted *)
 			(* NOTE: this doesn't consider samples that are aliquotted and NOT consolidated. Therefore the number could be higher! *)
 			uniqueAliquotableSamples = DeleteDuplicates@PickList[mySimulatedSamples,specifiedAliquotBools,True|Automatic];
 
-			(* Find plates and containers that definitely cannot be aliquotted because Aliquot was set to False *)
+			(* Find plates and containers that definitely cannot be aliquoted because Aliquot was set to False *)
 			uniqueNonAliquotablePlates = DeleteDuplicates@Cases[
 				PickList[simulatedSampleContainers,specifiedAliquotBools,False],
 				ObjectP[Object[Container,Plate]]
@@ -7726,6 +7749,7 @@ resolveESITripleQuadOptions[
 				"because the given samples are not in containers that are compatible with the autosampler affiliated with the mass spectrometry instrument."
 			],
 			Cache->simulatedCache,
+			Simulation->Simulation[simulatedCache],
 			Output->{Result,Tests}
 		],
 		{
@@ -7740,7 +7764,8 @@ resolveESITripleQuadOptions[
 					"because the given samples don't fit into the fluidics system of the mass spectrometer. If aliquotting is not desired, please move the samples to a suitable container prior to the experiment. Please refer to the documentation for a list of compatible containers.",
 					"because the given samples are not in containers that are compatible with the autosampler affiliated with the mass spectrometry instrument."
 				],
-				Cache->simulatedCache
+				Cache->simulatedCache,
+				Simulation->Simulation[simulatedCache]
 			],
 			{}
 		}
@@ -7947,7 +7972,7 @@ resolveESITripleQuadOptions[
 
 DefineOptions[
 	esiQTOFResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 (* NumberOfReplicates *)
@@ -7965,10 +7990,10 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 	systemFlushGradient,systemPrimeBufferContainer,systemFlushBufferContainer,systemPrimeBufferVolume,systemPrimeBufferResource,systemFlushBufferVolume,
 	systemFlushBufferResource,systemPrimeBufferPlacements,systemFlushBufferPlacements,instrumentSetupTime,sampleRunTime,
 	massSpectrometerResource,containersIn,numberOfContainersInvolved,flowInjectionBuffersInvolved,sampleContainersDeadVolumes,
-	resourcePickingTime,dataAcquisitionTime,checkpoints,massSpecPacket,sharedFieldPacket,finalizedPacket,
+	resourcePickingTime,dataAcquisitionTime,checkpoints,massSpecPacket,sharedFieldPacket,finalizedPacket, simulation,
 	allResourceBlobs,fulfillable,frqTests,previewRule, optionsRule,testsRule,resultRule,aliquotQList},
 
-(* Determine the requested output format of this function. *)
+	(* Determine the requested output format of this function. *)
 	outputSpecification=OptionValue[Output];
 	output=ToList[outputSpecification];
 
@@ -7977,7 +8002,8 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 	messages=!gatherTests;
 
 	(* Get our cache. *)
-	cache=OptionValue[Cache];
+	cache=Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* Determine if we need to make replicate spots *)
 	numberOfReplicates=Lookup[myResolvedOptions,NumberOfReplicates];
@@ -8000,12 +8026,12 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 
 	(*get the mass spectrometry instrument model *)
 	instrumentModel=If[MatchQ[Lookup[myResolvedOptions,Instrument],ObjectP[Object[Instrument]]],
-		Download[Lookup[fetchPacketFromCache[Download[Lookup[myResolvedOptions,Instrument],Object],cache],Model],Object],
-		Download[Lookup[myResolvedOptions,Instrument],Object]
+		cacheLookup[cache, Lookup[myResolvedOptions, Instrument], Model],
+		Lookup[myResolvedOptions,Instrument]
 	];
 
 	(* Get objects in options *)
-	calibrants=Download[Lookup[optionsWithReplicates,Calibrant],Object];
+	calibrants=Lookup[optionsWithReplicates,Calibrant];
 
 	(* Get unique calibrant objects *)
 	uniqueCalibrants=DeleteDuplicates[calibrants];
@@ -8023,7 +8049,8 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 			{Model[Object]},
 			{Detectors,Objects[IntegratedHPLC[Detectors]]}
 		},
-		Cache->cache
+		Cache->cache,
+		Simulation -> simulation
 	];
 
 	msDetectors=instrumentDownload[[All,1,1]];
@@ -8169,19 +8196,19 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 
 	(*create the placement fields for the needle wash solution*)
 	needleWashSolutionPlacements={
-		{Link[needleWashSolutionResource],{"SM Purge Reservoir Slot"}}
+		{Link[needleWashSolutionResource],{"SM Wash Reservoir Slot"}}
 	};
 
 	(*get the instrument model packet*)
 	instrumentModelPacket=fetchPacketFromCache[instrumentModel,cache];
 
 	(*for the system prime and flush we will defer to the default method*)
-	systemPrimeGradientMethod=Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"];
-	systemFlushGradientMethod=Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"];
+	systemPrimeGradientMethod=Object[Method, Gradient, "id:XnlV5jKXaknM"]; (* Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"] *)
+	systemFlushGradientMethod=Object[Method, Gradient, "id:XnlV5jKXaknM"]; (* Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"] *)
 
 	(*get the packet from the cache*)
-	systemPrimeGradientPacket=fetchPacketFromCache[Download[systemPrimeGradientMethod,Object],cache];
-	systemFlushGradientPacket=fetchPacketFromCache[Download[systemFlushGradientMethod,Object],cache];
+	systemPrimeGradientPacket=fetchPacketFromCache[systemPrimeGradientMethod,cache];
+	systemFlushGradientPacket=fetchPacketFromCache[systemFlushGradientMethod,cache];
 
 	(*get the gradient tuple*)
 	systemPrimeGradient=Lookup[systemPrimeGradientPacket,Gradient];
@@ -8249,7 +8276,7 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 
 	(* Create a resource for the mass spectrometer *)
 	(* Note that even in the case of flow injection we do NOT consider priming and flushing as part of the resource since we don't give the user option to change that so why would we charge them *)
-	massSpectrometerResource=Resource[Instrument->Lookup[optionsWithReplicates,Instrument],Time->(instrumentSetupTime+sampleRunTime)];
+	massSpectrometerResource=Resource[Instrument->Lookup[optionsWithReplicates,Instrument],Time->(instrumentSetupTime+sampleRunTime), Name -> "mass instrument"<>CreateUUID[]];
 
 	(* --- ESTIMATE CHECKPOINTS --- *)
 	(* Get containers involved *)
@@ -8267,13 +8294,13 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 	(* Create the Checkpoints field -- Note that in constrast to MALDI we do NOT have "Cleaning Up" but we do have "Purging Instrument" and "Flushing Instrument" *)
 	(* be careful adding the correct check points inside the respective procedures *)
 	checkpoints={
-		{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->resourcePickingTime]},
-		{"Purging Instrument",3 Hour, "System priming buffers are connected to the LC instrument and the instrument's buffer lines, needle and pump seals are purged at a high flow rates.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->3*Hour]},
-		{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 0*Minute]},
-		{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+dataAcquisitionTime)]},
-		{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->0*Minute]},
-		{"Flushing Instrument", 2 Hour, "Buffers are connected to the LC instrument and the instrument is flushed with each buffer at high flow rates.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->2*Hour]},
-		{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->20*Minute]}
+		{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time ->resourcePickingTime]},
+		{"Purging Instrument",3 Hour, "System priming buffers are connected to the LC instrument and the instrument's buffer lines, needle and pump seals are purged at a high flow rates.",Resource[Operator->$BaselineOperator,Time ->3*Hour]},
+		{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->$BaselineOperator,Time -> 0*Minute]},
+		{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+dataAcquisitionTime)]},
+		{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->$BaselineOperator,Time ->0*Minute]},
+		{"Flushing Instrument", 2 Hour, "Buffers are connected to the LC instrument and the instrument is flushed with each buffer at high flow rates.",Resource[Operator->$BaselineOperator,Time ->2*Hour]},
+		{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->$BaselineOperator,Time ->20*Minute]}
 	};
 
 	(* FINALIZE PACKETS ESI*)
@@ -8297,7 +8324,7 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 		(* if we're doing flow injection, we also need to pass the AcquisitionTime so that we can use it for our processing stage. Doesn't hurt to populate it always *)
 		AcquisitionTime->sampleRunTime,
 		InjectionType->injectionType,
-		Replace[AcquisitionModes]->ConstantArray[MS,Length[samplesWithReplicates]], (* hardcode this since the insturment can do both and at this point we only do MSMS *)
+		Replace[AcquisitionModes]->ConstantArray[MS,Length[samplesWithReplicates]], (* hardcode this since the instrument can do both and at this point we only do MSMS *)
 		Replace[IonModes]->ionModes,
 		Replace[MinMasses]->minMasses,
 		Replace[MaxMasses]->maxMasses,
@@ -8315,6 +8342,9 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 	(* -- Resources -- *)
 		Replace[Calibrants]->calibrantResources,
 		Instrument->massSpectrometerResource,
+		(* Populate MassSpectrometryInstrument so that LCMS procedures may be called *)
+		MassSpectrometryInstrument->massSpectrometerResource,
+		PrimingSyringe -> Link[Resource[Sample -> Model[Item, Consumable, "id:9RdZXvdkxzGZ"], Rent -> True]],
 
 	(* flow injection specific options and resources *)
 		Replace[SampleVolumes]->sampleVolumesWithReplicate,
@@ -8365,8 +8395,8 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation -> simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache, Simulation -> simulation],Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -8403,7 +8433,7 @@ esiQTOFResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOption
 
 DefineOptions[
 maldiResourcePackets,
-Options:>{HelperOutputOption,CacheOption}
+Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 (* NumberOfReplicates *)
@@ -8446,7 +8476,8 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 	messages=!gatherTests;
 
 	(* Get our cache. *)
-	cache=OptionValue[Cache];
+	cache=Lookup[ToList[ops], Cache, {}];
+	simulation=Lookup[ToList[ops], Simulation, {}];
 
 	(* Determine if we need to make replicate spots *)
 	numberOfReplicates=Lookup[resolvedOptions,NumberOfReplicates];
@@ -8519,7 +8550,8 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 			(*7*){maldiPlateFields},
 			(*8*){MaxVolume}
 		},
-		Cache->cache
+		Cache->cache,
+		Simulation -> simulation
 	];
 
 	(* - Extract downloaded values into relevant variables - *)
@@ -8760,13 +8792,14 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 
 	(* - Sonciator Resources - *)
 	(* Create a resource for the sonicators used to clean the MALDI plates *)
+	(* We can select any $EquivalentInstrumentModelLookup from the three different types of Branson sonicators *)
 	sonicatorResource=Resource[
-		Instrument->{
-			Model[Instrument,Sonicator,"Branson 1510"],
-			Model[Instrument,Sonicator,"Branson 1510 With Thermo Precision Incubator"],
-			Model[Instrument,Sonicator,"Branson 1800"],
-			Model[Instrument,Sonicator,"Branson CPXH 3800"]
-		},
+		Instrument->Flatten[
+			Replace[
+			Link[{
+				Model[Instrument, Sonicator, "id:Vrbp1jG80Jqx"](*Branson 1510 - regular *) (* Only allowing this one because this one has the holder cap that can hold beaker in place *)
+			}],
+			Resources`Private`$EquivalentInstrumentModelLookup, 1]],
 		Time->25 Minute (* 2 10-minute baths, assume 5 minutes to move in and out*)
 	];
 
@@ -8821,7 +8854,7 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 	returningTime=10 Minute;
 
 	(* Use specified operator, if no request, default to Level 0 *)
-	operator=Replace[Lookup[optionsWithReplicates,Operator],Null->Model[User,Emerald,Operator,"Trainee"]];
+	operator=Replace[Lookup[optionsWithReplicates,Operator],Null->$BaselineOperator];
 
 	(* Generate operator resources for each checkpoint *)
 	{resourcePickingOperator,samplePrepOperator,dataAcquisitionOperator,cleanUpOperator,postProcessingOperator,returningOperator}=Map[
@@ -8846,8 +8879,8 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 	];
 
 	{resourcesOk,resourceTests}=If[gatherTests,
-		Resources`Private`fulfillableResourceQ[resources,Output->{Result,Tests},Cache -> cache],
-		{Resources`Private`fulfillableResourceQ[resources,Cache -> cache],{}}
+		Resources`Private`fulfillableResourceQ[resources,Output->{Result,Tests},Cache -> cache, Simulation -> simulation],
+		{Resources`Private`fulfillableResourceQ[resources,Cache -> cache, Simulation -> simulation],{}}
 	];
 
 	(* FINALIZE PACKETS MALDI *)
@@ -8891,8 +8924,8 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 		Replace[SamplesInWells]->sampleWells,
 		Replace[CalibrantWells]->calibrantWells,
 		Replace[MatrixWells]->matrixWells,
-
 		Replace[CalibrationMethods]->Link[calibrationMethods],
+		AutomaticMALDICalibration->TrueQ[$AutomaticMALDICalibration],
 
 		(* -- Resources -- *)
 		Replace[Calibrants]->calibrantResources,
@@ -8908,7 +8941,7 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 	|>;
 
 	(* populateSamplePrepFields will handle replicates for sample prep, allow it to do work using original values *)
-	prepPacket=populateSamplePrepFields[mySamples,resolvedOptions,Cache->cache];
+	prepPacket=populateSamplePrepFields[mySamples,resolvedOptions,Cache->cache, Simulation -> simulation];
 
 	(* protocolPacket=Join[massSpecPacket,prepPacket]; *)
 	protocolPacket=Association@@(ReplaceRule[Normal[massSpecPacket], Normal[prepPacket]]);
@@ -8930,33 +8963,36 @@ maldiResourcePackets[mySamples:{ObjectP[Object[Sample]]...},templatedOptions:{(_
 
 DefineOptions[
 	esiTripleQuadResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 (* NumberOfReplicates *)
 esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
 	{
-		allAvalableNeedleList,allNeedleModels,allRelaventNeedleModels,allRelaventNeedlePacket,aliquotVolumesWithReplicates, allRelevantCalibrantModels,allResourceBlobs,
+		allAvalableNeedleList,allRelaventNeedleModels,allRelaventNeedlePacket,aliquotVolumesWithReplicates,allResourceBlobs,
 		bufferDeadVolume, bufferResource, bufferVolumes, calibrantSyringes,	calibrantSyringeNeedles,calibrantSyringeInfusionVolume,	calibrantSyringeResource,calibrantSyringeNeedleResource,
-		cache, calibrantDownload, calibrantModels,calibrationTime, calibrantStorages, calibrantResourceLookup,calibrantResources, calibrants, calibrantSampleModels,
+		cache, calibrantDownload, calibrantModels,calibrationTime, calibrantStorages, calibrantResourceLookup, calibrants, calibrantSampleModels,
 		calibrantVolumePerSample, checkpoints, collisionCellExitVoltages,collisionEnergies, coneGasFlows, containersIn, dataAcquisitionTime,
 		declusteringVoltages, desolvationGasFlows, desolvationTemperatures,dwellTimes, esiCapillaryVoltages, expandedInputs,
 		expandedResolvedOptions, finalizedPacket,finalNeedleList,flowInjectionBuffersInvolved, flowInjectionQ, fragmentMassDetections,
-		fragmentMinMasses,fragmentMaxMasses,fragmentMassSelections,acquisitionModes,infusionSyringeTubingResource,hplcConnectionDisconnections,hplcDisconnectionDestinations,syringeConnectionDisconnections,
+		fragmentMinMasses,fragmentMaxMasses,fragmentMassSelections,acquisitionModes,
 		fragments, frqTests, fulfillable, gatherTests, gradients,infusionFlowRates, infusionSyringes, infusionVolumes,infusionSyringeInnerDiameters,infusionSyringeModels,infusionSyringeNeedleResource,
-		infusionSyringeResource,injectionType, injectionVolume, instrumentDownload, instrumentModel,instrumentModelPacket, instrumentSetupTime, ionGuideVoltages,
-		ionModes, lcDetectorList, lcDetectors,massDetections,massSelections, massSpecPacket, massSpectrometerResource,
+		infusionSyringeResource,injectionType, injectionVolume, instrumentDownload, instrumentModel, instrumentSetupTime, ionGuideVoltages,
+		ionModes, lcDetectors,massDetections,massSelections, massSpecPacket, massSpectrometerResource,
 		massTolerances, maxMasses, messages, minMasses, msDetectors,multipleReactionMonitoringAssays,multipleReactionMonitoringAssayPackets, needleWashSolutionPlacements,
 		needleWashSolutionResource, neutralLosses,numberOfContainersInvolved, numberOfReplicates, optionsRule,
 		optionsWithReplicates, output, outputSpecification, previewRule,resolvedOptionsNoHidden, resourcePickingTime, resultRule,
 		runDurations, sampleContainers,sampleContainerInnerDepth,sampleContainerInnerDepthReplicates,sampleDownload, sampleObjects,sampleResourceLookup, sampleRunTime, samplesInResources,
-		samplesWithReplicates, sampleTemperature, sampleVolumes, scanModes,scanTimes, sharedFieldPacket, sourceTemperatures, stepwaveVoltages,
+		samplesWithReplicates, sampleTemperature, sampleVolumes, scanModes,scanTimes, sharedFieldPacket, sourceTemperatures,
 		systemFlushBufferContainer, systemFlushBufferPlacements,systemFlushBufferResource, systemFlushBufferVolume,
-		systemFlushGradient, systemFlushGradientMethod,systemFlushGradientPacket, systemPrimeBufferContainer,
+		systemFlushGradient, systemFlushGradientMethod,systemFlushGradientPacket, systemPrimeBufferContainer, simulation,
 		systemPrimeBufferPlacements, systemPrimeBufferResource,systemPrimeBufferVolume, systemPrimeGradient,systemPrimeFlushPlateResource,
 		systemPrimeGradientMethod, systemPrimeGradientPacket, testsRule,totalBufferVolumeNeeded, uniqueCalibrantModels, uniqueCalibrants,
-		uniqueCalibrantSamples, uniqueCalibrantTuples,uniqueCalibrantStorages, uniquePlateContainers,volumePerCalibrant,volumePerSample,uniqueCalibrantResources,
-		defaultCalibrantP,defaultCalibrants,nonDefaultCalibrant,truncatedUniqueCalibrants,defaultOnlyCalibrantQ,detectors,sampleContainerDownload
+		uniqueCalibrantSamples, uniqueCalibrantTuples,uniqueCalibrantStorages, uniquePlateContainers,volumePerCalibrant,volumePerSample,uniqueCalibrantResources,calibrationLoopCounts,
+		defaultCalibrantP,defaultCalibrants,nonDefaultCalibrant,truncatedUniqueCalibrants,defaultOnlyCalibrantQ,detectors,
+		calibrantPrimeBufferResource, calibrantPrimeInfusionSyringeResource, calibrantPrimeInfusionSyringeNeedleResource,
+		calibrantFlushBufferResource, calibrantFlushInfusionSyringeResource, calibrantFlushInfusionSyringeNeedleResource,
+		flushBufferResource, flushInfusionSyringeResource, flushInfusionSyringeNeedleResource
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -8968,7 +9004,8 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	messages=!gatherTests;
 
 	(* Get our cache. *)
-	cache=OptionValue[Cache];
+	cache=Lookup[ToList[ops], Cache, {}];
+	simulation=Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* Determine if we need to make replicate spots *)
 	numberOfReplicates=Lookup[myResolvedOptions,NumberOfReplicates];
@@ -8991,8 +9028,8 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 
 	(*get the mass spectrometry instrument model *)
 	instrumentModel=If[MatchQ[Lookup[myResolvedOptions,Instrument],ObjectP[Object[Instrument]]],
-		Download[Lookup[fetchPacketFromCache[Download[Lookup[myResolvedOptions,Instrument],Object],cache],Model],Object],
-		Download[Lookup[myResolvedOptions,Instrument],Object]
+		cacheLookup[cache, Lookup[myResolvedOptions, Instrument], Model],
+		Lookup[myResolvedOptions,Instrument]
 	];
 
 	(* Get objects in options *)
@@ -9051,6 +9088,7 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 				(*5*){InnerDiameter}
 			},
 			Cache->cache,
+			Simulation -> simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -9059,9 +9097,7 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	msDetectors=First[instrumentDownload[[All,1]]];
 
 	(* if there are several, we'll take the first *)
-	lcDetectorList=DeleteCases[First[instrumentDownload[[All, 2]]], Null];
-
-	lcDetectors=If[MatchQ[lcDetectorList,{}],{},lcDetectorList];
+	lcDetectors=DeleteCases[First[instrumentDownload[[All, 2]]], Null];
 
 	(* - Extract downloaded values into relevant variables - *)
 	sampleObjects=duplicateMassSpecReplicates[sampleDownload[[All,1]],numberOfReplicates];
@@ -9264,10 +9300,13 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 
 	uniqueCalibrantResources=Lookup[calibrantResourceLookup,truncatedUniqueCalibrants];
 
+	(*Initialize loop count to track how many calibration loops are performed for each calibrant during the procedure*)
+	calibrationLoopCounts=ConstantArray[0, Length[uniqueCalibrantResources]];
+
 	(*For ESI-QQQ we run calibrant by syringe pump, *)
 	(*First generate syringes and needle resources for that*)
-	calibrantSyringes=ConstantArray[Model[Container, Syringe, "1mL All-Plastic Disposable Syringe"],Length[truncatedUniqueCalibrants]];
-	calibrantSyringeNeedles=ConstantArray[Model[Item, Needle, "21g x 1 Inch Single-Use Needle"],Length[truncatedUniqueCalibrants]];
+	calibrantSyringes=ConstantArray[Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*),Length[truncatedUniqueCalibrants]];
+	calibrantSyringeNeedles=ConstantArray[Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*),Length[truncatedUniqueCalibrants]];
 
 	(*Calibrant volumes*)
 	calibrantSyringeInfusionVolume=ConstantArray[calibrantVolumePerSample,Length[truncatedUniqueCalibrants]];
@@ -9278,8 +9317,21 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	(*Creat needle resources*)
 	calibrantSyringeNeedleResource=(Resource[Sample->#])&/@ calibrantSyringeNeedles;
 
-	(* Build a resource for the tubing between the syringe and the instrument for the syringe pump*)
-	infusionSyringeTubingResource = Link[Object[Plumbing, Tubing, "PEEK tubing for Direct Infusion of Morrison MassSpec"]];
+	(* Create resource for calibrant prime/flush *)
+	(* Prime *)
+	calibrantPrimeBufferResource = Resource[Sample -> Model[Sample, StockSolution, "id:7X104v6zO6X9"](*1:1 LCMS-Grade Methanol/Milli-Q Water*), Amount -> 3 Milliliter, Container -> Model[Container, Vessel, "id:9RdZXvKBeeqL"](*20mL Glass Scintillation Vial*), Name -> "Pre-Calibration Prime Buffer"];
+	calibrantPrimeInfusionSyringeResource = Resource[Sample -> Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*), Name -> "Pre-Calibration Prime Syringe"];
+	calibrantPrimeInfusionSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*), Name -> "Pre-Calibration Prime Syringe Needle"];
+	(* Flush *)
+	calibrantFlushBufferResource = Resource[Sample -> Model[Sample, StockSolution, "id:7X104v6zO6X9"](*1:1 LCMS-Grade Methanol/Milli-Q Water*), Amount -> 3 Milliliter, Container -> Model[Container, Vessel, "id:9RdZXvKBeeqL"](*20mL Glass Scintillation Vial*), Name -> "Post-Calibration Flush Buffer"];
+	calibrantFlushInfusionSyringeResource = Resource[Sample -> Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*), Name -> "Post-Calibration Flush Syringe"];
+	calibrantFlushInfusionSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*), Name -> "Post-Calibration Flush Syringe Needle"];
+
+	(* Create resource for post-direct injection flush *)
+	(* Only need these in the direct infusion branch. *)
+	flushBufferResource = Resource[Sample -> Model[Sample, StockSolution, "id:7X104v6zO6X9"](*1:1 LCMS-Grade Methanol/Milli-Q Water*), Amount -> 3 Milliliter, Container -> Model[Container, Vessel, "id:9RdZXvKBeeqL"](*20mL Glass Scintillation Vial*), Name -> "Post-Infusion Flush Buffer"];
+	flushInfusionSyringeResource = Resource[Sample -> Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*), Name -> "Post-Infusion Flush Syringe"];
+	flushInfusionSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*), Name -> "Post-Infusion Flush Syringe Needle"];
 
 	(*Generate buffer dead volume*)
 	bufferDeadVolume=150*Milliliter;
@@ -9332,7 +9384,7 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 
 	(*create the placement fields for the needle wash solution*)
 	needleWashSolutionPlacements={
-		{Link[needleWashSolutionResource],{"SM Purge Reservoir Slot"}}
+		{Link[needleWashSolutionResource],{"SM Wash Reservoir Slot"}}
 	};
 
 	(*get the instrument model packet*)
@@ -9340,12 +9392,12 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	(*instrumentModelPacket=fetchPacketFromCache[instrumentModel,cache];*)
 
 	(*for the system prime and flush we will defer to the default method*)
-	systemPrimeGradientMethod=Object[Method,Gradient,"System Prime Method for QTRAP 6500"];(* Milli-Q water for 15 minutes*)
-	systemFlushGradientMethod=Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"]; (* 50% methanol in water for 15 minutes*)
+	systemPrimeGradientMethod=Object[Method, Gradient, "id:qdkmxzqZAGY4"]; (*Object[Method,Gradient,"System Prime Method for QTRAP 6500"];*)(* Milli-Q water for 15 minutes*)
+	systemFlushGradientMethod=Object[Method, Gradient, "id:XnlV5jKXaknM"]; (*Object[Method,Gradient,"System Prime Method-Acquity I-Class UPLC FlowInjection"];*) (* 50% methanol in water for 15 minutes*)
 
 	(*get the packet from the cache*)
-	systemPrimeGradientPacket=fetchPacketFromCache[Download[systemPrimeGradientMethod,Object],cache];
-	systemFlushGradientPacket=fetchPacketFromCache[Download[systemFlushGradientMethod,Object],cache];
+	systemPrimeGradientPacket=fetchPacketFromCache[systemPrimeGradientMethod,cache];
+	systemFlushGradientPacket=fetchPacketFromCache[systemFlushGradientMethod,cache];
 
 	(*get the gradient tuple*)
 	systemPrimeGradient=Lookup[systemPrimeGradientPacket,Gradient];
@@ -9465,22 +9517,22 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	(* be careful adding the correct check points inside the respective procedures *)
 	checkpoints=If[flowInjectionQ,
 		{
-			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->resourcePickingTime]},
-			{"Calibrate the Instrument",calibrationTime, "Check if the intrument is ready to run the sample, and calibrate the voltage offset if needed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+calibrationTime)]},
-			{"Purging Instrument",3 Hour, "System priming buffers are connected to the LC instrument and the instrument's buffer lines, needle and pump seals are purged at a high flow rates.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->3*Hour]},
-			{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 0*Minute]},
-			{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+dataAcquisitionTime)]},
-			{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->0*Minute]},
-			{"Flushing Instrument", 2 Hour, "Buffers are connected to the LC instrument and the instrument is flushed with each buffer at high flow rates.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->2*Hour]},
-			{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->20*Minute]}
+			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time ->resourcePickingTime]},
+			{"Calibrate the Instrument",calibrationTime, "Check if the instrument is ready to run the sample, and calibrate the voltage offset if needed.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+calibrationTime)]},
+			{"Purging Instrument",3 Hour, "System priming buffers are connected to the LC instrument and the instrument's buffer lines, needle and pump seals are purged at a high flow rates.",Resource[Operator->$BaselineOperator,Time ->3*Hour]},
+			{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->$BaselineOperator,Time -> 0*Minute]},
+			{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are injected and measured.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+dataAcquisitionTime)]},
+			{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->$BaselineOperator,Time ->0*Minute]},
+			{"Flushing Instrument", 2 Hour, "Buffers are connected to the LC instrument and the instrument is flushed with each buffer at high flow rates.",Resource[Operator->$BaselineOperator,Time ->2*Hour]},
+			{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->$BaselineOperator,Time ->20*Minute]}
 		},
 		{
-			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->resourcePickingTime]},
-			{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time -> 0*Minute]},
-			{"Calibrate the Instrument",calibrationTime, "Check if the intrument is ready to run the sample, and calibrate the voltage offset if needed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+calibrationTime)]},
-			{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are transferred then loaded to a syringe pump then injected to the instrument and get measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->(instrumentSetupTime+dataAcquisitionTime)]},
-			{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->0*Minute]},
-			{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time ->20*Minute]}
+			{"Picking Resources",resourcePickingTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time ->resourcePickingTime]},
+			{"Preparing Samples",0*Hour,"Preprocessing, such as thermal incubation/mixing, centrifugation, filtration, and aliquoting, is performed.",Resource[Operator->$BaselineOperator,Time -> 0*Minute]},
+			{"Calibrate the Instrument",calibrationTime, "Check if the instrument is ready to run the sample, and calibrate the voltage offset if needed.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+calibrationTime)]},
+			{"Acquiring Data",dataAcquisitionTime,"The instrument is calibrated, and samples are transferred then loaded to a syringe pump then injected to the instrument and get measured.",Resource[Operator->$BaselineOperator,Time ->(instrumentSetupTime+dataAcquisitionTime)]},
+			{"Sample Post-Processing",0*Minute,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Resource[Operator->$BaselineOperator,Time ->0*Minute]},
+			{"Returning Materials", 20 Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator->$BaselineOperator,Time ->20*Minute]}
 		}
 	];
 
@@ -9538,15 +9590,43 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 		Replace[MultipleReactionMonitoringAssays]->multipleReactionMonitoringAssayPackets,
 
 		Replace[CalibrantInfusionVolumes]->calibrantSyringeInfusionVolume,
+		Replace[CalibrationLoopCounts]->calibrationLoopCounts,
 
 		(* -- Resources -- *)
 		Instrument->massSpectrometerResource,
+		(* Populate the MassSpectrometryInstrument field to enable use of LCMS procedures *)
+		MassSpectrometryInstrument -> massSpectrometerResource,
 
 		(*Generate Calibrant Resources*)
 		Replace[UniqueCalibrants]->uniqueCalibrantResources,
 		Replace[CalibrantInfusionSyringes]->calibrantSyringeResource,
 		Replace[CalibrantInfusionSyringeNeedles]->calibrantSyringeNeedleResource,
 
+		(* Fields and resources to flush the infusion tubing and ion source capillary post-calibration. *)
+		CalibrantPrimeBuffer -> calibrantPrimeBufferResource,
+		CalibrantPrimeInfusionSyringe -> calibrantPrimeInfusionSyringeResource,
+		CalibrantPrimeInfusionVolume -> 1 Milliliter,
+		CalibrantPrimeInfusionSyringeNeedle -> calibrantPrimeInfusionSyringeNeedleResource,
+
+		(* Fields and resources to flush the infusion tubing and ion source capillary post-calibration. *)
+		CalibrantFlushBuffer -> calibrantFlushBufferResource,
+		CalibrantFlushInfusionSyringe -> calibrantFlushInfusionSyringeResource,
+		CalibrantFlushInfusionVolume -> 1 Milliliter,
+		CalibrantFlushInfusionSyringeNeedle -> calibrantFlushInfusionSyringeNeedleResource,
+
+		(* Fields and resources to flush the infusion tubing and ion source capillary post-infusion. *)
+		(* Note: Calibration flush that occurs first is the prime. *)
+		Sequence @@ If[MatchQ[injectionType, DirectInfusion],
+			{
+				FlushBuffer -> flushBufferResource,
+				FlushInfusionSyringe -> flushInfusionSyringeResource,
+				FlushInfusionVolume -> 1 Milliliter,
+				FlushInfusionSyringeNeedle -> flushInfusionSyringeNeedleResource
+			},
+			{
+				Nothing
+			}
+		],
 
 		(*ESI Specific Syringe Pump*)
 		Replace[InfusionSyringes]->infusionSyringeResource,
@@ -9590,15 +9670,12 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 
 		EstimatedProcessingTime->If[flowInjectionQ,Round[(instrumentSetupTime+sampleRunTime+10Minute),10Minute],Round[(instrumentSetupTime+dataAcquisitionTime),10Minute]],
 
-		(*---Connectors---*)
-		InfusionSyringeTubing->infusionSyringeTubingResource,
-
 		(* -- Checkpoints -- *)
 		Replace[Checkpoints]->checkpoints
 	|>;
 
 	(* generate a packet with the shared sample prep and aliquotting fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples,expandedResolvedOptions,Cache->cache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples,expandedResolvedOptions,Cache->cache,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, massSpecPacket];
@@ -9610,8 +9687,8 @@ esiTripleQuadResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolved
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation -> simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->cache, Simulation -> simulation],Null}
 	];
 
 	(* generate the Preview option; that is always Null *)

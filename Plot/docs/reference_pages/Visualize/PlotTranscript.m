@@ -37,9 +37,6 @@ DefineUsage[PlotTranscript,
 		"MotifForm",
 		"PlotProtein"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad"},
 	Preview->True
 }];

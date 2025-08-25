@@ -23,7 +23,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Multiple,
 			Class -> String,
 			Pattern :> _String,
-			Description -> "List of possible alternative names this model goes by.",
+			Description -> "A list of alternative names for this molecule.",
 			Category -> "Organizational Information",
 			Abstract -> True
 		},
@@ -50,6 +50,22 @@ DefineObjectType[Model[Molecule], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information"
+		},
+		VerifiedLog -> {
+			Format -> Multiple,
+			Class -> {Boolean, Link, Date},
+			Pattern :> {BooleanP, _Link, _?DateObjectQ},
+			Relation -> {Null, Object[User], Null},
+			Headers -> {"Verified", "Responsible person", "Date"},
+			Description -> "Records the history of changes to the Verified field, along with when the change occured, and the person responsible.",
+			Category -> "Organizational Information"
+		},
 		LegacyObject -> {
 			Format -> Single,
 			Class -> Link,
@@ -67,7 +83,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Sample],
-			Description -> "Specifies the model of sample that will be used if this model is specified to be used in an experiment.",
+			Description -> "Specifies the model of sample that will be used if this molecule model is specified to be used in an experiment.",
 			Category -> "Inventory"
 		},
 
@@ -84,7 +100,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> String,
 			Pattern :> InChIP,
-			Description -> "The International Chemical Identifer (InChI) that uniquely identifies this molecule.",
+			Description -> "The International Chemical Identifier (InChI) that uniquely identifies this molecule.",
 			Category -> "Organizational Information",
 			Abstract -> True
 		},
@@ -92,7 +108,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> String,
 			Pattern :> InChIKeyP,
-			Description -> "The hashed version of the International Chemical Identifer (InChI) that uniquely identifies this molecule.",
+			Description -> "The hashed version of the International Chemical Identifier (InChI) that uniquely identifies this molecule.",
 			Category -> "Organizational Information",
 			Abstract -> True
 		},
@@ -124,7 +140,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> String,
 			Pattern :> _String,
-			Description -> "Chemical formula of this molecule (e.g. H2O, NH2, etc.).",
+			Description -> "Chemical formula of this molecule (e.g. H2O, NH3, etc.).",
 			Category -> "Physical Properties",
 			Abstract -> True
 		},
@@ -132,21 +148,21 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this molecule consists of exactly one atom (e.g. H, Au, Cd(2+) etc.).",
+			Description -> "Indicates if this molecule consists of exactly one atom (e.g. He).",
 			Category -> "Physical Properties"
 		},
 		DetectionLabel -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates whether this molecule (e.g. Alexa Fluor 488) can be attached to another molecule and act as a tag that can indicate the presence and amount of the other molecule.",
+			Description -> "Indicates whether this molecule can be attached to another molecule and act as a tag for detection and quantification of that molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488).",
 			Category -> "Physical Properties"
 		},
 		AffinityLabel -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates whether this molecule has high binding capacity with certain material and can be attached to another molecule (e.g. His Tag).",
+			Description -> "Indicates whether this molecule can be attached to another molecule and act as a tag for detection and quantification of that molecule through physical binding (e.g. His tag).",
 			Category -> "Physical Properties"
 		},
 		DetectionLabels -> {
@@ -154,7 +170,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "Indicates the tags (e.g. Alexa Fluor 488) that the molecule contains, which can indicate the presence and amount of the molecule.",
+			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through methods that don't require physical binding, such fluorescence (e.g. Alexa Fluor 488). Molecules can be used as DetectionLabels when they have DetectionLabel->True.",
 			Category -> "Physical Properties"
 		},
 		AffinityLabels -> {
@@ -162,7 +178,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "Indicates the tags that the molecule contains (e.g. His Tag), which has high binding capacity with other materials.",
+			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through physical binding (e.g. His tag). Molecules can be used as DetectionLabels when they have AffinityLabel->True.",
 			Category -> "Physical Properties"
 		},
 		Targets -> {
@@ -191,7 +207,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> GreaterP[(0*Gram)/Liter Milli],
 			Units -> Gram/(Liter Milli),
-			Description -> "The density of a pure sample of this molecule at room temperature and pressure.",
+			Description -> "The weight of sample per amount of volume for this molecule at room temperature and pressure.",
 			Category -> "Physical Properties"
 		},
 		ExtinctionCoefficients -> {
@@ -263,7 +279,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Kelvin],
 			Units -> Celsius,
-			Description -> "Melting temperature of a pure sample of this molecule at atmospheric pressure.",
+			Description -> "The temperature at which bulk sample of this molecule transitions from solid to liquid at atmospheric pressure.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -272,7 +288,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Kelvin],
 			Units -> Celsius,
-			Description -> "Temperature at which a pure sample of this molecule boils under atmospheric pressure.",
+			Description -> "The temperature at which bulk sample of this molecule transitions from condensed phase to gas at atmospheric pressure. This occurs when the vapor pressure of the sample equals atmospheric pressure.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -281,7 +297,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Kilo*Pascal],
 			Units -> Kilo Pascal,
-			Description -> "Vapor pressure of a pure sample of this molecule at room temperature.",
+			Description -> "The pressure of the vapor in thermodynamic equilibrium with condensed phase for this molecule in a closed system at room temperature.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -290,7 +306,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Pascal*Second],
 			Units -> Pascal Second,
-			Description -> "The viscosity of a pure sample of this molecule at room temperature.",
+			Description -> "The dynamic viscosity of samples of this substance at room temperature and pressure, indicating how resistant it is to flow when an external force is applied.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -298,7 +314,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> _?NumericQ,
-			Description -> "The logarithm of the partition coefficient, which is the ratio of concentrations of a solute between the aqueous and organic phases of a biphasic solution.",
+			Description -> "The logarithm of the partition coefficient, which is the ratio of concentrations of a solute between the aqueous and organic phases of an octanol-water biphasic system.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -307,7 +323,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Real,
 			Pattern :> NumericP,
 			Units -> None,
-			Description -> "The logarithmic acid dissociation constants of a pure sample of this molecule at room temperature.",
+			Description -> "The logarithmic acid dissociation constants of the substance at room temperature in water.",
 			Category -> "Physical Properties",
 			Abstract -> False
 		},
@@ -325,7 +341,7 @@ DefineObjectType[Model[Molecule], {
 				Nucleus -> None,
 				ChemicalShift -> PPM
 			},
-			Description -> "The known chemical shift for a given nucleus for this molecule.",
+			Description -> "The known chemical shift for a given nucleus in this molecule.",
 			Category -> "Physical Properties"
 		},
 
@@ -341,7 +357,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if this molecule represents equal amounts of left- and right-handed enantiomers of a chiral molecule.",
+			Description -> "Indicates if this molecule represents a mixture of equal amounts of the two enantiomers of a chiral molecule.",
 			Category -> "Physical Properties"
 		},
 		EnantiomerForms->{(*Only in Racemic->True*)
@@ -349,7 +365,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
-			Description -> "If this molecule is racemic (Racemic -> True), indicates models for its left- and right-handed enantiomers.",
+			Description -> "If this model molecule is racemic (Racemic -> True), indicates the two models for the enantiomerically pure forms.",
 			Category -> "Physical Properties"
 		},
 		RacemicForm->{(*Only in Chiral->True*)
@@ -357,7 +373,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
-			Description -> "If this molecule is one of the enantiomers (Chiral -> True), indicates the model for its racemic form.",
+			Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for its racemic form.",
 			Category -> "Physical Properties"
 		},
 		EnantiomerPair->{(*Only one, single field*)
@@ -365,7 +381,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Molecule],
-			Description -> "If this molecule is one of the enantiomers (Chiral -> True), indicates the model for its non-superimposable mirror imaged molecule (stereoisomer).",
+			Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for the alternative enantiomer of this molecule.",
 			Category -> "Physical Properties"
 		},
 
@@ -391,27 +407,18 @@ DefineObjectType[Model[Molecule], {
 			Description -> "Indicates if a pure sample of this molecule is easily set aflame at room temperature and pressure.",
 			Category -> "Health & Safety"
 		},
-		pH -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> RangeP[0,14],
-			Units -> None,
-			Description -> "The logarithmic concentration of hydrogen ions of a pure sample of this molecule at room temperature and pressure.",
-			Category -> "Physical Properties",
-			Abstract -> False
-		},
 		Acid -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if pure samples of this molecule are strong acids (pH <= 2).",
+			Description -> "Indicates if this molecule forms strongly acidic solutions when dissolved in water (typically pKa <= 4).",
 			Category -> "Health & Safety"
 		},
 		Base -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates if pure samples of this molecule are strong acids (pH >= 12).",
+			Description -> "Indicates if this molecule forms strongly basic solutions when dissolved in water (typically pKaH >= 11).",
 			Category -> "Health & Safety"
 		},
 		Pyrophoric -> {
@@ -439,7 +446,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates this molecule is currently banned from usage in the ECL because the facility isn't yet equiped to handle it.",
+			Description -> "Indicates this molecule is currently banned from usage in the ECL because the facility isn't yet equipped to handle it.",
 			Category -> "Health & Safety"
 		},
 		ExpirationHazard -> {
@@ -482,7 +489,7 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "The PDF of the MSDS (Materials Saftey Data Sheet) of this molecule.",
+			Description -> "The PDF of the MSDS (Materials Safety Data Sheet) of this molecule.",
 			Category -> "Health & Safety"
 		},
 		NFPA -> {
@@ -512,6 +519,14 @@ DefineObjectType[Model[Molecule], {
 			Pattern:>BooleanP,
 			Description->"Indicates if this sample cannot be safely autoclaved.",
 			Category->"Health & Safety"
+		},
+		DoubleGloveRequired -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if working with this molecule requires to wear two pairs of gloves.",
+			Category -> "Health & Safety",
+			Developer -> True
 		},
 
 		LightSensitive -> {
@@ -604,6 +619,14 @@ DefineObjectType[Model[Molecule], {
 			Relation -> Object[Report, Literature][References],
 			Description -> "Literature references that discuss this molecule.",
 			Category -> "Analysis & Reports"
+		},
+		AdditionalInformation -> {
+			Format -> Multiple,
+			Class -> {String, Date},
+			Pattern :> {_String, _?DateObjectQ},
+			Description -> "Supplementary information recorded from the UploadMolecule function. These information usually records the user supplied input and options, providing additional information for verification.",
+			Headers -> {"Information", "Date Added"},
+			Category -> "Hidden"
 		}
 	}
 }];

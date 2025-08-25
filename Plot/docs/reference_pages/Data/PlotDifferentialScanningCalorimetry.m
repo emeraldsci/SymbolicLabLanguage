@@ -12,7 +12,7 @@ DefineUsage[PlotDifferentialScanningCalorimetry,
 		BasicDefinitions -> {
 			{
 				Definition -> {"PlotDifferentialScanningCalorimetry[DSCData]", "plot"},
-				Description -> "provides a graphical plot the provided 'DSCData' -- differential scanning calorimetry (DSC) spectra.",
+				Description -> "provides a graphical plot of the provided 'DSCData' -- differential scanning calorimetry (DSC) spectra.",
 				Inputs :> {
 					{
 						InputName -> "DSCData",
@@ -27,6 +27,26 @@ DefineUsage[PlotDifferentialScanningCalorimetry,
 					{
 						OutputName -> "plot",
 						Description -> "The plot of the heating and cooling curves obtained from the provided data.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition -> {"PlotDifferentialScanningCalorimetry[protocol]", "plot"},
+				Description -> "creates a 'plot' of the differential scanning calorimetry data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing differential scanning calorimetry data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, DifferentialScanningCalorimetry]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the differential scanning calorimetry protocol.",
 						Pattern :> ValidGraphicsP[]
 					}
 				}
@@ -54,7 +74,7 @@ DefineUsage[PlotDifferentialScanningCalorimetry,
 			"PlotChromatography",
 			"PlotAbsorbanceSpectroscopy"
 		},
-		Author -> {"waseem.vali", "ryan.bisbey", "boris.brenerman", "steven"},
+		Author -> {"malav.desai", "waseem.vali", "ryan.bisbey", "boris.brenerman", "steven"},
 		Preview -> True
 	}
 ];

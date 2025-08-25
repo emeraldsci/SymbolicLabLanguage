@@ -16,8 +16,7 @@
 (*Options*)
 
 
-DefineOptions[
-  ExperimentMeasureConductivity,
+DefineOptions[ExperimentMeasureConductivity,
   Options :> {
     {
       OptionName -> Instrument,
@@ -120,8 +119,8 @@ DefineOptions[
         OptionName -> TemperatureCorrection,
         Default -> Automatic,
         AllowNull -> False,
-        Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Linear, NonLinear, None, PureWater]],
-        Description -> "For each sample, the relationship between temperature and conductivity, such as Linear, NonLinear, None, or PureWater, which is optimized type of temperature algorithm. Linear should be used for the temperature correction of medium and highly conductive solutions. NonLinear should be used for natural water for temperature between 0-36\[Degree] C. PureWater should be used for the pure water measurements. None won't use any temperature compensation algorithms, and returns measured conductivity at measured temperature.",
+        Widget -> Widget[Type -> Enumeration, Pattern :> TemperatureCorrectionP],
+        Description -> "For each sample, the relationship between temperature and conductivity, such as Linear, NonLinear, None, or PureWater, which is optimized type of temperature algorithm. Linear should be used for the temperature correction of medium and highly conductive solutions. NonLinear should be used for natural water for temperature between 0-36\[Degree] C. PureWater should be used for the pure water measurements. None and Off won't use any temperature compensation algorithms, and returns measured conductivity at measured temperature.",
         Category -> "TemperatureCompensation",
         ResolutionDescription -> "Automatically set to Linear. If AlphaCoefficient is specified as Null set to None."
       },
@@ -174,7 +173,9 @@ DefineOptions[
         Category -> "Post Processing"
       }
     ],
-    FuntopiaSharedOptions,
+    ModelInputOptions,
+    SimulationOption,
+    NonBiologyFuntopiaSharedOptions,
     SamplesInStorageOption
   }
 ];
@@ -207,17 +208,17 @@ Error::ConflictingTemperatureCorrection = "The specified TemperatureCorrection a
 Error::SampleRinseStorageConditionMismatch = "The specified rinse sample storage conditions have conflicts with the specified SampleRinse option. Please change the value of SampleRinseStorageCondition or SampleRinse.";
 
 
-ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
+ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[{Object[Sample],Model[Sample]}]], myOptions : OptionsPattern[]] := Module[
   {
     listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
-    myOptionsWithPreparedSamples, samplePreparationCache, safeOps, safeOpsTests, validLengths, validLengthTests, outVerificationConductivity,
+    myOptionsWithPreparedSamples, safeOps, safeOpsTests, validLengths, validLengthTests, outVerificationConductivity,
     templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult, resolvedOptions,
     resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets, resourcePacketTests, objectSamplePacketFields,
     mySamplesList, probeModels, instrumentLookup, specifiedInstrumentObjects, potentialContainers, aliquotContainerLookup,
     potentialContainersWAliquot, calibrationStandard, verificationStandard, probeLookup, specifiedProbeObjects, conductivityStandardsList,
     smallVolumeProbe, regularProbe, convertedConductivity, inputConductivity, standardsList, outConductivity, allStandardsConductivities,
-    listedSamples, containerModelPreparationPackets, samplePrepPacketFilds,
-    mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, safeOpsNamed
+    listedSamples, containerModelPreparationPackets, samplePrepPacketFilds, updatedSimulation, inheritedCache,
+    mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, safeOpsNamed, secondaryCalibrationStandard
   },
 
   (* Determine the requested return value from the function *)
@@ -233,20 +234,20 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
   (* Simulate our sample preparation. *)
   validSamplePreparationResult = Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache} = simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
       ExperimentMeasureConductivity,
       listedSamples,
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult, $Failed],
     (* Return early. *)
     (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
   ];
 
   (* Call SafeOptions to make sure all options match pattern *)
@@ -256,7 +257,7 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
   ];
 
   (* Call sanitize-inputs to clean any named objects *)
-  {mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+  {mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
   (* Call ValidInputLengthsQ to make sure all options are the right length *)
   {validLengths, validLengthTests} = If[gatherTests,
@@ -312,10 +313,10 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
   (*listify the samples as needed*)
   mySamplesList = mySamplesWithPreparedSamples;
-
+  
   (* Hardcoded list of all probes available in SLL *)
   {smallVolumeProbe, regularProbe} = {Model[Part, ConductivityProbe, "InLab 751-4mm"], Model[Part, ConductivityProbe, "InLab 731-ISM"]};
-
+  
   (* Search for all conductivity standards available in SLL *)
   conductivityStandardsList = Search[Model[Sample], StringContainsQ[Name, "Conductivity Standard"]];
 
@@ -363,6 +364,10 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
     ]
   ];
 
+  (*---resolve SecondaryCalibrationConductivity if it's specified---*)
+  (*TODO: Add this section similar to above once SecondaryCalibrationStandard is added to options.*)
+
+  (*---resolve VerificationConductivity if it's specified---*)
   outVerificationConductivity = If[
     MatchQ[Lookup[safeOps, VerificationConductivity], RangeP[10 * Micro Siemens / Centimeter, 10000 Milli Siemens / Centimeter]],
 
@@ -382,15 +387,20 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
   (* Lookup calibration standard. *)
   calibrationStandard = Cases[ToList[Lookup[safeOps, CalibrationStandard]], ObjectP[]];
 
+  (* TODO: Once secondaryCalibrationStandard is added to Options secondaryCalibrationStandard this can be set in the options function.*)
+  (*For now the secondaryCalibrationStandard resource model will be hardcoded.*)
+  secondaryCalibrationStandard = ConstantArray[Model[Sample, "Conductivity Standard 10 \[Mu]S"], Length[calibrationStandard]];
+
   (* Lookup verification standard. *)
   verificationStandard = Cases[ToList[Lookup[safeOps, VerificationStandard]], ObjectP[]];
 
   objectSamplePacketFields = Packet @@ Union[{Conductivity, IncompatibleMaterials}, SamplePreparationCacheFields[Object[Sample]]];
   containerModelPreparationPackets = Packet[Container[Model[SamplePreparationCacheFields[Model[Container]]]]];
   samplePrepPacketFilds = Packet[SamplePreparationCacheFields[Model[Container], Format -> Sequence]];
+  inheritedCache = Lookup[safeOps, Cache, {}];
 
   cacheBall = FlattenCachePackets[{
-    samplePreparationCache,
+    inheritedCache,
     Quiet[Download[
       {
         mySamplesList,
@@ -400,6 +410,8 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
         potentialContainersWAliquot,
         Cases[ToList@calibrationStandard, ObjectP[Object[Sample]]],
         Cases[ToList@calibrationStandard, ObjectP[Model[Sample]]],
+        Cases[ToList@secondaryCalibrationStandard, ObjectP[Object[Sample]]],
+        Cases[ToList@secondaryCalibrationStandard, ObjectP[Model[Sample]]],
         Cases[ToList@verificationStandard, ObjectP[Object[Sample]]],
         Cases[ToList@verificationStandard, ObjectP[Model[Sample]]],
         conductivityStandardsList
@@ -423,22 +435,29 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
           Evaluate@samplePrepPacketFilds
         },
         {
-          Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
         },
         {
-          Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
         },
         {
-          Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
         },
         {
-          Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
         },
         {
-          Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
+        },
+        {
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
+        },
+        {
+          Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
         }
       },
-      Cache -> Flatten[{samplePreparationCache, ToList[Lookup[safeOps, Cache, {}]]}],
+      Cache -> inheritedCache,
+      Simulation -> updatedSimulation,
       Date -> Now
     ],
       {Download::FieldDoesntExist, Download::NotLinkField}]
@@ -447,7 +466,7 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
   (* Build the resolved options *)
   resolvedOptionsResult = If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {resolvedOptions, resolvedOptionsTests} = resolveExperimentMeasureConductivityOptions[ToList[mySamples], expandedSafeOps, Cache -> cacheBall, Output -> {Result, Tests}];
+    {resolvedOptions, resolvedOptionsTests} = resolveExperimentMeasureConductivityOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
     If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
@@ -457,7 +476,7 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      {resolvedOptions, resolvedOptionsTests} = {resolveExperimentMeasureConductivityOptions[ToList[mySamples], expandedSafeOps, Cache -> cacheBall], {}},
+      {resolvedOptions, resolvedOptionsTests} = {resolveExperimentMeasureConductivityOptions[ToList[mySamplesWithPreparedSamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
       $Failed,
       {Error::InvalidInput, Error::InvalidOption}
     ]
@@ -483,8 +502,8 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
   (* Build packets with resources *)
   {resourcePackets, resourcePacketTests} = If[gatherTests,
-    measureConductivityResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Output -> {Result, Tests}],
-    {measureConductivityResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall], {}}
+    measureConductivityResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+    {measureConductivityResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
   ];
 
   (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -503,9 +522,11 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
       resourcePackets,
       Upload -> Lookup[safeOps, Upload],
       Confirm -> Lookup[safeOps, Confirm],
+      CanaryBranch->Lookup[safeOps,CanaryBranch],
       ParentProtocol -> Lookup[safeOps, ParentProtocol],
       ConstellationMessage -> Object[Protocol, MeasureConductivity],
-      Cache -> samplePreparationCache
+      Cache -> cacheBall,
+      Simulation -> updatedSimulation
     ],
     $Failed
   ];
@@ -525,10 +546,10 @@ ExperimentMeasureConductivity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
   {
     listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
-    myOptionsWithPreparedSamples, samplePreparationCache, containerToSampleResult, containerToSampleOutput, updatedCache, samples, sampleCache,
+    myOptionsWithPreparedSamples, containerToSampleResult, containerToSampleOutput, samples, sampleCache, updatedSimulation, containerToSampleSimulation,
     sampleOptions, containerToSampleTests, listedContainers
   },
 
@@ -539,37 +560,34 @@ ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container
   (* Determine if we should keep a running list of tests *)
   gatherTests = MemberQ[output, Tests];
 
-  (* Make sure we're working with a list of options *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
-
   (* First, simulate our sample preparation. *)
   validSamplePreparationResult = Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache} = simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
       ExperimentMeasureConductivity,
-      listedContainers,
-      listedOptions
+      ToList[myContainers],
+      ToList[myOptions]
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult, $Failed],
     (* Return early. *)
     (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
   ];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult = If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput, containerToSampleTests} = containerToSampleOptions[
+    {containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
       ExperimentMeasureConductivity,
       mySamplesWithPreparedSamples,
       myOptionsWithPreparedSamples,
-      Output -> {Result, Tests},
-      Cache -> samplePreparationCache
+      Output -> {Result, Tests, Simulation},
+      Simulation -> updatedSimulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -580,24 +598,17 @@ ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput = containerToSampleOptions[
+      {containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
         ExperimentMeasureConductivity,
         mySamplesWithPreparedSamples,
         myOptionsWithPreparedSamples,
-        Output -> Result,
-        Cache -> samplePreparationCache
+        Output -> {Result, Simulation},
+        Simulation -> updatedSimulation
       ],
       $Failed,
       {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
-
-  (* Update our cache with our new simulated values. *)
-  (* It is important the sample preparation cache appears first in the cache ball. *)
-  updatedCache = Flatten[{
-    samplePreparationCache,
-    Lookup[listedOptions, Cache, {}]
-  }];
 
   (* If we were given an empty container, return early. *)
   If[MatchQ[containerToSampleResult, $Failed],
@@ -609,10 +620,10 @@ ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container
       Preview -> Null
     },
     (* Split up our containerToSample result into the samples and sampleOptions. *)
-    {samples, sampleOptions, sampleCache} = containerToSampleOutput;
+    {samples, sampleOptions} = containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentMeasureConductivity[samples, ReplaceRule[sampleOptions, Cache -> Flatten[{updatedCache, sampleCache}]]]
+    ExperimentMeasureConductivity[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
   ]
 ];
 
@@ -623,13 +634,13 @@ ExperimentMeasureConductivity[myContainers : ListableP[ObjectP[{Object[Container
 
 DefineOptions[
   resolveExperimentMeasureConductivityOptions,
-  Options :> {HelperOutputOption, CacheOption}
+  Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentMeasureConductivityOptions]] := Module[
   {
     outputSpecification, output, gatherTests, cache, samplePrepOptions, measureConductivityOptions, simulatedSamples, resolvedSamplePrepOptions,
-    simulatedCache, samplePrepTests, measureConductivityOptionsAssociation, invalidInputs, invalidOptions, targetContainers, resolvedAliquotOptions,
+    samplePrepTests, measureConductivityOptionsAssociation, invalidInputs, invalidOptions, targetContainers, resolvedAliquotOptions,
     aliquotTests, mapThreadFriendlyOptions, smallVolumeProbe, regularProbe, samplePackets, allProbeModelPackets, containerModelPackets,
     allProbeObjectPackets, calibrationStandardPacket, instrumentPacket, smallVolumeProbeConductivity, allProbeObjectDownloadValues, standardsPackets,
     allStandardDownloadValues, parentProtocol, instrument, probe, calibrationStandard, verificationStandard, numberOfReplicates, sampleRinse,
@@ -637,7 +648,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     specifiedInstrumentObjects, probeModels, allSampleDownloadValues, allProbeModelDownloadValues, allInstrumentObjDownloadValues,
     potentialContainerDownloadValues, calibrationObjectDownloadValues, calibrationModelDownloadValues, verificationObjectDownloadValues,
     verificationModelDownloadValues, smallVolumeProbePacket, regularProbePacket, aliquotVolume, conductivityStandardsList, conductivityStandardsConductivities, conductivityStandardsConductivityValues,
-    resolvedVerificationConductivity, verificationStandardPacket, name, confirm, template, samplesInStorageCondition, operator, upload, email,
+    resolvedVerificationConductivity, verificationStandardPacket, name, confirm, canaryBranch, template, samplesInStorageCondition, operator, upload, email,
     outputOption, numberOfReadings, calibrationConductivity, verificationConductivity, convertedConductivity, inputConductivity, standardsList,
     outConductivity, allStandardsConductivities, outVerificationConductivity, discardedSamplePackets, discardedInvalidInputs, discardedTest,
     solidSamplePackets, solidInvalidInputs, solidSampleTests, nullVolSampleTests, nullVolInvalidInputs, nullVolSamplePackets, minVolumeLookup,
@@ -658,7 +669,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     conflictingTemperatureCorrectionBoolList, resolvedOptions, allTests, resolvedPostProcessingOptions, resolvedImageSample, originalCache,
     alphaCoefficients, temperatureCorrections, resolvedCalibrationStandard, resolvedCalibrationConductivity, resolvedMeasureVolume,
     resolvedMeasureWeight, measureVolume, measureWeight, resolvedVerificationStandard, validSampleRinseStorageConditionTest,
-    invalidSampleRinseStorageConditionOptions, resolvedSampleRinseStorageConditionList, samplePrepPacketFilds, containerModelPreparationPackets
+    invalidSampleRinseStorageConditionOptions, resolvedSampleRinseStorageConditionList, samplePrepPacketFilds, containerModelPreparationPackets, simulation, updatedSimulation, cacheBall
   },
 
   (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -672,14 +683,15 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* Fetch our cache from the parent function. *)
   cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+  simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-  (* Seperate out our MeasureConductivity options from our Sample Prep options. *)
+  (* Separate out our MeasureConductivity options from our Sample Prep options. *)
   {samplePrepOptions, measureConductivityOptions} = splitPrepOptions[myOptions];
 
   (* Resolve our sample prep options *)
-  {{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-    resolveSamplePrepOptions[ExperimentMeasureConductivity, mySamples, samplePrepOptions, Cache -> cache, Output -> {Result, Tests}],
-    {resolveSamplePrepOptions[ExperimentMeasureConductivity, mySamples, samplePrepOptions, Cache -> cache, Output -> Result], {}}
+  {{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+    resolveSamplePrepOptionsNew[ExperimentMeasureConductivity, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+    {resolveSamplePrepOptionsNew[ExperimentMeasureConductivity, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
   ];
 
   (* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -695,6 +707,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     aliquotVolume,
     name,
     confirm,
+    canaryBranch,
     template,
     samplesInStorageCondition,
     operator,
@@ -716,6 +729,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     AliquotAmount,
     Name,
     Confirm,
+    CanaryBranch,
     Template,
     SamplesInStorageCondition,
     Operator,
@@ -729,10 +743,10 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     CalibrationConductivity,
     VerificationConductivity
   }];
-
+  
   (* Hardcoded list of all probes available in SLL ({Model[Part, ConductivityProbe, "InLab 751-4mm"], Model[Part, ConductivityProbe, "InLab 731-ISM"]}) *)
   {smallVolumeProbe, regularProbe} = {Model[Part, ConductivityProbe, "id:N80DNj1d751l"], Model[Part, ConductivityProbe, "id:J8AY5jDJbqZ7"]};
-
+  
   (* Search for all conductivity standards available in SLL *)
   conductivityStandardsList = Search[Model[Sample], StringContainsQ[Name, "Conductivity Standard"]];
 
@@ -842,22 +856,23 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
         samplePrepPacketFilds
       },
       {
-        Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+        Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
       },
       {
-        Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+        Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
       },
       {
-        Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+        Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
       },
       {
-        Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+        Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
       },
       {
-        Packet[Conductivity, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, Products, Container]
+        Packet[Conductivity, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Products, Container]
       }
     },
-    Cache -> simulatedCache,
+    Cache -> cache,
+    Simulation -> updatedSimulation,
     Date -> Now
   ],
     {Download::FieldDoesntExist, Download::NotLinkField}], $Failed -> Nothing, 1];
@@ -904,6 +919,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     verificationObjectDownloadValues[[All, 1]]
   ];
 
+  (* Combine the cache together *)
+  cacheBall = FlattenCachePackets[{
+    cache,
+    allDownloadValues
+  }];
+
   (* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
   (*-- INPUT VALIDATION CHECKS --*)
@@ -920,7 +941,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
   If[Length[discardedInvalidInputs] > 0 && !gatherTests,
-    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]];
+    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> cacheBall]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -929,12 +950,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
       failingTest = If[Length[discardedInvalidInputs] == 0,
         Nothing,
-        Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> simulatedCache] <> " are not discarded:", True, False]
+        Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> cacheBall] <> " are not discarded:", True, False]
       ];
 
       passingTest = If[Length[discardedInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["Our input samples " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Cache -> simulatedCache] <> " are not discarded:", True, True]
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Cache -> cacheBall] <> " are not discarded:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -962,12 +983,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[solidInvalidInputs] == 0,
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[solidInvalidInputs, Cache -> simulatedCache] <> " are not solids:", True, False]
+        Test["The input sample(s) " <> ObjectToString[solidInvalidInputs, Cache -> cacheBall] <> " are not solids:", True, False]
       ];
 
       passingTest = If[Length[solidInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, solidInvalidInputs], Cache -> simulatedCache] <> " are not solids:", True, True]
+        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, solidInvalidInputs], Cache -> cacheBall] <> " are not solids:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1001,12 +1022,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[nullVolInvalidInputs] == 0,
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[nullVolInvalidInputs, Cache -> simulatedCache] <> " have volumes:", True, False]
+        Test["The input sample(s) " <> ObjectToString[nullVolInvalidInputs, Cache -> cacheBall] <> " have volumes:", True, False]
       ];
 
       passingTest = If[Length[nullVolInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, nullVolInvalidInputs], Cache -> simulatedCache] <> " have volumes:", True, True]
+        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, nullVolInvalidInputs], Cache -> cacheBall] <> " have volumes:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1039,7 +1060,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
   If[And[Length[lowVolInvalidInputs] > 0, !gatherTests,
     NullQ[parentProtocol]
   ],
-    Message[Error::InsufficientVolume, ObjectToString[lowVolInvalidInputs, Cache -> simulatedCache], ObjectToString[lowestVolume]]
+    Message[Error::InsufficientVolume, ObjectToString[lowVolInvalidInputs, Cache -> cacheBall], ObjectToString[lowestVolume]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1047,12 +1068,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[lowVolInvalidInputs] == 0,
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[lowVolInvalidInputs, Cache -> simulatedCache] <> " have at least 50 Microliter of volume:", True, False]
+        Test["The input sample(s) " <> ObjectToString[lowVolInvalidInputs, Cache -> cacheBall] <> " have at least 50 Microliter of volume:", True, False]
       ];
 
       passingTest = If[Length[lowVolInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, lowVolInvalidInputs], Cache -> simulatedCache] <> " have at least 50 Microliter of volume:", True, True]
+        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, lowVolInvalidInputs], Cache -> cacheBall] <> " have at least 50 Microliter of volume:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1069,7 +1090,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
   (*get boolean for which sample/probes combinations are incompatible (based on material and conductivity)*)
   incompatibleBool = Map[
     Function[tuple,
-      Not /@ compatibleConductivityProbeQ[First[tuple], Last[tuple], Cache -> simulatedCache]
+      Not /@ compatibleConductivityProbeQ[First[tuple], Last[tuple], Cache -> cacheBall]
     ],
     sampleProbeCombinations
   ];
@@ -1339,12 +1360,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[nullConductivityInvalidInputs] == 0,
         Nothing,
-        Test["The input conductivity standard(s) " <> ObjectToString[nullConductivityInvalidInputs, Cache -> simulatedCache] <> " have conductivity:", True, False]
+        Test["The input conductivity standard(s) " <> ObjectToString[nullConductivityInvalidInputs, Cache -> cacheBall] <> " have conductivity:", True, False]
       ];
 
       passingTest = If[Length[nullConductivityInvalidInputs] == Length[calibrationStandard],
         Nothing,
-        Test["The input conductivity standard(s) " <> ObjectToString[Complement[{calibrationStandard}, nullConductivityInvalidInputs], Cache -> simulatedCache] <> " have conductivity:", True, True]
+        Test["The input conductivity standard(s) " <> ObjectToString[Complement[{calibrationStandard}, nullConductivityInvalidInputs], Cache -> cacheBall] <> " have conductivity:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1368,12 +1389,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[nullVerificationConductivityInvalidInputs] == 0,
         Nothing,
-        Test["The input conductivity standard(s) " <> ObjectToString[nullVerificationConductivityInvalidInputs, Cache -> simulatedCache] <> " have conductivity:", True, False]
+        Test["The input conductivity standard(s) " <> ObjectToString[nullVerificationConductivityInvalidInputs, Cache -> cacheBall] <> " have conductivity:", True, False]
       ];
 
       passingTest = If[Length[nullVerificationConductivityInvalidInputs] == Length[verificationStandard],
         Nothing,
-        Test["The input conductivity standard(s) " <> ObjectToString[Complement[{verificationStandard}, nullVerificationConductivityInvalidInputs], Cache -> simulatedCache] <> " have conductivity:", True, True]
+        Test["The input conductivity standard(s) " <> ObjectToString[Complement[{verificationStandard}, nullVerificationConductivityInvalidInputs], Cache -> cacheBall] <> " have conductivity:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1392,19 +1413,19 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
   If[Length[temperatureCorrectionInvalidOptions] > 0 && !gatherTests,
-    Message[Error::ConflictingTemperatureCorrection, ObjectToString[temperatureCorrectionInvalidOptions, Cache -> simulatedCache]];
+    Message[Error::ConflictingTemperatureCorrection, ObjectToString[temperatureCorrectionInvalidOptions, Cache -> cacheBall]];
   ];
 
   conflictingTemperatureCorrectionTest = If[gatherTests,
     Module[{failingTest, passingTest},
 
       failingTest = If[Length[temperatureCorrectionInvalidOptions] > 0,
-        Warning["The options TemperatureCorrection and AlphaCoefficient match, for the inputs " <> ObjectToString[temperatureCorrectionInvalidOptions, Cache -> simulatedCache] <> " if supplied by the user:", True, False],
+        Warning["The options TemperatureCorrection and AlphaCoefficient match, for the inputs " <> ObjectToString[temperatureCorrectionInvalidOptions, Cache -> cacheBall] <> " if supplied by the user:", True, False],
         Nothing
       ];
 
       passingTest = If[Length[temperatureCorrectionInvalidOptions] == Length[mySamples],
-        Warning["The options TemperatureCorrection and AlphaCoefficient match, for the inputs " <> ObjectToString[temperatureCorrectionInvalidOptions, Cache -> simulatedCache] <> " if supplied by the user:", True, True],
+        Warning["The options TemperatureCorrection and AlphaCoefficient match, for the inputs " <> ObjectToString[temperatureCorrectionInvalidOptions, Cache -> cacheBall] <> " if supplied by the user:", True, True],
         Nothing
       ];
 
@@ -1437,13 +1458,13 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
       (*Create a test for the non-passing inputs*)
       failingSampleTests = If[Length[failingSamples] > 0,
-        Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the SampleRinseStorageCondition does not have conflicts with specified SampleRinse option:", False, True],
+        Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> cacheBall] <> ", the SampleRinseStorageCondition does not have conflicts with specified SampleRinse option:", False, True],
         Nothing
       ];
 
       (*Create a test for the passing inputs*)
       passingSampleTests = If[Length[passingSamples] > 0,
-        Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the SampleRinseStorageCondition does not have conflicts with the specified SampleRinse option:", True, True],
+        Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> cacheBall] <> ", the SampleRinseStorageCondition does not have conflicts with the specified SampleRinse option:", True, True],
         Nothing
       ];
 
@@ -1462,7 +1483,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
   calibrantionInvalidOptions = If[conflictingCalibrantionQ,
-    Message[Error::ConflictingCalibrantion, ObjectToString[{calibrationStandardCodnuctivityLookup, resolvedCalibrationConductivity}, Cache -> simulatedCache]];
+    Message[Error::ConflictingCalibrantion, ObjectToString[{calibrationStandardCodnuctivityLookup, resolvedCalibrationConductivity}, Cache -> cacheBall]];
     {CalibrationStandard, CalibrationConductivity},
     {}
   ];
@@ -1471,12 +1492,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
 
       failingTest = If[Length[calibrantionInvalidOptions] > 0,
-        Test["The options CalibrationStandard and CalibrationConductivity match, for the inputs " <> ObjectToString[conflictingCalibrantOptions, Cache -> simulatedCache] <> " if supplied by the user:", True, False],
+        Test["The options CalibrationStandard and CalibrationConductivity match, for the inputs " <> ObjectToString[conflictingCalibrantOptions, Cache -> cacheBall] <> " if supplied by the user:", True, False],
         Nothing
       ];
 
       passingTest = If[conflictingCalibrantionQ,
-        Test["The options CalibrationStandard and CalibrationConductivity match, for the inputs " <> ObjectToString[{calibrationStandardCodnuctivityLookup, resolvedCalibrationConductivity}, Cache -> simulatedCache] <> " if supplied by the user:", True, True],
+        Test["The options CalibrationStandard and CalibrationConductivity match, for the inputs " <> ObjectToString[{calibrationStandardCodnuctivityLookup, resolvedCalibrationConductivity}, Cache -> cacheBall] <> " if supplied by the user:", True, True],
         Nothing
       ];
 
@@ -1497,7 +1518,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
   verificationInvalidOptions = If[conflictingVerificationQ,
-    Message[Error::ConflictingVerification, ObjectToString[{verificationStandardCodnuctivityLookup, resolvedVerificationConductivity}, Cache -> simulatedCache]];
+    Message[Error::ConflictingVerification, ObjectToString[{verificationStandardCodnuctivityLookup, resolvedVerificationConductivity}, Cache -> cacheBall]];
     {VerificationStandard, VerificationConductivity},
     {}
   ];
@@ -1506,12 +1527,12 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
 
       failingTest = If[Length[verificationInvalidOptions] > 0,
-        Test["The options VerificationStandard and VerificationConductivity match, for the inputs " <> ObjectToString[verificationInvalidOptions, Cache -> simulatedCache] <> " if supplied by the user:", True, False],
+        Test["The options VerificationStandard and VerificationConductivity match, for the inputs " <> ObjectToString[verificationInvalidOptions, Cache -> cacheBall] <> " if supplied by the user:", True, False],
         Nothing
       ];
 
       passingTest = If[conflictingVerificationQ,
-        Test["The options VerificationStandard and VerificationConductivity match, for the inputs " <> ObjectToString[{verificationStandardCodnuctivityLookup, resolvedVerificationConductivity}, Cache -> simulatedCache] <> " if supplied by the user:", True, True],
+        Test["The options VerificationStandard and VerificationConductivity match, for the inputs " <> ObjectToString[{verificationStandardCodnuctivityLookup, resolvedVerificationConductivity}, Cache -> cacheBall] <> " if supplied by the user:", True, True],
         Nothing
       ];
 
@@ -1528,7 +1549,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (*output an error if probe can not be resolved based on sample volume and expected conductivity range *)
   If[Length[noSuitableProbeInputs] > 0 && !gatherTests,
-    Message[Warning::NoSuitableProbe, ObjectToString[noSuitableProbeInputs, Cache -> simulatedCache], ObjectToString[noSuitableProbeProbes]]
+    Message[Warning::NoSuitableProbe, ObjectToString[noSuitableProbeInputs, Cache -> cacheBall], ObjectToString[noSuitableProbeProbes]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1536,11 +1557,11 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[noSuitableProbeInputs] == 0,
         Nothing,
-        Warning["The is no suitable probe for the input sample(s) " <> ObjectToString[noSuitableProbeInputs, Cache -> simulatedCache] <> " due to not sufficient volume for the expected conductivity range:", True, False]
+        Warning["The is no suitable probe for the input sample(s) " <> ObjectToString[noSuitableProbeInputs, Cache -> cacheBall] <> " due to not sufficient volume for the expected conductivity range:", True, False]
       ];
       passingTest = If[Length[noSuitableProbeInputs] == Length[simulatedSamples],
         Nothing,
-        Warning["The is no suitable probe for the input sample(s) " <> ObjectToString[Complement[simulatedSamples, noSuitableProbeInputs], Cache -> simulatedCache] <> " due to not sufficient volume for the expected conductivity range:", True, True]
+        Warning["The is no suitable probe for the input sample(s) " <> ObjectToString[Complement[simulatedSamples, noSuitableProbeInputs], Cache -> cacheBall] <> " due to not sufficient volume for the expected conductivity range:", True, True]
       ];
       {failingTest, passingTest}
     ],
@@ -1568,11 +1589,11 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Module[{failingTest, passingTest},
       failingTest = If[Length[lowSampleRinseVolumeInvalidInputs] == 0,
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[lowSampleRinseVolumeInvalidInputs, Cache -> simulatedCache] <> " have enough volume to prime probe:", True, False]
+        Test["The input sample(s) " <> ObjectToString[lowSampleRinseVolumeInvalidInputs, Cache -> cacheBall] <> " have enough volume to prime probe:", True, False]
       ];
       passingTest = If[Length[lowSampleRinseVolumeInvalidInputs] == Length[mySamples],
         Nothing,
-        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, lowSampleRinseVolumeInvalidInputs], Cache -> simulatedCache] <> " have enough volume to prime probe:", True, True]
+        Test["The input sample(s) " <> ObjectToString[Complement[mySamples, lowSampleRinseVolumeInvalidInputs], Cache -> cacheBall] <> " have enough volume to prime probe:", True, True]
       ];
       {failingTest, passingTest}
     ],
@@ -1597,7 +1618,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
     Function[
       {probeModelPacket, samplePacket},
       If[MatchQ[probeModelPacket, ObjectP[Model[Part, ConductivityProbe]]],
-        Not /@ compatibleConductivityProbeQ[probeModelPacket, samplePacket, Cache -> simulatedCache],
+        Not /@ compatibleConductivityProbeQ[probeModelPacket, samplePacket, Cache -> cacheBall],
         {False, False}
       ]
     ], {probeModelPackets, samplePackets}
@@ -1616,7 +1637,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are incompatible samples and we are throwing messages, throw an error message *)
   If[Length[incompatibleInputsAnyProbe] > 0 && !gatherTests,
-    Message[Error::IncompatibleSample, ObjectToString[incompatibleInputsAnyProbe, Cache -> simulatedCache]]
+    Message[Error::IncompatibleSample, ObjectToString[incompatibleInputsAnyProbe, Cache -> cacheBall]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1626,13 +1647,13 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
         (* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
         Nothing,
         (* otherwise, we throw one failing test for all discarded samples *)
-        Test["The input sample(s) " <> ObjectToString[incompatibleInputsAnyProbe, Cache -> simulatedCache] <> " is/are chemically compatible with an available conductivity probe:", True, False]
+        Test["The input sample(s) " <> ObjectToString[incompatibleInputsAnyProbe, Cache -> cacheBall] <> " is/are chemically compatible with an available conductivity probe:", True, False]
       ];
       passingTest = If[Length[incompatibleInputsAnyProbe] == Length[simulatedSamples],
         (* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
         Nothing,
         (* otherwise, we throw one passing test for all non-discarded samples *)
-        Test["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsAnyProbe], Cache -> simulatedCache] <> " is/are chemically compatible with an available conductivity probe:", True, True]
+        Test["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsAnyProbe], Cache -> cacheBall] <> " is/are chemically compatible with an available conductivity probe:", True, True]
       ];
       {failingTest, passingTest}
     ],
@@ -1645,7 +1666,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are incompatible samples and we are throwing messages, throw a warning message *)
   If[Length[incompatibleInputsConductivityAnyProbe] > 0 && !gatherTests,
-    Message[Warning::IncompatibleSampleConductivity, ObjectToString[incompatibleInputsConductivityAnyProbe, Cache -> simulatedCache]]
+    Message[Warning::IncompatibleSampleConductivity, ObjectToString[incompatibleInputsConductivityAnyProbe, Cache -> cacheBall]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1655,13 +1676,13 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
         (* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
         Nothing,
         (* otherwise, we throw one failing test for all discarded samples *)
-        Warning["The input sample(s) " <> ObjectToString[incompatibleInputsConductivityAnyProbe, Cache -> simulatedCache] <> " has a conductivity value outside any available conductivity range. Please consider choosing different samples to be measured:", True, False]
+        Warning["The input sample(s) " <> ObjectToString[incompatibleInputsConductivityAnyProbe, Cache -> cacheBall] <> " has a conductivity value outside any available conductivity range. Please consider choosing different samples to be measured:", True, False]
       ];
       passingTest = If[Length[incompatibleInputsConductivityAnyProbe] == Length[simulatedSamples],
         (* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
         Nothing,
         (* otherwise, we throw one passing test for all non-discarded samples *)
-        Warning["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsConductivityAnyProbe], Cache -> simulatedCache] <> " has a conductivity value outside any available conductivity range. Please consider choosing different samples to be measured:", True, True]
+        Warning["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsConductivityAnyProbe], Cache -> cacheBall] <> " has a conductivity value outside any available conductivity range. Please consider choosing different samples to be measured:", True, True]
       ];
       {failingTest, passingTest}
     ],
@@ -1676,7 +1697,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* If there are incompatible samples and we are throwing messages, throw a warning message *)
   If[Length[incompatibleInputsConductivitySpecificProbe] > 0 && !gatherTests,
-    Message[Warning::IncompatibleSampleConductivityProbe, ObjectToString[incompatibleInputsConductivitySpecificProbe, Cache -> simulatedCache]]
+    Message[Warning::IncompatibleSampleConductivityProbe, ObjectToString[incompatibleInputsConductivitySpecificProbe, Cache -> cacheBall]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1686,13 +1707,13 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
         (* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
         Nothing,
         (* otherwise, we throw one failing test for all discarded samples *)
-        Warning["The input sample(s) " <> ObjectToString[incompatibleInputsConductivitySpecificProbe, Cache -> simulatedCache] <> " has a conductivity value outside the specified conductivity probe. Please consider choosing different samples to be measured:", True, False]
+        Warning["The input sample(s) " <> ObjectToString[incompatibleInputsConductivitySpecificProbe, Cache -> cacheBall] <> " has a conductivity value outside the specified conductivity probe. Please consider choosing different samples to be measured:", True, False]
       ];
       passingTest = If[Length[incompatibleInputsConductivitySpecificProbe] == Length[simulatedSamples],
         (* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
         Nothing,
         (* otherwise, we throw one passing test for all non-discarded samples *)
-        Warning["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsConductivitySpecificProbe], Cache -> simulatedCache] <> " has a conductivity value outside the specified conductivity probe. Please consider choosing different samples to be measured:", True, True]
+        Warning["The input sample(s) " <> ObjectToString[Complement[simulatedSamples, incompatibleInputsConductivitySpecificProbe], Cache -> cacheBall] <> " has a conductivity value outside the specified conductivity probe. Please consider choosing different samples to be measured:", True, True]
       ];
       {failingTest, passingTest}
     ],
@@ -1707,13 +1728,15 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
       simulatedSamples,
       ReplaceRule[myOptions, resolvedSamplePrepOptions],
       RequiredAliquotAmounts -> aliquotVolumeList,
-      Cache -> simulatedCache,
+      Cache -> cacheBall,
+      Simulation->updatedSimulation,
       RequiredAliquotContainers -> aliquotContainersList,
       Output -> {Result, Tests}],
 
     {resolveAliquotOptions[ExperimentMeasureConductivity, mySamples, simulatedSamples, ReplaceRule[myOptions, resolvedSamplePrepOptions],
       RequiredAliquotAmounts -> aliquotVolumeList,
-      Cache -> simulatedCache,
+      Cache -> cacheBall,
+      Simulation->updatedSimulation,
       RequiredAliquotContainers -> aliquotContainersList,
       Output -> Result], {}}
   ];
@@ -1741,6 +1764,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
         TemperatureCorrection -> temperatureCorrectionsList,
         AlphaCoefficient -> alphaCoefficientsList,
         Confirm -> confirm,
+        CanaryBranch -> canaryBranch,
         Name -> name,
         Template -> template,
         SamplesInStorageCondition -> samplesInStorageCondition,
@@ -1763,7 +1787,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 
   (* Throw Error::InvalidInput if there are invalid inputs. *)
   If[Length[invalidInputs] > 0 && !gatherTests,
-    Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> simulatedCache]]
+    Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> cacheBall]]
   ];
 
   (* Throw Error::InvalidOption if there are invalid options. *)
@@ -1816,6 +1840,7 @@ resolveExperimentMeasureConductivityOptions[mySamples : {ObjectP[Object[Sample]]
 DefineOptions[measureConductivityResourcePackets,
   Options :> {
     CacheOption,
+    SimulationOption,
     HelperOutputOption
   }
 ];
@@ -1837,7 +1862,10 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
     regularProbeAlphaCoefficient, smallVolumeProbeSampleRinse, regularProbeSampleRinse, probeIndices, batchedNumberOfReadings, numberOfReadings,
     smallVolumeProbeNumberOfReadings, regularProbeNumberOfReadings, regularProbeCalibrationConductivity, smallVolumeProbeCalibrationConductivity,
     calibrationStandardConductivity, calibrationConductivity, instrumentProbes, instrumentProbeModels, smallVolumeProbeResource, regularProbeResource,
-    rawCalibrationStandardType, rawVerificationStandardType, rawCalibrationStandardContainer, rawVerificationStandardContainer, calibrationStandardProductDeprecated, verificationStandardProductDeprecated
+    rawCalibrationStandardType, rawVerificationStandardType, rawCalibrationStandardContainer, rawVerificationStandardContainer, calibrationStandardProductDeprecated, verificationStandardProductDeprecated,
+    secondaryCalibrationStandard, secondaryCalibrationStandardConductivity, regularProbeSecondaryCalibrationConductivity, smallVolumeProbeSecondaryCalibrationConductivity,
+    smallVolumeProbeSecondaryCalibrationStandardResource, regularProbeSecondaryCalibrationStandardResource, secondaryCalibrationStandardResource,
+    rawSecondaryCalibrationStandardType, secondaryCalibrationStandardType, rawSecondaryCalibrationStandardContainer, secondaryCalibrationStandardContainer, secondaryCalibrationStandardProductDeprecated, simulation, simulatedSamples, updatedSimulation
   },
   (* expand the resolved options if they weren't expanded already *)
   {expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentMeasureConductivity, {mySamples}, myResolvedOptions];
@@ -1858,9 +1886,13 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
   gatherTests = MemberQ[output, Tests];
   messages = Not[gatherTests];
 
-  (* Get the inherited cache *)
+  (* Get the inherited cache and simulation*)
   inheritedCache = Lookup[ToList[ops], Cache];
+  simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
+  (* simulate the samples after they go through all the sample prep *)
+  {simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentMeasureConductivity, mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
+  
   {smallVolumeProbe, regularProbe} = {Model[Part, ConductivityProbe, "id:N80DNj1d751l"], Model[Part, ConductivityProbe, "id:J8AY5jDJbqZ7"]};
 
   (* Get rid of the links in mySamples. *)
@@ -1893,32 +1925,44 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
       AlphaCoefficient,
       NumberOfReadings
     }];
+  (* TODO: Once secondaryCalibrationStandard is added to Options add it to the Options Lookup. For now it will be hardcoded.*)
+  (*Model[Sample, "Conductivity Standard 10 \[Mu]S"]*)
+  secondaryCalibrationStandard = Model[Sample, "id:4pO6dM5qa66o"];
 
   (* Get number of replicates *)
   numReplicates = Lookup[myResolvedOptions, NumberOfReplicates] /. {Null -> 1};
 
   (* --- Make our one big Download call --- *)
   samplePacketFields = Packet @@ Flatten[{Object, Container, Volume, Conductivity}];
+
   {
     samplePacks,
     rawCalibrationStandardType, (* can be Packet|Bottle: Packet is a sample in Sachet which we are using from the same bag *)
+    rawSecondaryCalibrationStandardType, (* can be Packet|Bottle *)
     rawVerificationStandardType, (* can be Packet|Bottle *)
     rawCalibrationStandardContainer,
+    rawSecondaryCalibrationStandardContainer,
     rawVerificationStandardContainer,
     calibrationStandardProductDeprecated,
+    secondaryCalibrationStandardProductDeprecated,
     verificationStandardProductDeprecated,
     calibrationStandardConductivity,
+    secondaryCalibrationStandardConductivity,
     instrumentProbes,
     instrumentProbeModels
   } = Quiet[Download[{
     samplesWithReplicates,
     {calibrationStandard},
+    {secondaryCalibrationStandard},
     {verificationStandard},
     {calibrationStandard},
+    {secondaryCalibrationStandard},
     {verificationStandard},
     {calibrationStandard},
+    {secondaryCalibrationStandard},
     {verificationStandard},
     {calibrationStandard},
+    {secondaryCalibrationStandard},
     {instrument},
     {instrument}
   },
@@ -1926,15 +1970,20 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
       {samplePacketFields},
       {Products[SampleType]},
       {Products[SampleType]},
+      {Products[SampleType]},
+      {Products[DefaultContainerModel][Object]},
       {Products[DefaultContainerModel][Object]},
       {Products[DefaultContainerModel][Object]},
       {Products[Deprecated]},
       {Products[Deprecated]},
+      {Products[Deprecated]},
+      {Conductivity},
       {Conductivity},
       {Probes},
       {Probes[Model]}
     },
     Cache -> inheritedCache,
+    Simulation -> updatedSimulation,
     Date -> Now
   ],
     {
@@ -1953,6 +2002,13 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
       Except[True]
     ]
   ];
+  secondaryCalibrationStandardType = LastOrDefault[
+    PickList[
+      Flatten[rawSecondaryCalibrationStandardType],
+      Flatten[secondaryCalibrationStandardProductDeprecated],
+      Except[True]
+    ]
+  ];
   verificationStandardType = LastOrDefault[
     PickList[
       Flatten[rawVerificationStandardType],
@@ -1965,6 +2021,13 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
     PickList[
       Flatten[rawCalibrationStandardContainer],
       Flatten[calibrationStandardProductDeprecated],
+      Except[True]
+    ]
+  ];
+  secondaryCalibrationStandardContainer = LastOrDefault[
+    PickList[
+      Flatten[rawSecondaryCalibrationStandardContainer],
+      Flatten[secondaryCalibrationStandardProductDeprecated],
       Except[True]
     ]
   ];
@@ -2082,7 +2145,7 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
   ];
 
   (* -- Generate resources for the CalibrationStandard -- *)
-  (*NOTE: there may be multiple products for a calibrant model so we need to just get the last contaienr type from it*)
+  (*NOTE: there may be multiple products for a calibrant model so we need to just get the last container type from it*)
   (* generate calibration standard resource for smallVolumeProbe *)
   smallVolumeProbeCalibrationStandardResource = If[Length[smallVolumeProbeSamples] > 0,
     Switch[calibrationStandardType,
@@ -2105,160 +2168,189 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
     {}
   ];
 
-  (*get conductivity of the standard*)
-  regularProbeCalibrationConductivity = If[Length[regularProbeSamples] > 0, {Mean /@ Flatten@calibrationStandardConductivity}, {}];
-
-  calibrationConductivity = Join[smallVolumeProbeCalibrationConductivity, regularProbeCalibrationConductivity];
-
-  (* combine all calibration standard resources for upload *)
-  calibrationStandardResource = Join[smallVolumeProbeCalibrationStandardResource, regularProbeCalibrationStandardResource];
-
-  (* -- Generate resources for the VerificationStandard -- *)
-  (* generate verification standard resource for smallVolumeProbe *)
-  smallVolumeProbeVerificationStandardResource = If[Length[smallVolumeProbeSamples] > 0,
-    Switch[verificationStandardType,
-      Packet, {Resource[Sample -> verificationStandard, Amount -> 20 Milliliter]},
-      _, {Resource[Sample -> verificationStandard, Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "15mL Tube"]]}
+  (*generate secondary calibration standard resource for smallProbe*)
+  smallVolumeProbeSecondaryCalibrationStandardResource = If[Length[smallVolumeProbeSamples] > 0,
+    Switch[secondaryCalibrationStandardType,
+      Packet, {Resource[Sample -> secondaryCalibrationStandard, Amount -> 20 Milliliter]},
+      _, {Resource[Sample -> secondaryCalibrationStandard, Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "15mL Tube"]]}
     ],
     {}
   ];
 
-  (* generate verification standard resource for regularProbe *)
-  regularProbeVerificationStandardResource = If[Length[regularProbeSamples] > 0,
-    Switch[verificationStandardType,
-      Packet, {Resource[Sample -> verificationStandard, Amount -> 20 Milliliter]},
-      _, {Resource[Sample -> verificationStandard, Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "15mL Tube"]]}
-    ],
+  (*generate secondary calibration standard resource for regularProbe, set to NULL for now. The regular probe still uses a single point calibration.*)
+  regularProbeSecondaryCalibrationStandardResource = If[Length[regularProbeSamples] > 0,
+    {Null},
     {}
   ];
 
-  (* combine all verification standard resources for upload *)
-  verificationStandardResource = Join[smallVolumeProbeVerificationStandardResource, regularProbeVerificationStandardResource];
+(*get conductivity of the primary standard*)
+regularProbeCalibrationConductivity = If[Length[regularProbeSamples] > 0, {Mean /@ Flatten@calibrationStandardConductivity}, {}];
 
-  (* generate wash solution resource for every selected probe *)
-  washSolutionResource = Resource[
-    Sample -> Model[Sample, "id:8qZ1VWNmdLBD"],
-    Amount -> 400 Milliliter,
-    Container -> Model[Container, Vessel, "id:R8e1PjRDbbOv"],
-    RentContainer -> True
-  ];
+calibrationConductivity = Join[smallVolumeProbeCalibrationConductivity, regularProbeCalibrationConductivity];
 
-  (* resolve and generate resources for rinse containers *)
-  rinseContainers = MapThread[
-    Function[{sampleRinseBool, probe},
-      If[TrueQ[sampleRinseBool],
-        Switch[probe,
-          ObjectP[Model[Part, ConductivityProbe, "id:N80DNj1d751l"]], Model[Container, Vessel, "2mL Tube"], (* Model[Part, ConductivityProbe, "InLab 751-4mm"] *)
-          ObjectP[Model[Part, ConductivityProbe, "id:J8AY5jDJbqZ7"]], Model[Container, Vessel, "15mL Tube"] (* Model[Part, ConductivityProbe, "InLab 731-ISM"] *)
-        ],
-        Null
-      ]
-    ],
-    {sampleRinse, probes}
-  ];
-  rinseContainersResources = If[MatchQ[#, Except[Null]], Resource[Sample -> #], Null]& /@ rinseContainers;
+(* combine all calibration standard resources for upload *)
+calibrationStandardResource = Join[smallVolumeProbeCalibrationStandardResource, regularProbeCalibrationStandardResource];
 
-  (*batching of rinse containers + verification Null*)
-  smallVolRinseContainers = If[
-    MatchQ[rinseContainers[[smallVolumeProbeSamplePositions]], {}],
-    {},
-    Join[{Null}, rinseContainers[[smallVolumeProbeSamplePositions]]]
-  ];
-  regularVolRinseContainers = If[
-    MatchQ[rinseContainers[[regularProbeSamplePositions]], {}],
-    {},
-    Join[{Null}, rinseContainers[[regularProbeSamplePositions]]]
-  ];
+(*get conductivity of the secondary standard*)
+smallVolumeProbeSecondaryCalibrationConductivity = If[Length[smallVolumeProbeSamples] > 0, {Mean /@ Flatten@secondaryCalibrationStandardConductivity}, {}];
 
-  batchedRinseContainers = Join[smallVolRinseContainers, regularVolRinseContainers];
+(*Currently set to Null if the regular probe is being used.*)
+  (*TODO: Update this if we want to change the regular probes from a single to two point calibration.*)
+regularProbeSecondaryCalibrationConductivity = If[Length[regularProbeSamples] > 0, {Null}, {}];
 
-  (* --- Generate the protocol packet --- *)
-  protocolPacket = <|
-    Type -> Object[Protocol, MeasureConductivity],
-    Object -> CreateID[Object[Protocol, MeasureConductivity]],
-    Replace[SamplesIn] -> samplesInResources,
-    Replace[ContainersIn] -> containerInResources,
-    Replace[RecoupSample] -> recoupSample,
-    Replace[RinseContainers] -> rinseContainersResources,
-    Replace[Probes] -> Link /@ probeObjects,
-    Replace[CalibrationStandard] -> Link /@ calibrationStandardResource,
-    Replace[CalibrationConductivity] -> Flatten@calibrationConductivity,
-    Replace[VerificationStandard] -> Link /@ verificationStandardResource,
-    UnresolvedOptions -> myUnresolvedOptions,
-    ResolvedOptions -> myResolvedOptions,
-    NumberOfReplicates -> numReplicates,
-    Replace[SampleRinseStorageConditions] -> Lookup[myResolvedOptions, SampleRinseStorageCondition],
-    Replace[BatchLengths] -> batchLengths,
-    Replace[BatchingParameters] -> MapThread[
-      Function[{temperatureCorrection, alphaCoefficient, rinseBool, container, index},
-        <|
-          Container -> Null,
-          TemperatureCorrection -> temperatureCorrection,
-          AlphaCoefficient -> alphaCoefficient,
-          RinseContainer -> container,
-          SampleRinse -> rinseBool,
-          BatchedIndex -> index,
-          DataFilePath -> Null,
-          ContainerModel -> Null,
-          Well -> Null
-        |>
-      ],
-      (*taking into account the number of readings*)
-      {
-        Flatten@MapThread[ConstantArray[#1, #2] &, {batchedTemperatureCorrection, batchedNumberOfReadings}],
-        Flatten@MapThread[ConstantArray[#1, #2] &, {batchedAlphaCoefficient, batchedNumberOfReadings}],
-        Flatten@MapThread[ConstantArray[#1, #2] &, {batchedSampleRinse, batchedNumberOfReadings}],
-        Flatten@MapThread[ConstantArray[#1, #2] &, {Link /@ batchedRinseContainers, batchedNumberOfReadings}],
-        Range[1, Length[Flatten@MapThread[ConstantArray[#1, #2] &, {batchedTemperatureCorrection, batchedNumberOfReadings}]]]
-      }
-    ],
-    Replace[BatchedNumberOfReadings] -> batchedNumberOfReadings,
-    Replace[SmallVolumeProbeIndices] -> smallVolumeProbeSamplePositions,
-    Replace[RegularProbeIndices] -> regularProbeSamplePositions,
-    Instrument -> instrumentResource,
-    WashSolution -> washSolutionResource,
-    WasteBeaker -> Resource[Sample -> Model[Container, Vessel, "id:O81aEB4kJJJo"], Rent -> True],
-    Replace[Checkpoints] -> {
-      {"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-      {"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-      {"Measuring Conductivity", 10Minute * Length[samplesInResources], "The conductivity of the requested samples is measured.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10Minute * Length[samplesInResources]]},
-      {"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 * Hour]]},
-      {"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
-    }
-  |>;
+secondaryCalibrationStandardConductivity = Join[smallVolumeProbeSecondaryCalibrationConductivity, regularProbeSecondaryCalibrationConductivity];
 
-  (* generate a packet with the shared fields *)
-  sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache];
+(*combine all secondary calibration standard resources for upload*)
+secondaryCalibrationStandardResource = Join[smallVolumeProbeSecondaryCalibrationStandardResource, regularProbeSecondaryCalibrationStandardResource];
 
-  (* Merge the shared fields with the specific fields *)
-  finalizedPacket = Join[sharedFieldPacket, protocolPacket];
+(* -- Generate resources for the VerificationStandard -- *)
+(* generate verification standard resource for smallVolumeProbe *)
+smallVolumeProbeVerificationStandardResource = If[Length[smallVolumeProbeSamples] > 0,
+Switch[verificationStandardType,
+  Packet, {Resource[Sample -> verificationStandard, Amount -> 20 Milliliter]},
+  _, {Resource[Sample -> verificationStandard, Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "15mL Tube"]]}
+],
+{}
+];
 
-  (* get all the resource symbolic representations *)
-  (* need to pull these at infinite depth because otherwise all resources with Link wrapped around them won't be grabbed *)
-  allResourceBlobs = DeleteDuplicates[Cases[Flatten[Values[finalizedPacket]], _Resource, Infinity]];
+(* generate verification standard resource for regularProbe *)
+regularProbeVerificationStandardResource = If[Length[regularProbeSamples] > 0,
+Switch[verificationStandardType,
+  Packet, {Resource[Sample -> verificationStandard, Amount -> 20 Milliliter]},
+  _, {Resource[Sample -> verificationStandard, Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "15mL Tube"]]}
+],
+{}
+];
 
-  (* call fulfillableResourceQ on all the resources we created *)
-  {fulfillable, frqTests} = Which[
-    MatchQ[$ECLApplication, Engine], {True, {}},
-    gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Cache -> inheritedCache],
-    True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Messages -> messages, Cache -> inheritedCache], Null}
-  ];
+(* combine all verification standard resources for upload *)
+verificationStandardResource = Join[smallVolumeProbeVerificationStandardResource, regularProbeVerificationStandardResource];
 
-  (* generate the tests rule *)
-  testsRule = Tests -> If[gatherTests,
-    frqTests,
-    Null
-  ];
+(* generate wash solution resource for every selected probe *)
+washSolutionResource = Resource[
+Sample -> Model[Sample, "id:8qZ1VWNmdLBD"],
+Amount -> 400 Milliliter,
+Container -> Model[Container, Vessel, "id:R8e1PjRDbbOv"],
+RentContainer -> True
+];
 
-  (* generate the Result output rule *)
-  (* if not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
-  resultRule = Result -> If[MemberQ[output, Result] && TrueQ[fulfillable],
-    finalizedPacket,
-    $Failed
-  ];
+(* resolve and generate resources for rinse containers *)
+rinseContainers = MapThread[
+Function[{sampleRinseBool, probe},
+  If[TrueQ[sampleRinseBool],
+	Switch[probe,
+	  ObjectP[Model[Part, ConductivityProbe, "id:N80DNj1d751l"]], Model[Container, Vessel, "2mL Tube"], (* Model[Part, ConductivityProbe, "InLab 751-4mm"] *)
+	  ObjectP[Model[Part, ConductivityProbe, "id:J8AY5jDJbqZ7"]], Model[Container, Vessel, "15mL Tube"] (* Model[Part, ConductivityProbe, "InLab 731-ISM"] *)
+	],
+	Null
+  ]
+],
+{sampleRinse, probes}
+];
+rinseContainersResources = If[MatchQ[#, Except[Null]], Resource[Sample -> #], Null]& /@ rinseContainers;
 
-  (* return the output as we desire it *)
-  outputSpecification /. {resultRule, testsRule}
+(*batching of rinse containers + verification Null*)
+smallVolRinseContainers = If[
+MatchQ[rinseContainers[[smallVolumeProbeSamplePositions]], {}],
+{},
+Join[{Null}, rinseContainers[[smallVolumeProbeSamplePositions]]]
+];
+regularVolRinseContainers = If[
+MatchQ[rinseContainers[[regularProbeSamplePositions]], {}],
+{},
+Join[{Null}, rinseContainers[[regularProbeSamplePositions]]]
+];
+
+batchedRinseContainers = Join[smallVolRinseContainers, regularVolRinseContainers];
+
+(* --- Generate the protocol packet --- *)
+protocolPacket = <|
+Type -> Object[Protocol, MeasureConductivity],
+Object -> CreateID[Object[Protocol, MeasureConductivity]],
+Replace[SamplesIn] -> samplesInResources,
+Replace[ContainersIn] -> containerInResources,
+Replace[RecoupSample] -> recoupSample,
+Replace[RinseContainers] -> rinseContainersResources,
+Replace[Probes] -> Link /@ probeObjects,
+Replace[CalibrationStandard] -> Link /@ calibrationStandardResource,
+Replace[CalibrationConductivity] -> Flatten@calibrationConductivity,
+Replace[SecondaryCalibrationStandard] -> Link /@ secondaryCalibrationStandardResource,
+Replace[SecondaryCalibrationStandardConductivity] -> Flatten@secondaryCalibrationStandardConductivity,
+Replace[VerificationStandard] -> Link /@ verificationStandardResource,
+UnresolvedOptions -> myUnresolvedOptions,
+ResolvedOptions -> myResolvedOptions,
+NumberOfReplicates -> numReplicates,
+Replace[SampleRinseStorageConditions] -> Lookup[myResolvedOptions, SampleRinseStorageCondition],
+Replace[BatchLengths] -> batchLengths,
+Replace[BatchingParameters] -> MapThread[
+  Function[{temperatureCorrection, alphaCoefficient, rinseBool, container, index},
+	<|
+	  Container -> Null,
+	  TemperatureCorrection -> temperatureCorrection,
+	  AlphaCoefficient -> alphaCoefficient,
+	  RinseContainer -> container,
+	  SampleRinse -> rinseBool,
+	  BatchedIndex -> index,
+	  DataFilePath -> Null,
+	  ContainerModel -> Null,
+	  Well -> Null
+	|>
+  ],
+  (*taking into account the number of readings*)
+  {
+	Flatten@MapThread[ConstantArray[#1, #2] &, {batchedTemperatureCorrection, batchedNumberOfReadings}],
+	Flatten@MapThread[ConstantArray[#1, #2] &, {batchedAlphaCoefficient, batchedNumberOfReadings}],
+	Flatten@MapThread[ConstantArray[#1, #2] &, {batchedSampleRinse, batchedNumberOfReadings}],
+	Flatten@MapThread[ConstantArray[#1, #2] &, {Link /@ batchedRinseContainers, batchedNumberOfReadings}],
+	Range[1, Length[Flatten@MapThread[ConstantArray[#1, #2] &, {batchedTemperatureCorrection, batchedNumberOfReadings}]]]
+  }
+],
+Replace[BatchedNumberOfReadings] -> batchedNumberOfReadings,
+Replace[SmallVolumeProbeIndices] -> smallVolumeProbeSamplePositions,
+Replace[RegularProbeIndices] -> regularProbeSamplePositions,
+Instrument -> instrumentResource,
+WashSolution -> washSolutionResource,
+WasteBeaker -> Resource[Sample -> Model[Container, Vessel, "id:O81aEB4kJJJo"], Rent -> True],
+Replace[Checkpoints] -> {
+  {"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+  {"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+  {"Measuring Conductivity", 10Minute * Length[samplesInResources], "The conductivity of the requested samples is measured.", Resource[Operator -> $BaselineOperator, Time -> 10Minute * Length[samplesInResources]]},
+  {"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 * Hour]]},
+  {"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
+}
+|>;
+
+(* generate a packet with the shared fields *)
+sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> updatedSimulation];
+
+(* Merge the shared fields with the specific fields *)
+finalizedPacket = Join[sharedFieldPacket, protocolPacket];
+
+(* get all the resource symbolic representations *)
+(* need to pull these at infinite depth because otherwise all resources with Link wrapped around them won't be grabbed *)
+allResourceBlobs = DeleteDuplicates[Cases[Flatten[Values[finalizedPacket]], _Resource, Infinity]];
+
+(* call fulfillableResourceQ on all the resources we created *)
+{fulfillable, frqTests} = Which[
+MatchQ[$ECLApplication, Engine], {True, {}},
+gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Cache -> inheritedCache, Simulation -> updatedSimulation],
+True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Messages -> messages, Cache -> inheritedCache, Simulation -> updatedSimulation], Null}
+];
+
+(* generate the tests rule *)
+testsRule = Tests -> If[gatherTests,
+frqTests,
+Null
+];
+
+(* generate the Result output rule *)
+(* if not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
+resultRule = Result -> If[MemberQ[output, Result] && TrueQ[fulfillable],
+finalizedPacket,
+$Failed
+];
+
+(* return the output as we desire it *)
+outputSpecification /. {resultRule, testsRule}
 ];
 
 
@@ -2269,64 +2361,64 @@ measureConductivityResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUn
 
 (* internal function which returns True or False depending on the sample and probe compatibility *)
 DefineOptions[compatibleConductivityProbeQ,
-  Options :> {
-    CacheOption
-  }
+Options :> {
+CacheOption
+}
 ];
 
 (*internal function for conductivity probe compatibility. Checks for material and conductivity compatibility.*)
 compatibleConductivityProbeQ[probeModelPacket : PacketP[Model[Part, ConductivityProbe]], samplePacket : ObjectP[Object[Sample]], myOptions : OptionsPattern[]] := Module[
 
-  {listedOptions, cache, isCompatible, conductivityCompatibility, minConductivityValue, maxConductivityValue, sampleConductivity, materialCompatibility},
+{listedOptions, cache, isCompatible, conductivityCompatibility, minConductivityValue, maxConductivityValue, sampleConductivity, materialCompatibility},
 
-  (* Make sure we're working with a list of options *)
-  listedOptions = ToList[myOptions];
+(* Make sure we're working with a list of options *)
+listedOptions = ToList[myOptions];
 
-  (* assign the option values to local variables *)
-  cache = Lookup[listedOptions, Cache];
+(* assign the option values to local variables *)
+cache = Lookup[listedOptions, Cache];
 
-  (*check the material compatibility: true or false*)
-  materialCompatibility = Quiet[CompatibleMaterialsQ[probeModelPacket, samplePacket, Cache -> cache]];
+(*check the material compatibility: true or false*)
+materialCompatibility = Quiet[CompatibleMaterialsQ[probeModelPacket, samplePacket, Cache -> cache]];
 
-  (*get the relevant conductivity values*)
-  minConductivityValue = Lookup[probeModelPacket, MinConductivity];
-  maxConductivityValue = Lookup[probeModelPacket, MaxConductivity];
-  sampleConductivity = If[MatchQ[Lookup[samplePacket, Conductivity], Null], Null, Mean@Lookup[samplePacket, Conductivity]];
+(*get the relevant conductivity values*)
+minConductivityValue = Lookup[probeModelPacket, MinConductivity];
+maxConductivityValue = Lookup[probeModelPacket, MaxConductivity];
+sampleConductivity = If[MatchQ[Lookup[samplePacket, Conductivity], Null], Null, Mean@Lookup[samplePacket, Conductivity]];
 
-  (*check conductivity compatibility if the conductivity value is not Null*)
-  conductivityCompatibility = If[Not[Or[NullQ[sampleConductivity], NullQ[minConductivityValue], NullQ[maxConductivityValue]]],
-    MatchQ[sampleConductivity, RangeP[minConductivityValue, maxConductivityValue]],
-    True
-  ];
+(*check conductivity compatibility if the conductivity value is not Null*)
+conductivityCompatibility = If[Not[Or[NullQ[sampleConductivity], NullQ[minConductivityValue], NullQ[maxConductivityValue]]],
+MatchQ[sampleConductivity, RangeP[minConductivityValue, maxConductivityValue]],
+True
+];
 
-  (*overall compatibility to return as a list*)
-  {materialCompatibility, conductivityCompatibility}
+(*overall compatibility to return as a list*)
+{materialCompatibility, conductivityCompatibility}
 ];
 
 (*internal function to find the preferred container depends on volume*)
 preferredConductivityContainer[input : Alternatives[GreaterP[0 Milliliter], All]] := Module[{},
 
-  (*if the input requests All, then provide all the containers including the 15 mL*)
-  If[MatchQ[input, All],
+(*if the input requests All, then provide all the containers including the 15 mL*)
+If[MatchQ[input, All],
 
-    (*provide everything including the 50 mL, 15 mL and 2 mL tube *)
-    Union[PreferredContainer[All], {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Tube"]}],
+(*provide everything including the 50 mL, 15 mL and 2 mL tube *)
+Union[PreferredContainer[All], {Model[Container, Vessel, "2mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Tube"]}],
 
-    (*for custom volumes we'll want to use specific containers*)
-    Switch[input,
-      (* Default to 15mL tubes if the volume is appropriate. *)
-      RangeP[2 Milliliter, 10 Milliliter], Model[Container, Vessel, "15mL Tube"],
+(*for custom volumes we'll want to use specific containers*)
+Switch[input,
+  (* Default to 15mL tubes if the volume is appropriate. *)
+  RangeP[2 Milliliter, 10 Milliliter], Model[Container, Vessel, "15mL Tube"],
 
-      (* If the volume is greater than 11 mL resolve to 50mL tubes *)
-      RangeP[11 Milliliter, 40 Milliliter], Model[Container, Vessel, "50mL Tube"],
+  (* If the volume is greater than 11 mL resolve to 50mL tubes *)
+  RangeP[11 Milliliter, 40 Milliliter], Model[Container, Vessel, "50mL Tube"],
 
-      (*if below 300 uL, then we'll use 2mL tubes*)
-      RangeP[50 Microliter, 300 * Microliter], Model[Container, Vessel, "2mL Tube"],
+  (*if below 300 uL, then we'll use 2mL tubes*)
+  RangeP[50 Microliter, 300 * Microliter], Model[Container, Vessel, "2mL Tube"],
 
-      (*otherwise, use the preferred container*)
-      _, PreferredContainer[input]
-    ]
-  ]
+  (*otherwise, use the preferred container*)
+  _, PreferredContainer[input]
+]
+]
 ];
 
 
@@ -2336,38 +2428,38 @@ preferredConductivityContainer[input : Alternatives[GreaterP[0 Milliliter], All]
 
 
 DefineOptions[ExperimentMeasureConductivityOptions,
-  Options :> {
-    {
-      OptionName -> OutputFormat,
-      Default -> Table,
-      AllowNull -> False,
-      Widget -> Widget[Type -> Enumeration, Pattern :> (Table | List)],
-      Description -> "Determines whether the function returns a table or a list of the options.",
-      Category -> "Protocol"
-    }
-  },
-  SharedOptions :> {ExperimentMeasureConductivity}
+Options :> {
+{
+  OptionName -> OutputFormat,
+  Default -> Table,
+  AllowNull -> False,
+  Widget -> Widget[Type -> Enumeration, Pattern :> (Table | List)],
+  Description -> "Determines whether the function returns a table or a list of the options.",
+  Category -> "Protocol"
+}
+},
+SharedOptions :> {ExperimentMeasureConductivity}
 ];
 
 
-ExperimentMeasureConductivityOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
-  {listedOptions, noOutputOptions, options},
+ExperimentMeasureConductivityOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+{listedOptions, noOutputOptions, options},
 
-  (* get the options as a list *)
-  listedOptions = ToList[myOptions];
+(* get the options as a list *)
+listedOptions = ToList[myOptions];
 
-  (* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
-  noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
+(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
+noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
-  (* get only the options *)
-  options = ExperimentMeasureConductivity[myInputs, Append[noOutputOptions, Output -> Options]];
+(* get only the options *)
+options = ExperimentMeasureConductivity[myInputs, Append[noOutputOptions, Output -> Options]];
 
 
-  (* Return the option as a list or table *)
-  If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
-    LegacySLL`Private`optionsToTable[options, ExperimentMeasureConductivity],
-    options
-  ]
+(* Return the option as a list or table *)
+If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
+LegacySLL`Private`optionsToTable[options, ExperimentMeasureConductivity],
+options
+]
 ];
 
 
@@ -2377,8 +2469,8 @@ ExperimentMeasureConductivityOptions[myInputs : ListableP[ObjectP[{Object[Contai
 
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ExperimentMeasureConductivityPreview[myInput : ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]] | _String], myOptions : OptionsPattern[ExperimentMeasureConductivity]] :=
-    ExperimentMeasureConductivity[myInput, Append[ToList[myOptions], Output -> Preview]];
+ExperimentMeasureConductivityPreview[myInput : ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[ObjectP[Object[Sample]] | _String], myOptions : OptionsPattern[ExperimentMeasureConductivity]] :=
+ExperimentMeasureConductivity[myInput, Append[ToList[myOptions], Output -> Preview]];
 
 
 
@@ -2387,57 +2479,57 @@ ExperimentMeasureConductivityPreview[myInput : ListableP[ObjectP[{Object[Contain
 
 
 DefineOptions[ValidExperimentMeasureConductivityQ,
-  Options :> {VerboseOption, OutputFormatOption},
-  SharedOptions :> {ExperimentMeasureConductivity}
+Options :> {VerboseOption, OutputFormatOption},
+SharedOptions :> {ExperimentMeasureConductivity}
 ];
 
 (* currently we only accept either a list of containers, or a list of samples *)
 ValidExperimentMeasureConductivityQ[myInput : ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]] | _String], myOptions : OptionsPattern[ValidExperimentMeasureConductivityQ]] := Module[
-  {listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
+{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
-  (* get the options as a list *)
-  listedOptions = ToList[myOptions];
-  listedInput = ToList[myInput];
+(* get the options as a list *)
+listedOptions = ToList[myOptions];
+listedInput = ToList[myInput];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
-  preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
+(* remove the Output option before passing to the core function because it doesn't make sense here *)
+preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
-  (* return only the tests for ExperimentMeasureConductivity *)
-  filterTests = ExperimentMeasureConductivity[myInput, Append[preparedOptions, Output -> Tests]];
+(* return only the tests for ExperimentMeasureConductivity *)
+filterTests = ExperimentMeasureConductivity[myInput, Append[preparedOptions, Output -> Tests]];
 
-  (* define the general test description *)
-  initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
+(* define the general test description *)
+initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
 
-  (* make a list of all the tests, including the blanket test *)
-  allTests = If[MatchQ[filterTests, $Failed],
-    {Test[initialTestDescription, False, True]},
-    Module[
-      {initialTest, validObjectBooleans, voqWarnings},
+(* make a list of all the tests, including the blanket test *)
+allTests = If[MatchQ[filterTests, $Failed],
+{Test[initialTestDescription, False, True]},
+Module[
+  {initialTest, validObjectBooleans, voqWarnings},
 
-      (* generate the initial test, which we know will pass if we got this far (?) *)
-      initialTest = Test[initialTestDescription, True, True];
+  (* generate the initial test, which we know will pass if we got this far (?) *)
+  initialTest = Test[initialTestDescription, True, True];
 
-      (* create warnings for invalid objects *)
-      validObjectBooleans = ValidObjectQ[DeleteCases[listedInput, _String], OutputFormat -> Boolean];
-      voqWarnings = MapThread[
-        Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
-          #2,
-          True
-        ]&,
-        {DeleteCases[listedInput, _String], validObjectBooleans}
-      ];
-
-      (* get all the tests/warnings *)
-      Flatten[{initialTest, filterTests, voqWarnings}]
-    ]
+  (* create warnings for invalid objects *)
+  validObjectBooleans = ValidObjectQ[DeleteCases[listedInput, _String], OutputFormat -> Boolean];
+  voqWarnings = MapThread[
+	Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
+	  #2,
+	  True
+	]&,
+	{DeleteCases[listedInput, _String], validObjectBooleans}
   ];
 
-  (* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
-  (* like if I ran OptionDefault[OptionValue[ValidExperimentMeasureConductivityQ, {Horse -> Zebra, Verbose -> True, OutputFormat -> Boolean}, {Verbose, OutputFormat}]], it would throw a message for the Horse -> Zebra option not existing, even if I am not actually pulling that one out *)
-  {verbose, outputFormat} = Quiet[OptionDefault[OptionValue[{Verbose, OutputFormat}]], OptionValue::nodef];
+  (* get all the tests/warnings *)
+  Flatten[{initialTest, filterTests, voqWarnings}]
+]
+];
 
-  (* run all the tests as requested *)
-  Lookup[RunUnitTest[<|"ValidExperimentMeasureConductivityQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidExperimentMeasureConductivityQ"]
+(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
+(* like if I ran OptionDefault[OptionValue[ValidExperimentMeasureConductivityQ, {Horse -> Zebra, Verbose -> True, OutputFormat -> Boolean}, {Verbose, OutputFormat}]], it would throw a message for the Horse -> Zebra option not existing, even if I am not actually pulling that one out *)
+{verbose, outputFormat} = Quiet[OptionDefault[OptionValue[{Verbose, OutputFormat}]], OptionValue::nodef];
+
+(* run all the tests as requested *)
+Lookup[RunUnitTest[<|"ValidExperimentMeasureConductivityQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidExperimentMeasureConductivityQ"]
 
 
 ];

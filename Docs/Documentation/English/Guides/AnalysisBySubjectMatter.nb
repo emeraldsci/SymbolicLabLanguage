@@ -1,3 +1,1494 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c9ac15524d538b89eda3282b1ccf3a12cf36df1837077619145b0116afc71acc
-size 57187
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     59405,       1484]
+NotebookOptionsPosition[     46360,       1261]
+NotebookOutlinePosition[     48885,       1313]
+CellTagsIndexPosition[     48842,       1310]
+WindowTitle->AnalysisBySubjectMatter
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "cbc0b860-a6b2-4024-911a-e3180c570fca"]
+        }],ExpressionUUID->"b9509e09-0b1f-48b2-92f3-6a12656a7f92"],
+        StripOnInput->False],{
+       "\"AnalyzeAbsorbanceQuantification\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeAbsorbanceQuantification"], 
+        "\"AnalyzeBindingKinetics\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeBindingKinetics"], 
+        "\"AnalyzeBindingQuantitation\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeBindingQuantitation"], 
+        "\"AnalyzeBubbleRadius\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeBubbleRadius"], 
+        "\"AnalyzeCellCount\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeCellCount"], 
+        "\"AnalyzeColonies\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeColonies"], 
+        "\"AnalyzeComposition\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeComposition"], 
+        "\"AnalyzeCopyNumber\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeCopyNumber"], 
+        "\"AnalyzeDNASequencing\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeDNASequencing"], 
+        "\"AnalyzeDynamicLightScattering\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeDynamicLightScattering"], 
+        "\"AnalyzeDynamicLightScatteringLoading\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeDynamicLightScatteringLoading"], 
+        "\"AnalyzeEpitopeBinning\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeEpitopeBinning"],
+         "\"AnalyzeFractions\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeFractions"], 
+        "\"AnalyzeFractionsApp\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeFractionsApp"], 
+        "\"AnalyzeImageExposure\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeImageExposure"], 
+        "\"AnalyzeKinetics\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeKinetics"], 
+        "\"AnalyzeLadder\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeLadder"], 
+        "\"AnalyzeMeltingPoint\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeMeltingPoint"], 
+        "\"AnalyzeMicroscopeOverlay\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeMicroscopeOverlay"], 
+        "\"AnalyzeParallelLine\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeParallelLine"], 
+        "\"AnalyzePeaks\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzePeaks"], 
+        "\"AnalyzeQuantificationCycle\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeQuantificationCycle"], 
+        "\"AnalyzeThermodynamics\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeThermodynamics"],
+         "\"AnalyzeTotalProteinQuantification\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeTotalProteinQuantification"], 
+        "\"CombineFluorescentImages\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/CombineFluorescentImages"], 
+        "\"ImageIntensity\"" :> 
+        Documentation`HelpLookup["paclet:Objects/ref/ImageIntensity"], 
+        "\"ImageMask\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/ImageMask"], 
+        "\"ImageOverlay\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/ImageOverlay"], 
+        "\"PlotAbsorbanceQuantification\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Plot/ref/PlotAbsorbanceQuantification"], 
+        "\"PlotBindingKinetics\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotBindingKinetics"], 
+        "\"PlotBindingQuantitation\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotBindingQuantitation"], 
+        "\"PlotCellCount\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotCellCount"], 
+        "\"PlotCellCountSummary\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotCellCountSummary"], 
+        "\"PlotChromatography\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotChromatography"], 
+        "\"PlotCopyNumber\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotCopyNumber"], 
+        "\"PlotDNASequencing\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotDNASequencing"], 
+        "\"PlotDynamicFoamAnalysis\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotDynamicFoamAnalysis"], 
+        "\"PlotDynamicLightScattering\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Plot/ref/PlotDynamicLightScattering"], 
+        "\"PlotEpitopeBinning\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotEpitopeBinning"], 
+        "\"PlotFractions\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotFractions"], 
+        "\"PlotImage\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotImage"], 
+        "\"PlotLadder\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotLadder"], 
+        "\"PlotMeltingPoint\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotMeltingPoint"], 
+        "\"PlotMicroscopeOverlay\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotMicroscopeOverlay"], 
+        "\"PlotQuantificationCycle\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotQuantificationCycle"], 
+        "\"PlotThermodynamics\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotThermodynamics"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "782b24cf-7ac7-4266-b738-f80839824f12"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "b8aa4336-aa04-4c57-b1ed-751a0f9b2b84"]
+        }],ExpressionUUID->"795c46d9-a229-42ce-8c9e-1d15a2329ef7"],
+        StripOnInput->False],{
+       "\"AnalyticalAndPhysicalChemistry\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"], 
+        "\"ImageAnalysis\"" :> 
+        Documentation`HelpLookup["paclet:Docs/guide/ImageAnalysis"], 
+        "\"NumericAnalysis\"" :> 
+        Documentation`HelpLookup["paclet:Docs/guide/NumericAnalysis"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "3b50bf43-b49b-492a-a70c-25a07344d9d2"]
+    }], "AnchorBar",ExpressionUUID->"1fac9c07-3dc9-49e8-97e0-c73059a7a8cb"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"3addec6a-43ff-4b4e-b86b-ec3d4abd1fe0"],
+
+Cell["Analysis By Subject Matter", "GuideTitle",
+ CellID->499254089,ExpressionUUID->"901e8efe-ffca-49dd-831b-03500fe87137"],
+
+Cell["\<\
+Collection of analysis functions organized by the subject mater they may be \
+relevant to.\
+\>", "GuideAbstract",
+ CellID->33985893,ExpressionUUID->"a7109c30-a5ce-4238-91df-c863f6e85160"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->293725314,ExpressionUUID->"7ced7645-7498-4124-91b4-96c1b43bed9e"],
+
+Cell["Chromatography", "GuideFunctionsSubsection",
+ CellID->63594128,ExpressionUUID->"739930b5-aff6-4994-9773-7db2e699dba8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaks"]], "paclet:Analysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "82669b90-76f8-4f17-8d50-e6bb94b4777c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Preforms peak picking analysis of experimental source data connecting the \
+results of the analysis to its source data and experimental protocol \
+information."
+}], "GuideText",
+ CellID->184411863,ExpressionUUID->"fedb9459-49a5-4d75-8506-2d51be099e3e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotChromatography"]], "paclet:Plot/ref/PlotChromatography"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e91f5ca0-a020-46ba-a628-5eabebc43dbd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of the detector response as a function of time of \
+the provided chromatography data."
+}], "GuideText",
+ CellID->333967419,ExpressionUUID->"2829288e-aca4-430c-a70f-b931838412da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeFractionsApp"]], 
+    "paclet:Analysis/ref/AnalyzeFractionsApp"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ff299eb3-8936-412d-81e8-86c5aae37787"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Selects a set of fractions or all fractions from the source data."
+}], "GuideText",
+ CellID->97112855,ExpressionUUID->"6ef7213f-a890-4224-af85-50670339aa6c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeFractions"]], "paclet:Analysis/ref/AnalyzeFractions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0537845c-caae-4709-9314-1475afbde425"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Selects a set of fractions to be carried forward for further analysis from \
+chromatography data where fractions were collected."
+}], "GuideText",
+ CellID->210424715,ExpressionUUID->"33089783-ee9d-455a-9706-eea4c3e4773e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotFractions"]], "paclet:Plot/ref/PlotFractions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f715cac1-84f1-4ae0-a9c1-1ea3216473be"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of detector response vs time from source \
+chromatography data with the time slices representing the time for which \
+fractions were collected highlighted from the provided fraction analysis \
+object."
+}], "GuideText",
+ CellID->455828322,ExpressionUUID->"fe725441-180a-40a1-8493-71710619fff1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeLadder"]], "paclet:Analysis/ref/AnalyzeLadder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7abafdd8-3ed4-40f6-a808-94a9868a0189"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Fits a standard curve function to relate position of a given band or peak \
+to length of a nucleic acid species."
+}], "GuideText",
+ CellID->536889652,ExpressionUUID->"9163dc0a-5e8f-45d8-abe6-9813400ab750"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotLadder"]], "paclet:Plot/ref/PlotLadder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3e7ace71-5cf7-4442-bdcd-ed8b6d2f6dc8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of the strand length as a function of peak position \
+for standard curve analysis of nucleic acids from the provided ladder \
+analysis object."
+}], "GuideText",
+ CellID->70760394,ExpressionUUID->"315dff07-07d7-47a6-bba8-f897a05b2f50"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeComposition"]], 
+    "paclet:Analysis/ref/AnalyzeComposition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ce63064-fa4d-4fdb-a1e2-76313db90e12"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the concentrations of different analytes in assays based on the \
+chromatogram peaks in a HPLC protocol."
+}], "GuideText",
+ CellID->15015415,ExpressionUUID->"87465a4b-8a49-427e-a617-feaa3e5aeee8"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->671220409,ExpressionUUID->"c74c803a-9c25-4637-9b04-7c89d61cc50d"],
+
+Cell["Spectroscopy", "GuideFunctionsSubsection",
+ CellID->906074382,ExpressionUUID->"a2910915-3c71-4644-8641-f528307e4856"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaks"]], "paclet:Analysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6c8a077a-74f4-4576-b511-7af7ca995610"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Preforms peak picking analysis of experimental source data connecting the \
+results of the analysis to its source data and experimental protocol \
+information."
+}], "GuideText",
+ CellID->737071831,ExpressionUUID->"09e8f9b6-7e88-4e56-aeae-e15c3eb324b2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeAbsorbanceQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeAbsorbanceQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ca7d8621-b94a-495d-b7cc-aebd3a84a452"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Users Beer's Law to calculate the concentration of an analyte based on its \
+extinction coefficient and absorbance spectra."
+}], "GuideText",
+ CellID->430530137,ExpressionUUID->"2fc041f1-efba-4d7e-a9c7-b4cf8f8254da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotAbsorbanceQuantification"]], 
+    "paclet:Plot/ref/PlotAbsorbanceQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4761186b-f741-47a7-aa0a-e9eec2537d1b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of overlaid absorbance spectroscopy data from replicates \
+reads recorded as part of the given absorbance quantification protocol."
+}], "GuideText",
+ CellID->413609282,ExpressionUUID->"5e83d9d1-1eba-4143-af8b-8e12baa1bd93"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeTotalProteinQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeTotalProteinQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "76963fd2-d246-41e9-b37f-62b79bf9b104"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates total protein calculation based on total protein quantification \
+assay data."
+}], "GuideText",
+ CellID->739110598,ExpressionUUID->"d13c58ce-4da1-4040-9cd8-87eac6d7cac9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDynamicLightScattering"]], 
+    "paclet:Analysis/ref/AnalyzeDynamicLightScattering"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "76a9967d-4e40-4d5f-b1c7-e637464c079b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates key scientific parameters including Z-average diameter, second \
+virial coefficient, diffusion interaction parameter and kirkwood Buff \
+integral from dynamic light scattering data."
+}], "GuideText",
+ CellID->788134275,ExpressionUUID->"b37cd3fd-0af7-4358-b9e3-c9f56afce11c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDynamicLightScatteringLoading"]], 
+    "paclet:Analysis/ref/AnalyzeDynamicLightScatteringLoading"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "643abf02-f5a9-4041-8915-7cf68e0e4426"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs thresholding analysis of correlation curve data on dynamic light \
+scattering data objects of a given protocol to identify the samples that were \
+properly loaded."
+}], "GuideText",
+ CellID->338053116,ExpressionUUID->"c7bac256-c9ff-4264-9a63-6c44b588d348"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotDynamicLightScattering"]], 
+    "paclet:Plot/ref/PlotDynamicLightScattering"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f70f661a-fcc8-4048-a4fa-8aee29e3ed8d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list line plot of intensity vs. particle size from dynamic \
+light scattering data."
+}], "GuideText",
+ CellID->365246701,ExpressionUUID->"5a2deb56-a519-411e-9dcf-4b77e1c9da1b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->7692103,ExpressionUUID->"7517e008-70ce-4040-be59-bd79f5d6ba01"],
+
+Cell["PCR", "GuideFunctionsSubsection",
+ CellID->44307146,ExpressionUUID->"42545794-e672-4938-ab15-99438c3c1ed8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCopyNumber"]], "paclet:Analysis/ref/AnalyzeCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c8e3fb91-d050-4240-82ed-20b8db0008dd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the estimated copy number of a given gene sequences in an \
+analyte based on qPCR data or Quantification Cycle analysis."
+}], "GuideText",
+ CellID->305762458,ExpressionUUID->"89073d52-a817-4f0c-bd66-5093009249cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCopyNumber"]], "paclet:Plot/ref/PlotCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9e6cf8a5-5761-4127-9679-80746c63273f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of the fitted standard curve relating quantification \
+cycle (Cq) to Log10[copy number] from the provided copy number analysis \
+object."
+}], "GuideText",
+ CellID->459096908,ExpressionUUID->"13817e1a-36c6-4abe-aaf5-bd8c0a01fec6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeQuantificationCycle"]], 
+    "paclet:Analysis/ref/AnalyzeQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f5bd0ab3-1704-47a5-b518-25b448ee3e50"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the Quantification Cycle (Cq) which is the inflection point in \
+the amplification curve of qPCR data."
+}], "GuideText",
+ CellID->348722211,ExpressionUUID->"00650ec6-0068-4f73-872f-deee2126a977"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotQuantificationCycle"]], 
+    "paclet:Plot/ref/PlotQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d4c9520-4785-487f-9ae4-c377d880d39d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot of fluorescence intensity as a function of \
+replication cycle with the quantification cycle (Cq) interpolated and \
+highlighted from the provided quantification cycle analysis object."
+}], "GuideText",
+ CellID->238273973,ExpressionUUID->"3b9b0cd6-3ad6-43e2-b531-1e9954ee247c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->286186081,ExpressionUUID->"721dea40-445b-4f92-bc77-9ebc1690714a"],
+
+Cell["Bioassays", "GuideFunctionsSubsection",
+ CellID->237956846,ExpressionUUID->"1ef2b601-9f4e-486d-b1cc-183db5aa4c9e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingKinetics"]], 
+    "paclet:Analysis/ref/AnalyzeBindingKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "997cda13-f459-4777-9070-815b89c458f6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Solves the kinetic association and dissociation rates by fitting to the \
+source biolayer interferometry binding kinetics data."
+}], "GuideText",
+ CellID->71637151,ExpressionUUID->"8d28cc38-277d-42c1-ab9f-a8c25dce8b73"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingKinetics"]], "paclet:Plot/ref/PlotBindingKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "654728f0-8ada-4c80-90fe-76f6a169a449"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot comparing the prediction of fitted binding kinetics \
+parameters to the source bio-layer interferometry data in the provided \
+binding kinetics analysis object."
+}], "GuideText",
+ CellID->374668401,ExpressionUUID->"0b5f9e43-08c8-4312-af11-9ed23dea0378"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingQuantitation"]], 
+    "paclet:Analysis/ref/AnalyzeBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e42d7eb8-d41d-42ea-9d33-54277df11fe0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determines the concentration of the analyte measured by first creating a \
+standard curve that fits all data with the specified model and then finding \
+the concentration at a specific binding rate."
+}], "GuideText",
+ CellID->117952065,ExpressionUUID->"b13a3060-c43b-4259-a8d6-ceb6bf6c5fe4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingQuantitation"]], 
+    "paclet:Plot/ref/PlotBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7d985b8a-ed86-4930-a734-f4949a56aa90"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of the observed binding rate as a function of \
+concentration showing the bio-layer thickness during the quantitation step \
+from the provided BLI analysis object."
+}], "GuideText",
+ CellID->694108796,ExpressionUUID->"72f7ff04-d52f-441e-87ad-6d3bc3f16f8b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeEpitopeBinning"]], 
+    "paclet:Analysis/ref/AnalyzeEpitopeBinning"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c60332b1-f9d1-4a0d-a033-3450491f9cf4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a biolayer interferometry dataset, classifies antibodies by their \
+interaction with a given antigen based on the thickness of the biolayer \
+formed during the association of the antibodies."
+}], "GuideText",
+ CellID->68168429,ExpressionUUID->"3338be51-098e-4d5a-a1f3-e7b5db9e287f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotEpitopeBinning"]], "paclet:Plot/ref/PlotEpitopeBinning"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ac6b8a4-7cfa-45af-a202-7d3314593c4d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a graph or table showing the groupings of samples with respect \
+to the interactions with a particular target from a provided BLI experimental \
+protocol."
+}], "GuideText",
+ CellID->369059646,ExpressionUUID->"f6ab6c1e-e8fe-4144-9958-fa6badd99c48"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDNASequencing"]], 
+    "paclet:Analysis/ref/AnalyzeDNASequencing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f1939113-98d3-4356-9d51-49ba671916bd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an DNA sequencing electrophoregram fluorescence data, conducts base \
+calling analysis which assigns DNA sequences as a function of the scan number."
+}], "GuideText",
+ CellID->189909289,ExpressionUUID->"580ae210-eece-4193-9250-e9d3d0cc74bf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotDNASequencing"]], "paclet:Plot/ref/PlotDNASequencing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cedadae1-dcf5-4e6c-a555-ba114eb3fc63"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of the raw fluorescence data versus scan number from the \
+provided DNA sequencing data."
+}], "GuideText",
+ CellID->45664742,ExpressionUUID->"637fbeee-71da-4e7d-a2f5-8c2dbb2f55a0"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->124377500,ExpressionUUID->"5af46835-0b57-4ec3-b6d1-f425c983c8ac"],
+
+Cell["Microscopy", "GuideFunctionsSubsection",
+ CellID->153808062,ExpressionUUID->"cc21444c-d1d7-4396-8c04-0ce1b08a6fae"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCellCount"]], "paclet:Analysis/ref/AnalyzeCellCount"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "db867521-2fb7-4f2a-8a3c-7e75c097be9f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Counts the apparent number of cells in the provided microscope image data."
+}], "GuideText",
+ CellID->30813783,ExpressionUUID->"96a02233-1244-4625-a02d-7d40a48927fe"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeColonies"]], "paclet:Analysis/ref/AnalyzeColonies"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3581b55c-eebd-422d-b200-b872fd1e5e31"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Counts the cell colonies or plaques on solid media in the provided \
+microscope image data."
+}], "GuideText",
+ CellID->143790134,ExpressionUUID->"ddf858bd-879e-4865-bd0b-0fecc348bebe"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMicroscopeOverlay"]], 
+    "paclet:Analysis/ref/AnalyzeMicroscopeOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5d0a2301-ea71-4f6f-8444-cc87b587b222"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an analytical combination of different composite fluorescent \
+images for use in co-localization analysis."
+}], "GuideText",
+ CellID->256475196,ExpressionUUID->"ecc999f8-b62c-4dd2-acb3-409c608e4c8a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotMicroscopeOverlay"]], 
+    "paclet:Plot/ref/PlotMicroscopeOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7b179346-e0d6-403a-be8a-8a9d5cb8f335"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a combined false color image of two or more microscope images \
+taken with different filters from the provided microscope overlay analysis \
+object."
+}], "GuideText",
+ CellID->269948863,ExpressionUUID->"317b5b44-cae3-44ab-a0ab-7f366aa11d7d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCellCount"]], "paclet:Plot/ref/PlotCellCount"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dfc9b138-6ff4-4bea-9f1e-e7409584848c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an image of the microscope data with the putative cell areas \
+indicated from the provided cell counting image analysis highlighted."
+}], "GuideText",
+ CellID->527890288,ExpressionUUID->"23aa94b0-736c-402f-8393-00e223fba7a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCellCountSummary"]], 
+    "paclet:Plot/ref/PlotCellCountSummary"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a8b4b0e1-dcbc-4d3e-9f77-a2ddc3c5a4fa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an image of the microscope data with the putative cell areas \
+highlighted, along with a pie cart of relative areas of cell groupings from \
+the provided cell counting image analysis highlighted."
+}], "GuideText",
+ CellID->211401285,ExpressionUUID->"d2ff5184-415c-4ea2-a24b-a1fdd4d5cec8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CombineFluorescentImages"]], 
+    "paclet:Analysis/ref/CombineFluorescentImages"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd53c2c7-0a46-4c69-a54e-c720ddbe6405"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a false color RGB image of the provided composite fluorescent \
+data."
+}], "GuideText",
+ CellID->158270421,ExpressionUUID->"91d9b2ab-f5d7-489c-8028-0fd802a8e0e6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotImage"]], "paclet:Plot/ref/PlotImage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "89c52f1e-3008-42ef-9792-1c20aa4978a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an image file or data objects containing images, provides a \
+visualization of these images that includes a measurement of absolute size \
+scales when possible."
+}], "GuideText",
+ CellID->240902394,ExpressionUUID->"ff9467d9-aff6-43ac-9745-8308bd80e305"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeImageExposure"]], 
+    "paclet:Analysis/ref/AnalyzeImageExposure"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "473636e7-4306-45a1-990d-d47609ff75a7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Identify image with optimal exposure time from the provided image data."
+}], "GuideText",
+ CellID->59733733,ExpressionUUID->"47173e4a-45ca-48f9-a454-200ac2c13852"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageMask"]], "paclet:Analysis/ref/ImageMask"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8fa959d6-4bb9-42db-83b0-ff4f36994093"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Replaces all the pixels in the input image that are outside of a given \
+color range."
+}], "GuideText",
+ CellID->465806376,ExpressionUUID->"7c2496ca-66fa-4669-b1f9-0e56acd82efa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageOverlay"]], "paclet:Analysis/ref/ImageOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "90a596b9-2504-403e-bba0-01148825ad7f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Overlays the pixel information from two images to combine them into one."
+}], "GuideText",
+ CellID->634198184,ExpressionUUID->"dbac8567-cfe5-4936-b1f2-2599c4fe2a18"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageIntensity"]], "paclet:Objects/ref/ImageIntensity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2a2391c8-d348-43d0-b088-e8c47d84e66b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the average intensity of the pixels as a function of the vertical \
+pixel position in the image."
+}], "GuideText",
+ CellID->167469769,ExpressionUUID->"3afd3323-cb7b-4f73-923e-ff18ef69b52b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->170794287,ExpressionUUID->"1395ef8e-6f4b-423e-bb19-28bfa6b8f762"],
+
+Cell["Quantification", "GuideFunctionsSubsection",
+ CellID->95870371,ExpressionUUID->"a55b4be2-132a-4d0e-bd8d-629495e84fc2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeAbsorbanceQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeAbsorbanceQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "05e5ea51-094e-4f2d-9b0c-4f03bd7e0ce9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Users Beer's Law to calculate the concentration of an analyte based on its \
+extinction coefficient and absorbance spectra."
+}], "GuideText",
+ CellID->418550289,ExpressionUUID->"10332ec1-9406-4e4b-856a-14e2275a6f4a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotAbsorbanceQuantification"]], 
+    "paclet:Plot/ref/PlotAbsorbanceQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "10622ee7-3610-410e-9934-e0c56934c94b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of overlaid absorbance spectroscopy data from replicates \
+reads recorded as part of the given absorbance quantification protocol."
+}], "GuideText",
+ CellID->527151610,ExpressionUUID->"d82250ce-8ac7-48d8-b132-d54a2204e81a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeTotalProteinQuantification"]], 
+    "paclet:Analysis/ref/AnalyzeTotalProteinQuantification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2ba7d896-a17d-40f7-bd50-e0a340ed9ba7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates total protein calculation based on total protein quantification \
+assay data."
+}], "GuideText",
+ CellID->53189210,ExpressionUUID->"f91d9c6f-dc01-4414-a279-6f15269d305a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCopyNumber"]], "paclet:Analysis/ref/AnalyzeCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f140b026-80db-421c-acf8-d6df9fe05470"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the estimated copy number of a given gene sequences in an \
+analyte based on qPCR data or Quantification Cycle analysis."
+}], "GuideText",
+ CellID->207037188,ExpressionUUID->"6f0a5613-e29d-4e59-b842-5d35876a554a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCopyNumber"]], "paclet:Plot/ref/PlotCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bf71227a-794b-40ad-9ea9-ce9569dc9d36"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of the fitted standard curve relating quantification \
+cycle (Cq) to Log10[copy number] from the provided copy number analysis \
+object."
+}], "GuideText",
+ CellID->656989152,ExpressionUUID->"6e829232-0520-4895-852f-069bb96de541"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeQuantificationCycle"]], 
+    "paclet:Analysis/ref/AnalyzeQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bf580400-1bcb-4fda-a4ff-9537eab82041"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the Quantification Cycle (Cq) which is the inflection point in \
+the amplification curve of qPCR data."
+}], "GuideText",
+ CellID->479157748,ExpressionUUID->"1f37707e-aa95-48b8-ac13-d08983df1336"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotQuantificationCycle"]], 
+    "paclet:Plot/ref/PlotQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "099dbcea-248a-49c8-b019-e8ff7caba549"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot of fluorescence intensity as a function of \
+replication cycle with the quantification cycle (Cq) interpolated and \
+highlighted from the provided quantification cycle analysis object."
+}], "GuideText",
+ CellID->98625682,ExpressionUUID->"039ebd94-c62d-4b55-893d-286ce3e6ef08"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaks"]], "paclet:Analysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f37dbe62-7c8b-4747-97dc-60e5a64a94f8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Preforms peak picking analysis of experimental source data connecting the \
+results of the analysis to its source data and experimental protocol \
+information."
+}], "GuideText",
+ CellID->121384656,ExpressionUUID->"79baa678-1e5e-4715-b060-0b05c1fb18a3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingQuantitation"]], 
+    "paclet:Analysis/ref/AnalyzeBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "650fbf8f-ed7d-45f8-a43e-8b61287bb1cb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determines the concentration of the analyte measured by first creating a \
+standard curve that fits all data with the specified model and then finding \
+the concentration at a specific binding rate."
+}], "GuideText",
+ CellID->389542414,ExpressionUUID->"cf78503e-b88f-4644-aac5-c09449e882fd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingQuantitation"]], 
+    "paclet:Plot/ref/PlotBindingQuantitation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "09989a68-54a9-40ff-ae79-20e80c09745b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of the observed binding rate as a function of \
+concentration showing the bio-layer thickness during the quantitation step \
+from the provided BLI analysis object."
+}], "GuideText",
+ CellID->647227890,ExpressionUUID->"65aca6ef-e276-4735-a01f-69156857a7bd"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->102354809,ExpressionUUID->"34e0273d-cf1b-4d8a-bb68-37321774d466"],
+
+Cell["Thermodynamics", "GuideFunctionsSubsection",
+ CellID->427927156,ExpressionUUID->"70e3aa88-5712-44ef-9300-3579ebcfd276"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMeltingPoint"]], 
+    "paclet:Analysis/ref/AnalyzeMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "da2df59e-6971-49a9-88ef-da9bebd0787f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the melting point from a melting curve dataset (either from \
+fluorescence  or absorbance thermodynamics data)."
+}], "GuideText",
+ CellID->62592833,ExpressionUUID->"ff20e67c-a600-4a49-b58b-a8684863c1b9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotMeltingPoint"]], "paclet:Plot/ref/PlotMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7c11ca94-7834-4a10-a127-f341f5a9b7f3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot of the source melting curve analysis along with a \
+demarcation of the fitted melting point."
+}], "GuideText",
+ CellID->268458529,ExpressionUUID->"878861dc-e706-48ce-9c75-26b1d3129b80"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeThermodynamics"]], 
+    "paclet:Analysis/ref/AnalyzeThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "537da128-f5a0-4a0a-9e16-f452e7fe264e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of melting curve data or analysis, performs Van't Hoff \
+analysis to determine free-energy, enthalpy, and entropy components of a \
+binding event."
+}], "GuideText",
+ CellID->47272245,ExpressionUUID->"309b1793-7480-494d-93db-f2114099c129"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotThermodynamics"]], "paclet:Plot/ref/PlotThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4058dcaf-068e-46d6-810b-da4cd94f7ad7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a Van't Hoff plot log of Keq as a function of inverse \
+temperature and the fitted line containing the thermodynamic parameters from \
+the provided thermodynamic analysis object."
+}], "GuideText",
+ CellID->249722988,ExpressionUUID->"f10b8d3d-ec39-4ed8-8a28-26a855c4cdc3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeParallelLine"]], 
+    "paclet:Analysis/ref/AnalyzeParallelLine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9f332afd-97ea-4631-a3c9-b0645a0b3adc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the relative potency ratio between two dose-response fitted \
+curves."
+}], "GuideText",
+ CellID->30787438,ExpressionUUID->"9403d261-1a31-4560-b20d-38317d625d14"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->17275617,ExpressionUUID->"f3e6bc06-074c-477d-92f6-1867fe9822ab"],
+
+Cell["Kinetics", "GuideFunctionsSubsection",
+ CellID->31782571,ExpressionUUID->"de6b03d1-e840-48a8-9fb1-bddc99e44763"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeKinetics"]], "paclet:Analysis/ref/AnalyzeKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cc78141d-23f4-477b-b035-115487de332c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction mechanism and a set of reaction trajectories (either \
+simulated or from experimentation) fits rate constants which represent a best \
+fit to the trajectory data."
+}], "GuideText",
+ CellID->226518396,ExpressionUUID->"fbd710bc-c824-471f-a09a-59c5b01a6e05"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingKinetics"]], 
+    "paclet:Analysis/ref/AnalyzeBindingKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f9d90211-242a-4ed6-b4be-4e4380b7ab71"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Solves the kinetic association and dissociation rates by fitting to the \
+source biolayer interferometry binding kinetics data."
+}], "GuideText",
+ CellID->189103013,ExpressionUUID->"5502e599-17ff-4c58-8421-b28061d9f807"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotBindingKinetics"]], "paclet:Plot/ref/PlotBindingKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f81fe6de-2ce2-4811-a848-f11c10005637"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot comparing the prediction of fitted binding kinetics \
+parameters to the source bio-layer interferometry data in the provided \
+binding kinetics analysis object."
+}], "GuideText",
+ CellID->222285661,ExpressionUUID->"30c167f6-325b-4858-8cec-15d151cdd863"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->60461035,ExpressionUUID->"e67cd380-3b8e-4e00-8b67-3c433a8e3b7f"],
+
+Cell["Property Measurement", "GuideFunctionsSubsection",
+ CellID->277120521,ExpressionUUID->"cf55bd3c-4007-4fd4-944a-aca382f9dc79"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBubbleRadius"]], 
+    "paclet:Analysis/ref/AnalyzeBubbleRadius"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "377638db-e0b8-41ae-88c9-941765fa5105"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the distribution of bubble radii from videos contained in dynamic \
+foam analysis data."
+}], "GuideText",
+ CellID->142232233,ExpressionUUID->"457f8773-f1b4-43a0-9b17-19dc95130bf9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotDynamicFoamAnalysis"]], 
+    "paclet:Plot/ref/PlotDynamicFoamAnalysis"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "32c63926-f72a-401b-92b4-de95eaf6233b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates plots of the foam height, foam volume, bubble count, mean bubble \
+area, average bubble radius and liquid content over time from the provided \
+dynamic foam analysis data objects."
+}], "GuideText",
+ CellID->190566937,ExpressionUUID->"652e6257-a415-4c72-8a42-d61fd27400f0"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->196680545,ExpressionUUID->"4db6cb55-34f7-435b-8be9-d5b42194cb05"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"83dd4861-d3e1-4f95-acec-6c33aa633326"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->853259435,ExpressionUUID->"95e87ad1-877c-44f1-9c1d-6c15f64b4537"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->54537348,ExpressionUUID->"812b5100-a05a-4141-9ccb-09bd23f4d15c"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["NumericAnalysis"]], "paclet:Docs/guide/NumericAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->358870751,ExpressionUUID->"3002c06c-4f2a-4374-a411-10453b0c39b9"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalyticalAndPhysicalChemistry"]], 
+   "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->348077067,ExpressionUUID->"5a015db7-e60e-4731-b3b1-7015a9e56846"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ImageAnalysis"]], "paclet:Docs/guide/ImageAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->165599131,ExpressionUUID->"f9addaa0-d2c0-44e7-8042-8bb1bd0befad"],
+
+Cell["", "FooterCell",
+ CellID->411943012,ExpressionUUID->"b75a8341-5419-4986-a2c5-7f1f6a248f6c"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{581.25, 654},
+WindowMargins->{{423, Automatic}, {Automatic, 40.5}},
+WindowTitle->"AnalysisBySubjectMatter",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Sun 20 Oct 2024 18:35:08", "context" -> "Docs`", 
+    "keywords" -> {
+     "AnalyzePeaks", "PlotChromatography", "AnalyzeFractionsApp", 
+      "AnalyzeFractions", "PlotFractions", "AnalyzeLadder", "PlotLadder", 
+      "AnalyzeComposition", "AnalyzeAbsorbanceQuantification", 
+      "PlotAbsorbanceQuantification", "AnalyzeTotalProteinQuantification", 
+      "AnalyzeDynamicLightScattering", "AnalyzeDynamicLightScatteringLoading",
+       "PlotDynamicLightScattering", "AnalyzeCopyNumber", "PlotCopyNumber", 
+      "AnalyzeQuantificationCycle", "PlotQuantificationCycle", 
+      "AnalyzeBindingKinetics", "PlotBindingKinetics", 
+      "AnalyzeBindingQuantitation", "PlotBindingQuantitation", 
+      "AnalyzeEpitopeBinning", "PlotEpitopeBinning", "AnalyzeDNASequencing", 
+      "PlotDNASequencing", "AnalyzeCellCount", "AnalyzeColonies", 
+      "AnalyzeMicroscopeOverlay", "PlotMicroscopeOverlay", "PlotCellCount", 
+      "PlotCellCountSummary", "CombineFluorescentImages", "PlotImage", 
+      "AnalyzeImageExposure", "ImageMask", "ImageOverlay", "ImageIntensity", 
+      "AnalyzeMeltingPoint", "PlotMeltingPoint", "AnalyzeThermodynamics", 
+      "PlotThermodynamics", "AnalyzeParallelLine", "AnalyzeKinetics", 
+      "AnalyzeBubbleRadius", "PlotDynamicFoamAnalysis"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of analysis functions organized by the subject mater they may \
+be relevant to.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "AnalysisBySubjectMatter", "title" -> "AnalysisBySubjectMatter", "type" -> 
+    "Guide", "uri" -> "Docs/guide/AnalysisBySubjectMatter"}, 
+  "SearchTextTranslated" -> ""},
+FrontEndVersion->"13.3 for Microsoft Windows (64-bit) (July 24, 2023)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8",
+ExpressionUUID->"bd5c4edd-96be-429a-abe6-da4fb804d799"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[595, 21, 8604, 186, 58, "AnchorBarGrid",ExpressionUUID->"3addec6a-43ff-4b4e-b86b-ec3d4abd1fe0",
+ CellID->1],
+Cell[9202, 209, 123, 1, 49, "GuideTitle",ExpressionUUID->"901e8efe-ffca-49dd-831b-03500fe87137",
+ CellID->499254089],
+Cell[9328, 212, 197, 4, 54, "GuideAbstract",ExpressionUUID->"a7109c30-a5ce-4238-91df-c863f6e85160",
+ CellID->33985893],
+Cell[9528, 218, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"7ced7645-7498-4124-91b4-96c1b43bed9e",
+ CellID->293725314],
+Cell[9644, 221, 124, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"739930b5-aff6-4994-9773-7db2e699dba8",
+ CellID->63594128],
+Cell[9771, 224, 561, 14, 76, "GuideText",ExpressionUUID->"fedb9459-49a5-4d75-8506-2d51be099e3e",
+ CellID->184411863],
+Cell[10335, 240, 517, 13, 60, "GuideText",ExpressionUUID->"2829288e-aca4-430c-a70f-b931838412da",
+ CellID->333967419],
+Cell[10855, 255, 485, 13, 60, "GuideText",ExpressionUUID->"6ef7213f-a890-4224-af85-50670339aa6c",
+ CellID->97112855],
+Cell[11343, 270, 538, 13, 82, "GuideText",ExpressionUUID->"33089783-ee9d-455a-9706-eea4c3e4773e",
+ CellID->210424715],
+Cell[11884, 285, 622, 15, 104, "GuideText",ExpressionUUID->"fe725441-180a-40a1-8493-71710619fff1",
+ CellID->455828322],
+Cell[12509, 302, 516, 13, 60, "GuideText",ExpressionUUID->"9163dc0a-5e8f-45d8-abe6-9813400ab750",
+ CellID->536889652],
+Cell[13028, 317, 557, 14, 82, "GuideText",ExpressionUUID->"315dff07-07d7-47a6-bba8-f897a05b2f50",
+ CellID->70760394],
+Cell[13588, 333, 531, 14, 82, "GuideText",ExpressionUUID->"87465a4b-8a49-427e-a617-feaa3e5aeee8",
+ CellID->15015415],
+Cell[14122, 349, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"c74c803a-9c25-4637-9b04-7c89d61cc50d",
+ CellID->671220409],
+Cell[14238, 352, 123, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"a2910915-3c71-4644-8641-f528307e4856",
+ CellID->906074382],
+Cell[14364, 355, 561, 14, 76, "GuideText",ExpressionUUID->"09e8f9b6-7e88-4e56-aeae-e15c3eb324b2",
+ CellID->737071831],
+Cell[14928, 371, 568, 14, 82, "GuideText",ExpressionUUID->"2fc041f1-efba-4d7e-a9c7-b4cf8f8254da",
+ CellID->430530137],
+Cell[15499, 387, 582, 14, 82, "GuideText",ExpressionUUID->"5e83d9d1-1eba-4143-af8b-8e12baa1bd93",
+ CellID->413609282],
+Cell[16084, 403, 537, 14, 60, "GuideText",ExpressionUUID->"d13c58ce-4da1-4040-9cd8-87eac6d7cac9",
+ CellID->739110598],
+Cell[16624, 419, 633, 15, 104, "GuideText",ExpressionUUID->"b37cd3fd-0af7-4358-b9e3-c9f56afce11c",
+ CellID->788134275],
+Cell[17260, 436, 627, 15, 104, "GuideText",ExpressionUUID->"c7bac256-c9ff-4264-9a63-6c44b588d348",
+ CellID->338053116],
+Cell[17890, 453, 526, 14, 60, "GuideText",ExpressionUUID->"5a2deb56-a519-411e-9dcf-4b77e1c9da1b",
+ CellID->365246701],
+Cell[18419, 469, 111, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"7517e008-70ce-4040-be59-bd79f5d6ba01",
+ CellID->7692103],
+Cell[18533, 472, 113, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"42545794-e672-4938-ab15-99438c3c1ed8",
+ CellID->44307146],
+Cell[18649, 475, 543, 13, 76, "GuideText",ExpressionUUID->"89073d52-a817-4f0c-bd66-5093009249cb",
+ CellID->305762458],
+Cell[19195, 490, 560, 14, 82, "GuideText",ExpressionUUID->"13817e1a-36c6-4abe-aaf5-bd8c0a01fec6",
+ CellID->459096908],
+Cell[19758, 506, 548, 14, 60, "GuideText",ExpressionUUID->"00650ec6-0068-4f73-872f-deee2126a977",
+ CellID->348722211],
+Cell[20309, 522, 631, 15, 104, "GuideText",ExpressionUUID->"3b9b0cd6-3ad6-43e2-b531-1e9954ee247c",
+ CellID->238273973],
+Cell[20943, 539, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"721dea40-445b-4f92-bc77-9ebc1690714a",
+ CellID->286186081],
+Cell[21059, 542, 120, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"1ef2b601-9f4e-486d-b1cc-183db5aa4c9e",
+ CellID->237956846],
+Cell[21182, 545, 553, 14, 76, "GuideText",ExpressionUUID->"8d28cc38-277d-42c1-ab9f-a8c25dce8b73",
+ CellID->71637151],
+Cell[21738, 561, 589, 14, 82, "GuideText",ExpressionUUID->"0b5f9e43-08c8-4312-af11-9ed23dea0378",
+ CellID->374668401],
+Cell[22330, 577, 633, 15, 104, "GuideText",ExpressionUUID->"b13a3060-c43b-4259-a8d6-ceb6bf6c5fe4",
+ CellID->117952065],
+Cell[22966, 594, 605, 15, 82, "GuideText",ExpressionUUID->"72f7ff04-d52f-441e-87ad-6d3bc3f16f8b",
+ CellID->694108796],
+Cell[23574, 611, 620, 15, 104, "GuideText",ExpressionUUID->"3338be51-098e-4d5a-a1f3-e7b5db9e287f",
+ CellID->68168429],
+Cell[24197, 628, 574, 14, 82, "GuideText",ExpressionUUID->"f6ab6c1e-e8fe-4144-9958-fa6badd99c48",
+ CellID->369059646],
+Cell[24774, 644, 577, 14, 82, "GuideText",ExpressionUUID->"580ae210-eece-4193-9250-e9d3d0cc74bf",
+ CellID->189909289],
+Cell[25354, 660, 512, 13, 60, "GuideText",ExpressionUUID->"637fbeee-71da-4e7d-a2f5-8c2dbb2f55a0",
+ CellID->45664742],
+Cell[25869, 675, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"5af46835-0b57-4ec3-b6d1-f425c983c8ac",
+ CellID->124377500],
+Cell[25985, 678, 121, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"cc21444c-d1d7-4396-8c04-0ce1b08a6fae",
+ CellID->153808062],
+Cell[26109, 681, 483, 12, 54, "GuideText",ExpressionUUID->"96a02233-1244-4625-a02d-7d40a48927fe",
+ CellID->30813783],
+Cell[26595, 695, 499, 13, 60, "GuideText",ExpressionUUID->"ddf858bd-879e-4865-bd0b-0fecc348bebe",
+ CellID->143790134],
+Cell[27097, 710, 547, 14, 82, "GuideText",ExpressionUUID->"ecc999f8-b62c-4dd2-acb3-409c608e4c8a",
+ CellID->256475196],
+Cell[27647, 726, 579, 15, 82, "GuideText",ExpressionUUID->"317b5b44-cae3-44ab-a0ab-7f366aa11d7d",
+ CellID->269948863],
+Cell[28229, 743, 542, 13, 82, "GuideText",ExpressionUUID->"23aa94b0-736c-402f-8393-00e223fba7a0",
+ CellID->527890288],
+Cell[28774, 758, 624, 15, 104, "GuideText",ExpressionUUID->"d2ff5184-415c-4ea2-a24b-a1fdd4d5cec8",
+ CellID->211401285],
+Cell[29401, 775, 510, 14, 60, "GuideText",ExpressionUUID->"91d9b2ab-f5d7-489c-8028-0fd802a8e0e6",
+ CellID->158270421],
+Cell[29914, 791, 558, 14, 82, "GuideText",ExpressionUUID->"ff9467d9-aff6-43ac-9745-8308bd80e305",
+ CellID->240902394],
+Cell[30475, 807, 493, 13, 60, "GuideText",ExpressionUUID->"47173e4a-45ca-48f9-a454-200ac2c13852",
+ CellID->59733733],
+Cell[30971, 822, 481, 13, 60, "GuideText",ExpressionUUID->"7c2496ca-66fa-4669-b1f9-0e56acd82efa",
+ CellID->465806376],
+Cell[31455, 837, 474, 12, 60, "GuideText",ExpressionUUID->"dbac8567-cfe5-4936-b1f2-2599c4fe2a18",
+ CellID->634198184],
+Cell[31932, 851, 510, 13, 60, "GuideText",ExpressionUUID->"3afd3323-cb7b-4f73-923e-ff18ef69b52b",
+ CellID->167469769],
+Cell[32445, 866, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"1395ef8e-6f4b-423e-bb19-28bfa6b8f762",
+ CellID->170794287],
+Cell[32561, 869, 124, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"a55b4be2-132a-4d0e-bd8d-629495e84fc2",
+ CellID->95870371],
+Cell[32688, 872, 568, 14, 76, "GuideText",ExpressionUUID->"10332ec1-9406-4e4b-856a-14e2275a6f4a",
+ CellID->418550289],
+Cell[33259, 888, 582, 14, 82, "GuideText",ExpressionUUID->"d82250ce-8ac7-48d8-b132-d54a2204e81a",
+ CellID->527151610],
+Cell[33844, 904, 536, 14, 60, "GuideText",ExpressionUUID->"f91d9c6f-dc01-4414-a279-6f15269d305a",
+ CellID->53189210],
+Cell[34383, 920, 543, 13, 82, "GuideText",ExpressionUUID->"6f0a5613-e29d-4e59-b842-5d35876a554a",
+ CellID->207037188],
+Cell[34929, 935, 560, 14, 82, "GuideText",ExpressionUUID->"6e829232-0520-4895-852f-069bb96de541",
+ CellID->656989152],
+Cell[35492, 951, 548, 14, 60, "GuideText",ExpressionUUID->"1f37707e-aa95-48b8-ac13-d08983df1336",
+ CellID->479157748],
+Cell[36043, 967, 630, 15, 104, "GuideText",ExpressionUUID->"039ebd94-c62d-4b55-893d-286ce3e6ef08",
+ CellID->98625682],
+Cell[36676, 984, 561, 14, 82, "GuideText",ExpressionUUID->"79baa678-1e5e-4715-b060-0b05c1fb18a3",
+ CellID->121384656],
+Cell[37240, 1000, 633, 15, 104, "GuideText",ExpressionUUID->"cf78503e-b88f-4644-aac5-c09449e882fd",
+ CellID->389542414],
+Cell[37876, 1017, 605, 15, 82, "GuideText",ExpressionUUID->"65aca6ef-e276-4735-a01f-69156857a7bd",
+ CellID->647227890],
+Cell[38484, 1034, 113, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"34e0273d-cf1b-4d8a-bb68-37321774d466",
+ CellID->102354809],
+Cell[38600, 1037, 125, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"70e3aa88-5712-44ef-9300-3579ebcfd276",
+ CellID->427927156],
+Cell[38728, 1040, 542, 14, 76, "GuideText",ExpressionUUID->"ff20e67c-a600-4a49-b58b-a8684863c1b9",
+ CellID->62592833],
+Cell[39273, 1056, 520, 13, 60, "GuideText",ExpressionUUID->"878861dc-e706-48ce-9c75-26b1d3129b80",
+ CellID->268458529],
+Cell[39796, 1071, 582, 15, 82, "GuideText",ExpressionUUID->"309b1793-7480-494d-93db-f2114099c129",
+ CellID->47272245],
+Cell[40381, 1088, 598, 14, 104, "GuideText",ExpressionUUID->"f10b8d3d-ec39-4ed8-8a28-26a855c4cdc3",
+ CellID->249722988],
+Cell[40982, 1104, 500, 14, 60, "GuideText",ExpressionUUID->"9403d261-1a31-4560-b20d-38317d625d14",
+ CellID->30787438],
+Cell[41485, 1120, 112, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"f3e6bc06-074c-477d-92f6-1867fe9822ab",
+ CellID->17275617],
+Cell[41600, 1123, 118, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"de6b03d1-e840-48a8-9fb1-bddc99e44763",
+ CellID->31782571],
+Cell[41721, 1126, 587, 14, 76, "GuideText",ExpressionUUID->"fbd710bc-c824-471f-a09a-59c5b01a6e05",
+ CellID->226518396],
+Cell[42311, 1142, 554, 14, 82, "GuideText",ExpressionUUID->"5502e599-17ff-4c58-8421-b28061d9f807",
+ CellID->189103013],
+Cell[42868, 1158, 589, 14, 82, "GuideText",ExpressionUUID->"30c167f6-325b-4858-8cec-15d151cdd863",
+ CellID->222285661],
+Cell[43460, 1174, 112, 1, 23, "GuideDelimiterSubsection",ExpressionUUID->"e67cd380-3b8e-4e00-8b67-3c433a8e3b7f",
+ CellID->60461035],
+Cell[43575, 1177, 131, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"cf55bd3c-4007-4fd4-944a-aca382f9dc79",
+ CellID->277120521],
+Cell[43709, 1180, 517, 14, 54, "GuideText",ExpressionUUID->"457f8773-f1b4-43a0-9b17-19dc95130bf9",
+ CellID->142232233],
+Cell[44229, 1196, 614, 15, 104, "GuideText",ExpressionUUID->"652e6257-a415-4c72-8a42-d61fd27400f0",
+ CellID->190566937],
+Cell[44846, 1213, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"4db6cb55-34f7-435b-8be9-d5b42194cb05",
+ CellID->196680545],
+Cell[44955, 1216, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"95e87ad1-877c-44f1-9c1d-6c15f64b4537",
+ CellID->853259435],
+Cell[45350, 1230, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"812b5100-a05a-4141-9ccb-09bd23f4d15c",
+ CellID->54537348],
+Cell[45458, 1233, 254, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"3002c06c-4f2a-4374-a411-10453b0c39b9",
+ CellID->358870751],
+Cell[45715, 1241, 288, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"5a015db7-e60e-4731-b3b1-7015a9e56846",
+ CellID->348077067],
+Cell[46006, 1250, 250, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"f9addaa0-d2c0-44e7-8042-8bb1bd0befad",
+ CellID->165599131],
+Cell[46259, 1258, 97, 1, 41, "FooterCell",ExpressionUUID->"b75a8341-5419-4986-a2c5-7f1f6a248f6c",
+ CellID->411943012]
+}
+]
+*)
+
+(* End of internal cache information *)
+

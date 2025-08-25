@@ -44,6 +44,17 @@ DefineUsage[ExperimentLiquidLiquidExtraction,
                   "Container" -> Widget[
                     Type -> Object,
                     Pattern :> ObjectP[{Object[Container]}]
+                  ],
+                  "Model Sample"->Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[Model[Sample]],
+                    ObjectTypes -> {Model[Sample]},
+                    OpenPaths -> {
+                      {
+                        Object[Catalog, "Root"],
+                        "Materials"
+                      }
+                    }
                   ]
                 }
               ],
@@ -67,6 +78,6 @@ DefineUsage[ExperimentLiquidLiquidExtraction,
       "ExperimentSamplePreparation"
     },
     Tutorials -> {},
-    Author -> {"thomas", "lige.tonggu"}
+    Author -> {"ben", "thomas", "lige.tonggu"}
   }
 ];

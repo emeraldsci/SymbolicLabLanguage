@@ -19,14 +19,26 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -67,7 +79,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			},
@@ -79,14 +91,28 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -113,7 +139,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			},
@@ -125,14 +151,28 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -143,7 +183,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				},
 				CommandBuilder -> False
@@ -156,14 +196,28 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "SamplePools",
 							Description-> "The samples that should be consolidated together into a pool.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -206,7 +260,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			},
@@ -218,14 +272,28 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "SamplePools",
 							Description-> "The samples that should be consolidated together into a pool.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -254,7 +322,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				}
 			},
@@ -266,14 +334,28 @@ DefineUsage[ExperimentAliquot,
 						{
 							InputName -> "SamplePools",
 							Description-> "The samples that should be consolidated together into a pool.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -285,7 +367,7 @@ DefineUsage[ExperimentAliquot,
 					{
 						OutputName->"Protocol",
 						Description->"A protocol containing instructions for completion of the requested sample transfer.",
-						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation]}]
+						Pattern:>ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, RoboticCellPreparation]}]
 					}
 				},
 				CommandBuilder -> False

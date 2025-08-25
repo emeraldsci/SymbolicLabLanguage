@@ -58,11 +58,6 @@ DefineUsage[PlotProtein,
 		"PlotTranscript",
 		"PlotObject"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad",
-		"Catherine",
-		"thomas"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad", "Catherine", "thomas"},
 	Preview->True
 }];

@@ -212,14 +212,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer samples, matrices and calibrants onto the MALDI plate.",
 			Category -> "Sample Preparation"
 		},
 		MALDIPlateManipulations -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of samples, matrices and calibrants onto the MALDI plate.",
 			Category -> "Sample Preparation",
 			Developer -> True
@@ -493,6 +493,144 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Units -> Milliliter,
 			Description ->"For each member of UniqueCalibrants, the unique calibrants of sample being injected into the mass spectrometer by using syringe pumps, this is a unique field of ESI-QQQ.",
 			IndexMatching -> UniqueCalibrants,
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		(* Calibrant Prime *)
+		CalibrantPrimeBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "Prior to calibration, the solvent or solution to use to flush the infusion tubing and ion source capillary.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to contain and inject the CalibrantPrimeBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description ->"The volume of CalibrantPrimeBuffer to aspirate into the CalibrantPrimeInfusionSyringe.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantPrimeInfusionSyringeNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle attached to the CalibrantPrimeInfusionSyringe to aid in aspirating CalibrantPrimeBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		(* Calibrant Flush *)
+		CalibrantFlushBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "After calibration, the solvent or solution to use to flush the infusion tubing and ion source capillary.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to contain and inject the CalibrantFlushBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description ->"The volume of CalibrantFlushBuffer to aspirate into the CalibrantFlushInfusionSyringe.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		CalibrantFlushInfusionSyringeNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle attached to the CalibrantFlushInfusionSyringe to aid in aspirating CalibrantFlushBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		(* Infusion flush *)
+		FlushBuffer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "After direct infusion, the solvent or solution to use to flush the infusion tubing and ion source capillary.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		FlushInfusionSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to contain and inject the FlushBuffer.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		FlushInfusionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description ->"The volume of FlushBuffer to aspirate into the FlushInfusionSyringe.",
+			Category -> "Mass Analysis",
+			Developer -> True
+		},
+		FlushInfusionSyringeNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle attached to the FlushInfusionSyringe to aid in aspirating FlushBuffer.",
 			Category -> "Mass Analysis",
 			Developer -> True
 		},
@@ -808,6 +946,18 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Developer -> True,
 			Headers -> {"Object to Place","Placement Tree"}
 		},
+		PrimingSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Consumable],
+				Model[Item, Consumable]
+			],
+			Description -> "The syringe used to pull air from the lockmass, calibrant, and wash solutions lines of the mass spectrometer.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
 		(*Instrument Processing Related Developer Fields*)
 		EstimatedProcessingTime -> {
 			Format -> Single,
@@ -1049,19 +1199,44 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Category -> "Mass Analysis",
 			IndexMatching -> CalibrantWells
 		},
+		CalibrationSmoothingAnalyses -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Analysis][Reference],
+			Description -> "For each member of CalibrantWells, the smoothing of the raw calibrant data that was done in preparation of peak detection.",
+			Category -> "Mass Analysis",
+			IndexMatching -> CalibrantWells
+		},
+		CalibrationPeakAnalyses -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Analysis][Reference],
+			Description -> "For each member of CalibrantWells, the peak detection that was performed on the smoothed raw calibrant data.",
+			Category -> "Mass Analysis",
+			IndexMatching -> CalibrantWells
+		},
 		CalibrationLaserPowers -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> RangeP[0 Percent, 100 Percent],
 			Units :> Percent,
-			Description -> "The laser power used to perform manual calibration for each of the CalibrantWells.",
+			Description -> "If manual calibration was performed, this is the laser power used to perform calibration for each of the CalibrantWells, otherwise it is the minimum of the laser powers used during automatic calibration.",
+			Category -> "Mass Analysis"
+		},
+		AutomaticMALDICalibration -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if peak picking and calibration will be performed using an automated algorithm. If False or Null, a manual peak picking and calibration procedure is performed.",
 			Category -> "Mass Analysis"
 		},
 		Calibrated -> {
 			Format -> Multiple,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if manual calibration was successful for each of the CalibrantWells.",
+			Description -> "Indicates if calibration was successful for each of the CalibrantWells.",
 			Category -> "Mass Analysis"
 		},
 		CalibratedMasses -> {
@@ -1104,6 +1279,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Category -> "General",
 			Developer -> True
 		},
+		UncalibratedMethodFilePaths -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The full file paths of the original, uncalibrated method files containing voltage settings.",
+			Category -> "General",
+			Developer -> True
+		},
 		AutoExecuteMethodFilePaths -> {
 			Format -> Multiple,
 			Class -> {Expression, String},
@@ -1130,6 +1313,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Category -> "General",
 			Developer -> True
 		},
+		CalibrantBatchExecutionFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The full file path of the calibrant batch execution file, containing the information needed to zap the calibrant spots on the MALDI plate.",
+			Category -> "General",
+			Developer -> True
+		},
 		InstrumentSettingsFilePath -> {
 			Format -> Single,
 			Class -> String,
@@ -1143,6 +1334,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Class -> String,
 			Pattern :> FilePathP,
 			Description -> "The full file path of the export script file used to convert and export data gathered by the instrument to the network drive.",
+			Category -> "General",
+			Developer -> True
+		},
+		CalibrantExportScriptFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The full file path of the export script file used to convert and export raw calibrant data gathered by the instrument to the network drive.",
 			Category -> "General",
 			Developer -> True
 		},
@@ -1384,6 +1583,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Description -> "Mass spectra of calibrants used in this protocol.",
 			Category -> "Experimental Results"
 		},
+		RawCalibrantData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "Mass spectra of calibrants from before calibration is applied.",
+			Category -> "Experimental Results"
+		},
 		MatrixData -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -1457,6 +1664,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Relation -> Alternatives[Model[Instrument, MassSpectrometer], Object[Instrument, MassSpectrometer]],
 			Description -> "A field used to support cross-compatibility of LCMS and MassSpectrometry procedures. The field should link to the same mass spectrometer as the Instrument field.",
 			Category -> "Operations Information",
+			Developer -> True
+		},
+		CalibrationLoopCounts -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of UniqueCalibrants, the number of calibration voltage adjustment loops performed during the procedure.",
+			Category -> "General",
 			Developer -> True
 		}
 	}

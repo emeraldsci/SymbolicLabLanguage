@@ -14,7 +14,8 @@
 		"OptionsHandling`"
     ],
     "sources": [
-        "Inventory.m"
+        "Inventory.m",
+        "Optimization.m"
     ],
     "symbols": [
 		"Aliquot",
@@ -36,6 +37,8 @@
 		"ColdPacking",
 		"ConcentratedBuffer",
 		"Concentrations",
+		"ContainerDocumentation",
+		"ContainerType",
 		"CoverModel",
 		"DateExpected",
 		"Destination",
@@ -47,11 +50,13 @@
 		"Disposal",
 		"ExpectedDeliveryDate",
 		"EmptyContainerCovers",
+		"EmptyContainerSent",
 		"Orders",
 		"OrderSamples",
 		"OrderSamplesOptions",
 		"OrderSamplesPreview",
 		"SyncOrders",
+		"PlateFillOrder",
 		"Price",
 		"QuantityReceived",
 		"QuantityOutstanding",
@@ -119,6 +124,11 @@
 		"Provider",
 		"OrderedItems",
 		"ShippedRack",
-		"NonShippableTypesP"
+		"NonShippableTypesP",
+		"PlotInventoryLevels",
+		"SimulateInventoryLevels",
+		"LeadTime",
+		"ResourcePickingMethod",
+		"Oldest"
 	]
 }

@@ -290,6 +290,14 @@ DefineObjectType[Object[Qualification, EngineBenchmark],{
 			Description -> "The text entered by the user during the text entry task.",
 			Category -> "User Input Tests"
 		},
+		EnteredObjects -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Qualification],
+			Description -> "The objects entered by the user during the object entry task.",
+			Category -> "User Input Tests"
+		},
 
 		(* -- Storage Tests -- *)
 		SingleUseObjects -> {
@@ -392,24 +400,6 @@ DefineObjectType[Object[Qualification, EngineBenchmark],{
 			Description -> "A specification of containers to place and their placment location.",
 			Headers -> {"Source Container", "Destination Container","Destination Position"},
 			Category -> "Movement Tests"
-		},
-
-		(* -- Subprotocol Tests -- *)
-		SamplePrep -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "A sample manipulation protocol generated the test the sample manipulation task.",
-			Category -> "Subprotocol Tests"
-		},
-		SamplePreparationProtocols -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol],
-			Description -> "Protocols used to prepare the SamplesIn and/or AliquotSamples prior to starting the experiment.",
-			Category -> "Sample Preparation"
 		},
 
 		(* -- Looping Tests -- *)
@@ -583,6 +573,31 @@ DefineObjectType[Object[Qualification, EngineBenchmark],{
 			Description -> "The disconnection information for removing wiring components.",
 			Headers -> {"Object to Connect A", "WiringConnector Name A"},
 			Category -> "Wiring Information",
+			Developer -> True
+		},
+		(* -- AsepticUnbagging Tests --*)
+		AsepticBaggedItems -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Wiring],
+				Object[Wiring],
+				Model[Plumbing],
+				Object[Plumbing],
+				Model[Instrument],
+				Object[Instrument],
+				Model[Sample],
+				Object[Sample],
+				Model[Container],
+				Object[Container],
+				Model[Part],
+				Object[Part],
+				Model[Item],
+				Object[Item]
+			],
+			Description -> "The items which are to be unbagged in an aseptic handling environment.",
+			Category -> "Aseptic Handling",
 			Developer -> True
 		}
 	}

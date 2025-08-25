@@ -57,9 +57,7 @@ DefineUsage[resolveSolidPhaseExtractionMethod,
 			"resolveSolidPhaseExtractionRoboticPrimitive",
 			"ExperimentSolidPhaseExtraction"
 		},
-		Author -> {
-			"nont.kosaisawe"
-		}
+		Author -> {"steven"}
 	}
 ];
 

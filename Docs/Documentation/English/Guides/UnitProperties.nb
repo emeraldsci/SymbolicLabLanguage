@@ -1,3 +1,302 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bad464ce198241a81e77d3d5f1eb792f74c152bc991abf1235c44bed49af929b
-size 11904
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     11402,        292]
+NotebookOptionsPosition[      8259,        229]
+NotebookOutlinePosition[      9588,        263]
+CellTagsIndexPosition[      9545,        260]
+WindowTitle->UnitProperties
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "28073b6f-682a-4b62-9ed0-cec6aff60f82"]
+        }],ExpressionUUID->"c4a55323-3006-4fe0-9c57-7f10c1b2ed66"],
+        StripOnInput->False], {"\<\"CanonicalUnit\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/CanonicalUnit"], "\<\"UnitBase\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitBase"], "\<\"UnitDimension\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitDimension"], "\<\"Units\"\>":>
+       Documentation`HelpLookup["paclet:EmeraldUnits/ref/Units"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "18dec53c-22be-4af8-b982-a8a4e5626ec0"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "6527f13d-0457-4f02-84c4-a83a62eecad0"]
+        }],ExpressionUUID->"6215c88c-28e8-4b1e-9942-719f7bfc7ba7"],
+        StripOnInput->False], {"\<\"Numerics\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/Numerics"], "\<\"StatisticalDistributions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/StatisticalDistributions"], "\<\"UnitManipulation\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/UnitManipulation"], "\<\"UnitPatterns\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/UnitPatterns"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "6c119d33-93ee-4656-b309-106d76ef4f8d"]
+    }], "AnchorBar",ExpressionUUID->"f7b6c081-a62b-45ae-a37a-a69e5f189fbb"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"a1528a40-248c-4b21-a792-aafed267fb0e"],
+
+Cell["Unit Properties", "GuideTitle",
+ CellID->180425367,ExpressionUUID->"4ab558c8-cda2-42e0-8204-83696385c521"],
+
+Cell["\<\
+Collection of functions for looking up unit properties for physical \
+quantities.\
+\>", "GuideAbstract",
+ CellID->901786063,ExpressionUUID->"3e16e642-bf22-497e-ba78-01099769f08d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->415650994,ExpressionUUID->"d30d8ade-7ce3-40ba-b535-1c34713df3a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Units"]],"paclet:EmeraldUnits/ref/Units"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c55aee5d-329a-4496-880f-8ad36f17d716"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a Quantity object containing the unit of the provided quantity."
+}], "GuideText",
+ CellID->222423625,ExpressionUUID->"bb6d1a90-31e4-4eed-b3c0-3785888a5138"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnitBase"]],"paclet:EmeraldUnits/ref/UnitBase"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "164649ba-f088-4ba6-8a11-c25b0f001961"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns only the unit portion of the provided quantity in absence of the \
+metric  prefix."
+}], "GuideText",
+ CellID->288266111,ExpressionUUID->"bc286659-2ed0-47d7-8f2b-fe85f71ed42a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnitDimension"]],"paclet:EmeraldUnits/ref/UnitDimension"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7b9b23fd-0608-4db7-ba36-3a752372eb90"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a description of the unit in the provided quantity."
+}], "GuideText",
+ CellID->319923941,ExpressionUUID->"8b620b16-7354-42db-8770-f3c1f01057cf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["CanonicalUnit"]],"paclet:EmeraldUnits/ref/CanonicalUnit"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1e5b887a-36a1-469f-acf3-f4ba0c5f3b57"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the canonical unit of the provided quantity or unit dimension."
+}], "GuideText",
+ CellID->321645278,ExpressionUUID->"08f2aa68-f434-48ee-9681-6760c26e4a2f"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->457389252,ExpressionUUID->"aed1e0ef-2b4d-4dea-a8f2-bc609721951f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"3d721786-3091-46e5-b130-8446b3e1cedc"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->115422360,ExpressionUUID->"871744af-b510-43d7-acfc-169685a32afd"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->209905012,ExpressionUUID->"ac05b2a1-d9c4-484f-aa55-1c997c2cb0c9"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Numerics"]],"paclet:Docs/guide/Numerics"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->136785531,ExpressionUUID->"c7df6eb1-a051-481a-91b2-1ac991683db3"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["StatisticalDistributions"]],
+   "paclet:Docs/guide/StatisticalDistributions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->98276552,ExpressionUUID->"39efa1c8-b09e-4864-b583-89e85f858624"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnitManipulation"]],"paclet:Docs/guide/UnitManipulation"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->89515666,ExpressionUUID->"a50e41c8-03db-4806-ba91-8a77d673d019"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnitPatterns"]],"paclet:Docs/guide/UnitPatterns"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->163018474,ExpressionUUID->"37e134ea-3acd-4295-bb3e-f0cabab8a39d"],
+
+Cell["", "FooterCell",
+ CellID->175220528,ExpressionUUID->"a20ba885-527c-4298-a2c3-62eec5088707"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"UnitProperties",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 19:11:08", "context" -> "Docs`", 
+    "keywords" -> {"Units", "UnitBase", "UnitDimension", "CanonicalUnit"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for looking up unit properties for physical \
+quantities.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "UnitProperties", "title" -> "UnitProperties", "type" -> "Guide", "uri" -> 
+    "Docs/guide/UnitProperties", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[586, 21, 3639, 89, 56, "AnchorBarGrid",ExpressionUUID->"a1528a40-248c-4b21-a792-aafed267fb0e",
+ CellID->1],
+Cell[4228, 112, 112, 1, 50, "GuideTitle",ExpressionUUID->"4ab558c8-cda2-42e0-8204-83696385c521",
+ CellID->180425367],
+Cell[4343, 115, 189, 4, 31, "GuideAbstract",ExpressionUUID->"3e16e642-bf22-497e-ba78-01099769f08d",
+ CellID->901786063],
+Cell[4535, 121, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"d30d8ade-7ce3-40ba-b535-1c34713df3a0",
+ CellID->415650994],
+Cell[4651, 124, 457, 11, 38, "GuideText",ExpressionUUID->"bb6d1a90-31e4-4eed-b3c0-3785888a5138",
+ CellID->222423625],
+Cell[5111, 137, 482, 12, 38, "GuideText",ExpressionUUID->"bc286659-2ed0-47d7-8f2b-fe85f71ed42a",
+ CellID->288266111],
+Cell[5596, 151, 461, 11, 38, "GuideText",ExpressionUUID->"8b620b16-7354-42db-8770-f3c1f01057cf",
+ CellID->319923941],
+Cell[6060, 164, 472, 11, 38, "GuideText",ExpressionUUID->"08f2aa68-f434-48ee-9681-6760c26e4a2f",
+ CellID->321645278],
+Cell[6535, 177, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"aed1e0ef-2b4d-4dea-a8f2-bc609721951f",
+ CellID->457389252],
+Cell[6644, 180, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"871744af-b510-43d7-acfc-169685a32afd",
+ CellID->115422360],
+Cell[7039, 194, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"ac05b2a1-d9c4-484f-aa55-1c997c2cb0c9",
+ CellID->209905012],
+Cell[7148, 197, 235, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"c7df6eb1-a051-481a-91b2-1ac991683db3",
+ CellID->136785531],
+Cell[7386, 204, 270, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"39efa1c8-b09e-4864-b583-89e85f858624",
+ CellID->98276552],
+Cell[7659, 212, 250, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"a50e41c8-03db-4806-ba91-8a77d673d019",
+ CellID->89515666],
+Cell[7912, 219, 243, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"37e134ea-3acd-4295-bb3e-f0cabab8a39d",
+ CellID->163018474],
+Cell[8158, 226, 97, 1, 41, "FooterCell",ExpressionUUID->"a20ba885-527c-4298-a2c3-62eec5088707",
+ CellID->175220528]
+}
+]
+*)
+
+(* End of internal cache information *)
+

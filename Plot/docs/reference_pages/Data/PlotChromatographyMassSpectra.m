@@ -30,6 +30,26 @@ DefineUsage[PlotChromatographyMassSpectra,{
 					Pattern:>ListableP[ValidGraphicsP[]]
 				}
 			}
+		},
+		{
+			Definition -> {"PlotChromatographyMassSpectra[protocol]", "plot"},
+			Description -> "displays either a 2D (sliced) or 3D (waterfall) plot of the LCMS data found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing LCMS data objects.",
+					Widget -> Alternatives[
+						Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, LCMS]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the LCMS protocol.",
+					Pattern :> ValidGraphicsP[]
+				}
+			}
 		}
 	},
 	MoreInformation -> {

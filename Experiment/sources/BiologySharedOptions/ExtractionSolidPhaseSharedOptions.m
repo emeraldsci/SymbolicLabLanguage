@@ -3091,3 +3091,7 @@ resolveExtractionSolidPhaseSharedOptionsTests[myFunction_Symbol, previouslyExtra
 				TimeConstraint -> 3600
 			]
 		};
+
+(* Authors definition for Experiment`Private`solidPhaseExtractionConflictingOptionsChecks *)
+Authors[Experiment`Private`solidPhaseExtractionConflictingOptionsChecks]:={"taylor.hochuli"};
+

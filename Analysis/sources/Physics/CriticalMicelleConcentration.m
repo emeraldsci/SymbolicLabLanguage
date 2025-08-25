@@ -214,7 +214,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 		preMicelleFitMin,preMicelleFitMax, preMicellarRSquared, postMicellarRSquared,
 		emptyPostMicellarRegionTests,emptyPreMicellarRegionTests, emptyPreMicellarRegion,emptyPostMicellarRegion, diluentModelsObjects, aliquotSamplesCompositionsLinks,
 		diluentCompositionsLinks, diluentObjects,  postMicellarFitID, preMicellarFitID, preMicellarFitNoID, postMicellarFitNoID, gasConstant,
-		cacheBall, resolvedOptionsResult, resolvedOptionsTests, collapsedResolvedOptions, postMicellarDerivative,
+		cacheBall, resolvedOptionsResult, resolvedOptionsTests, collapsedResolvedOptions, postMicellarDerivative, dataObjs,
 		resolvedpreMicellarDomain, resolvedpostMicellarDomain, conflictingPreMicellarDomainUnits, conflictingPreMicellarDomainUnitsTests,
 		conflictingPostMicellarDomainUnits, conflictingPostMicellarDomainUnitsTests, additionalinvalidOptions, preMicellarRange,postMicellarRange, objectCache,
 		preMicellarDomain,postMicellarDomain, allconcentrations,molarBool, concentrationDataNoZero,surfaceTensionDataNoZero, unableToConvertTests, unableToConvert, optionObjects
@@ -261,17 +261,25 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 
 	combinedOptionsNamed = ReplaceRule[safeOptions, unresolvedOptions];
 
-
 	(* Sanitize the inputs (Convert from Name to Object) *)
-	{myDataObjs,combinedOptions} = Experiment`Private`sanitizeInputs[myDataObjs,combinedOptionsNamed];
+	{dataObjs, combinedOptions} = Experiment`Private`sanitizeInputs[myDataObjs,combinedOptionsNamed];
 
+	(* If the specified options don't match their patterns return $Failed *)
+	If[MatchQ[combinedOptions, $Failed],
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> safeOptionTests,
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
 
 	(* -- Assemble big download -- *)
 	{
 		cacheBall
 	}=Quiet[Download[
 		{
-			myDataObjs
+			dataObjs
 		},
 		{
 			{
@@ -298,7 +306,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 	(*--Build the resolved options--*)
 	resolvedOptionsResult=If[gatherTests,
 		(*We are gathering tests. This silences any messages being thrown*)
-		{resolvedOptions,resolvedOptionsTests}=resolveAnalyzeCriticalMicelleConcentrationOptions[myDataObjs,combinedOptions,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveAnalyzeCriticalMicelleConcentrationOptions[dataObjs,combinedOptions,Cache->cacheBall,Output->{Result,Tests}];
 
 		(*Therefore, we have to run the tests to see if we encountered a failure*)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -308,7 +316,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 
 		(*We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption*)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveAnalyzeCriticalMicelleConcentrationOptions[myDataObjs,combinedOptions,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveAnalyzeCriticalMicelleConcentrationOptions[dataObjs,combinedOptions,Cache->cacheBall],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -331,7 +339,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 		Return[outputSpecification/.{
 			Result->$Failed,
 			Tests->allTests,
-			Options->RemoveHiddenOptions[AnalyzeCritcalMicelleConcentration, collapsedResolvedOptions],
+			Options->RemoveHiddenOptions[AnalyzeCriticalMicelleConcentration, collapsedResolvedOptions],
 			Preview->Null
 		}]
 	];
@@ -409,7 +417,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 	targetMoleculeComposition =
 		Map[
 			Function[{compositions},
-				Flatten[Cases[compositions, {CompositionP, ObjectP[#]}]] & /@ resolvedtargetMolecule
+				Flatten[Cases[compositions, {CompositionP, ObjectP[#], _}]] & /@ resolvedtargetMolecule
 			], Flatten[aliquotSamplesCompositions, 1]];
 
 	(*Find what units the concentrations are in*)
@@ -418,13 +426,13 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 	(*Find the Concentration preferably in Molar units of of the target molecule in each data objects composition*)
 
 	(*Find the samples most likely diluent*)
-	compositionNoTarget= DeleteCases[
+	compositionNoTarget= Map[
 		DeleteCases[
-		#,{CompositionP,ObjectP[resolvedtargetMolecule]}
-	],
-		{_,Null}
-	]
-		&/@Flatten[aliquotSamplesCompositions,1];
+			DeleteCases[#,{CompositionP,ObjectP[resolvedtargetMolecule],_}],
+			{_,Null,_}
+		]&,
+		Flatten[aliquotSamplesCompositions,1]
+	];
 
 	(*find the solvent of the sample to calculate molar concentration*)
 	solvent=If[MatchQ[#,{}],
@@ -911,7 +919,7 @@ AnalyzeCriticalMicelleConcentration[myDataObjs:{ObjectP[Object[Data,SurfaceTensi
 				Replace[SurfaceTensions]-> Flatten[surfaceTensions],
 				Replace[Temperatures] -> Flatten[temperatures],
 				Replace[SurfacePressures]-> surfacePressures,
-				Replace[AssayData]->(Link[#,CriticalMicelleConcentrationAnalyses]&/@myDataObjs),
+				Replace[AssayData]->(Link[#,CriticalMicelleConcentrationAnalyses]&/@dataObjs),
 				PreMicellarFit ->If[Or[MatchQ[preMicellarFit,Null],preMicellarFitUpload],Null,Link[preMicellarFitID,PredictedValues]],
 				PostMicellarFit ->If[Or[MatchQ[postMicellarFit,Null],postMicellarFitUpload],Null,Link[postMicellarFitID,PredictedValues]],
 				CriticalMicelleConcentration-> criticalMicelleConcentration,

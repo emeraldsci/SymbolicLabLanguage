@@ -31,6 +31,26 @@ DefineUsage[PlotDynamicFoamAnalysis,
 						Pattern:>Alternatives[{ValidGraphicsP[]..},Null]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotDynamicFoamAnalysis[protocol]", "plot"},
+				Description -> "displays a 'plot' of the dynamic foam analysis data found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing dynamic foam analysis data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, DynamicFoamAnalysis]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the dynamic foam analysis protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {

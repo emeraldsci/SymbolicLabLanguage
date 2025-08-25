@@ -147,7 +147,7 @@ DefineObjectType[Object[Maintenance,ParameterizeContainer],{
 				_?DateObjectQ,
 				_Link,
 				ParameterizationMeasurementTypeP,
-				GreaterEqualP[0*Milli*Meter]|GreaterEqualP[0]|CrossSectionalShapeP|WellShapeP,
+				DistanceP|_?NumericQ|CrossSectionalShapeP|WellShapeP,
 				BooleanP,
 				_Link
 			},
@@ -204,6 +204,14 @@ DefineObjectType[Object[Maintenance,ParameterizeContainer],{
 			Description -> "The number of times we have been forced to start over from the beginning.",
 			Category -> "Parameterization Measurements"
 		},
+		Caliper -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument, DistanceGauge], Model[Instrument, DistanceGauge]],
+			Description -> "The specific caliper used to perform measurements in this protocol.",
+			Category -> "Qualifications & Maintenance"
+		},
 		Calipers -> {
 			Format -> Single,
 			Class -> Link,
@@ -234,7 +242,71 @@ DefineObjectType[Object[Maintenance,ParameterizeContainer],{
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Part, Battery], Model[Part, Battery]],
 			Description -> "The batteries required for the calipers and gauges used in this protocol.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		CaliperBatteryRequirements -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Part, Battery], Model[Part, Battery]],
+			Description -> "The batteries required for the caliper used in this protocol.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		HeightGaugeBatteryRequirements -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Part, Battery], Model[Part, Battery]],
+			Description -> "The batteries required for the height gauge used in this protocol.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		DepthGaugeBatteryRequirements -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Part, Battery], Model[Part, Battery]],
+			Description -> "The batteries required for the depth gauge used in this protocol.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		CalibrationBlockFields -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "For each member of CalibrationBlocks, the field name in this maintenance that they are stored for verifying distances and placing plates on top.",
+			Developer -> True,
+			IndexMatching -> CalibrationBlocks,
 			Category -> "Qualifications & Maintenance"
+		},
+		CalibrationBlocksVerified -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of CalibrationBlocks, indicates if the calibration block is free of cracks and good to use as precision standards.",
+			Developer -> True,
+			IndexMatching -> CalibrationBlocks,
+			Category -> "Qualifications & Maintenance"
+		},
+		CalibrationBlocks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item, CalibrationDistanceBlock],Model[Item, CalibrationDistanceBlock]],
+			Description -> "The calibration blocks used in this maintenance for verifying distances and placing plates on top.",
+			Developer -> True,
+			Category -> "Qualifications & Maintenance"
+		},
+		CalibrationBlockVerificationMeasurements -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Units -> None,
+			Relation -> Object[Data][Maintenance],
+			Description -> "A list of measurements that verify if the calibration blocks stored in CalibrationBlockFields is good to use as precision standards.",
+			Category -> "Parameterization Measurements"
 		},
 		CalibrationBlock -> {
 			Format -> Single,
@@ -284,7 +356,62 @@ DefineObjectType[Object[Maintenance,ParameterizeContainer],{
 			Description -> "A jig used for placing plates on top of in order to probe their bottom geometry.",
 			Category -> "Qualifications & Maintenance"
 		},
-
+		RetryMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to retry in the case of inconsistencies.",
+			Category -> "Parameterization Measurements"
+		},
+		NumberOfMeasurementRetries -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0,1],
+			Description -> "The number of times we have retried measurements in an attempt for consistencies.",
+			Category -> "Parameterization Measurements"
+		},
+		OuterDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the specific measurement fields to determine the outer width/length dimensions.",
+			Category -> "Parameterization Measurements"
+		},
+		HeightDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to determine the height dimensions.",
+			Category -> "Parameterization Measurements"
+		},
+		HorizontalWellDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to determine the well dimensions (spacing, well diameter, margin) in the horizontal direction.",
+			Category -> "Parameterization Measurements"
+		},
+		VerticalWellDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to determine the well dimensions (spacing, well diameter, margin) in the vertical direction.",
+			Category -> "Parameterization Measurements"
+		},
+		BottomCavityDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to determine the bottom cavity dimensions.",
+			Category -> "Parameterization Measurements"
+		},
+		WellDepthDimensionMeasurements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _Symbol,
+			Description -> "Indicates the measurements to determine the well depth dimensions.",
+			Category -> "Parameterization Measurements"
+		},
 		(* specific dimensions fields below!! *)
 		(*********************************************************)
 		OuterDimensionsConsistency -> {

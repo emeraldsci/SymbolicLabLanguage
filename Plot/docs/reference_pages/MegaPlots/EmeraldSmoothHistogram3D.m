@@ -60,11 +60,7 @@ DefineUsage[EmeraldSmoothHistogram3D,
 		"EmeraldSmoothHistogram",
 		"PlotObject"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad",
-		"hayley"
-	},
+	Author -> {"dirk.schild", "amir.saadat", "brad", "hayley"},
 	Sync -> Automatic,
 	Preview->True
 }];

@@ -102,6 +102,14 @@ DefineObjectType[Object[Part, CapillaryArray], {
             Pattern :> GreaterP[0*PSI],
             Description -> "The maximum positive pressure that can be applied at the capillaries' destination by the high pressure syringe pump in the instrument. An applied positive pressure at the capillaries' destination causes a fluid movement backwards from the syringe pump through the capillary, and into the Plates (Sample, RunningBuffer, RinseBuffer, Marker, Waste).",
             Category -> "Operating Limits"
-        }
+        },
+		CloggedChannels ->{
+			Format->Multiple,
+			Class->String,
+			Pattern:>WellP,
+			Description->"The list of channels that are clogged as identified by the most recent FlushCapillaryArray maintenance performed on the instrument.",
+			Category->"General",
+			Developer->True
+		}
   }
 }];

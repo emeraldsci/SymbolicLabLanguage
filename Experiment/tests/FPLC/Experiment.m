@@ -80,7 +80,7 @@ DefineTests[
 			},
 			Variables:>{protocol}
 		],
-		Example[{Additional, "Inject and separate large samples, even from the wrong type of container (aliquotted):"},
+		Example[{Additional, "Inject and separate large samples, even from the wrong type of container (aliquoted):"},
 			protocol=ExperimentFPLC[
 				Object[Sample, "FPLC Large-Volume Protein Sample 6 (in incompatible container)" <> $SessionUUID],
 				InjectionVolume -> 2*Liter
@@ -283,6 +283,28 @@ DefineTests[
 			ListableP[ObjectP[Model[Sample, "Milli-Q water"]]],
 			Variables:>{protocol}
 		],
+		
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFPLC[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFPLC[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFPLC[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFPLC[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"StandardsBlanksOutside", "Define a Standard when using a different instrument:"},
 			options=ExperimentFPLC[
 				{Object[Sample, "FPLC Test Oligo" <> $SessionUUID],	Object[Sample, "FPLC Test Oligo2" <> $SessionUUID]},
@@ -477,7 +499,7 @@ DefineTests[
 				uniqueSampleCapResources
 			},
 			{
-				{Null, ObjectP[Model[Item, Cap, "250mL Glass Bottle Aspiration Cap, EPDM"]], Null, Null, ObjectP[Model[Item, Cap, "250mL Glass Bottle Aspiration Cap, EPDM"]], Null, Null, ObjectP[Model[Item, Cap, "250mL Glass Bottle Aspiration Cap, EPDM"]], ObjectP[Model[Item, Cap, "4L Bottle Aspiration Cap, EPDM, Thread-Through"]], Null},
+				{Null, ObjectP[Model[Item, Cap, "id:L8kPEjkYnpYE"]], Null, Null, ObjectP[Model[Item, Cap, "id:L8kPEjkYnpYE"]], Null, Null, ObjectP[Model[Item, Cap, "id:L8kPEjkYnpYE"]], ObjectP[Model[Item, Cap, "id:R8e1Pjewp7an"]], Null},
 				{ObjectP[Object[Resource, Sample]], ObjectP[Object[Resource, Sample]]}
 			},
 			Variables:>{protocol, requiredResources, uniqueSampleCapResources},
@@ -2864,13 +2886,13 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentFPLC[Object[Sample,  "FPLC Test Oligo" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "HPLC vial (high recovery)"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{_Integer, ObjectP[Model[Container, Vessel, "HPLC vial (high recovery)"]]},
+			{{_Integer, ObjectP[Model[Container, Vessel, "HPLC vial (high recovery)"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,DestinationWell,"Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentFPLC[Object[Sample,"FPLC Test Oligo" <> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -3837,85 +3859,40 @@ DefineTests[
 		(* ------------ FUNTOPIA SHARED OPTION TESTING ------------ *)
 		(* -------------------------------------------------------- *)
 		(* -------------------------------------------------------- *)
-		Example[{Options, PreparatoryPrimitives, "Transfer water to use as blanks samples in a column qualification protocol:"},
-			ExperimentFPLC[
-				"My Blanks Plate",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Blanks Plate",
-						Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Blanks Plate", "A1"},
-						Amount -> 1. * Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Blanks Plate", "B1"},
-						Amount -> 1. * Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> {"My Blanks Plate", "C1"},
-						Amount -> 1. * Milliliter
-					]
-				},
-				BufferA -> Model[Sample, "Milli-Q water"],
-				BufferB -> Model[Sample, "Milli-Q water"]
-			],
-			ObjectP[Object[Protocol, FPLC]]
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentFPLC[
+				(* Milli-Q water *)
+				{Model[Sample, "id:8qZ1VWNmdLBD"], Model[Sample, "id:8qZ1VWNmdLBD"]},
+				PreparedModelAmount -> 1 Milliliter,
+				(* 96-well 2mL Deep Well Plate *)
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Milli-Q water *)
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				(* 96-well 2mL Deep Well Plate *)
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
-		Example[{Options, PreparatoryPrimitives, "Describe the preparation of a buffer before using it in an FPLC protocol:"},
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
 			ExperimentFPLC[
-				{Object[Sample, "FPLC Test Oligo" <> $SessionUUID]},
-				BufferA -> "My Buffer",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My Buffer",
-						Sample -> {Model[Container, Vessel, "Amber Glass Bottle 4 L"], "A1"}
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My Buffer",
-						Amount -> 1800 Milliliter
-					],
-					Transfer[
-						Source -> Model[Sample, "Tris Base"],
-						Destination -> "My Buffer",
-						Amount -> 22 Gram
-					]
-				}
-			],
-			ObjectP[Object[Protocol, FPLC]]
-		],
-		Example[{Options, PreparatoryPrimitives, "Mix a stock solution sample before aliquotting into a deepwell plate that will be loaded onto the FPLC:"},
-			ExperimentFPLC[
-				{"My 4L Bottle", "My 4L Bottle", "My 4L Bottle"},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 4L Bottle",
-						Container -> Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-					],
-					Transfer[
-						Source -> {Model[Sample, StockSolution, "id:R8e1PjpR1k0n"]},
-						Destination -> "My 4L Bottle",
-						Volume -> 3.5 Liter
-					],
-					Mix[
-						Sample -> "My 4L Bottle",
-						MixType -> Roll,
-						Time -> 30 Minute
-					]
-				},
-				Aliquot -> True,
-				AssayVolume -> {1 Milliliter, 1.25 Milliliter, 1 Milliliter},
-				AliquotContainer -> {
-					{1, Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
-					{1, Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
-					{1, Model[Container, Plate, "96-well 2mL Deep Well Plate"]}
-				},
-				ConsolidateAliquots -> False
+				Model[Sample, "Caffeine"],
+				PreparedModelAmount -> 5 Milligram,
+				MixType -> Vortex, IncubationTime -> 10 Minute,
+				AssayBuffer -> Model[Sample, "Milli-Q water"]
 			],
 			ObjectP[Object[Protocol, FPLC]]
 		],
@@ -4045,6 +4022,59 @@ DefineTests[
 				4.63,
 				11.
 			}
+		],
+		Test["Perform system prime and flush for all buffers used in the injection run (requires correct buffers):",
+			protocol = ExperimentFPLC[Object[Sample,  "FPLC Test Oligo" <> $SessionUUID], GradientD->70Percent];
+			Download[
+				protocol,
+				{
+					SystemPrimeBufferA, SystemPrimeBufferB, SystemPrimeBufferC, SystemPrimeBufferD, SystemPrimeBufferE, SystemPrimeBufferF, SystemPrimeBufferG, SystemPrimeBufferH,
+					SystemFlushBufferA, SystemFlushBufferB, SystemFlushBufferC, SystemFlushBufferD, SystemFlushBufferE, SystemFlushBufferF, SystemFlushBufferG, SystemFlushBufferH
+				}
+			],
+			{
+				ObjectP[],ObjectP[],Null,ObjectP[],Null,Null,Null,Null,
+				ObjectP[],ObjectP[],Null,ObjectP[],Null,Null,Null,Null
+			},
+			Variables :> {protocol}
+		],
+		Test["Perform system prime and flush for all buffers used in the injection run (populates corresponding gradients):",
+			protocol = ExperimentFPLC[Object[Sample,  "FPLC Test Oligo" <> $SessionUUID], GradientE->20Percent,GradientH->80Percent];
+			Download[
+				protocol,
+				{SystemPrimeGradient[Gradient][[All,2;;9]],SystemFlushGradient[Gradient][[All,2;;9]]}
+			],
+			{
+				{
+					(* A *)
+					{EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* E *)
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* B *)
+					{EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* H *)
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent]},
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent]}
+				},
+				{
+					(* A *)
+					{EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* E *)
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* B *)
+					{EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					{EqualP[0Percent],EqualP[100Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent]},
+					(* H *)
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent]},
+					{EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[0Percent],EqualP[100Percent]}
+				}
+			},
+			Variables :> {protocol}
 		]
 	},
 	SetUp :> (
@@ -4072,8 +4102,8 @@ DefineTests[
 				Object[Sample,  "FPLC Test Oligo New Plate" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Oligo in nondefault but compatible tube" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Oligo in nondefault but compatible bottle" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "A fake Parent Protocol for ExperimentFPLC testing" <> $SessionUUID],
-				Object[Qualification, HPLC, "A fake Parent Qualification for ExperimentFPLC testing" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "A test Parent Protocol for ExperimentFPLC testing" <> $SessionUUID],
+				Object[Qualification, HPLC, "A test Parent Qualification for ExperimentFPLC testing" <> $SessionUUID],
 				Object[Method, Gradient, "FPLC Test Method" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Water BufferA" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Water BufferB" <> $SessionUUID],
@@ -4106,8 +4136,8 @@ DefineTests[
 				Object[Sample, "FPLC Test Containerless Sample" <> $SessionUUID],
 				Object[Sample, "FPLC Test Discarded Sample" <> $SessionUUID],
 				Object[Container, Vessel, "FPLC Test Discarded Container" <> $SessionUUID],
-				Object[Container, Bench, "FPLC Fake bench for tests" <> $SessionUUID],
-				Model[Item, Cap, "FPLC Fake 50 mL Aspiration Cap" <> $SessionUUID],
+				Object[Container, Bench, "FPLC test bench for tests" <> $SessionUUID],
+				Model[Item, Cap, "FPLC test 50 mL Aspiration Cap" <> $SessionUUID],
 				Object[Item, Cap, "FPLC Test Aspiration Cap 1" <> $SessionUUID],
 				Object[Item, Cap, "FPLC Test Aspiration Cap 2" <> $SessionUUID],
 				Model[Molecule, Oligomer, "Test DNA IM for FPLC" <> $SessionUUID],
@@ -4203,7 +4233,7 @@ DefineTests[
 				(*14*)<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "HPLC vial (high recovery)"], Objects], Name -> "FPLC Test Discarded Container" <> $SessionUUID, Status -> Discarded, Site->Link[$Site], DeveloperObject -> True|>,
 				(*15*)<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "id:Vrbp1jG800Zm"], Objects], Name -> "FPLC Test Buffer Bottle A" <> $SessionUUID, Site->Link[$Site], DeveloperObject -> True|>,
 				(*16*)<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "id:Vrbp1jG800Zm"], Objects], Name -> "FPLC Test Buffer Bottle B" <> $SessionUUID, Site->Link[$Site], DeveloperObject -> True|>,
-				(*17*)<|Type -> Object[Protocol, SampleManipulation], Name -> "A test Parent Protocol for ExperimentFPLC testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
+				(*17*)<|Type -> Object[Protocol, ManualSamplePreparation], Name -> "A test Parent Protocol for ExperimentFPLC testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
 				(*18*)<|Type -> Object[Qualification, HPLC], Name -> "A test Parent Qualification for ExperimentFPLC testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
 				(*19*)<|Type -> Object[Item, Column], Model -> Link[Model[Item, Column, "HiTrap 5x5mL Desalting Column"], Objects], Name -> "FPLC Test Column" <> $SessionUUID, Status -> Available, Site->Link[$Site], DeveloperObject -> True|>,
 				(*20*)<|
@@ -4331,7 +4361,7 @@ DefineTests[
 					(*16*){"A1", testLargeSampleBottle7},
 					(*17*){"A1", testLargeSampleBottle8},
 					(*18*){"A1", testDiscardedContainer},
-					(*19*){"A1", testDiscardedContainer},
+					(*19*){"A1", testPlate3},
 					(*20*){"Work Surface", testBench},
 					(*21*){"Work Surface", testBench}
 				},
@@ -4387,7 +4417,7 @@ DefineTests[
 			(* Secondary uploads *)
 			Upload[{
 				<|Object -> waterSample, Name -> "FPLC Test Water Sample" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
-				<|Object -> oligoSample, Name -> "FPLC Test Oligo" <> $SessionUUID, Status -> Available, DeveloperObject -> True, Replace[Composition] -> {{10 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+				<|Object -> oligoSample, Name -> "FPLC Test Oligo" <> $SessionUUID, Status -> Available, DeveloperObject -> True, Replace[Composition] -> {{10 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 				<|Object -> oligoSample2, Name -> "FPLC Test Oligo2" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
 				<|Object -> oligoSampleNewPlate, Name -> "FPLC Test Oligo New Plate" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
 				<|Object -> waterBuffer1, Name -> "FPLC Test Water BufferA" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
@@ -4426,7 +4456,7 @@ DefineTests[
 				Object[Sample,  "FPLC Test Oligo New Plate" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Oligo in nondefault but compatible tube" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Oligo in nondefault but compatible bottle" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "A test Parent Protocol for ExperimentFPLC testing" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "A test Parent Protocol for ExperimentFPLC testing" <> $SessionUUID],
 				Object[Qualification, HPLC, "A test Parent Qualification for ExperimentFPLC testing" <> $SessionUUID],
 				Object[Method, Gradient, "FPLC Test Method" <> $SessionUUID],
 				Object[Sample,  "FPLC Test Water BufferA" <> $SessionUUID],
@@ -4997,7 +5027,7 @@ DefineTests[ValidExperimentFPLCQ,
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo2" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo New Plate" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID],
 				Object[Qualification, HPLC, "A test Parent Qualification for ValidExperimentFPLCQ testing" <> $SessionUUID],
 				Object[Method, Gradient, "ValidExperimentFPLCQ Test Method" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Water BufferA" <> $SessionUUID],
@@ -5084,7 +5114,7 @@ DefineTests[ValidExperimentFPLCQ,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "HPLC vial (high recovery)"], Objects], Name -> "ValidExperimentFPLCQ Test Discarded Container" <> $SessionUUID, Status -> Discarded, Site->Link[$Site], DeveloperObject -> True|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "id:Vrbp1jG800Zm"], Objects], Name -> "ValidExperimentFPLCQ Test Buffer Bottle A" <> $SessionUUID, Site->Link[$Site], DeveloperObject -> True|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "id:Vrbp1jG800Zm"], Objects], Name -> "ValidExperimentFPLCQ Test Buffer Bottle B" <> $SessionUUID, Site->Link[$Site], DeveloperObject -> True|>,
-				<|Type -> Object[Protocol, SampleManipulation], Name -> "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
+				<|Type -> Object[Protocol, ManualSamplePreparation], Name -> "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
 				<|Type -> Object[Qualification, HPLC], Name -> "A test Parent Qualification for ValidExperimentFPLCQ testing" <> $SessionUUID, Status -> Processing, Site->Link[$Site], DeveloperObject -> True|>,
 				<|Type -> Object[Item, Column], Model -> Link[Model[Item, Column, "HiTrap 5x5mL Desalting Column"], Objects], Name -> "ValidExperimentFPLCQ Test Column" <> $SessionUUID, Status -> Available, Site->Link[$Site], DeveloperObject -> True|>,
 				<|
@@ -5217,13 +5247,14 @@ DefineTests[ValidExperimentFPLCQ,
 					Null,
 					Null
 				},
-				StorageCondition -> Refrigerator
+				StorageCondition -> Refrigerator,
+				FastTrack -> True
 			];
 
 			(* Secondary uploads *)
 			Upload[{
 				<|Object -> waterSample, Name -> "ValidExperimentFPLCQ Test Water Sample" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
-				<|Object -> oligoSample, Name -> "ValidExperimentFPLCQ Test Oligo" <> $SessionUUID, Status -> Available, DeveloperObject -> True, Replace[Composition] -> {{10 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+				<|Object -> oligoSample, Name -> "ValidExperimentFPLCQ Test Oligo" <> $SessionUUID, Status -> Available, DeveloperObject -> True, Replace[Composition] -> {{10 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 				<|Object -> oligoSample2, Name -> "ValidExperimentFPLCQ Test Oligo2" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
 				<|Object -> oligoSampleNewPlate, Name -> "ValidExperimentFPLCQ Test Oligo New Plate" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
 				<|Object -> waterBuffer1, Name -> "ValidExperimentFPLCQ Test Water BufferA" <> $SessionUUID, Status -> Available, DeveloperObject -> True|>,
@@ -5258,7 +5289,7 @@ DefineTests[ValidExperimentFPLCQ,
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo2" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Oligo New Plate" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "A test Parent Protocol for ValidExperimentFPLCQ testing" <> $SessionUUID],
 				Object[Qualification, HPLC, "A test Parent Qualification for ValidExperimentFPLCQ testing" <> $SessionUUID],
 				Object[Method, Gradient, "ValidExperimentFPLCQ Test Method" <> $SessionUUID],
 				Object[Sample,  "ValidExperimentFPLCQ Test Water BufferA" <> $SessionUUID],

@@ -28,6 +28,22 @@ DefineObjectType[Object[Part, pHProbe], {
 			],
 			Description -> "The device that this part is associated with.",
 			Category -> "Instrument Specifications"
+		},
+		Reservoir -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The internal chamber container of the pH probe that contains the storage solution (usually \"Electrolyte 3 mol/L KCl\") used to maintain stable reference electrode conditions for accurate pH measurement.",
+			Category -> "Instrument Specifications"
+		},
+		StorageContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, Vessel],
+			Description -> "The container filled with storage solution (usually \"Electrolyte 3 mol/L KCl\") secured to the bottom of the probe to keep the pH probe's glass membrane and reference junction hydrated when not in use.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

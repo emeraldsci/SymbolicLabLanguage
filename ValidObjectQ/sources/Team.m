@@ -45,7 +45,7 @@ validTeamFinancingQTests[packet:ObjectP[Object[Team,Financing]]]:={
 		BillingAddress
 	}],
 
-	(* both fields are needed to not crash billing. Active doesnt really do much now but we dont want to run this on Historical teams *)
+	(* both fields are needed to not crash billing. Active doesnt really do much now but we don't want to run this on Historical teams *)
 	If[MatchQ[Lookup[packet, Status], Active],
 		RequiredTogetherTest[packet, {NextBillingCycle, CurrentPriceSchemes}],
 		Nothing
@@ -109,7 +109,7 @@ validTeamFinancingQTests[packet:ObjectP[Object[Team,Financing]]]:={
 		True
 	],
 
-	Test["All CurrentPriceSchemes have copacetic site with the team information:",
+	Test["All CurrentPriceSchemes have compatible site with the team information:",
 		Or[
 			Length[Lookup[packet,CurrentPriceSchemes]]==0,
 			And@@MapThread[MatchQ[#1,ObjectP[#2]]&,
@@ -121,7 +121,7 @@ validTeamFinancingQTests[packet:ObjectP[Object[Team,Financing]]]:={
 		True
 	],
 
-	Test["All CurrentBills have copacetic site with the team information:",
+	Test["All CurrentBills have compatible site with the team information:",
 		Or[
 			Length[Lookup[packet,CurrentBills]]==0,
 			And@@MapThread[MatchQ[#1,ObjectP[#2]]&,
@@ -133,7 +133,7 @@ validTeamFinancingQTests[packet:ObjectP[Object[Team,Financing]]]:={
 		True
 	],
 
-	Test["All bills from the BillHistory have copacetic site with the team information:",
+	Test["All bills from the BillHistory have compatible site with the team information:",
 		Or[
 			Length[Lookup[packet,BillingHistory]]==0,
 			And@@MapThread[MatchQ[#1,ObjectP[#2]]&,

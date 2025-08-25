@@ -24,6 +24,12 @@ DefineTests[PlotqPCR,
 			}],
 			ValidGraphicsP[]
 		],
+		Example[{Basic,"Given a qPCR protocol object, creates a plot for the linked data objects. If there are linked analysis objects, the quantification cycle/copy number information from the most recent analysis for each applicable wavelength pair is displayed as a tooltip:"},
+			PlotqPCR[
+				Object[Data,qPCR,"PlotqPCR test data 1"<>plotqPCRUUID][Protocol]
+			],
+			SlideView[{ValidGraphicsP[]..}]
+		],
 		
 		(* analysis packet *)
 		Example[{Basic,"Given an Object[Analysis, MeltingPoint] packet generated from Object[Data, qPCR], plot the melting curve as the negative derivative:"},
@@ -160,7 +166,7 @@ DefineTests[PlotqPCR,
 					Replace[EmissionWavelengths]->{520.,558.,586.,623.,682.,711.,558.,586.,623.,682.,711.,586.,623.,682.,711.,623.,682.,711.,682.,711.,711.} Nanometer,
 					Replace[AmplificationCurveTypes]->PadRight[{PrimaryAmplicon,Unused,Unused,Unused,Unused,Unused,PassiveReference},21,Unused],
 					Replace[AmplificationCurves]->PadRight[{QuantityArray[{{1,0.838366},{2,0.867461},{3,0.882255},{4,0.887922},{5,0.8991},{6,0.908386},{7,0.915779},{8,0.922756},{9,0.929573},{10,0.93254},{11,0.941931},{12,0.954241},{13,0.963869},{14,0.966802},{15,0.979435},{16,0.993327},{17,1.02214},{18,1.06643},{19,1.14886},{20,1.29975},{21,1.56968},{22,1.95918},{23,2.38847},{24,2.78532},{25,3.16301},{26,3.53637},{27,3.89258},{28,4.20981},{29,4.47358},{30,4.7301},{31,4.96325},{32,5.17179},{33,5.33801},{34,5.50773},{35,5.65007},{36,5.77216},{37,5.92374},{38,6.01616},{39,6.12867},{40,6.21872}},{None,RFU}]},21,{QuantityArray[MapThread[{#1,#2}&,{Range[40],ConstantArray[1,40]}],{None,RFU}]}],
-					Protocol->Link[qPCRProtocol, StandardData],
+					Protocol->Link[qPCRProtocol, Data],
 					DeveloperObject->True
 				|>,
 				<|
@@ -173,7 +179,7 @@ DefineTests[PlotqPCR,
 					Replace[EmissionWavelengths]->{520.,558.,586.,623.,682.,711.,558.,586.,623.,682.,711.,586.,623.,682.,711.,623.,682.,711.,682.,711.,711.} Nanometer,
 					Replace[AmplificationCurveTypes]->PadRight[{Unused,PrimaryAmplicon,Unused,Unused,Unused,Unused,PassiveReference},21,Unused],
 					Replace[AmplificationCurves]->PadRight[{QuantityArray[MapThread[{#1,#2}&,{Range[40],ConstantArray[1,40]}],{None,RFU}],QuantityArray[{{1,0.444124},{2,0.460555},{3,0.465152},{4,0.471081},{5,0.475303},{6,0.479624},{7,0.480211},{8,0.487465},{9,0.490427},{10,0.504163},{11,0.519415},{12,0.53833},{13,0.582165},{14,0.663417},{15,0.816901},{16,1.09213},{17,1.52884},{18,2.06853},{19,2.63047},{20,3.14602},{21,3.65078},{22,4.12188},{23,4.52009},{24,4.86981},{25,5.19369},{26,5.46031},{27,5.72132},{28,5.93092},{29,6.14026},{30,6.29707},{31,6.44814},{32,6.59431},{33,6.71977},{34,6.80241},{35,6.91043},{36,6.97861},{37,7.08597},{38,7.15183},{39,7.24419},{40,7.27548}},{None,RFU}]},21,{QuantityArray[MapThread[{#1,#2}&,{Range[40],ConstantArray[1,40]}],{None,RFU}]}],
-					Protocol->Link[qPCRProtocol, StandardData],
+					Protocol->Link[qPCRProtocol, Data],
 					DeveloperObject->True
 				|>,
 				<|

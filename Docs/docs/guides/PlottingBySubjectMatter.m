@@ -85,6 +85,8 @@ Guide[
 			{PlotMicroscopeOverlay, "Generates a combined false color image of two or more microscope images taken with different filters from the provided microscope overlay analysis object."},
 			{PlotCellCount, "Generates an image of the microscope data with the putative cell areas indicated from the provided cell counting image analysis highlighted."},
 			{PlotCellCountSummary, "Generates an image of the microscope data with the putative cell areas highlighted, along with a pie cart of relative areas of cell groupings from the provided cell counting image analysis highlighted."},
+			{PlotColonies, "Generates a graphical representation of the number of colonies or plaques."},
+			{PlotImageExposure, "Generates a graphical representation of the provided exposure analysis object."},
 			{ImageMask, "Replaces all the pixels in the input image that are outside of a given color range."},
 			{ImageOverlay, "Overlays the pixel information from two images to combine them into one."},
 			{CombineFluorescentImages, "Generates a false color RGB image of the provided composite fluorescent data."}

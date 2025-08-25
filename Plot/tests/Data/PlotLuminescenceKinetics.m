@@ -21,6 +21,11 @@ DefineTests[PlotLuminescenceKinetics,
 			_?ValidGraphicsQ
 		],
 		Example[
+			{Basic, "Plot the luminescence trajectory for data objects linked to a LuminescenceKinetics protocol object:"},
+			PlotLuminescenceKinetics[Object[Protocol, LuminescenceKinetics,"LuminescenceKinetics Test Protocol 1"]],
+			_?ValidGraphicsQ
+		],
+		Example[
 			{Basic,"Plot the luminescence trajectory and temperature trace of the data of interest:"},
 			PlotLuminescenceKinetics[Object[Data, LuminescenceKinetics, "LuminescenceKinetics Test Data 2"],SecondaryData->{Temperature}],
 			_?ValidGraphicsQ
@@ -215,9 +220,9 @@ DefineTests[PlotLuminescenceKinetics,
 		]
 		
 	},
-	SymbolSetUp:>Module[{data1},
+	SymbolSetUp:>Module[{data1, protocol1},
 		$CreatedObjects={};
-		data1=CreateID[Object[Data,LuminescenceKinetics]];
+		{data1, protocol1} = CreateID[{Object[Data, LuminescenceKinetics], Object[Protocol, LuminescenceKinetics]}];
 		Upload[{
 			<|
 				Object->data1,
@@ -240,7 +245,13 @@ DefineTests[PlotLuminescenceKinetics,
 				Replace[Gains]->{2500 Microvolt},
 				Replace[Replicates]->{Link[data1,Replicates]}
 			|>
-		}]
+		}];
+		Upload[<|
+			Object -> protocol1,
+			Type -> Object[Protocol, LuminescenceKinetics],
+			Name -> "LuminescenceKinetics Test Protocol 1",
+			Replace[Data] -> {Link[data1, Protocol]}
+		|>]
 	],
 	SymbolTearDown:>(
 		EraseObject[$CreatedObjects,Force->True,Verbose->False];

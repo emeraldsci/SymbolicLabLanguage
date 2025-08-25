@@ -1,3 +1,2197 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:277249339ef5f9fd355d6ac2cf8d2bf1783e8603e83e021b35be6ed7f867c14e
-size 84573
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     84373,       2187]
+NotebookOptionsPosition[     66660,       1888]
+NotebookOutlinePosition[     69827,       1948]
+CellTagsIndexPosition[     69784,       1945]
+WindowTitle->UnitPatterns
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "3af77397-f63b-4cff-b645-122f2b7f9af7"]
+        }],ExpressionUUID->"6c4cb311-4c38-4c73-bab0-f22daad4e9b0"],
+        StripOnInput->False], {"\<\"AbsorbanceAreaQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AbsorbanceAreaQ"], "\<\"AbsorbanceDistanceQ\"\
+\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AbsorbanceDistanceQ"], \
+"\<\"AbsorbancePerDistanceQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AbsorbancePerDistanceQ"], \
+"\<\"AbsorbanceQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AbsorbanceQ"], "\<\"AbsorbanceRateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AbsorbanceRateQ"], "\<\"AccelerationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AccelerationQ"], "\<\"AmountQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AmountQ"], "\<\"AngularVelocityQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AngularVelocityQ"], "\<\"ArbitraryUnitQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ArbitraryUnitQ"], "\<\"AreaQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/AreaQ"], "\<\"BasePairQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/BasePairQ"], "\<\"ByteQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ByteQ"], "\<\"ChemicalShiftQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ChemicalShiftQ"], "\<\"ChemicalShiftStrengthQ\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ChemicalShiftStrengthQ"], "\<\"ConcentrationQ\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ConcentrationQ"], "\<\"ConductanceAreaQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ConductanceAreaQ"], \
+"\<\"ConductancePerTimeQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ConductancePerTimeQ"], "\<\"ConductanceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ConductanceQ"], "\<\"CurrencyQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/CurrencyQ"], "\<\"CurrentQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/CurrentQ"], "\<\"CycleQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/CycleQ"], "\<\"DensityQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/DensityQ"], "\<\"DimensionlessQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/DimensionlessQ"], "\<\"DistanceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/DistanceQ"], "\<\"EnergyQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EnergyQ"], "\<\"EntropyQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EntropyQ"], "\<\"EqualP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EqualP"], "\<\"EqualQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/EqualQ"], "\<\"ExtinctionCoefficientQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ExtinctionCoefficientQ"], \
+"\<\"FirstOrderRateQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FirstOrderRateQ"], "\<\"FlowRateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FlowRateQ"], "\<\"FluorescenceAreaQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FluorescenceAreaQ"], \
+"\<\"FluorescencePerAreaQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FluorescencePerAreaQ"], \
+"\<\"FluorescenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FluorescenceQ"], "\<\"FluorescenceTimeQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FluorescenceTimeQ"], "\<\"FrequencyQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/FrequencyQ"], "\<\"GreaterDateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/GreaterDateQ"], "\<\"GreaterEqualDateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/GreaterEqualDateQ"], "\<\"GreaterEqualP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/GreaterEqualP"], "\<\"GreaterEqualQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/GreaterEqualQ"], "\<\"GreaterP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/GreaterP"], "\<\"GreaterQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/GreaterQ"], "\<\"InverseMolecularWeightQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/InverseMolecularWeightQ"], "\<\"ISOQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ISOQ"], "\<\"LessDateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/LessDateQ"], "\<\"LessEqualDateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/LessEqualDateQ"], "\<\"LessEqualP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LessEqualP"], "\<\"LessEqualQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LessEqualQ"], "\<\"LessP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LessP"], "\<\"LessQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LessQ"], "\<\"LuminescencePerMolecularWeightQ\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LuminescencePerMolecularWeightQ"], \
+"\<\"LuminescenceQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/LuminescenceQ"], "\<\"MassConcentrationQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MassConcentrationQ"], \
+"\<\"MassExtinctionCoefficientQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MassExtinctionCoefficientQ"], "\<\"MassQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MassQ"], \
+"\<\"MolecularWeightLuminescenceAreaQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MolecularWeightLuminescenceAreaQ"], \
+"\<\"MolecularWeightQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MolecularWeightQ"], \
+"\<\"MolecularWeightStrengthQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/MolecularWeightStrengthQ"], "\<\"NoUnitQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/NoUnitQ"], "\<\"NucleotideQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/NucleotideQ"], "\<\"PercentQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PercentQ"], "\<\"PercentRateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PercentRateQ"], "\<\"PerMolarQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PerMolarQ"], "\<\"PixelAreaQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PixelAreaQ"], "\<\"PixelQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PixelQ"], "\<\"PixelsPerDistanceQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PixelsPerDistanceQ"], \
+"\<\"PositiveQuantityQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PositiveQuantityQ"], "\<\"PowerQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PowerQ"], "\<\"PressureQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/PressureQ"], "\<\"QuantityArrayP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityArrayP"], "\<\"QuantityArrayQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityArrayQ"], "\<\"QuantityCoordinatesP\"\
+\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityCoordinatesP"], \
+"\<\"QuantityCoordinatesQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityCoordinatesQ"], \
+"\<\"QuantityDistributionP\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityDistributionP"], \
+"\<\"QuantityDistributionQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityDistributionQ"], \
+"\<\"QuantityFunctionP\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityFunctionP"], \
+"\<\"QuantityMatrixP\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityMatrixP"], "\<\"QuantityMatrixQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityMatrixQ"], "\<\"QuantityVectorQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityVectorQ"], "\<\"RangeP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/RangeP"], "\<\"RangeQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/RangeQ"], "\<\"ResistivityQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ResistivityQ"], "\<\"RPMQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/RPMQ"], "\<\"RRTQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/RRTQ"], "\<\"SecondOrderRateQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/SecondOrderRateQ"], "\<\"SpeedQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/SpeedQ"], "\<\"StrengthPerChemicalShiftQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/StrengthPerChemicalShiftQ"], \
+"\<\"StrengthPerMolecularWeightQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/StrengthPerMolecularWeightQ"], \
+"\<\"TemperatureQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/TemperatureQ"], \
+"\<\"TemperatureRampRateQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/TemperatureRampRateQ"], \
+"\<\"TimeOfFlightAreaQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/TimeOfFlightAreaQ"], "\<\"TimeQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/TimeQ"], "\<\"UnitCoordinatesP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitCoordinatesP"], \
+"\<\"UnitCoordinatesQ\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitCoordinatesQ"], "\<\"UnitsP\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitsP"], "\<\"UnitsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitsQ"], "\<\"ViscosityQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/ViscosityQ"], "\<\"VoltageQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/VoltageQ"], "\<\"VolumePercentQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/VolumePercentQ"], "\<\"VolumeQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/VolumeQ"], "\<\"WeightVolumePercentQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/WeightVolumePercentQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "38951336-5829-4daa-9ff0-b72a6a390eb7"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "8232cbd0-8578-4b81-97ed-c33672fc01ef"]
+        }],ExpressionUUID->"be9e6cf8-76e7-4f32-baa0-b8e6327c177f"],
+        StripOnInput->False], {"\<\"Numerics\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/Numerics"], "\<\"StatisticalDistributions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/StatisticalDistributions"], "\<\"UnitManipulation\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/UnitManipulation"], "\<\"UnitProperties\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/UnitProperties"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "a4dfb495-ed3c-48ae-9a0f-8cca72179d4b"]
+    }], "AnchorBar",ExpressionUUID->"4d69c096-ab2d-4444-8129-ae0713ac75b3"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"67210802-1418-43c1-9896-ab6abd480560"],
+
+Cell["Unit Patterns", "GuideTitle",
+ CellID->1882701872,ExpressionUUID->"1a547521-085f-4e30-81cd-9618aea1e840"],
+
+Cell["Collection of functions for managing quantity units.", "GuideAbstract",
+ CellID->1546307806,ExpressionUUID->"1f4541bb-f7b0-4000-8953-dc19061c4a2d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2095683095,ExpressionUUID->"2676a770-4525-4ce4-99f5-eadacc8e2fe6"],
+
+Cell["Core Functions", "GuideFunctionsSubsection",
+ CellID->1266483218,ExpressionUUID->"f091ab55-8107-4e6a-81ff-ee1adda77793"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnitsQ"]], "paclet:EmeraldUnits/ref/UnitsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6bc9ba8-5f54-4787-beab-b757e951ae8e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in the form of units known to Emerald."
+}], "GuideText",
+ CellID->2073019509,ExpressionUUID->"8413709e-1cea-4e7f-8ae5-70aa93bad8b8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnitsP"]], "paclet:EmeraldUnits/ref/UnitsP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ec70916a-5d71-4e70-bc13-189add8d0322"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches any quantity whose dimensions are compatible \
+with the dimensions of input."
+}], "GuideText",
+ CellID->464198835,ExpressionUUID->"e42a6b18-c823-472c-ab6b-f169b8686b61"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NoUnitQ"]], "paclet:EmeraldUnits/ref/NoUnitQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fba0e65f-6d11-4a1c-9022-02f9daf9d033"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input has no units."
+}], "GuideText",
+ CellID->2129213941,ExpressionUUID->"2aacf52c-582e-4c70-8537-c94168aa5e33"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->31212779,ExpressionUUID->"f70e9abb-6f32-4ce8-8ae5-305054676e30"],
+
+Cell["Inequalities", "GuideFunctionsSubsection",
+ CellID->607166785,ExpressionUUID->"e6320866-8058-49af-bd1b-6f0f119afdea"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EqualP"]], "paclet:EmeraldUnits/ref/EqualP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "afb30266-5c3e-48c4-8cd6-6f283b065148"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches any quantity equal to the specified value."
+}], "GuideText",
+ CellID->1957348598,ExpressionUUID->"9b090ce8-4034-4b34-9cb9-596605045c2b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EqualQ"]], "paclet:EmeraldUnits/ref/EqualQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cf171a67-d55e-401d-a5b6-72b375036bc1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input value is equal to the second input value."
+}], "GuideText",
+ CellID->2003381840,ExpressionUUID->"3b0da89c-5a48-4d52-ab36-9b91058104ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterP"]], "paclet:EmeraldUnits/ref/GreaterP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6be80fc6-ba6b-4a2c-8a62-877aae3926b3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches any quantity greater than the specified value."
+}], "GuideText",
+ CellID->442483567,ExpressionUUID->"e89bdde6-ee1e-4552-8197-77833615f967"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterQ"]], "paclet:EmeraldUnits/ref/GreaterQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3d1baacd-63a3-4fc0-97d3-83d85aac486d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input value is grater than the second input value."
+}], "GuideText",
+ CellID->85441008,ExpressionUUID->"2188dcfd-e1c4-45e7-a509-51008eaf0d4c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterEqualP"]], "paclet:EmeraldUnits/ref/GreaterEqualP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b0359aea-02bf-4690-beb8-0dc929910b75"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches any quantity greater than or equal to the \
+specified value."
+}], "GuideText",
+ CellID->1487945260,ExpressionUUID->"446c3ad0-ca2d-4462-ae42-e63b967be172"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterEqualQ"]], "paclet:EmeraldUnits/ref/GreaterEqualQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f944658a-16fe-459b-913d-01a9337e6d94"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input value is greater than or equal to the second \
+input value."
+}], "GuideText",
+ CellID->448915505,ExpressionUUID->"0342ccec-7b39-409f-96ab-39804fb47642"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessP"]], "paclet:EmeraldUnits/ref/LessP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3a9ac92b-f46a-4ead-9e73-e55da00b8872"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches any quantity smaller than the specified value."
+}], "GuideText",
+ CellID->812840624,ExpressionUUID->"b70ebb9b-707a-473a-a1cf-069baca32344"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessQ"]], "paclet:EmeraldUnits/ref/LessQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "65b04e4c-53e6-431f-a492-57759847a9ef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input is smaller than the second input."
+}], "GuideText",
+ CellID->1268889001,ExpressionUUID->"60d4760d-6c8f-4fdf-b8e4-7441841672b6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessEqualP"]], "paclet:EmeraldUnits/ref/LessEqualP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "24246080-202c-4a0d-bf01-af77b98073f2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern matching any quantity smaller than or equal to the specified \
+value."
+}], "GuideText",
+ CellID->1704825097,ExpressionUUID->"9f1fafa0-c039-4e3f-83fe-2dd194f44b00"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessEqualQ"]], "paclet:EmeraldUnits/ref/LessEqualQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "680b6726-869b-4926-bdb9-1316db0195c2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input is smaller than or equal to the second input."
+}], "GuideText",
+ CellID->1268587005,ExpressionUUID->"e33e730f-b7ec-44ad-822f-ca12b0101dd9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RangeP"]], "paclet:EmeraldUnits/ref/RangeP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "958bae9f-ad38-43ec-aa33-cc93230a40ae"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that will match a value between the provided minimum and \
+maximum values."
+}], "GuideText",
+ CellID->924145619,ExpressionUUID->"9051a169-5e11-4e6f-b686-3a6fa0aeb118"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RangeQ"]], "paclet:EmeraldUnits/ref/RangeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "66840b05-7f26-4bbe-af56-eeffb3ca4ad2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a value is inside the range from the specified minimum value to \
+the specified maximum value."
+}], "GuideText",
+ CellID->1513683429,ExpressionUUID->"548bbe81-f64c-4c2b-9c71-7b42a95240b9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PositiveQuantityQ"]], 
+    "paclet:EmeraldUnits/ref/PositiveQuantityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "965d79f6-03ec-4fc1-b9c6-14482171e162"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided value is a unit-ed value with positive magnitude in \
+its base unit."
+}], "GuideText",
+ CellID->1386108841,ExpressionUUID->"2215c748-ac05-44ed-acc1-36365a009798"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->428688031,ExpressionUUID->"9770cf62-e82b-4e00-b6b9-0e5c11395d64"],
+
+Cell["Structural Patterns", "GuideFunctionsSubsection",
+ CellID->152101332,ExpressionUUID->"3b3c2d60-94e7-4c18-8152-e09fc9a0093b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityArrayQ"]], "paclet:EmeraldUnits/ref/QuantityArrayQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a23d8733-7364-47b8-8b7f-ce8cf16316ee"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is a valid QuantityArray."
+}], "GuideText",
+ CellID->861546994,ExpressionUUID->"8a49a509-2a6c-4244-b6c0-3da0ecc587ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityArrayP"]], "paclet:EmeraldUnits/ref/QuantityArrayP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2b71c795-0eac-4411-9f58-cb9acd09514d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that will match a valid QuantityArray whose unit match with \
+the input unit specification."
+}], "GuideText",
+ CellID->1685580084,ExpressionUUID->"74a0eec0-f324-4528-979b-ca67b4fcfe9e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnitCoordinatesQ"]], 
+    "paclet:EmeraldUnits/ref/UnitCoordinatesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f28ac8da-2a7b-44e0-9385-ab97f420a210"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided value is a set of coordinate pairs, either as a \
+list of numbers, list of quantities, or quantity array."
+}], "GuideText",
+ CellID->2087684211,ExpressionUUID->"8e9a1dcc-cd0d-4316-bc6e-c4d7a70b79a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UnitCoordinatesP"]], 
+    "paclet:EmeraldUnits/ref/UnitCoordinatesP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "80229033-fd59-482d-9116-050f4451b9f0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that wil match a set of coordinate pairs, either as a list of \
+numbers, list of quantities, or quantity array."
+}], "GuideText",
+ CellID->2120709591,ExpressionUUID->"f8ecf957-0ac1-4c57-ba4b-629dee585dfc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityCoordinatesQ"]], 
+    "paclet:EmeraldUnits/ref/QuantityCoordinatesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "161ceddf-9ea7-41c3-a5a4-79fe3ce67342"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is an Nx2 quantity array."
+}], "GuideText",
+ CellID->980006678,ExpressionUUID->"a4da68be-ec1c-4148-bff0-98a92cfb62a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityCoordinatesP"]], 
+    "paclet:EmeraldUnits/ref/QuantityCoordinatesP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eb3e7e3e-6260-4e9d-8aa9-4b6391ccecef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches an Nx2 quantity array."
+}], "GuideText",
+ CellID->1920148303,ExpressionUUID->"c4c024e1-1cc5-4597-af47-886ad1cd5fa8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityDistributionQ"]], 
+    "paclet:EmeraldUnits/ref/QuantityDistributionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7a44de08-d7a8-43cc-bd78-cc8891ef9822"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input is a valid QuantityDistribution with input unit \
+requirements."
+}], "GuideText",
+ CellID->1695765052,ExpressionUUID->"6e3b96f8-a7a5-408b-87b9-60c660b9278e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityDistributionP"]], 
+    "paclet:EmeraldUnits/ref/QuantityDistributionP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a9d41da2-ebc9-40f2-a8fd-0d1ace46de84"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches a valid QuantityDistribution with input unit \
+requirements."
+}], "GuideText",
+ CellID->1467749627,ExpressionUUID->"9d135d45-0542-4ffb-ba4f-4d13b06c808b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityFunctionP"]], 
+    "paclet:EmeraldUnits/ref/QuantityFunctionP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "07678cac-1c14-4c5a-b1a4-f9f5fdad4a36"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern' that matches any QuantityFunction whose input and output \
+units are compatible with the provided inputs."
+}], "GuideText",
+ CellID->323327900,ExpressionUUID->"58852207-9148-4948-a0e7-cd4b7a4688a8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityVectorQ"]], "paclet:EmeraldUnits/ref/QuantityVectorQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "96ef2332-83a7-4388-8246-40165400380d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is an Nx1 quantity array."
+}], "GuideText",
+ CellID->1038388390,ExpressionUUID->"fa30c5d7-8601-4c6c-87f3-ef1d09ebf0ce"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityMatrixQ"]], "paclet:EmeraldUnits/ref/QuantityMatrixQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "686ccab2-482d-43bd-a46a-9a1f0b22524a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is an NxM quantity array."
+}], "GuideText",
+ CellID->1741555208,ExpressionUUID->"49f67727-625f-421f-b5fe-72323c96f019"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityMatrixP"]], "paclet:EmeraldUnits/ref/QuantityMatrixP"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "226dd765-6bd9-422b-9725-b11290017598"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches the input unit requirements."
+}], "GuideText",
+ CellID->116272246,ExpressionUUID->"66eb72ea-3acc-40ee-be98-56167a0864b4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["QuantityCoordinatesP"]], 
+    "paclet:EmeraldUnits/ref/QuantityCoordinatesP"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eccba4ba-d6f5-4f61-917a-80e7d596fd74"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Is a pattern that matches an Nx2 quantity array."
+}], "GuideText",
+ CellID->2125003399,ExpressionUUID->"2be27854-a43b-48a5-87f7-32a6f1444360"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->131593736,ExpressionUUID->"2c3f291d-a440-4fb8-b07b-ae5802f39a9f"],
+
+Cell["Dimensional Analysis", "GuideFunctionsSubsection",
+ CellID->1935248189,ExpressionUUID->"7a30ff6a-c8e1-45c9-b438-f251fbaecb50"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceAreaQ"]], "paclet:EmeraldUnits/ref/AbsorbanceAreaQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d4d3c6dc-b1c5-453a-a62c-06917fe69204"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of AbsorbanceUnit times Units of \
+time."
+}], "GuideText",
+ CellID->2076478708,ExpressionUUID->"8cd2cbc8-659d-412e-ba80-5711461e15a3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceDistanceQ"]], 
+    "paclet:EmeraldUnits/ref/AbsorbanceDistanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7ddff2d3-bbe7-4f67-8979-45ebf6b76157"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of AbsorbanceUnit times Units of \
+distance."
+}], "GuideText",
+ CellID->620897959,ExpressionUUID->"b041a978-29e9-40e6-824b-a7b69f13b137"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbancePerDistanceQ"]], 
+    "paclet:EmeraldUnits/ref/AbsorbancePerDistanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "53a0d479-ec5b-4c97-bab3-b75563388f3b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of AbsorbanceUnit per Units of \
+distance."
+}], "GuideText",
+ CellID->808956140,ExpressionUUID->"f9d0806a-3e45-4e45-a315-79f01fbe9770"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceQ"]], "paclet:EmeraldUnits/ref/AbsorbanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b540f7db-ff66-4fb1-a96e-254b3bca856e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of AbsorbanceUnit."
+}], "GuideText",
+ CellID->406875823,ExpressionUUID->"599df15e-18be-4a04-82aa-10986b5a411a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AbsorbanceRateQ"]], "paclet:EmeraldUnits/ref/AbsorbanceRateQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e2a86bd8-c95b-4468-9233-d2957775738f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of AbsorbanceUnit per Units of \
+time."
+}], "GuideText",
+ CellID->774025113,ExpressionUUID->"d8c30e2e-baaa-4cc6-98a9-faee87f9e491"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AccelerationQ"]], "paclet:EmeraldUnits/ref/AccelerationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "db45086d-1520-4154-99a0-4fa78cad3b3a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of distance per time-squared."
+}], "GuideText",
+ CellID->1731624312,ExpressionUUID->"a833a65c-d1eb-4a97-8985-19ddee6fa8cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AmountQ"]], "paclet:EmeraldUnits/ref/AmountQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2c3f857c-47e2-4c2d-9c64-7267d597e918"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Moles."
+}], "GuideText",
+ CellID->711427640,ExpressionUUID->"51f40477-4f11-4fdf-adae-5074c3d32736"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AngularVelocityQ"]], 
+    "paclet:EmeraldUnits/ref/AngularVelocityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "13774ba3-b614-4857-9e42-a783c3f4670f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of revolutions per time."
+}], "GuideText",
+ CellID->1922882631,ExpressionUUID->"ca2106c2-d749-4859-b593-c81feadf1d52"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ArbitraryUnitQ"]], "paclet:EmeraldUnits/ref/ArbitraryUnitQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f3e53f6b-7bad-4758-abd2-7b9403610edd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in arbitrary unit."
+}], "GuideText",
+ CellID->406975514,ExpressionUUID->"61f82e1f-e572-4d9b-9110-8029fb7f94f7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AreaQ"]], "paclet:EmeraldUnits/ref/AreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "854899bc-1c81-460f-9c6d-6b7ea1494008"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks tests if the provided input is in Units of distance squared."
+}], "GuideText",
+ CellID->302048103,ExpressionUUID->"adf1a886-639a-4609-b6d3-ce3df000715b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["BasePairQ"]], "paclet:EmeraldUnits/ref/BasePairQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "80ded9bf-0679-450c-9ede-5700a04eb91c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of BasePair."
+}], "GuideText",
+ CellID->2018609260,ExpressionUUID->"1ef231da-6e5d-4948-a93d-62d1523cc9da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ByteQ"]], "paclet:EmeraldUnits/ref/ByteQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a2d62f99-c4c2-40b3-b2da-6bcac9e07702"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units bytes."
+}], "GuideText",
+ CellID->819177514,ExpressionUUID->"0914c948-b53d-4063-b128-56263a022c7d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ChemicalShiftQ"]], "paclet:EmeraldUnits/ref/ChemicalShiftQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "325d7bd9-170b-4f27-a465-eb32f95728e7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of PPM."
+}], "GuideText",
+ CellID->398816881,ExpressionUUID->"53bc17fb-9e77-4e0f-b039-983b494ecf96"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ChemicalShiftStrengthQ"]], 
+    "paclet:EmeraldUnits/ref/ChemicalShiftStrengthQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "040d8c3d-7526-41f2-9c98-7004f359e24b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of PPM times ArbitraryUnits."
+}], "GuideText",
+ CellID->618856680,ExpressionUUID->"ee26ccfd-4f55-44c6-8381-12942b9910f8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ConcentrationQ"]], "paclet:EmeraldUnits/ref/ConcentrationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c58db61-6367-4539-a03e-a7b691a65b4f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molarity."
+}], "GuideText",
+ CellID->860918339,ExpressionUUID->"240c14ad-83f3-402c-a46e-0434aca2c56e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ConductanceAreaQ"]], 
+    "paclet:EmeraldUnits/ref/ConductanceAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7877d9f9-724f-4032-99f0-6a16e5ce9447"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of conductance times Units of \
+time."
+}], "GuideText",
+ CellID->1857193734,ExpressionUUID->"aa232437-d962-4861-8889-5a4830a2568d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ConductancePerTimeQ"]], 
+    "paclet:EmeraldUnits/ref/ConductancePerTimeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "637cbff3-d565-4eac-8969-dba2d47a8f63"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of conductance per Units of \
+time."
+}], "GuideText",
+ CellID->180278193,ExpressionUUID->"af22c520-cf8f-43a8-b8d1-fe858d98a563"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ConductanceQ"]], "paclet:EmeraldUnits/ref/ConductanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5b97f73a-0825-4cbe-befd-b660a852add0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Siemens per distance."
+}], "GuideText",
+ CellID->1983647481,ExpressionUUID->"079fd71d-675d-4703-ad75-e1b953a5a76a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CurrencyQ"]], "paclet:EmeraldUnits/ref/CurrencyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "81a9befd-6761-47c9-a128-466a7c730966"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of money."
+}], "GuideText",
+ CellID->1627077139,ExpressionUUID->"6994fef0-3a81-4510-8901-40a441d76e0a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CurrentQ"]], "paclet:EmeraldUnits/ref/CurrentQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97d626c0-6903-4268-8dc3-2f321f3e0f2e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Ampere."
+}], "GuideText",
+ CellID->228714275,ExpressionUUID->"1ce416cd-9d4e-479b-ac75-46f0f0066ecd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CycleQ"]], "paclet:EmeraldUnits/ref/CycleQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "76d12415-9167-47ac-9656-1c6c3806c322"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Cycle."
+}], "GuideText",
+ CellID->5091795,ExpressionUUID->"b2cb1ae6-8a93-4473-b756-e34ad4c7ad89"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DensityQ"]], "paclet:EmeraldUnits/ref/DensityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fb318245-6831-4006-b75e-d1b4b0d86d5c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Mass over Units of volume."
+}], "GuideText",
+ CellID->1825936332,ExpressionUUID->"9d871a01-f1e2-41a0-83d7-371fd449d019"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DimensionlessQ"]], "paclet:EmeraldUnits/ref/DimensionlessQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "97407572-1a71-460b-8c18-a72fd29736e7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input has no Units."
+}], "GuideText",
+ CellID->970616294,ExpressionUUID->"cc1cfbf6-c388-4f4e-808b-bd21aeca2675"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DistanceQ"]], "paclet:EmeraldUnits/ref/DistanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ccbd4916-2c55-44ce-add7-cabfa77c763a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Distance."
+}], "GuideText",
+ CellID->862270646,ExpressionUUID->"854738dc-7aa0-4c71-9f79-5704495ac1a7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EnergyQ"]], "paclet:EmeraldUnits/ref/EnergyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dbf4b7c5-248f-43a2-984b-091dc9171509"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molar energy."
+}], "GuideText",
+ CellID->963097366,ExpressionUUID->"42ab9c5f-8d83-49a9-86e8-3c20ac906ad8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["EntropyQ"]], "paclet:EmeraldUnits/ref/EntropyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7e790617-2503-44c2-9333-5edd435aaabc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molar entropy."
+}], "GuideText",
+ CellID->1193182923,ExpressionUUID->"88f7d467-639d-4735-ab04-5d979d66ec0a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExtinctionCoefficientQ"]], 
+    "paclet:EmeraldUnits/ref/ExtinctionCoefficientQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d1ea6f5c-7508-4f6b-b0f7-9fc226df1b81"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Liter/(Centimeter*Mole)."
+}], "GuideText",
+ CellID->623091175,ExpressionUUID->"c6148b3b-eb5b-4aba-b77f-b7a393704c5d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FirstOrderRateQ"]], "paclet:EmeraldUnits/ref/FirstOrderRateQ"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b78f5d24-8359-4a89-843c-0d8f406e7a16"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of first order rate constants \
+(per time)."
+}], "GuideText",
+ CellID->1163115453,ExpressionUUID->"fe897414-f997-42ad-80fa-9d3af68e2368"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FlowRateQ"]], "paclet:EmeraldUnits/ref/FlowRateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "833d1c74-9edc-4b1b-bd2c-38a89ee94b58"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Volume per Units of Time."
+}], "GuideText",
+ CellID->2085263577,ExpressionUUID->"09c20a75-6810-4407-8551-b05f511c3f83"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FluorescenceAreaQ"]], 
+    "paclet:EmeraldUnits/ref/FluorescenceAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ca4915ca-a2b5-485f-a0cd-05199f538214"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of RFU times Units of distance."
+}], "GuideText",
+ CellID->91819599,ExpressionUUID->"34f0d6aa-1c9d-4594-a542-6f2f4dceb76b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FluorescencePerAreaQ"]], 
+    "paclet:EmeraldUnits/ref/FluorescencePerAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f9fc04fc-f8eb-42bd-8dae-791e700c22a6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of RFU per Units of distance."
+}], "GuideText",
+ CellID->1318741847,ExpressionUUID->"e96519c4-8f15-4397-a494-394d43b92bb7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FluorescenceQ"]], "paclet:EmeraldUnits/ref/FluorescenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ae9de83-68ad-4921-9463-a09f8bd4c52d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of RFU."
+}], "GuideText",
+ CellID->2062985489,ExpressionUUID->"96aaddea-d75c-433a-a8e9-bc4b9667ba80"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FluorescenceTimeQ"]], 
+    "paclet:EmeraldUnits/ref/FluorescenceTimeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "00397a0e-338f-4cee-b5b2-3fed0d317106"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of RFU times Units of time."
+}], "GuideText",
+ CellID->1473632808,ExpressionUUID->"e15c3f53-be58-4d54-889f-680fae1d744e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["FrequencyQ"]], "paclet:EmeraldUnits/ref/FrequencyQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6023480e-f124-4e13-add2-72639ec5bd85"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units per time or Hertz."
+}], "GuideText",
+ CellID->417703205,ExpressionUUID->"4fdc6415-10aa-410b-bd11-1da7363af59d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterDateQ"]], "paclet:Plot/ref/GreaterDateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "702eecea-c9ef-4708-9cec-2261cbb866ab"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input date is later than the second input date."
+}], "GuideText",
+ CellID->213724392,ExpressionUUID->"021429a1-edef-4cac-9b21-4c612256dab7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["GreaterEqualDateQ"]], "paclet:Plot/ref/GreaterEqualDateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a577f533-af9f-4476-8c12-1b0333f469a5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first input date is later than or the same compared to the \
+second input date."
+}], "GuideText",
+ CellID->1473198560,ExpressionUUID->"7da9962c-93ee-4cb2-af38-634d924849cc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["InverseMolecularWeightQ"]], 
+    "paclet:EmeraldUnits/ref/InverseMolecularWeightQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "58d7016a-0aad-4f52-b740-0e4d7ef200c9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of inverse molecular weight."
+}], "GuideText",
+ CellID->1709231657,ExpressionUUID->"3b3102e6-28be-4b44-b3ec-8aa4dce1bcc6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ISOQ"]], "paclet:EmeraldUnits/ref/ISOQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a4ad0805-ea55-4ea6-a3f9-71af558bbf96"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of ISO."
+}], "GuideText",
+ CellID->167713280,ExpressionUUID->"8faa34b6-30e7-47f7-993f-e6ac9247648f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessDateQ"]], "paclet:Plot/ref/LessDateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7862b0ec-0f2b-42dd-a258-d29fc2f85daa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the first date is earlier than the second date."
+}], "GuideText",
+ CellID->1258552096,ExpressionUUID->"788fbbf3-4b04-44eb-8f3f-33d5d12e4aa5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LessEqualDateQ"]], "paclet:Plot/ref/LessEqualDateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "78f2cb4b-c8db-45b6-9ef9-0e6030687bac"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given date is less than or equal to another date."
+}], "GuideText",
+ CellID->1918638169,ExpressionUUID->"ba5f8467-ee5f-4d41-9ea5-2ffce2887e05"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LuminescencePerMolecularWeightQ"]], 
+    "paclet:EmeraldUnits/ref/LuminescencePerMolecularWeightQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8966562f-fd9b-4060-b71b-0d4ae3856782"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of luminescence per molecular \
+weight."
+}], "GuideText",
+ CellID->2084746678,ExpressionUUID->"fe06402d-102f-48f6-9362-25973b73766e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LuminescenceQ"]], "paclet:EmeraldUnits/ref/LuminescenceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "11ba3051-ebeb-4c43-864d-248a404e2314"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Lumens."
+}], "GuideText",
+ CellID->2141716341,ExpressionUUID->"d94127b4-ef47-4e5e-8c34-5f7a27efd4ea"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MassConcentrationQ"]], 
+    "paclet:EmeraldUnits/ref/MassConcentrationQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4a11fd6d-dc9a-45ba-9ba1-d0ab302d0e4a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of mass concentration (SI Units: \
+kg/m^3 or kg/L)."
+}], "GuideText",
+ CellID->1853135820,ExpressionUUID->"67a92328-5f00-448b-b4e3-49e797344e03"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MassExtinctionCoefficientQ"]], 
+    "paclet:EmeraldUnits/ref/MassExtinctionCoefficientQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c5f15ea8-3269-47d8-88a3-879a56c84de9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Liter/(Centimeter Gram)."
+}], "GuideText",
+ CellID->698394299,ExpressionUUID->"7d9a37af-f6a7-413d-b392-f89c4cec8ec7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MassQ"]], "paclet:EmeraldUnits/ref/MassQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d964f965-2acf-4859-9330-b90beb28e98e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Mass."
+}], "GuideText",
+ CellID->1914852438,ExpressionUUID->"5bfd6a30-abad-4ac8-aae4-f240d74ed9af"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MolecularWeightLuminescenceAreaQ"]], 
+    "paclet:EmeraldUnits/ref/MolecularWeightLuminescenceAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2376a1a3-dc15-4422-9883-9aa79b497c06"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molecular weight times \
+luminescence."
+}], "GuideText",
+ CellID->734991524,ExpressionUUID->"8135f463-09d1-4c04-b336-ae77bad1356c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MolecularWeightQ"]], 
+    "paclet:EmeraldUnits/ref/MolecularWeightQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cbe171e1-2622-4557-b8b6-583504199bc8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molecular weight."
+}], "GuideText",
+ CellID->676606324,ExpressionUUID->"0a9dd56d-8097-4e01-902e-3e466b137ae1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MolecularWeightStrengthQ"]], 
+    "paclet:EmeraldUnits/ref/MolecularWeightStrengthQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4f323f6a-4d37-43ab-b52e-0ecf85532990"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of molecular weight times \
+luminescence."
+}], "GuideText",
+ CellID->796576603,ExpressionUUID->"98f2e8d0-dc12-4acd-89ea-536dda2b207c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NucleotideQ"]], "paclet:EmeraldUnits/ref/NucleotideQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "44e639f5-ebdb-4645-8fd2-0cecbfa6fba1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Nucleotide."
+}], "GuideText",
+ CellID->649911223,ExpressionUUID->"b1513833-64d6-48a1-97e3-fb06af75d35e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PercentQ"]], "paclet:EmeraldUnits/ref/PercentQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "55162c6d-d12f-4474-b92f-78fbdd7f0c69"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Percent."
+}], "GuideText",
+ CellID->956096319,ExpressionUUID->"515fb979-663e-47c6-9f87-d5a29394d409"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PercentRateQ"]], "paclet:EmeraldUnits/ref/PercentRateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "64b57508-619d-40eb-bd00-8e53a7b6ed2d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Percent per time."
+}], "GuideText",
+ CellID->1638186579,ExpressionUUID->"e9771976-252a-4b06-ac29-592aae556e5f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PerMolarQ"]], "paclet:EmeraldUnits/ref/PerMolarQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d4a9ab2-c155-4dc0-9ec0-990eee4246a1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of 1/Molar."
+}], "GuideText",
+ CellID->113995066,ExpressionUUID->"76a086c1-a8e2-4a1a-acd4-2a778aecebc3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PixelAreaQ"]], "paclet:EmeraldUnits/ref/PixelAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ee2661f6-9e42-4562-9119-bfaeb6ee3a97"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Pixels squared."
+}], "GuideText",
+ CellID->359661138,ExpressionUUID->"11d82798-2ac4-40a5-b91c-92f6c7ea2b47"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PixelQ"]], "paclet:EmeraldUnits/ref/PixelQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f007988f-b1f0-43b1-b85d-770823d7cddd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Pixels."
+}], "GuideText",
+ CellID->1805763708,ExpressionUUID->"74a2a257-50c2-4931-94c5-ffee52128bc4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PixelsPerDistanceQ"]], 
+    "paclet:EmeraldUnits/ref/PixelsPerDistanceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2229db02-c2a0-4eb5-8cc6-75fac3211b94"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Pixels per Units of distance."
+}], "GuideText",
+ CellID->1231740952,ExpressionUUID->"2116d23f-e02f-4a76-98d1-6d93e2b91e27"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PowerQ"]], "paclet:EmeraldUnits/ref/PowerQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "da38edd5-0132-413d-8abd-06422ef82a2f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Watts."
+}], "GuideText",
+ CellID->127823184,ExpressionUUID->"812cc00f-9298-41d5-b83f-1bb53160d6c2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PressureQ"]], "paclet:EmeraldUnits/ref/PressureQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "72060105-df2e-4290-bf17-78fe0dd1da4b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Pressure."
+}], "GuideText",
+ CellID->840606488,ExpressionUUID->"0a3f14e7-cdf7-4b20-9679-f653450cf4b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ResistivityQ"]], "paclet:EmeraldUnits/ref/ResistivityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8dfbcc39-6e36-4735-9add-0f8c5c8a90b1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of resistance times Units of \
+distance."
+}], "GuideText",
+ CellID->1925813850,ExpressionUUID->"0f794c32-8e04-4225-8ca0-d7e54ef712cc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RPMQ"]], "paclet:EmeraldUnits/ref/RPMQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cad72083-1446-41e2-bc92-59a2f9533f34"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of revolutions per minute (RPM)."
+}], "GuideText",
+ CellID->279849366,ExpressionUUID->"aae8baf0-9ffe-4dc3-9567-34f2409ea628"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["RRTQ"]], "paclet:EmeraldUnits/ref/RRTQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9742bc36-a7eb-42c8-9b21-530f3a52af42"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given value is in Units of relative retention time (RRT)."
+}], "GuideText",
+ CellID->439107432,ExpressionUUID->"07b1255f-78f7-47e3-86b9-ec535f999144"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SecondOrderRateQ"]], 
+    "paclet:EmeraldUnits/ref/SecondOrderRateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3b8ef7de-80cd-4186-8e6c-11ea6cfb15f1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of second order rate constants \
+(per molar concentration per time)."
+}], "GuideText",
+ CellID->1324798532,ExpressionUUID->"e2b7cb25-11b8-4567-96e3-ad9cca170d54"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SpeedQ"]], "paclet:EmeraldUnits/ref/SpeedQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5f112ef7-54b5-4bb2-bfd3-1655d557b27d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of distance per time."
+}], "GuideText",
+ CellID->778475228,ExpressionUUID->"e9c3dc4a-fd69-4fdd-baa3-c071c5853a33"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrengthPerChemicalShiftQ"]], 
+    "paclet:EmeraldUnits/ref/StrengthPerChemicalShiftQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0b54d2ae-44c7-4f5e-b8b3-d3f54339de55"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of ArbitraryUnits/PPM."
+}], "GuideText",
+ CellID->1362779472,ExpressionUUID->"e785a3e3-d777-46e2-8eb8-8427abe933fb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["StrengthPerMolecularWeightQ"]], 
+    "paclet:EmeraldUnits/ref/StrengthPerMolecularWeightQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8f17731a-1f8b-4662-99fd-778d0381f7ef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in ArbitraryUnit per Units of weight."
+}], "GuideText",
+ CellID->1321490649,ExpressionUUID->"28c56b3b-1605-4827-9380-4f2005291d91"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TemperatureQ"]], "paclet:EmeraldUnits/ref/TemperatureQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0c2c1164-6cdb-46fa-8b10-a4c5abedb462"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of temperature."
+}], "GuideText",
+ CellID->1017460469,ExpressionUUID->"87694244-3ca7-491c-9ead-765c81aca4ac"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TemperatureRampRateQ"]], 
+    "paclet:EmeraldUnits/ref/TemperatureRampRateQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a906d0ff-cde1-4c6a-a994-7f57532b434d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of temperature per time."
+}], "GuideText",
+ CellID->45821422,ExpressionUUID->"13c9b61d-b4cc-4b59-ba73-92c605a7e592"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TimeOfFlightAreaQ"]], 
+    "paclet:EmeraldUnits/ref/TimeOfFlightAreaQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "195cc679-3b9b-4df9-91db-6077c72d6bc4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of time of flight spectra area."
+}], "GuideText",
+ CellID->1321493928,ExpressionUUID->"6cccb0fb-7b24-44be-9d45-e689abfc07b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TimeQ"]], "paclet:EmeraldUnits/ref/TimeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a660c0e3-5e01-4a19-9915-418702768586"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Time."
+}], "GuideText",
+ CellID->1072570622,ExpressionUUID->"44a7cb60-26eb-4b2e-93cb-0cfd8b7c6711"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ViscosityQ"]], "paclet:EmeraldUnits/ref/ViscosityQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fbefcd60-d065-41f3-8730-ae2e6400311d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of pressure pre time or mass per \
+distance times time."
+}], "GuideText",
+ CellID->716711036,ExpressionUUID->"4c04b335-f8d6-450e-ba36-da7d8b9693da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["VoltageQ"]], "paclet:EmeraldUnits/ref/VoltageQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f8ab4cd3-a26b-4c6b-b747-73cb5208455f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Volts."
+}], "GuideText",
+ CellID->526606029,ExpressionUUID->"fda0b7b4-c86e-490e-9ff3-5b1f2fdaa67e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["VolumePercentQ"]], "paclet:EmeraldUnits/ref/VolumePercentQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "798baba9-e1ad-4a60-bdc2-68bce550d62a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of volume percent."
+}], "GuideText",
+ CellID->887420116,ExpressionUUID->"39df9a01-56fe-4cd8-8343-c1c39b31ef3b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["VolumeQ"]], "paclet:EmeraldUnits/ref/VolumeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6cbb81a-7ba1-429e-942d-a13b5eb1053a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of Volume."
+}], "GuideText",
+ CellID->595961197,ExpressionUUID->"5a1c200f-26dd-42de-be5a-2f4a9d745601"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["WeightVolumePercentQ"]], 
+    "paclet:EmeraldUnits/ref/WeightVolumePercentQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef9277e8-83e9-41ee-b304-0f21d1d9b7cd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input is in Units of WeightVolumePercent (% w/v)."
+}], "GuideText",
+ CellID->456108371,ExpressionUUID->"24d0f95f-68fc-444b-a81b-7c9209ad3762"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1444255254,ExpressionUUID->"af8d2b01-3b9d-4fb9-a833-66db95692af1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"b413f31f-4f47-4cbf-83d7-6d78a5cbd649"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->590391937,ExpressionUUID->"bdb33d00-7acc-4f96-a998-e979ac74b8ba"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1342836019,ExpressionUUID->"860e9f8e-dc7a-4548-82bc-e58bee60f259"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Numerics"]], "paclet:Docs/guide/Numerics"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1139325010,ExpressionUUID->"42053471-e47b-4d0b-a382-d41a479f8425"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["StatisticalDistributions"]], 
+   "paclet:Docs/guide/StatisticalDistributions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1671246418,ExpressionUUID->"5fe419d3-28cc-4251-8247-e23dc1599144"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UnitManipulation"]], "paclet:Docs/guide/UnitManipulation"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1699928213,ExpressionUUID->"14c168b5-6e67-4578-8ec1-724ef4d08dd8"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UnitProperties"]], "paclet:Docs/guide/UnitProperties"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->571036203,ExpressionUUID->"8058bf95-ba0e-4765-a36b-a8ca8b40abcf"],
+
+Cell["", "FooterCell",
+ CellID->301045378,ExpressionUUID->"a783e2d7-eb94-4e77-a501-e045cf63935c"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"UnitPatterns",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:10:05", "context" -> "Docs`", 
+    "keywords" -> {
+     "UnitsQ", "UnitsP", "NoUnitQ", "EqualP", "EqualQ", "GreaterP", 
+      "GreaterQ", "GreaterEqualP", "GreaterEqualQ", "LessP", "LessQ", 
+      "LessEqualP", "LessEqualQ", "RangeP", "RangeQ", "PositiveQuantityQ", 
+      "QuantityArrayQ", "QuantityArrayP", "UnitCoordinatesQ", 
+      "UnitCoordinatesP", "QuantityCoordinatesQ", "QuantityCoordinatesP", 
+      "QuantityDistributionQ", "QuantityDistributionP", "QuantityFunctionP", 
+      "QuantityVectorQ", "QuantityMatrixQ", "QuantityMatrixP", 
+      "AbsorbanceAreaQ", "AbsorbanceDistanceQ", "AbsorbancePerDistanceQ", 
+      "AbsorbanceQ", "AbsorbanceRateQ", "AccelerationQ", "AmountQ", 
+      "AngularVelocityQ", "ArbitraryUnitQ", "AreaQ", "BasePairQ", "ByteQ", 
+      "ChemicalShiftQ", "ChemicalShiftStrengthQ", "ConcentrationQ", 
+      "ConductanceAreaQ", "ConductancePerTimeQ", "ConductanceQ", "CurrencyQ", 
+      "CurrentQ", "CycleQ", "DensityQ", "DimensionlessQ", "DistanceQ", 
+      "EnergyQ", "EntropyQ", "ExtinctionCoefficientQ", "FirstOrderRateQ", 
+      "FlowRateQ", "FluorescenceAreaQ", "FluorescencePerAreaQ", 
+      "FluorescenceQ", "FluorescenceTimeQ", "FrequencyQ", "GreaterDateQ", 
+      "GreaterEqualDateQ", "InverseMolecularWeightQ", "ISOQ", "LessDateQ", 
+      "LessEqualDateQ", "LuminescencePerMolecularWeightQ", "LuminescenceQ", 
+      "MassConcentrationQ", "MassExtinctionCoefficientQ", "MassQ", 
+      "MolecularWeightLuminescenceAreaQ", "MolecularWeightQ", 
+      "MolecularWeightStrengthQ", "NucleotideQ", "PercentQ", "PercentRateQ", 
+      "PerMolarQ", "PixelAreaQ", "PixelQ", "PixelsPerDistanceQ", "PowerQ", 
+      "PressureQ", "ResistivityQ", "RPMQ", "RRTQ", "SecondOrderRateQ", 
+      "SpeedQ", "StrengthPerChemicalShiftQ", "StrengthPerMolecularWeightQ", 
+      "TemperatureQ", "TemperatureRampRateQ", "TimeOfFlightAreaQ", "TimeQ", 
+      "ViscosityQ", "VoltageQ", "VolumePercentQ", "VolumeQ", 
+      "WeightVolumePercentQ"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for managing quantity units.", "synonyms" -> {}, 
+    "titlemodifier" -> "", "Windowtitle" -> "UnitPatterns", "title" -> 
+    "UnitPatterns", "type" -> "Guide", "uri" -> "Docs/guide/UnitPatterns", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"8f22b320-63d5-4c4b-b959-50c08c19af1a"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[584, 21, 13965, 284, 58, "AnchorBarGrid",ExpressionUUID->"67210802-1418-43c1-9896-ab6abd480560",
+ CellID->1],
+Cell[14552, 307, 111, 1, 45, "GuideTitle",ExpressionUUID->"1a547521-085f-4e30-81cd-9618aea1e840",
+ CellID->1882701872],
+Cell[14666, 310, 153, 1, 30, "GuideAbstract",ExpressionUUID->"1f4541bb-f7b0-4000-8953-dc19061c4a2d",
+ CellID->1546307806],
+Cell[14822, 313, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2676a770-4525-4ce4-99f5-eadacc8e2fe6",
+ CellID->2095683095],
+Cell[14939, 316, 126, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"f091ab55-8107-4e6a-81ff-ee1adda77793",
+ CellID->1266483218],
+Cell[15068, 319, 465, 12, 31, "GuideText",ExpressionUUID->"8413709e-1cea-4e7f-8ae5-70aa93bad8b8",
+ CellID->2073019509],
+Cell[15536, 333, 496, 13, 57, "GuideText",ExpressionUUID->"e42a6b18-c823-472c-ab6b-f169b8686b61",
+ CellID->464198835],
+Cell[16035, 348, 439, 12, 37, "GuideText",ExpressionUUID->"2aacf52c-582e-4c70-8537-c94168aa5e33",
+ CellID->2129213941],
+Cell[16477, 362, 112, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"f70e9abb-6f32-4ce8-8ae5-305054676e30",
+ CellID->31212779],
+Cell[16592, 365, 123, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"e6320866-8058-49af-bd1b-6f0f119afdea",
+ CellID->607166785],
+Cell[16718, 368, 463, 12, 31, "GuideText",ExpressionUUID->"9b090ce8-4034-4b34-9cb9-596605045c2b",
+ CellID->1957348598],
+Cell[17184, 382, 462, 12, 37, "GuideText",ExpressionUUID->"3b0da89c-5a48-4d52-ab36-9b91058104ca",
+ CellID->2003381840],
+Cell[17649, 396, 470, 12, 37, "GuideText",ExpressionUUID->"e89bdde6-ee1e-4552-8197-77833615f967",
+ CellID->442483567],
+Cell[18122, 410, 467, 12, 37, "GuideText",ExpressionUUID->"2188dcfd-e1c4-45e7-a509-51008eaf0d4c",
+ CellID->85441008],
+Cell[18592, 424, 495, 13, 37, "GuideText",ExpressionUUID->"446c3ad0-ca2d-4462-ae42-e63b967be172",
+ CellID->1487945260],
+Cell[19090, 439, 493, 13, 37, "GuideText",ExpressionUUID->"0342ccec-7b39-409f-96ab-39804fb47642",
+ CellID->448915505],
+Cell[19586, 454, 464, 12, 37, "GuideText",ExpressionUUID->"b70ebb9b-707a-473a-a1cf-069baca32344",
+ CellID->812840624],
+Cell[20053, 468, 452, 12, 37, "GuideText",ExpressionUUID->"60d4760d-6c8f-4fdf-b8e4-7441841672b6",
+ CellID->1268889001],
+Cell[20508, 482, 485, 13, 37, "GuideText",ExpressionUUID->"9f1fafa0-c039-4e3f-83fe-2dd194f44b00",
+ CellID->1704825097],
+Cell[20996, 497, 474, 12, 37, "GuideText",ExpressionUUID->"e33e730f-b7ec-44ad-822f-ca12b0101dd9",
+ CellID->1268587005],
+Cell[21473, 511, 481, 13, 37, "GuideText",ExpressionUUID->"9051a169-5e11-4e6f-b686-3a6fa0aeb118",
+ CellID->924145619],
+Cell[21957, 526, 499, 13, 57, "GuideText",ExpressionUUID->"548bbe81-f64c-4c2b-9c71-7b42a95240b9",
+ CellID->1513683429],
+Cell[22459, 541, 513, 14, 57, "GuideText",ExpressionUUID->"2215c748-ac05-44ed-acc1-36365a009798",
+ CellID->1386108841],
+Cell[22975, 557, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"9770cf62-e82b-4e00-b6b9-0e5c11395d64",
+ CellID->428688031],
+Cell[23091, 560, 130, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"3b3c2d60-94e7-4c18-8152-e09fc9a0093b",
+ CellID->152101332],
+Cell[23224, 563, 464, 12, 31, "GuideText",ExpressionUUID->"8a49a509-2a6c-4244-b6c0-3da0ecc587ca",
+ CellID->861546994],
+Cell[23691, 577, 515, 13, 57, "GuideText",ExpressionUUID->"74a0eec0-f324-4528-979b-ca67b4fcfe9e",
+ CellID->1685580084],
+Cell[24209, 592, 548, 14, 57, "GuideText",ExpressionUUID->"8e9a1dcc-cd0d-4316-bc6e-c4d7a70b79a0",
+ CellID->2087684211],
+Cell[24760, 608, 544, 14, 57, "GuideText",ExpressionUUID->"f8ecf957-0ac1-4c57-ba4b-629dee585dfc",
+ CellID->2120709591],
+Cell[25307, 624, 481, 13, 37, "GuideText",ExpressionUUID->"a4da68be-ec1c-4148-bff0-98a92cfb62a4",
+ CellID->980006678],
+Cell[25791, 639, 476, 13, 37, "GuideText",ExpressionUUID->"c4c024e1-1cc5-4597-af47-886ad1cd5fa8",
+ CellID->1920148303],
+Cell[26270, 654, 513, 14, 37, "GuideText",ExpressionUUID->"6e3b96f8-a7a5-408b-87b9-60c660b9278e",
+ CellID->1695765052],
+Cell[26786, 670, 516, 14, 37, "GuideText",ExpressionUUID->"9d135d45-0542-4ffb-ba4f-4d13b06c808b",
+ CellID->1467749627],
+Cell[27305, 686, 540, 14, 57, "GuideText",ExpressionUUID->"58852207-9148-4948-a0e7-cd4b7a4688a8",
+ CellID->323327900],
+Cell[27848, 702, 471, 13, 37, "GuideText",ExpressionUUID->"fa30c5d7-8601-4c6c-87f3-ef1d09ebf0ce",
+ CellID->1038388390],
+Cell[28322, 717, 471, 13, 37, "GuideText",ExpressionUUID->"49f67727-625f-421f-b5fe-72323c96f019",
+ CellID->1741555208],
+Cell[28796, 732, 470, 13, 37, "GuideText",ExpressionUUID->"66eb72ea-3acc-40ee-be98-56167a0864b4",
+ CellID->116272246],
+Cell[29269, 747, 476, 13, 37, "GuideText",ExpressionUUID->"2be27854-a43b-48a5-87f7-32a6f1444360",
+ CellID->2125003399],
+Cell[29748, 762, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2c3f291d-a440-4fb8-b07b-ae5802f39a9f",
+ CellID->131593736],
+Cell[29864, 765, 132, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"7a30ff6a-c8e1-45c9-b438-f251fbaecb50",
+ CellID->1935248189],
+Cell[29999, 768, 498, 14, 31, "GuideText",ExpressionUUID->"8cd2cbc8-659d-412e-ba80-5711461e15a3",
+ CellID->2076478708],
+Cell[30500, 784, 510, 14, 57, "GuideText",ExpressionUUID->"b041a978-29e9-40e6-824b-a7b69f13b137",
+ CellID->620897959],
+Cell[31013, 800, 514, 14, 57, "GuideText",ExpressionUUID->"f9d0806a-3e45-4e45-a315-79f01fbe9770",
+ CellID->808956140],
+Cell[31530, 816, 463, 12, 37, "GuideText",ExpressionUUID->"599df15e-18be-4a04-82aa-10986b5a411a",
+ CellID->406875823],
+Cell[31996, 830, 495, 14, 37, "GuideText",ExpressionUUID->"d8c30e2e-baaa-4cc6-98a9-faee87f9e491",
+ CellID->774025113],
+Cell[32494, 846, 479, 12, 37, "GuideText",ExpressionUUID->"a833a65c-d1eb-4a97-8985-19ddee6fa8cb",
+ CellID->1731624312],
+Cell[32976, 860, 446, 12, 37, "GuideText",ExpressionUUID->"51f40477-4f11-4fdf-adae-5074c3d32736",
+ CellID->711427640],
+Cell[33425, 874, 485, 13, 37, "GuideText",ExpressionUUID->"ca2106c2-d749-4859-b593-c81feadf1d52",
+ CellID->1922882631],
+Cell[33913, 889, 460, 12, 37, "GuideText",ExpressionUUID->"61f82e1f-e572-4d9b-9110-8029fb7f94f7",
+ CellID->406975514],
+Cell[34376, 903, 459, 12, 37, "GuideText",ExpressionUUID->"adf1a886-639a-4609-b6d3-ce3df000715b",
+ CellID->302048103],
+Cell[34838, 917, 454, 12, 37, "GuideText",ExpressionUUID->"1ef231da-6e5d-4948-a93d-62d1523cc9da",
+ CellID->2018609260],
+Cell[35295, 931, 439, 12, 37, "GuideText",ExpressionUUID->"0914c948-b53d-4063-b128-56263a022c7d",
+ CellID->819177514],
+Cell[35737, 945, 458, 12, 37, "GuideText",ExpressionUUID->"53bc17fb-9e77-4e0f-b039-983b494ecf96",
+ CellID->398816881],
+Cell[36198, 959, 500, 13, 37, "GuideText",ExpressionUUID->"ee26ccfd-4f55-44c6-8381-12942b9910f8",
+ CellID->618856680],
+Cell[36701, 974, 463, 12, 37, "GuideText",ExpressionUUID->"240c14ad-83f3-402c-a46e-0434aca2c56e",
+ CellID->860918339],
+Cell[37167, 988, 498, 14, 37, "GuideText",ExpressionUUID->"aa232437-d962-4861-8889-5a4830a2568d",
+ CellID->1857193734],
+Cell[37668, 1004, 501, 14, 37, "GuideText",ExpressionUUID->"af22c520-cf8f-43a8-b8d1-fe858d98a563",
+ CellID->180278193],
+Cell[38172, 1020, 472, 12, 37, "GuideText",ExpressionUUID->"079fd71d-675d-4703-ad75-e1b953a5a76a",
+ CellID->1983647481],
+Cell[38647, 1034, 451, 12, 37, "GuideText",ExpressionUUID->"6994fef0-3a81-4510-8901-40a441d76e0a",
+ CellID->1627077139],
+Cell[39101, 1048, 449, 12, 37, "GuideText",ExpressionUUID->"1ce416cd-9d4e-479b-ac75-46f0f0066ecd",
+ CellID->228714275],
+Cell[39553, 1062, 442, 12, 37, "GuideText",ExpressionUUID->"b2cb1ae6-8a93-4473-b756-e34ad4c7ad89",
+ CellID->5091795],
+Cell[39998, 1076, 469, 12, 37, "GuideText",ExpressionUUID->"9d871a01-f1e2-41a0-83d7-371fd449d019",
+ CellID->1825936332],
+Cell[40470, 1090, 452, 12, 37, "GuideText",ExpressionUUID->"cc1cfbf6-c388-4f4e-808b-bd21aeca2675",
+ CellID->970616294],
+Cell[40925, 1104, 453, 12, 37, "GuideText",ExpressionUUID->"854738dc-7aa0-4c71-9f79-5704495ac1a7",
+ CellID->862270646],
+Cell[41381, 1118, 453, 12, 37, "GuideText",ExpressionUUID->"42ab9c5f-8d83-49a9-86e8-3c20ac906ad8",
+ CellID->963097366],
+Cell[41837, 1132, 457, 12, 37, "GuideText",ExpressionUUID->"88f7d467-639d-4735-ab04-5d979d66ec0a",
+ CellID->1193182923],
+Cell[42297, 1146, 499, 13, 37, "GuideText",ExpressionUUID->"c6148b3b-eb5b-4aba-b77f-b7a393704c5d",
+ CellID->623091175],
+Cell[42799, 1161, 501, 14, 37, "GuideText",ExpressionUUID->"fe897414-f997-42ad-80fa-9d3af68e2368",
+ CellID->1163115453],
+Cell[43303, 1177, 470, 12, 37, "GuideText",ExpressionUUID->"09c20a75-6810-4407-8551-b05f511c3f83",
+ CellID->2085263577],
+Cell[43776, 1191, 492, 13, 37, "GuideText",ExpressionUUID->"34f0d6aa-1c9d-4594-a542-6f2f4dceb76b",
+ CellID->91819599],
+Cell[44271, 1206, 498, 13, 37, "GuideText",ExpressionUUID->"e96519c4-8f15-4397-a494-394d43b92bb7",
+ CellID->1318741847],
+Cell[44772, 1221, 457, 12, 37, "GuideText",ExpressionUUID->"96aaddea-d75c-433a-a8e9-bc4b9667ba80",
+ CellID->2062985489],
+Cell[45232, 1235, 490, 13, 37, "GuideText",ExpressionUUID->"e15c3f53-be58-4d54-889f-680fae1d744e",
+ CellID->1473632808],
+Cell[45725, 1250, 461, 12, 37, "GuideText",ExpressionUUID->"4fdc6415-10aa-410b-bd11-1da7363af59d",
+ CellID->417703205],
+Cell[46189, 1264, 465, 12, 37, "GuideText",ExpressionUUID->"021429a1-edef-4cac-9b21-4c612256dab7",
+ CellID->213724392],
+Cell[46657, 1278, 502, 13, 57, "GuideText",ExpressionUUID->"7da9962c-93ee-4cb2-af38-634d924849cc",
+ CellID->1473198560],
+Cell[47162, 1293, 503, 13, 37, "GuideText",ExpressionUUID->"3b3102e6-28be-4b44-b3ec-8aa4dce1bcc6",
+ CellID->1709231657],
+Cell[47668, 1308, 438, 12, 37, "GuideText",ExpressionUUID->"8faa34b6-30e7-47f7-993f-e6ac9247648f",
+ CellID->167713280],
+Cell[48109, 1322, 450, 12, 37, "GuideText",ExpressionUUID->"788fbbf3-4b04-44eb-8f3f-33d5d12e4aa5",
+ CellID->1258552096],
+Cell[48562, 1336, 466, 12, 37, "GuideText",ExpressionUUID->"ba5f8467-ee5f-4d41-9ea5-2ffce2887e05",
+ CellID->1918638169],
+Cell[49031, 1350, 530, 14, 57, "GuideText",ExpressionUUID->"fe06402d-102f-48f6-9362-25973b73766e",
+ CellID->2084746678],
+Cell[49564, 1366, 460, 12, 37, "GuideText",ExpressionUUID->"d94127b4-ef47-4e5e-8c34-5f7a27efd4ea",
+ CellID->2141716341],
+Cell[50027, 1380, 516, 14, 57, "GuideText",ExpressionUUID->"67a92328-5f00-448b-b4e3-49e797344e03",
+ CellID->1853135820],
+Cell[50546, 1396, 507, 13, 37, "GuideText",ExpressionUUID->"7d9a37af-f6a7-413d-b392-f89c4cec8ec7",
+ CellID->698394299],
+Cell[51056, 1411, 442, 12, 37, "GuideText",ExpressionUUID->"5bfd6a30-abad-4ac8-aae4-f240d74ed9af",
+ CellID->1914852438],
+Cell[51501, 1425, 533, 14, 57, "GuideText",ExpressionUUID->"8135f463-09d1-4c04-b336-ae77bad1356c",
+ CellID->734991524],
+Cell[52037, 1441, 480, 13, 37, "GuideText",ExpressionUUID->"0a9dd56d-8097-4e01-902e-3e466b137ae1",
+ CellID->676606324],
+Cell[52520, 1456, 517, 14, 57, "GuideText",ExpressionUUID->"98f2e8d0-dc12-4acd-89ea-536dda2b207c",
+ CellID->796576603],
+Cell[53040, 1472, 459, 12, 37, "GuideText",ExpressionUUID->"b1513833-64d6-48a1-97e3-fb06af75d35e",
+ CellID->649911223],
+Cell[53502, 1486, 450, 12, 37, "GuideText",ExpressionUUID->"515fb979-663e-47c6-9f87-d5a29394d409",
+ CellID->956096319],
+Cell[53955, 1500, 468, 12, 37, "GuideText",ExpressionUUID->"e9771976-252a-4b06-ac29-592aae556e5f",
+ CellID->1638186579],
+Cell[54426, 1514, 452, 12, 37, "GuideText",ExpressionUUID->"76a086c1-a8e2-4a1a-acd4-2a778aecebc3",
+ CellID->113995066],
+Cell[54881, 1528, 461, 12, 37, "GuideText",ExpressionUUID->"11d82798-2ac4-40a5-b91c-92f6c7ea2b47",
+ CellID->359661138],
+Cell[55345, 1542, 446, 12, 37, "GuideText",ExpressionUUID->"74a2a257-50c2-4931-94c5-ffee52128bc4",
+ CellID->1805763708],
+Cell[55794, 1556, 497, 13, 37, "GuideText",ExpressionUUID->"2116d23f-e02f-4a76-98d1-6d93e2b91e27",
+ CellID->1231740952],
+Cell[56294, 1571, 444, 12, 37, "GuideText",ExpressionUUID->"812cc00f-9298-41d5-b83f-1bb53160d6c2",
+ CellID->127823184],
+Cell[56741, 1585, 453, 12, 37, "GuideText",ExpressionUUID->"0a3f14e7-cdf7-4b20-9679-f653450cf4b7",
+ CellID->840606488],
+Cell[57197, 1599, 488, 13, 37, "GuideText",ExpressionUUID->"0f794c32-8e04-4225-8ca0-d7e54ef712cc",
+ CellID->1925813850],
+Cell[57688, 1614, 463, 12, 37, "GuideText",ExpressionUUID->"aae8baf0-9ffe-4dc3-9567-34f2409ea628",
+ CellID->279849366],
+Cell[58154, 1628, 461, 12, 37, "GuideText",ExpressionUUID->"07b1255f-78f7-47e3-86b9-ec535f999144",
+ CellID->439107432],
+Cell[58618, 1642, 529, 14, 57, "GuideText",ExpressionUUID->"e2b7cb25-11b8-4567-96e3-ad9cca170d54",
+ CellID->1324798532],
+Cell[59150, 1658, 456, 12, 37, "GuideText",ExpressionUUID->"e9c3dc4a-fd69-4fdd-baa3-c071c5853a33",
+ CellID->778475228],
+Cell[59609, 1672, 501, 13, 37, "GuideText",ExpressionUUID->"e785a3e3-d777-46e2-8eb8-8427abe933fb",
+ CellID->1362779472],
+Cell[60113, 1687, 511, 13, 37, "GuideText",ExpressionUUID->"28c56b3b-1605-4827-9380-4f2005291d91",
+ CellID->1321490649],
+Cell[60627, 1702, 463, 12, 37, "GuideText",ExpressionUUID->"87694244-3ca7-491c-9ead-765c81aca4ac",
+ CellID->1017460469],
+Cell[61093, 1716, 491, 13, 37, "GuideText",ExpressionUUID->"13c9b61d-b4cc-4b59-ba73-92c605a7e592",
+ CellID->45821422],
+Cell[61587, 1731, 494, 13, 37, "GuideText",ExpressionUUID->"6cccb0fb-7b24-44be-9d45-e689abfc07b7",
+ CellID->1321493928],
+Cell[62084, 1746, 442, 12, 37, "GuideText",ExpressionUUID->"44a7cb60-26eb-4b2e-93cb-0cfd8b7c6711",
+ CellID->1072570622],
+Cell[62529, 1760, 498, 13, 57, "GuideText",ExpressionUUID->"4c04b335-f8d6-450e-ba36-da7d8b9693da",
+ CellID->716711036],
+Cell[63030, 1775, 448, 12, 37, "GuideText",ExpressionUUID->"fda0b7b4-c86e-490e-9ff3-5b1f2fdaa67e",
+ CellID->526606029],
+Cell[63481, 1789, 469, 12, 37, "GuideText",ExpressionUUID->"39df9a01-56fe-4cd8-8343-c1c39b31ef3b",
+ CellID->887420116],
+Cell[63953, 1803, 447, 12, 37, "GuideText",ExpressionUUID->"5a1c200f-26dd-42de-be5a-2f4a9d745601",
+ CellID->595961197],
+Cell[64403, 1817, 499, 13, 37, "GuideText",ExpressionUUID->"24d0f95f-68fc-444b-a81b-7c9209ad3762",
+ CellID->456108371],
+Cell[64905, 1832, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"af8d2b01-3b9d-4fb9-a833-66db95692af1",
+ CellID->1444255254],
+Cell[65015, 1835, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"bdb33d00-7acc-4f96-a998-e979ac74b8ba",
+ CellID->590391937],
+Cell[65410, 1849, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"860e9f8e-dc7a-4548-82bc-e58bee60f259",
+ CellID->1342836019],
+Cell[65520, 1852, 241, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"42053471-e47b-4d0b-a382-d41a479f8425",
+ CellID->1139325010],
+Cell[65764, 1860, 277, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"5fe419d3-28cc-4251-8247-e23dc1599144",
+ CellID->1671246418],
+Cell[66044, 1869, 257, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"14c168b5-6e67-4578-8ec1-724ef4d08dd8",
+ CellID->1699928213],
+Cell[66304, 1877, 252, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"8058bf95-ba0e-4765-a36b-a8ca8b40abcf",
+ CellID->571036203],
+Cell[66559, 1885, 97, 1, 40, "FooterCell",ExpressionUUID->"a783e2d7-eb94-4e77-a501-e045cf63935c",
+ CellID->301045378]
+}
+]
+*)
+
+(* End of internal cache information *)
+

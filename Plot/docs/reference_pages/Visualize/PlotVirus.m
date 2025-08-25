@@ -43,10 +43,7 @@ DefineUsage[PlotVirus,
 			"PlotObject",
 			"PlotProtein"
 		},
-		Author -> {
-			"amir.saadat",
-			"brad"
-		},
+		Author -> {"dirk.schild", "amir.saadat", "brad"},
 		Preview->True
 	}
 ];

@@ -302,7 +302,7 @@ DefineObjectType[Object[Protocol, AlphaScreen], {
 		MoatPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "For each member of AssayPlates, a set of instructions specifying the loading of moat into the plates.",
 			Category -> "Sample Handling",
 			IndexMatching -> AssayPlates,
@@ -312,8 +312,8 @@ DefineObjectType[Object[Protocol, AlphaScreen], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
-			Description -> "The manipulations protocol used to load moat into the plates.",
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, RoboticSamplePreparation],
+			Description -> "The sample preparation protocol used to load moat into the plates.",
 			Category -> "Sample Handling"
 		},
 		(* AssayPlateLoadingPrimitives and AssayPlateLoadingSampleManipulation are reserved fields for automatic plate loading *)
@@ -349,6 +349,39 @@ DefineObjectType[Object[Protocol, AlphaScreen], {
 			Pattern :> GreaterEqualP[0 Minute],
 			Units -> Minute,
 			Description -> "The length of time for which the assay plates equilibrate at the assay temperature in the plate reader before being read.",
+			Category -> "Optics"
+		},
+		TargetCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of carbon dioxide in the atmosphere in the plate reader chamber.",
+			Category -> "Optics"
+		},
+		TargetOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Percent],
+			Units -> Percent,
+			Description -> "The target amount of oxygen in the atmosphere in the plate reader chamber. If specified, nitrogen gas is pumped into the chamber to force oxygen in ambient air out of the chamber until the desired level is reached.",
+			Category -> "Optics"
+		},
+		AtmosphereEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The length of time for which the samples equilibrate at the requested oxygen and carbon dioxide level before being read.",
+			Category -> "Optics"
+		},
+		EstimatedACUEquilibrationTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Minute],
+			Units -> Minute,
+			Description -> "The estimated length of time for the gas level inside the chamber to reach the TargetOxygenLevel and TargetCarbonDioxideLevel.",
+			Developer -> True,
 			Category -> "Optics"
 		},
 		PlateReaderMix -> {

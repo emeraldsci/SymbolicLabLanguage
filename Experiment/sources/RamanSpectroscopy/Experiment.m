@@ -460,8 +460,10 @@ DefineOptions[ExperimentRamanSpectroscopy,
       Category->"Protocol"
     },
     (* Shared options *)
-    FuntopiaSharedOptions,
-    SamplesInStorageOptions
+    NonBiologyFuntopiaSharedOptions,
+    SamplesInStorageOptions,
+    ModelInputOptions,
+    SimulationOption
   }
 ];
 
@@ -541,13 +543,11 @@ Error::InvalidRamanBlankFormFactor = "The following samples request blanks with 
 
 ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[ExperimentRamanSpectroscopy]]:=Module[
   {listedOptions,listedSamples,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
-    samplePreparationCache,safeOps,safeOpsNamed,safeOpsTests,validLengths,validLengthTests,
+    samplePreparationSimulation,safeOps,safeOpsNamed,safeOpsTests,validLengths,validLengthTests,
     templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
     resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,allDownloadValues,
-    (* fake object tracking *)
-    optionsWithObjects, userSpecifiedObjects, simulatedSampleQ, objectsExistQs, objectsExistTests,
     (* variables from safeOps and download *)
-    upload, confirm, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
+    upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
     allModelSamplesFromOptions, allObjectSamplesFromOptions, allInstrumentObjectsFromOptions, allObjectsFromOptions, allInstrumentModelsFromOptions,
     containerPreparationPackets, modelPreparationPackets, liquidHandlerContainers, modelContainerPacketFields
   },
@@ -566,20 +566,20 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   (* Simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
       ExperimentRamanSpectroscopy,
       listedSamples,
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
     (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    Return[$Failed]
   ];
 
   (* Call SafeOptions to make sure all options match pattern *)
@@ -588,13 +588,7 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
     {SafeOptions[ExperimentRamanSpectroscopy,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
   ];
 
-  {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentRamanSpectroscopy,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentRamanSpectroscopy,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-  ];
+  {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation->samplePreparationSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -604,6 +598,12 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
       Options -> $Failed,
       Preview -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentRamanSpectroscopy,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentRamanSpectroscopy,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -617,7 +617,7 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   ];
 
   (* get assorted hidden options *)
-  {upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+  {upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 
   (* Use any template options to get values for options not specified in myOptions *)
@@ -643,53 +643,11 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentRamanSpectroscopy,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
 
 
-  (* ---------------------------------------------------- *)
-  (* -- Check for Objects that are not in the database -- *)
-  (* ---------------------------------------------------- *)
-
-  (* Any options whose values _could_ be an object *)
-  optionsWithObjects = Cases[Values[ToList[myOptions]], ObjectP[]];
-
-  (* Extract any objects that the user has explicitly specified *)
-  userSpecifiedObjects = DeleteDuplicates@Cases[
-    Flatten[{ToList[mySamplesWithPreparedSamples],optionsWithObjects}],
-    ObjectP[]
-  ];
-
-  (* Check that the specified objects exist or are visible to the current user *)
-  simulatedSampleQ = Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False]&/@userSpecifiedObjects;
-  objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-      {PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And@@objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-      Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-    ];
-
-    Return[outputSpecification/.{
-      Result -> $Failed,
-      Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
-
-
   (* ----------------------------------------------------------------------------------- *)
   (* -- DOWNLOAD THE INFORMATION FOR THE OPTION RESOLVER AND RESOURCE PACKET FUNCTION -- *)
   (* ----------------------------------------------------------------------------------- *)
-  (*TODO: somethign in here is givign a null packet that used to not do that*)
-  (*TODO: need to download the normal sample/container/model fields, along with the insturment. Thats about it. *)
+  (*TODO: something in here is givign a null packet that used to not do that*)
+  (*TODO: need to download the normal sample/container/model fields, along with the instrument. Thats about it. *)
   (* Combine our downloaded and simulated cache. *)
   (* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
   samplePreparationPackets = Packet[SamplePreparationCacheFields[Object[Sample], Format->Sequence], Volume, IncompatibleMaterials, LiquidHandlerIncompatible, Well, Composition, Tablet];
@@ -707,7 +665,7 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   (* download the object here since there will be a packet also from simulation *)
   (* note that we want to avoid duplicates that arise from the SamplesIn potentially being the AdjustmentSample *)
   allObjectSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Object[Sample]]], Object], Alternatives@@ToList[mySamplesWithPreparedSamples[Object]]];
-  allModelSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Model[Sample]]], Object], Alternatives@@ToList[Download[mySamplesWithPreparedSamples, Model[Object], Cache -> samplePreparationCache]]];
+  allModelSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Model[Sample]]], Object], Alternatives@@ToList[Download[mySamplesWithPreparedSamples, Model[Object], Cache -> inheritedCache, Simulation -> samplePreparationSimulation]]];
 
   (* get liquid handler compatible containers *)
   ramanLiquidHandlerContainers[]:=(ramanLiquidHandlerContainers[]=hamiltonAliquotContainers["Memoization"]);
@@ -748,12 +706,13 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
             modelPreparationPackets
           }
         },
-        Cache -> Flatten[{samplePreparationCache, inheritedCache}]
+        Cache -> inheritedCache,
+        Simulation -> samplePreparationSimulation
       ]
     ],
     Download::FieldDoesntExist];
 
-  cacheBall=Cases[FlattenCachePackets[{samplePreparationCache, inheritedCache, allDownloadValues}], PacketP[]];
+  cacheBall=Cases[FlattenCachePackets[{inheritedCache, allDownloadValues}], PacketP[]];
 
   (* -------------------------- *)
   (* --- RESOLVE THE OPTIONS ---*)
@@ -763,7 +722,7 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   resolvedOptionsResult=If[gatherTests,
 
     (* We are gathering tests. This silences any messages being thrown. *)
-    {resolvedOptions,resolvedOptionsTests}=resolveExperimentRamanSpectroscopyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+    {resolvedOptions,resolvedOptionsTests}=resolveExperimentRamanSpectroscopyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->{Result,Tests}];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
     If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -773,7 +732,7 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      {resolvedOptions,resolvedOptionsTests}={resolveExperimentRamanSpectroscopyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall],{}},
+      {resolvedOptions,resolvedOptionsTests}={resolveExperimentRamanSpectroscopyOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall,Simulation->samplePreparationSimulation],{}},
       $Failed,
       {Error::InvalidInput,Error::InvalidOption}
     ]
@@ -807,8 +766,8 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
   (* ---------------------------- *)
 
   {resourcePackets,resourcePacketTests} = If[gatherTests,
-    ramanSpectroscopyResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-    {ramanSpectroscopyResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions, collapsedResolvedOptions, Cache->cacheBall],{}}
+    ramanSpectroscopyResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation->samplePreparationSimulation,Output->{Result,Tests}],
+    {ramanSpectroscopyResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions, collapsedResolvedOptions, Cache->cacheBall,Simulation->samplePreparationSimulation],{}}
   ];
 
   (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -827,13 +786,15 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
       resourcePackets,
       Upload->Lookup[safeOps,Upload],
       Confirm->Lookup[safeOps,Confirm],
+      CanaryBranch->Lookup[safeOps,CanaryBranch],
       ParentProtocol->Lookup[safeOps,ParentProtocol],
       Priority->Lookup[safeOps,Priority],
       StartDate->Lookup[safeOps,StartDate],
       HoldOrder->Lookup[safeOps,HoldOrder],
       QueuePosition->Lookup[safeOps,QueuePosition],
       ConstellationMessage->Object[Protocol,RamanSpectroscopy],
-      Cache -> samplePreparationCache
+      Cache -> cacheBall,
+      Simulation -> samplePreparationSimulation
     ],
     $Failed
   ];
@@ -853,9 +814,9 @@ ExperimentRamanSpectroscopy[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 (* --- CONTAINER OVERLOAD --- *)
 (* -------------------------- *)
 
-ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,sampleCache,
-    samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests},
+ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+  {listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    samplePreparationSimulation,containerToSampleResult,containerToSampleOutput,containerToSampleSimulation,samples,sampleOptions,containerToSampleTests},
 
   (* Make sure we're working with a list of options *)
   listedOptions=ToList[myOptions];
@@ -870,31 +831,31 @@ ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Ob
   (* First, simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
       ExperimentRamanSpectroscopy,
       ToList[myContainers],
       ToList[myOptions]
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
     (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    Return[$Failed]
   ];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
     (* We are gathering tests. This silences any messages being thrown. *)
-    {containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+    {containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
       ExperimentRamanSpectroscopy,
       mySamplesWithPreparedSamples,
       myOptionsWithPreparedSamples,
-      Output->{Result,Tests},
-      Cache->samplePreparationCache
+      Output->{Result,Tests,Simulation},
+      Simulation->samplePreparationSimulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -905,12 +866,12 @@ ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Ob
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      containerToSampleOutput=containerToSampleOptions[
+      {containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
         ExperimentRamanSpectroscopy,
         mySamplesWithPreparedSamples,
         myOptionsWithPreparedSamples,
-        Output->Result,
-        Cache->samplePreparationCache
+        Output-> {Result,Simulation},
+        Simulation->samplePreparationSimulation
       ],
       $Failed,
       {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -928,25 +889,12 @@ ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Ob
     },
 
     (* Split up our containerToSample result into the samples and sampleOptions. *)
-    {samples,sampleOptions, sampleCache}=containerToSampleOutput;
-
-    (* Update our cache with our new simulated values. *)
-    (* It is important the sample preparation cache appears first in the cache ball. *)
-    updatedCache=Flatten[{
-      samplePreparationCache,
-      Lookup[sampleOptions,Cache,{}]
-    }];
+    {samples,sampleOptions}=containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentRamanSpectroscopy[samples,ReplaceRule[sampleOptions,Cache->updatedCache]]
+    ExperimentRamanSpectroscopy[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
   ]
 ];
-
-
-
-
-
-
 
 
 (* ::Subsection::Closed:: *)
@@ -960,11 +908,11 @@ ExperimentRamanSpectroscopy[myContainers:ListableP[ObjectP[{Object[Container],Ob
 
 DefineOptions[
   resolveExperimentRamanSpectroscopyOptions,
-  Options:>{HelperOutputOption,CacheOption}
+  Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
-resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentBioLayerInterferometryOptions]]:=Module[
-  {outputSpecification,output,gatherTests,samplePrepOptions,ramanOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests, ramanOptionsAssociation,
+resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentRamanSpectroscopyOptions]]:=Module[
+  {outputSpecification,output,gatherTests,samplePrepOptions,ramanOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests, ramanOptionsAssociation,
     ramanTests, invalidInputs,invalidOptions,resolvedAliquotOptions,aliquotTests, resolvedOptions, mapThreadFriendlyOptions, resolvedPostProcessingOptions,
     fastAssoc,sampleModels,
     (* -- download related variables -- *)
@@ -1050,7 +998,9 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     (* -- aliquot resolution variables -- *)
     sampleContainerPackets, sampleContainerFields,
     sampleVolumes,sampleMasses,tabletBools, bestAliquotAmount, liquidHandlerContainerModels,liquidHandlerContainerMaxVolumes,
-    potentialAliquotContainers, simulatedSamplesContainerModels, requiredAliquotContainers
+    potentialAliquotContainers, simulatedSamplesContainerModels, requiredAliquotContainers,
+
+    inheritedSimulation, updatedSimulation
   },
 
   (* ---------------------------------------------- *)
@@ -1067,21 +1017,22 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* Fetch our cache from the parent function. *)
   inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+  inheritedSimulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
   (* Separate out our BLI options from our Sample Prep options. *)
   {samplePrepOptions, ramanOptions}=splitPrepOptions[myOptions];
 
   (* Resolve our sample prep options *)
-  {{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-    resolveSamplePrepOptions[ExperimentRamanSpectroscopy,mySamples,samplePrepOptions,Cache->inheritedCache,Output->{Result,Tests}],
-    {resolveSamplePrepOptions[ExperimentRamanSpectroscopy,mySamples,samplePrepOptions,Cache->inheritedCache,Output->Result],{}}
+  {{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+    resolveSamplePrepOptionsNew[ExperimentRamanSpectroscopy,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation->inheritedSimulation,Output->{Result,Tests}],
+    {resolveSamplePrepOptionsNew[ExperimentRamanSpectroscopy,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation->inheritedSimulation,Output->Result],{}}
   ];
 
   (* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
   ramanOptionsAssociation = Association[ramanOptions];
 
   (* Extract the packets that we need from our downloaded cache. *)
-  (* we dont know what solutions will be needed yet, is there any way to prevent two download calls here? The solutions in the options will also need a volume check *)
+  (* we don't know what solutions will be needed yet, is there any way to prevent two download calls here? The solutions in the options will also need a volume check *)
 
   (* Remember to download from simulatedSamples, using our simulatedCache *)
   sampleObjectPrepFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], IncompatibleMaterials, State, Volume, Tablet];
@@ -1097,7 +1048,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   allModelFields = Packet[Object, Name, State, IncompatibleMaterials];
   modelContainerPacketFields=Packet@@Flatten[{Object,SamplePreparationCacheFields[Model[Container]]}];
 *)
-  (* gatehr a list of potential aliquot containers *)
+  (* gather a list of potential aliquot containers *)
   liquidHandlerContainers = ramanLiquidHandlerContainers[];
   (*
   {allDownloadValues, allObjectPackets, allModelPackets, liquidHandlerContainerPackets} = Quiet[Download[
@@ -1132,9 +1083,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   sampleContainerPackets = allDownloadValues[[All, 3]];
 *)
 
+  (*make the new cache, excluding things we don't need in the resolver*)
+  newCache = FlattenCachePackets[{
+    inheritedCache,
+    Lookup[FirstOrDefault[updatedSimulation, <||>], Packets, {}]
+  }];
 
   (*do the download without downloading - make a fast cache for looking up from*)
-  fastAssoc = makeFastAssocFromCache[simulatedCache];
+  fastAssoc = makeFastAssocFromCache[newCache];
 
   (*no need to download object since all options and inputs are sanitized at the beginning to prevent any issues from named objects popping up*)
   allObjectPackets = fetchPacketFromFastAssoc[#,fastAssoc]&/@allObjectOptions;
@@ -1150,8 +1106,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   sampleModels = Download[Lookup[samplePackets, Model], Object];
   sampleModelPackets = fetchPacketFromFastAssoc[#,fastAssoc]&/@sampleModels;
 
-  (*make the new cache, excluding things we dont need in the resolver*)
-  newCache = simulatedCache;
+
 
   (* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -1255,8 +1210,8 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* get the boolean for any incompatible materials *)
   {compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-    CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Output -> {Result, Tests}],
-    {CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Messages -> messages], {}}
+    CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+    {CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Simulation -> updatedSimulation, Messages -> messages], {}}
   ];
 
   (* If the materials are incompatible, then the Instrument is invalid *)
@@ -1279,7 +1234,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
   If[Length[discardedInvalidInputs]>0&&!gatherTests,
-    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->newCache]];
+    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->newCache,Simulation -> updatedSimulation]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1287,12 +1242,12 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     Module[{failingTest,passingTest},
       failingTest=If[MatchQ[Length[discardedInvalidInputs],0],
         Nothing,
-        Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->newCache]<>" are not discarded:",True,False]
+        Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->newCache,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
       ];
 
       passingTest=If[MatchQ[Length[discardedInvalidInputs], Length[mySamples]],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->newCache]<>" are not discarded:",True,True]
+        Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->newCache,Simulation -> updatedSimulation]<>" are not discarded:",True,True]
       ];
 
       {failingTest,passingTest}
@@ -1323,12 +1278,12 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     Module[{failingTest, passingTest},
       failingTest = If[Length[deprecatedInvalidInputs] == 0,
         Nothing,
-        Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> newCache] <> " that are not deprecated:", True, False]
+        Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> newCache,Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
       ];
 
       passingTest = If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
         Nothing,
-        Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Cache -> newCache] <> " that are not deprecated:", True, True]
+        Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Cache -> newCache,Simulation -> updatedSimulation] <> " that are not deprecated:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -1361,7 +1316,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* If there are invalid inputs and we are throwing messages, throw an error message *)
   If[Length[lowSampleAmountInputs]>0&&!gatherTests,
-    Message[Error::RamanNotEnoughSample,ObjectToString[lowSampleAmountInputs,Cache->newCache]]
+    Message[Error::RamanNotEnoughSample,ObjectToString[lowSampleAmountInputs,Cache->newCache,Simulation -> updatedSimulation]]
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1371,13 +1326,13 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
         (* when not a single sample is low volume, we know we don't need to throw any failing test *)
         Nothing,
         (* otherwise, we throw one failing test for all low volume quantity *)
-        Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs,Cache->newCache]<>" have enough quantity for measurement:",True,False]
+        Test["The input sample(s) "<>ObjectToString[lowSampleAmountInputs,Cache->newCache,Simulation -> updatedSimulation]<>" have enough quantity for measurement:",True,False]
       ];
       passingTest=If[Length[lowSampleAmountInputs]==Length[simulatedSamples],
         (* when ALL samples are low volume, we know we don't need to throw any passing test *)
         Nothing,
         (* otherwise, we throw one passing test for all non-low volume samples *)
-        Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowSampleAmountInputs],Cache->newCache]<>" have enough quantity for measurement:",True,True]
+        Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowSampleAmountInputs],Cache->newCache,Simulation -> updatedSimulation]<>" have enough quantity for measurement:",True,True]
       ];
       {failingTest,passingTest}
     ],
@@ -1393,8 +1348,8 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* this will throw warnings if needed *)
   {validSamplesInStorageConditionBools, validSamplesInStorageConditionTests} = Quiet[
     If[gatherTests,
-      ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache ->newCache],
-      {ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache ->newCache], {}}
+      ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache ->newCache, Simulation -> updatedSimulation],
+      {ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache ->newCache, Simulation -> updatedSimulation], {}}
     ],
     Download::MissingCacheField
   ];
@@ -1416,7 +1371,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (*MapThreadFriendlyOptions have the Key value pairs expanded to index match, such that if you call Lookup[options, OptionName], it gives the Option value at the index we are interested in*)
   mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentRamanSpectroscopy, roundedOptions];
 
-  (* since this si a fairly heavy map thread, the output will be an association of the form <| OptionName -> resolvedOptionValue |> so that it is easy to look up aht teh end *)
+  (* since this si a fairly heavy map thread, the output will be an association of the form <| OptionName -> resolvedOptionValue |> so that it is easy to look up at the end *)
   (* the error trackers will come out the same way as <| |> *)
 
   {
@@ -1859,7 +1814,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
             (* -- setup -- *)
 
 
-            (* get the stat from teh simulated sample packets *)
+            (* get the stat from the simulated sample packets *)
             sampleState = fastAssocLookup[fastAssoc, sample, State];
             sampleTabletBool = fastAssocLookup[fastAssoc, sample, Tablet];
 
@@ -1875,7 +1830,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
               tabletProcessing/.Automatic -> Null
             ];
 
-            (* determine teh state of the sample as it will be in the plate. This is to determine which type of plate to use since Tablet coudl result ina powder that needs a 96 well rather than the tablet holder *)
+            (* determine the state of the sample as it will be in the plate. This is to determine which type of plate to use since Tablet coudl result ina powder that needs a 96 well rather than the tablet holder *)
             computedSampleState = Which[
 
               (* make sure to put this first since tablets are also State -> Solid *)
@@ -1926,7 +1881,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
               False
             ];
 
-            (* if there are processing parameters set but the input is not a tablet, set teh error tracker to True *)
+            (* if there are processing parameters set but the input is not a tablet, set the error tracker to True *)
             unusedTabletProcessing = If[MatchQ[resolvedTabletProcessing, Except[Null]]&&MatchQ[safeSampleTabletBool, False],
               True,
               False
@@ -2966,10 +2921,10 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
             (* -- general errors for sample time and region -- *)
 
-            (* The max appers to be 6000 um/s *)
+            (* The max appears to be 6000 um/s *)
             (* we will assume that the sample plate is valid for this test, so use the well size that woudl be used for the SampleType *)
             (* Tablet -> 24 Well with 8 mm diameter, Liquid/Powder -> Glass plate with 6.21 mm diameter*)
-            (*teh software limits diameter to 6 mm diameter, so the plate doesnt really matter*)
+            (*the software limits diameter to 6 mm diameter, so the plate doesnt really matter*)
             (* the allowable Z height for both is 10 mm, although this is sort of crazy *)
             (*the coordinates are relative to well center*)
             (*see www.cellvis.com/_96-well-glass-bottom-plate-with-high-performance-number-1.5-cover-glass_/product_detail.php?product_id=50#dimension-diagram*)
@@ -2985,7 +2940,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
                 True
               ],
 
-              (* if there are missing or bad parameters, dont do this calculation since it wont make sense *)
+              (* if there are missing or bad parameters, don't do this calculation since it wont make sense *)
               {False, {}},
 
               (* otherwise check the relevant sampling pattern parameters *)
@@ -3074,7 +3029,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
                 True
               ],
 
-              (* if there are missing or bad parameters, dont do this calculation since it wont make sense *)
+              (* if there are missing or bad parameters, don't do this calculation since it wont make sense *)
               {0*Second, 0*Micrometer/Second, {}, {}},
 
               (* if there are no errors, then check the time that it will take to do the sampling and the required speed *)
@@ -3090,7 +3045,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
                 },
 
                 Spiral,
-                (* I dont know how this calculation is done but this appears to be the rule *)
+                (* I don't know how this calculation is done but this appears to be the rule *)
                 {
                   resolvedSamplingTime,
                   resolvedSpiralInnerDiameter*3.8*1/Second,
@@ -3113,7 +3068,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
                   (* need to know the speed and how long the path is that it will travel. Speed is resolution/exposure time
                   the path length is dictated by the spot size and the *)
 
-                  (* TODO: this lookup could move out to the general section if it is useful elsewhere. may even want this to live in teh instrument object *)
+                  (* TODO: this lookup could move out to the general section if it is useful elsewhere. may even want this to live in the instrument object *)
                   objectiveToSpotSizeLookup = {
                     20 -> 35 Micrometer,
                     10 -> 50 Micrometer,
@@ -3267,7 +3222,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
             blanksErrorTrackerAssociation
           ];
 
-          (* return the options and the error tracking booleans - note that becasue this is an association dont worry about order *)
+          (* return the options and the error tracking booleans - note that becasue this is an association don't worry about order *)
           {resolvedOptionsAssociation, errorTrackersAssociation}
         ]
       ],
@@ -3442,7 +3397,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingMicroscopeImageLightIntensity: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingMicroscopeImageLightIntensity,{}]&&!gatherTests,
-    Message[Error::MissingRamanMicroscopeImageLightIntensity,ObjectToString[samplePacketsWithMissingMicroscopeImageLightIntensity,Cache->newCache]]
+    Message[Error::MissingRamanMicroscopeImageLightIntensity,ObjectToString[samplePacketsWithMissingMicroscopeImageLightIntensity,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingMicroscopeImageLightIntensityTests=ramanSampleTests[gatherTests,
@@ -3450,14 +3405,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingMicroscopeImageLightIntensity,
     "If required, MicroscopeImageLightIntensity is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- MissingMicroscopeImageExposureTime: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingMicroscopeImageExposureTime,{}]&&!gatherTests,
-    Message[Error::MissingRamanMicroscopeImageExposureTime,ObjectToString[samplePacketsWithMissingMicroscopeImageExposureTime,Cache->newCache]]
+    Message[Error::MissingRamanMicroscopeImageExposureTime,ObjectToString[samplePacketsWithMissingMicroscopeImageExposureTime,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingRamanMicroscopeImageExposureTimeTests=ramanSampleTests[gatherTests,
@@ -3465,14 +3420,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingMicroscopeImageExposureTime,
     "If required, MicroscopeImageExposureTime is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- UnusedMicroscopeImageLightIntensity: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithUnusedMicroscopeImageLightIntensity,{}]&&!gatherTests,
-    Message[Error::UnusedRamanMicroscopeImageLightIntensity,ObjectToString[samplePacketsWithUnusedMicroscopeImageLightIntensity,Cache->newCache]]
+    Message[Error::UnusedRamanMicroscopeImageLightIntensity,ObjectToString[samplePacketsWithUnusedMicroscopeImageLightIntensity,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   unusedMicroscopeImageLightIntensityTests=ramanSampleTests[gatherTests,
@@ -3480,13 +3435,13 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithUnusedMicroscopeImageLightIntensity,
     "If not required, MicroscopeImageLightIntensity is not specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- UnusedMicroscopeImageExposureTime: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithUnusedMicroscopeImageExposureTime,{}]&&!gatherTests,
-    Message[Error::UnusedRamanMicroscopeImageExposureTime,ObjectToString[samplePacketsWithUnusedMicroscopeImageExposureTime,Cache->newCache]]
+    Message[Error::UnusedRamanMicroscopeImageExposureTime,ObjectToString[samplePacketsWithUnusedMicroscopeImageExposureTime,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   unusedMicroscopeImageExposureTimeTests=ramanSampleTests[gatherTests,
@@ -3494,7 +3449,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithUnusedMicroscopeImageExposureTime,
     "If not required, MicroscopeImageExposureTime is not specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
@@ -3524,7 +3479,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- ObjectiveMisMatch: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithObjectiveMisMatchBool,{}]&&!gatherTests,
-    Message[Error::RamanObjectiveMisMatch,ObjectToString[samplePacketsWithObjectiveMisMatchBool,Cache->newCache]]
+    Message[Error::RamanObjectiveMisMatch,ObjectToString[samplePacketsWithObjectiveMisMatchBool,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   objectiveMisMatchTests=ramanSampleTests[gatherTests,
@@ -3532,14 +3487,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithObjectiveMisMatchBool,
     "The FloodLight and ObjectiveMagnification option do not conflict for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- NoObjective: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithNoObjectiveBool,{}]&&!gatherTests,
-    Message[Error::NoRamanObjective,ObjectToString[samplePacketsWithNoObjectiveBool,Cache->newCache]]
+    Message[Error::NoRamanObjective,ObjectToString[samplePacketsWithNoObjectiveBool,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   noObjectiveTests=ramanSampleTests[gatherTests,
@@ -3547,14 +3502,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithNoObjectiveBool,
     "A valid objective or FloodLight is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- NissingAdjustmentTarget: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingAdjustmentTarget,{}]&&!gatherTests,
-    Message[Error::MissingRamanAdjustmentTarget,ObjectToString[samplePacketsWithMissingAdjustmentTarget,Cache->newCache]]
+    Message[Error::MissingRamanAdjustmentTarget,ObjectToString[samplePacketsWithMissingAdjustmentTarget,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingAdjustmentTargetTests=ramanSampleTests[gatherTests,
@@ -3562,14 +3517,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingAdjustmentTarget,
     "If power/exposure optimization is performed, AdjustmentTarget is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- NoAdjustmentTargetRequired: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithNoAdjustmentTargetRequired,{}]&&!gatherTests,
-    Message[Error::NoRamanAdjustmentTargetRequired,ObjectToString[samplePacketsWithNoAdjustmentTargetRequired,Cache->newCache]]
+    Message[Error::NoRamanAdjustmentTargetRequired,ObjectToString[samplePacketsWithNoAdjustmentTargetRequired,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   noAdjustmentTargetRequiredTests=ramanSampleTests[gatherTests,
@@ -3577,14 +3532,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithNoAdjustmentTargetRequired,
     "If power/exposure optimization is not performed, AdjustmentTarget is not specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- MissingAdjustmentSample: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingAdjustmentSample,{}]&&!gatherTests,
-    Message[Error::MissingRamanAdjustmentSample,ObjectToString[samplePacketsWithMissingAdjustmentSample,Cache->newCache]]
+    Message[Error::MissingRamanAdjustmentSample,ObjectToString[samplePacketsWithMissingAdjustmentSample,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingAdjustmentSampleTests=ramanSampleTests[gatherTests,
@@ -3592,14 +3547,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingAdjustmentSample,
     "If power/exposure optimization is performed, AdjustmentSample is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- noAdjustmentSample: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithNoAdjustmentSampleRequired,{}]&&!gatherTests,
-    Message[Error::NoRamanAdjustmentSampleRequired,ObjectToString[samplePacketsWithNoAdjustmentSampleRequired,Cache->newCache]]
+    Message[Error::NoRamanAdjustmentSampleRequired,ObjectToString[samplePacketsWithNoAdjustmentSampleRequired,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   noAdjustmentSampleTests=ramanSampleTests[gatherTests,
@@ -3607,14 +3562,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithNoAdjustmentSampleRequired,
     "If power/exposure optimization is not performed, AdjustmentSample is not specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- MissingRamanAdjustmentEmissionWavelength: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingAdjustmentEmissionWavelength,{}]&&!gatherTests,
-    Message[Error::MissingRamanAdjustmentEmissionWavelength,ObjectToString[samplePacketsWithMissingAdjustmentEmissionWavelength,Cache->newCache]]
+    Message[Error::MissingRamanAdjustmentEmissionWavelength,ObjectToString[samplePacketsWithMissingAdjustmentEmissionWavelength,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingAdjustmentEmissionWavelengthTests=ramanSampleTests[gatherTests,
@@ -3622,7 +3577,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingAdjustmentEmissionWavelength,
     "If power/exposure optimization is performed, AdjustmentEmissionWavelength is specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
@@ -3630,7 +3585,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- NoAdjustmentEmissionWavelength: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithNoAdjustmentEmissionWavelengthRequired,{}]&&!gatherTests,
-    Message[Error::NoRamanAdjustmentEmissionWavelengthRequired,ObjectToString[samplePacketsWithNoAdjustmentEmissionWavelengthRequired,Cache->newCache]]
+    Message[Error::NoRamanAdjustmentEmissionWavelengthRequired,ObjectToString[samplePacketsWithNoAdjustmentEmissionWavelengthRequired,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   noAdjustmentEmissionWavelengthTests=ramanSampleTests[gatherTests,
@@ -3638,7 +3593,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithNoAdjustmentEmissionWavelengthRequired,
     "If power/exposure optimization is not performed, AdjustmentEmissionWavelength is not specified for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- AdjustmentSampleNotFound -- *)
@@ -3712,7 +3667,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- SampleTypeRequiresDissolutionTests: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithSampleTypeRequiresDissolution,{}]&&!gatherTests,
-    Message[Error::RamanSampleTypeRequiresDissolution,ObjectToString[samplePacketsWithSampleTypeRequiresDissolution,Cache->newCache]]
+    Message[Error::RamanSampleTypeRequiresDissolution,ObjectToString[samplePacketsWithSampleTypeRequiresDissolution,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   sampleTypeRequiresDissolutionTests=ramanSampleTests[gatherTests,
@@ -3720,13 +3675,13 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithSampleTypeRequiresDissolution,
     "When the SampleType is Liquid, the sample in is also a liquid for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- InvalidTabletProcessingRequested: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithInvalidTabletProcessingRequested,{}]&&!gatherTests,
-    Message[Error::InvalidRamanTabletProcessingRequested,ObjectToString[samplePacketsWithInvalidTabletProcessingRequested,Cache->newCache]]
+    Message[Error::InvalidRamanTabletProcessingRequested,ObjectToString[samplePacketsWithInvalidTabletProcessingRequested,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   invalidTabletProcessingRequestedTests=ramanSampleTests[gatherTests,
@@ -3734,13 +3689,13 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithInvalidTabletProcessingRequested,
     "The TabletProcessing option is valid for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- TabletProcessingInconsistancy: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithTabletProcessingInconsistancy,{}]&&!gatherTests,
-    Message[Error::RamanTabletProcessingInconsistancy,ObjectToString[samplePacketsWithTabletProcessingInconsistancy,Cache->newCache]]
+    Message[Error::RamanTabletProcessingInconsistancy,ObjectToString[samplePacketsWithTabletProcessingInconsistancy,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   tabletProcessingInconsistancyTests=ramanSampleTests[gatherTests,
@@ -3748,14 +3703,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithTabletProcessingInconsistancy,
     "The TabletProcessing option is consistant with the state of the sample in and the SampleType for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- IncorectSampelType: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithIncorrectSampleType,{}]&&!gatherTests,
-    Message[Error::IncorrectRamanSampleType,ObjectToString[samplePacketsWithIncorrectSampleType,Cache->newCache]]
+    Message[Error::IncorrectRamanSampleType,ObjectToString[samplePacketsWithIncorrectSampleType,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   incorrectSampleTypeTests=ramanSampleTests[gatherTests,
@@ -3763,13 +3718,13 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithIncorrectSampleType,
     "The SampleType matches the physical state of the sample after the requested processing/preparation is done for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- UnusedTabletProcessing: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithUnusedTabletProcessing,{}]&&!gatherTests,
-    Message[Error::UnusedRamanTabletProcessing,ObjectToString[samplePacketsWithUnusedTabletProcessing,Cache->newCache]]
+    Message[Error::UnusedRamanTabletProcessing,ObjectToString[samplePacketsWithUnusedTabletProcessing,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   unusedTabletProcessingTests=ramanSampleTests[gatherTests,
@@ -3777,14 +3732,14 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithUnusedTabletProcessing,
     "If TabletProcessing is specified, the input is a Tablet for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
   (* -- MissingTabletProcessing: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingTableProcessing,{}]&&!gatherTests,
-    Message[Error::MissingRamanTabletProcessing,ObjectToString[samplePacketsWithMissingTableProcessing,Cache->newCache]]
+    Message[Error::MissingRamanTabletProcessing,ObjectToString[samplePacketsWithMissingTableProcessing,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   missingTabletProcessingTests=ramanSampleTests[gatherTests,
@@ -3792,7 +3747,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithMissingTableProcessing,
     "If the input is a Tablet, TabletProcessing is not Null for the input sample `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* collect the invalid option names for the sample type *)
@@ -3830,7 +3785,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
       samplePackets,
       #1,
       #2,
-      newCache]&,
+      newCache,updatedSimulation]&,
     {
       {
         samplePacketsWithSwappedXDimension,
@@ -3895,7 +3850,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMaxSpeedExceeded,{}]&&!gatherTests,
-    Message[Error::RamanMaxSpeedExceeded,ObjectToString[samplePacketsWithMaxSpeedExceeded,Cache->newCache], maxSpeedExceededOptionSets]
+    Message[Error::RamanMaxSpeedExceeded,ObjectToString[samplePacketsWithMaxSpeedExceeded,Cache->newCache,Simulation->updatedSimulation], maxSpeedExceededOptionSets]
   ];
 
   (* collect the invalid option name *)
@@ -3911,7 +3866,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* throw the message *)
   If[!MatchQ[samplePacketsWithPatternsOutOfBounds,{}]&&!gatherTests,
-    Message[Error::RamanSamplingPatternOutOfBounds, ObjectToString[samplePacketsWithPatternsOutOfBounds,Cache->newCache], outOfBoundsOptionSets]
+    Message[Error::RamanSamplingPatternOutOfBounds, ObjectToString[samplePacketsWithPatternsOutOfBounds,Cache->newCache,Simulation->updatedSimulation], outOfBoundsOptionSets]
   ];
 
   (* collect the invalid option name *)
@@ -3924,7 +3879,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- SwappedInnerOuterDiameter: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithSwappedInnerOuterDiameter,{}]&&!gatherTests,
-    Message[Error::RamanSwappedInnerOuterDiameter,ObjectToString[samplePacketsWithSwappedInnerOuterDiameter,Cache->newCache]]
+    Message[Error::RamanSwappedInnerOuterDiameter,ObjectToString[samplePacketsWithSwappedInnerOuterDiameter,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3936,7 +3891,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- SwappedXDimensionStepSize: Message, InvalidOption -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithSwappedXDimension,{}]&&!gatherTests,
-    Message[Error::RamanSwappedXDimensionStepSize,ObjectToString[samplePacketsWithSwappedXDimension,Cache->newCache]]
+    Message[Error::RamanSwappedXDimensionStepSize,ObjectToString[samplePacketsWithSwappedXDimension,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3948,7 +3903,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- SwappedYDimensionStepSize: Message, InvalidOption -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithSwappedYDimension,{}]&&!gatherTests,
-    Message[Error::RamanSwappedYDimensionStepSize,ObjectToString[samplePacketsWithSwappedYDimension,Cache->newCache]]
+    Message[Error::RamanSwappedYDimensionStepSize,ObjectToString[samplePacketsWithSwappedYDimension,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3960,7 +3915,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- SwappedZDimensionStepSize: Message, InvalidOption -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithSwappedZDimension,{}]&&!gatherTests,
-    Message[Error::RamanSwappedZDimensionStepSize,ObjectToString[samplePacketsWithSwappedZDimension,Cache->newCache]]
+    Message[Error::RamanSwappedZDimensionStepSize,ObjectToString[samplePacketsWithSwappedZDimension,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3973,7 +3928,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSamplingCoordinates: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSamplingCoordinates,{}]&&!gatherTests,
-    Message[Error::MissingRamanSamplingCoordinates,ObjectToString[samplePacketsWithMissingSamplingCoordinates,Cache->newCache]]
+    Message[Error::MissingRamanSamplingCoordinates,ObjectToString[samplePacketsWithMissingSamplingCoordinates,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3986,7 +3941,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingNumberOfSamplingPoints: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingNumberOfSamplingPoints,{}]&&!gatherTests,
-    Message[Error::RamanMissingNumberOfSamplingPoints,ObjectToString[samplePacketsWithMissingNumberOfSamplingPoints,Cache->newCache]]
+    Message[Error::RamanMissingNumberOfSamplingPoints,ObjectToString[samplePacketsWithMissingNumberOfSamplingPoints,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -3999,7 +3954,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingNumberOfRings: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingNumberOfRings,{}]&&!gatherTests,
-    Message[Error::RamanMissingNumberOfRings,ObjectToString[samplePacketsWithMissingNumberOfRings,Cache->newCache]]
+    Message[Error::RamanMissingNumberOfRings,ObjectToString[samplePacketsWithMissingNumberOfRings,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4012,7 +3967,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingNumberOfShots: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingNumberOfShots,{}]&&!gatherTests,
-    Message[Error::MissingNumberOfShots,ObjectToString[samplePacketsWithMissingNumberOfShots,Cache->newCache]]
+    Message[Error::MissingNumberOfShots,ObjectToString[samplePacketsWithMissingNumberOfShots,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4025,7 +3980,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSamplingTime: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSamplingTime,{}]&&!gatherTests,
-    Message[Error::MissingRamanSamplingTime,ObjectToString[samplePacketsWithMissingSamplingTime,Cache->newCache]]
+    Message[Error::MissingRamanSamplingTime,ObjectToString[samplePacketsWithMissingSamplingTime,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4038,7 +3993,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSpiralInnerDiameter: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSpiralInnerDiameter,{}]&&!gatherTests,
-    Message[Error::RamanMissingSpiralInnerDiameter,ObjectToString[samplePacketsWithMissingSpiralInnerDiameter,Cache->newCache]]
+    Message[Error::RamanMissingSpiralInnerDiameter,ObjectToString[samplePacketsWithMissingSpiralInnerDiameter,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4051,7 +4006,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSpiralOuterDiameter: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSpiralOuterDiameter,{}]&&!gatherTests,
-    Message[Error::RamanMissingSpiralOuterDiameter,ObjectToString[samplePacketsWithMissingSpiralOuterDiameter,Cache->newCache]]
+    Message[Error::RamanMissingSpiralOuterDiameter,ObjectToString[samplePacketsWithMissingSpiralOuterDiameter,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4064,7 +4019,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSpiralResolution: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSpiralResolution,{}]&&!gatherTests,
-    Message[Error::RamanMissingSpiralResolution,ObjectToString[samplePacketsWithMissingSpiralResolution,Cache->newCache]]
+    Message[Error::RamanMissingSpiralResolution,ObjectToString[samplePacketsWithMissingSpiralResolution,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4077,7 +4032,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- MissingSpiralFillArea: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingSpiralFillArea,{}]&&!gatherTests,
-    Message[Error::RamanMissingSpiralFillArea,ObjectToString[samplePacketsWithMissingSpiralFillArea,Cache->newCache]]
+    Message[Error::RamanMissingSpiralFillArea,ObjectToString[samplePacketsWithMissingSpiralFillArea,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4091,7 +4046,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* throw the message *)
   MapThread[
     If[!MatchQ[#1,{}]&&!gatherTests,
-    Message[Error::MissingRamanSamplingDimension,ObjectToString[#,Cache->newCache], #2]
+    Message[Error::MissingRamanSamplingDimension,ObjectToString[#,Cache->newCache,Simulation->updatedSimulation], #2]
   ]&,
     {
       {
@@ -4115,7 +4070,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* throw the message *)
   MapThread[
     If[!MatchQ[#1,{}]&&!gatherTests,
-      Message[Error::MissingRamanSamplingStepSize,ObjectToString[#,Cache->newCache], #2]
+      Message[Error::MissingRamanSamplingStepSize,ObjectToString[#,Cache->newCache,Simulation->updatedSimulation], #2]
     ]&,
     {
       {
@@ -4142,7 +4097,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- ERRORNAME: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingFilledSquareNumberOfTurns,{}]&&!gatherTests,
-    Message[Error::RamanMissingFilledSquareNumberOfTurns,ObjectToString[samplePacketsWithMissingFilledSquareNumberOfTurns,Cache->newCache]]
+    Message[Error::RamanMissingFilledSquareNumberOfTurns,ObjectToString[samplePacketsWithMissingFilledSquareNumberOfTurns,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* collect the invalid option name *)
@@ -4159,7 +4114,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* throw the message *)
   If[!MatchQ[samplePacketsWithExcessiveSamplingTime,{}]&&!gatherTests,
-    Message[Error::ExcessiveRamanSamplingTime,ObjectToString[samplePacketsWithExcessiveSamplingTime,Cache->newCache], excessiveTimeRelatedOptionSets]
+    Message[Error::ExcessiveRamanSamplingTime,ObjectToString[samplePacketsWithExcessiveSamplingTime,Cache->newCache,Simulation->updatedSimulation], excessiveTimeRelatedOptionSets]
   ];
 
   (* collect the invalid option name *)
@@ -4175,7 +4130,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* throw the message *)
   If[!MatchQ[samplePacketsWithLongSamplingTime,{}]&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
-    Message[Warning::LongRamanSamplingTime,ObjectToString[samplePacketsWithLongSamplingTime,Cache->newCache], longTimeRelatedOptionSets]
+    Message[Warning::LongRamanSamplingTime,ObjectToString[samplePacketsWithLongSamplingTime,Cache->newCache,Simulation->updatedSimulation], longTimeRelatedOptionSets]
   ];
 
   (* Define the tests the user will see for the above message *)
@@ -4183,7 +4138,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     Module[{failingTest,passingTest},
       failingTest=If[MatchQ[samplePacketsWithLongSamplingTime,{}],
         Nothing,
-        Warning["The sampling time for samples "<>ObjectToString[samplePacketsWithLongSamplingTime,Cache->simulatedCache]<>" is less than 2 hours:",True,False]
+        Warning["The sampling time for samples "<>ObjectToString[samplePacketsWithLongSamplingTime,Cache->newCache,Simulation->updatedSimulation]<>" is less than 2 hours:",True,False]
       ];
       passingTest=If[MatchQ[samplePacketsWithLongSamplingTime,{}],
         Warning["The sampling time for every sample is less than 2 hours:",True,True],
@@ -4204,7 +4159,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   If[!MatchQ[samplePacketsWithUnusedRamanSamplingPatternOptions,{}]&&!gatherTests,
     Message[
       Error::UnusedRamanSamplingPatternParameterOption,
-      ObjectToString[samplePacketsWithUnusedRamanSamplingPatternOptions,Cache->newCache],
+      ObjectToString[samplePacketsWithUnusedRamanSamplingPatternOptions,Cache->newCache,Simulation->updatedSimulation],
       PickList[
         Lookup[mapThreadErrorCheckingAssociation, UnusedRamanSamplingPatternOptions],
         samplePackets,
@@ -4219,7 +4174,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithUnusedRamanSamplingPatternOptions,
     "No irrelevant SamplingPattern options are specified for `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
 
@@ -4236,7 +4191,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- TabletWithRamanBlankSample: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithBlankForTablet,{}]&&!gatherTests,
-    Message[Error::TabletWithRamanBlankSample,ObjectToString[samplePacketsWithBlankForTablet,Cache->newCache]]
+    Message[Error::TabletWithRamanBlankSample,ObjectToString[samplePacketsWithBlankForTablet,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   blanksForTabletsTests=ramanSampleTests[gatherTests,
@@ -4244,12 +4199,12 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithBlankForTablet,
     "No blanks are specified when the samples with a tablet form factor for `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
   (* -- TabletWithRamanBlankSample: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithMissingBlank,{}]&&!gatherTests&&Not[MatchQ[$ECLApplication,Engine]],
-    Message[Warning::RamanSampleWithoutBlank,ObjectToString[samplePacketsWithMissingBlank,Cache->newCache]]
+    Message[Warning::RamanSampleWithoutBlank,ObjectToString[samplePacketsWithMissingBlank,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* Define the tests the user will see for the above message *)
@@ -4257,7 +4212,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     Module[{failingTest,passingTest},
       failingTest=If[MatchQ[samplePacketsWithMissingBlank,{}],
         Nothing,
-        Warning["The samples "<>ObjectToString[samplePacketsWithMissingBlank,Cache->simulatedCache]<>" have Blank specified:",True,False]
+        Warning["The samples "<>ObjectToString[samplePacketsWithMissingBlank,Cache->newCache,Simulation->updatedSimulation]<>" have Blank specified:",True,False]
       ];
       passingTest=If[MatchQ[samplePacketsWithMissingBlank,{}],
         Warning["All samples have Blank specified:",True,True],
@@ -4272,7 +4227,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   (* -- TabletWithRamanBlankSample: Message, Test and Invalid Option -- *)
   (* throw the message *)
   If[!MatchQ[samplePacketsWithBlankIsTablet,{}]&&!gatherTests,
-    Message[Error::InvalidRamanBlankFormFactor,ObjectToString[samplePacketsWithBlankIsTablet,Cache->newCache]]
+    Message[Error::InvalidRamanBlankFormFactor,ObjectToString[samplePacketsWithBlankIsTablet,Cache->newCache,Simulation->updatedSimulation]]
   ];
   (* make the test *)
   blanksAreTabletsTests=ramanSampleTests[gatherTests,
@@ -4280,7 +4235,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     samplePackets,
     samplePacketsWithBlankIsTablet,
     "Blank are not tablets for samples `1`:",
-    newCache];
+    newCache,updatedSimulation];
 
 
   (* -- collect the invalid options for blanks -- *)
@@ -4326,7 +4281,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
   ];
 
   (* -- Too Many Samples -- *)
-  (* we need to wait until this poitn to throw this becasue it depends on the sampleType *)
+  (* we need to wait until this point to throw this because it depends on the sampleType *)
   maxNumberOfSamples = Which[
     MatchQ[Lookup[resolvedOptionsAssociation, SampleType], {(Liquid|Powder)..}],
     96,
@@ -4334,7 +4289,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
     MatchQ[Lookup[resolvedOptionsAssociation, SampleType], {Tablet..}],
     18,
 
-    (* just be on the safe side and dont throw the error until we are sure that it is appropriate *)
+    (* just be on the safe side and don't throw the error until we are sure that it is appropriate *)
     True,
     96
   ];
@@ -4415,7 +4370,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* - Make a list of the smallest liquid handler compatible container that can potentially hold the needed volume for each sample - *)
   (* First, find the Models and the MaxVolumes of the liquid handler compatible containers *)
-  {liquidHandlerContainerModels,liquidHandlerContainerMaxVolumes}=Transpose[Download[liquidHandlerContainers, {Object, MaxVolume}]];
+  {liquidHandlerContainerModels,liquidHandlerContainerMaxVolumes}=Transpose[Download[liquidHandlerContainers, {Object, MaxVolume}, Simulation -> updatedSimulation]];
 
   (* Define the container we would transfer into for each sample, if Aliquotting needed to happen *)
   potentialAliquotContainers=
@@ -4453,6 +4408,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
       simulatedSamples,
       ReplaceRule[myOptions,resolvedSamplePrepOptions],
       Cache -> newCache,
+      Simulation->updatedSimulation,
       RequiredAliquotContainers->requiredAliquotContainers,
       RequiredAliquotAmounts->bestAliquotAmount,
       AllowSolids -> True,
@@ -4466,6 +4422,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
         simulatedSamples,
         ReplaceRule[myOptions,resolvedSamplePrepOptions],
         Cache -> newCache,
+        Simulation->updatedSimulation,
         RequiredAliquotContainers->requiredAliquotContainers,
         RequiredAliquotAmounts->bestAliquotAmount,
         AliquotWarningMessage->Null,
@@ -4536,7 +4493,7 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 
   (* Throw Error::InvalidInput if there are invalid inputs. *)
   If[Length[invalidInputs]>0&&!gatherTests,
-    Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->newCache]]
+    Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->newCache,Simulation->updatedSimulation]]
   ];
 
   (* Throw Error::InvalidOption if there are invalid options. *)
@@ -4643,14 +4600,15 @@ resolveExperimentRamanSpectroscopyOptions[mySamples:{ObjectP[Object[Sample]]...}
 DefineOptions[ramanSpectroscopyResourcePackets,
   Options:>{
     CacheOption,
-    HelperOutputOption
+    HelperOutputOption,
+    SimulationOption
   }
 ];
 
 ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
   {
     (* general variables *)
-    expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden, outputSpecification,output,
+    resolvedOptionsNoHidden, outputSpecification,output,
     gatherTests,messages, cache,fastAssoc,
 
     (* resolved option values *)
@@ -4688,16 +4646,13 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
     samplesWithoutLinks,tablets, numberOfReplicates,samplesWithReplicates,optionsWithReplicates,
     recoupSample,
     protocolPacket,allResourceBlobs,fulfillable,frqTests,resultRule,testsRule,
-    gatherResourcesTime
+    gatherResourcesTime, simulation
   },
 
   (* --------------------------- *)
   (*-- SETUP OPTIONS AND CACHE --*)
   (* --------------------------- *)
 
-
-  (* expand the resolved options if they weren't expanded already *)
-  {expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentRamanSpectroscopy, {mySamples}, myResolvedOptions];
 
   (* Get the resolved collapsed index matching options that don't include hidden options *)
   resolvedOptionsNoHidden=CollapseIndexMatchedOptions[
@@ -4717,6 +4672,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
 
   (* Fetch our cache from the parent function. *)
   cache=Cases[Lookup[ToList[myOptions],Cache], PacketP[]];
+  simulation=Lookup[ToList[myOptions],Simulation,SimulationP[]];
 
   (* Get rid of the links in mySamples. *)
   samplesWithoutLinks=mySamples/.x:ObjectP[]:>Download[x, Object];
@@ -4789,7 +4745,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
   listedSamplePackets = fetchPacketFromFastAssoc[#,fastAssoc]&/@mySamples;
 
   (* Make a list of all the maximum volumes *)
-  liquidHandlerContainerMaxVolumes=Download[liquidHandlerContainers, MaxVolume];
+  liquidHandlerContainerMaxVolumes=Download[liquidHandlerContainers, MaxVolume, Simulation -> simulation];
 
   (* ----------------- *)
   (* -- Pate Layout -- *)
@@ -4908,7 +4864,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
   (* safe blanks *)
   safeBlank = blanks/.x:ObjectP[]:>Download[x, Object];
 
-  (* substitute out teh objects for the wells *)
+  (* substitute out the objects for the wells *)
   blankWellsWithNulls = safeBlank/.blankWellRules;
 
   (* compose the blanks field for the protocol object *)
@@ -5130,7 +5086,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
       (exposureTime[[#]]/.(Optimize -> 100 Millisecond))*numberOfShots[[#]],
 
       Spiral,
-      (* I dont know how this calculation is done but this appears to be the rule *)
+      (* I don't know how this calculation is done but this appears to be the rule *)
       samplingTime[[#]],
 
       FilledSquare,
@@ -5143,7 +5099,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
         (* need to know the speed and how long the path is that it will travel. Speed is resolution/exposure time
         the path length is dictated by the spot size and the *)
 
-        (* TODO: this lookup could move out to the general section if it is useful elsewhere. may even want this to live in teh instrument object *)
+        (* TODO: this lookup could move out to the general section if it is useful elsewhere. may even want this to live in the instrument object *)
         objectiveToSpotSizeLookup = {
           20 -> 35 Micrometer,
           10 -> 50 Micrometer,
@@ -5195,7 +5151,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
     samplingTimeWithReads = (timePerSample+readRestTime[[#]])*numberOfReads[[#]]
     ]&,
 
-    (* we can just map over the index since I dont want to gather all of these variables *)
+    (* we can just map over the index since I don't want to gather all of these variables *)
     Range[Length[mySamples]]
   ];
 
@@ -5220,7 +5176,7 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
   (* -- sample prep estimate -- *)
   
   (* this includes tablet processing and the potential SMs to load the plate with *)
-  (* since I dont really know how long this takes, I'm just going to say 2 min per sample and 10 minutes for setup/teardown *)
+  (* since I don't really know how long this takes, I'm just going to say 2 min per sample and 10 minutes for setup/teardown *)
   samplePrepTime = (10 Minute)*Length[samplesWithReplicates];
   
   
@@ -5331,17 +5287,17 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
 
     (* checkpoints *)
     Replace[Checkpoints]->{
-      {"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]},
-      {"Picking Resources",gatherResourcesTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->gatherResourcesTime]},
-      {"Preparing Plate", samplePrepTime, "Tablets are prepared for measurement, and samples are loaded into the measurement plate.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> samplePrepTime]},
-      {"Measure Raman Spectra",(10 Minute)+totalSamplingTime,"The Raman spectra of the requested samples is measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->(10 Minute)+totalSamplingTime]},
-      {"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]}
+      {"Preparing Samples",0 Minute,"Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->$BaselineOperator,Time->0 Minute]},
+      {"Picking Resources",gatherResourcesTime,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time->gatherResourcesTime]},
+      {"Preparing Plate", samplePrepTime, "Tablets are prepared for measurement, and samples are loaded into the measurement plate.", Resource[Operator -> $BaselineOperator, Time -> samplePrepTime]},
+      {"Measure Raman Spectra",(10 Minute)+totalSamplingTime,"The Raman spectra of the requested samples is measured.",Resource[Operator->$BaselineOperator,Time->(10 Minute)+totalSamplingTime]},
+      {"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->$BaselineOperator,Time->0 Minute]}
     },
     ResolvedOptions->myCollapsedResolvedOptions,
     UnresolvedOptions->myUnresolvedOptions,
     Replace[SamplesInStorage]->samplesInStorage
   |>,
-    populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache]
+    populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache,Simulation->simulation]
   ];
 
   (* ---------------------- *)
@@ -5358,9 +5314,9 @@ ramanSpectroscopyResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
     MatchQ[$ECLApplication,Engine],
     {True,{}},
     gatherTests,
-    Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache -> cache],
+    Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache -> cache,Simulation->simulation],
     True,
-    {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache -> cache],Null}
+    {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache -> cache,Simulation->simulation],{}}
   ];
 
   (* generate the tests rule *)
@@ -5407,7 +5363,7 @@ DefineOptions[ExperimentRamanSpectroscopyOptions,
   SharedOptions :> {ExperimentRamanSpectroscopy}
 ];
 
-ExperimentRamanSpectroscopyOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentRamanSpectroscopyOptions]]:=Module[
+ExperimentRamanSpectroscopyOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentRamanSpectroscopyOptions]]:=Module[
   {listedOptions,preparedOptions,resolvedOptions},
 
   listedOptions=ToList[myOptions];
@@ -5435,7 +5391,7 @@ DefineOptions[ExperimentRamanSpectroscopyPreview,
   SharedOptions :> {ExperimentRamanSpectroscopy}
 ];
 
-ExperimentRamanSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentRamanSpectroscopyPreview]]:=Module[
+ExperimentRamanSpectroscopyPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentRamanSpectroscopyPreview]]:=Module[
   {listedOptions},
 
   listedOptions=ToList[myOptions];
@@ -5456,7 +5412,7 @@ DefineOptions[ValidExperimentRamanSpectroscopyQ,
   SharedOptions :> {ExperimentRamanSpectroscopy}
 ];
 
-ValidExperimentRamanSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentRamanSpectroscopyQ]]:=Module[
+ValidExperimentRamanSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentRamanSpectroscopyQ]]:=Module[
   {listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
   listedInput=ToList[myInput];
@@ -5530,7 +5486,7 @@ ValidExperimentRamanSpectroscopyQ[myInput:ListableP[ObjectP[{Object[Sample],Obje
 
 ramanSampleTests[testFlag:False,testHead:(Test|Warning),allSamples_,badSamples_,testDescription_,cache_]:={};
 
-ramanSampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},badSamples:{PacketP[]...},testDescription_String,cache_]:=Module[{
+ramanSampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},badSamples:{PacketP[]...},testDescription_String,cache_,simulation_]:=Module[{
   numberOfSamples,numberOfBadSamples,allSampleObjects,badObjects,goodObjects},
 
   (* Convert packets to objects *)
@@ -5555,9 +5511,9 @@ ramanSampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},
     True,
     {
       (* Passing Test *)
-      testHead[StringTemplate[testDescription][ObjectToString[goodObjects,Cache->cache]],True,True],
+      testHead[StringTemplate[testDescription][ObjectToString[goodObjects,Cache->cache,Simulation->simulation]],True,True],
       (* Failing Test *)
-      testHead[StringTemplate[testDescription][ObjectToString[badObjects,Cache->cache]],False,True]
+      testHead[StringTemplate[testDescription][ObjectToString[badObjects,Cache->cache,Simulation->simulation]],False,True]
     }
   ]
 ];

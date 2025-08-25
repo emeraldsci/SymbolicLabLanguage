@@ -47,36 +47,39 @@ DefineUsage[PlotTable,
 						Alternatives[
 							"Enter Object(s):"->Widget[Type->Expression,Pattern:>ObjectP[Types[]],Size->Line],
 							"Select Object(s):"->Adder[
-								Alternatives@@(
-									(ToString@#)->Widget[
+								With[{types = Select[Types[],Length@#==1&]},
+									Widget[
 										Type->Object,
-										Pattern:>ObjectP[Types[#]],
-										ObjectTypes->Types[#],
+										Pattern:>ObjectP[Types[types]],
+										ObjectTypes->Types[types],
 										PreparedSample->False,
 										PreparedContainer->False,
 										PatternTooltip->"Must match ObjectP[]."
-									]&/@Select[Types[],Length@#==1&]
-								)
+									]
+								]
 							]
 						],
 						Adder[
-							Alternatives@@(
-								(ToString@#)->Widget[
+							With[{types = Select[Types[],Length@#==1&]},
+								Widget[
 									Type->Object,
-									Pattern:>ObjectP[Types[#]],
-									ObjectTypes->Types[#],
+									Pattern:>ObjectP[Types[types]],
+									ObjectTypes->Types[types],
 									PreparedSample->False,
 									PreparedContainer->False,
 									PatternTooltip->"Must match ObjectP[]."
-								]&/@Select[Types[],Length@#==1&]
-							)
-						]			
+								]
+							]
+						]
 					]
 				},
 				{
 					InputName -> "fields",
 					Description -> "Fields to display in the table.",
 					Widget -> Alternatives[
+						(* this Links -> True option is truly dumb.  If we do FieldQ[Horse[Zebra], Output -> Short, Links -> True], it will return True because it recognizes the link syntax despite there obviously being no horse or zebra options *)
+						(* to add onto it, FieldP does NOT have a links option, and neither does Fields *)
+						(* so there is literally zero error checking of anything if we allow this Links -> True thing to be here.  But we do need it here regardless if we want to allow through-links support (which I assume we do) *)
 						"Enter Fields:"->Widget[Type->Expression,Pattern:>ListableP[FieldP[Output->Short]|_?(FieldQ[#,Output->Short,Links->True]&)],Size->Line],
 						"Enter Individual Fields:"->Adder[
 							Widget[Type->Expression,Pattern:>FieldP[Output->Short]|_?(FieldQ[#,Output->Short,Links->True]&),Size->Word]

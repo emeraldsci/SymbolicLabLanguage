@@ -146,7 +146,7 @@ DefineOptions[ExperimentAbsorbanceSpectroscopy,
 				Description->"When using the Cuvette Method, indicates which model stir bar to be inserted into the cuvette to mix the sample.",
 				ResolutionDescription -> "If AcquisitionMix is True, StirBar is automatically specified depending on the cuvette. Otherwise, automatically set to Null.",
 				Widget-> Widget[Type->Object,
-					Pattern:>ObjectP[Model[Part,StirBar],Object[Part,StirBar]],
+					Pattern:>ObjectP[{Model[Part, StirBar], Object[Part, StirBar]}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -248,12 +248,14 @@ Error::IncompatibleBlankOptions = "The specified blank options (BlankAbsorbance,
 Error::BlankVolumeNotRecommended = "The provided volume in the BlankVolumes option `1` does not match the allowed volume (`2`) for the provided instrument `3`.  Please specify `2` for BlankVolume, or leave as Automatic.";
 Error::QuantificationRequiresBlanking = "If QuantifyConcentration -> True, BlankAbsorbance cannot be False.  Please set BlankAbsorbance -> True if you wish to calculate the concentration of your samples.";
 Error::AbsSpecTooManySamples = "The number of input samples and blanks times the NumberOfReplicates cannot fit on `1` in a single protocol.  Please select less than or equal to `2` samples when using `1`, or use the BMG plate readers, which are unrestricted by number of samples.";
+Error::TooManyBlanks = "The specified Blanks, `1`, cannot be used simultaneously because when using cuvette method, all input samples can only share 1 blank sample. Please adjust the number of blanks and try again.";
 Warning::AbsSpecInsufficientSampleVolume = "The specified sample volumes `1` are below the minimum required volume for the specified instrument type of `2`. Please consider using larger sample volumes or select an instrument that can read samples of this size.";
 Warning::BlankStateWarning = "The blanks (`1`) do not have a state of liquid. If this is not intended, please check the blank samples (`1`).";
-Warning::NotEqualBlankVolumesWarning = "The blank volume (`1`) is not equal to the volume of the sample (`2`). We recommend a blank volume that equals to the sample volume, or let the BlankVolumes resolve automatically.";
+Warning::NotEqualBlankVolumes = "The blank volume (`1`) is not equal to the volume of the sample (`2`). We recommend a blank volume that equals to the sample volume, or let the BlankVolumes resolve automatically.";
 Error::InjectionSampleStateError = "The injection samples (`1`) do not have a state of liquid. The instrument can only inject liquid samples. Please make sure the injection samples have a state of liquid.";
 Error::SkippedInjectionError = "Injection options (`1`) are not specified before the use of injection option (`2`). Please make sure the injections are specified in order. For example, secondary injection can be specified only if the primary injection is already specified.";
 
+Error::PlateReaderReadings = "The NumberOfReadings option is specified to `1` while the requested instrument `2` `3`. The NumberOfReadings cannot be set for any spectrophotometer for cuvetter measurements. If the plate reader is unable to take multiple readings to calculate an average absorbance value, this option cannot be set to an integer. However, if the plate reader can accept multiple readings, the option cannot be set to Null. Please refer to the `4` help file and specify the option according to the instrument type or allow it to be resolved automatically.";
 Error::PlateReaderMixingUnsupported = "The PlateReaderMix options are not compatible with `1`.  Please specify a different Instrument if you wish to specify these mix options.";
 Error::PlateReaderInjectionsUnsupported = "`1` does not support specification of any injection options.  Please specify a different Instrument if you wish to perform injections.";
 Error::PlateReaderReadDirectionUnsupported= "`1` does not support specification of ReadDirection.  Please specify a different Instrument if you wish to specify these options.";
@@ -274,9 +276,10 @@ Error::TooManyWavelength="The number of discrete `1` (`2`) cannot exceed the ins
 Warning::SpanWavelengthOrder="The span wavelength (`1`) is specified from high-wavelength to low-wavelength. The instrument will automatically adjust and scan the samples from low-wavelength to high-wavelength.";
 
 Error::MicrofluidicChipLoading="The specified MicrofluidicChipLoading (`1`) must be set to Robotic or Manual when using Lunatic or, otherwise, to Null. Please make sure this option is set accordingly or consider setting it to Automatic.";
+Warning::TemperatureNoEquilibration = "The Temperature option is specified as `1` while EquilibrationTime is specified as `2`. The instrument might not reach the set temperature before starting the temperature-controlled assay, potentially leading to inaccurate results";
 
 (* these are the currently supported plates and plate reader models; using ObjectP below, but not making these patterns themselves because then the error messages will look ugly *)
-allowedAbsSpecPlateReaderModels := {Model[Instrument, PlateReader, "PHERAstar FS"], Model[Instrument, PlateReader, "FLUOstar Omega"], Model[Instrument, PlateReader, "Lunatic"],Model[Instrument,PlateReader,"CLARIOstar"]};
+allowedAbsSpecPlateReaderModels := {Model[Instrument, PlateReader, "PHERAstar FS"], Model[Instrument, PlateReader, "FLUOstar Omega"], Model[Instrument, PlateReader, "Lunatic"],Model[Instrument,PlateReader,"CLARIOstar"], Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"]};
 
 
 (* Store a list of available cuvette models *)
@@ -353,11 +356,11 @@ BMGCompatiblePlatesP[Absorbance] := Alternatives@@BMGCompatiblePlates[Absorbance
 (* --- Core Function --- *)
 ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopy]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests, upload,
-		confirm, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
-		resolvedOptionsNoHidden, allTests, estimatedRunTime, fastCacheBall,
+		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
+		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resultRule, resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, protocolObject,
-		cache, newCache, allPackets, userSpecifiedObjects, objectsExistQs, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, protocolObject,
+		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
 		samplePreparationSimulation, downloadFields, mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed
 	},
 
@@ -381,7 +384,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -398,7 +401,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -427,7 +430,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
@@ -452,12 +455,22 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 	(* expand the combined options *)
 	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentAbsorbanceSpectroscopy, {mySamplesWithPreparedSamples}, combinedOptions]];
 
+	(* get all specified instruments *)
+	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+			Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+		},
+		{
+			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
+			Packet[Model[{WettedMaterials, PlateReaderMode, SamplingPatterns}]],
+			Packet[IntegratedLiquidHandler[Model]],
+			Packet[IntegratedLiquidHandler[Model][Object]],
+			Packet[IntegratedLiquidHandlers[Object]]
 		}
 	};
 
@@ -466,14 +479,15 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 		Quiet[
 			Download[
 				{
-					mySamplesWithPreparedSamples
+					mySamplesWithPreparedSamples,
+					specifiedInstruments
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,
 				Simulation->samplePreparationSimulation,
 				Date -> Now
 			],
-			{Download::FieldDoesntExist}
+			{Download::FieldDoesntExist, Download::NotLinkField}
 		],
 		$Failed,
 		{Download::ObjectDoesNotExist}
@@ -486,40 +500,6 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 
 	(* Download information we need in both the Options and ResourcePackets functions *)
 	newCache = FlattenCachePackets[{cache, allPackets, standardPlatesDownloadCache["Memoization"]}];
-
-	(* Before going to resolver, check whether any of the specified objects does not exist. This is done early to avoid tons of errors later. *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				mySamplesWithPreparedSamples,
-				Values[expandedCombinedOptions]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	(* NOTE: Since we can be called by ExperimentSM which uses degenerate cache balling with Simulated->True, we need to check for that as well *)
-	(* as the new simulation style using PreparatoryUOs. *)
-	fastCacheBall = makeFastAssocFromCache[newCache];
-	objectsExistQs=MapThread[
-		Or[#1, #2]&,
-		{
-			(MatchQ[Lookup[fetchPacketFromFastAssoc[#, fastCacheBall], Simulated], True]&)/@userSpecifiedObjects,
-			DatabaseMemberQ[
-				userSpecifiedObjects,
-				Simulation->samplePreparationSimulation
-			]
-		}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]];
-		Return[$Failed],
-		Nothing
-	];
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult=If[gatherTests,
@@ -615,7 +595,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			Cache->newCache,
 			Simulation->samplePreparationSimulation
 		],
-		{Null, Null}
+		{Null, samplePreparationSimulation}
 	];
 
 	estimatedRunTime = 15 Minute +
@@ -692,6 +672,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 					Name->Lookup[safeOptions,Name],
 					Upload->Lookup[safeOptions,Upload],
 					Confirm->Lookup[safeOptions,Confirm],
+					CanaryBranch->Lookup[safeOptions,CanaryBranch],
 					ParentProtocol->Lookup[safeOptions,ParentProtocol],
 					Priority->Lookup[safeOptions,Priority],
 					StartDate->Lookup[safeOptions,StartDate],
@@ -708,6 +689,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOptions,Upload],
 			Confirm->Lookup[safeOptions,Confirm],
+			CanaryBranch->Lookup[safeOptions,CanaryBranch],
 			ParentProtocol->Lookup[safeOptions,ParentProtocol],
 			Priority->Lookup[safeOptions,Priority],
 			StartDate->Lookup[safeOptions,StartDate],
@@ -715,7 +697,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			QueuePosition->Lookup[safeOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,AbsorbanceSpectroscopy],
 			Cache -> newCache,
-			Simulation -> samplePreparationSimulation
+			Simulation -> simulation
 		]
 	];
 
@@ -737,7 +719,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 (*ExperimentAbsorbanceSpectroscopy (container input) *)
 
 
-ExperimentAbsorbanceSpectroscopy[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String| {LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopy]] := Module[
+ExperimentAbsorbanceSpectroscopy[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String| {LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopy]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, containerToSampleResult,containerToSampleSimulation,
 		containerToSampleTests, inputSamples, messages, listedContainers, validSamplePreparationResult, mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples, samplePreparationSimulation, containerToSampleOutput, sampleOptions},
@@ -763,7 +745,7 @@ ExperimentAbsorbanceSpectroscopy[myContainers : ListableP[ObjectP[{Object[Contai
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -881,8 +863,8 @@ resolveReadPlateMethod[
 				{Packet[Container], Packet[Container[Model[{Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]]]},
 				{Packet[Model]}
 			},
-			Cache->Lookup[ToList[myOptions], Cache, {}],
-			Simulation->Lookup[ToList[myOptions], Simulation, Null]
+			Cache->Lookup[allOptions, Cache, {}],
+			Simulation->Lookup[allOptions, Simulation, Null]
 		],
 		{Download::NotLinkField, Download::FieldDoesntExist}
 	];
@@ -947,7 +929,7 @@ resolveReadPlateMethod[
 			Nothing
 		],
 		Module[{incompatibleContainerModels},
-			incompatibleContainerModels=Complement[DeleteDuplicates[Lookup[allModelContainerPackets, Object]], validPlateModelsList];
+			incompatibleContainerModels=Complement[DeleteDuplicates[Lookup[allModelContainerPackets, Object, {}]], validPlateModelsList];
 
 			If[Length[incompatibleContainerModels]>0,
 				"the container models "<>ObjectToString[incompatibleContainerModels]<>" are not compatible with the plate reader and thus require an aliquot (manual only) into a compatible container. Please consult the experiment help file documentation for a full list of compatible containers. In order to perform the unit operation robotically, please prepare the samples in a compatible container model",
@@ -968,7 +950,7 @@ resolveReadPlateMethod[
 			Nothing
 		],
 		(* FluorescencePolarization and FluorescencePolarizationKinetics experiments can only be done on the PHERAstar, which can only be used manually *)
-		If[MatchQ[myType, ExperimentFluorescencePolarization | ExperimentFluorescencePolarizationKinetics],
+		If[MatchQ[myType, Object[Protocol, FluorescencePolarization] | Object[Protocol, FluorescencePolarizationKinetics]],
 			"FluorescencePolarization and FluorescencePolarizationKinetics experiments can only be performed manually",
 			Nothing
 		],
@@ -977,15 +959,16 @@ resolveReadPlateMethod[
 			Nothing
 		],
 		Module[{manualOnlyOptions},
-			manualOnlyOptions=Select[{ImageSample, MeasureVolume, MeasureWeight, PreparatoryPrimitives, PreparatoryUnitOperations},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)];
+			manualOnlyOptions=Select[{ImageSample, MeasureVolume, MeasureWeight, PreparatoryUnitOperations},(!MatchQ[Lookup[allOptions, #, Null], ListableP[{}|False|Null|Automatic]]&)];
 
-			If[Length[manualOnlyOptions]>0,
+			(* if PrepUO matches this super strict pattern that means we are dealing with a model sample, in which case it is okay to do Robotic *)
+			If[Length[manualOnlyOptions]>0 && Not[MatchQ[Lookup[allOptions, PreparatoryUnitOperations], {_[LabelSample[KeyValuePattern[{Label -> {__?(StringStartsQ[#, "Prepared sample "] &)}}]]]}]],
 				"the following Manual-only options were specified "<>ToString[manualOnlyOptions],
 				Nothing
 			]
 		],
 		Module[{manualOnlyOptions},
-			manualOnlyOptions=Select[{DualEmissionWavelength, DualEmissionGain},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)];
+			manualOnlyOptions=Select[{DualEmissionWavelength, DualEmissionGain},(!MatchQ[Lookup[allOptions, #, Null], ListableP[Null|Automatic]]&)];
 
 			If[Length[manualOnlyOptions]>0,
 				"the following options "<>ToString[manualOnlyOptions]<>" are only supported by the PHERAstar, which is not integrated on a robotic workcell",
@@ -993,31 +976,31 @@ resolveReadPlateMethod[
 			]
 		],
 		Module[{manualOnlyOptions},
-			manualOnlyOptions=Select[{MoatBuffer, MoatSize, MoatVolume, NumberOfReplicates, DilutionCurve, SerialDilutionCurve, Diluent},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)];
+			manualOnlyOptions=Select[{MoatBuffer, MoatSize, MoatVolume, NumberOfReplicates, DilutionCurve, SerialDilutionCurve, Diluent},(!MatchQ[Lookup[allOptions, #, Null], ListableP[Null|Automatic]]&)];
 
 			If[Length[manualOnlyOptions]>0,
 				"the following options "<>ToString[manualOnlyOptions]<>" require aliquotting and thus are only supported Manually. Please build your Transfer[...] unit operations to first create a moat, if you'd like your plate to be read with a moat.",
 				Nothing
 			]
 		],
-		If[MemberQ[safeOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[IncubatePrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
+		If[MemberQ[allOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[IncubatePrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
 			"the Incubate Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
-		If[MemberQ[safeOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[CentrifugePrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
+		If[MemberQ[allOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[CentrifugePrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
 			"the Centrifuge Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
-		If[MemberQ[safeOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[FilterPrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
+		If[MemberQ[allOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[FilterPrepOptionsNew], "OptionSymbol"], Except[ListableP[False|Null|Automatic]]]],
 			"the Filter Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
-		If[MemberQ[safeOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[AliquotOptions], "OptionSymbol"], Except[ListableP[False|Null|Automatic|{Automatic..}]]]],
+		If[MemberQ[allOptions, Verbatim[Rule][Alternatives@@Lookup[OptionDefinition[AliquotOptions], "OptionSymbol"], Except[ListableP[False|Null|Automatic|{Automatic..}]]]],
 			"the Aliquot Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
-		If[MemberQ[Lookup[Flatten[samplePackets,1], LiquidHandlerIncompatible], True],
-			"the following samples are liquid handler incompatible "<>ObjectToString[Lookup[Cases[Flatten[samplePackets,1], KeyValuePattern[LiquidHandlerIncompatible->True]], Object], Cache->allPackets],
+		If[MemberQ[Lookup[Cases[Flatten[samplePackets,1],PacketP[]], LiquidHandlerIncompatible], True],
+			"the following samples are liquid handler incompatible "<>ObjectToString[Lookup[Cases[Cases[Flatten[samplePackets,1],PacketP[]], KeyValuePattern[LiquidHandlerIncompatible->True]], Object], Cache->allPackets],
 			Nothing
 		],
 		If[MatchQ[Lookup[allOptions, Preparation], Manual],
@@ -1079,48 +1062,92 @@ resolveReadPlateWorkCell[
 		ExperimentFluorescencePolarization|ExperimentFluorescencePolarizationKinetics|
 		ExperimentAlphaScreen|ExperimentNephelometry|ExperimentNephelometryKinetics
 	),
-	mySamples:ListableP[(ObjectP[{Object[Container],Object[Sample]}]|{LocationPositionP,ObjectP[Object[Container]]}|Automatic)],
+	mySamples:ListableP[(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|{LocationPositionP,ObjectP[Object[Container]]}|Automatic)],
 	myOptions:OptionsPattern[]
-]:=Module[
-	{containerPackets,samplePackets,allCellTypes},
+]:= Module[
+	{specifiedInstrument, objectsToDownload, fieldsToDownload, allDownloads, containerPackets, samplePackets, integratedLHModels, integratedWorkCells, allCellTypes},
+
+	(* determine the objects to download *)
+	(* find out the specified instrument option *)
+	specifiedInstrument = Lookup[myOptions, Instrument];
+
+	(* if user supplied a instrument object or model, include that, otherwise just download input sample/container information *)
+	objectsToDownload = {
+		Cases[mySamples, ObjectP[Object[Container]]],
+		Cases[mySamples, ObjectP[Object[Sample]]],
+		If[MatchQ[specifiedInstrument, ObjectP[{Object[Instrument], Model[Instrument]}]], {specifiedInstrument}, Nothing]
+	};
+
+	(* determine the field to download *)
+	fieldsToDownload = {
+		{Packet[Field[Contents[[All, 2]][{CellType}]]]},
+		{Packet[CellType]},
+		Switch[specifiedInstrument,
+			(* if we are given a instrument model, need to check if it is integrated with a given liquid handler model already *)
+			ObjectP[Model[Instrument]],
+			{IntegratedLiquidHandlers[Object]},
+			(* if we are given a instrument object, need to check if it is integrated with a given liquid handler object already *)
+			ObjectP[Object[Instrument]],
+			{IntegratedLiquidHandler[Model][Object]},
+			(* no instrument, nothing to download here *)
+			_,
+			Nothing
+		]
+	};
 
 	(* Download information that we need from our inputs and/or options. *)
-	{containerPackets,samplePackets}=Quiet[
+	allDownloads = Quiet[
 		Download[
-			{
-				Cases[mySamples, ObjectP[Object[Container]]],
-				Cases[mySamples, ObjectP[Object[Sample]]]
-			},
-			{
-				{Packet[Contents[[All,2]][{CellType}]]},
-				{Packet[CellType]}
-			},
-			Cache->Lookup[ToList[myOptions], Cache, {}],
-			Simulation->Lookup[ToList[myOptions], Simulation, Null],
-			Date->Now
+			objectsToDownload,
+			Evaluate[fieldsToDownload],
+			Cache -> Lookup[ToList[myOptions], Cache, {}],
+			Simulation -> Lookup[ToList[myOptions], Simulation, Null],
+			Date -> Now
 		],
-		{Download::NotLinkField,Download::FieldDoesntExist}
+		{Download::NotLinkField, Download::FieldDoesntExist}
+	];
+
+	(* parse packets from download *)
+	{containerPackets, samplePackets} = allDownloads[[{1, 2}]];
+	integratedLHModels = If[!MatchQ[specifiedInstrument, ObjectP[{Object[Instrument], Model[Instrument]}]],
+		Null,
+		allDownloads[[3]]
+	];
+
+	(* from integrated LH models, get the corresponding work cells *)
+	integratedWorkCells = DeleteDuplicates[
+		Lookup[Experiment`Private`$InstrumentsToWorkCells,
+			Cases[Flatten[{integratedLHModels}], ObjectReferenceP[Model[Instrument, LiquidHandler]]],
+			Nothing
+		]
 	];
 
 	(* Get all of our CellTypes *)
-	allCellTypes=Lookup[Cases[Flatten[{containerPackets, samplePackets}], PacketP[Object[Sample]]],CellType];
+	allCellTypes = Lookup[Cases[Flatten[{containerPackets, samplePackets}], PacketP[Object[Sample]]], CellType];
 
 	(* Determine the WorkCell that can be used (bioSTAR|microbioSTAR|STAR) *)
 	Which[
+		(* respect user input for sure *)
 		MatchQ[Lookup[myOptions, WorkCell, Automatic], WorkCellP],
-		ToList@Lookup[myOptions, WorkCell, Automatic],
-		MatchQ[myFunction,ExperimentNephelometry|ExperimentNephelometryKinetics]&&MemberQ[allCellTypes,MicrobialCellTypeP],
-		{microbioSTAR},
-		MatchQ[myFunction,ExperimentNephelometry|ExperimentNephelometryKinetics]&&MatchQ[allCellTypes,{(NonMicrobialCellTypeP|Null)..}],
-		{bioSTAR, microbioSTAR},
-		MatchQ[myFunction,ExperimentNephelometry|ExperimentNephelometryKinetics],
-		{bioSTAR, microbioSTAR},
-		!MemberQ[allCellTypes,CellTypeP],
-		{STAR, bioSTAR, microbioSTAR},
-		MatchQ[allCellTypes,{(Mammalian|Null)..}],
-		{bioSTAR, STAR, microbioSTAR},
+			ToList@Lookup[myOptions, WorkCell, Automatic],
+		(* if user provided a instrument model and it has integrated liquid handler models, use the workcell from those LH models *)
+		MatchQ[specifiedInstrument, ObjectP[Model[Instrument]]] && Length[integratedWorkCells] > 0,
+			integratedWorkCells,
+		(* if user provided a instrument object, then this object MUST have already been integrated to a LH, otherwise, it does not make sense *)
+		MatchQ[specifiedInstrument, ObjectP[Object[Instrument]]],
+			integratedWorkCells,
+		MatchQ[myFunction, ExperimentNephelometry | ExperimentNephelometryKinetics] && MemberQ[allCellTypes, MicrobialCellTypeP],
+			{microbioSTAR},
+		MatchQ[myFunction, ExperimentNephelometry | ExperimentNephelometryKinetics] && MatchQ[allCellTypes, {(NonMicrobialCellTypeP | Null)..}],
+			{bioSTAR, microbioSTAR},
+		MatchQ[myFunction, ExperimentNephelometry | ExperimentNephelometryKinetics],
+			{bioSTAR, microbioSTAR},
+		!MemberQ[allCellTypes, CellTypeP],
+			{STAR, bioSTAR, microbioSTAR},
+		MatchQ[allCellTypes, {(Mammalian | Null)..}],
+			{bioSTAR, STAR, microbioSTAR},
 		True,
-		{microbioSTAR, bioSTAR, STAR}
+			{microbioSTAR, bioSTAR, STAR}
 	]
 ];
 
@@ -1144,7 +1171,7 @@ resolveAbsorbanceOptions[
 ] := Module[
 	{outputSpecification,output,gatherTests,messages,inheritedCache,simulatedCache,samplePrepOptions,absSpecOptions,absSpecOptionsAssoc,
 		experimentFunction,experimentMode,allInstrumentModels,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,resolveSamplePrepTests,wavelengthOptionName,
-		specifiedMethods,specifiedInstrument,specifiedSpectralBandwidth,specifiedStirBar,specifiedAcquisitionMix,specifiedAcquisitionMixRate,specifiedAcquisitionMixRateIncrements,specifiedMinAcquisitionMixRate,
+		specifiedMethods,specifiedInstrument,specifiedInstrumentModel,specifiedSpectralBandwidth,specifiedStirBar,specifiedAcquisitionMix,specifiedAcquisitionMixRate,specifiedAcquisitionMixRateIncrements,specifiedMinAcquisitionMixRate,
 		specifiedMaxAcquisitionMixRate,specifiedMaxStirAttempts,specifiedAdjustMixRate,specifiedRecoupSample,specifiedContainerOut,specifiedSamplesOutStorageCondition,numberOfReplicates,blankAbsorbance,name,preparationResult,
 		allowedPreparation,preparationTest,resolvedPreparation,resolvedWorkCell,acquisitionMixRateRangeMismatch,mismatchingAcquisitionMixRateTests,mismatchingAcquisitionMixRateOptions,mismatchCuvettePlateReaderValidQ,mismatchCuvettePlateReaderTestString,mismatchCuvettePlateReaderTest,mismatchCuvettePlateReaderOptions,specifiedTemperatureMonitor,
 		mismatchCuvetteMoatValidQ,mismatchCuvetteMoatTestString,mismatchCuvetteMoatTest,mismatchCuvetteMoatOptions,
@@ -1153,7 +1180,7 @@ resolveAbsorbanceOptions[
 		specifiedPlateReaderMixSchedule,specifiedEquilibrationTime,specifiedMoatBuffer,specifiedMoatVolume,specifiedMoatSize,
 		specifiedReadDirection,injectionOptionNames,injectionOptions,bmgRequired,instrument,uniqueInjectionSamples,uniqueBlankSamples,
 		preresolvedInstrument,potentialAnalytesToUse,possibleAliquotContainers,listedSampleContainerPackets,listedContainerInPackets,listedInjectionSamplePackets,listedBlankPackets,
-		parentProt,specifiedQuantifyConcentration,
+		parentProt,specifiedQuantifyConcentration,specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel,
 		listedInstrumentPackets,listedAliquotContainerPackets,samplePackets,containerPackets,
 		sampleContainerModelPackets,containerInPackets,injectionSamplePackets,blankSamplePackets,blankContainerPackets,suppliedInstrumentPacket,suppliedModelInstrumentPacket,instrumentPacket,
 		modelInstrumentPacket,allInstrumentPacketLists,allPlateReaderModelPackets,aliquotContainerModelPacket,discardedSamplePackets,discardedInvalidInputs,discardedTest,
@@ -1167,7 +1194,7 @@ resolveAbsorbanceOptions[
 		moatInstrumentTest,readDirectionError,readDirectionInvalidOptions,readDirectionTest,injectionInstrumentError,injectionInstrumentInvalidOptions,
 		injectionInstrumentTest,anyInjectionsQ,specifiedRetainCover,resolvedRetainCover,validRetainCover,retainCoverTest,injectionSampleStateError,injectionSampleStateErrorTest,invalidCoverOption,invalidCoverInstrument,
 		invalidCoverInstrumentTest,specifiedWavelength,specifiedReadOrder,orderError,invalidOrderOption,
-		orderTest,exceedWavelengthError,invalidWavelengthOption,wavelengthTest,spanWavelengthWarning,spanWavelengthWarningTest,roundedTemperature,temperature,specifiedEquilibrationTimePostRounding,
+		orderTest,exceedWavelengthError,invalidWavelengthOption,wavelengthTest,spanWavelengthWarning,spanWavelengthWarningTest,resolvedACUOptions, resolvedACUInvalidOptions, resolvedACUTests, roundedTemperature,temperature,specifiedEquilibrationTimePostRounding,
 		resolvedMethods,preresolvedAcquisitionMix,resolvedAcquisitionMix,roundedAcquisitionMixRate,roundedMinAcquisitionMixRate,roundedMaxAcquisitionMixRate,roundedAcquisitionMixRateIncrements,defaultSpectralBandwidth,
 		roundedSpectralBandwidth,resolvedSpectralbandwidth,defaultAcquisitionMixRate,defaultMinAcquisitionMixRate,defaultMaxAcquisitionMixRate,defaultAcquisitionMixRateIncrements,
 		defaultMaxStirAttempts,resolvedAcquisitionMixRate,resolvedMinAcquisitionMixRate,resolvedMaxAcquisitionMixRate,resolvedAcquisitionMixRateIncrements,resolvedMaxStirAttempts,resolvedAdjustMixRate,resolvedCuvetteContainerModels,
@@ -1175,11 +1202,13 @@ resolveAbsorbanceOptions[
 		defaultMixingMode,defaultMixingSchedule,roundedMixTime,roundedPlateReaderMixRate,resolvedPlateReaderMixRate,resolvedPlateReaderMixTime,resolvedPlateReaderMixMode,resolvedCuvetteStirBars,resolvedContainersOut,resolvedRecoupSamples,resolvedSamplesOutStorageCondition,
 		resolvedPlateReaderMixSchedule,suppliedPrimaryFlowRate,suppliedSecondaryFlowRate,suppliedTertiaryFlowRate,suppliedQuaternaryFlowRate,primaryInjectionsQ,secondaryInjectionQ,tertiaryInjectionQ,quaternaryInjectionQ,resolvedPrimaryFlowRate,resolvedSecondaryFlowRate,resolvedTertiaryFlowRate,resolvedQuaternaryFlowRate,impliedMoat,
 		resolvedMoatBuffer,resolvedMoatVolume,resolvedMoatSize,suppliedAliquotBooleans,suppliedAliquotVolumes,suppliedAssayVolumes,
-		suppliedTargetConcentrations,suppliedAssayBuffers,suppliedAliquotContainers,automaticAliquotingBooleans,uniqueContainers,
+		suppliedTargetConcentrations,suppliedAssayBuffers,suppliedAliquotContainers, suppliedAliquotContainerModels,
+		automaticAliquotingBooleans,uniqueContainers,
 		tooManySourceContainers,numberOfAliquotContainers,tooManyAliquotContainers,replicateAliquotsRequired,replicatesError,
 		replicatesWarning,sampleRepeatAliquotsRequired,sampleRepeatError,sampleRepeatWarning,bmgAliquotRequired,blankAliquotRequired,specifiedBlanks,specifiedBlankVolumes,aliquotContainerConflicts,badAliquotContainerOptions,
 		badAliquotContainerTests,unresolvedAliquotContainers,unresolvedAliquotContainerModels,totalVolumeConflicts,badTotalVolumeOptions,badTotalVolumeTests,cuvettePackets,nonLiquidSamplePackets,nonLiquidSampleInvalidInputs,nonLiquidSampleTest,
 		potentialAnalyteTests,suppliedConsolidateAliquots,suppliedSamplingPattern,suppliedSamplingDistance,suppliedSamplingDimension,containerOutConflicts,badContainerOutOptions,badContainerOutTests,
+		plateReaderTemperatureNoEquilibrationWarning, plateReaderTemperatureNoEquilibrationTest,
 		validSamplingCombo,validSamplingComboTest,resolvedSamplingPattern,samplingRequested,instrumentSupportedSampling,noSampling,validSamplingInstrumentTest,
 		plateReadersForSampling,anyInstrumentSupportsSampling,validSamplingModeTest,validSamplingInstrumentCombo,validSamplingInstrumentComboTest,invalidSamplingOptions,
 		preresolvedNumReplicates,blanksWithVolumesToMove,numberOfTransferBlanks,containerContents,numbersOfWells,insufficientBlankSpace,
@@ -1190,19 +1219,19 @@ resolveAbsorbanceOptions[
 		missingExtCoefficientErrors,specifiedAnalytes,quantificationAnalytes,resolvedNumberOfReadings,specifiedNumReadings,specifiedMicrofluidicChipLoading,
 		sampleCompositionPackets,sampleContainsAnalyteErrors,sampleContainsAnalyteOptions,sampleContainsAnalyteOptionTests,
 		preResolvedQuantifyConcentration,preResolvedQuantAnalyte,resolvedConsolidateAliquots,simulation,
-		plateReaderNumberOfReadingsErrorQ,plateReaderNumberOfReadingsErrorTest,plateReaderNumberOfReadingsInvalidOptions,
-		tooManySamplesError,tooManySamplesOptions,tooManySamplesTest,blankAliquotError,blankContainerErrorTest,incompatibleBlankVolumesInvalidOptions,
+		plateReaderNumberOfReadingsErrorQ,plateReaderNumberOfReadingsNullQ,plateReaderNumberOfReadingsErrorTest,plateReaderNumberOfReadingsInvalidOptions,
+		tooManySamplesError,tooManySamplesOptions,tooManySamplesTest,tooManyBlanksError,tooManyBlanksOptions,blankAliquotError,tooManyBlanksTest,blankContainerErrorTest,incompatibleBlankVolumesInvalidOptions,
 		blankContainerWarningTest,incompatibleBlankInvalidOptions,incompatibleBlankOptionTests,selectedBlanks,nonLiquidBlanksBoolean,nonLiquidBlanks,blankStateWarning,blankStateWarningTest,sampleVolumes,sampleObjs,notEqualBlankVolumes,notEqualSamples,notEqualBlankVolumesWarning,notEqualBlankVolumesWarningTest,skippedInjectionError,injectionQList,injectionOptionList,skippedInjectionIndex,invalidSkippedInjection,skippedInjectionErrorTest,blankVolumeNotAllowedInvalidOptions,blankVolumeNotAllowedTests,
 		quantRequiresBlankingInvalidOptions,quantRequiresBlankingTest,concInvalidOptions,concInvalidOptionsTests,extCoefficientNotFoundTests,
 		missingExtinctionCoefficientOptions,missingExtinctionCoefficientOptionTests,invalidMoatOptions,moatTests,moatError,moatInstrumentInvalidOptions,
 		preresolvedAliquot,validPlateModelsList,resolutionAliquotContainer,requiredAliquotContainers,suppliedDestinationWells,
-		plateWells,moatWells,duplicateDestinationWells,duplicateDestinationWellOption,duplicateDestinationWellTest,invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,resolvedDestinationWells,requiredAliquotAmounts,aliquotWarningMessage,preresolvedAliquotOptions,
+		plateWells,moatWells,suppliedDestinationWellsNoAutomatic,duplicateDestinationWells,duplicateDestinationWellError,duplicateDestinationWellOption,duplicateDestinationWellTest,invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,resolvedDestinationWells,requiredAliquotAmounts,aliquotWarningMessage,preresolvedAliquotOptions,
 		resolvedSamplingDistance,resolvedSamplingDimension,resolvedAliquotOptions,resolveAliquotOptionsTests,assayContainerModelPacket,invalidInjectionOptions,validInjectionTests,
 		resolvedMicrofluidicChipLoading,microfluidicChipLoadingErrorQ,microfluidicChipLoadingErrorTest,microfluidicChipLoadingInvalidOptions,
 		resolvedPostProcessingOptions,email,invalidOptions,invalidInputs,roundedWavelengths,resolvedWavelengths,resolvedOptions,allTests,testsRule,resultRule,
 		sampleVolumesTooSmallQ,tooSmallSampleVolumes,sampleVolumesTest,tooSmallSamples,liquidHandlerRequiredDefault,
 		resolvedSampleLabels,resolvedSampleContainerLabels,
-		resolvedBlankLabels,resolvedTemperatureMonitor,allowedCuvettes,mainDownloadResult,cacheBall
+		resolvedBlankLabels,resolvedTemperatureMonitor,allowedCuvettes,mainDownloadResult,cacheBall,fastCacheBall
 	},
 
 	(* --- Setup our user specified options and cache --- *)
@@ -1293,7 +1322,9 @@ resolveAbsorbanceOptions[
 		suppliedSamplingDimension,
 		specifiedNumReadings,
 		specifiedMicrofluidicChipLoading,
-		specifiedQuantifyConcentration
+		specifiedQuantifyConcentration,
+		specifiedTargetCarbonDioxideLevel,
+		specifiedTargetOxygenLevel
 	} = Lookup[
 		absSpecOptionsAssoc,
 		{
@@ -1332,7 +1363,9 @@ resolveAbsorbanceOptions[
 			SamplingDimension,
 			NumberOfReadings,
 			MicrofluidicChipLoading,
-			QuantifyConcentration
+			QuantifyConcentration,
+			TargetCarbonDioxideLevel,
+			TargetOxygenLevel
 		},
 		Automatic
 	];
@@ -1360,7 +1393,7 @@ resolveAbsorbanceOptions[
 	(* Lookup all the injection options *)
 	injectionOptions=Lookup[absSpecOptionsAssoc,injectionOptionNames,Automatic];
 
-	(* Plate mixing, injections, numberofreadings require BMG *)
+	(* Plate mixing, injections require BMG *)
 	(* Moat only makes sense in a BMG plate *)
 	bmgRequired=Or[
 		!MatchQ[
@@ -1374,10 +1407,11 @@ resolveAbsorbanceOptions[
 					specifiedMoatVolume,
 					specifiedMoatSize,
 					specifiedReadDirection,
-					specifiedNumReadings,
 					suppliedSamplingPattern,
 					suppliedSamplingDistance,
-					suppliedSamplingDimension
+					suppliedSamplingDimension,
+					specifiedTargetCarbonDioxideLevel,
+					specifiedTargetOxygenLevel
 				},
 				injectionOptions
 			],
@@ -1415,6 +1449,19 @@ resolveAbsorbanceOptions[
 		Null
 	];
 
+	(* get the model of the specified instrument *)
+	specifiedInstrumentModel = Which[
+		(* if we are provided with a instrument object, then we have to do this standalone download here *)
+		MatchQ[specifiedInstrument, ObjectP[Object[Instrument]]],
+		Download[specifiedInstrument, Model, Cache -> inheritedCache],
+		(* if we are provided with a instrument model, then go with that *)
+		MatchQ[specifiedInstrument, ObjectP[Model[Instrument]]],
+		specifiedInstrument,
+		(* otherwise we do not know the model yet *)
+		True,
+		Null
+	];
+
 	(* Resolve the Methods *)
 	(* to resolve the method, use the following *)
 	(* if Instrument is set, pick the corresponding method (Lunatic -> Microfluidic, PlateReader -> PlateReader, Cary -> Cuvette) *)
@@ -1427,12 +1474,13 @@ resolveAbsorbanceOptions[
 	(* Otherwise, Lunatic since it is the safest option *)
 	resolvedMethods = Which[
 		Not[MatchQ[specifiedMethods, Automatic]], specifiedMethods,
-		MatchQ[specifiedInstrument,ObjectP[Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)]],Microfluidic,
-		MatchQ[specifiedInstrument,ObjectP[{Object[Instrument, PlateReader], Model[Instrument, PlateReader]}]],PlateReader,
+		(* set to Lunatic if instrument is Lunatic model or object *)
+		MatchQ[specifiedInstrumentModel, ObjectP[Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)]], Microfluidic,
+		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, PlateReader], Model[Instrument, PlateReader]}]], PlateReader,
 		Not[MatchQ[specifiedMicrofluidicChipLoading, Automatic | Null]], Microfluidic,
 		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer]}]], Cuvette,
 		Not[MatchQ[specifiedSpectralBandwidth, Automatic | Null]], Cuvette,
-		Not[ContainsOnly[Flatten[{specifiedAcquisitionMix}], {Automatic,Null}]], Cuvette,
+		Not[ContainsOnly[Flatten[{specifiedAcquisitionMix}], {Automatic, Null}]], Cuvette,
 		MemberQ[
 			Flatten[{
 				specifiedAcquisitionMixRate, specifiedAcquisitionMixRateIncrements, specifiedMinAcquisitionMixRate,
@@ -1443,12 +1491,12 @@ resolveAbsorbanceOptions[
 		], Cuvette,
 		MemberQ[
 			Flatten[{
-				specifiedReadDirection, suppliedSamplingPattern, suppliedSamplingDistance, suppliedSamplingDimension, specifiedPlateReaderMixRate, specifiedPlateReaderMixTime, specifiedPlateReaderMix, specifiedPlateReaderMixMode, specifiedPlateReaderMixSchedule, specifiedMoatBuffer, specifiedMoatVolume, specifiedMoatSize,injectionOptions, specifiedNumReadings
+				specifiedReadDirection, suppliedSamplingPattern, suppliedSamplingDistance, suppliedSamplingDimension, specifiedPlateReaderMixRate, specifiedPlateReaderMixTime, specifiedPlateReaderMix, specifiedPlateReaderMixMode, specifiedPlateReaderMixSchedule, specifiedMoatBuffer, specifiedMoatVolume, specifiedMoatSize, injectionOptions, specifiedNumReadings, specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel
 			}],
 			Except[Automatic | Null]
 		], PlateReader,
 		MatchQ[resolvedPreparation, Robotic], PlateReader,
-		Not[MatchQ[specifiedEquilibrationTime, Automatic | Null]] || Not[MatchQ[specifiedTemp, Automatic | Null]],If[MemberQ[Map[(# >= 400 Microliter)&,Download[simulatedSamples, Volume, Simulation -> updatedSimulation]],True], Cuvette, PlateReader],
+		Not[MatchQ[specifiedEquilibrationTime, Automatic | Null]] || Not[MatchQ[specifiedTemp, Automatic | Null]], If[MemberQ[Map[(# >= 400 Microliter)&, Download[simulatedSamples, Volume, Simulation -> updatedSimulation]], True], Cuvette, PlateReader],
 		bmgRequired, PlateReader,
 		True, Microfluidic
 	];
@@ -1459,16 +1507,24 @@ resolveAbsorbanceOptions[
 	(* preresolve instrument based on resolved methods *)
 	(* if specified sampling pattern is ring/matrix/spiral, resolve to CLARIOstar, otherwise, FLUOstar Omega *)
 	(* if we are requesting this resolves as a part of a robotic primitive, do not return Lunatic *)
-	preresolvedInstrument=Which[
-		MatchQ[specifiedInstrument,ObjectP[]],specifiedInstrument,
-		MatchQ[specifiedInstrument,Automatic],
-		Which[
-			MatchQ[resolvedMethods, Cuvette], Model[Instrument, Spectrophotometer, "id:01G6nvwR99K1"](* Cary 3500 *),
-			MatchQ[resolvedMethods, Microfluidic], Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)
-		],
-		bmgRequired,Null,
-		MatchQ[resolvedPreparation, Robotic] || MatchQ[Lookup[myOptions, LiquidHandler], True], Null,
-		True, Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)
+	preresolvedInstrument= Which[
+		MatchQ[specifiedInstrument, Except[Automatic]],
+			specifiedInstrument,
+		(* default to Cary 3500 if we are doing Cuvette *)
+		MatchQ[resolvedMethods, Cuvette],
+			Model[Instrument, Spectrophotometer, "id:01G6nvwR99K1"], (* Cary 3500 *)
+		(* default to Lunatic if we are doing Microfluidic *)
+		MatchQ[resolvedMethods, Microfluidic],
+			Model[Instrument, PlateReader, "id:N80DNj1lbD66"], (* Lunatic *)
+		(* if TargetCO2/TargetO2Level is specified, then we only have one option *)
+		MemberQ[Flatten[{specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel}], PercentP],
+			Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		bmgRequired || MatchQ[resolvedMethods, PlateReader],
+			Null,
+		MatchQ[resolvedPreparation, Robotic] || MatchQ[Lookup[myOptions, LiquidHandler], True],
+			Null,
+		True,
+			Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)
 	];
 
 	(* Get our unique injection samples for download *)
@@ -1495,6 +1551,7 @@ resolveAbsorbanceOptions[
 	allowedCuvettes=absorbanceAllowedCuvettesForAutomaticResolution["Memoization"];
 
 	(* Make the Download call *)
+	(* --- DO WE ACTUALLY NEED THIS? shouldn't this already covered in the main experiment function? --- *)
 	mainDownloadResult = Quiet[
 		Download[
 			{
@@ -1510,13 +1567,13 @@ resolveAbsorbanceOptions[
 			Evaluate[{
 				{
 					Packet[IncompatibleMaterials, Well, Volume, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
-					Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
+					Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
 					Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
 					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]]
 				},
 				{
 					Packet[IncompatibleMaterials, Well, Volume, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
-					Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
+					Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
 					Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
 					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]]
 				},
@@ -1526,7 +1583,7 @@ resolveAbsorbanceOptions[
 				{Packet[Model, Status], Packet[Model[{WettedMaterials, PlateReaderMode, SamplingPatterns}]], Packet[WettedMaterials, PlateReaderMode, SamplingPatterns]},
 				{Packet[WettedMaterials, PlateReaderMode, SamplingPatterns]},
 				{Packet[MinVolume,MaxVolume,RecommendedFillVolume,Name]},
-				{SamplePreparationCacheFields[Model[Container], Format -> Packet]}
+				{Packet[Model, SamplePreparationCacheFields[Model[Container], Format -> Sequence]]}
 			}],
 			Cache->inheritedCache,
 			Simulation->updatedSimulation,
@@ -1537,6 +1594,9 @@ resolveAbsorbanceOptions[
 
 	(* update our cache to now include everything that we have just downloaded *)
 	cacheBall=Experiment`Private`FlattenCachePackets[{simulatedCache,mainDownloadResult}];
+
+	(* make fast cache ball *)
+	fastCacheBall = makeFastAssocFromCache[cacheBall];
 
 	(* extract out the packets *)
 	{listedSampleContainerPackets, listedContainerInPackets,listedInjectionSamplePackets, listedBlankPackets, listedInstrumentPackets, allInstrumentPacketLists, cuvettePackets,listedAliquotContainerPackets}=mainDownloadResult;
@@ -1578,7 +1638,7 @@ resolveAbsorbanceOptions[
 	specifiedWavelength=Lookup[absSpecOptionsAssoc,wavelengthOptionName];
 
 	(* If SamplingDistance is set to a value resolve to Ring somewhat arbitrarily - this is the first thing in BMG's dropdown *)
-	resolvedSamplingPattern=Switch[{suppliedSamplingPattern,suppliedSamplingDistance,suppliedSamplingDimension,bmgRequired,specifiedWavelength,Length[DeleteDuplicates[ToList[specifiedWavelength]]]},
+	resolvedSamplingPattern=Switch[{suppliedSamplingPattern,suppliedSamplingDistance,suppliedSamplingDimension,bmgRequired||MatchQ[resolvedMethods, PlateReader],specifiedWavelength,Length[DeleteDuplicates[ToList[specifiedWavelength]]]},
 		{Except[Automatic],_,_,_,_,_},suppliedSamplingPattern,
 		{_,_,_Integer,_,ListableP[DistanceP],LessEqualP[8]},Matrix,
 		{_,DistanceP,Null|Automatic,_,_,_},Ring,
@@ -1652,13 +1712,20 @@ resolveAbsorbanceOptions[
 		]
 	];
 
-	(* If LiquidHandler -> True (SM) or Preparation->Robotic (SP), and we weren't given a specific instrument model, default to CLARIOstar. This reflect the priority change in resolvePlateReaderOptions *)
-	liquidHandlerRequiredDefault = If[
+	(* If we are working on a liquid handler and we weren't given a specific instrument model, default to *)
+	(* CLARIOstar with ACU if we are using a (micro)bioSTAR workcell, or regular CLARIOstar if we are not. *)
+	liquidHandlerRequiredDefault = Which[
+		(* We're using one of the cell bio work cells, equipped with ACU clariostars. *)
+		MatchQ[resolvedWorkCell, Alternatives[bioSTAR, microbioSTAR]],
+			fetchPacketFromCache[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"],allPlateReaderModelPackets], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		(* Preparation is robotic but we aren't using a (micro)bioSTAR. *)
 		Or[
 			TrueQ[Lookup[myOptions, LiquidHandler]],
 			MatchQ[resolvedPreparation, Robotic]
 		],
-			fetchPacketFromCache[Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"],allPlateReaderModelPackets], (* ClarioSTAR *)
+			fetchPacketFromCache[Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"],allPlateReaderModelPackets], (* Model[Instrument, PlateReader, "CLARIOstar"] *)
+		(* Otherwise, we don't need anything here. *)
+		True,
 			{}
 	];
 
@@ -1688,8 +1755,77 @@ resolveAbsorbanceOptions[
 		(* If we need a sampling plate reader and are on a liquid handler, pick the liquid handler default if it allows sampling. *)
 		MatchQ[resolvedPreparation, Robotic] && MatchQ[noSampling, False] && MemberQ[Lookup[plateReadersForSampling, Object], ObjectP[Lookup[liquidHandlerRequiredDefault, Object]]],
 			{<||>,liquidHandlerRequiredDefault},
+		(* If we are using plate reader manually, and will need to prep blank plate, we need to consider what work cell it will go to because the compiler will look at the picked instrument's integrated liquid handler and generate a Transfer primitive with WorkCell -> liquidHandlerContainingOurPlateReader. *)
+		(* At this point we do not have blank-related options resolved, we approximate the need of blank prep by if Blank or BlankVolume is specified as Null. *)
+		(* Note that this is a semi-temporary fix, lab and user feedback will be observed to decide if we want to keep it this way. Because technically we can prep the blank plate on one liquid handler, seal the plate, and read it on another liquid handler, we prefer not to go that way for now for efficiency. *)
+		And[
+			MatchQ[resolvedPreparation, Manual],
+			MatchQ[resolvedMethods,PlateReader],
+			MemberQ[
+				Flatten[Lookup[absSpecOptionsAssoc, {Blanks, BlankVolumes}]],
+				Except[Null]
+			]
+		],
+			Module[{specifiedAliquot, validPlateModels, inputsForPotentialWorkCell, potentialBlankPrepWorkCells, allPlateReaderPackets, screenedPlateReaderPackets},
+				(* Determine potential workcells, consider all samples in input samples containers if Aliquot is explicitly set to false, otherwise send samples to resolvePotentialWorkCells. *)
+				specifiedAliquot = ToList[Lookup[absSpecOptionsAssoc, Aliquot]];
+				(* get the valid container models that can be used with this experiment *)
+				validPlateModels = BMGCompatiblePlates[Absorbance];
+				inputsForPotentialWorkCell =  If[Or[
+						(* all sample are already in valid plates and aliquot is not set explicitly set to True *)
+						And[
+							Sequence @@ (
+								MemberQ[validPlateModels, #]& /@ Lookup[(sampleContainerModelPackets/. Null -> <||>), Object, Null]
+							),
+							!MemberQ[specifiedAliquot, True]
+						],
+						(* Or there is no Aliquot option explicitly set to False *)
+						!AllTrue[specifiedAliquot, TrueQ]
+					],
+					(* Highly likely not aliquoting and blank will be packed into the plate, use the whole sample containers *)
+					Cases[Lookup[(containerPackets /. Null -> <||>), Object], ObjectP[]],
+					(* Otherwise use the samples *)
+					Cases[Lookup[samplePackets, Object], ObjectP[]]
+				];
+
+				(* Estimate the potential workcells that the blank prep TransferUO will likely get *)
+				potentialBlankPrepWorkCells = resolvePotentialWorkCells[
+					(* Regardless of what the experiment will use, force the helper to consider it robotic so that it will not early return *)
+					inputsForPotentialWorkCell,
+					{Preparation -> Robotic, Sterile -> Null, SterileTechnique  -> Null},
+					Cache -> cacheBall
+				];
+				allPlateReaderPackets = If[noSampling,
+					Flatten[{liquidHandlerRequiredDefault, allPlateReaderModelPackets}],
+					plateReadersForSampling
+				];
+				(* Refer to resolvePotentialWorkCells for potential outcomes. Consider all scenarios of its final Which call *)
+				screenedPlateReaderPackets = Which[
+					(* If STAR is not allowed, i.e. we have microbioSTAR or bioSTAR or both, prefer the integrated CLARIOstar Plus if it passed previous screenings *)
+					(* Note that although there are occasions that only one of microbioSTAR and bioSTAR is allowed, we can resolve to any model not restricted to STAR, as the execute absorbanceConstrainInstrument will limit the instrument selection based on cell types *)
+					!MemberQ[potentialBlankPrepWorkCells, STAR] && MemberQ[allPlateReaderPackets, ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]],(* "CLARIOstar Plus with ACU" *)
+						{fetchPacketFromCache[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], allPlateReaderPackets]},
+					(* Otherwise if STAR cannot be used, just filter out FLUOstar Omega and CLARIOstar *)
+					(* Note that this is possible when this is called by experiment using a plate reader mode not supported by CLARIOstar Plus, e.g. *)
+					!MemberQ[potentialBlankPrepWorkCells, STAR],
+						Cases[
+							allPlateReaderPackets,
+							Except[ObjectP[{Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"], Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"]}]] (*"FLUOstar Omega", "CLARIOstar" *)
+						],
+					True,
+					(* Otherwise if all workcells are allowed, we can use any model *)
+						allPlateReaderPackets
+				];
+				(* return the instrument packet and model instrument packet. If nothing passed screening due to workcell or sampling pattern, make sure to output a packet so that calculations downstream does not crash. There are error checkings that capture why there no instrument support the given options. If not, we need to add the specific error checking. *)
+				{<||>, FirstOrDefault[screenedPlateReaderPackets, First[allPlateReaderModelPackets]]}
+			],
 		True,
-			{<||>,First[plateReadersForSampling,First[Flatten[{liquidHandlerRequiredDefault,allPlateReaderModelPackets}]]]}
+			{
+				<||>,
+				First[
+					plateReadersForSampling, First[Flatten[{liquidHandlerRequiredDefault, allPlateReaderModelPackets}]]
+				]
+			}
 	];
 
 	instrument=If[MatchQ[preresolvedInstrument,ObjectP[]],
@@ -1829,9 +1965,9 @@ resolveAbsorbanceOptions[
 				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->cacheBall]<>" have a Liquid State:",True,False]
 			];
 
-			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[flatSampleList],
+			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[samplePackets],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,nonLiquidSampleInvalidInputs],Cache->cacheBall]<>" have a Liquid State:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[Lookup[samplePackets,Object],nonLiquidSampleInvalidInputs],Cache->cacheBall]<>" have a Liquid State:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1846,6 +1982,9 @@ resolveAbsorbanceOptions[
 	optionPrecisions={
 		{Temperature,10^-1 Celsius},
 		{EquilibrationTime,1 Second},
+		{TargetOxygenLevel,10^-1 Percent},
+		{TargetCarbonDioxideLevel,10^-1 Percent},
+		{AtmosphereEquilibrationTime,1 Second},
 		{FocalHeight,10^-1 Millimeter},
 		{PrimaryInjectionVolume,1 Microliter},
 		{SecondaryInjectionVolume,1 Microliter},
@@ -2073,13 +2212,13 @@ resolveAbsorbanceOptions[
 	];
 
 
-	(* - MinAcquisitionMixRate can't be larger than MaxAcquisitionMixRate - *)
+	(* - check if the supplied instrument is of a compatible type with method - *)
 	methodsInstrumentValidQ=If[
 		!MatchQ[specifiedMethods,Automatic]&&!MatchQ[specifiedInstrument,Automatic],
 		Which[
 			MatchQ[specifiedMethods,Cuvette],cuvetteQ,
 			MatchQ[specifiedMethods,Microfluidic],lunaticQ,
-			MatchQ[specifiedMethods,PlateReader],!lunaticQ&&MatchQ[specifiedInstrument,ObjectP[Model[Instrument,PlateReader]]]
+			MatchQ[specifiedMethods,PlateReader],!lunaticQ&&MatchQ[specifiedInstrument,ObjectP[{Model[Instrument, PlateReader], Object[Instrument, PlateReader]}]]
 		],
 		True
 	];
@@ -2111,7 +2250,7 @@ resolveAbsorbanceOptions[
 
 
 	(* - MinAcquisitionMixRate can't be larger than MaxAcquisitionMixRate - *)
-	acquisitionMixRateRangeMismatch=If[!MatchQ[specifiedMinAcquisitionMixRate,Automatic]&&!MatchQ[specifiedMaxAcquisitionMixRate,Automatic]&&specifiedMinAcquisitionMixRate>specifiedMaxAcquisitionMixRate,
+	acquisitionMixRateRangeMismatch=If[!MatchQ[specifiedMinAcquisitionMixRate,Automatic]&&!MatchQ[specifiedMaxAcquisitionMixRate,Automatic]&&MatchQ[specifiedMinAcquisitionMixRate, GreaterP[specifiedMaxAcquisitionMixRate]],
 		{specifiedMinAcquisitionMixRate,specifiedMaxAcquisitionMixRate},
 		{}
 	];
@@ -2246,7 +2385,7 @@ resolveAbsorbanceOptions[
 			Null,
 			If[MatchQ[#, ObjectP[Model]],
 				#,
-				Experiment`Private`cacheLookup[cacheBall,#,{Model}]
+				fastAssocLookup[fastCacheBall,#,{Model}]
 			]
 		]&,
 		unresolvedAliquotContainers
@@ -2328,7 +2467,7 @@ resolveAbsorbanceOptions[
 					Cases[cuvettePackets,ObjectP[specifiedAliquotContainer]],
 					cuvettePackets
 				];
-				minCuvetteSampleVolume=Min[Lookup[allowedCuvettePackets,MinVolume]];
+				minCuvetteSampleVolume=Min[Lookup[allowedCuvettePackets,MinVolume,0 Microliter]];
 				Which[
 					(* make sure that we have enough volume for at least one of our cuvettes, otherwise none of this matters *)
 					sampleVolume<minCuvetteSampleVolume,
@@ -2571,7 +2710,36 @@ resolveAbsorbanceOptions[
 
 	(* --- Non-IndexMatching option resolution --- *)
 
-
+	(* Resolve TargetCarbonDioxideLevel *)
+	{{resolvedACUOptions, resolvedACUInvalidOptions}, resolvedACUTests} = If[gatherTests,
+		resolveACUOptions[
+			myType,
+			simulatedSamples,
+			Association[roundedOptionsAssoc,
+				{
+					Instrument -> instrument,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests}
+				}
+			]
+		],
+		{
+			resolveACUOptions[
+				myType,
+				simulatedSamples,
+				Association[roundedOptionsAssoc,
+					{
+						Instrument -> instrument,
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation,
+						Output -> Result
+					}
+				]
+			],
+			{}
+		}
+	];
 
 	(* get the rounded temperature value *)
 	roundedTemperature=Lookup[roundedOptionsAssoc,Temperature];
@@ -2680,7 +2848,7 @@ resolveAbsorbanceOptions[
 	(* - Resolve ReadDirection - *)
 	resolvedReadDirection=If[!MatchQ[specifiedReadDirection,Automatic],
 		specifiedReadDirection,
-		If[lunaticQ,
+		If[lunaticQ || cuvetteQ,
 			Null,
 			Row
 		]
@@ -2820,7 +2988,7 @@ resolveAbsorbanceOptions[
 		MemberQ[suppliedAliquotBooleans,True]&&MemberQ[suppliedAliquotBooleans,False],
 
 		(* If we have more than one container in play then somethings are set to be aliquoted or there are multiple sources *)
-		(* In either case these then means everything must be aliquotted *)
+		(* In either case these then means everything must be aliquoted *)
 		MemberQ[suppliedAliquotBooleans,False]&&Length[uniqueContainers]>1
 	];
 
@@ -2869,13 +3037,13 @@ resolveAbsorbanceOptions[
 			Module[{blankPacket,blankContainer},
 				(* Find the sample packet for our blank, then get its container *)
 				blankPacket=SelectFirst[blankSamplePackets,MatchQ[Lookup[#,Object],ObjectP[blank]]&,<||>];
-				blankContainer=Lookup[blankPacket,Container];
+				blankContainer=Lookup[blankPacket,Container,Null];
 
 				(* Count as needing transfer if a volume has been specified or if left Automatic and we detect transfer is needed *)
 				Which[
 					MatchQ[blankAbsorbance,False],Nothing,
 					MatchQ[blankVolume,VolumeP],{blank,blankVolume},
-					(MatchQ[blankVolume,Automatic]&&(!MatchQ[First[containerPackets],ObjectP[blankContainer]]||bmgAliquotRequired)),{blank,Min[{Lookup[samplePacket,Volume],300*Microliter}]},
+					(MatchQ[blankVolume,Automatic]&&(!MatchQ[First[containerPackets],ObjectP[blankContainer]]||NullQ[First[containerPackets]]||bmgAliquotRequired)),{blank,Min[Cases[{Lookup[samplePacket,Volume],300*Microliter},VolumeP]]},
 					True,Nothing
 				]
 			]
@@ -2888,9 +3056,9 @@ resolveAbsorbanceOptions[
 
 	(* Determine if our container has sufficient space - only need to consider first because if we have multiple containers, then we're aliquoting *)
 	(* If we have insufficientBlankSpace we must aliquot *)
-	containerContents=Lookup[First[containerPackets],Contents];
-	numbersOfWells=Lookup[First[sampleContainerModelPackets],NumberOfWells];
-	insufficientBlankSpace=If[MatchQ[First[sampleContainerModelPackets],ObjectP[Model[Container,Plate]]],
+	containerContents=Lookup[FirstCase[containerPackets,PacketP[],<||>],Contents,{}];
+	numbersOfWells=Lookup[FirstCase[sampleContainerModelPackets,PacketP[],<||>],NumberOfWells];
+	insufficientBlankSpace=If[MatchQ[FirstCase[sampleContainerModelPackets,PacketP[],<||>],ObjectP[Model[Container,Plate]]],
 		(numbersOfWells-Length[containerContents])<numberOfTransferBlanks&&MatchQ[myType,Object[Protocol,AbsorbanceKinetics]]&&MatchQ[resolvedPreparation, Manual],
 		(* If we aren't working with a plate we'll have to aliquot anyways and we don't want to confuse that with blank space *)
 		False
@@ -2923,14 +3091,14 @@ resolveAbsorbanceOptions[
 		{}
 	];
 
-	(* For AbsorbanceKinetics we have to aliquot if samples are being aliquotted since everything goes in the same plate *)
+	(* For AbsorbanceKinetics we have to aliquot if samples are being aliquoted since everything goes in the same plate *)
 	(* For others we only need to aliquot if we have to make replicate samples *)
 	blankAliquotRequired=Which[
 		cuvetteQ,If[MatchQ[Lookup[blankSamplePackets,Container],ObjectP[Model[Container,Cuvette]]],
 			False,
 			True
 			],
-		MatchQ[myType,Object[Protocol,AbsorbanceKinetics]]&&MatchQ[resolvedPreparation,Manual],bmgAliquotRequired||MemberQ[automaticAliquotingBooleans,False]||insufficientBlankSpace,
+		MatchQ[myType,Object[Protocol,AbsorbanceKinetics]]&&MatchQ[resolvedPreparation,Manual],bmgAliquotRequired||MemberQ[suppliedAliquotBooleans,True]||insufficientBlankSpace,
 		True,replicateAliquotsRequired
 	];
 
@@ -2991,6 +3159,28 @@ resolveAbsorbanceOptions[
 		{}
 	];
 
+	(* Check if Temperature is specified but EquilibrationTime was specified zero. Need to warn the user that there might be fluctuations. *)
+	plateReaderTemperatureNoEquilibrationWarning = If[And[
+		MatchQ[temperature,GreaterP[$AmbientTemperature]],
+		EqualQ[temperatureEquilibriumTime, 0 Minute]],
+		True,
+		False
+	];
+
+	(* Throw message *)
+	If[TrueQ[plateReaderTemperatureNoEquilibrationWarning]&&messages&&Not[MatchQ[$ECLApplication, Engine]],
+		Message[Warning::TemperatureNoEquilibration, temperature, temperatureEquilibriumTime]
+	];
+
+	(*If we are gathering tests, create a test for Quantification and Method mismatch*)
+	plateReaderTemperatureNoEquilibrationTest=If[gatherTests,
+		Test["If Temperature is Solubility, EquilibriumTime is above 0 Minute:",
+			plateReaderTemperatureNoEquilibrationWarning,
+			False
+		],
+		Nothing
+	];
+
 	(* --- Resolve the index matched options --- *)
 
 	(* MapThread the options so that we can do our big MapThread *)
@@ -3025,10 +3215,10 @@ resolveAbsorbanceOptions[
 	(* decide the potential analytes to use; specifying the Analyte here will pre-empt warnings thrown by this function *)
 	{potentialAnalytesToUse, potentialAnalyteTests} = If[MatchQ[myType,Object[Protocol,AbsorbanceKinetics]],
 		(* For AbsorbanceKinetics, we still want to try to find the analyte. This will help us resolve the best Wavelengths to use. We do not want to complain about this with messages though *)
-		{Quiet[selectAnalyteFromSample[samplePackets, Cache -> cacheBall, Output -> Result]], Null},
+		{Quiet[selectAnalyteFromSample[samplePackets, Cache -> cacheBall, Output -> Result, DetectionMethod -> Absorbance]], Null},
 		If[gatherTests,
-			selectAnalyteFromSample[samplePackets, Analyte -> preResolvedQuantAnalyte, Cache -> cacheBall, Output -> {Result, Tests}],
-			{selectAnalyteFromSample[samplePackets, Analyte -> preResolvedQuantAnalyte, Cache -> cacheBall, Output -> Result], Null}
+			selectAnalyteFromSample[samplePackets, Analyte -> preResolvedQuantAnalyte, Cache -> cacheBall, DetectionMethod -> Absorbance, Output -> {Result, Tests}],
+			{selectAnalyteFromSample[samplePackets, Analyte -> preResolvedQuantAnalyte, Cache -> cacheBall, DetectionMethod -> Absorbance, Output -> Result], Null}
 		]
 	];
 
@@ -3071,7 +3261,7 @@ resolveAbsorbanceOptions[
 		blankContainerErrors,
 		blankContainerWarnings
 	}=Transpose[MapThread[
-		Function[{samplePacket,containerPacket,containerInPacket,compositionPackets,potentialAnalyte,options, aliquitQ},
+		Function[{samplePacket,containerPacket,containerInPacket,compositionPackets,potentialAnalyte,options, aliquotQ},
 			Module[
 				{incompatibleBlankOptionsError,blankVolumeNotAllowedError,specifiedBlank,specifiedBlankVolume,
 					concInvalidOptionsError,extCoefficientNotFoundWarning,blank,blankVolume,extCoefficients,
@@ -3155,11 +3345,18 @@ resolveAbsorbanceOptions[
 							]
 						},
 
-						(* we have a user-specified aliquot container *)
+						(* we have a user-specified aliquot container MODEL *)
 						MatchQ[Lookup[options,AliquotContainer],ObjectP[Model[Container]]],
 						{
 							Lookup[fetchPacketFromCache[Lookup[options,AliquotContainer],cacheBall],RecommendedFillVolume],
 							Lookup[options,AliquotContainer]
+						},
+
+						(* we have a user-specified aliquot container OBJECT *)
+						MatchQ[Lookup[options,AliquotContainer],ObjectP[Object[Container]]],
+						{
+							fastAssocLookup[fastCacheBall, Lookup[options,AliquotContainer], {Model, RecommendedFillVolume}],
+							fastAssocLookup[fastCacheBall, Lookup[options,AliquotContainer], Model]
 						},
 
 						(* we will aliquot things without a specified container, take the RecommendedFillVolume of the smallest default Cuvette we are using *)
@@ -3171,14 +3368,21 @@ resolveAbsorbanceOptions[
 					]];
 
 				(* -- resolve stir bar--*)
-				(* resolve stir bars depending on the resolved cuvette model; currently, cuvettes and stir bars are hardcoded *)
-				resolvedStirBars=If[cuvetteQ&&MatchQ[acquisitionMixes,True],
-					Which[
-						MatchQ[cuvetteContainerModel,Model[Container, Cuvette, "id:mnk9jOR4n89R"]],Model[Part, StirBar, "id:xRO9n3BLRZZO"],(* Standard Scale with Stirring *)
-						MatchQ[cuvetteContainerModel,Model[Container, Cuvette, "id:Y0lXejMD0VBm"]],Model[Part, StirBar, "id:Z1lqpMza1XPV"],(* Semi-Micro Scale with Stirring *)
-						MatchQ[cuvetteContainerModel,Model[Container, Cuvette, "id:Vrbp1jKkre0x"]],Model[Part, StirBar, "id:Y0lXejMD0VKP"] (* Micro Scale with Stirring *)
-					],
-					Null
+				resolvedStirBars = Which[
+					(* respect user input, if it is set it is set *)
+					MatchQ[Lookup[options, StirBar], Except[Automatic]],
+						Lookup[options, StirBar],
+					(* otherwise if we not using cuvette method, or acquisition mix is not needed, set to Null *)
+					(!cuvetteQ) || (!TrueQ[acquisitionMixes]),
+						Null,
+					(* resolve stir bars depending on the resolved cuvette model; currently, cuvettes and stir bars are hardcoded *)
+					True,
+						cuvetteContainerModel /. {
+							ObjectP[Model[Container, Cuvette, "id:mnk9jOR4n89R"]] -> Model[Part, StirBar, "id:xRO9n3BLRZZO"], (* Standard Scale with Stirring *)
+							ObjectP[Model[Container, Cuvette, "id:Y0lXejMD0VBm"]] -> Model[Part, StirBar, "id:Z1lqpMza1XPV"], (* Semi-Micro Scale with Stirring *)
+							ObjectP[Model[Container, Cuvette, "id:Vrbp1jKkre0x"]] -> Model[Part, StirBar, "id:Y0lXejMD0VKP"], (* Micro Scale with Stirring *)
+							_ -> Null
+						}
 				];
 
 
@@ -3235,17 +3439,22 @@ resolveAbsorbanceOptions[
 				quantAnalyte = Which[
 					(* if specified, obviously go with it *)
 					MatchQ[specifiedQuantAnalyte, IdentityModelP], specifiedQuantAnalyte,
-					(* if not specified and we are not quantifying and we're doing AbsSpec specifically, then this should be Null *)
-					(* for AbsIntensity, even if we are not quantifying we still need the analyte to resolve the wavelength reasonably *)
-					MatchQ[myType, Object[Protocol, AbsorbanceSpectroscopy]] && MatchQ[quantifyConcentration, False], Null,
+					(* if not specified and we are not quantifying, then this should be Null *)
+					MatchQ[quantifyConcentration, False], Null,
 					(* if not specified but we are quantifying, pick the value we resolved to above*)
 					True, potentialAnalyte
 				];
 
 				(* get the quantification analyte packets *)
-				quantAnalytePacket = If[NullQ[quantAnalyte],
-					Null,
-					SelectFirst[compositionPackets, Not[NullQ[#]] && MatchQ[quantAnalyte, ObjectP[Lookup[#, Object]]]&, Null]
+				quantAnalytePacket = Which[
+					MatchQ[quantAnalyte, IdentityModelP],
+					SelectFirst[compositionPackets, Not[NullQ[#]] && MatchQ[quantAnalyte, ObjectP[Lookup[#, Object]]]&, Null],
+					(* for AbsIntensity, even if we are not quantifying we still need the analyte to resolve the wavelength reasonably *)
+					MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+					SelectFirst[compositionPackets, Not[NullQ[#]] && MatchQ[potentialAnalyte, ObjectP[Lookup[#, Object]]]&, Null],
+					(* otherwise set to Null *)
+					True,
+					Null
 				];
 
 				(* get whether we're dealing with a peptide or protein *)
@@ -3301,10 +3510,12 @@ resolveAbsorbanceOptions[
 
 					(* also flip the concInvalidOptionsError variable if QuantificationAnalyte is specified/Null when the other is not *)
 				concInvalidOptionsError = Or[
-					(* QuantificationAnalyte is Null but one of the other quantification options is specified *)
-					NullQ[specifiedQuantAnalyte] && (DistanceQ[quantificationWavelength] || TrueQ[quantifyConcentration]),
+					(* QuantificationAnalyte is Null but QuantifyConcentration is True, this is for sure error state *)
+					NullQ[quantAnalyte] && TrueQ[quantifyConcentration],
+					(* QuantificationAnalyte is Null but Wavelength is specified, gonna be an error state for any protocol type other than AbsorbanceIntensity, since Wavelength is always specified *)
+					NullQ[quantAnalyte] && DistanceQ[quantificationWavelength] && !MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
 					(* QuantificationAnalyte is an object but one of the other quantification options is not specified *)
-					MatchQ[specifiedQuantAnalyte, IdentityModelP] && (NullQ[quantificationWavelength] || Not[TrueQ[quantifyConcentration]]),
+					MatchQ[quantAnalyte, IdentityModelP] && (NullQ[quantificationWavelength] || Not[TrueQ[quantifyConcentration]]),
 					(* we've already flipped the switch *)
 					concInvalidOptionsError
 				];
@@ -3351,7 +3562,7 @@ resolveAbsorbanceOptions[
 				badBlankContainer=If[MatchQ[specifiedBlank,ObjectP[Object]],
 					Or[
 						(* If we are doing aliquot on sample, then always say we need to move the blank *)
-						TrueQ[aliquitQ],
+						TrueQ[aliquotQ],
 						If[MatchQ[myType,Object[Protocol,AbsorbanceKinetics]]&&MatchQ[resolvedPreparation, Manual],
 							!MemberQ[Lookup[containerPackets,Object],ObjectP[Lookup[blankContainerPacket,Object]]]&&!blankAliquotRequired,
 							!MemberQ[BMGCompatiblePlates[Absorbance],ObjectP[Lookup[blankContainerPacket,Model]]]
@@ -3364,7 +3575,7 @@ resolveAbsorbanceOptions[
 				(* this is a bit janky, but we are trying to guess which container we will be using for the experiment here. We don't have _all_ the information we need to know for sure since it needs info for all samples *)
 				bestInitialGuessBlankContainerModel=Which[
 					cuvetteQ && MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]]]],suppliedAliquotContainers,
-					MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]]]],First[suppliedAliquotContainers],
+					MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]]]],FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]],
 					cuvetteQ,resolvedCuvetteContainerModels,
 					True,First[BMGCompatiblePlates[Absorbance]]
 				];
@@ -3415,7 +3626,7 @@ resolveAbsorbanceOptions[
 					TrueQ[blankAbsorbance]&&MatchQ[specifiedBlankVolume,Automatic]&&Not[lunaticQ],
 					{
 						If[badBlankContainer||blankAliquotRequired,
-							Max[{Min[{Lookup[samplePacket,Volume],containerMaxVolume}],containerRecommendedVolume}],
+							Max[{Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]],containerRecommendedVolume}],
 							Null
 						],
 						incompatibleBlankOptionsError,
@@ -3520,14 +3731,26 @@ resolveAbsorbanceOptions[
 	];
 
 	(* - Pre-resolve aliquot container - *)
+	(* If there is aliquot container supplied as Object[Container], covert to its model for the validity check below *)
+	suppliedAliquotContainerModels = Map[
+		Function[suppliedContainer,
+			If[MatchQ[suppliedContainer, ObjectP[Object[Container]]],
+				(* If supplied an object, pull its model *)
+				Lookup[fetchPacketFromCache[suppliedContainer, FlattenCachePackets[listedAliquotContainerPackets]], Model],
+				(* Otherwise, leave as it is *)
+				suppliedContainer
+			]
+		],
+		Flatten[suppliedAliquotContainers]
+	];
 
 	(* If the user gave us a valid container to aliquot into use that same container for any other aliquoting *)
 	(* This will make sure it ends up all in one plate when possible *)
 	(* User could have specified as {{1,container}..}, sneakily flatten so we can pull out object *)
 	(* We don't bother using this in the Lunatic since we're just selecting containers for the liquid handler and things will end up in a chip no matter what *)
 	resolutionAliquotContainer=Which[
-		cuvetteQ && MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]]]],suppliedAliquotContainers,
-		MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainers],ObjectP[]]]],First[suppliedAliquotContainers],
+		cuvetteQ && MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainerModels],ObjectP[]]]],suppliedAliquotContainers,
+		MemberQ[validPlateModelsList,ObjectP[FirstCase[Flatten[suppliedAliquotContainerModels],ObjectP[]]]],First[suppliedAliquotContainers],
 		cuvetteQ,resolvedCuvetteContainerModels,
 		True,First[BMGCompatiblePlates[Absorbance]]
 	];
@@ -3539,9 +3762,12 @@ resolveAbsorbanceOptions[
 			Flatten[{resolutionAliquotContainer}],
 			MapThread[
 				Which[
-					MatchQ[#2,False|Null],Null,
+					(*we should only let it pass if the sample is already in a valid plate when user gives False/Null*)
+					MatchQ[#2,False|Null] && MemberQ[validPlateModelsList,ObjectP[#1]],Null,
+					(* Otherwise we were not given aliquot bool, but the sample is already in a valid container, feed the required container the same as the sample container*)
 					MemberQ[validPlateModelsList,ObjectP[#1]],#1,
 					lunaticQ, PreferredContainer[0.4*Milliliter],
+					(* If we reach here, we need to aliquot the sample to new container, despite whether the user gives a aliquot bool. We need to feed resolveAliquotOptions the requried aliquot container so that if the aliquot bool is specified to be false, it will throw an error.*)
 					True,resolutionAliquotContainer
 				]&,
 				{Download[sampleContainerModelPackets,Object],suppliedAliquotBooleans}
@@ -3576,12 +3802,18 @@ resolveAbsorbanceOptions[
 
 	(* Figure out if the combination of (NumberOfReplicates * number of samples) + (2* number of blanks) (if we're blanking), or NumberOfReplicates * Number of samples if we are not *)
 	(* Note Moat sample space gets checked below by validMoat *)
-	totalNumSamples=If[blankAbsorbance,
-		If[lunaticQ,
-			(preresolvedNumReplicates*Length[simulatedSamples])+numBlanks, (* Lunatic doesn't make replicate blanks *)
+
+	totalNumSamples = Which[
+		!blankAbsorbance,
+			preresolvedNumReplicates*Length[simulatedSamples],
+		(* Lunatic doesn't make replicate blanks *)
+		lunaticQ,
+			(preresolvedNumReplicates*Length[simulatedSamples])+numBlanks,
+		(* cuvette only allows one blank sample, if numOfBlankAdditions is somehow larger than 1, Error::TooManyBlanks will be thrown *)
+		cuvetteQ,
+			(preresolvedNumReplicates*Length[simulatedSamples]) + numOfBlankAdditions,
+		True,
 			(preresolvedNumReplicates*Length[simulatedSamples])+(numOfBlankAdditions*preresolvedNumReplicates)
-		],
-		preresolvedNumReplicates*Length[simulatedSamples]
 	];
 
 	(* Throw an error if we have too many samples *)
@@ -3659,39 +3891,37 @@ resolveAbsorbanceOptions[
 	(* convert numberOfReplicates such that Null|Automatic -> 1 *)
 	intNumReplicates=resolvedNumberOfReplicates/.{Null->1};
 
-	(* - Resolve NumberOfReplicates - *)
+	(* - Resolve NumberOfReadings - *)
 
 	(* Resolve the number of readings based on which instrument we're using *)
-	resolvedNumberOfReadings = Which[
-		lunaticQ, Null,
-		cuvetteQ, If[MatchQ[specifiedNumReadings,Automatic],
-			1,
-			specifiedNumReadings
+	resolvedNumberOfReadings = If[MatchQ[specifiedNumReadings,Automatic],
+		If[lunaticQ||cuvetteQ,
+			Null,
+			100
 		],
-		True, If[MatchQ[specifiedNumReadings,Automatic],
-			100,
-			specifiedNumReadings
-		]
+		specifiedNumReadings
 	];
 
-	plateReaderNumberOfReadingsErrorQ = Or[
-		(* If Lunatic is being used but a number is provided *)
-		And[lunaticQ,MatchQ[resolvedNumberOfReadings,Except[Null]]],
-		(* Or we're not using the lunatic and Null is specified *)
-		And[!lunaticQ,MatchQ[resolvedNumberOfReadings,Null]]
-	];
+	(* If Lunatic is being used but a number is provided *)
+	plateReaderNumberOfReadingsErrorQ = And[lunaticQ||cuvetteQ,MatchQ[resolvedNumberOfReadings,Except[Null]]];
 
-	If[plateReaderNumberOfReadingsErrorQ&&messages,
-		Message[Error::PlateReaderReadings,resolvedNumberOfReadings]
+	(* Or we're not using the lunatic and Null is specified *)
+	plateReaderNumberOfReadingsNullQ=And[!(lunaticQ||cuvetteQ),MatchQ[resolvedNumberOfReadings,Null]];
+
+	Which[
+		plateReaderNumberOfReadingsErrorQ&&messages,
+		Message[Error::PlateReaderReadings,resolvedNumberOfReadings,ObjectToString[instrument],"cannot support multiple NumberOfReadings",experimentFunction],
+		plateReaderNumberOfReadingsNullQ&&messages,
+		Message[Error::PlateReaderReadings,resolvedNumberOfReadings,ObjectToString[instrument],"must specify NumberOfReadings",experimentFunction]
 	];
 
 	(* Create test *)
 	plateReaderNumberOfReadingsErrorTest = If[gatherTests,
-		Test["If a plate reader is incapable of accepting NumberOfReadings, the NumberOfReadings option was not set to an integer:",{lunaticQ,resolvedNumberOfReadings},Except[{True,_Integer}|{False,Null}]]
+		Test["If a plate reader is incapable of accepting NumberOfReadings, the NumberOfReadings option was not set to an integer:",{lunaticQ||cuvetteQ,resolvedNumberOfReadings},Except[{True,_Integer}|{False,Null}]]
 	];
 
 	(* Track invalid option *)
-	plateReaderNumberOfReadingsInvalidOptions = If[plateReaderNumberOfReadingsErrorQ,NumberOfReadings];
+	plateReaderNumberOfReadingsInvalidOptions = If[plateReaderNumberOfReadingsErrorQ||plateReaderNumberOfReadingsNullQ,NumberOfReadings];
 
 	(* - BlankVolumes is specified if blanks need to be moved - *)
 
@@ -3783,7 +4013,7 @@ resolveAbsorbanceOptions[
 
 	(* if there are blank objects, track the invalid ones that are not Liquid *)
 	nonLiquidBlanksBoolean=If[!MatchQ[selectedBlanks,{}],
-		(!MatchQ[#,Liquid])&/@Download[selectedBlanks, State, Cache ->inheritedCache, Simulation->simulation],
+		(!MatchQ[#,Liquid])&/@Download[selectedBlanks, State, Cache ->inheritedCache, Simulation->updatedSimulation],
 		{}
 	];
 
@@ -4141,15 +4371,16 @@ resolveAbsorbanceOptions[
 
 	(* - Validate DestinationWell Option - *)
 	(* Check whether the supplied DestinationWell have duplicated members. PlateReader experiment only allows one plate so we should not aliquot two samples into the same well. *)
-	duplicateDestinationWells=DeleteDuplicates[
-		Select[DeleteCases[ToList[suppliedDestinationWells],Automatic],Count[DeleteCases[ToList[suppliedDestinationWells],Automatic],#]>1&]
-	];
-	duplicateDestinationWellOption=If[!MatchQ[duplicateDestinationWells,{}]&&!gatherTests,
-		Message[Error::PlateReaderDuplicateDestinationWell,ToString[DeleteDuplicates[duplicateDestinationWells]]];{DestinationWell},
+	suppliedDestinationWellsNoAutomatic = DeleteCases[ToList[suppliedDestinationWells], Automatic | NullP];
+	duplicateDestinationWells = Cases[Tally[suppliedDestinationWellsNoAutomatic], {well_, GreaterP[1]} :> well];
+
+	duplicateDestinationWellError = !MatchQ[duplicateDestinationWells, {}] && MatchQ[resolvedMethods, PlateReader];
+	duplicateDestinationWellOption = If[duplicateDestinationWellError && !gatherTests,
+		Message[Error::PlateReaderDuplicateDestinationWell, ToString[DeleteDuplicates[duplicateDestinationWells]]];{DestinationWell},
 		{}
 	];
 	duplicateDestinationWellTest=If[gatherTests,
-		Test["The specified DestinationWell should not have duplicated members:",MatchQ[duplicateDestinationWells,{}],True],
+		Test["The specified DestinationWell should not have duplicated members:",!duplicateDestinationWellError,True],
 		{}
 	];
 
@@ -4248,10 +4479,10 @@ resolveAbsorbanceOptions[
 						containerMaxVolume
 					];
 
-					Min[{
+					Min[Cases[{
 						sampleVolume,
 						defaultVolume
-					}]
+					},VolumeP]]
 				]&,
 				{samplePackets,requiredAliquotContainers,totalInjectionVolume}
 			]]
@@ -4285,7 +4516,7 @@ resolveAbsorbanceOptions[
 	];
 
 	(* resolve the aliquot options *)
-	{resolvedAliquotOptions,resolveAliquotOptionsTests}=If[gatherTests,
+	{resolvedAliquotOptions,resolveAliquotOptionsTests}=Quiet[If[gatherTests,
 		resolveAliquotOptions[
 			experimentFunction,
 			Download[mySamples,Object],
@@ -4310,7 +4541,7 @@ resolveAbsorbanceOptions[
 			AliquotWarningMessage->aliquotWarningMessage,
 			Output->Result],{}
 		}
-	];
+	],{Error::SolidSamplesUnsupported,Error::InvalidInput}];
 
 	(* - Verify the sample volume and blank volume - *)
 	(* Note: We will throw a warning, if a BlankVolume is not equal to the sample volume. *)
@@ -4323,13 +4554,13 @@ resolveAbsorbanceOptions[
 	(* If we aren't aliquoting, samples are all required to be in one container *)
 	assayContainerModelPacket=If[MatchQ[Lookup[resolvedAliquotOptions,Aliquot],{True..}],
 		aliquotContainerModelPacket,
-		First[sampleContainerModelPackets]
+		FirstCase[sampleContainerModelPackets,PacketP[],<||>]
 	];
 
 	(* check that the specified sample volumes are sufficient *)
 	sampleVolumesTooSmallQ = If[lunaticQ,
 		Map[(# < 2 Microliter)&, sampleVolumes],
-		Map[(# < Lookup[assayContainerModelPacket,RecommendedFillVolume]/.{Null->50 Microliter})&, sampleVolumes]
+		Map[(# < Lookup[assayContainerModelPacket,RecommendedFillVolume,Null]/.{Null->50 Microliter})&, sampleVolumes]
 	];
 
 	tooSmallSampleVolumes=PickList[sampleVolumes,sampleVolumesTooSmallQ,True];
@@ -4343,7 +4574,7 @@ resolveAbsorbanceOptions[
 			If[
 				lunaticQ,
 				2 Microliter,
-				Lookup[assayContainerModelPacket,RecommendedFillVolume]
+				Lookup[assayContainerModelPacket,RecommendedFillVolume,Null]
 			]
 		]
 	];
@@ -4376,7 +4607,7 @@ resolveAbsorbanceOptions[
 
 	(* Throw message *)
 	If[notEqualBlankVolumesWarning&&messages&&Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::NotEqualBlankVolumesWarning,notEqualBlankVolumes,notEqualSamples]
+		Message[Warning::NotEqualBlankVolumes,notEqualBlankVolumes,notEqualSamples]
 	];
 
 	(* Create test *)
@@ -4487,17 +4718,19 @@ resolveAbsorbanceOptions[
 		]
 	];
 
-	resolvedBlankLabels = Module[{suppliedBlankObjects, uniqueBlanks, preResolvedUniqueBlankLabels, preResolvedBlankLabelRules},
+	resolvedBlankLabels = Module[{suppliedBlankObjects, uniqueBlankVolumeTuples, preResolvedUniqueBlankLabels, preResolvedBlankLabelRules},
 		suppliedBlankObjects = Download[blanks,Object];
-		uniqueBlanks = DeleteDuplicates[Cases[Download[blanks,Object], ObjectP[]]];
-		preResolvedUniqueBlankLabels = Table[CreateUniqueLabel["blank sample"], Length[uniqueBlanks]];
+		(* take volume into consideration when identifying if a blank is unique or not, blankVolumes here is always index matched to blanks so we should be good *)
+		(* this is the same logic as in blankVolumeLabelTuples and blankVolumeTuples *)
+		uniqueBlankVolumeTuples = DeleteDuplicates[Cases[Transpose[{suppliedBlankObjects, blankVolumes}], {ObjectP[], _}]];
+		preResolvedUniqueBlankLabels = Table[CreateUniqueLabel["blank sample"], Length[uniqueBlankVolumeTuples]];
 		preResolvedBlankLabelRules = MapThread[
 			(#1 -> #2)&,
-			{uniqueBlanks, preResolvedUniqueBlankLabels}
+			{uniqueBlankVolumeTuples, preResolvedUniqueBlankLabels}
 		];
 
 		MapThread[
-			Function[{blankObject, blankLabel},
+			Function[{blankObject, blankVolume, blankLabel},
 				Which[
 					MatchQ[blankLabel, Except[Automatic]],
 						blankLabel,
@@ -4506,11 +4739,27 @@ resolveAbsorbanceOptions[
 					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[blankObject, Object]], _String],
 						LookupObjectLabel[simulation, Download[blankObject, Object]],
 					True,
-						Lookup[preResolvedBlankLabelRules, Download[blankObject, Object]]
+						Replace[{blankObject, blankVolume}, preResolvedBlankLabelRules]
 				]
 			],
-			{suppliedBlankObjects, Lookup[roundedOptionsAssoc, BlankLabel]}
+			{suppliedBlankObjects, blankVolumes, Lookup[roundedOptionsAssoc, BlankLabel]}
 		]
+	];
+
+	(* --- Throw error if user is trying to set more than one blank types for cuvette --- *)
+	{tooManyBlanksError, tooManyBlanksOptions} = If[Length[DeleteDuplicates[resolvedBlankLabels]] > 1 && cuvetteQ,
+		{True, {Blanks, BlankVolumes}},
+		{False, {}}
+	];
+
+	(* throw messages *)
+	If[tooManyBlanksError && messages,
+		Message[Error::TooManyBlanks, blanks]
+	];
+
+	(* make test *)
+	tooManyBlanksTest = If[gatherTests,
+		Test["Number of blanks do not exceed 1 when using Cuvette method:", tooManyBlanksError, False]
 	];
 
 	(* --- pull out all the shared options from the input options --- *)
@@ -4555,6 +4804,7 @@ resolveAbsorbanceOptions[
 			plateReaderNumberOfReadingsInvalidOptions,
 			temperatureIncompatibleInvalidOptions,
 			tooManySamplesOptions,
+			tooManyBlanksOptions,
 			incompatibleBlankVolumesInvalidOptions,
 			incompatibleBlankInvalidOptions,
 			invalidSkippedInjection,
@@ -4572,7 +4822,8 @@ resolveAbsorbanceOptions[
 			If[MatchQ[preparationResult, $Failed],
 				{Preparation},
 				{}
-			]
+			],
+			resolvedACUInvalidOptions
 		}]],
 		Null
 	];
@@ -4598,7 +4849,7 @@ resolveAbsorbanceOptions[
 	(* If we aren't aliquoting, samples are all required to be in one container *)
 	assayContainerModelPacket=If[MatchQ[Lookup[resolvedAliquotOptions,Aliquot],{True..}],
 		aliquotContainerModelPacket,
-		First[sampleContainerModelPackets]
+		FirstCase[sampleContainerModelPackets,PacketP[],<||>]
 	];
 
 	(* Resolve to Null if SamplingPattern->Center, else to 80% of the well diameter *)
@@ -4701,6 +4952,7 @@ resolveAbsorbanceOptions[
 				Name->name,
 				Email->email
 			},
+			resolvedACUOptions,
 			resolvedSamplePrepOptions,
 			resolvedAliquotOptions,
 			resolvedPostProcessingOptions
@@ -4749,7 +5001,9 @@ resolveAbsorbanceOptions[
 			moatTests,
 			tooFewReplicatesTest,
 			tooManySamplesTest,
+			tooManyBlanksTest,
 			badContainerOutTests,
+			plateReaderTemperatureNoEquilibrationTest,
 			plateReaderNumberOfReadingsErrorTest,
 			blankContainerErrorTest,
 			temperatureIncompatibleTest,
@@ -4769,7 +5023,8 @@ resolveAbsorbanceOptions[
 			potentialAnalyteTests,
 			validInjectionTests,
 			sampleVolumesTest,
-			microfluidicChipLoadingErrorTest
+			microfluidicChipLoadingErrorTest,
+			resolvedACUTests
 		}],
 		_EmeraldTest
 	];
@@ -4801,7 +5056,9 @@ resolveAbsorbanceOptions[
 DefineOptions[selectAnalyteFromSample,
 	Options :> {
 		{Analyte -> Automatic, Automatic | {(ObjectP[List @@ IdentityModelTypeP] | Null | Automatic)..},"The substance already specified as the analyte for this sample."},
+		{DetectionMethod -> Automatic, Automatic | Absorbance,"The method used to detect the analyte, the program will try to find a molecule in the sample that has information populated to be used with this detection method"},
 		CacheOption,
+		SimulationOption,
 		HelperOutputOption
 	}
 ];
@@ -4814,12 +5071,14 @@ Warning::AmbiguousAnalyte="The desired analyte for sample(s) `1` is ambiguous be
 (* otherwise, pick Null *)
 selectAnalyteFromSample[mySample:ObjectP[{Object[Sample], Model[Sample]}], ops:OptionsPattern[]]:=selectAnalyteFromSample[{mySample}, ops];
 selectAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, ops:OptionsPattern[]]:=Module[
-	{safeOps, cache, allPackets, analyteP, analytesToUse, analyteObjs, compositionObjs, ambiguousQ, output, nonWaterP,
-		outputSpecification, gatherTests, messages, ambiguousResultWarning, specifiedAnalytes, expandedSpecifiedAnalytes},
+	{
+		safeOps,cache,allPackets,analyteP,analytesToUse,analyteObjs,compositionObjs,ambiguousQ,output,nonWaterP,
+		outputSpecification,gatherTests,messages,ambiguousResultWarning,specifiedAnalytes,expandedSpecifiedAnalytes,
+		detectionMethod,extinctionCoefficientsPerComposition,componentToExtinctionCoefficient},
 
 	(* get the Cache and Output options *)
 	safeOps = SafeOptions[selectAnalyteFromSample, ToList[ops]];
-	{cache, outputSpecification, specifiedAnalytes} = Lookup[safeOps, {Cache, Output, Analyte}];
+	{cache, outputSpecification, specifiedAnalytes, detectionMethod, simulation} = Lookup[safeOps, {Cache, Output, Analyte, DetectionMethod, Simulation}];
 
 	(* expand specifiedAnalytes to be the same length as mySamples if it is not already *)
 	expandedSpecifiedAnalytes = If[MatchQ[specifiedAnalytes, Automatic],
@@ -4833,11 +5092,25 @@ selectAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, 
 	messages = Not[gatherTests];
 
 	(* get the composition and analytes fields from all the input samples or models *)
-	allPackets = Download[mySamples, Packet[Analytes, Composition], Cache -> cache, Date -> Now];
+	{allPackets,extinctionCoefficientsPerComposition} = Transpose@Quiet[
+		Download[
+			mySamples,
+			{
+				Packet[Analytes,Composition,Solvent],
+				Composition[[All,2]][ExtinctionCoefficients]
+			},
+			Cache->cache,
+			Simulation->simulation,
+			Date->Now
+		],
+		{Download::FieldDoesntExist,Download::MissingField,Download::MissingCacheField}
+	];
 
 	(* get the analyte objects and the composition objects *)
 	analyteObjs = Download[Lookup[#, Analytes], Object]& /@ allPackets;
 	compositionObjs = Download[Lookup[#, Composition][[All, 2]], Object]& /@ allPackets;
+	(* build an association of the Model[Molecule]->ExtinctionCoefficients *)
+	componentToExtinctionCoefficient = Association[Rule@@@Transpose[{Flatten[compositionObjs,1],Flatten[extinctionCoefficientsPerComposition,1]}]];
 
 	(* hard-coded list of types that are analyte-like *)
 	analyteP = ObjectP[{Model[Molecule, cDNA], Model[Molecule, Oligomer], Model[Molecule, Transcript], Model[Molecule, Protein], Model[Molecule, Protein, Antibody], Model[Molecule, Carbohydrate], Model[Lysate], Model[Cell]}];
@@ -4864,34 +5137,52 @@ selectAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, 
 
 	(* parse the Analytes and Composition fields to find the correct analytes to use *)
 	analytesToUse = MapThread[
-		Function[{composition, analytes, specifiedAnalyte},
-			Which[
-				Not[MatchQ[specifiedAnalyte, Automatic]], specifiedAnalyte,
-				MatchQ[analytes, {IdentityModelP..}], First[analytes],
-				MemberQ[composition, analyteP], FirstCase[composition, analyteP, Null],
-				(* basically saying pick any identity model except for water if you can *)
-				MemberQ[composition, nonWaterP], FirstCase[composition, nonWaterP],
-				True, FirstCase[composition, IdentityModelP, Null]
-			]
-		],
-		{compositionObjs, analyteObjs, expandedSpecifiedAnalytes}
+		Function[{composition, analytes, specifiedAnalyte, samplePacket},
+			Module[{noSolventWaterComposition,extinctionCoefficientBools},
+
+				noSolventWaterComposition = DeleteCases[
+					Cases[compositionObjs,nonWaterP],
+					Download[Lookup[samplePacket,Solvent,Null],Object]
+				];
+				extinctionCoefficientBools=Map[
+					MatchQ[Lookup[componentToExtinctionCoefficient,#,Null],Except[{}|$Failed|Null]]&,
+					noSolventWaterComposition];
+
+				Which[
+					Not[MatchQ[specifiedAnalyte,Automatic]],specifiedAnalyte,
+					MatchQ[analytes,{IdentityModelP..}],First[analytes],
+
+					(* for absorbance, go through composition, pull out their ExtinctionCoefficients and pick the first one that is not water/Solvent *)
+					And[
+						MatchQ[detectionMethod,Absorbance],
+						MemberQ[extinctionCoefficientBools,True]
+					],
+					First@PickList[noSolventWaterComposition,extinctionCoefficientBools],
+
+					MemberQ[composition,analyteP],FirstCase[composition,analyteP,Null],
+					(* basically saying pick any identity model except for water if you can *)
+					MemberQ[composition,nonWaterP],FirstCase[composition,nonWaterP],
+					True,FirstCase[composition,IdentityModelP,Null]
+				]
+		]],
+		{compositionObjs, analyteObjs, expandedSpecifiedAnalytes, allPackets}
 	];
 
 	(* throw a warning if analyte selection is ambiguous *)
 	If[MemberQ[ambiguousQ, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::AmbiguousAnalyte, ObjectToString[PickList[mySamples, ambiguousQ], Cache -> cache], ObjectToString[PickList[analytesToUse, ambiguousQ], Cache -> cache]]
+		Message[Warning::AmbiguousAnalyte, ObjectToString[PickList[mySamples, ambiguousQ], Cache -> cache, Simulation -> simulation], ObjectToString[PickList[analytesToUse, ambiguousQ], Cache -> cache, Simulation -> simulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing warning test with the appropriate result. *)
 	ambiguousResultWarning = If[gatherTests,
 		Module[{failingTest, passingTest},
 			failingTest = If[MemberQ[ambiguousQ, True],
-				Warning["Provided sample(s) " <> ObjectToString[PickList[mySamples, ambiguousQ], Cache -> cache] <> " contains only one identity model in its Analyte or Composition fields:", True, False],
+				Warning["Provided sample(s) " <> ObjectToString[PickList[mySamples, ambiguousQ], Cache -> cache, Simulation -> simulation] <> " contains only one identity model in its Analyte or Composition fields:", True, False],
 				Nothing
 			];
 
 			passingTest = If[MemberQ[ambiguousQ, False],
-				Warning["Provided sample(s) " <> ObjectToString[Complement[mySamples, PickList[mySamples, ambiguousQ]], Cache -> cache] <> " contains only one identity model in its Analyte or Composition fields:", True, True],
+				Warning["Provided sample(s) " <> ObjectToString[Complement[mySamples, PickList[mySamples, ambiguousQ]], Cache -> cache, Simulation -> simulation] <> " contains only one identity model in its Analyte or Composition fields:", True, True],
 				Nothing
 			];
 
@@ -4912,8 +5203,8 @@ selectAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, 
 (* private function to generate the list of protocol packets containing resource blobs *)
 absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | Object[Protocol, AbsorbanceIntensity] | Object[Protocol, AbsorbanceKinetics]), mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}] := Module[
 	{expandedResolvedOptions,outputSpecification,output,gatherTests,messages,numReplicates,samplesInWithReplicates,
-	lunaticQ,instrumentOpt,injectionObjects,uniqueInjectionSamples,resolvedBlanks,blanksWithReplicates,blankVolumesWithReplicates,
-	resolvedBlankVolumesFinal,blankAbsorbance,maxNumBlankPlates,blankContainerModel,blankContainersResources,
+	lunaticQ,instrumentOpt,injectionObjects,uniqueInjectionSamples,resolvedBlanks,blanksWithReplicates,blankVolumesWithReplicates, blankPackets,
+	resolvedBlankVolumesFinal,resolvedBlankLabels,blankAbsorbance,maxNumBlankPlates,blankContainerModel,blankContainersResources,
 	microfluidicChipRackResource,manualLoadingPipetteResource,manualLoadingTipsResource,
 	listedInstrumentPackets,instrumentModelPacket,instrumentModel,wavelengths,wavelengthsWithReplicates,quantConcsWithReplicates,
 	resolvedOptionsNoHidden,previewRule,optionsRule,testsRule,resultRule,allResourceBlobs,fulfillable,frqTests,
@@ -4932,7 +5223,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	secondaryInjections,tertiaryInjections,quaternaryInjections,injectionSampleVolumeAssociation,allowedInjectionContainers,
 	injectionSampleToResourceLookup,primaryInjectionWithResources,secondaryInjectionsWithResources,tertiaryInjectionsWithResources,
 	quaternaryInjectionsWithResources,anyInjectionsQ,numberOfInjectionContainers,washVolume,
-	primaryCleaningSolvent,secondaryCleaningSolvent,injectorCleaningFields,
+	line1PrimaryPurgingSolvent,line2PrimaryPurgingSolvent, line1SecondaryPurgingSolvent,line2SecondaryPurgingSolvent, injectorCleaningFields,
 	wavelengthOptionName,wavelengthFieldName,experimentFunction,primitiveHead,simulation,
 	resolvedPreparation,nonHiddenOptions,sampleLabelsWithReplicates,blankLabelsWithReplicates,unitOperationPackets,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,resourcesOk,resourceTests},
 
@@ -4972,22 +5263,27 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	(* simulate the samples after they go through all the sample prep *)
 	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[experimentFunction, mySamples, myResolvedOptions, Cache -> cache, Simulation->simulation];
 
+	(* pull out the resolved BlankAbsorbance, Blanks, and BlankVolumes options *)
+	{blankAbsorbance, resolvedBlanks, resolvedBlankVolumesFinal, resolvedBlankLabels} = Lookup[expandedResolvedOptions, {BlankAbsorbance, Blanks, BlankVolumes, BlankLabel}];
+
 	(* make a Download call to get the sample, container, and instrument packets *)
-	{listedSimulatedContainerPackets, listedSampleContainers, listedInstrumentPackets, maxVolumeContainerModelPackets,downloadedInjectionValues} = Quiet[
+	{listedSimulatedContainerPackets, listedSampleContainers, listedInstrumentPackets, maxVolumeContainerModelPackets,downloadedInjectionValues, blankPackets} = Quiet[
 		Download[
 			{
 				simulatedSamples,
 				mySamples,
 				{instrumentOpt},
 				Flatten[{validModelsForLunaticLoading[], BMGCompatiblePlates[Absorbance], absorbanceAllowedCuvettes}],
-				uniqueInjectionSamples
+				uniqueInjectionSamples,
+				resolvedBlanks
 			},
 			{
 				{Packet[Container[Model]]},
 				{Container[Object]},
 				{Packet[Model]},
 				{Packet[MaxVolume]},
-				{Container[Object],Container[Model][Object]}
+				{Container[Object],Container[Model][Object]},
+				{Packet[Volume, Container]}
 			},
 			Cache -> cache,
 			Simulation -> updatedSimulation,
@@ -5137,12 +5433,17 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 
 	(* Make the resources for the cuvettes *)
 	cuvetteResources = If[cuvetteQ,
-		Map[
-		If[NullQ[#],
-			Null,
-			Resource[Sample->#, Name->ToString[Unique[]], Rent->True]
-		]&,
-		cuvettes
+		MapThread[
+			Which[
+				NullQ[#1],
+				Null,
+				!NullQ[#2],
+				(* Note that we don't give Cuvettes resources if they are Aliquot containers as they will be picked in the subprotocol. We will update the protocol field properly at compiler time. *)
+				Link[#1],
+				True,
+				Link[Resource[Sample->#1, Name->ToString[Unique[]], Rent->True]]
+			]&,
+			{cuvettes,Lookup[expandedResolvedOptions, AliquotContainer]}
 		],
 		Null
 	];
@@ -5243,12 +5544,9 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 
 	(* --- Generate the fields for blanks --- *)
 
-	(* pull out the resolved BlankAbsorbance, Blanks, and BlankVolumes options *)
-	{blankAbsorbance, resolvedBlanks, resolvedBlankVolumesFinal} = Lookup[expandedResolvedOptions, {BlankAbsorbance, Blanks, BlankVolumes}];
-
 	(* get the Blanks accounting for the number of replicates *)
 	(* need to Download Object as well *)
-	blanksWithReplicates = If[MatchQ[resolvedBlanks, {Null...} | Null],
+	blanksWithReplicates = If[NullQ[resolvedBlanks],
 		{},
 		expandReplicatesFunction[Download[resolvedBlanks, Object]]
 	];
@@ -5446,9 +5744,18 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 						#1,
 						Resource@@{
 							Sample -> #1,
-							If[MatchQ[achievableResolution,VolumeP],
-								Amount -> achievableResolution,
-								Nothing
+							(* For plate reader, we cannot simply request 1.1 x resolved blank volumes, because it is possible that we just resolve to use an existing sample on the same sample plate as our blank . We resolve the blank volume using sample volume, and it is a perfectly reasonable setup to have blank sample volume the same as the sample volume. In this case we request the whole sample. *)
+							Which[
+								And[
+									MatchQ[#1,ObjectP[Object[Sample]]],
+									MatchQ[#2, VolumeP],
+									MatchQ[Lookup[fetchPacketFromCache[#1, Flatten[blankPackets]], {Container, Volume}, Null], {ObjectP[Object[Container, Plate]], EqualP[#2]}]
+								],
+									Nothing,
+								MatchQ[achievableResolution,VolumeP],
+									Amount -> achievableResolution,
+								True,
+									Nothing
 							],
 							If[MatchQ[#1,ObjectP[Model]],
 								Container -> PreferredContainer[achievableResolution],
@@ -5608,36 +5915,45 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	washVolume=($BMGFlushVolume + 2.5 Milliliter) * 2;
 
 	(* Create solvent resources to clean the lines *)
-	primaryCleaningSolvent=Resource@@{
+	line1PrimaryPurgingSolvent=Resource@@{
 		Sample->Model[Sample,StockSolution,"id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Primary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Primary Purging Solvent"
 	};
+	line2PrimaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->Model[Sample,StockSolution,"id:BYDOjv1VA7Zr"] (* 70% Ethanol *),
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Primary Purging Solvent"
+		},
+		Null
+	];
 
-	secondaryCleaningSolvent=Resource@@{
+	line1SecondaryPurgingSolvent=Resource@@{
 		Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Secondary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Secondary Purging Solvent"
 	};
+	line2SecondaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Secondary Purging Solvent"
+		},
+		Null
+	];
 
 	(* Populate fields needed to clean the lines before/after the run *)
-	(* If we're only cleaning 1 line we can use a single 50mL to hold prepping and flushing solvent *)
 	injectorCleaningFields=If[anyInjectionsQ,
 		<|
-			PrimaryPreppingSolvent->primaryCleaningSolvent,
-			PrimaryFlushingSolvent->primaryCleaningSolvent,
-			SecondaryPreppingSolvent->secondaryCleaningSolvent,
-			SecondaryFlushingSolvent ->secondaryCleaningSolvent
+			Line1PrimaryPurgingSolvent->line1PrimaryPurgingSolvent,
+			Line2PrimaryPurgingSolvent->line2PrimaryPurgingSolvent,
+			Line1SecondaryPurgingSolvent->line1SecondaryPurgingSolvent,
+			Line2SecondaryPurgingSolvent ->line2SecondaryPurgingSolvent
 		|>,
 		<||>
 	];
@@ -5648,7 +5964,48 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 
 	(* expand sample labels for replicates *)
 	sampleLabelsWithReplicates = expandReplicatesFunction[Lookup[myResolvedOptions, SampleLabel]];
-	blankLabelsWithReplicates = expandReplicatesFunction[Lookup[myResolvedOptions, BlankLabel]];
+
+	blankLabelsWithReplicates = If[cuvetteQ,
+		(* for cuvette, all sample and sample replicates share one blank (in exportCary) so we simply duplicate the labels here b/c maximum number of blanks to make is 1 *)
+		expandReplicatesFunction[resolvedBlankLabels],
+		(* for plate reader, each sample and sample replicates have their own blank, so we need to create a new sample label for marking *)
+		Module[{uniqueBlankLabels, newBlankLabels, oldToNewLabelRules},
+			(* get all unique blank sample labels *)
+			uniqueBlankLabels = DeleteDuplicates[resolvedBlankLabels];
+
+			(* make another set of blank labels (according to number of replicates) ready to use *)
+			newBlankLabels = Table[
+				Table[CreateUniqueLabel["blank sample"], numReplicatesNoNull - 1],
+				Length[uniqueBlankLabels]
+			];
+
+			(* make replacement rules *)
+			oldToNewLabelRules = Rule @@@ Transpose[{uniqueBlankLabels, newBlankLabels}];
+
+			(* what we want here is that if user gives us a prepared blank sample (with blank volume being Null), all replicates will share the same blank sample, so we simply duplicate blank labels *)
+			(* if user gives us a blank volume indicating preparing new blanks in our procedure, then we will make a new blank for each of the duplicate, therefore requiring a new blank label for each of the replicates *)
+			(* for example, for the following input
+			input: {sample1, sample2}
+			NumberOfReplicates -> 2,
+			Blanks: {Object[Sample, "id:1234"], Model[Sample, "Milli-Q water"]},
+			BlankVolumes: {Null, 200uL}
+			the resolved expanded BlankLabels will be:
+			{"blank sample 1", "blank sample 1", "blank sample 2", "blank sample 3"}
+			indicating:
+			2 replicates of sample1 will share the same prepared blank Object[Sample, "id:1234"], therefore only need one blank label "blank sample 1",
+			2 replicates of sample2, each of them will get a fresh blank prepared from 200uL of Model[Sample, "Milli-Q water"], so we need different blank labels ("blank sample 2", "blank sample 3")
+			*)
+			Flatten[MapThread[
+				If[NullQ[#1],
+					(* if we can use the blank directly, no need to create new labels for it since the blank is already prepared *)
+					ConstantArray[#2, numReplicatesNoNull],
+					(* otherwise combine the new labels with old labels *)
+					Prepend[#2 /. oldToNewLabelRules, #2]
+				]&,
+				{resolvedBlankVolumesFinal, resolvedBlankLabels}
+			]]
+		]
+	];
 
 	(* get the non hidden options *)
 	nonHiddenOptions=Lookup[
@@ -5672,11 +6029,11 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				ResolvedOptions -> resolvedOptionsNoHidden,
 				Replace[SamplesIn] -> (Link[#, Protocols]& /@ samplesInResources),
 				Replace[Checkpoints] -> {
-					{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-					{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-					{"Reading Absorbance", estimatedReadingTime, "Sample absorbance is measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 * Minute]]},
-					{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 * Minute]]},
-					{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
+					{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+					{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+					{"Reading Absorbance", estimatedReadingTime, "Sample absorbance is measured.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 * Minute]]},
+					{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 * Minute]]},
+					{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
 				},
 				Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ containersIn,
 				NumberOfReplicates -> numReplicates,
@@ -5687,11 +6044,12 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				],
 				ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
 				EquilibrationTime -> Lookup[expandedResolvedOptions, EquilibrationTime],
-				Replace[BlankVolumes] -> If[MatchQ[blankVolumesWithReplicates,{Null..}],
-					{},
-					blankVolumesWithReplicates
-				],
+				TargetCarbonDioxideLevel -> Lookup[expandedResolvedOptions, TargetCarbonDioxideLevel],
+				TargetOxygenLevel -> Lookup[expandedResolvedOptions, TargetOxygenLevel],
+				AtmosphereEquilibrationTime -> Lookup[expandedResolvedOptions, AtmosphereEquilibrationTime],
+				Replace[BlankVolumes] -> If[NullQ[blankVolumesWithReplicates], {}, blankVolumesWithReplicates],
 				Replace[Blanks] -> (Link[#] & /@ allBlankResources),
+				Replace[BlankLabels] -> If[NullQ[blankLabelsWithReplicates], {}, blankLabelsWithReplicates],
 				Replace[SamplesInStorage] -> expandedSamplesInStorage,
 				PlateReaderMix -> Lookup[expandedResolvedOptions, PlateReaderMix],
 				PlateReaderMixRate -> Lookup[expandedResolvedOptions, PlateReaderMixRate],
@@ -5729,12 +6087,10 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				AcquisitionMixRateIncrements-> Lookup[expandedResolvedOptions,AcquisitionMixRateIncrements],
 				MaxStirAttempts-> Lookup[expandedResolvedOptions,MaxStirAttempts],
 				AdjustMixRate-> Lookup[expandedResolvedOptions,AdjustMixRate],
-				MaxAcquisitionMixRate-> Lookup[expandedResolvedOptions,MaxAcquisitionMixRate],
-				MaxAcquisitionMixRate-> Lookup[expandedResolvedOptions,MaxAcquisitionMixRate],
 				Replace[StirBar]-> stirBarResource,
 				StirAttemptsCounter -> 1,
 				StirBarRetriever -> stirBarRetrieverResource,
-				Replace[Cuvettes]-> Link/@cuvetteResources,
+				Replace[Cuvettes]-> cuvetteResources,
 				Replace[ContainersOut] -> containersOutResources,
 				Replace[RecoupSample] -> recoupSampleBoolean,
 				Replace[SamplesOutStorage] -> samplesOutWithNumReplicates,
@@ -5885,9 +6241,9 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 			MatchQ[resolvedPreparation, Robotic],
 		{True, {}},
 		gatherTests,
-			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Simulation->simulation,Cache->cache],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Simulation->updatedSimulation,Cache->cache],
 		True,
-			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Simulation->simulation,Cache->cache],Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Simulation->updatedSimulation,Cache->cache],Null}
 	];
 
 	(* --- Output --- *)
@@ -5924,7 +6280,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 requiredLunaticChipTip = Model[Item, Tips, "50 uL Hamilton tips, non-sterile"];
 
 (* get the valid container models that can be used with this experiment; it depends on whether we're using the Lunatic or not *)
-(* using a private SampleManipulation function for Lunatic case *)
+(* using a private function for Lunatic case *)
 (* need to make sure the requiredLunaticChipTip can fit in the container, and need to make sure your source container isn't too small *)
 validModelsForLunaticLoading[] := validModelsForLunaticLoading[] = Module[
 	{liquidHandlerContainers, chipTip, containerModelPackets, tipModelPackets, reachableContainerBools,
@@ -5934,7 +6290,7 @@ validModelsForLunaticLoading[] := validModelsForLunaticLoading[] = Module[
 	(* get all the liquid handler-compatible containers *)
 	liquidHandlerContainers = compatibleSampleManipulationContainers[MicroLiquidHandling];
 
-	(* get teh chip tip we are going to be comparing against *)
+	(* get the chip tip we are going to be comparing against *)
 	chipTip = requiredLunaticChipTip;
 
 	(* Download the relevant fields*)
@@ -6002,7 +6358,7 @@ ValidExperimentAbsorbanceSpectroscopyQ[mySamples : ListableP[_String | ObjectP[O
 	listedOptions = ToList[myOptions];
 	listedSamples = ToList[mySamples];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentAbsorbanceSpectroscopy *)
@@ -6047,14 +6403,14 @@ ValidExperimentAbsorbanceSpectroscopyQ[mySamples : ListableP[_String | ObjectP[O
 
 
 (* plates overloads *)
-ValidExperimentAbsorbanceSpectroscopyQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentAbsorbanceSpectroscopyQ]] := Module[
+ValidExperimentAbsorbanceSpectroscopyQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentAbsorbanceSpectroscopyQ]] := Module[
 	{listedOptions, preparedOptions, absSpecTests, initialTestDescription, allTests, verbose, outputFormat, listedContainers},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedContainers = ToList[myContainers];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentAbsorbanceSpectroscopy *)
@@ -6120,7 +6476,7 @@ ExperimentAbsorbanceSpectroscopyOptions[mySamples : ListableP[_String | ObjectP[
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentAbsorbanceSpectroscopy *)
@@ -6135,13 +6491,13 @@ ExperimentAbsorbanceSpectroscopyOptions[mySamples : ListableP[_String | ObjectP[
 
 
 (* containers overloads *)
-ExperimentAbsorbanceSpectroscopyOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopyOptions]] := Module[
+ExperimentAbsorbanceSpectroscopyOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopyOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentAbsorbanceSpectroscopy *)
@@ -6172,7 +6528,7 @@ ExperimentAbsorbanceSpectroscopyPreview[mySamples : ListableP[_String | ObjectP[
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentAbsorbanceSpectroscopy[mySamples, Append[noOutputOptions, Output -> Preview]]
@@ -6180,13 +6536,13 @@ ExperimentAbsorbanceSpectroscopyPreview[mySamples : ListableP[_String | ObjectP[
 
 
 (* container overloads *)
-ExperimentAbsorbanceSpectroscopyPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopyPreview]] := Module[
+ExperimentAbsorbanceSpectroscopyPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentAbsorbanceSpectroscopyPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentAbsorbanceSpectroscopy[myContainers, Append[noOutputOptions, Output -> Preview]]

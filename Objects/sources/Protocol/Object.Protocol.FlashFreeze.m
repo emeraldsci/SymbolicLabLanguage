@@ -74,13 +74,19 @@ DefineObjectType[Object[Protocol,FlashFreeze],
 				Description->"The tweezer that will be used to immerse the sample container into the liquid nitrogen dewar during flash freezing.",
 				Category->"General"
 			},
-			CryoTransporter->{
-				Format->Single,
-				Class->Link,
-				Pattern:>_Link,
-				Relation->Alternatives[Model[Instrument,CryogenicFreezer],Object[Instrument,CryogenicFreezer]],
-				Description->"The portable cryogenic freezer that will hold the sample during transportation.",
-				Category->"Instrument Specifications"
+			CryoTransporter -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Model[Instrument, PortableCooler],
+					Object[Instrument, PortableCooler],
+					(* Older protocols use: *)
+					Model[Instrument, CryogenicFreezer],
+					Object[Instrument, CryogenicFreezer]
+				],
+				Description -> "The transportable cryogenic freezer that will hold the sample during transportation.",
+				Category -> "Instrument Specifications"
 			},
 			Funnel->{
 				Format->Single,

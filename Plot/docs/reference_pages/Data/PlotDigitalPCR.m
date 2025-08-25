@@ -30,6 +30,26 @@ DefineUsage[PlotDigitalPCR,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotDigitalPCR[protocol]", "plot"},
+				Description -> "creates a 'plot' using fluorescence signal amplitude values for droplets in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing digital PCR data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, DigitalPCR]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the digital PCR protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso->{

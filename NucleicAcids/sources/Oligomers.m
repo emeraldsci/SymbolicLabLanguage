@@ -1147,7 +1147,7 @@ MakeMoleculeBoxes[]:=Module[{},
 	Unprotect[Molecule];
 
 	PrependTo[FormatValues[Molecule],
-		HoldPattern[MakeBoxes[mol:Molecule[{__Atom|__String},{___Bond},___],StandardForm]]/;TrueQ[$MoleculeBlobs]:>
+		HoldPattern[MakeBoxes[mol:Molecule[{(__Atom|__String)..},{___Bond},___],StandardForm]]/;TrueQ[$MoleculeBlobs]:>
 			With[{boxes=ToBoxes[ECL`PlotMolecule[mol]]},
 				InterpretationBox[boxes,mol]
 			]

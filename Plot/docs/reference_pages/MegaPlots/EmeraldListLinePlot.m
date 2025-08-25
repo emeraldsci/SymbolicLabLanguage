@@ -24,7 +24,7 @@ DefineUsage[EmeraldListLinePlot,{
 								"y"->Widget[Type->Expression,Pattern:>UnitsP[],Size->Word]
 							}
 						],
-						Widget[Type->Expression,Pattern:>CoordinatesP|QuantityCoordinatesP[]|Null,Size->Paragraph]
+						Widget[Type->Expression,Pattern:>oneDataSetP,Size->Paragraph]
 					]
 				}
 			},
@@ -63,9 +63,14 @@ DefineUsage[EmeraldListLinePlot,{
 				{
 					InputName->"nestedData",
 					Description->"Data to plot on primary (left) axis.  Data can have units associated as a QuantityArray, or be raw numerical values.",
-					Widget->Adder[Adder[Alternatives[
-						"Single Dataset"->Widget[Type->Expression,Pattern:>CoordinatesP|QuantityCoordinatesP[]|Null,Size->Paragraph]
-					]]]
+					Widget->Alternatives[
+						Adder[
+							Widget[Type->Expression,Pattern:>oneDataSetP,Size->Paragraph]
+						],
+						Adder[Adder[Alternatives[
+							"Single Dataset"->Widget[Type->Expression,Pattern:>oneDataSetP,Size->Paragraph]
+						]]]
+					]
 				}
 			},
 			Outputs:>{

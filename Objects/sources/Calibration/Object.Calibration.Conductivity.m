@@ -18,12 +18,13 @@ DefineObjectType[Object[Calibration, Conductivity], {
 			Category -> "Qualifications & Maintenance"
 		},
 		Temperature -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
-			Description -> "The recorded temperature of the calibration standard during the course of the calibration.",
-			Category -> "Qualifications & Maintenance"
+			Description -> "For each member of Conductivity, the recorded temperature of the calibration standard during the course of the calibration.",
+			Category -> "Qualifications & Maintenance",
+			IndexMatching -> Conductivity
 		},
 		ReferenceTemperature -> {
 			Format -> Single,
@@ -34,17 +35,18 @@ DefineObjectType[Object[Calibration, Conductivity], {
 			Category -> "Qualifications & Maintenance"
 		},
 		CellConstant -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> GreaterEqualP[0 1/Centimeter],
 			Units -> 1/Centimeter,
-			Description -> "The ratio of the distance between the electrode plates to the surface area of the plate determined by the calibration against conductivity standard.",
-			Category -> "Qualifications & Maintenance"
+			Description -> "For each member of Conductivity, the ratio of the distance between the electrode plates to the surface area of the plate determined by the calibration against conductivity standard.",
+			Category -> "Qualifications & Maintenance",
+			IndexMatching -> Conductivity
 		},
 		Conductivity -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class ->  Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> GreaterEqualP[0 Micro Siemens/Centimeter],
 			Units -> Micro Siemens/Centimeter,
 			Description -> "The conductivity of calibration standard against of which probe was calibrated.",
 			Category -> "Qualifications & Maintenance"

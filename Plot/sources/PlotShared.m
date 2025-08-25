@@ -314,6 +314,8 @@ peakTriplets= {
 	{Object[Data, ChromatographyMassSpectra], Absorbance, AbsorbancePeaksAnalyses},
 	{Object[Data, ChromatographyMassSpectra], IonAbundance, IonAbundancePeaksAnalyses},
 	{Object[Data, ChromatographyMassSpectra], MassSpectrum, MassSpectrumPeaksAnalyses},
+	{Object[Data, CoulterCount], DiameterDistribution, DiameterPeaksAnalyses},
+	{Object[Data, CoulterCount], UnblankedDiameterDistribution, DiameterPeaksAnalyses},
 	{Object[Data, FluorescenceSpectroscopy], ExcitationSpectrum, ExcitationSpectrumPeaksAnalyses},
 	{Object[Data, FluorescenceSpectroscopy], EmissionSpectrum, EmissionSpectrumPeaksAnalyses},
 	{Object[Data, LuminescenceSpectroscopy], EmissionSpectrum, PeaksAnalyses},
@@ -322,7 +324,7 @@ peakTriplets= {
 	{Object[Data, PAGE], OptimalLaneIntensity, LanePeaksAnalyses},
 	{Object[Data, Western], MassSpectrum, MassSpectrumPeaksAnalyses},
 	{Object[Data, TLC], Intensity, LanePeaksAnalyses},
-	{Object[Data, XRayDiffraction], DiffractionSpectrum, DiffractionPeaksAnalyses},
+	{Object[Data, XRayDiffraction], BlankedDiffractionPattern, DiffractionPeaksAnalyses},
 	{Object[Data, IRSpectroscopy], AbsorbanceSpectrum, AbsorbanceSpectrumPeaksSource},
 	{Object[Data, DifferentialScanningCalorimetry], HeatingCurves, HeatingCurvePeaksAnalyses}
 };

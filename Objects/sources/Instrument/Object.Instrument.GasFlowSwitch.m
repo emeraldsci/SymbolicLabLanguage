@@ -59,6 +59,16 @@ DefineObjectType[Object[Instrument, GasFlowSwitch], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if maintenance protocols are automatically generated to replace the tanks connected to this gas flow switch if tank replacement is indicated.",
 			Category -> "Qualifications & Maintenance"
+		},
+		TurnsToOpen -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Round[Download[Field[Model],TurnsToOpen],1/4]},Round[Download[Field[Model],TurnsToOpen],1/4]],(*display as rational or integer in 1/4 increments*)
+			Pattern:> Alternatives[
+				_Rational,
+				_Integer
+			],
+			Description -> "The number of turns (in 1/4 turn increments) that the pressure builder valves of tanks connected to this gas flow switch should be opened displayed as a fraction or integer.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

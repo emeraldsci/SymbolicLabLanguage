@@ -59,13 +59,22 @@ DefineTests[ExperimentPowderXRD,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentPowderXRD[
+				Model[Sample, "Caffeine"],
+				PreparedModelAmount -> 5 Milligram,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, PowderXRD]]
+		],
 		Test["Populate the XRDParameters field with the index matching fields that resolve to be the same thing and Null for others:",
 			Download[
 				ExperimentPowderXRD[
 					{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]},
 					ExposureTime -> 0.1*Second,
 					OmegaAngleIncrement -> {0.1*AngularDegree, 1*AngularDegree},
-					DetectorDistance -> {60.*Millimeter, 70.*Millimeter},
+					DetectorDistance -> {61.*Millimeter, 70.*Millimeter},
 					DetectorRotation -> Fixed,
 					MinOmegaAngle -> 0.*AngularDegree,
 					MaxOmegaAngle -> 5.*AngularDegree,
@@ -92,7 +101,7 @@ DefineTests[ExperimentPowderXRD,
 					{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]},
 					ExposureTime -> 0.1*Second,
 					OmegaAngleIncrement -> {0.1*AngularDegree, 1*AngularDegree},
-					DetectorDistance -> {60.*Millimeter, 70.*Millimeter},
+					DetectorDistance -> {61.*Millimeter, 70.*Millimeter},
 					DetectorRotation -> Fixed,
 					MinOmegaAngle -> 0.*AngularDegree,
 					MaxOmegaAngle -> 5.*AngularDegree,
@@ -131,16 +140,16 @@ DefineTests[ExperimentPowderXRD,
 			Variables :> {options}
 		],
 		Example[{Options, DetectorDistance, "Specify the detector distance for each given sample in a PowderXRD experiment:"},
-			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 200*Millimeter}, Output -> Options];
+			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 200*Millimeter}, Output -> Options];
 			Lookup[options, DetectorDistance],
-			{60*Millimeter, 200*Millimeter},
+			{61*Millimeter, 200*Millimeter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 		Example[{Options, DetectorDistance, "DetectorDistance automatically resolves to the smallest value allowed given the constraints provided by the omega and detector angles:"},
 			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> {-4.99*AngularDegree, -17.24*AngularDegree}, MaxOmegaAngle -> {4.99*AngularDegree, 17.24*AngularDegree}, Output -> Options];
 			Lookup[options, DetectorDistance],
-			{60*Millimeter, 70*Millimeter},
+			{61*Millimeter, 70*Millimeter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -164,20 +173,20 @@ DefineTests[ExperimentPowderXRD,
 			Variables :> {options}
 		],
 		Example[{Options, MinOmegaAngle, "If not specified, MinOmegaAngle resolves to the lowest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, Output -> Options];
+			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, Output -> Options];
 			Lookup[options, MinOmegaAngle],
-			{-4.99*AngularDegree, -17.24*AngularDegree, Null},
+			{-8.49 AngularDegree, -17.24 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 		Example[{Options, MinOmegaAngle, "MinOmegaAngle and MaxOmegaAngle values are stored in the OmegaAngles field:"},
 			Download[
-				ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
+				ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
 				OmegaAngles
 			],
 			{
-				{-4.99*AngularDegree, 4.99*AngularDegree},
-				{-17.24*AngularDegree, 17.24*AngularDegree},
+				{-8.49 AngularDegree, 8.49 AngularDegree},
+				{-17.24 AngularDegree, 17.24 AngularDegree},
 				{Null, Null}
 			},
 			EquivalenceFunction -> Equal
@@ -190,9 +199,9 @@ DefineTests[ExperimentPowderXRD,
 			Variables :> {options}
 		],
 		Example[{Options, MaxOmegaAngle, "If not specified, MaxOmegaAngle resolves to the largest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, Output -> Options];
+			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, Output -> Options];
 			Lookup[options, MaxOmegaAngle],
-			{4.99*AngularDegree, 17.24*AngularDegree, Null},
+			{8.49 AngularDegree, 17.24 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -216,8 +225,8 @@ DefineTests[ExperimentPowderXRD,
 				DetectorAngles
 			],
 			{
-				{0*AngularDegree, 0*AngularDegree},
-				{0*AngularDegree, 81.24*AngularDegree}
+				{0 AngularDegree, 0 AngularDegree},
+				{0 AngularDegree, 81.25 AngularDegree}
 			},
 			EquivalenceFunction -> Equal
 		],
@@ -243,9 +252,9 @@ DefineTests[ExperimentPowderXRD,
 			Variables :> {options}
 		],
 		Example[{Options, MaxDetectorAngle, "MaxDetectorAngle automatically resolves to the largest value allowed by the specified DetectorDistance if DetectorRotation -> Sweeping, or Null if DetectorRotation -> Fixed:"},
-			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}, Output -> Options];
+			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}, Output -> Options];
 			Lookup[options, MaxDetectorAngle],
-			{56.74*AngularDegree, 68.99*AngularDegree, Null},
+			{60.25 AngularDegree, 69 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -298,6 +307,11 @@ DefineTests[ExperimentPowderXRD,
 			Lookup[options, Instrument],
 			ObjectP[Model[Instrument, Diffractometer, "XtaLAB Synergy-R"]]
 		],
+		Example[{Options, TransferType, "Specify wheather samples are to be loaded into the CrystallizationPlate as solids or slurries with TransferType:"},
+			options = ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID]}, TransferType -> MassTransfer, Output -> Options];
+			Lookup[options, TransferType],
+			MassTransfer
+		],
 		Example[{Messages, "InputContainsTemporalLinks", "Throw a message if given a temporal link:"},
 			ExperimentPowderXRD[Link[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Now - 1 Minute]],
 			ObjectP[Object[Protocol, PowderXRD]],
@@ -320,7 +334,17 @@ DefineTests[ExperimentPowderXRD,
 			}
 		],
 		Example[{Messages, "PowderXRDTooManySamples", "Throws an error if trying to run on too many samples:"},
-			ExperimentPowderXRD[ConstantArray[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], 98], SpottingVolume -> 1 Microliter, Aliquot -> True],
+			ExperimentPowderXRD[ConstantArray[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], 97], SpottingVolume -> 1 Microliter, Aliquot -> True],
+			$Failed,
+			Messages :> {
+				Error::PowderXRDTooManySamples,
+				Error::InvalidInput
+			},
+			TimeConstraint -> 300
+		],
+		(* We use two wells to correct any plate rotation while running the solid powder plate. *)
+		Test["Throws an error if trying to run on too many samples:",
+			ExperimentPowderXRD[ConstantArray[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID], 93]],
 			$Failed,
 			Messages :> {
 				Error::PowderXRDTooManySamples,
@@ -335,6 +359,34 @@ DefineTests[ExperimentPowderXRD,
 				Error::DuplicateName,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages, "UnableToResolveTransferType", "An error is thrown if TransferType is unspecified and the samples (following any sample preparation) are not of the same State:"},
+			ExperimentPowderXRD[{
+				Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID],
+				Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID]
+			}],
+			$Failed,
+			Messages :> {Error::UnableToResolveTransferType, Error::InvalidSamplesForTransferType, Error::InvalidOption, Error::InvalidInput}
+		],
+		Example[{Messages, "InvalidSamplesForTransferType", "An error is thrown if a liquid sample is provided with a TransferType of MassTransfer:"},
+			ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], TransferType->MassTransfer],
+			$Failed,
+			Messages :> {Error::InvalidSamplesForTransferType, Error::InvalidOption, Error::InvalidInput}
+		],
+		Example[{Messages, "CrystallizationPlatePreparationTransferTypeMismatch", "An error is thrown if a Robotic CrystallizationPlatePreparation was specified with a TransferType of MassTransfer:"},
+			ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID], TransferType->MassTransfer, CrystallizationPlatePreparation->Robotic],
+			$Failed,
+			Messages :> {Error::CrystallizationPlatePreparationTransferTypeMismatch, Error::InvalidOption}
+		],
+		Example[{Messages, "InvalidSpottingVolumeForTransferType", "SpottingVolume may not be specified when TransferType -> MassTransfer:"},
+			ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID], TransferType->MassTransfer, SpottingVolume->1 Microliter],
+			$Failed,
+			Messages :> {Error::InvalidSpottingVolumeForTransferType, Error::InvalidOption}
+		],
+		Test["SpottingVolume must be specified when TransferType -> Slurry:",
+			ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], TransferType->Slurry, SpottingVolume->Null],
+			$Failed,
+			Messages :> {Error::InvalidSpottingVolumeForTransferType, Error::InvalidOption}
 		],
 		Example[{Messages, "FixedOptionsWhileSweeping", "FixedDetectorAngle may not be specified when DetectorRotation -> Sweeping:"},
 			ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, FixedDetectorAngle -> 10*AngularDegree, DetectorRotation -> Sweeping],
@@ -425,7 +477,7 @@ DefineTests[ExperimentPowderXRD,
 			}
 		],
 		Example[{Messages, "DetectorTooClose", "DetectorDistance may not be closer than is allowed by the specified angles:"},
-			ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> -17.24*AngularDegree, DetectorDistance -> 60*Millimeter],
+			ExperimentPowderXRD[{Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> -17.24*AngularDegree, DetectorDistance -> 61*Millimeter],
 			$Failed,
 			Messages :> {
 				Error::DetectorTooClose,
@@ -453,6 +505,19 @@ DefineTests[ExperimentPowderXRD,
 				Error::InvalidOption
 			}
 		],
+		Example[{Messages, "NoPossibleDetectorDistanceForAngles ", "If the specified angles are impossible to achieve at any detector distance, an error is surfaced:"},
+			ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID],
+				DetectorRotation -> Fixed,
+				FixedDetectorAngle -> 20 AngularDegree,
+				MinOmegaAngle -> -17.24 AngularDegree,
+				MaxOmegaAngle -> 17.24 AngularDegree
+			],
+			$Failed,
+			Messages :> {
+				Error::NoPossibleDetectorDistanceForAngles,
+				Error::InvalidOption
+			}
+		],
 
 		(* examples for all the shared options *)
 		Example[{Options, Aliquot, "Aliquot resolves to True if the sample needs to be moved into the proper container, and False if it does not need to be:"},
@@ -469,38 +534,16 @@ DefineTests[ExperimentPowderXRD,
 			Download[ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Confirm -> True], Status],
 			Processing|ShippingMaterials|Backlogged
 		],
+		Example[{Options, CanaryBranch, "Specify the CanaryBranch on which the protocol is run:"},
+			Download[ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], CanaryBranch -> "d1cacc5a-948b-4843-aa46-97406bbfc368"], CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, InternalUpload`Private`sllDistroExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
+		],
 		Example[{Options, Name, "Set name of the new protocol:"},
 			Download[ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], Name -> "PowderXRD protocol 24601"], Name],
 			"PowderXRD protocol 24601"
 		],
 
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to pre-create standard solutions to perform experiments on:"},
-			protocol = ExperimentPowderXRD[
-				{"NIST standard sample 1", "NIST standard sample 2"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "NIST standard sample 1", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "NIST standard sample 2", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[
-						Source -> Model[Sample, "Silicon, NIST SRM 640f, powder, line position and line shape standard for powder diffraction"],
-						Destination -> "NIST standard sample 1",
-						Amount -> 10*Milligram
-					],
-					Transfer[
-						Source -> Model[Sample, "Silicon, NIST SRM 640f, powder, line position and line shape standard for powder diffraction"],
-						Destination -> "NIST standard sample 2",
-						Amount -> 10*Milligram
-					],
-					Aliquot[
-						Source -> Model[Sample, "Milli-Q water"],
-						Amounts -> {80*Microliter, 80*Microliter},
-						Destinations -> {"NIST standard sample 1", "NIST standard sample 2"}
-					]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to pre-create standard solutions to perform experiments on:"},
 			protocol = ExperimentPowderXRD[
 				{"NIST standard sample 1", "NIST standard sample 2"},
@@ -838,7 +881,7 @@ DefineTests[ExperimentPowderXRD,
 		Example[{Options, AliquotSampleLabel, "Set the AliquotSampleLabel option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotSampleStorageCondition -> Refrigerator, AliquotSampleLabel -> "aliquot sample label 1", Output -> Options];
 			Lookup[options, AliquotSampleLabel],
-			"aliquot sample label 1",
+			{"aliquot sample label 1"},
 			Variables :> {options}
 		],
 		Example[{Options, ConsolidateAliquots, "Set the ConsolidateAliquots option:"},
@@ -856,13 +899,13 @@ DefineTests[ExperimentPowderXRD,
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentPowderXRD[Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -882,9 +925,34 @@ DefineTests[ExperimentPowderXRD,
 			Lookup[options, MeasureVolume],
 			True,
 			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentPowderXRD[
+				{Model[Sample, StockSolution, "Silicon NIST Standard solution 10/1 v/w in water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 100 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, StockSolution, "id:qdkmxzqknx90"]], ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[100 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		]
-
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
 		$EmailEnabled=False,
 		$AllowSystemsProtocols = True,
@@ -915,6 +983,7 @@ DefineTests[ExperimentPowderXRD,
 					Object[Container, Vessel, "Container 6 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Container, Vessel, "Container 7 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Container, Vessel, "Container 8 for ExperimentPowderXRD tests" <> $SessionUUID],
+					Object[Container, Vessel, "Container 9 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (25 mL)" <> $SessionUUID],
@@ -925,6 +994,7 @@ DefineTests[ExperimentPowderXRD,
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Discarded)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Deprecated Model)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Model-less)" <> $SessionUUID],
+					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID],
 					Object[Protocol, PowderXRD, "PowderXRD Protocol 1" <> $SessionUUID],
 					Download[Object[Protocol, PowderXRD, "PowderXRD Protocol 1" <> $SessionUUID], {ProcedureLog[Object], RequiredResources[[All, 1]][Object]}]
 				}],
@@ -936,7 +1006,8 @@ DefineTests[ExperimentPowderXRD,
 		Block[{$AllowSystemsProtocols = True},
 			Module[
 				{testBench, container, container2, container3, sample, sample2, sample3, container4, sample4, sample5,
-					container5, sample6, container6, container7, sample7, testProtocol1, sample8, container8, sample9, container9, testProtSubObjs, completeTheTestProtocol},
+					container5, sample6, container6, container7, sample7, testProtocol1, sample8, container8, sample9, container9,
+					sample10, container10, testProtSubObjs, completeTheTestProtocol},
 
 				testBench = Upload[
 					<|
@@ -957,7 +1028,8 @@ DefineTests[ExperimentPowderXRD,
 					container6,
 					container7,
 					container8,
-					container9
+					container9,
+					container10
 				} = UploadSample[
 					{
 						Model[Container, Vessel, "2mL Tube"],
@@ -968,9 +1040,11 @@ DefineTests[ExperimentPowderXRD,
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "15mL Tube"],
+						Model[Container, Vessel, "2mL Tube"],
 						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
+						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
@@ -991,7 +1065,8 @@ DefineTests[ExperimentPowderXRD,
 						"Container 5 for ExperimentPowderXRD tests" <> $SessionUUID,
 						"Container 6 for ExperimentPowderXRD tests" <> $SessionUUID,
 						"Container 7 for ExperimentPowderXRD tests" <> $SessionUUID,
-						"Container 8 for ExperimentPowderXRD tests" <> $SessionUUID
+						"Container 8 for ExperimentPowderXRD tests" <> $SessionUUID,
+						"Container 9 for ExperimentPowderXRD tests" <> $SessionUUID
 					}
 				];
 
@@ -1004,19 +1079,20 @@ DefineTests[ExperimentPowderXRD,
 					sample6,
 					sample7,
 					sample8,
-					sample9
+					sample9,
+					sample10
 				} = UploadSample[
 					{
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"],
-						(* this model is deprecated *)
-						Model[Sample, "LCMS Grade Water, 4 Liter"],
-						Model[Sample, "Milli-Q water"],
-						Model[Sample, "Milli-Q water"]
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:qdkmxzq0eRGp"],(* "LCMS Grade Water, 4 Liter" this model is deprecated *)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:8qZ1VWNmdLBD"],(*Milli-Q water*)
+						Model[Sample, "id:BYDOjv1VA88z"](*Sodium Chloride*)
 					},
 					{
 						{"A1", container},
@@ -1027,7 +1103,8 @@ DefineTests[ExperimentPowderXRD,
 						{"A1", container6},
 						{"A1", container7},
 						{"A1", container8},
-						{"A1", container9}
+						{"A1", container9},
+						{"A1", container10}
 					},
 					InitialAmount -> {
 						100*Microliter,
@@ -1038,7 +1115,8 @@ DefineTests[ExperimentPowderXRD,
 						100*Microliter,
 						100*Microliter,
 						12*Milliliter,
-						100*Microliter
+						100*Microliter,
+						50 Milligram
 					},
 					Name -> {
 						"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID,
@@ -1049,14 +1127,15 @@ DefineTests[ExperimentPowderXRD,
 						"ExperimentPowderXRD New Test Chemical 1 (Discarded)" <> $SessionUUID,
 						"ExperimentPowderXRD New Test Chemical 1 (Deprecated Model)" <> $SessionUUID,
 						"ExperimentPowderXRD New Test Chemical 1 (12 mL)" <> $SessionUUID,
-						"ExperimentPowderXRD New Test Chemical 1 (Model-less)" <> $SessionUUID
+						"ExperimentPowderXRD New Test Chemical 1 (Model-less)" <> $SessionUUID,
+						"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID
 					}
 				];
 
-				Upload[<|Object -> #, DeveloperObject -> True, AwaitingStorageUpdate -> Null|> & /@ Cases[Flatten[{container, container2, sample, sample2, sample, container3, sample3, container4, sample4, sample5, sample6, container5, container6, sample7, container7, sample8, container8, sample9, container9}], ObjectP[]]];
+				Upload[<|Object -> #, DeveloperObject -> True, AwaitingStorageUpdate -> Null|> & /@ Cases[Flatten[{container, container2, sample, sample2, sample, container3, sample3, container4, sample4, sample5, sample6, container5, container6, sample7, container7, sample8, container8, sample9, container9, sample10, container10}], ObjectP[]]];
 
 				Upload[Cases[Flatten[{
-					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]]}}|>,
+					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>,
 					<|Object -> sample6, Status -> Discarded|>
 				}], PacketP[]]];
 
@@ -1089,6 +1168,7 @@ DefineTests[ExperimentPowderXRD,
 					Object[Container, Vessel, "Container 6 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Container, Vessel, "Container 7 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Container, Vessel, "Container 8 for ExperimentPowderXRD tests" <> $SessionUUID],
+					Object[Container, Vessel, "Container 9 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (100 uL)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (80 uL)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (25 mL)" <> $SessionUUID],
@@ -1096,6 +1176,7 @@ DefineTests[ExperimentPowderXRD,
 					Object[Sample,"ExperimentPowderXRD New Test Chemical in crystallization plate (0.1 mL)" <> $SessionUUID],
 					Object[Sample, "ExperimentPowderXRD New Test Chemical 1 (12 mL)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Model-less)" <> $SessionUUID],
+					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Solid)" <> $SessionUUID],
 					Object[Container, Plate, "Crystallization plate 1 for ExperimentPowderXRD tests" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Discarded)" <> $SessionUUID],
 					Object[Sample,"ExperimentPowderXRD New Test Chemical 1 (Deprecated Model)" <> $SessionUUID],
@@ -1153,7 +1234,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 			True
 		],
 		Example[{Options, DetectorDistance, "Specify the detector distance for each given sample in a PowderXRD experiment:"},
-			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 200*Millimeter}],
+			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 200*Millimeter}],
 			True
 		],
 		Example[{Options, DetectorDistance, "DetectorDistance automatically resolves to the smallest value allowed given the constraints provided by the omega and detector angles:"},
@@ -1173,7 +1254,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 			True
 		],
 		Example[{Options, MinOmegaAngle, "If not specified, MinOmegaAngle resolves to the lowest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
+			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
 			True
 		],
 		Example[{Options, MaxOmegaAngle, "Specify the maximum angle between the sample and X-ray source for each sample:"},
@@ -1181,7 +1262,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 			True
 		],
 		Example[{Options, MaxOmegaAngle, "If not specified, MaxOmegaAngle resolves to the largest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
+			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}],
 			True
 		],
 		Example[{Options, FixedDetectorAngle, "Specify the fixed angle between the detector and X-ray source for each sample:"},
@@ -1205,7 +1286,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 			True
 		],
 		Example[{Options, MaxDetectorAngle, "MaxDetectorAngle automatically resolves to the largest value allowed by the specified DetectorDistance if DetectorRotation -> Sweeping, or Null if DetectorRotation -> Fixed:"},
-			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}],
+			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}],
 			True
 		],
 		Example[{Options, DetectorAngleIncrement, "Specify increment between the angles between the detector and X-ray source when sweeping the detector for each sample:"},
@@ -1240,6 +1321,80 @@ DefineTests[ValidExperimentPowderXRDQ,
 				}
 			],
 			True
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentPowderXRD[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentPowderXRD[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentPowderXRD[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentPowderXRD[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 100 Microliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPowderXRD[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 100 Microliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPowderXRD[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		],
 		Example[{Messages, "DiscardedSamples", "Throws an error if trying to run on discarded samples:"},
 			ValidExperimentPowderXRDQ[Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (Discarded)" <> $SessionUUID]],
@@ -1298,7 +1453,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 			False
 		],
 		Example[{Messages, "DetectorTooClose", "DetectorDistance may not be closer than is allowed by the specified angles:"},
-			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> -17.24*AngularDegree, DetectorDistance -> 60*Millimeter],
+			ValidExperimentPowderXRDQ[{Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ValidExperimentPowderXRDQ New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> -17.24*AngularDegree, DetectorDistance -> 61*Millimeter],
 			False
 		],
 		Example[{Messages, "PowderXRDHighVolume", "If dealing with a volume over 100 uL, throw a warning:"},
@@ -1311,6 +1466,8 @@ DefineTests[ValidExperimentPowderXRDQ,
 		]
 
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
 		$EmailEnabled=False
 	},
@@ -1458,7 +1615,7 @@ DefineTests[ValidExperimentPowderXRDQ,
 				Upload[<|Object -> #, DeveloperObject -> True|> & /@ Cases[Flatten[{container, container2, sample, sample2, sample, container3, sample3, container4, sample4, sample5, sample6, container5, container6, sample7, container7}], ObjectP[]]];
 
 				Upload[Flatten[{
-					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]]}}|>,
+					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>,
 					<|Object -> sample6, Status -> Discarded|>
 				}]];
 
@@ -1555,16 +1712,16 @@ DefineTests[ExperimentPowderXRDOptions,
 			Variables :> {options}
 		],
 		Example[{Options, DetectorDistance, "Specify the detector distance for each given sample in a PowderXRD experiment:"},
-			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 200*Millimeter}, OutputFormat -> List];
+			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 200*Millimeter}, OutputFormat -> List];
 			Lookup[options, DetectorDistance],
-			{60*Millimeter, 200*Millimeter},
+			{61*Millimeter, 200*Millimeter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 		Example[{Options, DetectorDistance, "DetectorDistance automatically resolves to the smallest value allowed given the constraints provided by the omega and detector angles:"},
 			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, MinOmegaAngle -> {-4.99*AngularDegree, -17.24*AngularDegree}, MaxOmegaAngle -> {4.99*AngularDegree, 17.24*AngularDegree}, OutputFormat -> List];
 			Lookup[options, DetectorDistance],
-			{60*Millimeter, 70*Millimeter},
+			{61*Millimeter, 70*Millimeter},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -1588,9 +1745,9 @@ DefineTests[ExperimentPowderXRDOptions,
 			Variables :> {options}
 		],
 		Example[{Options, MinOmegaAngle, "If not specified, MinOmegaAngle resolves to the lowest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, OutputFormat -> List];
+			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, OutputFormat -> List];
 			Lookup[options, MinOmegaAngle],
-			{-4.99*AngularDegree, -17.24*AngularDegree, Null},
+			{-8.49 AngularDegree, -17.24 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -1602,9 +1759,9 @@ DefineTests[ExperimentPowderXRDOptions,
 			Variables :> {options}
 		],
 		Example[{Options, MaxOmegaAngle, "If not specified, MaxOmegaAngle resolves to the largest value allowed by the specified DetectorDistance and/or DetectorRotation options:"},
-			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, OutputFormat -> List];
+			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, Automatic}, DetectorRotation -> {Fixed, Fixed, Sweeping}, OutputFormat -> List];
 			Lookup[options, MaxOmegaAngle],
-			{4.99*AngularDegree, 17.24*AngularDegree, Null},
+			{8.49 AngularDegree, 17.24 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -1644,9 +1801,9 @@ DefineTests[ExperimentPowderXRDOptions,
 			Variables :> {options}
 		],
 		Example[{Options, MaxDetectorAngle, "MaxDetectorAngle automatically resolves to the largest value allowed by the specified DetectorDistance if DetectorRotation -> Sweeping, or Null if DetectorRotation -> Fixed:"},
-			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {60*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}, OutputFormat -> List];
+			options = ExperimentPowderXRDOptions[{Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (100 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID], Object[Sample,"ExperimentPowderXRDOptions New Test Chemical 1 (80 uL)" <> $SessionUUID]}, DetectorDistance -> {61*Millimeter, 70*Millimeter, 70*Millimeter}, DetectorRotation -> {Sweeping, Sweeping, Fixed}, OutputFormat -> List];
 			Lookup[options, MaxDetectorAngle],
-			{56.74*AngularDegree, 68.99*AngularDegree, Null},
+			{60.25 AngularDegree, 69 AngularDegree, Null},
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
@@ -1693,6 +1850,8 @@ DefineTests[ExperimentPowderXRDOptions,
 			Variables :> {options}
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
 		$EmailEnabled=False
 	},
@@ -1839,7 +1998,7 @@ DefineTests[ExperimentPowderXRDOptions,
 				];
 				Upload[<|Object -> #, DeveloperObject -> True|> & /@ Cases[Flatten[{container, container2, sample, sample2, sample, container3, sample3, container4, sample4, sample5, sample6, container5, container6, sample7, container7}], ObjectP[]]];
 				Upload[Flatten[{
-					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]]}}|>,
+					<|Object -> sample5, Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>,
 					<|Object -> sample6, Status -> Discarded|>
 				}]];
 

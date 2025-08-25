@@ -431,17 +431,17 @@ analyzeBindingKineticsSetUp[label_String]:=Module[{objs, existingObjs, standardD
         <|
           Type -> Object[Sample],
           Name -> "Test sample for "<>label<>" with multiple analytes"<>$SessionUUID,
-          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[proteins[[1]]]},{0.2 Milligram/Milliliter, Link[proteins[[2]]]}}
+          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[proteins[[1]]], Now},{0.2 Milligram/Milliliter, Link[proteins[[2]]], Now}}
         |>,
         <|
           Type -> Object[Sample],
           Name -> "Test sample for "<>label<>" with mg/mL analytes"<>$SessionUUID,
-          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[proteins[[1]]]}}
+          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[proteins[[1]]], Now}}
         |>,
         <|
           Type -> Object[Sample],
           Name -> "Test sample for "<>label<>" with mg/mL analytes and no molecular weight"<>$SessionUUID,
-          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[badProtein]}}
+          Replace[Composition] -> {{0.1 Milligram/Milliliter, Link[badProtein], Now}}
         |>
       }
     ];

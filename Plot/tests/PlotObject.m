@@ -223,6 +223,39 @@ DefineTests[PlotObject,{
 		ValidGraphicsP[]
 	],
 
+	Example[{Additional,"Protocol Objects","Plot all absorbance spectroscopy data linked to an absorbance quantification protocol object input:"},
+		PlotObject[Object[Data, AbsorbanceSpectroscopy, "id:7X104vnnXNRZ"][Protocol]],
+		ValidGraphicsP[]
+	],
+	Example[{Additional,"Protocol Objects","Plot all HPLC data linked to a protocol object input:"},
+		PlotObject[Object[Data, Chromatography, "id:eGakld01dzk4"][Protocol]],
+		_SlideView
+	],
+	Example[{Additional,"Protocol Objects","Plot all fluorescence intensity data linked to a protocol object input:"},
+		PlotObject[Object[Protocol, FluorescenceIntensity, "id:9RdZXvK8De8x"]],
+		ValidGraphicsP[]
+	],
+	Example[{Additional,"Protocol Objects","Plot all DNA sequencing data linked to a protocol object input:"},
+		PlotObject[Object[Data, DNASequencing, "id:R8e1Pjp8odDX"][Protocol]],
+		_SlideView
+	],
+	Example[{Additional,"Protocol Objects","Plot all mass spectrometry data linked to a protocol object input:"},
+		PlotObject[Object[Data, MassSpectrometry, "id:N80DNj11WNxD"][Protocol]],
+		_SlideView
+	],
+	Example[{Additional,"Protocol Objects","Plot all PAGE data linked to a protocol object input:"},
+		PlotObject[Object[Data, PAGE, "id:XnlV5jKRBVVZ"][Protocol]],
+		_SlideView
+	],
+	Example[{Additional,"Protocol Objects","Plot all qPCR data linked to a protocol object input:"},
+		PlotObject[Object[Data, qPCR, "id:bq9LA0JWAV6A"][Protocol]],
+		_SlideView
+	],
+	Example[{Additional,"Protocol Objects","Plot all DigitalPCR data linked to a protocol object input:"},
+		PlotObject[Object[Data, DigitalPCR, "id:WNa4ZjKJlD8R"][Protocol]],
+		_SlideView
+	],
+
 	Example[{Additional,"Model Objects","Display the ribbon structure of the protein:"},
 		PlotObject[Model[Molecule, Protein, "A2M"]],
 		ValidGraphicsP[]
@@ -280,6 +313,20 @@ DefineTests[PlotObject,{
 		plotImageP
 	],
 
+	Example[{Additional,"Item Models","Display a generic image of the item column:"},
+		PlotObject[
+			Search[Model[Item,Column],ImageFile!=Null,MaxResults->1][[1]]
+		],
+		_Image
+	],
+
+	Example[{Additional,"Item Objects","Display a generic image of the item wrench:"},
+		PlotObject[
+			Search[Object[Item,Wrench],Model[ImageFile]!=Null,MaxResults->1][[1]]
+		],
+		_Image
+	],
+
 	Test["Displays a list of images:",
 		PlotObject[{Model[Instrument, HPLC, "UltiMate 3000"],Object[Instrument, HPLC, "Thorin"]}],
 		{_Image..}
@@ -329,6 +376,24 @@ DefineTests[PlotObject,{
 		ValidGraphicsP[]
 	],
 
+	(*Method Objects*)
+
+	Example[{Basic, "Plot a simple binary gradient mixture of Buffer A and B:"},
+		PlotObject[Object[Method,Gradient,"id:P5ZnEj4ldYBR"]],
+		_?ValidGraphicsQ
+	],
+	Example[{Basic, "Plot a simple binary ion chromatography gradient"},
+		PlotObject[Object[Method, IonChromatographyGradient, "id:kEJ9mqRl40EV"]],
+		_?ValidGraphicsQ
+	],
+	Example[{Basic, "Plot a simple ion chromatography Gradient with a varying eluent concentration"},
+		PlotObject[Object[Method, IonChromatographyGradient, "id:L8kPEjn5xV8V"]],
+		_?ValidGraphicsQ
+	],
+	Example[{Basic, "Plot a simple binary supercritical fluid chromatography gradient"},
+		PlotObject[Object[Method, SupercriticalFluidGradient, "id:qdkmxzqOAZDM"]],
+		_?ValidGraphicsQ
+	],
 
 	(*
 		OPTIONS
@@ -433,7 +498,7 @@ DefineTests[PlotObject,{
 		ValidGraphicsP[]
 	],
 	Test["If given an object doesn't have a PlotObject overload, returns Null:",
-		PlotObject[Object[Protocol, FluorescenceIntensity, "id:9RdZXvK8De8x"]],
+		PlotObject[Object[Protocol, ManualSamplePreparation]],
 		Null
 	],
 	Test["The HPLC qualification overload respects the OutputFormat option:",
@@ -445,6 +510,7 @@ DefineTests[PlotObject,{
 
 (*** Duplicate tests for Builder testing ***)
 
+Authors[PlotObjectCC]:={"scicomp"};
 DefineTests[PlotObjectCC,{
 
 	Example[{Basic,"Plot a data object using the default styling and settings for its type. Here chromatography data is displayed using the default styling and settings for an HPLC plot:"},

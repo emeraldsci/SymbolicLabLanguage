@@ -52,7 +52,7 @@ DefineObjectType[Object[Instrument], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this object was not found at its database listed location and that troubleshooting will be required to locate it.",
+			Description -> "Indicates that this object was not found at its database listed location and that additional support will be required to locate it.",
 			Category -> "Organizational Information",
 			Developer -> True
 		},
@@ -76,7 +76,7 @@ DefineObjectType[Object[Instrument], {
 			Format -> Multiple,
 			Class -> {Expression, Expression, Link},
 			Pattern :> {_?DateObjectQ, InstrumentStatusP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Qualification] | Object[Maintenance] | Object[Protocol]},
+			Relation -> {Null, Null, Object[User] | Object[Qualification] | Object[Maintenance] | Object[Protocol] | Object[Repair]},
 			Description -> "A log of changes made to the instrument's status.",
 			Headers -> {"Date","Status","Responsible Party"},
 			Category -> "Organizational Information"
@@ -259,6 +259,27 @@ DefineObjectType[Object[Instrument], {
 			Category -> "Instrument Specifications",
 			Headers -> {"Software Name", "Version Number"}
 		},
+		InstrumentLicenseFiles -> {
+			Format -> Multiple,
+			Class -> {Expression, Link},
+			Pattern :> {InstrumentSoftwareP, _Link},
+			Relation -> {Null, Object[EmeraldCloudFile]},
+			Description -> "List of activation (or license) files for the instrument software.",
+			Category -> "Instrument Specifications",
+			Headers -> {"Software Name", "License File"},
+			Developer -> True,
+			AdminViewOnly -> True
+		},
+		InstrumentLicenseKeys -> {
+			Format -> Multiple,
+			Class -> {Expression, String},
+			Pattern :> {InstrumentSoftwareP, _String},
+			Description -> "List of activation (or license) keys for the instrument software.",
+			Category -> "Instrument Specifications",
+			Headers -> {"Software Name", "License Key"},
+			Developer -> True,
+			AdminViewOnly -> True
+		},
 		IP -> {
 			Format -> Single,
 			Class -> String,
@@ -366,7 +387,7 @@ DefineObjectType[Object[Instrument], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates if the instrument can provide a different storage condition than its container.",
+			Description -> "Indicates if the ProvidedStorageCondition of this instrument can differ from that of its container. This field should be set to True when the inside of the instrument has different environmental properties from its container (humidity, temperature, etc) or provides an engineering control to allow for storage of different sample types.",
 			Category -> "Storage Information"
 		},
 
@@ -742,7 +763,7 @@ DefineObjectType[Object[Instrument], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part,PressureRegulator][ConnectedInstruments],
-			Description -> "The pressure regaultor used to control argon gas flow into this instrument.",
+			Description -> "The pressure regulator used to control argon gas flow into this instrument.",
 			Category -> "Sensor Information"
 		},
 		CO2PressureSensor -> {
@@ -758,7 +779,7 @@ DefineObjectType[Object[Instrument], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part,PressureRegulator][ConnectedInstruments],
-			Description -> "The pressure regaultor used to control CO2 gas flow into this instrument.",
+			Description -> "The pressure regulator used to control CO2 gas flow into this instrument.",
 			Category -> "Sensor Information"
 		},
 		HeliumPressureSensor -> {
@@ -774,7 +795,7 @@ DefineObjectType[Object[Instrument], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part,PressureRegulator][ConnectedInstruments],
-			Description -> "The pressure regaultor used to control helium gas flow into this instrument.",
+			Description -> "The pressure regulator used to control helium gas flow into this instrument.",
 			Category -> "Sensor Information"
 		},
 		NitrogenPressureSensor -> {
@@ -790,7 +811,7 @@ DefineObjectType[Object[Instrument], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Part,PressureRegulator][ConnectedInstruments],
-			Description -> "The pressure regaultor used to control nitrogen gas flow into this instrument.",
+			Description -> "The pressure regulator used to control nitrogen gas flow into this instrument.",
 			Category -> "Sensor Information"
 		},
 		WasteScale -> {
@@ -888,9 +909,10 @@ DefineObjectType[Object[Instrument], {
 			Class -> {Link, Expression, Expression, Link, Expression, String},
 			Pattern :> {_Link, _?DateObjectQ, _?DateObjectQ, _Link, QualificationExtensionCategoryP, _String},
 			Relation -> {Model[Qualification], Null, Null, Object[User], Null, Null},
-			Description -> "A list of amendments made to the regular qualification schedule of this instrument, and the reason for the deviation.",
+			Description -> "A list of amendments made to the regular qualification schedule of this instrument, and the reason for the change.",
 			Category -> "Qualifications & Maintenance",
-			Headers -> {"Qualification Model", "Original Due Date","Revised Due Date","Responsible Party","Extension Category","Extension Reason"}
+			Headers -> {"Qualification Model", "Original Due Date","Revised Due Date","Responsible Party","Extension Category","Extension Reason"},
+			Developer -> True
 		},
 		MaintenanceFrequency -> {
 			Format -> Computable,
@@ -971,26 +993,16 @@ DefineObjectType[Object[Instrument], {
 			Headers -> {"Date","Vendor","Documentation"},
 			Category -> "Qualifications & Maintenance"
 		},
-		OperationsSupportTickets -> {
+		InternalCommunications -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[SupportTicket, Operations][AffectedInstrument],
-			Description -> "Support tickets associated with the execution of this top-level protocol.",
+			Description -> "Support tickets associated with the operation of this instrument.",
 			Category -> "Qualifications & Maintenance",
-			Developer -> True
+			Developer -> True,
+			AdminViewOnly -> True
 		},
-		(* == Fields to Be Replaced, should be removed April 2024 post migration to SupportTicket ==*)
-		TroubleshootingTickets -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Troubleshooting, Ticket][AffectedInstrument],
-			Description -> "Troubleshooting tickets that triggered maintenance on this instrument.",
-			Category -> "Qualifications & Maintenance"
-		},
-		(*====*)
-
 		VentilationVerificationLog  -> {
 			Format -> Multiple,
 			Class -> {Date, Link, Link},
@@ -1012,10 +1024,28 @@ DefineObjectType[Object[Instrument], {
 		Certificates -> {
 			Format -> Multiple,
 			Class -> {String, Link},
-			Pattern :> {_String, _Link},
-			Relation -> {Null, Object[EmeraldCloudFile]},
+			Pattern :> {_String, (ObjectP[Object[EmeraldCloudFile]]|ObjectP[Object,Report,Certificate])},
+			Relation -> {Null, Alternatives[Object[EmeraldCloudFile],Object[Report,Certificate][InstrumentCertified]]},
 			Description -> "All instrument-related certificates received from vendors.",
 			Headers -> {"Name","Certificate"},
+			Category -> "Qualifications & Maintenance"
+		},
+		ActiveInstrumentRepairs -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Repair],
+			Description -> "Any ongoing instrument repairs that are actively blocking use of this instrument.",
+			Category -> "General",
+			Developer -> True
+		},
+		RepairLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link, Link},
+			Pattern :> {_?DateObjectQ, _Link, _Link},
+			Relation -> {Null, Object[Repair][Instrument], Object[Company, Supplier][RepairLog, 3]},
+			Description -> "A record of any off-protocol maintenance performed on this instrument to return it to full functionality.",
+			Headers -> {"Date", "Repair", "Vendor"},
 			Category -> "Qualifications & Maintenance"
 		},
 	(* --- Health & Safety --- *)
@@ -1026,14 +1056,20 @@ DefineObjectType[Object[Instrument], {
 			Description -> "Hazards to be aware of during operation of this instrument.",
 			Category -> "Health & Safety"
 		},
-		SampleHandlingCategories -> {
+		AsepticHandling -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],SampleHandlingCategories]],
-			Pattern :> {HandlingCategoryP...},
-			Description -> "Specifies the types of handling classifications that need to be undertaken for this instrument and items on this instrument.",
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], AsepticHandling]],
+			Pattern :> BooleanP,
+			Description -> "Indicates whether aseptic techniques are followed when handling samples on this instrument. These techniques include sanitizing equipment, surfaces, and personnel during experimentation and storage. Unlike AsepticTechniqueEnvironment, which refers only to actions within the instrument's interior, AsepticHandling applies to all sample-handling activities involving this instrument.",
 			Category -> "Health & Safety"
 		},
-
+		AsepticTechniqueEnvironment -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], AsepticTechniqueEnvironment]],
+			Pattern :> BooleanP,
+			Description -> "Indicates whether any interactions with the instrument's interior are carried out using aseptic practices. Unlike AsepticHandling, AsepticTechniqueEnvironment refers only to actions performed within the instrument's interior.",
+			Category -> "Health & Safety"
+		},
 		(* --- Sensor Information --- *)
 		EnvironmentalSensors -> {
 			Format -> Multiple,
@@ -1127,6 +1163,14 @@ DefineObjectType[Object[Instrument], {
 			Relation -> Object[Instrument,VacuumPump][IntegratedInstrument],
 			Description -> "The vacuum pumps that are connected to this instrument.",
 			Category -> "Integrations"
+		},
+		StreamCameras ->  {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part, Camera][ConnectedInstruments],
+			Description -> "The camera that streams the operations at the connected instrument during procedures.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

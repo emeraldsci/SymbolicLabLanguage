@@ -60,6 +60,16 @@ DefineObjectType[Model[Part], {
 			Category -> "Part Specifications",
 			Headers -> {"Schematic","Caption"}
 		},
+
+		(* --- Quality Assurance --- *)
+		ReceivingBatchInformation -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FieldP[{Object[Report,Certificate,Analysis],Object[Report, Certificate, Calibration]},Output->Short],
+			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+
 		(* --- Storage --- *)
 		Expires -> {
 			Format -> Single,
@@ -104,6 +114,13 @@ DefineObjectType[Model[Part], {
 			Category -> "Storage Information",
 			Headers->{"Storage Container", "Storage Position"},
 			Developer -> True
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how parts of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage Information"
 		},
 		
 		(* --- Plumbing Information --- *)

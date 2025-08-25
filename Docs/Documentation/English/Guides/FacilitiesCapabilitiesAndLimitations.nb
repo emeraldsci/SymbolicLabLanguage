@@ -1,3 +1,558 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b6a8db7b60350b8e219bd1a668f31076b846929d4d6903f14896079113b42ccc
-size 22084
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     21884,        548]
+NotebookOptionsPosition[     16202,        446]
+NotebookOutlinePosition[     17937,        485]
+CellTagsIndexPosition[     17894,        482]
+WindowTitle->FacilitiesCapabilitiesAndLimitations
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "b7291bf2-12be-4ab8-9202-556239162356"]
+        }],ExpressionUUID->"7ef0bba3-59bf-4823-86aa-d3f91d9ef195"],
+        StripOnInput->False], {"\<\"AchievableResolution\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/AchievableResolution"], "\<\"AliquotContainers\"\
+\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/AliquotContainers"], \
+"\<\"CentrifugeDevices\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/CentrifugeDevices"], \
+"\<\"CompatibleFootprintQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/CompatibleFootprintQ"], \
+"\<\"CompatibleMaterialsQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/CompatibleMaterialsQ"], \
+"\<\"IncubateCellsDevices\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/IncubateCellsDevices"], \
+"\<\"IncubateDevices\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/IncubateDevices"], "\<\"LNAChimeraQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/LNAChimeraQ"], "\<\"MixDevices\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/MixDevices"], "\<\"PreferredContainer\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/PreferredContainer"], "\<\"Resource\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Resources/ref/Resource"], "\<\"SampleUsage\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/SampleUsage"], "\<\"SampleVolumeRangeQ\
+\"\>":>Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/SampleVolumeRangeQ"], "\<\"TransferDevices\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/TransferDevices"], "\<\"ValidResourceQ\"\>":>
+       Documentation`HelpLookup["paclet:Resources/ref/ValidResourceQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "9736398d-67b5-4141-8b01-2471dca2caff"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "8ed586ac-d759-4b36-96a9-fc4394ce3f9f"]
+        }],ExpressionUUID->"63591efc-6b98-4a88-948d-af8f5385037f"],
+        StripOnInput->False], {"\<\"ExperimentTrackingAndManagement\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ExperimentTrackingAndManagement"], \
+"\<\"PricingFunctions\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/PricingFunctions"], "\<\"RunningExperiments\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/RunningExperiments"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "0c31513f-954b-4806-a755-24ce8f618827"]
+    }], "AnchorBar",ExpressionUUID->"265ae914-1bcd-4548-88ce-b473b75569d8"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"13c39868-6855-4f3d-860c-0105a3a4d1ec"],
+
+Cell["Facilities Capabilities And Limitations", "GuideTitle",
+ CellID->415084872,ExpressionUUID->"ecf84563-5bc9-4f8b-91aa-015361ac8ce7"],
+
+Cell["\<\
+Collection of functions for assessing the status and limitations of ECL \
+Facilities and Capabilities.\
+\>", "GuideAbstract",
+ CellID->1304558248,ExpressionUUID->"5a63d354-db2a-43c9-9f6e-593e3c3e7f5f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2049921913,ExpressionUUID->"6891cf91-2b8a-44d0-ad92-f5d0051102b8"],
+
+Cell["Chemical Compatibility", "GuideFunctionsSubsection",
+ CellID->957442970,ExpressionUUID->"a7af68fc-6bba-4b6c-81a7-987a7386a7d8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CompatibleMaterialsQ"]], 
+    "paclet:Experiment/ref/CompatibleMaterialsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3ec7cf6d-1c08-4591-b55a-fd7a345f2ca7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the wetted materials of a given instrument are thought to be \
+chemically compatible with a provided list of samples."
+}], "GuideText",
+ CellID->649029819,ExpressionUUID->"9566c5de-a9ac-4546-a4ad-52cfe8dd9348"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1174724820,ExpressionUUID->"9b148d5a-de78-4209-a9de-2d114352c042"],
+
+Cell["Sample Limitations", "GuideFunctionsSubsection",
+ CellID->1782882869,ExpressionUUID->"0c7a4cc3-280f-48be-8cdf-77cf2c4340c1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SampleVolumeRangeQ"]], 
+    "paclet:LegacySLL/ref/SampleVolumeRangeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5ae73245-bb06-4faa-8b25-4b605d1c430f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a given volume can be measured and manipulated in the lab."
+}], "GuideText",
+ CellID->1073052692,ExpressionUUID->"24910c19-33c8-480b-a62a-2150b54e29c1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AchievableResolution"]], 
+    "paclet:LegacySLL/ref/AchievableResolution"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "56c740c7-f778-4eca-82b0-401ad549fdd0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Rounds a provided volume or mass to the closest precision a given \
+instrument type is capable of working with in the ECL."
+}], "GuideText",
+ CellID->228926938,ExpressionUUID->"dcb852dd-e1e6-495f-abb2-e0331d02bdf6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PreferredContainer"]], 
+    "paclet:LegacySLL/ref/PreferredContainer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8e19e144-9509-4022-beab-a27c6fe1a97d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the smallest standardized ECL container model which can hold a \
+given volume."
+}], "GuideText",
+ CellID->1431835189,ExpressionUUID->"58b515f6-162f-44a4-8c92-756e444c22af"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AliquotContainers"]], 
+    "paclet:ExperimentUtilities/ref/AliquotContainers"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9db73a42-f6a9-44e1-80a6-6558c8de2e41"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Finds the potential preferred containers that can both hold the all volume \
+of input sample and fit on input instrument."
+}], "GuideText",
+ CellID->152273241,ExpressionUUID->"76efc8ac-8b98-4bb8-ae35-de84dc7a1252"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["TransferDevices"]], "paclet:LegacySLL/ref/TransferDevices"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8e85b3ac-865f-43d3-9854-14aa997f8d59"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a volume or mass returns a list of devices that can be used to \
+measure that amount, along with the working measuring range and resolution of \
+those devices."
+}], "GuideText",
+ CellID->1603337910,ExpressionUUID->"72aa7393-8540-4a8c-bd2a-717a165f633b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["IncubateCellsDevices"]], 
+    "paclet:Experiment/ref/IncubateCellsDevices"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a0616e7b-d25a-43a1-81ce-4dd8fae308c0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Indicates which incubators are compatible with the container models, \
+container or samples given as inputs."
+}], "GuideText",
+ CellID->675450814,ExpressionUUID->"db7da1ea-201c-4dbc-9813-83b7d1e274f9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["IncubateDevices"]], "paclet:Experiment/ref/IncubateDevices"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b097a15a-f74d-4252-a8d8-63809bdad53a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Indicates which incubators are compatible with the samples given as inputs."
+}], "GuideText",
+ CellID->703272856,ExpressionUUID->"ba4ab028-51f4-4e00-8f7e-b22f196fd6a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MixDevices"]], "paclet:Experiment/ref/MixDevices"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "02639ad2-de03-4f58-93d7-0cce512eabc2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Indicates which instruments can be used to mix the sample or a given \
+sample volume inside a container model."
+}], "GuideText",
+ CellID->156897704,ExpressionUUID->"b6024797-bcbe-4d1b-8338-4c0bbe27d0b6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["LNAChimeraQ"]], "paclet:NucleicAcids/ref/LNAChimeraQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cc54820c-58a4-4e81-98ee-df03e2804ca1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given string or strand is a valid Chimera sequence."
+}], "GuideText",
+ CellID->2017276259,ExpressionUUID->"273b0973-0e11-4253-af16-66a2040fd2bf"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2037749824,ExpressionUUID->"c312cd0f-0f66-4f3d-a968-24f3035a3a73"],
+
+Cell["Footprint Limitations", "GuideFunctionsSubsection",
+ CellID->392089612,ExpressionUUID->"b95259ce-dda1-46c7-9712-fcdf9a84b828"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CompatibleFootprintQ"]], 
+    "paclet:ExperimentUtilities/ref/CompatibleFootprintQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c99e222e-a9d7-4189-bb3f-5c8105af1692"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a sample or a container can fit into the one of the positions in \
+the specified instrument or location."
+}], "GuideText",
+ CellID->1370279888,ExpressionUUID->"6b5c88db-66c8-4f43-b76d-c3d00c91836f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CentrifugeDevices"]], 
+    "paclet:Experiment/ref/CentrifugeDevices"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1d6fb54d-da7a-4139-a06a-f2917916bb70"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Lists all instruments physically capable of centrifuging a given set of \
+samples."
+}], "GuideText",
+ CellID->679447188,ExpressionUUID->"52ddfd84-6dea-4000-8563-53670a5defb7"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1298337617,ExpressionUUID->"71c31fe3-cc2b-4929-bc3a-f665f8d86d95"],
+
+Cell["Resource Requests", "GuideFunctionsSubsection",
+ CellID->578991752,ExpressionUUID->"0dc07216-52d0-405c-b3ee-20c0d617d158"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Resource"]], "paclet:Resources/ref/Resource"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fe6723b8-3568-4ca8-a923-a63ac5f55cd1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Wrapper for defining a resource request within the ECL facility for use in \
+conducting experiments."
+}], "GuideText",
+ CellID->865971307,ExpressionUUID->"df38bf49-3462-4980-a1ff-74bfd9612bff"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidResourceQ"]], "paclet:Resources/ref/ValidResourceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "74c000fa-806c-457a-81fa-1f2e1e7fe0ef"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a give Resource request is properly formatted for its given type \
+of resource."
+}], "GuideText",
+ CellID->883081030,ExpressionUUID->"22f9ce4e-63e7-4ec9-8a58-db197b8cad33"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SampleUsage"]], "paclet:ExperimentUtilities/ref/SampleUsage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4f5547d6-ad6c-48b3-8df0-fcfd6a556cff"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a table that lists out the usage amount, the amount in user's \
+inventory, and amount in public inventory fo all samples specified in input \
+unit operations."
+}], "GuideText",
+ CellID->683386793,ExpressionUUID->"f4933d83-21de-4ecf-9baa-65e54b561ea7"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->939285795,ExpressionUUID->"f1cf62f3-c882-400a-a2f9-df2436488964"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"3c11f7ca-63d9-4730-bff1-e2d6606e5a81"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->424067468,ExpressionUUID->"91dfae49-a63c-4b9b-af23-25cae5eb1ac7"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1951193930,ExpressionUUID->"132d88c0-ca6e-4572-84d3-a281e0a5e46c"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["RunningExperiments"]], "paclet:Docs/guide/RunningExperiments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1641091820,ExpressionUUID->"065a7f9b-6906-4d0e-b773-8b591c2194ac"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ExperimentTrackingAndManagement"]], 
+   "paclet:Docs/guide/ExperimentTrackingAndManagement"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1697740319,ExpressionUUID->"4f4a269d-348b-4a8e-9f66-a0a975b38d94"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["PricingFunctions"]], "paclet:Docs/guide/PricingFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->306323744,ExpressionUUID->"b022ef96-4550-45ab-80b9-85883334e98d"],
+
+Cell["", "FooterCell",
+ CellID->864863549,ExpressionUUID->"0b77db59-e5af-41fb-b14b-2ccebbf9328d"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"FacilitiesCapabilitiesAndLimitations",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:05:11", "context" -> "Docs`", 
+    "keywords" -> {
+     "CompatibleMaterialsQ", "SampleVolumeRangeQ", "AchievableResolution", 
+      "PreferredContainer", "AliquotContainers", "TransferDevices", 
+      "IncubateCellsDevices", "IncubateDevices", "MixDevices", "LNAChimeraQ", 
+      "CompatibleFootprintQ", "CentrifugeDevices", "Resource", 
+      "ValidResourceQ", "SampleUsage"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for assessing the status and limitations of ECL \
+Facilities and Capabilities.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "FacilitiesCapabilitiesAndLimitations", "title" -> 
+    "FacilitiesCapabilitiesAndLimitations", "type" -> "Guide", "uri" -> 
+    "Docs/guide/FacilitiesCapabilitiesAndLimitations", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"2872d41b-a143-4586-9e0a-f133025b0d25"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[608, 21, 4824, 110, 58, "AnchorBarGrid",ExpressionUUID->"13c39868-6855-4f3d-860c-0105a3a4d1ec",
+ CellID->1],
+Cell[5435, 133, 136, 1, 45, "GuideTitle",ExpressionUUID->"ecf84563-5bc9-4f8b-91aa-015361ac8ce7",
+ CellID->415084872],
+Cell[5574, 136, 211, 4, 30, "GuideAbstract",ExpressionUUID->"5a63d354-db2a-43c9-9f6e-593e3c3e7f5f",
+ CellID->1304558248],
+Cell[5788, 142, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"6891cf91-2b8a-44d0-ad92-f5d0051102b8",
+ CellID->2049921913],
+Cell[5905, 145, 133, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"a7af68fc-6bba-4b6c-81a7-987a7386a7d8",
+ CellID->957442970],
+Cell[6041, 148, 552, 14, 51, "GuideText",ExpressionUUID->"9566c5de-a9ac-4546-a4ad-52cfe8dd9348",
+ CellID->649029819],
+Cell[6596, 164, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"9b148d5a-de78-4209-a9de-2d114352c042",
+ CellID->1174724820],
+Cell[6713, 167, 130, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0c7a4cc3-280f-48be-8cdf-77cf2c4340c1",
+ CellID->1782882869],
+Cell[6846, 170, 489, 13, 31, "GuideText",ExpressionUUID->"24910c19-33c8-480b-a62a-2150b54e29c1",
+ CellID->1073052692],
+Cell[7338, 185, 546, 14, 57, "GuideText",ExpressionUUID->"dcb852dd-e1e6-495f-abb2-e0331d02bdf6",
+ CellID->228926938],
+Cell[7887, 201, 507, 14, 57, "GuideText",ExpressionUUID->"58b515f6-162f-44a4-8c92-756e444c22af",
+ CellID->1431835189],
+Cell[8397, 217, 549, 14, 57, "GuideText",ExpressionUUID->"76efc8ac-8b98-4bb8-ae35-de84dc7a1252",
+ CellID->152273241],
+Cell[8949, 233, 575, 14, 57, "GuideText",ExpressionUUID->"72aa7393-8540-4a8c-bd2a-717a165f633b",
+ CellID->1603337910],
+Cell[9527, 249, 533, 14, 57, "GuideText",ExpressionUUID->"db7da1ea-201c-4dbc-9813-83b7d1e274f9",
+ CellID->675450814],
+Cell[10063, 265, 485, 12, 37, "GuideText",ExpressionUUID->"ba4ab028-51f4-4e00-8f7e-b22f196fd6a0",
+ CellID->703272856],
+Cell[10551, 279, 510, 13, 57, "GuideText",ExpressionUUID->"b6024797-bcbe-4d1b-8338-4c0bbe27d0b6",
+ CellID->156897704],
+Cell[11064, 294, 470, 12, 37, "GuideText",ExpressionUUID->"273b0973-0e11-4253-af16-66a2040fd2bf",
+ CellID->2017276259],
+Cell[11537, 308, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"c312cd0f-0f66-4f3d-a968-24f3035a3a73",
+ CellID->2037749824],
+Cell[11654, 311, 132, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"b95259ce-dda1-46c7-9712-fcdf9a84b828",
+ CellID->392089612],
+Cell[11789, 314, 549, 14, 51, "GuideText",ExpressionUUID->"6b5c88db-66c8-4f43-b76d-c3d00c91836f",
+ CellID->1370279888],
+Cell[12341, 330, 501, 14, 37, "GuideText",ExpressionUUID->"52ddfd84-6dea-4000-8563-53670a5defb7",
+ CellID->679447188],
+Cell[12845, 346, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"71c31fe3-cc2b-4929-bc3a-f665f8d86d95",
+ CellID->1298337617],
+Cell[12962, 349, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0dc07216-52d0-405c-b3ee-20c0d617d158",
+ CellID->578991752],
+Cell[13093, 352, 495, 13, 51, "GuideText",ExpressionUUID->"df38bf49-3462-4980-a1ff-74bfd9612bff",
+ CellID->865971307],
+Cell[13591, 367, 496, 13, 37, "GuideText",ExpressionUUID->"22f9ce4e-63e7-4ec9-8a58-db197b8cad33",
+ CellID->883081030],
+Cell[14090, 382, 577, 14, 57, "GuideText",ExpressionUUID->"f4933d83-21de-4ecf-9baa-65e54b561ea7",
+ CellID->683386793],
+Cell[14670, 398, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f1cf62f3-c882-400a-a2f9-df2436488964",
+ CellID->939285795],
+Cell[14779, 401, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"91dfae49-a63c-4b9b-af23-25cae5eb1ac7",
+ CellID->424067468],
+Cell[15174, 415, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"132d88c0-ca6e-4572-84d3-a281e0a5e46c",
+ CellID->1951193930],
+Cell[15284, 418, 261, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"065a7f9b-6906-4d0e-b773-8b591c2194ac",
+ CellID->1641091820],
+Cell[15548, 426, 291, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"4f4a269d-348b-4a8e-9f66-a0a975b38d94",
+ CellID->1697740319],
+Cell[15842, 435, 256, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"b022ef96-4550-45ab-80b9-85883334e98d",
+ CellID->306323744],
+Cell[16101, 443, 97, 1, 40, "FooterCell",ExpressionUUID->"0b77db59-e5af-41fb-b14b-2ccebbf9328d",
+ CellID->864863549]
+}
+]
+*)
+
+(* End of internal cache information *)
+

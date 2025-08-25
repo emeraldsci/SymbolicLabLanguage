@@ -45,13 +45,7 @@ DefineUsage[PlotReactionMechanism,
 			"PlotTranscript",
 			"PlotObject"
 		},
-		Author -> {
-			"amir.saadat",
-			"brad",
-			"alice",
-			"qian",
-			"thomas"
-		},
+		Author -> {"dirk.schild", "amir.saadat", "brad", "alice", "qian", "thomas"},
 		Preview->True
 	}
 ];

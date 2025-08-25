@@ -33,8 +33,6 @@ DefineUsage[UploadUnitOperation,
       "Download",
       "Experiment"
     },
-    Author -> {
-      "thomas"
-    }
+    Author -> {"taylor.hochuli"}
   }
 ]

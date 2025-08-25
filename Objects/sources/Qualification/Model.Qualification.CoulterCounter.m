@@ -38,14 +38,6 @@ DefineObjectType[Model[Qualification, CoulterCounter], {
 			Description -> "The conductive solution used to suspend the particles to be counted and sized. The electrolyte solution generally contains an aqueous or organic solvent and an electrolyte chemical to make the solution conductive.",
 			Category -> "General"
 		},
-		ElectrolyteSolutionVolume->{
-			Format->Single,
-			Class->Real,
-			Pattern:>GreaterEqualP[0 Milliliter],
-			Units->Milliliter,
-			Description->"The amount of the electrolyte solution to be added into the ElectrolyeSolutionContainer of the coulter counter instrument. The amount added here supplies a reservoir of clean electrolyte solution that is pumped to flush the aperture tube before and after sample runs to remove particles that may remain trapped in the bottom of the aperture tube.",
-			Category->"General"
-		},
 		ElectrolyteSampleDilutionVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -65,6 +57,14 @@ DefineObjectType[Model[Qualification, CoulterCounter], {
 			IndexMatching -> Standards,
 			Description -> "For each member of Standards, the amount of the prepared sample(s) to be mixed with the electrolyte solution to create a particle suspension which is used for calibrating the aperture tube.",
 			Category -> "General"
+		},
+		FlowRates -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> (GreaterEqualP[0 Microliter / Second] | Automatic),
+			IndexMatching -> Standards,
+			Description -> "For each member of Standards, the target volume of the sample-electrolyte solution mixture pumped through the aperture of the ApertureTube per unit time during the sample run.",
+			Category -> "Electrical Resistance Measurement"
 		}
 	}
 }];

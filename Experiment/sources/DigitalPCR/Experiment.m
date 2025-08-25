@@ -898,10 +898,12 @@ DefineOptions[ExperimentDigitalPCR,
 		*)
 
 		(* SharedOptions *)
+		ModelInputOptions,
 		AnalyticalNumberOfReplicatesOption,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
-		SamplesInStorageOptions
+		SamplesInStorageOptions,
+		SimulationOption
 		(*SamplesOutStorageOptions*)
 	}
 ];
@@ -997,13 +999,13 @@ ExperimentDigitalPCR[
 	mySamples:ListableP[ObjectP[Object[Sample]]],
 	myPrimerPairSamples:ListableP[
 		Alternatives[
-			{{ObjectP[{Model[Sample],Object[Sample]}],ObjectP[{Model[Sample],Object[Sample]}]}..},
+			{{ObjectP[{Object[Sample]}],ObjectP[{Object[Sample]}]}..},
 			{Null,Null}
 		]
 	],
 	myProbeSamples:ListableP[
 		Alternatives[
-			{ObjectP[{Model[Sample],Object[Sample]}]..},
+			{ObjectP[{Object[Sample]}]..},
 			Null
 		]
 	],
@@ -1023,7 +1025,7 @@ ExperimentDigitalPCR[
 		myPrimerPairSamplesWithPreparedSamplesNestedNulls,myProbeSamplesWithPreparedSamplesNestedNulls,
 		expandedSamples,nonNullExpandedPrimerPairSamples,nonNullExpandedProbeSamples,expandedPrimerPairSamples,expandedProbeSamples,recommendedRTStockSolution,
 		validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,cache,combinedCacheWithSamplePreparation,downloadedPackets,
+		updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,cache,downloadedPackets,
 		templatedOptions,templateTests,inheritedOptions,digitalPCROptionsAssociation,expandedSafeOps,referencePrimerPairObjects,referenceProbeObjects,allPrimerObjects,allProbeObjects,recommendedMasterMixes,
 		oligomerObjects,oligomerModels,oligomerObjectDownloadFields,oligomerModelDownloadFields,
 		digitalPCRCompatibleFluorophores,nonAutomaticOptionsWithObjects,automaticOptionsWithPotentialObjects,instrumentOptions,
@@ -1104,13 +1106,13 @@ ExperimentDigitalPCR[
 	(* Get the number of probes per sample for bringing back the nested form of listedProbeSamples *)
 	probeLengths=Length/@listedProbeSamples;
 
-	(* Create a mega-list of all input objects for simulateSamplePreparationPackets *)
+	(* Create a mega-list of all input objects for simulateSamplePreparationPacketsNew *)
 	concatenatedOligoInputs=Join[listedSamples,flatPrimerPairSamples,flatProbeSamples];
 
 	(* Flatten to a list of singletons *)
 	flatConcatenatedOligoInputs=Flatten[concatenatedOligoInputs];
 
-	(* Remove Nulls for simulateSamplePreparationPackets function *)
+	(* Remove Nulls for simulateSamplePreparationPacketsNew function *)
 	flatConcatenatedOligoInputsNoNulls=DeleteCases[flatConcatenatedOligoInputs,Null];
 
 	(* Get lengths of each list to break them back out to individual lists *)
@@ -1127,20 +1129,19 @@ ExperimentDigitalPCR[
 	(* Simulate our sample preparation. *) (*ADDING PRIMER AND PROBE PREPS*)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{myFlatConcatenatedOligoInputsNoNullsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{myFlatConcatenatedOligoInputsNoNullsWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDigitalPCR,
 			flatConcatenatedOligoInputsNoNulls,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -1157,7 +1158,7 @@ ExperimentDigitalPCR[
 	];
 
 	(* Convert named objects in inputs and options to object references with IDs and remove links *)
-	{allOligoInputWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[myFlatConcatenatedOligoInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
+	{allOligoInputWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[myFlatConcatenatedOligoInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* Bring back concatenatedOligoInputs list structure *)
 	concatenatedOligoInputsWithPreparedSamples=Unflatten[allOligoInputWithPreparedSamples,concatenatedOligoInputs];
@@ -1241,8 +1242,6 @@ ExperimentDigitalPCR[
 	(* Get cache from inheritedOptions *)
 	cache=Lookup[inheritedOptions,Cache];
 
-	(* Combine incoming cache with sample preparation cache *)
-	combinedCacheWithSamplePreparation = FlattenCachePackets[{cache, samplePreparationCache}];
 
 (*
 	(* Prepare myPrimerPairSamplesWithPreparedSamples for expansion: if it consists of primer pairs for only one sample, then remove the outer list so it can be expanded *)
@@ -1374,60 +1373,50 @@ ExperimentDigitalPCR[
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
-	downloadedPackets = Check[
-		Quiet[
-			Download[
-				{
-					listedSamples,
-					oligomerObjects,
-					oligomerModels,
-					allPrimerObjects,
-					allProbeObjects,
-					digitalPCRCompatibleFluorophores,
-					nonAutomaticOptionsWithObjects,
-					automaticOptionsWithPotentialObjects,
-					instrumentOptions,
-					liquidHandlerContainers,
-					recommendedMasterMixes,
-					recommendedRTStockSolution
-				},
-				{
-					{Packet[Composition,IncompatibleMaterials],Packet[Composition[[All,2]][{Name,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums,FluorescenceLabelingTarget,DetectionLabels}]]},
-					{oligomerObjectDownloadFields,Packet[Container[objectContainerFields]],Packet[Container[Model][modelContainerFields]]},
-					{oligomerModelDownloadFields},
-					{Packet[Composition],Packet[Composition[[All,2]][{MolecularWeight}]]},(*already included in oligomerObjectDownloadFields - verify before deleting*)
-					{Packet[Composition],Packet[Composition[[All,2]][{Name,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums,FluorescenceLabelingTarget,DetectionLabels,MolecularWeight}]]},(*Need to download fields form detectionlabels if they are fluorescent*)
-					{Packet[Name,Fluorescent,FluorescenceExcitationMaximums, FluorescenceEmissionMaximums,FluorescenceLabelingTarget]},
-					{Packet[Name,Deprecated,Positions,AvailableLayouts,TareWeight]},(*Need anything else?*)
-					{Packet[Model,Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,IncompatibleMaterials],Packet[Model[{Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,MasterMixConcentrationFactor,IncompatibleMaterials}]]},
-					{Packet[Name, Model, WettedMaterials]},
-					{Evaluate[Packet@@modelContainerFields]},
-					{Packet[Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,IncompatibleMaterials]},
-					{Packet[Name,VolumeIncrements]}
-				},
-				Cache->combinedCacheWithSamplePreparation,
-				Date->Now
-			],
-			{Download::FieldDoesntExist, Download::NotLinkField}
+	downloadedPackets = Quiet[
+		Download[
+			{
+				listedSamples,
+				oligomerObjects,
+				oligomerModels,
+				allPrimerObjects,
+				allProbeObjects,
+				digitalPCRCompatibleFluorophores,
+				nonAutomaticOptionsWithObjects,
+				automaticOptionsWithPotentialObjects,
+				instrumentOptions,
+				liquidHandlerContainers,
+				recommendedMasterMixes,
+				recommendedRTStockSolution
+			},
+			{
+				{Packet[Composition,IncompatibleMaterials],Packet[Composition[[All,2]][{Name,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums,FluorescenceLabelingTarget,DetectionLabels}]]},
+				{oligomerObjectDownloadFields,Packet[Container[objectContainerFields]],Packet[Container[Model][modelContainerFields]]},
+				{oligomerModelDownloadFields},
+				{Packet[Composition],Packet[Composition[[All,2]][{MolecularWeight}]]},(*already included in oligomerObjectDownloadFields - verify before deleting*)
+				{Packet[Composition],Packet[Composition[[All,2]][{Name,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums,FluorescenceLabelingTarget,DetectionLabels,MolecularWeight}]]},(*Need to download fields form detectionlabels if they are fluorescent*)
+				{Packet[Name,Fluorescent,FluorescenceExcitationMaximums, FluorescenceEmissionMaximums,FluorescenceLabelingTarget]},
+				{Packet[Name,Deprecated,Positions,AvailableLayouts,TareWeight]},(*Need anything else?*)
+				{Packet[Model,Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,IncompatibleMaterials],Packet[Model[{Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,MasterMixConcentrationFactor,IncompatibleMaterials}]]},
+				{Packet[Name, Model, WettedMaterials]},
+				{Evaluate[Packet@@modelContainerFields]},
+				{Packet[Name,UsedAsSolvent,ConcentratedBufferDiluent,ConcentratedBufferDilutionFactor,BaselineStock,IncompatibleMaterials]},
+				{Packet[Name,VolumeIncrements]}
+			},
+			Cache->cache,
+			Simulation -> updatedSimulation,
+			Date->Now
 		],
-		$Failed,
-		{Download::ObjectDoesNotExist}
-	];
-
-	(*Download any detection labels attached to the probes*)
-
-	(* Return early if objects do not exist *)
-	If[MatchQ[downloadedPackets,$Failed],
-		Return[$Failed]
+		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 	(* Add downloaded information to cache ball *)
-	cacheBall=FlattenCachePackets[{combinedCacheWithSamplePreparation,downloadedPackets}];
+	cacheBall=FlattenCachePackets[{cache,downloadedPackets}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentDigitalPCROptions[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentDigitalPCROptions[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1437,7 +1426,7 @@ ExperimentDigitalPCR[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentDigitalPCROptions[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentDigitalPCROptions[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1464,8 +1453,8 @@ ExperimentDigitalPCR[
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		experimentDigitalPCRResourcePackets[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{experimentDigitalPCRResourcePackets[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+		experimentDigitalPCRResourcePackets[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{experimentDigitalPCRResourcePackets[expandedSamples,expandedPrimerPairSamples,expandedProbeSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1484,13 +1473,15 @@ ExperimentDigitalPCR[
 			resourcePackets,
 			Upload->Lookup[inheritedOptions,Upload],
 			Confirm->Lookup[inheritedOptions,Confirm],
+			CanaryBranch->Lookup[inheritedOptions,CanaryBranch],
 			ParentProtocol->Lookup[inheritedOptions,ParentProtocol],
 			Priority->Lookup[inheritedOptions,Priority],
 			StartDate->Lookup[inheritedOptions,StartDate],
 			HoldOrder->Lookup[inheritedOptions,HoldOrder],
 			QueuePosition->Lookup[inheritedOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,DigitalPCR],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -1506,10 +1497,11 @@ ExperimentDigitalPCR[
 ];
 
 
-(*---Function overload accepting sample/container objects as sample inputs and sample/container objects or Nulls as primer pair inputs and probe inputs---*)
+
+(*---Function overload accepting sample/container objects as sample inputs and sample/container/model objects or Nulls as primer pair inputs and probe inputs---*)
 
 ExperimentDigitalPCR[
-	mySampleContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
+	mySampleContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myPrimerPairSamples:ListableP[
 		Alternatives[
 			{{(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}),(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]})}..},
@@ -1524,7 +1516,8 @@ ExperimentDigitalPCR[
 	],
 	myOptions:OptionsPattern[ExperimentDigitalPCR]
 ]:=Module[
-	{listedOptions,listedSampleContainers,listedPrimerPairSamples,listedProbeSamples,flatPrimerPairSamples,primerPairLengths,flatProbeSamples,probeLengths,
+	{
+		listedOptions,listedSampleContainers,listedPrimerPairSamples,listedProbeSamples,flatPrimerPairSamples,primerPairLengths,flatProbeSamples,probeLengths,
 		initialListedPrimerPairSamples,initialListedProbeSamples,nestedIndexMatchingInputsCheck,nestedIndexMatchingInputsResult,
 		concatenatedOligoInputs,flatConcatenatedOligoInputs,concatenatedOligoInputsLengths,myFlatConcatenatedOligoInputsWithPreparedSamples,
 		concatenatedOligoInputsWithPreparedSamples,sampleCache,
@@ -1537,8 +1530,10 @@ ExperimentDigitalPCR[
 		nullProbeSamplePositions,nonNullProbeSamples,nonNullProbeContainerToSampleResult,
 		probeContainerToSampleOutput,probeContainerToSampleTests,probeContainerToSampleResult,
 		myProbeSamplesWithPreparedSamples,probeSamples,combinedContainerToSampleTests,
-		finalPrimerPairSamples,finalProbeSamples,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,finalSamples,containerToSampleTests},
+		finalPrimerPairSamples,finalProbeSamples,myOptionsWithPreparedSamplesWithModifiedPreparedModelOps,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,finalSamples,
+		containerToSampleTests, containerToSampleSimulation, primerContainerToSampleSimulation, probeContainerToSampleSimulation
+	},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -1612,7 +1607,7 @@ ExperimentDigitalPCR[
 	(* Get the number of probes per sample for bringing back the nested form of listedProbeSamples *)
 	probeLengths=Length/@listedProbeSamples;
 
-	(* Create a mega-list of all input objects for simulateSamplePreparationPackets *)
+	(* Create a mega-list of all input objects for simulateSamplePreparationPacketsNew *)
 	concatenatedOligoInputs=Join[listedSampleContainers,flatPrimerPairSamples,flatProbeSamples];
 
 	(* Flatten to a list of singletons *)
@@ -1632,51 +1627,19 @@ ExperimentDigitalPCR[
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
 
-		{myFlatConcatenatedOligoInputsWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{myFlatConcatenatedOligoInputsWithPreparedSamples,myOptionsWithPreparedSamplesWithModifiedPreparedModelOps,updatedSimulation}=simulateSamplePreparationPacketsNew[
 				ExperimentDigitalPCR,
 				flatConcatenatedOligoInputs,
 				listedOptions
 			],
 			$Failed,
-			{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+			{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 		];
-			 (*
-		{mySamplesWithPreparedSamples,preliminaryOptionsWithPreparedSamples,preliminarySamplePreparationCache}=simulateSamplePreparationPackets[
-			ExperimentDigitalPCR,
-			listedSampleContainers,
-			listedOptions
-		];
-
-		{myFlatPrimerPairSamplesWithPreparedSamples,secondaryOptionsWithPreparedSamples,secondarySamplePreparationCache}=simulateSamplePreparationPackets[
-			ExperimentDigitalPCR,
-			flatPrimerPairSamples,
-			ReplaceRule[preliminaryOptionsWithPreparedSamples,
-				Cache->FlattenCachePackets[{
-					Lookup[preliminaryOptionsWithPreparedSamples,Cache,{}],
-					preliminarySamplePreparationCache
-				}]
-			]
-		];
-
-		{myFlatProbeSamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
-			ExperimentDigitalPCR,
-			flatProbeSamples,
-			ReplaceRule[secondaryOptionsWithPreparedSamples,
-				Cache->FlattenCachePackets[{
-					Lookup[secondaryOptionsWithPreparedSamples,Cache,{}],
-					secondarySamplePreparationCache
-				}]
-			]
-		],
-		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
-	];*)
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Bring back concatenatedOligoInputs list structure *)
@@ -1685,15 +1648,21 @@ ExperimentDigitalPCR[
 	(* Separate mega-list to three lists: samples, primerpairs and probes *)
 	{mySamplesWithPreparedSamples,myFlatPrimerPairSamplesWithPreparedSamples,myFlatProbeSamplesWithPreparedSamples}=TakeList[concatenatedOligoInputsWithPreparedSamples,concatenatedOligoInputsLengths];
 
+	(* put the "proper" specified preparatory models in here now *)
+	(* need to switch back to the not-expanded version of this option again *)
+	(* Our current index matching system does not support ModelInputOptions match to 3 input sample groups *)
+	(* Have to Null the value but it is okay since LabelSample has been created in PreparatoryUnitOperations during simulateSamplePreparationPacketsNew so ModelInputOptions are useless now *)
+	myOptionsWithPreparedSamples = ReplaceRule[myOptionsWithPreparedSamplesWithModifiedPreparedModelOps, {PreparedModelContainer -> Null, PreparedModelAmount -> Null}];
+
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentDigitalPCR,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -1704,12 +1673,12 @@ ExperimentDigitalPCR[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentDigitalPCR,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -1733,12 +1702,12 @@ ExperimentDigitalPCR[
 	nonNullPrimerContainerToSampleResult=If[Length[nonNullPrimerSamples]>0,
 		If[gatherTests,
 			(* We are gathering tests. This silences any messages being thrown. *)
-			{primerContainerToSampleOutput,primerContainerToSampleTests}=containerToSampleOptions[
+			{primerContainerToSampleOutput,primerContainerToSampleTests, primerContainerToSampleSimulation}=containerToSampleOptions[
 				ExperimentDigitalPCR,
 				Flatten[nonNullPrimerSamples,1],
 				myOptionsWithPreparedSamples,
-				Output->{Result,Tests},
-				Cache->samplePreparationCache
+				Output->{Result,Tests, Simulation},
+				Simulation -> containerToSampleSimulation
 			];
 
 			(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -1749,17 +1718,18 @@ ExperimentDigitalPCR[
 
 			(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 			Check[
-				primerContainerToSampleOutput=containerToSampleOptions[
+				{primerContainerToSampleOutput, primerContainerToSampleSimulation}=containerToSampleOptions[
 					ExperimentDigitalPCR,
 					Flatten[nonNullPrimerSamples,1],
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output->{Result, Simulation},
+					Simulation -> containerToSampleSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 			]
 		],
+		primerContainerToSampleSimulation = containerToSampleSimulation;
 		{flattenedPrimerSamplesWithPreparedSamples}
 	];
 
@@ -1770,9 +1740,15 @@ ExperimentDigitalPCR[
 	];
 
 	(* Re-create the list structure similar to input, but with nested Null pairs *)
-	myPrimerPairSamplesWithPreparedSamplesNestedNulls=TakeList[
-		Partition[primerContainerToSampleResult,2],
-		primerPairLengths
+	myPrimerPairSamplesWithPreparedSamplesNestedNulls=If[Length[nonNullPrimerSamples] > 0,
+		TakeList[
+			Partition[Flatten[Most[primerContainerToSampleResult]],2],
+			primerPairLengths
+		],
+		TakeList[
+			Partition[Flatten[primerContainerToSampleResult],2],
+			primerPairLengths
+		]
 	];
 
 	(* Flatten nesting of Null pairs to match input pattern *)
@@ -1800,12 +1776,12 @@ ExperimentDigitalPCR[
 	nonNullProbeContainerToSampleResult=If[Length[nonNullProbeSamples]>0,
 		If[gatherTests,
 			(* We are gathering tests. This silences any messages being thrown. *)
-			{probeContainerToSampleOutput,probeContainerToSampleTests}=containerToSampleOptions[
+			{probeContainerToSampleOutput,probeContainerToSampleTests, probeContainerToSampleSimulation}=containerToSampleOptions[
 				ExperimentDigitalPCR,
 				nonNullProbeSamples,
 				myOptionsWithPreparedSamples,
-				Output->{Result,Tests},
-				Cache->samplePreparationCache
+				Output->{Result,Tests, Simulation},
+				Simulation -> primerContainerToSampleSimulation
 			];
 
 			(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -1816,17 +1792,18 @@ ExperimentDigitalPCR[
 
 			(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 			Check[
-				probeContainerToSampleOutput=containerToSampleOptions[
+				{probeContainerToSampleOutput, probeContainerToSampleSimulation}=containerToSampleOptions[
 					ExperimentDigitalPCR,
 					nonNullProbeSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output->{Result, Simulation},
+					Simulation -> primerContainerToSampleSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 			]
 		],
+		probeContainerToSampleSimulation = primerContainerToSampleSimulation;
 		{myFlatProbeSamplesWithPreparedSamples}
 	];
 
@@ -1837,7 +1814,10 @@ ExperimentDigitalPCR[
 	];
 
 	(* Re-create the list structure similar to input, but with nested Null pairs *)
-	myProbeSamplesWithPreparedSamples=TakeList[probeContainerToSampleResult,probeLengths];
+	myProbeSamplesWithPreparedSamples=If[Length[nonNullProbeSamples] > 0,
+		TakeList[Flatten[Most[probeContainerToSampleResult]],probeLengths],
+		TakeList[Flatten[probeContainerToSampleResult],probeLengths]
+	];
 
 	(* Flatten nesting of Null probes to match input pattern *)
 	probeSamples=Map[
@@ -1860,12 +1840,7 @@ ExperimentDigitalPCR[
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
+	updatedCache=Lookup[listedOptions,Cache,{}];
 
 	(* If we were given an empty container, return early. *)
 	If[Or[MatchQ[containerToSampleResult,$Failed],MatchQ[nonNullPrimerContainerToSampleResult,$Failed],MatchQ[nonNullProbeContainerToSampleResult,$Failed]],
@@ -1878,13 +1853,13 @@ ExperimentDigitalPCR[
 		},
 
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* When primers/probes are Null, we'll assume that it is a prepared plate and sample must contain oligomer models. Samples without oligomers are assumed to be passive buffer samples used for droplet generation only and removed from sample input list. *)
 		finalSamples=If[NullQ[primerPairSamples]&&NullQ[probeSamples],
 			Module[{sampleCompositionPackets,samplesWithOligomers},
 				(* Need to download sample composition to check if a sample has oligomers *)
-				sampleCompositionPackets=Download[samples,Packet[Composition],Cache->updatedCache];
+				sampleCompositionPackets=Download[samples,Packet[Composition],Cache->updatedCache, Simulation -> probeContainerToSampleSimulation];
 				(* Remove any samples that do not have a single identity oligomer in the composition *)
 				samplesWithOligomers=Cases[
 					sampleCompositionPackets,
@@ -1921,14 +1896,14 @@ ExperimentDigitalPCR[
 			finalSamples,
 			finalPrimerPairSamples,
 			finalProbeSamples,
-			ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]
+			ReplaceRule[sampleOptions,Simulation -> probeContainerToSampleSimulation]
 		]
 	]
 ];
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair or probe inputs---*)
 ExperimentDigitalPCR[
-	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentDigitalPCR]
 ]:=ExperimentDigitalPCR[
 	mySamples,
@@ -1944,7 +1919,7 @@ ExperimentDigitalPCR[
 
 DefineOptions[
 	resolveExperimentDigitalPCROptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption, SimulationOption}
 ];
 
 resolveExperimentDigitalPCROptions[
@@ -1969,7 +1944,7 @@ resolveExperimentDigitalPCROptions[
 		digitalPCROptions,instrument,dropletCartridge,dropletGeneratorOil,dropletReaderOil,diluent,
 		passiveWellBuffer,plateSealInstrument,plateSealFoil,
 		sampleProcessSteps,fastTrack,name,parentProtocol,samplePackets,sampleContainerPackets,
-		sampleContainerModels,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+		sampleContainerModels,simulatedSamples,resolvedSamplePrepOptions,simulation, updatedSimulation,samplePrepTests,
 		expandedListedPrimerPairSamples,expandedListedProbeSamples,initialExpandedListedPrimerPairSamples,initialExpandedListedProbeSamples,
 		oligomerSampleObjects,oligomerModelSamples,allModelPackets,
 		oligomerSamplePackets,oligomerModelSamplePackets,oligomerSampleObjectModelPackets,oligomerSampleObjectFields,oligomerModelSampleFields,
@@ -2180,7 +2155,7 @@ resolveExperimentDigitalPCROptions[
 		referenceReversePrimerStockConcentrationAccuracyWarnings,specifiedActiveWell,activeWellOptionLengthCheck,
 		activeWellInvalidLengthOptions,activeWellInvalidLengthTest,aliquotAmounts,preResolvedAliquotBool,
 		resolvedPostProcessingOptions,resolvedOptions,allTests,resultRule,testsRule,
-		invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests},
+		invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests, simulatedCache},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -2199,14 +2174,15 @@ resolveExperimentDigitalPCROptions[
 
 	(*Fetch our options cache from the parent function*)
 	inheritedCache=Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation,{}];
 
 	(* Separate out our digitalPCROptions from our Sample Prep options. *)
 	{samplePrepOptions,digitalPCROptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentDigitalPCR,myListedSamples,samplePrepOptions,Cache->inheritedCache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentDigitalPCR,myListedSamples,samplePrepOptions,Cache->inheritedCache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentDigitalPCR,myListedSamples,samplePrepOptions,Cache->inheritedCache,Simulation -> simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentDigitalPCR,myListedSamples,samplePrepOptions,Cache->inheritedCache,Simulation -> simulation,Output->Result],{}}
 	];
 
 	(* Expand input primer pair list to match samples if only one primer pair is given for all samples *)
@@ -2304,10 +2280,13 @@ resolveExperimentDigitalPCROptions[
 				{Packet[Composition,Model,Well]},
 				{Packet[Composition,Model,Well]}
 			},
-			Cache->simulatedCache
+			Cache->inheritedCache,
+			Simulation -> updatedSimulation
 		],
 		{Download::FieldDoesntExist}
 	];
+
+	simulatedCache =  FlattenCachePackets[{inheritedCache, oligomerSamplePackets, oligomerModelSamplePackets, initialSamplePackets, sampleContainerPackets, sampleContainerModels, initialAllSampleObjectPackets, flatPrimerPairPackets, flatProbePackets}];
 
 	(* Pull out sample packets of the type Object[Sample] *)
 	oligomerSampleObjectPackets=Cases[
@@ -2490,7 +2469,7 @@ resolveExperimentDigitalPCROptions[
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -2498,11 +2477,11 @@ resolveExperimentDigitalPCROptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[oligomerSampleObjects],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[oligomerSampleObjects,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[oligomerSampleObjects,discardedInvalidInputs],Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2524,7 +2503,7 @@ resolveExperimentDigitalPCROptions[
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[deprecatedInvalidInputs]>0&&messages,
-		Message[Error::DeprecatedModels,ObjectToString[deprecatedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DeprecatedModels,ObjectToString[deprecatedInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -2532,11 +2511,11 @@ resolveExperimentDigitalPCROptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[deprecatedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples have models "<>ObjectToString[deprecatedInvalidInputs,Cache->simulatedCache]<>" that are not deprecated:",True,False]
+				Test["Our input samples have models "<>ObjectToString[deprecatedInvalidInputs,Simulation->updatedSimulation]<>" that are not deprecated:",True,False]
 			];
 			passingTest=If[Length[deprecatedInvalidInputs]==Length[allModelPackets],
 				Nothing,
-				Test["Our input samples have models "<>ObjectToString[Complement[Lookup[allModelPackets,Object],deprecatedInvalidInputs],Cache->simulatedCache]<>" that are not deprecated:",True,True]
+				Test["Our input samples have models "<>ObjectToString[Complement[Lookup[allModelPackets,Object],deprecatedInvalidInputs],Simulation->updatedSimulation]<>" that are not deprecated:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2555,7 +2534,7 @@ resolveExperimentDigitalPCROptions[
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[nullCompositionInvalidInputs]>0&&messages,
-		Message[Error::DigitalPCRNullComposition,ObjectToString[nullCompositionInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DigitalPCRNullComposition,ObjectToString[nullCompositionInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -2563,11 +2542,11 @@ resolveExperimentDigitalPCROptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[nullCompositionInvalidInputs]==0,
 				Nothing,
-				Test["Composition is not informed in input objects "<>ObjectToString[nullCompositionInvalidInputs,Cache->simulatedCache]<>" ::",True,False]
+				Test["Composition is not informed in input objects "<>ObjectToString[nullCompositionInvalidInputs,Simulation->updatedSimulation]<>" ::",True,False]
 			];
 			passingTest=If[Length[nullCompositionInvalidInputs]==Length[allSampleObjectPackets],
 				Nothing,
-				Test["Composition is informed in input objects "<>ObjectToString[Complement[Lookup[allSampleObjectPackets,Object],nullCompositionInvalidInputs],Cache->simulatedCache]<>" ::",True,True]
+				Test["Composition is informed in input objects "<>ObjectToString[Complement[Lookup[allSampleObjectPackets,Object],nullCompositionInvalidInputs],Simulation->updatedSimulation]<>" ::",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2586,7 +2565,7 @@ resolveExperimentDigitalPCROptions[
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[liquidStateInvalidInputs]>0&&messages,
-		Message[Error::DigitalPCRNonLiquidSamples,ObjectToString[liquidStateInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DigitalPCRNonLiquidSamples,ObjectToString[liquidStateInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -2594,11 +2573,11 @@ resolveExperimentDigitalPCROptions[
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[liquidStateInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples, "<>ObjectToString[liquidStateInvalidInputs,Cache->simulatedCache]<>", are in liquid state::",True,False]
+				Test["Our input samples, "<>ObjectToString[liquidStateInvalidInputs,Simulation->updatedSimulation]<>", are in liquid state::",True,False]
 			];
 			passingTest=If[Length[liquidStateInvalidInputs]==Length[allSampleObjectPackets],
 				Nothing,
-				Test["Our input samples, "<>ObjectToString[Complement[Lookup[allSampleObjectPackets,Object],liquidStateInvalidInputs],Cache->simulatedCache]<>", are in liquid state ::",True,True]
+				Test["Our input samples, "<>ObjectToString[Complement[Lookup[allSampleObjectPackets,Object],liquidStateInvalidInputs],Simulation->updatedSimulation]<>", are in liquid state ::",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -2698,18 +2677,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If resolvedPreparedPlate is False and samples are in DropletCartridge, we are throwing messages, throw an error message.*)
 	If[!resolvedPreparedPlate&&MemberQ[unpreparedSampleContainerCheck,True]&&messages,
-		Message[Error::InvalidInputSampleContainer,ObjectToString[inputSampleContainerInvalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInputSampleContainer,ObjectToString[inputSampleContainerInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a test for prepared plate error. *)
 	inputSampleContainerTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[!resolvedPreparedPlate&&MemberQ[unpreparedSampleContainerCheck,True],
-				Test["For samples "<>ObjectToString[inputSampleContainerInvalidInputs,Cache->simulatedCache]<>", if not using prepared plate, input samples should not be in Model[Container,Plate,DropletCartridge,\"Bio-Rad GCR96 Digital PCR Cartridge\"]::",True,False],
+				Test["For samples "<>ObjectToString[inputSampleContainerInvalidInputs,Simulation->updatedSimulation]<>", if not using prepared plate, input samples should not be in Model[Container,Plate,DropletCartridge,\"Bio-Rad GCR96 Digital PCR Cartridge\"]::",True,False],
 				Nothing
 			];
 			passingTest=If[!resolvedPreparedPlate&&MemberQ[unpreparedSampleContainerCheck,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,unpreparedSampleContainerCheck,False],Cache->simulatedCache]<>", if not using prepared plate, input samples should not be in Model[Container,Plate,DropletCartridge,\"Bio-Rad GCR96 Digital PCR Cartridge\"]::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,unpreparedSampleContainerCheck,False],Simulation->updatedSimulation]<>", if not using prepared plate, input samples should not be in Model[Container,Plate,DropletCartridge,\"Bio-Rad GCR96 Digital PCR Cartridge\"]::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -5904,18 +5883,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[singleFluorophorePerProbeErrors,True]&&messages,
-		Message[Error::DigitalPCRSingleFluorophorePerProbe,ObjectToString[singleFluorophorePerProbeInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DigitalPCRSingleFluorophorePerProbe,ObjectToString[singleFluorophorePerProbeInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	singleFluorophorePerProbeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[singleFluorophorePerProbeErrors,True],
-				Test["For samples "<>ObjectToString[singleFluorophorePerProbeInvalidInputs,Cache->simulatedCache]<>", each probe input object has 1 fluorescent oligomer in Composition::",True,False],
+				Test["For samples "<>ObjectToString[singleFluorophorePerProbeInvalidInputs,Simulation->updatedSimulation]<>", each probe input object has 1 fluorescent oligomer in Composition::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[amplitudeMultiplexingErrors,False],
-				Test["For samples "<>ObjectToString[Complement[simulatedSamples,singleFluorophorePerProbeInvalidInputs],Cache->simulatedCache]<>", each probe input object has 1 fluorescent oligomer in Composition::",True,True],
+				Test["For samples "<>ObjectToString[Complement[simulatedSamples,singleFluorophorePerProbeInvalidInputs],Simulation->updatedSimulation]<>", each probe input object has 1 fluorescent oligomer in Composition::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -5933,18 +5912,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[noMultiplexAvailableErrors,True]&&messages,
-		Message[Error::DigitalPCRMultiplexingNotAvailable,ObjectToString[noMultiplexAvailableInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DigitalPCRMultiplexingNotAvailable,ObjectToString[noMultiplexAvailableInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	noMultiplexAvailableTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[noMultiplexAvailableErrors,True],
-				Test["For samples "<>ObjectToString[noMultiplexAvailableInvalidInputs,Cache->simulatedCache]<>", multiple probes are not be used when multiplexing capabilities are not available::",True,False],
+				Test["For samples "<>ObjectToString[noMultiplexAvailableInvalidInputs,Simulation->updatedSimulation]<>", multiple probes are not be used when multiplexing capabilities are not available::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[noMultiplexAvailableErrors,False],
-				Test["For samples "<>ObjectToString[Complement[simulatedSamples,noMultiplexAvailableInvalidInputs],Cache->simulatedCache]<>", multiple probes are not be used when multiplexing capabilities are not available::",True,True],
+				Test["For samples "<>ObjectToString[Complement[simulatedSamples,noMultiplexAvailableInvalidInputs],Simulation->updatedSimulation]<>", multiple probes are not be used when multiplexing capabilities are not available::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -5956,18 +5935,18 @@ resolveExperimentDigitalPCROptions[
 	(*-- WARNINGS --*)
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[tooManyTargetsMultiplexedWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRMultiplexedTargetQuantity,ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRMultiplexedTargetQuantity,ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	tooManyTargetsMultiplexedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[tooManyTargetsMultiplexedWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings],Cache->simulatedCache]<>", multiplexing more than 2 targets in a channel may yield poor separation of droplet populations::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings],Simulation->updatedSimulation]<>", multiplexing more than 2 targets in a channel may yield poor separation of droplet populations::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[tooManyTargetsMultiplexedWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings,False],Cache->simulatedCache]<>", multiplexing more than 2 targets in a channel may yield poor separation of droplet populations::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,tooManyTargetsMultiplexedWarnings,False],Simulation->updatedSimulation]<>", multiplexing more than 2 targets in a channel may yield poor separation of droplet populations::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -5977,18 +5956,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[probeStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRProbeStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRProbeStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	probeStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -5998,18 +5977,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[referenceProbeStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRReferenceProbeStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRReferenceProbeStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	referenceProbeStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ProbeConcentration or ProbeVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6019,18 +5998,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[forwardPrimerStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRForwardPrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRForwardPrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	forwardPrimerStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[forwardPrimerStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ForwardPrimerConcentration or ForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ForwardPrimerConcentration or ForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[forwardPrimerStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ForwardPrimerConcentration or ForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ForwardPrimerConcentration or ForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6040,18 +6019,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[reversePrimerStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRReversePrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRReversePrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	reversePrimerStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[reversePrimerStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ReversePrimerConcentration or ReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ReversePrimerConcentration or ReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[reversePrimerStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ReversePrimerConcentration or ReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ReversePrimerConcentration or ReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6061,18 +6040,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[referenceForwardPrimerStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRReferenceForwardPrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRReferenceForwardPrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	referenceForwardPrimerStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceForwardPrimerStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceForwardPrimerStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6082,18 +6061,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[referenceReversePrimerStockConcentrationAccuracyWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRReferenceReversePrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRReferenceReversePrimerStockConcentrationAccuracy,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	referenceReversePrimerStockConcentrationAccuracyTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceReversePrimerStockConcentrationAccuracyWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings],Cache->simulatedCache]<>", if ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings],Simulation->updatedSimulation]<>", if ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceReversePrimerStockConcentrationAccuracyWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings,False],Cache->simulatedCache]<>", if ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationAccuracyWarnings,False],Simulation->updatedSimulation]<>", if ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume is Automatic and concentration of oligomer is provided as mass concentration, calculation of molar concentration depends on the accuracy of MolecularWeight of the oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6103,18 +6082,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[masterMixConcentrationFactorNotInformedWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRMasterMixConcentrationFactorNotInformed,ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRMasterMixConcentrationFactorNotInformed,ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	masterMixConcentrationFactorNotInformedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[masterMixConcentrationFactorNotInformedWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings],Cache->simulatedCache]<>", ConcentratedBufferDilutionFactor is not informed in MasterMix model and MasterMixConcentrationFactor is calculated from specified MasterMixVolume::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings],Simulation->updatedSimulation]<>", ConcentratedBufferDilutionFactor is not informed in MasterMix model and MasterMixConcentrationFactor is calculated from specified MasterMixVolume::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[masterMixConcentrationFactorNotInformedWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings,False],Cache->simulatedCache]<>", ConcentratedBufferDilutionFactor is not informed in MasterMix model and MasterMixConcentrationFactor is calculated from specified MasterMixVolume::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixConcentrationFactorNotInformedWarnings,False],Simulation->updatedSimulation]<>", ConcentratedBufferDilutionFactor is not informed in MasterMix model and MasterMixConcentrationFactor is calculated from specified MasterMixVolume::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6124,18 +6103,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any warnings, we are throwing messages and we are not in Engine, throw an warning message listing the affected objects.*)
 	If[MemberQ[masterMixQuantityMismatchWarnings,True]&&messages&&notInEngine,
-		Message[Warning::DigitalPCRMasterMixQuantityMismatch,ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings],Cache->simulatedCache]]
+		Message[Warning::DigitalPCRMasterMixQuantityMismatch,ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	masterMixQuantityMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[masterMixQuantityMismatchWarnings,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings],Cache->simulatedCache]<>", MasterMixVolume does not match (ReactionVolume/MasterMixConcentrationFactor)::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings],Simulation->updatedSimulation]<>", MasterMixVolume does not match (ReactionVolume/MasterMixConcentrationFactor)::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[masterMixQuantityMismatchWarnings,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings,False],Cache->simulatedCache]<>", MasterMixVolume does not match (ReactionVolume/MasterMixConcentrationFactor)::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixQuantityMismatchWarnings,False],Simulation->updatedSimulation]<>", MasterMixVolume does not match (ReactionVolume/MasterMixConcentrationFactor)::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6154,18 +6133,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[sampleDilutionMismatchErrors,True]&&messages,
-		Message[Error::DigitalPCRSampleDilutionMismatch,ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRSampleDilutionMismatch,ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	sampleDilutionMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[sampleDilutionMismatchErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors],Cache->simulatedCache]<>", SerialDilutionCurve, DilutionMixVolume, DilutionNumberOfMixes and DilutionMixRate are informed when SampleDilution is True and PreparedPlate is False, or all options are Null when SampleDilution is False::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors],Simulation->updatedSimulation]<>", SerialDilutionCurve, DilutionMixVolume, DilutionNumberOfMixes and DilutionMixRate are informed when SampleDilution is True and PreparedPlate is False, or all options are Null when SampleDilution is False::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[sampleDilutionMismatchErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors,False],Cache->simulatedCache]<>", SerialDilutionCurve, DilutionMixVolume, DilutionNumberOfMixes and DilutionMixRate are informed when SampleDilution is True and PreparedPlate is False, or all options are Null when SampleDilution is False::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleDilutionMismatchErrors,False],Simulation->updatedSimulation]<>", SerialDilutionCurve, DilutionMixVolume, DilutionNumberOfMixes and DilutionMixRate are informed when SampleDilution is True and PreparedPlate is False, or all options are Null when SampleDilution is False::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6182,18 +6161,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[sampleVolumeMismatchErrors,True]&&messages,
-		Message[Error::DigitalPCRDilutionSampleVolume,ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRDilutionSampleVolume,ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	sampleVolumeMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[sampleVolumeMismatchErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors],Cache->simulatedCache]<>", volume of diluted samples is greater than 1.1*SampleVolume::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors],Simulation->updatedSimulation]<>", volume of diluted samples is greater than 1.1*SampleVolume::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[sampleVolumeMismatchErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors,False],Cache->simulatedCache]<>", volume of diluted samples is greater than 1.1*SampleVolume::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,sampleVolumeMismatchErrors,False],Simulation->updatedSimulation]<>", volume of diluted samples is greater than 1.1*SampleVolume::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6210,18 +6189,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[singleFluorophorePerReferenceProbeErrors,True]&&messages,
-		Message[Error::DigitalPCRSingleReferenceFluorophorePerProbe,ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRSingleReferenceFluorophorePerProbe,ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	singleFluorophorePerReferenceProbeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[singleFluorophorePerReferenceProbeErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors],Cache->simulatedCache]<>", each ReferenceProbes object has 1 fluorescent oligomer in Composition::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors],Simulation->updatedSimulation]<>", each ReferenceProbes object has 1 fluorescent oligomer in Composition::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[singleFluorophorePerReferenceProbeErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors,False],Cache->simulatedCache]<>", each ReferenceProbes object has 1 fluorescent oligomer in Composition::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,singleFluorophorePerReferenceProbeErrors,False],Simulation->updatedSimulation]<>", each ReferenceProbes object has 1 fluorescent oligomer in Composition::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6239,18 +6218,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeFluorophoreNullOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeWavelengthsNull,ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeWavelengthsNull,ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeFluorophoreNullOptionsTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeFluorophoreNullOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors],Cache->simulatedCache]<>", ProbeExcitationWavelength and ProbeEmissionWavelength are not Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors],Simulation->updatedSimulation]<>", ProbeExcitationWavelength and ProbeEmissionWavelength are not Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeFluorophoreNullOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors,False],Cache->simulatedCache]<>", ProbeExcitationWavelength and ProbeEmissionWavelength are not Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors,False],Simulation->updatedSimulation]<>", ProbeExcitationWavelength and ProbeEmissionWavelength are not Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6267,18 +6246,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeFluorophoreIncompatibleOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeWavelengthsIncompatible,ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeWavelengthsIncompatible,ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeFluorophoreIncompatibleTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeFluorophoreIncompatibleOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors],Cache->simulatedCache]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed, they are compatible with the specifiedreferencePInstrument::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors],Simulation->updatedSimulation]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed, they are compatible with the specifiedreferencePInstrument::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeFluorophoreIncompatibleOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors,False],Cache->simulatedCache]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreIncompatibleOptionsErrors,False],Simulation->updatedSimulation]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6295,18 +6274,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeFluorophoreLengthMismatchErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeWavelengthsLengthMismatch,ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeWavelengthsLengthMismatch,ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeFluorophoreLengthMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeFluorophoreLengthMismatchErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors],Cache->simulatedCache]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed for input probes, all three lists have the same length::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors],Simulation->updatedSimulation]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed for input probes, all three lists have the same length::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeFluorophoreLengthMismatchErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors,False],Cache->simulatedCache]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed for input probes, all three lists have the same length::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreLengthMismatchErrors,False],Simulation->updatedSimulation]<>", if ProbeExcitationWavelength and ProbeEmissionWavelength are informed for input probes, all three lists have the same length::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6325,18 +6304,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeFluorophoreNullOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeWavelengthsNull,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreNullOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeWavelengthsNull,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreNullOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeFluorophoreNullOptionsTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeFluorophoreNullOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreNullOptionsErrors],Cache->simulatedCache]<>", if ReferenceProbes are specified, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are not Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreNullOptionsErrors],Simulation->updatedSimulation]<>", if ReferenceProbes are specified, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are not Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeFluorophoreNullOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors,False],Cache->simulatedCache]<>", if ReferenceProbes are specified, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are not Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeFluorophoreNullOptionsErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbes are specified, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are not Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6353,18 +6332,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeFluorophoreIncompatibleOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeWavelengthsIncompatible,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeWavelengthsIncompatible,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeFluorophoreIncompatibleTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeFluorophoreIncompatibleOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors],Cache->simulatedCache]<>", if ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors],Simulation->updatedSimulation]<>", if ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeFluorophoreIncompatibleOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors,False],Cache->simulatedCache]<>", if ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreIncompatibleOptionsErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, they are compatible with the specified Instrument::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6381,18 +6360,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeFluorophoreLengthMismatchErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeWavelengthsLengthMismatch,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeWavelengthsLengthMismatch,ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeFluorophoreLengthMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeFluorophoreLengthMismatchErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors],Cache->simulatedCache]<>", if ReferenceProbes, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, all three lists have the same length::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors],Simulation->updatedSimulation]<>", if ReferenceProbes, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, all three lists have the same length::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeFluorophoreLengthMismatchErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors,False],Cache->simulatedCache]<>", if ReferenceProbes, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, all three lists have the same length::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeFluorophoreLengthMismatchErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbes, ReferenceProbeExcitationWavelength and ReferenceProbeEmissionWavelength are informed, all three lists have the same length::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6409,18 +6388,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[amplitudeMultiplexingErrors,True]&&messages,
-		Message[Error::DigitalPCRAmplitudeMultiplexing,ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRAmplitudeMultiplexing,ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	amplitudeMultiplexingTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[amplitudeMultiplexingErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors],Cache->simulatedCache]<>", if AmplitudeMultiplexing is specified, the emission wavelength channels are compatible with the Instrument and at least one channel has more than 1 target::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors],Simulation->updatedSimulation]<>", if AmplitudeMultiplexing is specified, the emission wavelength channels are compatible with the Instrument and at least one channel has more than 1 target::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[amplitudeMultiplexingErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors,False],Cache->simulatedCache]<>", if AmplitudeMultiplexing is specified, the emission wavelength channels are compatible with the Instrument and at least one channel has more than 1 target::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,amplitudeMultiplexingErrors,False],Simulation->updatedSimulation]<>", if AmplitudeMultiplexing is specified, the emission wavelength channels are compatible with the Instrument and at least one channel has more than 1 target::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6437,18 +6416,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[premixedPrimerProbeErrors,True]&&messages,
-		Message[Error::DigitalPCRPremixedPrimerProbe,ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPremixedPrimerProbe,ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	premixedPrimerProbeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[premixedPrimerProbeErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors],Cache->simulatedCache]<>", if primerPairs and probes are not Null, PremixedPrimerPair is specified as TargetAssay when primerPairs and probes inputs are the same, PrimerSet when only the primerPairs inputs are the same or None if all three are unique objects, and if primerPairs and probes are Null, PremixedPrimerPair is Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors],Simulation->updatedSimulation]<>", if primerPairs and probes are not Null, PremixedPrimerPair is specified as TargetAssay when primerPairs and probes inputs are the same, PrimerSet when only the primerPairs inputs are the same or None if all three are unique objects, and if primerPairs and probes are Null, PremixedPrimerPair is Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[premixedPrimerProbeErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors,False],Cache->simulatedCache]<>", if primerPairs and probes are not Null, PremixedPrimerPair is specified as TargetAssay when primerPairs and probes inputs are the same, PrimerSet when only the primerPairs inputs are the same or None if all three are unique objects, and if primerPairs and probes are Null, PremixedPrimerPair is Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,premixedPrimerProbeErrors,False],Simulation->updatedSimulation]<>", if primerPairs and probes are not Null, PremixedPrimerPair is specified as TargetAssay when primerPairs and probes inputs are the same, PrimerSet when only the primerPairs inputs are the same or None if all three are unique objects, and if primerPairs and probes are Null, PremixedPrimerPair is Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6465,18 +6444,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referencePremixedPrimerProbeErrors,True]&&messages,
-		Message[Error::DigitalPCRReferencePremixedPrimerProbe,ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferencePremixedPrimerProbe,ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referencePremixedPrimerProbeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referencePremixedPrimerProbeErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors],Cache->simulatedCache]<>", if ReferencePrimerPairs and ReferenceProbes are not Null, ReferencePremixedPrimerPair is specified as TargetAssay when ReferencePrimerPairs and ReferenceProbes inputs are the same, PrimerSet when only the ReferencePrimerPairs inputs are the same or None if all three are unique objects, and if ReferencePrimerPairs and ReferenceProbes are Null, ReferencePremixedPrimerPair is Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors],Simulation->updatedSimulation]<>", if ReferencePrimerPairs and ReferenceProbes are not Null, ReferencePremixedPrimerPair is specified as TargetAssay when ReferencePrimerPairs and ReferenceProbes inputs are the same, PrimerSet when only the ReferencePrimerPairs inputs are the same or None if all three are unique objects, and if ReferencePrimerPairs and ReferenceProbes are Null, ReferencePremixedPrimerPair is Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referencePremixedPrimerProbeErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors,False],Cache->simulatedCache]<>", if ReferencePrimerPairs and ReferenceProbes are not Null, ReferencePremixedPrimerPair is specified as TargetAssay when ReferencePrimerPairs and ReferenceProbes inputs are the same, PrimerSet when only the ReferencePrimerPairs inputs are the same or None if all three are unique objects, and if ReferencePrimerPairs and ReferenceProbes are Null, ReferencePremixedPrimerPair is Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePremixedPrimerProbeErrors,False],Simulation->updatedSimulation]<>", if ReferencePrimerPairs and ReferenceProbes are not Null, ReferencePremixedPrimerPair is specified as TargetAssay when ReferencePrimerPairs and ReferenceProbes inputs are the same, PrimerSet when only the ReferencePrimerPairs inputs are the same or None if all three are unique objects, and if ReferencePrimerPairs and ReferenceProbes are Null, ReferencePremixedPrimerPair is Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6493,18 +6472,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeStockConcentration,ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeStockConcentration,ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors],Cache->simulatedCache]<>", if probes are not Null and ProbeConcentration or ProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors],Simulation->updatedSimulation]<>", if probes are not Null and ProbeConcentration or ProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors,False],Cache->simulatedCache]<>", if probes are not Null and ProbeConcentration or ProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if probes are not Null and ProbeConcentration or ProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6521,18 +6500,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeStockConcentration,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeStockConcentration,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors],Cache->simulatedCache]<>", if ReferenceProbes are not Null and ReferenceProbeConcentration or ReferenceProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null and ReferenceProbeConcentration or ReferenceProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors,False],Cache->simulatedCache]<>", if ReferenceProbes are not Null and ReferenceProbeConcentration or ReferenceProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null and ReferenceProbeConcentration or ReferenceProbeVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6549,18 +6528,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if probes are not Null, and ProbeConcentration and ProbeVolume are specified, they are within +/-5% range as calculated using probe stock concentration, and if probes are Null, both options are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if probes are not Null, and ProbeConcentration and ProbeVolume are specified, they are within +/-5% range as calculated using probe stock concentration, and if probes are Null, both options are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if probes are not Null, and ProbeConcentration and ProbeVolume are specified, they are within +/-5% range as calculated using probe stock concentration, and if probes are Null, both options are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if probes are not Null, and ProbeConcentration and ProbeVolume are specified, they are within +/-5% range as calculated using probe stock concentration, and if probes are Null, both options are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6577,18 +6556,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[probeStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRProbeStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRProbeStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	probeStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[probeStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if probes are not Null, and ProbeConcentration, ProbeVolume and probe stock concentration are informed, probe stock concentration is 4x ProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if probes are not Null, and ProbeConcentration, ProbeVolume and probe stock concentration are informed, probe stock concentration is 4x ProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[probeStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if probes are not Null, and ProbeConcentration, ProbeVolume and probe stock concentration are informed, probe stock concentration is 4x ProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,probeStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if probes are not Null, and ProbeConcentration, ProbeVolume and probe stock concentration are informed, probe stock concentration is 4x ProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6605,18 +6584,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration and ReferenceProbeVolume are specified, they are within +/-5% range as calculated using reference probe stock concentration, and if ReferenceProbes are Null, both options are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration and ReferenceProbeVolume are specified, they are within +/-5% range as calculated using reference probe stock concentration, and if ReferenceProbes are Null, both options are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration and ReferenceProbeVolume are specified, they are within +/-5% range as calculated using reference probe stock concentration, and if ReferenceProbes are Null, both options are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration and ReferenceProbeVolume are specified, they are within +/-5% range as calculated using reference probe stock concentration, and if ReferenceProbes are Null, both options are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6633,18 +6612,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceProbeStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceProbeStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceProbeStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceProbeStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceProbeStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration, ReferenceProbeVolume and reference probe stock concentration are informed, reference probe stock concentration is 4x ReferenceProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration, ReferenceProbeVolume and reference probe stock concentration are informed, reference probe stock concentration is 4x ReferenceProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceProbeStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration, ReferenceProbeVolume and reference probe stock concentration are informed, reference probe stock concentration is 4x ReferenceProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceProbeStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if ReferenceProbes are not Null, and ReferenceProbeConcentration, ReferenceProbeVolume and reference probe stock concentration are informed, reference probe stock concentration is 4x ReferenceProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6661,18 +6640,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[forwardPrimerStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRForwardPrimerStockConcentration,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRForwardPrimerStockConcentration,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	forwardPrimerStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[forwardPrimerStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors],Cache->simulatedCache]<>", if forward primers are not Null and ForwardPrimerConcentration or ForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors],Simulation->updatedSimulation]<>", if forward primers are not Null and ForwardPrimerConcentration or ForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[forwardPrimerStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors,False],Cache->simulatedCache]<>", if forward primers are not Null and ForwardPrimerConcentration or ForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if forward primers are not Null and ForwardPrimerConcentration or ForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6689,18 +6668,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[forwardPrimerConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRForwardPrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRForwardPrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	forwardPrimerConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[forwardPrimerConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if forward primers are Null, both options are Null, if forward primers are not Null, ForwardPrimerConcentration and ForwardPrimerVolume are specified only when PremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using forward primer stock concentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if forward primers are Null, both options are Null, if forward primers are not Null, ForwardPrimerConcentration and ForwardPrimerVolume are specified only when PremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using forward primer stock concentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[forwardPrimerConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if forward primers are Null, both options are Null, if forward primers are not Null, ForwardPrimerConcentration and ForwardPrimerVolume are specified only when PremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using forward primer stock concentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if forward primers are Null, both options are Null, if forward primers are not Null, ForwardPrimerConcentration and ForwardPrimerVolume are specified only when PremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using forward primer stock concentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6717,18 +6696,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[forwardPrimerStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRForwardPrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRForwardPrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	forwardPrimerStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[forwardPrimerStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if forward primers are not Null, and ForwardPrimerConcentration, ForwardPrimerVolume and forward primer stock concentration are informed, forward primer stock concentration is 4x ProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if forward primers are not Null, and ForwardPrimerConcentration, ForwardPrimerVolume and forward primer stock concentration are informed, forward primer stock concentration is 4x ProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[forwardPrimerStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if forward primers are not Null, and ForwardPrimerConcentration, ForwardPrimerVolume and forward primer stock concentration are informed, forward primer stock concentration is 4x ProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,forwardPrimerStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if forward primers are not Null, and ForwardPrimerConcentration, ForwardPrimerVolume and forward primer stock concentration are informed, forward primer stock concentration is 4x ProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6745,18 +6724,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[reversePrimerStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRReversePrimerStockConcentration,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReversePrimerStockConcentration,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	reversePrimerStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[reversePrimerStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors],Cache->simulatedCache]<>", if reverse primers are not Null and ReversePrimerConcentration or ReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors],Simulation->updatedSimulation]<>", if reverse primers are not Null and ReversePrimerConcentration or ReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[reversePrimerStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors,False],Cache->simulatedCache]<>", if reverse primers are not Null and ReversePrimerConcentration or ReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if reverse primers are not Null and ReversePrimerConcentration or ReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6773,18 +6752,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[reversePrimerConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRReversePrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReversePrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	reversePrimerConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[reversePrimerConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if reverse primers are Null, both options are Null, if reverse primers are not Null, ReversePrimerConcentration and ReversePrimerVolume are specified only when PremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reverse primer stock concentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if reverse primers are Null, both options are Null, if reverse primers are not Null, ReversePrimerConcentration and ReversePrimerVolume are specified only when PremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reverse primer stock concentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[reversePrimerConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if reverse primers are Null, both options are Null, if reverse primers are not Null, ReversePrimerConcentration and ReversePrimerVolume are specified only when PremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reverse primer stock concentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if reverse primers are Null, both options are Null, if reverse primers are not Null, ReversePrimerConcentration and ReversePrimerVolume are specified only when PremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reverse primer stock concentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6801,18 +6780,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[reversePrimerStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRReversePrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReversePrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	reversePrimerStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[reversePrimerStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if reverse primers are not Null, and ReversePrimerConcentration, ReversePrimerVolume and reverse primer stock concentration are informed, reverse primer stock concentration is 4x ProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if reverse primers are not Null, and ReversePrimerConcentration, ReversePrimerVolume and reverse primer stock concentration are informed, reverse primer stock concentration is 4x ProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[reversePrimerStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if reverse primers are not Null, and ReversePrimerConcentration, ReversePrimerVolume and reverse primer stock concentration are informed, reverse primer stock concentration is 4x ProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reversePrimerStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if reverse primers are not Null, and ReversePrimerConcentration, ReversePrimerVolume and reverse primer stock concentration are informed, reverse primer stock concentration is 4x ProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6829,18 +6808,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceForwardPrimerStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceForwardPrimerStockConcentration,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceForwardPrimerStockConcentration,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceForwardPrimerStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceForwardPrimerStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors],Cache->simulatedCache]<>", if reference forward primers are not Null and ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors],Simulation->updatedSimulation]<>", if reference forward primers are not Null and ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceForwardPrimerStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors,False],Cache->simulatedCache]<>", if reference forward primers are not Null and ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if reference forward primers are not Null and ReferenceForwardPrimerConcentration or ReferenceForwardPrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6857,18 +6836,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceForwardPrimerConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceForwardPrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceForwardPrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceForwardPrimerConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceForwardPrimerConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if reference forward primers are Null, both options are Null, if reference forward primers are not Null, ReferenceForwardPrimerConcentration and ReferenceForwardPrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using reference forward primer stock concentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if reference forward primers are Null, both options are Null, if reference forward primers are not Null, ReferenceForwardPrimerConcentration and ReferenceForwardPrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using reference forward primer stock concentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceForwardPrimerConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if reference forward primers are Null, both options are Null, if reference forward primers are not Null, ReferenceForwardPrimerConcentration and ReferenceForwardPrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using reference forward primer stock concentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if reference forward primers are Null, both options are Null, if reference forward primers are not Null, ReferenceForwardPrimerConcentration and ReferenceForwardPrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as PrimerSet or None, and the respective concentration and volume are within +/-5% range as calculated using reference forward primer stock concentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6885,18 +6864,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceForwardPrimerStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceForwardPrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceForwardPrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceForwardPrimerStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceForwardPrimerStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if reference forward primers are not Null, and ReferenceForwardPrimerConcentration, ReferenceForwardPrimerVolume and reference forward primer stock concentration are informed, reference forward primer stock concentration is 4x ReferenceProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if reference forward primers are not Null, and ReferenceForwardPrimerConcentration, ReferenceForwardPrimerVolume and reference forward primer stock concentration are informed, reference forward primer stock concentration is 4x ReferenceProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceForwardPrimerStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if reference forward primers are not Null, and ReferenceForwardPrimerConcentration, ReferenceForwardPrimerVolume and reference forward primer stock concentration are informed, reference forward primer stock concentration is 4x ReferenceProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceForwardPrimerStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if reference forward primers are not Null, and ReferenceForwardPrimerConcentration, ReferenceForwardPrimerVolume and reference forward primer stock concentration are informed, reference forward primer stock concentration is 4x ReferenceProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6913,18 +6892,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceReversePrimerStockConcentrationErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceReversePrimerStockConcentration,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceReversePrimerStockConcentration,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceReversePrimerStockConcentrationTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceReversePrimerStockConcentrationErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors],Cache->simulatedCache]<>", if reference reverse primers are not Null and ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors],Simulation->updatedSimulation]<>", if reference reverse primers are not Null and ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceReversePrimerStockConcentrationErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors,False],Cache->simulatedCache]<>", if reference reverse primers are not Null and ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationErrors,False],Simulation->updatedSimulation]<>", if reference reverse primers are not Null and ReferenceReversePrimerConcentration or ReferenceReversePrimerVolume are Automatic, stock concentration is provided as molar concentration in sample composition or mass concentration in sample Composition with MolecularWeight in the identity oligomer::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6941,18 +6920,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceReversePrimerConcentrationVolumeMismatchOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceReversePrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceReversePrimerConcentrationVolumeMismatch,ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceReversePrimerConcentrationVolumeMismatchOptionTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceReversePrimerConcentrationVolumeMismatchOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors],Cache->simulatedCache]<>", if reference reverse primers are Null, both options are Null, if reference reverse primers are not Null, ReferenceReversePrimerConcentration and ReferenceReversePrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reference reverse primer stock concentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors],Simulation->updatedSimulation]<>", if reference reverse primers are Null, both options are Null, if reference reverse primers are not Null, ReferenceReversePrimerConcentration and ReferenceReversePrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reference reverse primer stock concentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceReversePrimerConcentrationVolumeMismatchOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors,False],Cache->simulatedCache]<>", if reference reverse primers are Null, both options are Null, if reference reverse primers are not Null, ReferenceReversePrimerConcentration and ReferenceReversePrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reference reverse primer stock concentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerConcentrationVolumeMismatchOptionErrors,False],Simulation->updatedSimulation]<>", if reference reverse primers are Null, both options are Null, if reference reverse primers are not Null, ReferenceReversePrimerConcentration and ReferenceReversePrimerVolume are specified only when ReferencePremixedPrimerProbe is specified as None, and the respective concentration and volume are within +/-5% range as calculated using reference reverse primer stock concentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6969,18 +6948,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referenceReversePrimerStockConcentrationTooLowErrors,True]&&messages,
-		Message[Error::DigitalPCRReferenceReversePrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferenceReversePrimerStockConcentrationTooLow,ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referenceReversePrimerStockConcentrationTooLowTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referenceReversePrimerStockConcentrationTooLowErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors],Cache->simulatedCache]<>", if reference reverse primers are not Null, and ReferenceReversePrimerConcentration, ReferenceReversePrimerVolume and reference reverse primer stock concentration are informed, reference reverse primer stock concentration is 4x ProbeConcentration::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors],Simulation->updatedSimulation]<>", if reference reverse primers are not Null, and ReferenceReversePrimerConcentration, ReferenceReversePrimerVolume and reference reverse primer stock concentration are informed, reference reverse primer stock concentration is 4x ProbeConcentration::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referenceReversePrimerStockConcentrationTooLowErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors,False],Cache->simulatedCache]<>", if reference reverse primers are not Null, and ReferenceReversePrimerConcentration, ReferenceReversePrimerVolume and reference reverse primer stock concentration are informed, reference reverse primer stock concentration is 4x ProbeConcentration::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referenceReversePrimerStockConcentrationTooLowErrors,False],Simulation->updatedSimulation]<>", if reference reverse primers are not Null, and ReferenceReversePrimerConcentration, ReferenceReversePrimerVolume and reference reverse primer stock concentration are informed, reference reverse primer stock concentration is 4x ProbeConcentration::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -6997,18 +6976,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[reverseTranscriptionMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRReverseTranscriptionMismatch,ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReverseTranscriptionMismatch,ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	reverseTranscriptionMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[reverseTranscriptionMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors],Cache->simulatedCache]<>", if ReverseTranscription is True, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are specified; if ReverseTranscription is False, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors],Simulation->updatedSimulation]<>", if ReverseTranscription is True, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are specified; if ReverseTranscription is False, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[reverseTranscriptionMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors,False],Cache->simulatedCache]<>", if ReverseTranscription is True, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are specified; if ReverseTranscription is False, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,reverseTranscriptionMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if ReverseTranscription is True, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are specified; if ReverseTranscription is False, ReverseTranscriptionTime, ReverseTranscriptionTemperature, and ReverseTranscriptionRampRate are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7025,18 +7004,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[masterMixMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRMasterMixMismatch,ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRMasterMixMismatch,ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	masterMixMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[masterMixMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors],Cache->simulatedCache]<>", if PreparedPlate is False, MasterMixConcentrationFactor and MasterMixVolume are specified; if PreparedPlate is True,MasterMixConcentrationFactor and MasterMixVolume are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors],Simulation->updatedSimulation]<>", if PreparedPlate is False, MasterMixConcentrationFactor and MasterMixVolume are specified; if PreparedPlate is True,MasterMixConcentrationFactor and MasterMixVolume are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[masterMixMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors,False],Cache->simulatedCache]<>", if PreparedPlate is False, MasterMixConcentrationFactor and MasterMixVolume are specified; if PreparedPlate is True,MasterMixConcentrationFactor and MasterMixVolume are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,masterMixMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if PreparedPlate is False, MasterMixConcentrationFactor and MasterMixVolume are specified; if PreparedPlate is True,MasterMixConcentrationFactor and MasterMixVolume are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7053,18 +7032,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[diluentVolumeOptionErrors,True]&&messages,
-		Message[Error::DigitalPCRDiluentVolume,ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRDiluentVolume,ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	diluentVolumeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[diluentVolumeOptionErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors],Cache->simulatedCache]<>", if PreparedPlate is False, DiluentVolume has a non-negative value; if PreparedPlate is True, DiluentVolume is Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors],Simulation->updatedSimulation]<>", if PreparedPlate is False, DiluentVolume has a non-negative value; if PreparedPlate is True, DiluentVolume is Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[diluentVolumeOptionErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors,False],Cache->simulatedCache]<>", if PreparedPlate is False, DiluentVolume has a non-negative value; if PreparedPlate is True, DiluentVolume is Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,diluentVolumeOptionErrors,False],Simulation->updatedSimulation]<>", if PreparedPlate is False, DiluentVolume has a non-negative value; if PreparedPlate is True, DiluentVolume is Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7081,18 +7060,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[totalVolumeErrors,True]&&messages,
-		Message[Error::DigitalPCRTotalVolume,ObjectToString[PickList[simulatedSamples,totalVolumeErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRTotalVolume,ObjectToString[PickList[simulatedSamples,totalVolumeErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	totalVolumeTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[totalVolumeErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,totalVolumeErrors],Cache->simulatedCache]<>", volume of all inputs and stock solutions going in the sample are within +/- 0.5 microliter of ReactionVolume::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,totalVolumeErrors],Simulation->updatedSimulation]<>", volume of all inputs and stock solutions going in the sample are within +/- 0.5 microliter of ReactionVolume::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[totalVolumeErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,totalVolumeErrors,False],Cache->simulatedCache]<>", volume of all inputs and stock solutions going in the sample are within +/- 0.5 microliter of ReactionVolume::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,totalVolumeErrors,False],Simulation->updatedSimulation]<>", volume of all inputs and stock solutions going in the sample are within +/- 0.5 microliter of ReactionVolume::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7109,18 +7088,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[activationMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRActivationMismatch,ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRActivationMismatch,ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	activationMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[activationMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors],Cache->simulatedCache]<>", if Activation is True, ActivationTime, ActivationTemperature, and ActivationRampRate are specified; if Activation is False, ActivationTime, ActivationTemperature, and ActivationRampRate are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors],Simulation->updatedSimulation]<>", if Activation is True, ActivationTime, ActivationTemperature, and ActivationRampRate are specified; if Activation is False, ActivationTime, ActivationTemperature, and ActivationRampRate are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[activationMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors,False],Cache->simulatedCache]<>", if Activation is True, ActivationTime, ActivationTemperature, and ActivationRampRate are specified; if Activation is False, ActivationTime, ActivationTemperature, and ActivationRampRate are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,activationMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if Activation is True, ActivationTime, ActivationTemperature, and ActivationRampRate are specified; if Activation is False, ActivationTime, ActivationTemperature, and ActivationRampRate are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7138,18 +7117,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[primerAnnealingMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRPrimerAnnealingMismatch,ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPrimerAnnealingMismatch,ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	primerAnnealingMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[primerAnnealingMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors],Cache->simulatedCache]<>", if PrimerAnnealing is True, PrimerAnnealingTime, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are specified; if PrimerAnnealing is False, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are Null; if PrimerGradientAnnealing is also False, PrimerAnnealingTime is also Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors],Simulation->updatedSimulation]<>", if PrimerAnnealing is True, PrimerAnnealingTime, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are specified; if PrimerAnnealing is False, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are Null; if PrimerGradientAnnealing is also False, PrimerAnnealingTime is also Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[primerAnnealingMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors,False],Cache->simulatedCache]<>", if PrimerAnnealing is True, PrimerAnnealingTime, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are specified; if PrimerAnnealing is False, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are Null; if PrimerGradientAnnealing is also False, PrimerAnnealingTime is also Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerAnnealingMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if PrimerAnnealing is True, PrimerAnnealingTime, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are specified; if PrimerAnnealing is False, PrimerAnnealingTemperature, and PrimerAnnealingRampRate are Null; if PrimerGradientAnnealing is also False, PrimerAnnealingTime is also Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7166,18 +7145,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[primerGradientAnnealingMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRPrimerGradientAnnealingMismatch,ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPrimerGradientAnnealingMismatch,ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	primerGradientAnnealingMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[primerGradientAnnealingMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors],Cache->simulatedCache]<>", if PrimerGradientAnnealing is True, PrimerGradientAnnealingTime, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are specified; if PrimerGradientAnnealing is False, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors],Simulation->updatedSimulation]<>", if PrimerGradientAnnealing is True, PrimerGradientAnnealingTime, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are specified; if PrimerGradientAnnealing is False, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[primerGradientAnnealingMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors,False],Cache->simulatedCache]<>", if PrimerGradientAnnealing is True, PrimerGradientAnnealingTime, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are specified; if PrimerGradientAnnealing is False, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if PrimerGradientAnnealing is True, PrimerGradientAnnealingTime, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are specified; if PrimerGradientAnnealing is False, PrimerGradientAnnealingMinTemperature, PrimerGradientAnnealingMaxTemperature, and PrimerGradientAnnealingRow are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7194,18 +7173,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[primerGradientAnnealingRowTemperatureMismatchErrors,True]&&messages,
-		Message[Error::DigitalPCRPrimerGradientAnnealingRowTemperatureMismatch,ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPrimerGradientAnnealingRowTemperatureMismatch,ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	primerGradientAnnealingRowTemperatureMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[primerGradientAnnealingRowTemperatureMismatchErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors],Cache->simulatedCache]<>", if PrimerGradientAnnealingRow is specified with {Row,Temperature}, the temperature matches the appropriate value as calculated from Range[PrimerGradientAnnealingMinTemperature,PrimerGradientAnnealingMaxTemperature,7] and rounded to 0.1 Celsius::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors],Simulation->updatedSimulation]<>", if PrimerGradientAnnealingRow is specified with {Row,Temperature}, the temperature matches the appropriate value as calculated from Range[PrimerGradientAnnealingMinTemperature,PrimerGradientAnnealingMaxTemperature,7] and rounded to 0.1 Celsius::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[primerGradientAnnealingRowTemperatureMismatchErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors,False],Cache->simulatedCache]<>", if PrimerGradientAnnealingRow is specified with {Row,Temperature}, the temperature matches the appropriate value as calculated from Range[PrimerGradientAnnealingMinTemperature,PrimerGradientAnnealingMaxTemperature,7] and rounded to 0.1 Celsius::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerGradientAnnealingRowTemperatureMismatchErrors,False],Simulation->updatedSimulation]<>", if PrimerGradientAnnealingRow is specified with {Row,Temperature}, the temperature matches the appropriate value as calculated from Range[PrimerGradientAnnealingMinTemperature,PrimerGradientAnnealingMaxTemperature,7] and rounded to 0.1 Celsius::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7222,18 +7201,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[overConstrainedRowOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCROverConstrainedRowOptions,ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCROverConstrainedRowOptions,ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	overConstrainedRowOptionsTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[overConstrainedRowOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors],Cache->simulatedCache]<>", if ActiveWell and PrimerGradientAnnealingRow are specified, the rows match::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors],Simulation->updatedSimulation]<>", if ActiveWell and PrimerGradientAnnealingRow are specified, the rows match::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[overConstrainedRowOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors,False],Cache->simulatedCache]<>", if ActiveWell and PrimerGradientAnnealingRow are specified, the rows match::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,overConstrainedRowOptionsErrors,False],Simulation->updatedSimulation]<>", if ActiveWell and PrimerGradientAnnealingRow are specified, the rows match::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7250,18 +7229,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[extensionMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRExtensionMismatch,ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRExtensionMismatch,ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	extensionMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[extensionMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors],Cache->simulatedCache]<>", if Extension is True, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are specified; if Extension is False, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors],Simulation->updatedSimulation]<>", if Extension is True, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are specified; if Extension is False, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[extensionMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors,False],Cache->simulatedCache]<>", if Extension is True, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are specified; if Extension is False, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,extensionMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if Extension is True, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are specified; if Extension is False, ExtensionTime, ExtensionTemperature, and ExtensionRampRate are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7278,18 +7257,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[polymeraseDegradationMismatchOptionsErrors,True]&&messages,
-		Message[Error::DigitalPCRPolymeraseDegradationMismatch,ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPolymeraseDegradationMismatch,ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	polymeraseDegradationMismatchTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[polymeraseDegradationMismatchOptionsErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors],Cache->simulatedCache]<>", if PolymeraseDegradation is True, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are specified; if PolymeraseDegradation is False, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are Null::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors],Simulation->updatedSimulation]<>", if PolymeraseDegradation is True, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are specified; if PolymeraseDegradation is False, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are Null::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[polymeraseDegradationMismatchOptionsErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors,False],Cache->simulatedCache]<>", if PolymeraseDegradation is True, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are specified; if PolymeraseDegradation is False, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are Null::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,polymeraseDegradationMismatchOptionsErrors,False],Simulation->updatedSimulation]<>", if PolymeraseDegradation is True, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are specified; if PolymeraseDegradation is False, PolymeraseDegradationTime, PolymeraseDegradationTemperature, and PolymeraseDegradationRampRate are Null::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7317,12 +7296,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,forwardPrimerStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ForwardPrimerStorageCondition does not have conflicts with the input forward primers:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ForwardPrimerStorageCondition does not have conflicts with the input forward primers:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ForwardPrimerStorageCondition does not have conflicts with the input forward primers:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ForwardPrimerStorageCondition does not have conflicts with the input forward primers:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7351,12 +7330,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,reversePrimerStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ReversePrimerStorageCondition does not have conflicts with the input reverse primers:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ReversePrimerStorageCondition does not have conflicts with the input reverse primers:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ReversePrimerStorageCondition does not have conflicts with the input reverse primers:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ReversePrimerStorageCondition does not have conflicts with the input reverse primers:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7385,12 +7364,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,probeStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ProbeStorageCondition does not have conflicts with the input probes:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ProbeStorageCondition does not have conflicts with the input probes:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ProbeStorageCondition does not have conflicts with the input probes:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ProbeStorageCondition does not have conflicts with the input probes:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7419,12 +7398,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,referenceForwardPrimerStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ReferenceForwardPrimerStorageCondition does not have conflicts with the reference forward primers:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ReferenceForwardPrimerStorageCondition does not have conflicts with the reference forward primers:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ReferenceForwardPrimerStorageCondition does not have conflicts with the input reference forward primers:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ReferenceForwardPrimerStorageCondition does not have conflicts with the input reference forward primers:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7453,12 +7432,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,referenceReversePrimerStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ReferenceReversePrimerStorageCondition does not have conflicts with the reference reverse primers:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ReferenceReversePrimerStorageCondition does not have conflicts with the reference reverse primers:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ReferenceReversePrimerStorageCondition does not have conflicts with the reference reverse primers:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ReferenceReversePrimerStorageCondition does not have conflicts with the reference reverse primers:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7487,12 +7466,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,referenceProbeStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", the ReferenceProbeStorageCondition does not have conflicts with the reference probes:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", the ReferenceProbeStorageCondition does not have conflicts with the reference probes:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", the ReferenceProbeStorageCondition does not have conflicts with the reference probes:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", the ReferenceProbeStorageCondition does not have conflicts with the reference probes:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7521,12 +7500,12 @@ resolveExperimentDigitalPCROptions[
 			passingSamples=PickList[simulatedSamples,masterMixStorageConditionErrors,False];
 			(*Create a test for the non-passing inputs*)
 			failingSampleTests=If[Length[failingSamples]>0,
-				Test["For samples "<>ObjectToString[failingSamples,Cache->simulatedCache]<>", MasterMixStorageCondition is only specified when PreparedPlate is False:",False,True],
+				Test["For samples "<>ObjectToString[failingSamples,Simulation->updatedSimulation]<>", MasterMixStorageCondition is only specified when PreparedPlate is False:",False,True],
 				Nothing
 			];
 			(*Create a test for the passing inputs*)
 			passingSampleTests=If[Length[passingSamples]>0,
-				Test["For samples "<>ObjectToString[passingSamples,Cache->simulatedCache]<>", MasterMixStorageCondition is only specified when PreparedPlate is False:",True,True],
+				Test["For samples "<>ObjectToString[passingSamples,Simulation->updatedSimulation]<>", MasterMixStorageCondition is only specified when PreparedPlate is False:",True,True],
 				Nothing
 			];
 			(*Return the created tests*)
@@ -7544,18 +7523,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[primerProbeOptionsLengthErrors,True]&&messages,
-		Message[Error::DigitalPCRPrimerProbeMismatchedOptionLengths,ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRPrimerProbeMismatchedOptionLengths,ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	primerProbeOptionsLengthTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[primerProbeOptionsLengthErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors],Cache->simulatedCache]<>", if primerPairs, probes, and related concentration and volume options are informed, they are the same length::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors],Simulation->updatedSimulation]<>", if primerPairs, probes, and related concentration and volume options are informed, they are the same length::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[primerProbeOptionsLengthErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors,False],Cache->simulatedCache]<>", if primerPairs, probes, and related concentration and volume options are informed, they are the same length::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,primerProbeOptionsLengthErrors,False],Simulation->updatedSimulation]<>", if primerPairs, probes, and related concentration and volume options are informed, they are the same length::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7571,18 +7550,18 @@ resolveExperimentDigitalPCROptions[
 
 	(* If we have any invalid option sets and we are throwing messages, throw an error message listing the affected objects.*)
 	If[MemberQ[referencePrimerProbeOptionsLengthErrors,True]&&messages,
-		Message[Error::DigitalPCRReferencePrimerProbeMismatchedOptionLengths,ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors],Cache->simulatedCache]]
+		Message[Error::DigitalPCRReferencePrimerProbeMismatchedOptionLengths,ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors],Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
 	referencePrimerProbeOptionsLengthTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[MemberQ[referencePrimerProbeOptionsLengthErrors,True],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors],Cache->simulatedCache]<>", if ReferencePrimerPairs, ReferenceProbes, and related concentration and volume options are informed, they are the same length::",True,False],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors],Simulation->updatedSimulation]<>", if ReferencePrimerPairs, ReferenceProbes, and related concentration and volume options are informed, they are the same length::",True,False],
 				Nothing
 			];
 			passingTest=If[MemberQ[referencePrimerProbeOptionsLengthErrors,False],
-				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors,False],Cache->simulatedCache]<>", if  ReferencePrimerPairs, ReferenceProbes, and related concentration and volume options are informed, they are the same length::",True,True],
+				Test["For samples "<>ObjectToString[PickList[simulatedSamples,referencePrimerProbeOptionsLengthErrors,False],Simulation->updatedSimulation]<>", if  ReferencePrimerPairs, ReferenceProbes, and related concentration and volume options are informed, they are the same length::",True,True],
 				Nothing
 			];
 			{failingTest,passingTest}
@@ -7592,8 +7571,8 @@ resolveExperimentDigitalPCROptions[
 
 	(* Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument *)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[instrument,DeleteDuplicates[Flatten[Join[simulatedSamples,resolvedMasterMix]]],Output->{Result,Tests},Cache->simulatedCache],
-		{CompatibleMaterialsQ[instrument,DeleteDuplicates[Flatten[Join[simulatedSamples,resolvedMasterMix]]],Messages->messages,Cache->simulatedCache],{}}
+		CompatibleMaterialsQ[instrument,DeleteDuplicates[Flatten[Join[simulatedSamples,resolvedMasterMix]]],Output->{Result,Tests},Cache->inheritedCache, Simulation->updatedSimulation],
+		{CompatibleMaterialsQ[instrument,DeleteDuplicates[Flatten[Join[simulatedSamples,resolvedMasterMix]]],Messages->messages,Cache->inheritedCache, Simulation->updatedSimulation],{}}
 	];
 
 	(*if the materials are incompatible, then the Instrument is invalid*)
@@ -7679,7 +7658,7 @@ resolveExperimentDigitalPCROptions[
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -7746,7 +7725,8 @@ resolveExperimentDigitalPCROptions[
 			myListedSamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache->inheritedCache,
+			Simulation -> updatedSimulation,
 			RequiredAliquotAmounts->aliquotAmounts,
 			RequiredAliquotContainers->targetContainers,
 			Output->{Result,Tests}
@@ -7757,7 +7737,8 @@ resolveExperimentDigitalPCROptions[
 				myListedSamples,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache->inheritedCache,
+				Simulation -> updatedSimulation,
 				RequiredAliquotAmounts->aliquotAmounts,
 				RequiredAliquotContainers->targetContainers,
 				Output->Result],
@@ -7766,7 +7747,7 @@ resolveExperimentDigitalPCROptions[
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions,Sterile->True];
 
 	(*Gather the resolved options (pre-collapsed; that is happening outside the function)*)
 	resolvedOptions=ReplaceRule[Normal[roundedOptions],
@@ -8023,7 +8004,8 @@ roundNestedOptions[myPrecisionAssociationInput_Association,myPrecisionInputKeys:
 DefineOptions[experimentDigitalPCRResourcePackets,
 	Options:>{
 		CacheOption,
-		HelperOutputOption
+		HelperOutputOption,
+		SimulationOption
 	}
 ];
 
@@ -8048,7 +8030,7 @@ experimentDigitalPCRResourcePackets[
 ]:=Module[
 	{
 		unresolvedOptionsNoHidden,resolvedOptionsNoHidden,sampleInputsWithDilutions,samplesInWithReplicates,expandedResolvedOptions,expandedMySamples,expandedMyPrimerSamples,expandedMyProbeSamples,
-		outputSpecification,output,gatherTests,messages,inheritedCache,timeToHMSString,expandDilutionSeries,dropletCartridgeObjects,
+		outputSpecification,output,gatherTests,messages,inheritedCache,simulation,timeToHMSString,expandDilutionSeries,dropletCartridgeObjects,
 		takeAllIndexLeavingNull,optionsSingletonMultiplex,singletonFieldsMasterSwitch,bufferResourceBuilder,uniqueOligomerResourceBuilder,
 		initialLiquidHandlerContainers,rtMasterMixStockSolution,rtMasterMixPacket,reverseTranscriptionMasterMixModel,
 		seriesSampleVolumes,seriesDiluentVolumes,serialDilutions,serialDilutionsWithReplicates,dilutionFactors,numberOfDilutionPlates,sampleDilutionPlateResource,dilutionCountNoStock,
@@ -8126,6 +8108,7 @@ experimentDigitalPCRResourcePackets[
 
 	(* Get the inherited cache *)
 	inheritedCache=Lookup[ToList[ops],Cache];
+	simulation =Lookup[ToList[ops],Simulation];
 
 	(* -- Local Helpers --  *)
 	(* Take [[All,All,<index>]] and output a list of objects *)
@@ -8395,7 +8378,8 @@ experimentDigitalPCRResourcePackets[
 				{Packet[MaxVolume,NumberOfWells]},
 				{Packet[VolumeIncrements]}
 			},
-			Cache->inheritedCache
+			Cache->inheritedCache,
+			Simulation -> simulation
 		],
 		{Download::FieldDoesntExist}
 	];
@@ -8847,7 +8831,7 @@ experimentDigitalPCRResourcePackets[
 
 	(* When plate is already prepared, no resource needs to be created and the containers of input sample will be used for dropletCartridgeResource *)
 	(* - Extract the container objects from the downloaded cache. Resources should not be created for the containers in - *)
-	allContainersInObjects=Download[mySamples,Container[Object],Cache->inheritedCache];
+	allContainersInObjects=Download[mySamples,Container[Object],Cache->inheritedCache,Simulation->simulation];
 
 	containersInObjects=If[Lookup[myResolvedOptions,PreparedPlate],
 		Module[{containersInObjectsWithIndex,containersInObjectsSorted},
@@ -8931,7 +8915,7 @@ experimentDigitalPCRResourcePackets[
 	(* get the model for plate sealer option value *)
 	plateSealerModel=If[MatchQ[specifiedPlateSealer,ObjectReferenceP[Model[Instrument,PlateSealer]]],
 		specifiedPlateSealer,
-		Download[specifiedPlateSealer,Model,Cache->inheritedCache]
+		Download[specifiedPlateSealer,Model,Cache->inheritedCache,Simulation->simulation]
 	];
 
 	(* build adapter resource if the model matches Bio-Rad PX1*)
@@ -9409,16 +9393,16 @@ experimentDigitalPCRResourcePackets[
 
 		(* Resources *)
 		Replace[Checkpoints]->{
-			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 45 Minute]]},
-			{"Picking Resources",45 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 45 Minute]]},
-			{"Preparing Assay Plate",2 Hour,"The samples and reagents are combined and loaded on DropletCartridges.", Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"], Time -> 2 Hour]]},
-			{"Digital PCR",instrumentTime,"Digital PCR procedure is performed on the reaction mixtures.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]]},
-			{"Returning Materials",1 Hour,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1*Hour]]}
+			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 45 Minute]]},
+			{"Picking Resources",45 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 45 Minute]]},
+			{"Preparing Assay Plate",2 Hour,"The samples and reagents are combined and loaded on DropletCartridges.", Link[Resource[Operator->$BaselineOperator, Time -> 2 Hour]]},
+			{"Digital PCR",instrumentTime,"Digital PCR procedure is performed on the reaction mixtures.", Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+			{"Returning Materials",1 Hour,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 1*Hour]]}
 		}
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[sharedFieldPacket,protocolPacket];
@@ -9430,8 +9414,8 @@ experimentDigitalPCRResourcePackets[
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication,Engine],{True,{}},
-		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[expandedResolvedOptions,FastTrack],Site->Lookup[expandedResolvedOptions,Site],Cache->inheritedCache],
-		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[expandedResolvedOptions,FastTrack],Site->Lookup[expandedResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests,Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[expandedResolvedOptions,FastTrack],Site->Lookup[expandedResolvedOptions,Site],Simulation -> simulation],
+		True,{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[expandedResolvedOptions,FastTrack],Site->Lookup[expandedResolvedOptions,Site],Messages->messages,Simulation -> simulation],Null}
 	];
 
 	(*---Return our options, packets, and tests---*)
@@ -9567,7 +9551,7 @@ DefineOptions[ExperimentDigitalPCROptions,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs and probe inputs---*)
 ExperimentDigitalPCROptions[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myPrimerPairSamples:ListableP[
 		Alternatives[
 			{{(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String),(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String)}..},
@@ -9602,7 +9586,7 @@ ExperimentDigitalPCROptions[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair or probe inputs---*)
 ExperimentDigitalPCROptions[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentDigitalPCROptions]
 ]:=ExperimentDigitalPCROptions[
 	mySamples,
@@ -9623,7 +9607,7 @@ DefineOptions[ExperimentDigitalPCRPreview,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ExperimentDigitalPCRPreview[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myPrimerPairSamples:ListableP[
 		Alternatives[
 			{{(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String),(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String)}..},
@@ -9648,7 +9632,7 @@ ExperimentDigitalPCRPreview[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ExperimentDigitalPCRPreview[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentDigitalPCRPreview]
 ]:=ExperimentDigitalPCRPreview[
 	mySamples,
@@ -9670,7 +9654,7 @@ DefineOptions[ValidExperimentDigitalPCRQ,
 
 (*---Main function accepting sample/container objects as sample inputs and sample objects or Nulls as primer pair inputs---*)
 ValidExperimentDigitalPCRQ[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myPrimerPairSamples:ListableP[
 		Alternatives[
 			{{(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String),(ObjectP[{Object[Container],Model[Sample],Object[Sample]}]|_String)}..},
@@ -9733,7 +9717,7 @@ ValidExperimentDigitalPCRQ[
 
 (*---Function definition accepting sample/container objects as sample inputs and no primer pair inputs---*)
 ValidExperimentDigitalPCRQ[
-	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	mySamples:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ValidExperimentDigitalPCRQ]
 ]:=ValidExperimentDigitalPCRQ[
 	mySamples,

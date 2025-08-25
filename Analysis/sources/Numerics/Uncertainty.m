@@ -602,6 +602,11 @@ bfpP = {{_Symbol,_?NumericQ, _?NumericQ}...};
 (* 
 	no distribution and no covariance matrix, so everything is constant (mean values)
 *)
+
+
+(* Authors definition for Analysis`Private`fitAnalysisParameterDistribution *)
+Authors[Analysis`Private`fitAnalysisParameterDistribution]:={"malav.desai"};
+
 fitAnalysisParameterDistribution[{pdist:Null,cm:Null,bfp:bfpP}]:=MapThread[#1->#2&,{bfp[[;;,1]],bfp[[;;,2]]}];
 (* 
 	if we have a covariance matrix but no full distribution, make a mutlinormal distribution

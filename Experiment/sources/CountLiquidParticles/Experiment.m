@@ -666,8 +666,21 @@ DefineOptions[ExperimentCountLiquidParticles,
 			PreparationOption,
 			Description -> "Indicates if this unit operation is carried out primarily robotically or manually. Manual unit operations are executed by a laboratory operator and robotic unit operations are executed by a liquid handling work cell. For now ExperimentCountLiquidParticles can be only done manually."
 		],
-		
-		FuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 40 Milliliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
 		SimulationOption
 	}
@@ -706,7 +719,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 		optionsWithObjects, allObjects, objectSamplePacketFields, modelSamplePacketFields, modelContainerObjects,
 		instrumentObjects, modelSampleObjects, sampleObjects, modelInstrumentObjects, samplePreparationSimulation,
 		objectContainerFields,modelContainerFields,messages,listedSamples,objectContainerObjects,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,upload, confirm,
+		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,upload, confirm,canaryBranch,
 		parentProt, cache, methodObjects, modelInstrumentFields,simulatedProtocol,simulation,returnEarlyQ,
 		performSimulationQ, updatedSimulation, allStirBarModels
 	},
@@ -732,7 +745,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 	
 	(* If we are given an invalid define name, return early. *)
@@ -750,16 +763,10 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 	];
 	
 	(* get some information from the input options *)
-	{upload, confirm, parentProt, cache} = Lookup[safeOpsNamed, {Upload, Confirm, ParentProtocol, Cache},{}];
+	{upload, confirm, canaryBranch, parentProt, cache} = Lookup[safeOpsNamed, {Upload, Confirm, CanaryBranch, ParentProtocol, Cache},{}];
 	
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentCountLiquidParticles,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentCountLiquidParticles,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -769,6 +776,12 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentCountLiquidParticles,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentCountLiquidParticles,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -835,7 +848,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 	];
 
 	(* Create the Packet Download syntax for our Object and Model samples. *)
-	objectSamplePacketFields=Packet@@Flatten[{Composition,IncompatibleMaterials,Well,SamplePreparationCacheFields[Object[Sample]]}];
+	objectSamplePacketFields=Packet@@Flatten[{Composition, IncompatibleMaterials, Well, Viscosity, BoilingPoint, SamplePreparationCacheFields[Object[Sample]]}];
 	modelSamplePacketFields=Packet[Model[Flatten[{IncompatibleMaterials,Products,Composition,SamplePreparationCacheFields[Model[Sample]]}]]];
 	objectContainerFields=SamplePreparationCacheFields[Object[Container]];
 	modelContainerFields=SamplePreparationCacheFields[Model[Container]];
@@ -965,7 +978,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-			Options->RemoveHiddenOptions[ExperimentFlowCytometry,collapsedResolvedOptions],
+			Options->RemoveHiddenOptions[ExperimentCountLiquidParticles,collapsedResolvedOptions],
 			Preview->Null,
 			Simulation->Simulation[]
 		}]
@@ -986,7 +999,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			Cache->cacheBall,
 			Simulation->samplePreparationSimulation
 		],
-		{Lookup[First[resourcePackets],Object], Null}
+		{Lookup[First[resourcePackets],Object], samplePreparationSimulation}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1017,9 +1030,10 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			Cache -> cacheBall,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,CountLiquidParticles],
-			Simulation->samplePreparationSimulation
+			Simulation-> updatedSimulation
 		],
 
 		(* If we want to upload an actual protocol object. *)
@@ -1033,9 +1047,10 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 			Cache -> cacheBall,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,CountLiquidParticles],
-			Simulation->samplePreparationSimulation
+			Simulation-> updatedSimulation
 		]
 	];
 
@@ -1050,7 +1065,7 @@ ExperimentCountLiquidParticles[mySamples:ListableP[ObjectP[Object[Sample]]],myOp
 ];
 
 (*Mixed inputs*)
-ExperimentCountLiquidParticles[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentCountLiquidParticles[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
 		myOptionsWithPreparedSamples,samplePreparationSimulation,containerToSampleResult,containerToSampleOutput,
@@ -1065,7 +1080,8 @@ ExperimentCountLiquidParticles[myContainers:ListableP[ObjectP[{Object[Container]
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	(* Get containers and options in list format. *)
+	{listedContainers, listedOptions}= {ToList[myContainers], ToList[myOptions]};
 
 	(* get some information from the input options *)
 	cache = Lookup[listedOptions, Cache,{}];
@@ -1076,10 +1092,12 @@ ExperimentCountLiquidParticles[myContainers:ListableP[ObjectP[{Object[Container]
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentCountLiquidParticles,
 			ToList[listedContainers],
-			ToList[listedOptions]
+			ToList[listedOptions],
+			DefaultPreparedModelAmount -> 40 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1778,6 +1796,135 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		],
 		Nothing
 	];
+	
+	(* pre-resolve the AcquisitionMixType since if Stir is needed, we need to make sure sample is in a self-standing container that stirbar can actually spin *)
+	{
+		resolvedSampleTemperatures,
+		resolvedAcquisitionMixes,
+		resolvedAcquisitionMixTypes
+	} = Transpose[MapThread[
+		Function[{optionList, method},
+			Module[
+				{
+					methodPacketForProtocol, stirBar, maxStirAttempt, acquisitionMix, acquisitionMixRate, adjustMixRate, minAcquisitionMixRate, maxAcquisitionMixRate,
+					acquisitionMixRateIncrement, acquisitionMixType, numberOfMixes, waitTimeBeforeReading, specifiedStirQ, specifiedSwirlQ, specifiedAcquisitionMixQ,
+					resolvedSampleTemperature, resolvedAcquisitionMix, resolvedAcquisitionMixType
+				},
+				(* Preparation: get the user specified method packet*)
+				methodPacketForProtocol = If[MatchQ[method, ObjectP[]], fetchPacketFromCache[Download[method, Object], Flatten[methodPackets]], {}];
+
+				(* lookup options *)
+				{
+					stirBar,
+					maxStirAttempt,
+					acquisitionMix,
+					acquisitionMixRate,
+					adjustMixRate,
+					minAcquisitionMixRate,
+					maxAcquisitionMixRate,
+					acquisitionMixRateIncrement,
+					acquisitionMixType,
+					numberOfMixes,
+					waitTimeBeforeReading,
+					sampleTemperature
+				} = Lookup[optionList,
+					{
+						StirBar,
+						MaxStirAttempts,
+						AcquisitionMix,
+						AcquisitionMixRate,
+						AdjustMixRate,
+						MinAcquisitionMixRate,
+						MaxAcquisitionMixRate,
+						AcquisitionMixRateIncrement,
+						AcquisitionMixType,
+						NumberOfMixes,
+						WaitTimeBeforeReading,
+						SampleTemperature
+					}
+				];
+
+				(* check to see if user implied using stirring or swirling for mixing *)
+				specifiedStirQ = Or[
+					MatchQ[stirBar, Except[Null | Automatic]],
+					MatchQ[maxStirAttempt, Except[Null | Automatic]],
+					MatchQ[acquisitionMixRate, Except[Null | Automatic]],
+					MatchQ[adjustMixRate, Except[Null | Automatic | False]],
+					MatchQ[minAcquisitionMixRate, Except[Null | Automatic]],
+					MatchQ[maxAcquisitionMixRate, Except[Null | Automatic]],
+					MatchQ[acquisitionMixRateIncrement, Except[Null | Automatic]]
+				];
+
+				specifiedSwirlQ = Or[
+					MatchQ[acquisitionMixType, Except[Null | Automatic]],
+					MatchQ[numberOfMixes, Except[Null | Automatic]],
+					MatchQ[waitTimeBeforeReading, Except[Null | Automatic]]
+				];
+
+				(* if any of these two are specified then we will determine that user has specified aquisition mix *)
+				specifiedAcquisitionMixQ = Or[
+					specifiedStirQ,
+					specifiedSwirlQ
+				];
+
+				(* resolved SampleTemperature *)
+				resolvedSampleTemperature = Which[
+
+					(* Use what user specified *)
+					MatchQ[sampleTemperature, Except[Automatic]], sampleTemperature,
+
+					(* if user specified method, get the method *)
+					MatchQ[methodPacketForProtocol, PacketP[]], Lookup[methodPacketForProtocol, SampleTemperature, Ambient],
+
+					(* for 1mL syringe, set it to room temperature *)
+					True, Ambient
+
+				];
+
+				(* Now resolve all AcquisitionMix Options *)
+				resolvedAcquisitionMix = Which[
+
+					(* Use user specified value *)
+					MatchQ[acquisitionMix, Except[Automatic]], acquisitionMix,
+
+					(* if user specified method, use the method value*)
+					MatchQ[methodPacketForProtocol, PacketP[]], Lookup[methodPacketForProtocol, AcquisitionMix],
+
+					(* If we specified a additional temperature we want to acqui mix *)
+					!MatchQ[resolvedSampleTemperature, Ambient | EqualQ[$AmbientTemperature]], True,
+
+					(* Otherwise just return the boolean about if we have specified acquisitionMix*)
+					True, specifiedAcquisitionMixQ
+
+				];
+
+				(* resolve acquisition mix type *)
+				resolvedAcquisitionMixType = Which[
+
+					(* Use user specified value *)
+					MatchQ[acquisitionMixType, Except[Automatic]],
+					acquisitionMixType,
+
+					(* if user specified method, use the method value*)
+					MatchQ[methodPacketForProtocol, PacketP[]], Lookup[methodPacketForProtocol, AcquisitionMixType],
+
+					(* if any stir options are filled resolved to Stir *)
+					Or[specifiedStirQ, resolvedAcquisitionMix], Stir,
+
+					(* Default to Null *)
+					True, Null
+				];
+
+				(* return *)
+				{
+					resolvedSampleTemperature,
+					resolvedAcquisitionMix,
+					resolvedAcquisitionMixType
+				}
+			]
+		],
+		{mapThreadFriendlyOptions, methods}
+	]];
 
 	(* Before resolving the options, check if aliquot container has been specified *)
 	suppliedAliquotContainerModels=Map[
@@ -1806,25 +1953,48 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 	];
 
 	(* Now check if all container models are compatible for the footprint for this *)
-	inputContainerCompatibleBools=CompatibleFootprintQ[
-		ConstantArray[ToList[suppliedInstrumentModel],Length[Lookup[sampleContainerModelPackets,Object]]],
-		Lookup[sampleContainerModelPackets,Object],
-		ExactMatch->False
+	inputContainerCompatibleBools= MapThread[
+		Function[{compatibleFootprintQ, containerModelPacket, resolvedAcquisitionMixType},
+			And[
+				(* dimensions must match *)
+				TrueQ[FirstOrDefault[compatibleFootprintQ, compatibleFootprintQ]],
+				Or[
+					(* if we are stirring, then the container must be self-standing *)
+					MatchQ[resolvedAcquisitionMixType, Stir] && TrueQ[Lookup[containerModelPacket, SelfStanding]],
+					(* if we are not stirring, we do not care if sample is in a self-standing container or not *)
+					!MatchQ[resolvedAcquisitionMixType, Stir]
+				]
+			]
+		],
+		{
+			(* we do not care about footprint match, just make sure the dimensions fit since we will try to find a rack anyway *)
+			ToList @ CompatibleFootprintQ[
+				ConstantArray[ToList[suppliedInstrumentModel], Length[Lookup[sampleContainerModelPackets, Object]]],
+				Lookup[sampleContainerModelPackets, Object],
+				ExactMatch -> False
+			],
+			sampleContainerModelPackets,
+			resolvedAcquisitionMixTypes
+		}
 	];
 
 
 	(* Define the RequiredAliquotContainers we have to aliquot if the samples are not in a compatible container *)
-	requiredAliquotContainers=Flatten[MapThread[
-		Function[{compatibleQ,simulatedSample},
-			If[
+	requiredAliquotContainers = Flatten[MapThread[
+		Function[{compatibleQ, simulatedSample, resolvedAcquisitionMixType},
+			Which[
 				(* If input sample is in a suitable container, not asking to aliquot*)
-				TrueQ[FirstOrDefault[compatibleQ,compatibleQ]],
+				compatibleQ,
 				Null,
-				(* else use aliquot container to find a good container, note HIAC instrument can take a really wide range of container, but we only use the first one *)
-				(First[Quiet[AliquotContainers[suppliedInstrumentModel,simulatedSample,ExactMatch->False,Cache->simulatedCache,Simulation->updatedSimulation]]])
+				(* if we are stirring, we will have to find a container that is selfstanding, and fits inside the instrument *)
+				MatchQ[resolvedAcquisitionMixType, Stir],
+				(First[Quiet[AliquotContainers[suppliedInstrumentModel, simulatedSample, ExactMatch -> False, SelfStanding -> True, Cache -> simulatedCache, Simulation -> updatedSimulation]]]),
+				(* otherwise we do not really care what aliquot as long as it fits inside the instrument *)
+				True,
+				(First[Quiet[AliquotContainers[suppliedInstrumentModel, simulatedSample, ExactMatch -> False, Cache -> simulatedCache, Simulation -> updatedSimulation]]])
 			]
 		],
-		{ToList[inputContainerCompatibleBools],simulatedSamples}
+		{inputContainerCompatibleBools, simulatedSamples, resolvedAcquisitionMixTypes}
 	]];
 
 
@@ -1837,11 +2007,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		(*5*)resolvedStirBars,
 		(*6*)resolvedMaxStirAttempts,
 		(*7*)resolvedReadingVolumes,
-		(*8*)resolvedSampleTemperatures,
 		(*9*)resolvedNumberOfReadings,
 		(*10*)resolvedEquilibrationTimes,
 		(*11*)resolvedPreRinseVolumes,
-		(*13*)resolvedAcquisitionMixes,
 		(*14*)resolvedAcquisitionMixRates,
 		(*15*)resolvedAdjustMixRates,
 		(*16*)resolvedMinAcquisitionMixRates,
@@ -1859,7 +2027,6 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		(*28*)resolvedNumberOfWashes,
 		(*29*)resolvedSaveCustomMethods,
 		(*30*)resolvedDiscardFirstRuns,
-		(*31*)resolvedAcquisitionMixTypes,
 		(*32*)resolvedNumberOfMixesList,
 		(*33*)resolvedWaitTimeBeforeReadings,
 		(*34*)resolvedSamplingHeights,
@@ -1908,7 +2075,10 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 					method,
 					suppliedAliquotContainerModel,
 					inputContainerCompatibleBool,
-					requiredAliquotContainer
+					requiredAliquotContainer,
+					resolvedSampleTemperature,
+					resolvedAcquisitionMix,
+					resolvedAcquisitionMixType
 				},
 				Module[
 					{
@@ -1925,15 +2095,14 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						sampleSolvent, dilutionMixVolume, dilutionMixRate, dilutionContainer, dilutionStorageCondition, dilutionNumberOfMix,
 						notEnoughVolumeError,dilutionCurveVolumeError,dilutionContainerLengthMisMatchedQ,serialDilutionVolume,
 						countLiquidPartcielDilutionWarning,dilutionContainerError,dilutionSampleVolumes, requiredSampleVolume, maxVolume,
-						numberOfDilutionWell, requiredWell, requiredRow, resolvedSampleTemperature, numberOfReading, resolvedNumberOfReading,
-						unNeededDilutionOptions,requiredDilutionOptions, specifiedAcquisitionMixQ, resolvedAcquisitionMix,
-						allCompatibleStirBars,invalidStirBarError, specifiedAdjustMixRateQ,unNeededAcquisitionMixOptions,
+						numberOfDilutionWell, requiredWell, requiredRow, numberOfReading, resolvedNumberOfReading,
+						unNeededDilutionOptions,requiredDilutionOptions, allCompatibleStirBars,invalidStirBarError, specifiedAdjustMixRateQ,unNeededAcquisitionMixOptions,
 						requiredAcquisitionMixOptions,unNeededAdjustMixRateOptions,requiredAdjustMixRateOptions,
 						invalidMinAcquisitionMixRateError, invalidMaxAcquisitionMixRateError, invalidAcquisitionMixRateIncrementError,
 						washSolution,numberOfWash, inConsistentOptionNames,saveCustomMethod,discardFirstRun, samplingHeight,
 						resolvedDiscardFirstRun,resolvedSamplingHeight,resolvedSaveCustomMethod, dilutionLength, dilutedSampleVolume,
-						resolvedAcquisitionMixType, stirQ, swirlQ, resolvedNumberOfMixes, resolvedWaitTimeBeforeReading,
-						specifiedStirQ,	specifiedSwirlQ,conflictingMixingOptions,duplicateParticleSizesWarning,
+						stirQ, swirlQ, resolvedNumberOfMixes, resolvedWaitTimeBeforeReading,
+						conflictingMixingOptions,duplicateParticleSizesWarning,
 						resolvedStirBarModelPacket, readingContainerModelPacket, calibrationFunction,minSampleVolume,
 						minSampleHeight, stirBarCoverHeight, stirBarDeadHeight, liquidLevelCoverStirBarError, sampleHeightError,
 						rawCalibrationFunction, inputUnit, outputUnit, inverseFunction, stirBarStirringHeight, latestVolumeCalibration
@@ -2063,20 +2232,6 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 
 						(* for 1mL syringe, set it to 50 microliter *)
 						True, 50 Microliter
-
-					];
-
-					(* resolved SampleTemperature *)
-					resolvedSampleTemperature=Which[
-
-						(* Use what user specified *)
-						MatchQ[sampleTemperature,Except[Automatic]],sampleTemperature,
-
-						(* if user specified method, get the method *)
-						MatchQ[methodPacketForProtocol,PacketP[]], Lookup[methodPacketForProtocol,SampleTemperature,Ambient],
-
-						(* for 1mL syringe, set it to room temperature *)
-						True, Ambient
 
 					];
 
@@ -2532,63 +2687,6 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 					];
 
 					(* --- Now resolve acquisition mix options ---*)
-					(* First check if any of acquisition mix options are specified by users *)
-					(* check to see if user implied using stirring or swirling for mixing *)
-					specifiedStirQ=Or[
-						MatchQ[stirBar,Except[Null|Automatic]],
-						MatchQ[maxStirAttempt,Except[Null|Automatic]],
-						MatchQ[acquisitionMixRate,Except[Null|Automatic]],
-						MatchQ[adjustMixRate,Except[Null|Automatic|False]],
-						MatchQ[minAcquisitionMixRate,Except[Null|Automatic]],
-						MatchQ[maxAcquisitionMixRate,Except[Null|Automatic]],
-						MatchQ[acquisitionMixRateIncrement,Except[Null|Automatic]]
-					];
-
-					specifiedSwirlQ=Or[
-						MatchQ[acquisitionMixType,Except[Null|Automatic]],
-						MatchQ[numberOfMixes,Except[Null|Automatic]],
-						MatchQ[waitTimeBeforeReading,Except[Null|Automatic]]
-					];
-
-					(* if any of these two are specified then we will determine that user has specified aquisition mix *)
-					specifiedAcquisitionMixQ=Or[
-						specifiedStirQ,
-						specifiedSwirlQ
-					];
-
-					(* Now resolve all AcquisitionMix Options *)
-					resolvedAcquisitionMix=Which[
-
-						(* Use user specified value *)
-						MatchQ[acquisitionMix,Except[Automatic]], acquisitionMix,
-
-						(* if user specified method, use the method value*)
-						MatchQ[methodPacketForProtocol,PacketP[]], Lookup[methodPacketForProtocol,AcquisitionMix],
-
-						(* If we specified a additional temperature we want to acqui mix *)
-						!MatchQ[resolvedSampleTemperature,Ambient|EqualQ[$AmbientTemperature]],True,
-
-						(* Otherwise just return the boolean about if we have specified acquisitionMix*)
-						True, specifiedAcquisitionMixQ
-
-					];
-
-					(* now that we need to resolve the mix Type*)
-					resolvedAcquisitionMixType = Which[
-
-						(* Use user specified value *)
-						MatchQ[acquisitionMixType,Except[Automatic]], acquisitionMixType,
-
-						(* if user specified method, use the method value*)
-						MatchQ[methodPacketForProtocol,PacketP[]], Lookup[methodPacketForProtocol,AcquisitionMixType],
-
-						(* if any stir options are filled resolved to Stir *)
-						Or[specifiedStirQ,resolvedAcquisitionMix], Stir,
-
-						(* Default to Null *)
-						True, Null
-
-					];
 
 					(* Build a shorthand for stirring with stir bar *)
 					stirQ= resolvedAcquisitionMix&&MatchQ[resolvedAcquisitionMixType,Stir];
@@ -2617,8 +2715,12 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(* if user specified aliquot container, get all possible stir bars for the model of specified aliquot containers *)
 						stirQ&&MatchQ[suppliedAliquotContainerModel,ObjectP[Model[Container]]],
 						Experiment`Private`compatibleStirBars[suppliedAliquotContainerModel,Cache->simulatedCache,Simulation->updatedSimulation],
+						
+						(* if we are going to aliquot into a new container, use the aliquot container *)
+						stirQ&&(!NullQ[requiredAliquotContainer]),
+						Experiment`Private`compatibleStirBars[requiredAliquotContainer,Cache->simulatedCache,Simulation->updatedSimulation],
 
-						(* else get all compatible stirbars for the input sample *)
+						(* else the input sample is in a good container, so get all compatible stirbars for the input sample *)
 						stirQ,
 						Experiment`Private`compatibleStirBars[Lookup[samplePacket,Object],Cache->simulatedCache,Simulation->updatedSimulation],
 
@@ -3002,8 +3104,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 							uniqueVariable=Unique[t];
 							(* What is the maximum height of the container? Look for InternalDepth first; if not available, use Z-dimension which is external height as estimate. *)
 							containerHeight=Which[
-								MatchQ[Lookup[sampleContainerModelPacket, InternalDepth], DistanceP], Lookup[sampleContainerModelPacket InternalDepth],
-								MatchQ[Lookup[sampleContainerModelPacket, Dimensions], _List], Lookup[sampleContainerModelPacket, Dimensions][[3]],
+								MatchQ[Lookup[readingContainerModelPacket, InternalDepth], DistanceP], Lookup[readingContainerModelPacket, InternalDepth],
+								MatchQ[Lookup[readingContainerModelPacket, Dimensions], _List], Lookup[readingContainerModelPacket, Dimensions][[3]],
 								True, 0 Meter
 							];
 							SafeRound[
@@ -3278,11 +3380,9 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(*5*)resolvedStirBar,
 						(*6*)resolvedMaxStirAttempt,
 						(*7*)resolvedReadingVolume,
-						(*8*)resolvedSampleTemperature,
 						(*9*)resolvedNumberOfReading,
 						(*10*)resolvedEquilibrationTime,
 						(*11*)resolvedPreRinseVolume,
-						(*13*)resolvedAcquisitionMix,
 						(*14*)resolvedAcquisitionMixRate,
 						(*15*)resolvedAdjustMixRate,
 						(*16*)resolvedMinAcquisitionMixRate,
@@ -3300,7 +3400,6 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 						(*28*)resolvedNumberOfWash,
 						(*29*)resolvedSaveCustomMethod,
 						(*30*)resolvedDiscardFirstRun,
-						(*31*)resolvedAcquisitionMixType,
 						(*32*)resolvedNumberOfMixes,
 						(*33*)resolvedWaitTimeBeforeReading,
 						(*34*)resolvedSamplingHeight,
@@ -3348,8 +3447,11 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 				sampleContainerModelPackets,
 				methods,
 				suppliedAliquotContainerModels,
-				ToList[inputContainerCompatibleBools],
-				requiredAliquotContainers
+				inputContainerCompatibleBools,
+				requiredAliquotContainers,
+				resolvedSampleTemperatures,
+				resolvedAcquisitionMixes,
+				resolvedAcquisitionMixTypes
 			}
 		]
 	];
@@ -3372,8 +3474,8 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 		{suppliedAliquotBooleans,suppliedAliquotVolumes,suppliedAssayVolumes,suppliedTargetConcentrations,suppliedAssayBuffers,suppliedAliquotContainers}
 	];
 
-	(* Required Aliquot Volumes will be the required volumes we calculated during resolving the whole option set *)
-	requiredAliquotVolumes=If[Length[nonLiquidSamplePackets]>0,Null,requiredSampleVolumes];
+	(* we will always aliquot all the sample into the new container b/c that is the assumption we followed when checking Error::CountLiquidParticleLiquidLevelTooLow *)
+	requiredAliquotVolumes=If[Length[nonLiquidSamplePackets]>0,Null,Lookup[samplePackets,Volume]];
 
 	(* -- Resolve Aliquot Options -= *)
 	(* Call resolveAliquotOptions *)
@@ -3386,6 +3488,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 			simulatedSamples,
 			ReplaceRule[roundedUnresolvedOptions,resolvedSamplePrepOptions],
 			Cache->simulatedCache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotVolumes,
 			AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the "<>ObjectToString[Download[suppliedInstrumentModel,Object]],
@@ -3401,6 +3504,7 @@ resolveExperimentCountLiquidParticlesOptions[mySamples:{ObjectP[Object[Sample]].
 				simulatedSamples,
 				ReplaceRule[roundedUnresolvedOptions,resolvedSamplePrepOptions],
 				Cache->simulatedCache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotVolumes,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the "<>ObjectToString[Download[suppliedInstrumentModel,Object]],
@@ -3949,9 +4053,6 @@ DefineOptions[resolveCountLiquidParticlesMethod,
 	}
 ];
 
-(* Error message for resolveCountLiquidParticlesMethod*)
-Error::ConflictingCountLiduiqParticlesMethodRequirements="The following option(s)/input(s) were specified that require a Manual Preparation method, `1`. However, the following option(s)/input(s) were specified that require a Robotic Preparation method, `2`. Please resolve this conflict in order to submit a valid Centrifuge protocol.";
-
 (* NOTE: You should NOT throw messages in this function. Just return the methods by which you can perform your primitive with *)
 (* the given options. *)
 resolveCountLiquidParticlesMethod[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}]|Automatic], myOptions : OptionsPattern[]] := Module[
@@ -4066,7 +4167,8 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 	(* get the resolved collapsed index matching options that don't include hidden options *)
 	resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
 		ExperimentCountLiquidParticles,
-		RemoveHiddenOptions[ExperimentCountLiquidParticles, myResolvedOptions],
+		(* don't remove NumberOfMixes or WaitTimeBeforeReading because these guys are sometimes hidden and sometimes not, but we need them below regardless *)
+		RemoveHiddenOptions[ExperimentCountLiquidParticles, myResolvedOptions, Exclude -> {NumberOfMixes, WaitTimeBeforeReading}],
 		Ignore -> myUnresolvedOptions,
 		Messages -> False
 	];
@@ -4213,7 +4315,7 @@ countLiquidParticlesResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnr
 			Simulation->updatedSimulation,
 			Date -> Now
 		],
-		{Download::FieldDoesntExist,Download::NotLinkField}
+		{Download::FieldDoesntExist,Download::NotLinkField,Download::MissingCacheField}
 	];
 	
 	(* Collect all inforations into different lists*)
@@ -4875,13 +4977,6 @@ simulateExperimentCountLiquidParticles[
 		UpdateSimulation[currentSimulation, simulationWithLabels]
 	}
 ];
-
-
-
-(* ::Subsubsection::Closed:: *)
-(*Define Author for primitive head*)
-Authors[CountLiquidParticles]:={"weiran.wang"}
-
 
 (* ::Subsection:: *)
 (*Helpers*)

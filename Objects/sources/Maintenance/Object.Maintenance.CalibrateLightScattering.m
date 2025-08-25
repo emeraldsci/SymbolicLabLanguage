@@ -72,7 +72,11 @@ DefineObjectType[Object[Maintenance, CalibrateLightScattering], {
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,ManualSamplePreparation]|Object[Protocol,RoboticSamplePreparation],
+      Relation->Alternatives[
+        Object[Protocol,ManualSamplePreparation],
+        Object[Protocol,RoboticSamplePreparation],
+        Object[Notebook, Script]
+      ],
       Description->"A sample manipulation protocol used to load the AssayContainers.",
       Category->"Sample Loading"
     },
@@ -121,9 +125,9 @@ DefineObjectType[Object[Maintenance, CalibrateLightScattering], {
     },
     ManualLoadingTuples->{
       Format->Multiple,
-      Class->{Sources->Link, SourceRow->Expression ,Targets->Link, TargetRow->Expression, FirstWell->Expression, NumberOfWells->Expression},
-      Pattern:>{Sources->_Link, SourceRow->_String, Targets->_Link, TargetRow->_String, FirstWell->_String, NumberOfWells->_String},
-      Relation->{Sources->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel],SourceRow->Null, Targets->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel], TargetRow->Null, FirstWell->Null, NumberOfWells->Null},
+      Class->{Sources->Link, SourceRow->Expression ,Targets->Link, TargetRow->Expression, FirstWell->Expression, NumberOfWells->Expression, TargetPositions -> Expression},
+      Pattern:>{Sources->_Link, SourceRow->_String, Targets->_Link, TargetRow->_String, FirstWell->_String, NumberOfWells->_String, TargetPositions -> _String},
+      Relation->{Sources->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel],SourceRow->Null, Targets->Model[Container,Plate]|Object[Container,Plate]|Model[Container,Vessel]|Object[Container,Vessel], TargetRow->Null, FirstWell->Null, NumberOfWells->Null, TargetPositions -> Null},
       Description->"The pipetting instructions used to manually load samples onto assay capillaries manually. This plate is set for loading using an 8-channel multichannel pipette.",
       Category -> "Sample Loading"
     },

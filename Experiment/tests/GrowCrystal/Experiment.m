@@ -847,17 +847,29 @@ DefineTests[ExperimentGrowCrystal,
 			Variables :> {options},
 			TimeConstraint -> 240
 		],
-		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryPrimitives option to prepare a plate from models before the experiment is run:"},
-			protocol = ExperimentGrowCrystal[
-				"ExperimentGrowCrystal PreparatoryUnitOperations test plate",
-				PreparatoryUnitOperations -> {
-					LabelContainer[Label -> "ExperimentGrowCrystal PreparatoryUnitOperations test plate", Container -> Model[Container, Plate, Irregular, Crystallization, "MRC Maxi 48 Well Plate"]],
-					Transfer[Source -> Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"], Destination -> {"A1Drop1", "ExperimentGrowCrystal PreparatoryUnitOperations test plate"}, Amount -> 2 Microliter]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentGrowCrystal[
+				{Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"], Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"]},
+				PreparedModelContainer -> Model[Container, Plate, Irregular, Crystallization, "96 MRC Under Oil Plate"],
+				PreparedModelAmount -> 10 Microliter,
+				Output -> Options
 			];
-			Download[protocol, PreparatoryUnitOperations],
-			{SamplePreparationP..},
-			Variables :> {protocol}
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"]]..},
+				{ObjectP[Model[Container, Plate, Irregular, Crystallization, "96 MRC Under Oil Plate"]]..},
+				{EqualP[10 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options, Output, "Return a list of resolved options for the given samples when Output is set to Options:"},
 			ExperimentGrowCrystal[
@@ -881,6 +893,102 @@ DefineTests[ExperimentGrowCrystal,
 			SimulationP
 		],
 		(* ===Messages=== *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentGrowCrystal[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentGrowCrystal[Object[Container, Plate, Irregular, Crystallization, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentGrowCrystal[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentGrowCrystal[Object[Container, Plate, Irregular, Crystallization, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, coverPackets, coverID, sampleID, samplePackets, simulationToPassIn, coverUpdatePacket},
+				containerPackets = UploadSample[
+					Model[Container, Plate, Irregular, Crystallization, "MRC Maxi 48 Well Plate"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				coverPackets = UploadSample[
+					Model[Item, PlateSeal, "Crystal Clear Sealing Film"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverPackets]];
+				coverID = Lookup[First[coverPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"],
+					{"A1Drop1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 10 Microliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				coverUpdatePacket = UploadCover[containerID, Cover -> coverID, Simulation -> simulationToPassIn, Upload -> False];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverUpdatePacket]];
+
+				ExperimentGrowCrystal[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, coverPackets, coverID, sampleID, samplePackets, simulationToPassIn, coverUpdatePacket},
+				containerPackets = UploadSample[
+					Model[Container, Plate, Irregular, Crystallization, "MRC Maxi 48 Well Plate"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				coverPackets = UploadSample[
+					Model[Item, PlateSeal, "Crystal Clear Sealing Film"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverPackets]];
+				coverID = Lookup[First[coverPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "2 mg/mL Bovine Serum Albumin Standard"],
+					{"A1Drop1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 10 Microliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				coverUpdatePacket = UploadCover[containerID, Cover -> coverID, Simulation -> simulationToPassIn, Upload -> False];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[coverUpdatePacket]];
+
+				ExperimentGrowCrystal[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "SolidSamplesUnsupported", "Throws an error if the input sample is not liquid:"},
 			ExperimentGrowCrystal[
 				Object[Sample, "Solid sample for ExperimentGrowCrystal Testing" <> $SessionUUID]
@@ -2218,7 +2326,7 @@ DefineTests[ExperimentGrowCrystal,
 						<|Name -> "A2Drop1", XOffset -> Quantity[32.2, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[12.6, "Millimeters"], CrossSectionalShape -> Circle, Rotation -> 0|>,
 						<|Name -> "A2Reservoir", XOffset -> Quantity[40.55, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[4.4, "Millimeters"], CrossSectionalShape -> Rectangle, Rotation -> 0|>
 					},
-					Reusability -> False,
+					Reusable -> False,
 					Expires -> False,
 					DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
 					Replace[CoverFootprints] -> {LidSBSUniversal, SealSBS, SBSPlateLid},
@@ -2304,7 +2412,7 @@ DefineTests[ExperimentGrowCrystal,
 						<|Name -> "A2Drop1", XOffset -> Quantity[32.2, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[12.6, "Millimeters"], CrossSectionalShape -> Circle, Rotation -> 0|>,
 						<|Name -> "A2Reservoir", XOffset -> Quantity[40.55, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[4.4, "Millimeters"], CrossSectionalShape -> Rectangle, Rotation -> 0|>
 					},
-					Reusability -> False,
+					Reusable -> False,
 					Expires -> False,
 					DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
 					Replace[CoverFootprints] -> {LidSBSUniversal, SealSBS, SBSPlateLid},
@@ -2390,7 +2498,7 @@ DefineTests[ExperimentGrowCrystal,
 						<|Name -> "A2Drop1", XOffset -> Quantity[32.2, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[12.6, "Millimeters"], CrossSectionalShape -> Circle, Rotation -> 0|>,
 						<|Name -> "A2Reservoir", XOffset -> Quantity[40.55, "Millimeters"], YOffset -> Quantity[74.15, "Millimeters"], ZOffset -> Quantity[4.4, "Millimeters"], CrossSectionalShape -> Rectangle, Rotation -> 0|>
 					},
-					Reusability -> False,
+					Reusable -> False,
 					Expires -> False,
 					DefaultStorageCondition -> Link[Model[StorageCondition, "id:7X104vnR18vX"]],
 					Replace[CoverFootprints] -> {LidSBSUniversal, SealSBS, SBSPlateLid},

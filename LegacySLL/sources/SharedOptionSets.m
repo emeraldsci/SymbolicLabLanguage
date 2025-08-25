@@ -129,8 +129,10 @@ DefineOptionSet[
 			OptionName->Cache,
 			Default->{},
 			AllowNull->True,
-			Pattern:>{(ObjectP[] | Null) ...},
-			Description->"List of pre-downloaded packets to be used before checking for session cached object or downloading any object information from the server.",
+			(* note that this pattern is to make SafeOptions on the Cache option a lot faster because cache can get enormous and pattern matching on 10000 packets should be sped up as much as we can *)
+			(* this pattern does NOT check whether the types/objects in the specified cache are properly defined in SLL *)
+			Pattern:>{(Constellation`Private`fastPacketP[] | Null) ...},
+			Description->"List of pre-downloaded packets to be used before checking for session cached objects or downloading any object information from the server.",
 			Category->"Hidden"
 		}
 }];

@@ -49,7 +49,7 @@ DefineObjectType[Model[Qualification,Training,Aspiration], {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
-      Relation -> Model[Instrument,BiosafetyCabinet],
+      Relation -> Alternatives[Model[Instrument,BiosafetyCabinet],Model[Instrument,HandlingStation,BiosafetyCabinet]],
       Description -> "The biosafety cabinet instrument model which contains the aspirator used to aspirate sample from the container.",
       Category -> "General"
     },

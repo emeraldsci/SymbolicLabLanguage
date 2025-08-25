@@ -12,18 +12,100 @@ DefineUsage[ExperimentAcousticLiquidHandlingPreview,
 	{
 		BasicDefinitions->{
 			{
-				Definition->{"ExperimentAcousticLiquidHandlingPreview[Primitives]","Preview"},
-				Description->"returns the graphical preview for ExperimentAcousticLiquidHandling when it is called on 'primitives'.",
+				Definition->{"ExperimentAcousticLiquidHandlingPreview[Sources, Destinations, Volumes]","Preview"},
+				Description->"returns the graphical preview for ExperimentAcousticLiquidHandling when it is called on 'Sources', 'Destinations', 'Volumes'.",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName->"Primitives",
-							Description->"The transfer of samples to be performed by an acoustic liquid handler.",
-							Widget->acousticLiquidHandlingInputPatternWidget,
-							Expandable->False,
-							NestedIndexMatching->False
+							InputName -> "Sources",
+							Description-> "The samples or locations from which liquid is transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[Object[Container]]
+									]
+								}
+							],
+							Expandable -> True
 						},
-						IndexName->"experiment primitives"
+						{
+							InputName -> "Destinations",
+							Description-> "The sample or location to which the liquids are transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container], Model[Container]}]
+								],
+								"New Container with Index" -> {
+									"Index" -> Widget[
+										Type -> Number,
+										Pattern :> GreaterEqualP[1, 1]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Container, Plate]}],
+										PreparedSample -> False,
+										PreparedContainer -> False
+									]
+								},
+								"Container with Well Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[{Object[Container, Plate], Model[Container, Plate]}]
+									]
+								},
+								"Container with Well Position and Index"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container with Index"->{
+										"Index" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										],
+										"Container" -> Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Model[Container, Plate]}],
+											PreparedSample -> False,
+											PreparedContainer -> False
+										]
+									}
+								}
+							],
+							Expandable -> True
+						},
+						{
+							InputName -> "Volumes",
+							Description -> "The volumes of the samples to be transferred.",
+							Widget -> Widget[
+								Type->Quantity,
+								Pattern:>GreaterEqualP[0*Nanoliter],
+								Units->{Nanoliter,{Nanoliter,Microliter}}
+							],
+							Expandable -> True
+						},
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -53,18 +135,100 @@ DefineUsage[ExperimentAcousticLiquidHandlingOptions,
 	{
 		BasicDefinitions->{
 			{
-				Definition->{"ExperimentAcousticLiquidHandlingOptions[Primitives]","ResolvedOptions"},
-				Description->"returns the resolved options for ExperimentAcousticLiquidHandling when it is called on 'primitives'.",
+				Definition->{"ExperimentAcousticLiquidHandlingOptions[Sources, Destinations, Volumes]","ResolvedOptions"},
+				Description->"returns the resolved options for ExperimentAcousticLiquidHandling when it is called on 'Sources', 'Destinations', 'Volumes'.",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName->"Primitives",
-							Description->"The transfer of samples to be performed by an acoustic liquid handler.",
-							Widget->acousticLiquidHandlingInputPatternWidget,
-							Expandable->False,
-							NestedIndexMatching->False
+							InputName -> "Sources",
+							Description-> "The samples or locations from which liquid is transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[Object[Container]]
+									]
+								}
+							],
+							Expandable -> True
 						},
-						IndexName->"experiment primitives"
+						{
+							InputName -> "Destinations",
+							Description-> "The sample or location to which the liquids are transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container], Model[Container]}]
+								],
+								"New Container with Index" -> {
+									"Index" -> Widget[
+										Type -> Number,
+										Pattern :> GreaterEqualP[1, 1]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Container, Plate]}],
+										PreparedSample -> False,
+										PreparedContainer -> False
+									]
+								},
+								"Container with Well Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[{Object[Container, Plate], Model[Container, Plate]}]
+									]
+								},
+								"Container with Well Position and Index"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container with Index"->{
+										"Index" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										],
+										"Container" -> Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Model[Container, Plate]}],
+											PreparedSample -> False,
+											PreparedContainer -> False
+										]
+									}
+								}
+							],
+							Expandable -> True
+						},
+						{
+							InputName -> "Volumes",
+							Description -> "The volumes of the samples to be transferred.",
+							Widget -> Widget[
+								Type->Quantity,
+								Pattern:>GreaterEqualP[0*Nanoliter],
+								Units->{Nanoliter,{Nanoliter,Microliter}}
+							],
+							Expandable -> True
+						},
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -97,18 +261,100 @@ DefineUsage[ValidExperimentAcousticLiquidHandlingQ,
 	{
 		BasicDefinitions->{
 			{
-				Definition->{"ValidExperimentAcousticLiquidHandlingQ[Primitives]","Booleans"},
-				Description->"checks whether the provided 'primitives' and the specified options are valid for calling ExperimentAcousticLiquidHandling.",
+				Definition->{"ValidExperimentAcousticLiquidHandlingQ[Sources, Destinations, Volumes]","Booleans"},
+				Description->"checks whether the provided 'Sources', 'Destinations', 'Volumes' and the specified options are valid for calling ExperimentAcousticLiquidHandling.",
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName->"Primitives",
-							Description->"The transfer of samples to be performed by an acoustic liquid handler.",
-							Widget->acousticLiquidHandlingInputPatternWidget,
-							Expandable->False,
-							NestedIndexMatching->False
+							InputName -> "Sources",
+							Description-> "The samples or locations from which liquid is transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[Object[Container]]
+									]
+								}
+							],
+							Expandable -> True
 						},
-						IndexName->"experiment primitives"
+						{
+							InputName -> "Destinations",
+							Description-> "The sample or location to which the liquids are transferred.",
+							Widget -> Alternatives[
+								"Object"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample], Object[Container], Model[Container]}]
+								],
+								"New Container with Index" -> {
+									"Index" -> Widget[
+										Type -> Number,
+										Pattern :> GreaterEqualP[1, 1]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Model[Container, Plate]}],
+										PreparedSample -> False,
+										PreparedContainer -> False
+									]
+								},
+								"Container with Well Position"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container"->Widget[
+										Type->Object,
+										Pattern:>ObjectP[{Object[Container, Plate], Model[Container, Plate]}]
+									]
+								},
+								"Container with Well Position and Index"->{
+									"Well"->Widget[
+										Type->String,
+										Pattern:>WellPositionP,
+										Size->Line,
+										PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"
+									],
+									"Container with Index"->{
+										"Index" -> Widget[
+											Type -> Number,
+											Pattern :> GreaterEqualP[1, 1]
+										],
+										"Container" -> Widget[
+											Type -> Object,
+											Pattern :> ObjectP[{Model[Container, Plate]}],
+											PreparedSample -> False,
+											PreparedContainer -> False
+										]
+									}
+								}
+							],
+							Expandable -> True
+						},
+						{
+							InputName -> "Volumes",
+							Description -> "The volumes of the samples to be transferred.",
+							Widget -> Widget[
+								Type->Quantity,
+								Pattern:>GreaterEqualP[0*Nanoliter],
+								Units->{Nanoliter,{Nanoliter,Microliter}}
+							],
+							Expandable -> True
+						},
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{

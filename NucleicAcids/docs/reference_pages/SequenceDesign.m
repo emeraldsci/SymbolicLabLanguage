@@ -40,14 +40,14 @@ DefineUsage[junctionSubsequences,
 {
 	BasicDefinitions -> {
 		{"junctionSubsequences[motifMap,junct,k]", "subs", "returns all the subsequences at the junction sites on the basis of a motif map."},
-		{"junctionSubsequences[strands,k]", "subs", "returns all the subsequences at the junction sites on teh basis of a set of strands."}
+		{"junctionSubsequences[strands,k]", "subs", "returns all the subsequences at the junction sites on the basis of a set of strands."}
 	},
 	MoreInformation -> {
-		"Must Convert everything to canonocal form (DNA only) so that the junctions make sense."
+		"Must Convert everything to canonical form (DNA only) so that the junctions make sense."
 	},
 	Input :> {
 		{"motifMap", {(_String -> {(SequenceP | {SequenceP..})..})..}, "List of rules from motif to the subsequences of that motif (matches the output produced by subsequences on strands or structures)."},
-		{"junct", {{_String, _String}...}, "List of junctions between the motifs in the form {from,to} coutning from 5' to 3'."},
+		{"junct", {{_String, _String}...}, "List of junctions between the motifs in the form {from,to} counting from 5' to 3'."},
 		{"strands", {StrandP...} | {StructureP...}, "List of strands or structures you wish to generate the junction subsequences for."},
 		{"k", _Integer, "Subsequence level upon which you want to break down the subsequences."}
 	},
@@ -282,7 +282,7 @@ DefineUsage[AllSequences,
 		{"AllSequences[n]", "sequences", "returns a list of all possible sequences of length n."}
 	},
 	Input :> {
-		{"n", GreaterP[-1,1], "The lenght of the sequences to generate."}
+		{"n", GreaterP[-1,1], "The length of the sequences to generate."}
 	},
 	Output :> {
 		{"sequences", _?SequenceQ, "A list of all possible sequenes length n."}
@@ -346,7 +346,7 @@ DefineUsage[FoldingMatrix,
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
@@ -384,7 +384,7 @@ DefineUsage[FoldingSequences,
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
 		{"sequences", {_?SequenceQ...}, "List of folding subsequences."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
@@ -411,9 +411,9 @@ DefineUsage[FoldingSequences,
 DefineUsage[FoldsQ,
 {
 	BasicDefinitions -> {
-		{"FoldsQ[sequence,k]", "folds", "this function returns true if in the provided sequence a fold of lenght 'k' exists anywhere in the sequence."},
-		{"FoldsQ[sequence,k,Span[m,n]]", "folds", "this function returns true if in the provided sequence a fold of lenght 'k' exists in the space from position m to n."},
-		{"FoldsQ[str,k]", "folds", "this function returns true if in the provided strand a fold of lenght 'k' not designated by motif Pairing exists anywhere."},
+		{"FoldsQ[sequence,k]", "folds", "this function returns true if in the provided sequence a fold of length 'k' exists anywhere in the sequence."},
+		{"FoldsQ[sequence,k,Span[m,n]]", "folds", "this function returns true if in the provided sequence a fold of length 'k' exists in the space from position m to n."},
+		{"FoldsQ[str,k]", "folds", "this function returns true if in the provided strand a fold of length 'k' not designated by motif Pairing exists anywhere."},
 		{"FoldsQ[cmplx,k]", "folds", "this function returns true if in the provided Structure a fold of length 'k' not designated by motif Pairing exists anywhere."},
 		{"FoldsQ[subsequences]", "folds", "given a list of subsequences, determines if any one of the subsequences in that list can bind to another."},
 		{"FoldsQ[subsequences,testSequence]", "folds", "given a list of subsequences and a test sequences, determines if the test sequence could bind to any sequences in the subsequences list."}
@@ -426,14 +426,14 @@ DefineUsage[FoldsQ,
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
 		{"str", _?StrandQ, "The strand you wish to Analyze."},
 		{"cmplx", _?StructureQ, "The Structure you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."},
 		{"subsequences", {_?SequenceQ..}, "List of subseuqences you with to analyse."},
 		{"testSequence", _?SequenceQ, "The sequence you wish to compare to a list of subsequences."}
 	},
 	Output :> {
-		{"folds", BooleanP, "True if a fold of lenght k exists in the sequence and in any provided range."}
+		{"folds", BooleanP, "True if a fold of length k exists in the sequence and in any provided range."}
 	},
 	SeeAlso -> {
 		"FoldingMatrix",
@@ -468,10 +468,7 @@ DefineUsage[FractionAT,
 		"FractionAT",
 		"FractionPurine"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -495,10 +492,7 @@ DefineUsage[FractionAU,
 		"FractionAT",
 		"FractionPurine"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -522,10 +516,7 @@ DefineUsage[FractionGC,
 		"FractionAT",
 		"FractionPurine"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -550,10 +541,7 @@ DefineUsage[FractionMono,
 		"FractionAT",
 		"FractionPurine"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad"}
 }];
 
 
@@ -664,7 +652,7 @@ DefineUsage[NumberOfFolds,
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
@@ -701,7 +689,7 @@ DefineUsage[NumberOfRepeats,
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
@@ -771,7 +759,7 @@ DefineUsage[RepeatingMatrix,
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
@@ -808,12 +796,12 @@ DefineUsage[RepeatingSequences,
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."}
 	},
 	Output :> {
-		{"sequences", {_?SequenceQ..}, "List of subsequences of lenght 'k' within the parent sequence that are repeated one or more times."}
+		{"sequences", {_?SequenceQ..}, "List of subsequences of length 'k' within the parent sequence that are repeated one or more times."}
 	},
 	SeeAlso -> {
 		"FoldingMatrix",
@@ -835,9 +823,9 @@ DefineUsage[RepeatingSequences,
 DefineUsage[RepeatsQ,
 {
 	BasicDefinitions -> {
-		{"RepeatsQ[sequence,k]", "repeats", "the function returns true if in the provided sequence a repeated subseuqence of lenght 'k' exists anywhere in the sequence."},
-		{"RepeatsQ[sequence,k,Span[m,n]]", "repeats", "the function returns true if in the provided sequence a repeate subsequence of lenght 'k' exists in the space from position m to n."},
-		{"RepeatsQ[str,k]", "repeats", "the function returns true if in the provided strand a repeat of lenght 'k' not designated by motif Pairing exists anywhere."},
+		{"RepeatsQ[sequence,k]", "repeats", "the function returns true if in the provided sequence a repeated subseuqence of length 'k' exists anywhere in the sequence."},
+		{"RepeatsQ[sequence,k,Span[m,n]]", "repeats", "the function returns true if in the provided sequence a repeate subsequence of length 'k' exists in the space from position m to n."},
+		{"RepeatsQ[str,k]", "repeats", "the function returns true if in the provided strand a repeat of length 'k' not designated by motif Pairing exists anywhere."},
 		{"RepeatsQ[cmplx,k]", "repeats", "the function returns true if in the provided Structure a repeat of length 'k' not designated by motif Pairing exists anywhere."},
 		{"RepeatsQ[subsequences]", "repeats", "given a list of subsequences, determines if any one of the subsequences in that list repeates more than once."},
 		{"RepeatsQ[subsequences,testSequence]", "repeats", "given a list of subsequences and a test sequences, determines if the test sequences appears in the subsequences anywhere."}
@@ -849,7 +837,7 @@ DefineUsage[RepeatsQ,
 		{"sequence", _?SequenceQ, "The sequence you wish to Analyze."},
 		{"str", _?StrandQ, "The strand you wish to Analyze."},
 		{"cmplx", _?StructureQ, "The Structure you wish to Analyze."},
-		{"k", GreaterP[0,1], "The lenght of overlapping subsequences to employ."},
+		{"k", GreaterP[0,1], "The length of overlapping subsequences to employ."},
 		{"m", GreaterP[0,1], "The starting position for a provided span (inclusive)."},
 		{"n", GreaterP[0,1], "The ending position for a provided span (inclusive)."},
 		{"subsequences", {_?SequenceQ..}, "List of subseuqences you with to analyse."},

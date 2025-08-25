@@ -96,7 +96,8 @@ DefineOptions[CompatibleFootprintQ,
 			Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Boolean, Positions]],
 			Description -> "Indicates if a boolean should be returned, indicating if a position exists on the instrument that can fit the sample, or if the positions that are compatible with the sample should be returned."
 		},
-		CacheOption
+		CacheOption,
+		SimulationOption
 	}
 ];
 
@@ -141,9 +142,10 @@ CompatibleFootprintQ[
 	myLocationObjs:ListableP[ListableP[ObjectP[{Model[Instrument],Model[Container]}]]],
 	myListableSample:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Container]}]],
 	myOptions:OptionsPattern[]
-]:=Module[{cache,containerModels,listedInputs,listedObjects,fieldsToDownload},
-	(* Get our passed cache. *)
+]:=Module[{cache,containerModels,listedInputs,listedObjects,fieldsToDownload,simulation},
+	(* Get our passed cache and simulation. *)
 	cache=Quiet[OptionValue[Cache]];
+	simulation=Quiet[OptionValue[Simulation]];
 
 	(* Ensure that options and samples are in a list, and have no temporal links *)
 	listedInputs=First[removeLinks[ToList[myListableSample],{}]];
@@ -162,7 +164,8 @@ CompatibleFootprintQ[
 	containerModels=Flatten@Download[
 		listedObjects,
 		fieldsToDownload,
-		Cache->cache
+		Cache->cache,
+		Simulation->simulation
 	];
 
 	(* Call our main function. *)
@@ -202,14 +205,15 @@ CompatibleFootprintQ[myLocationSingletonObjs:ListableP[ObjectP[{Model[Instrument
 
 CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], Model[Container]}]]..}, myListableContainers:ListableP[ObjectP[Model[Container]]], myOptions:OptionsPattern[]]:=Module[
 	{cache, output, listedLocations, safeOps, expandedSafeOps, locationPackets, mapThreadFriendlyOptions, results, modelDimensions,
-		positions, uniqueFootprints, allowablePositions, wiggleRoom, allowableFootprintP, locationPacketsListed, realContainerPacketListed, footprint,
+		positions, uniqueFootprints, allowablePositions, wiggleRoom, allowableFootprintP, realContainerPacketListed, footprint,
 		adapterPacketsListed, allPositions, listedContainers, locationFlattenedList, locationPacketsFlattenListed, adapterPacketsFlattenListed,
-		realContainerFlattenedListPacket, optionsToExpand, safeOpsValuesToExpand, expandValueToList, preExpandedOptionRules, updatedPreExpandOptions,
-		flattenOutput
+		realContainerFlattenedListPacket,
+		flattenOutput,simulation
 	},
 
 	(* Lookup our cache. *)
 	cache=Quiet[OptionValue[Cache]];
+	simulation=Quiet[OptionValue[Simulation]];
 
 	(* Get the value of Output. *)
 	output=Quiet[OptionValue[Output]];
@@ -225,7 +229,9 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 
 	(* Get the safe options of this function. *)
 	safeOps=SafeOptions[CompatibleFootprintQ, ToList[myOptions], AutoCorrect -> False];
-
+	If[MatchQ[safeOps, $Failed],
+		Return[$Failed]
+	];
 	(*	(* Expand the safe Ops to a list of list *)
 		optionsToExpand={Tolerance,ExactMatch,MinWidth,Position};
 
@@ -268,7 +274,8 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 				{Packet[CompatibleAdapters[Positions]]},
 				{Packet[Object, Dimensions, Footprint]}
 			},
-			Cache -> cache
+			Cache -> cache,
+			Simulation -> simulation
 		],
 		{Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField}
 	];
@@ -328,9 +335,9 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 						(* lookup footprint as is from the container packet *)
 						rawFootprint=Lookup[realContainerPacket, Footprint];
 
-						(* Get all of our positions that can possibly be used. If we have an Adapter, take the positions from that instead. *)
+						(* Get all of our positions that can possibly be used. If we have an Adapter, take the positions from that in addition to those in the instrument. *)
 						allPositions=If[Length[adapterPackets] > 0,
-							Flatten[Lookup[adapterPackets, Positions]],
+							Join[Flatten[Lookup[adapterPackets, Positions]], Lookup[instrumentPacket, Positions]],
 							Lookup[instrumentPacket, Positions]
 						];
 
@@ -400,7 +407,7 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 											Null,
 											Null,
 											Null,
-											footprint | Open |SingleItem,
+											footprint | Open | SingleItem | LabArmorBeads,
 											_
 										},
 									eachExactMatch,
@@ -409,7 +416,7 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 											Null | RangeP[modelDimensions[[1]] - wiggleRoom, modelDimensions[[1]] + wiggleRoom],
 											Null | RangeP[modelDimensions[[2]] - wiggleRoom, modelDimensions[[2]] + wiggleRoom],
 											Null | GreaterEqualP[modelDimensions[[3]] - wiggleRoom],
-											footprint | Open |SingleItem,
+											footprint | Open | SingleItem | LabArmorBeads,
 											_
 										},
 									True,
@@ -417,7 +424,7 @@ CompatibleFootprintQ[myLocationObjLists:{ListableP[ObjectP[{Model[Instrument], M
 											Null | GreaterEqualP[modelDimensions[[1]] - wiggleRoom],
 											Null | GreaterEqualP[modelDimensions[[2]] - wiggleRoom],
 											Null | GreaterEqualP[modelDimensions[[3]] - wiggleRoom],
-											footprint | Open|SingleItem,
+											footprint | Open| SingleItem | LabArmorBeads,
 											_
 										}
 								];
@@ -496,6 +503,13 @@ DefineOptions[AliquotContainers,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0Meter], Units -> Meter],
 				Description -> "Indicates if there is a minimum width for positions on the instrument."
+			},
+			{
+				OptionName -> SelfStanding,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if a self-standing container is desired. Setting SelfStanding to Null means any container model is fine."
 			}
 		],
 		CacheOption,
@@ -507,7 +521,7 @@ DefineOptions[AliquotContainers,
 AliquotContainers[myLocationObjs:ListableP[ObjectP[Model[Instrument]]], mySample:ObjectP[Object[Sample]], myOptions:OptionsPattern[]]:=Module[
 	{cache, listedInstruments, safeOps, expandedSafeOps, instrumentPackets, samplePacket, realSamplePacket, sampleAmount,
 		sterile, lightSensitive,filteredPreferredContainerPackets,mapThreadFriendlyOptions, filterBooleans, positions,
-		uniqueFootprints, wiggleRoom, preferredContainers, preferredContainerPackets, preferredContainerDimensions, filteredContainers, results, simulation},
+		uniqueFootprints, wiggleRoom, preferredContainers, preferredContainerPackets, preferredContainerDimensions, preferredContainerSelfStandingBools, results, simulation},
 
 	(* ToList our instruments. *)
 	listedInstruments=ToList[myLocationObjs];
@@ -552,7 +566,7 @@ AliquotContainers[myLocationObjs:ListableP[ObjectP[Model[Instrument]]], mySample
 	preferredContainers=ToList[PreferredContainer[sampleAmount, Sterile -> sterile, LightSensitive -> lightSensitive, All -> True, Type -> All]];
 
 	(* Get a packet for each of our preferred vessels. *)
-	preferredContainerPackets=Download[preferredContainers, Packet[Object, Dimensions], Cache -> cache];
+	preferredContainerPackets=Download[preferredContainers, Packet[Object, Dimensions, SelfStanding], Cache -> cache];
 
 	(* Convert our options into a MapThread friendly version. *)
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[AliquotContainers, expandedSafeOps];
@@ -583,39 +597,48 @@ AliquotContainers[myLocationObjs:ListableP[ObjectP[Model[Instrument]]], mySample
 		];
 
 		(* Get the dimensions of each of our preferred vessels. *)
-		preferredContainerDimensions=Lookup[filteredPreferredContainerPackets, Dimensions, {}];
+		preferredContainerDimensions = Lookup[filteredPreferredContainerPackets, Dimensions, {}];
+		preferredContainerSelfStandingBools = Lookup[filteredPreferredContainerPackets, SelfStanding, {}];
 
 		(* Filter our vessels by the ones that can fit onto one of the positions on our instrument. *)
-		filterBooleans=(
-			(* Is this preferred vessel able to fit on a position of this instrument? *)
-			Length[
-				Cases[
-					uniqueFootprints,
-					(* Are we looking for a direct footprint match? *)
-					If[Lookup[mapThreadOptions, ExactMatch],
-						{
-							Null | RangeP[#[[1]] - wiggleRoom, #[[1]] + wiggleRoom],
-							Null | RangeP[#[[2]] - wiggleRoom, #[[2]] + wiggleRoom],
-							Null | RangeP[#[[3]] - wiggleRoom, #[[3]] + wiggleRoom]
-						},
-						{
-							Null | GreaterEqualP[#[[1]] - wiggleRoom],
-							Null | GreaterEqualP[#[[2]] - wiggleRoom],
-							Null | GreaterEqualP[#[[3]] - wiggleRoom]
-						}
+		filterBooleans= MapThread[
+			Function[
+				{containerDimensions, containerSelfStanding},
+				And[
+					(* Is this preferred vessel able to fit on a position of this instrument? *)
+					Length[
+						Cases[
+							uniqueFootprints,
+							(* Are we looking for a direct footprint match? *)
+							If[Lookup[mapThreadOptions, ExactMatch],
+								{
+									Null | RangeP[containerDimensions[[1]] - wiggleRoom, containerDimensions[[1]] + wiggleRoom],
+									Null | RangeP[containerDimensions[[2]] - wiggleRoom, containerDimensions[[2]] + wiggleRoom],
+									Null | RangeP[containerDimensions[[3]] - wiggleRoom, containerDimensions[[3]] + wiggleRoom]
+								},
+								{
+									Null | GreaterEqualP[containerDimensions[[1]] - wiggleRoom],
+									Null | GreaterEqualP[containerDimensions[[2]] - wiggleRoom],
+									Null | GreaterEqualP[containerDimensions[[3]] - wiggleRoom]
+								}
+							]
+						]
+					] > 0,
+					(* if self standing option is specified, make sure we pick the containers that meets the requirement *)
+					Or[
+						NullQ[Lookup[mapThreadOptions, SelfStanding]],
+						MatchQ[containerSelfStanding, Lookup[mapThreadOptions, SelfStanding]]
 					]
 				]
-			] > 0
-				&) /@ preferredContainerDimensions;
-
-		(* Filter our vessels based on these boolean computations. *)
-		filteredContainers=PickList[
-			Lookup[filteredPreferredContainerPackets, Object, {}],
-			filterBooleans
+			],
+			{preferredContainerDimensions, preferredContainerSelfStandingBools}
 		];
 
-		(* Return our preferred vessels that can fit on a position on our instrument. *)
-		filteredContainers
+		(* Filter our vessels based on these boolean computations. *)
+		PickList[
+			Lookup[filteredPreferredContainerPackets, Object, {}],
+			filterBooleans
+		]
 	], {instrumentPackets, mapThreadFriendlyOptions}];
 
 	(* If we were not given a list an input, de-list the result. *)
@@ -659,7 +682,18 @@ DefineOptions[RackFinder,
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if the function should return a rack that contains only single position."
+			Description->"Indicates if the function should return a rack that is made of thermally conductive material."
+		},
+		{
+			OptionName->MaxDepthMargin,
+			Default->Null,
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterEqualP[0.0 Millimeter],
+				Units->Millimeter
+			],
+			Description->"The maximum distance allowed between the bottom of the returned rack model and the inside bottom of its first position."
 		},
 		CacheOption,
 		SimulationOption
@@ -669,74 +703,78 @@ DefineOptions[RackFinder,
 Warning::RackNotFound="RackFinder was unable to find a compatible rack for the objects: `1`.";
 
 RackFinder[
-	myInputs:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Container]}]],
-	myOptions:OptionsPattern[]
-]:=Module[
+	myInputs : ListableP[ObjectP[{Object[Sample], Object[Container], Model[Container]}]],
+	myOptions : OptionsPattern[]
+] := Module[
 	{
-		listedInputs,listedObjects,listOfRacks,listsOfBools,indices,inputSamples,inputContainers,inputContainerModels,
-		safeOps,cache,simulation,rawSamplePackets,rawContainerPackets,rawContainerModelPackets,rackPackets,newCache,
-		compatibleRacks,containersWithNoRack,inputSamplesFootprints,inputContainersFootprints,inputContainerModelFootprints,
-		inputSamplesMatchingFootprints,inputContainerMatchingFootprints,inputContainerModelMatchingFootprints,
-		compFootprintQListOfRacks,rackAvailabilities,singleRackQ,rackPacketsNotFlat,rackAvailabilitiesNotFlat,
-		countList,countLookup,modelsToReturn,output,commonRackLookup,commonFootprintToRackLookup,conductiveRackQ
+		listedInputs, listedObjects, listOfRacks, listsOfBools, indices, inputSamples, inputContainers, inputContainerModels,
+		safeOps, cache, simulation, rawSamplePackets, rawContainerPackets, rawContainerModelPackets, rackPackets, newCache,
+		compatibleRacks, containersWithNoRack, inputSamplesFootprints, inputContainersFootprints, inputContainerModelFootprints,
+		inputSamplesMatchingFootprints, inputContainerMatchingFootprints, inputContainerModelMatchingFootprints,
+		compFootprintQListOfRacks, rackAvailabilities, singleRackQ, rackPacketsNotFlat, rackAvailabilitiesNotFlat,
+		countList, countLookup, modelsToReturn, output, commonRackLookup, commonFootprintToRackLookup, conductiveRackQ,
+		maxDepthMargin
 	},
 
 	(* Ensure that options and samples are in a list, and have no temporal links *)
-	listedInputs=First[removeLinks[ToList[myInputs],{}]];
+	listedInputs = First[removeLinks[ToList[myInputs], {}]];
 
 	(* make sure all objects are in object reference form *)
-	listedObjects=Download[listedInputs,Object];
+	listedObjects = Download[listedInputs, Object];
 
 	(* Check if all options match their patterns *)
-	safeOps=SafeOptions[RackFinder,ToList[myOptions],AutoCorrect->False];
+	safeOps = SafeOptions[RackFinder, ToList[myOptions], AutoCorrect -> False];
 
 	(* get cache and simulation from options *)
-	{cache,simulation,output,singleRackQ,conductiveRackQ}=Lookup[safeOps,{Cache,Simulation,ReturnAllRacks,RequireSinglePositionPosition,ThermalConductiveRack}];
-	
-	
+	{cache, simulation, output, singleRackQ, conductiveRackQ, maxDepthMargin} = Lookup[
+		safeOps,
+		{Cache, Simulation, ReturnAllRacks, RequireSinglePositionPosition, ThermalConductiveRack, MaxDepthMargin}
+	];
+
+
 	(* group objects based on types *)
-	inputSamples=Cases[listedObjects,ObjectReferenceP[Object[Sample]]];
-	inputContainers=Cases[listedObjects,ObjectReferenceP[Object[Container]]];
-	inputContainerModels=Cases[listedObjects,ObjectReferenceP[Model[Container]]];
+	inputSamples = Cases[listedObjects, ObjectReferenceP[Object[Sample]]];
+	inputContainers = Cases[listedObjects, ObjectReferenceP[Object[Container]]];
+	inputContainerModels = Cases[listedObjects, ObjectReferenceP[Model[Container]]];
 
 	(* define lookup tables that contain rack models for commonly used CONTAINERS *)
-	commonRackLookup={
+	commonRackLookup = {
 		(*15mL Tube*)
-		Model[Container,Vessel,"id:xRO9n3vk11pw"]->Model[Container,Rack,"id:R8e1PjRDbbo7"],
+		Model[Container, Vessel, "id:xRO9n3vk11pw"] -> Model[Container, Rack, "id:R8e1PjRDbbo7"],
 		(*50mL Tube*)
-		Model[Container,Vessel,"id:bq9LA0dBGGR6"]->Model[Container,Rack,"id:GmzlKjY5EEdE"],
+		Model[Container, Vessel, "id:bq9LA0dBGGR6"] -> Model[Container, Rack, "id:GmzlKjY5EEdE"],
 		(*2mL Tube - MicrocentrifugeTube*)
-		Model[Container,Vessel,"id:3em6Zv9NjjN8"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"],
+		Model[Container, Vessel, "id:3em6Zv9NjjN8"] -> Model[Container, Rack, "id:vXl9j57WEJ8Z"],
 		(*1.5mL Tube with 2mL Tube Skirt - MicrocentrifugeTube*)
-		Model[Container,Vessel,"id:eGakld01zzpq"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"],
+		Model[Container, Vessel, "id:eGakld01zzpq"] -> Model[Container, Rack, "id:vXl9j57WEJ8Z"],
 		(*0.5mL Tube with 2mL Tube Skirt - MicrocentrifugeTube*)
-		Model[Container,Vessel,"id:o1k9jAG00e3N"]->Model[Container,Rack,"id:vXl9j57WEJ8Z"]
+		Model[Container, Vessel, "id:o1k9jAG00e3N"] -> Model[Container, Rack, "id:vXl9j57WEJ8Z"]
 	};
 
 	(* define lookup tables that contain rack models for commonly used FOOTPRINTS *)
-	commonFootprintToRackLookup={
-		Conical15mLTube->Model[Container, Rack, "id:R8e1PjRDbbo7"], (*15mL Tube Stand*)
-		Conical50mLTube->Model[Container, Rack, "id:GmzlKjY5EEdE"], (*50mL Tube Stand*)
-		MicrocentrifugeTube->Model[Container, Rack, "id:vXl9j57WEJ8Z"], (*2mL Tube Stand*)
-		Round9mLOptiTube->Model[Container, Rack, "id:n0k9mG8EWdNp"],
-		Round32mLOptiTube->Model[Container, Rack, "id:GmzlKjY5EEdE"],
-		Round94mLUltraClearTube->Model[Container, Rack, "id:zGj91a7NxY1j"]
+	commonFootprintToRackLookup = {
+		Conical15mLTube -> Model[Container, Rack, "id:R8e1PjRDbbo7"], (*15mL Tube Stand*)
+		Conical50mLTube -> Model[Container, Rack, "id:GmzlKjY5EEdE"], (*50mL Tube Stand*)
+		MicrocentrifugeTube -> Model[Container, Rack, "id:vXl9j57WEJ8Z"], (*2mL Tube Stand*)
+		Round9mLOptiTube -> Model[Container, Rack, "id:n0k9mG8EWdNp"],
+		Round32mLOptiTube -> Model[Container, Rack, "id:GmzlKjY5EEdE"],
+		Round94mLUltraClearTube -> Model[Container, Rack, "id:zGj91a7NxY1j"]
 	};
 
 	If[
 		(* case where inputs only have the Model[Container,Vessel]s listed in commonRackLookup keys *)
-		ContainsOnly[listedObjects,Keys[commonRackLookup]] && Not[TrueQ[conductiveRackQ]] && Not[TrueQ[output]],
+		ContainsOnly[listedObjects, Keys[commonRackLookup]] && Not[TrueQ[conductiveRackQ]] && Not[MatchQ[maxDepthMargin, DistanceP]] && Not[TrueQ[output]],
 		Module[{replacedListedObjects},
-			replacedListedObjects=listedObjects/.commonRackLookup;
-			If[MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,
+			replacedListedObjects = listedObjects /. commonRackLookup;
+			If[MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1,
 				First[replacedListedObjects],
 				replacedListedObjects
 			]
 		],
 		(* Else, case where inputs only have the Model[Container,Vessel]s listed in commonRackLookup keys OR have to do big download if thats not true*)
-		Module[{rawSamplePacketsNotFlat,rawContainerPacketsNotFlat,rawContainerModelPacketsNotFlat,
-		objectSamplesToFootprintLookup,objectContainersToFootprintLookup,modelContainersToFootprintLookup,replacedListedObjectsWithFootprints},
-			
+		Module[{rawSamplePacketsNotFlat, rawContainerPacketsNotFlat, rawContainerModelPacketsNotFlat,
+			objectSamplesToFootprintLookup, objectContainersToFootprintLookup, modelContainersToFootprintLookup, replacedListedObjectsWithFootprints},
+
 			(* Download all information *)
 			{
 				rawSamplePacketsNotFlat,
@@ -751,48 +789,48 @@ RackFinder[
 					(* input Model[Container]s *)
 					inputContainerModels
 				},
-			    {
-				   (* first two for tracing back to input samples *)
-				   {
-					   Packet[Container,Name],
-					   Packet[Container[Model]],
-					   Packet[Container[Model][{Dimensions,Footprint, ContainerMaterials}]]
-				   },
-				   {
-					   Packet[Model,Name],
-					   Packet[Model[{Dimensions,Footprint, ContainerMaterials}]]
-				   },
-				   {
-					   Packet[Dimensions,Footprint,Name, ContainerMaterials]
-				   }
-			    }
+				{
+					(* first two for tracing back to input samples *)
+					{
+						Packet[Container, Name],
+						Packet[Container[Model]],
+						Packet[Container[Model][{Dimensions, Footprint, ContainerMaterials}]]
+					},
+					{
+						Packet[Model, Name],
+						Packet[Model[{Dimensions, Footprint, ContainerMaterials}]]
+					},
+					{
+						Packet[Dimensions, Footprint, Name, ContainerMaterials]
+					}
+				}
 			];
 			(* create a lookup of rawPackets' Object -> Footprint*)
-			objectSamplesToFootprintLookup = If[Length[inputSamples]>0,
+			objectSamplesToFootprintLookup = If[Length[inputSamples] > 0,
 				(Lookup[#[[1]], Object] -> Lookup[#[[3]], Footprint])& /@ rawSamplePacketsNotFlat,
 				{}
 			];
 
 			(* create a lookup of rawPackets' Object -> Footprint*)
-			objectContainersToFootprintLookup = If[Length[inputContainers]>0,
+			objectContainersToFootprintLookup = If[Length[inputContainers] > 0,
 				(Lookup[#[[1]], Object] -> Lookup[#[[2]], Footprint])& /@ rawContainerPacketsNotFlat,
 				{}
 			];
 
 			(* create a lookup of rawPackets' Object -> Footprint*)
-			modelContainersToFootprintLookup = If[Length[inputContainerModels]>0,
+			modelContainersToFootprintLookup = If[Length[inputContainerModels] > 0,
 				(Lookup[#, Object] -> Lookup[#, Footprint])& /@ rawContainerModelPacketsNotFlat,
 				{}
 			];
 
 			(* replace listedObjects with all of replace rules just previously made *)
-			replacedListedObjectsWithFootprints = listedObjects/.(Flatten[{objectSamplesToFootprintLookup,objectContainersToFootprintLookup,modelContainersToFootprintLookup}]);
+			replacedListedObjectsWithFootprints = listedObjects /. (Flatten[{objectSamplesToFootprintLookup, objectContainersToFootprintLookup, modelContainersToFootprintLookup}]);
 			(* check if all footprints are only part of it *)
-			If[ContainsOnly[replacedListedObjectsWithFootprints,Keys[commonFootprintToRackLookup]] && Not[TrueQ[conductiveRackQ]] && Not[TrueQ[output]],
+			If[ContainsOnly[replacedListedObjectsWithFootprints, Keys[commonFootprintToRackLookup]] && Not[TrueQ[conductiveRackQ]] && Not[MatchQ[maxDepthMargin, DistanceP]] && Not[TrueQ[output]],
 				(* if they are, return the replace rule *)
 				Module[{replacedList},
-					replacedList=replacedListedObjectsWithFootprints/.commonFootprintToRackLookup;
-					If[MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,
+					replacedList = replacedListedObjectsWithFootprints /. commonFootprintToRackLookup;
+					If[MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1,
 						First[replacedList],
 						replacedList
 					]
@@ -801,14 +839,14 @@ RackFinder[
 				Module[{},
 					(* search for all available rack models *)
 					(* sort listOfRacks to make this function somewhat deterministic *)
-					listOfRacks=Sort[Search[Model[Container,Rack],Deprecated!=True]];
+					listOfRacks = Sort[Search[Model[Container, Rack], Deprecated != True]];
 
 					(* download *)
 					{
 						(*rackPackets are stuff for CompatibleFootprintQ*)
 						rackPacketsNotFlat,
 						rackAvailabilitiesNotFlat
-					}=Quiet[
+					} = Quiet[
 						Download[
 							{
 								listOfRacks,
@@ -816,136 +854,114 @@ RackFinder[
 							},
 							{
 								{
-									Packet[Object,Dimensions,Footprint,Positions,ContainerMaterials]
+									Packet[Object, Dimensions, Footprint, Positions, ContainerMaterials, DepthMargin]
 								},
 								{
 									Packet[Objects[Status]]
 								}
 							},
-							Cache->cache,
-							Simulation->simulation
-						],{Download::FieldDoesntExist,Download::NotLinkField,Download::MissingCacheField,Download::ObjectDoesNotExist}
+							Cache -> cache,
+							Simulation -> simulation
+						], {Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField, Download::ObjectDoesNotExist}
 					];
 
 					(* clean up downloaded packets *)
 					{
-						rawSamplePackets,rawContainerPackets,rawContainerModelPackets,rackPackets
-					}=Flatten/@{
-						rawSamplePacketsNotFlat,rawContainerPacketsNotFlat,rawContainerModelPacketsNotFlat,rackPacketsNotFlat
+						rawSamplePackets, rawContainerPackets, rawContainerModelPackets, rackPackets
+					} = Flatten /@ {
+						rawSamplePacketsNotFlat, rawContainerPacketsNotFlat, rawContainerModelPacketsNotFlat, rackPacketsNotFlat
 					};
-					rackAvailabilities=Flatten/@rackAvailabilitiesNotFlat;
+					rackAvailabilities = Flatten /@ rackAvailabilitiesNotFlat;
 
 					(* creating new cache for CompatibleFootprintQ *)
-					newCache=Experiment`Private`FlattenCachePackets[{rawSamplePackets,rawContainerPackets,rawContainerModelPackets,rackPackets}];
+					newCache = Experiment`Private`FlattenCachePackets[{rawSamplePackets, rawContainerPackets, rawContainerModelPackets, rackPackets}];
 					(*tolerances = Lookup[#,Tolerance]&/@rackPackets;*)
 
 					(* now filter listOfRacks that only have same positions footprint as inputs footprints, filter corresponding rackPackets as well *)
 					(*get inputSamples, inputContainers and inputContainerModels footprints*)
-					inputSamplesFootprints=If[Length[rawSamplePackets]>0,
-						Lookup[rawSamplePackets,Footprint,Nothing],
+					inputSamplesFootprints = If[Length[rawSamplePackets] > 0,
+						Lookup[rawSamplePackets, Footprint, Nothing],
 						{}
 					];
 
-					inputContainersFootprints=If[Length[rawContainerPackets]>0,
-						Lookup[rawContainerPackets,Footprint,Nothing],
+					inputContainersFootprints = If[Length[rawContainerPackets] > 0,
+						Lookup[rawContainerPackets, Footprint, Nothing],
 						{}
 					];
 
-					inputContainerModelFootprints=If[Length[rawContainerModelPackets]>0,
-						Lookup[#,Footprint]&/@(rawContainerModelPackets),
+					inputContainerModelFootprints = If[Length[rawContainerModelPackets] > 0,
+						Lookup[#, Footprint]& /@ (rawContainerModelPackets),
 						{}
 					];
 
-					(* Go through each list of footprints and filter out listOfRacks/rackPackets that have same footprints for inputSamples, inputContainers and inputContainerModels *)
-					(* Keep only the models whose Position[Footprint]s are in inputSamplesFootprints*)
-					inputSamplesMatchingFootprints = Map[
-						Function[{rackPacket},
-							Module[{positions, materials, footprints, numPositionQ, conductiveQ},
+					(* Go through each list of footprints and filter out listOfRacks/rackPackets that have same footprints
+					for inputSamples, inputContainers and inputContainerModels *)
+					{
+						inputSamplesMatchingFootprints,
+						inputContainerMatchingFootprints,
+						inputContainerModelMatchingFootprints
+					} = Transpose[
+						Map[
+							Function[{rackPacket},
+								Module[{positions, materials, depthMargin, footprints, numPositionQ, conductiveQ, depthMarginQ},
 
-								(*Get positions*)
-								{positions, materials} = Lookup[rackPacket, {Positions, ContainerMaterials}];
+									(*Get positions*)
+									{positions, materials, depthMargin} = Lookup[rackPacket, {Positions, ContainerMaterials, DepthMargin}];
 
-								(*Get footprint*)
-								footprints = DeleteDuplicates[Lookup[positions, Footprint, {}]];
+									(*Get footprints*)
+									footprints = DeleteDuplicates[Lookup[positions, Footprint, {}]];
 
-								(* what if we want the return the rack that can hold only one rack *)
-								numPositionQ = If[singleRackQ, (Length[positions] == 1), True];
+									(* what if we want the return the rack that can hold only one rack *)
+									numPositionQ = If[singleRackQ, (Length[positions] == 1), True];
 
-								(* check if we want a conductive rack *)
-								conductiveQ = If[conductiveRackQ, MemberQ[materials, StainlessSteel], True];
+									(* check if we want a conductive rack *)
+									conductiveQ = If[conductiveRackQ, MemberQ[materials, StainlessSteel | Aluminum], True];
 
-								(*Ask if footprint is in inputSampleFootprints, if it is, return rackPacket[Object]*)
-								If[And[ContainsAny[footprints, inputSamplesFootprints], !MatchQ[positions,{}],numPositionQ, conductiveQ],
-									Lookup[rackPacket, Object],
-									Nothing
+									(* Set a boolean indicating whether this rack satisfies the MaxDepthMargin option *)
+									depthMarginQ = Switch[{maxDepthMargin, depthMargin},
+
+										(* If MaxDepthMargin is specified and the DepthMargin of this rack is populated, then
+										return True if the rack's DepthMargin is less than or equal to the MaxDepthMargin option *)
+										{DistanceP, DistanceP}, depthMargin <= maxDepthMargin,
+
+										(* If MaxDepthMargin is specified and the DepthMargin of this rack is Null, return False *)
+										{DistanceP, _}, False,
+
+										(* If MaxDepthMargin is not specified, return True regardless of the rack's DepthMargin *)
+										{_, _}, True
+									];
+
+									Map[
+										If[
+											And[
+												ContainsAny[footprints, #],
+												!MatchQ[positions, {}],
+												numPositionQ,
+												conductiveQ,
+												depthMarginQ
+											],
+											Lookup[rackPacket, Object],
+											Null
+										]&,
+										{inputSamplesFootprints, inputContainersFootprints, inputContainerModelFootprints}
+									]
 								]
-							]
-						],
-						rackPackets
-					];
-				
-					(* Keep only the models whose Position[Footprint]s are in inputContainersFootprints*)
-					inputContainerMatchingFootprints = Map[
-						Function[{rackPacket},
-							Module[{positions, materials, footprints, numPositionQ, conductiveQ},
-								(*Get positions*)
-								{positions, materials} = Lookup[rackPacket, {Positions, ContainerMaterials}];
-								(*Get footprint*)
-								footprints = DeleteDuplicates[Lookup[positions, Footprint, {}]];
-
-								(* what if we want the return the rack that can hold only one rack *)
-								numPositionQ = If[singleRackQ, (Length[positions] == 1), True];
-
-								(* check if we want a conductive rack *)
-								conductiveQ = If[conductiveRackQ, MemberQ[materials, StainlessSteel], True];
-
-								(*Ask if footprint is in inputSampleFootprints, if it is, return rackPacket[Object]*)
-								If[And[ContainsAny[footprints, inputContainersFootprints], !MatchQ[positions,{}],numPositionQ, conductiveQ],
-									Lookup[rackPacket, Object],
-									Nothing
-								]
-							]
-						],
-						rackPackets
-					];
-				
-					(* Keep only the models whose Position[Footprint]s are in inputSamplesFootprints*)
-					inputContainerModelMatchingFootprints = Map[
-						Function[{rackPacket},
-							Module[{positions, materials, footprints, numPositionQ, conductiveQ},
-								(*Get positions*)
-								{positions, materials} = Lookup[rackPacket, {Positions, ContainerMaterials}];
-
-								(*Get footprints*)
-								footprints = DeleteDuplicates[Lookup[positions, Footprint, {}]];
-
-								(* what if we want the return the rack that can hold only one rack *)
-								numPositionQ = If[singleRackQ, (Length[positions] == 1), True];
-
-								(* check if we want a conductive rack *)
-								conductiveQ = If[conductiveRackQ, MemberQ[materials, StainlessSteel], True];
-
-								(*Ask if footprint is in inputSampleFootprints, if it is, return rackPacket[Object]*)
-								If[And[ContainsAny[footprints, inputContainerModelFootprints], !MatchQ[positions,{}],numPositionQ, conductiveQ],
-									Lookup[rackPacket, Object],
-									Nothing
-								]
-							]
-						],
-						rackPackets
-					];
+							],
+							rackPackets
+						]
+					] /. Null -> Nothing;
 
 					(* construct the listOfRacks to put into first argument of CompatibleFootprintQ, want to maintain order of listedObjects *)
-					compFootprintQListOfRacks=Map[
+					compFootprintQListOfRacks = Map[
 						Function[{object},
 							Which[
-								MatchQ[object,ObjectReferenceP[Object[Sample]]],
+								MatchQ[object, ObjectReferenceP[Object[Sample]]],
 								inputSamplesMatchingFootprints,
 
-								MatchQ[object,ObjectReferenceP[Object[Container]]],
+								MatchQ[object, ObjectReferenceP[Object[Container]]],
 								inputContainerMatchingFootprints,
 
-								MatchQ[object,ObjectReferenceP[Model[Container]]],
+								MatchQ[object, ObjectReferenceP[Model[Container]]],
 								inputContainerModelMatchingFootprints
 							]
 						],
@@ -954,62 +970,62 @@ RackFinder[
 
 					(* throw a warning and return early if there is no potential rack to check with CompatibleFootprintQ *)
 					(* TODO: revisit to make sure we don't crash any function calling RackFinder with these return values *)
-					If[MatchQ[Flatten@compFootprintQListOfRacks,{}],
+					If[MatchQ[Flatten@compFootprintQListOfRacks, {}],
 						Return[
 							Which[
-								MatchQ[output,False]&&MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,Null,
-								MatchQ[output,True]&&MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,Null,
-								MatchQ[output,False],{},
-								True,{}
+								MatchQ[output, False] && MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1, Null,
+								MatchQ[output, True] && MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1, Null,
+								MatchQ[output, False], {},
+								True, {}
 							]
 						]
 					];
 
 					(*return first rack that is True with CompatibleFootprintQ*)
-					listsOfBools=CompatibleFootprintQ[
+					listsOfBools = CompatibleFootprintQ[
 						(*list of potential matching racks*)
 						compFootprintQListOfRacks,
 						(*list of input object[sample],object[container] or model[container]*)
 						listedObjects,
 						(*Tolerance->tolerances,*)
-						FlattenOutput->False,
-						Cache->newCache
+						FlattenOutput -> False,
+						Cache -> newCache
 					];
 
 					(* get indices of True *)
-					indices=Position[#,True]&/@listsOfBools;
+					indices = Position[#, True]& /@ listsOfBools;
 
 					(* map over the list of indices to extract the first compatible rack for each input object *)
 					(* if returning Null, it means there is no compatible model rack*)
-					compatibleRacks=MapThread[
-						If[Length[#1]>0,
-							Extract[#2,#1]
+					compatibleRacks = MapThread[
+						If[Length[#1] > 0,
+							Extract[#2, #1]
 						]&,
-						{indices,compFootprintQListOfRacks}
+						{indices, compFootprintQListOfRacks}
 					];
 
 					(* create a lookup for each rack model's objects count *)
-					countList=Count[#,KeyValuePattern[Status->Available]]&/@rackAvailabilities;
-					countLookup=AssociationThread[listOfRacks,countList];
+					countList = Count[#, KeyValuePattern[Status -> Available]]& /@ rackAvailabilities;
+					countLookup = AssociationThread[listOfRacks, countList];
 
 					(* for each input object, get the compatible model with the most availability *)
-					modelsToReturn=Map[
-						FirstOrDefault@Keys@ReverseSort[KeyTake[countLookup,#]]&,
+					modelsToReturn = Map[
+						FirstOrDefault@Keys@ReverseSort[KeyTake[countLookup, #]]&,
 						compatibleRacks
 					];
 
 					(* throw a warning for inputs without found racks *)
-					containersWithNoRack=PickList[listedObjects,indices,Null];
+					containersWithNoRack = PickList[listedObjects, indices, Null];
 					(*If[Length[containersWithNoRack]!=0,
                         Message[Warning::RackNotFound,containersWithNoRack]
                     ];*)
 
 					(* TODO: write comment please *)
 					Which[
-						MatchQ[output,False]&&MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,First[modelsToReturn],
-						MatchQ[output,True]&&MatchQ[myInputs,Except[_List]]&&Length[listedInputs]==1,First[compatibleRacks],
-						MatchQ[output,False],modelsToReturn,
-						True,compatibleRacks
+						MatchQ[output, False] && MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1, First[modelsToReturn],
+						MatchQ[output, True] && MatchQ[myInputs, Except[_List]] && Length[listedInputs] == 1, First[compatibleRacks],
+						MatchQ[output, False], modelsToReturn,
+						True, compatibleRacks
 					]
 
 				]

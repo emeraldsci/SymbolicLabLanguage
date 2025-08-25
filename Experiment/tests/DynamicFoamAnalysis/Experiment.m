@@ -29,6 +29,7 @@ DefineTests[
 			ObjectP[Object[Protocol,DynamicFoamAnalysis]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
 		],
+
 		Example[{Additional,"Specify the input as {Position,Container}:"},
 			ExperimentDynamicFoamAnalysis[{"A1",Object[Container, Vessel, "DynamicFoamAnalysis 100mL Bottle Container1"<> $SessionUUID]}],
 			ObjectP[Object[Protocol,DynamicFoamAnalysis]],
@@ -43,8 +44,86 @@ DefineTests[
 			ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample5 for no model"<> $SessionUUID],Upload->True],
 			ObjectP[Object[Protocol,DynamicFoamAnalysis]]
 		],
+		Example[{Basic,"Run a DynamicFoamAnalysis experiment on a model:"},
+			ExperimentDynamicFoamAnalysis[Model[Sample,"Milli-Q water"],Upload->True],
+			ObjectP[Object[Protocol,DynamicFoamAnalysis]]
+		],
 
 		(*-- Messages: errors and warnings --*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentDynamicFoamAnalysis[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentDynamicFoamAnalysis[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentDynamicFoamAnalysis[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentDynamicFoamAnalysis[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDynamicFoamAnalysis[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDynamicFoamAnalysis[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		(*- invalid inputs -*)
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample6 for discarded"<> $SessionUUID]],
@@ -830,22 +909,6 @@ DefineTests[
 			False,
 			Variables:>{options}
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be run with a dynamic foam analysis experiment:"},
-			protocol=ExperimentDynamicFoamAnalysis["DFA sample 1",
-				PreparatoryPrimitives->{
-					Define[Name->"DFA sample 1",
-						Container->Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Destination->"DFA sample 1",Amount->50*Milliliter
-					]
-				}
-			];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables:>{protocol}
-		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to be run with a dynamic foam analysis experiment:"},
 			protocol=ExperimentDynamicFoamAnalysis["DFA sample 1",
 				PreparatoryUnitOperations->{
@@ -1110,7 +1173,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[{Options,SampleContainerLabel,"Specify a label for the aliquoted sample:"},
@@ -1199,7 +1262,7 @@ DefineTests[
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],AliquotContainer->Model[Container,Vessel,"50mL Tube"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -1229,7 +1292,7 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options,Name,"Specify the name of a protocol:"},
@@ -1528,7 +1591,7 @@ DefineTests[
 			<|Object->waterSampleNotLiq4, Name->"DynamicFoamAnalysis Test Water Sample4 for not liquid" <> $SessionUUID, Status->Available, State->Null, DeveloperObject->True|>,
 			<|Object->waterSampleModelSevered5, Name->"DynamicFoamAnalysis Test Water Sample5 for no model" <> $SessionUUID, Status->Available, DeveloperObject->True, Model->Null|>,
 			<|Object->waterSampleDiscarded6, Name->"DynamicFoamAnalysis Test Water Sample6 for discarded" <> $SessionUUID, Status->Discarded, DeveloperObject->True|>,
-			<|Object->concentrationSample7, Name->"DynamicFoamAnalysis Test Water Sample7 for concentration" <> $SessionUUID, Replace[Composition]->{{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {10 Micromolar, Link[Model[Molecule, "Sodium n-Dodecyl Sulfate"]]}}, Status->Available, DeveloperObject->True|>,
+			<|Object->concentrationSample7, Name->"DynamicFoamAnalysis Test Water Sample7 for concentration" <> $SessionUUID, Replace[Composition]->{{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Sodium n-Dodecyl Sulfate"]], Now}}, Status->Available, DeveloperObject->True|>,
 			<|Object->waterSampleLowVol8, Name->"DynamicFoamAnalysis Test Water Sample8 for low volume" <> $SessionUUID, Status->Available, DeveloperObject->True|>,
 			<|Object->waterSampleHighVol9, Name->"DynamicFoamAnalysis Test Water Sample9 for high volume" <> $SessionUUID, Status->Available, DeveloperObject->True|>
 		}];

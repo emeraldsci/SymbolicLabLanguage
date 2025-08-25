@@ -17,7 +17,7 @@
 
 validModelItemQTests[packet : PacketP[Model[Item]]] := With[
 	{
-		prodPackets = Download[Lookup[packet, Products], Packet[Deprecated]]
+		prodPackets = Download[Lookup[packet, Products], Packet[Deprecated,CountPerSample]]
 	},
 	{
 
@@ -96,6 +96,46 @@ validModelItemQTests[packet : PacketP[Model[Item]]] := With[
 				{Upright, _, ObjectP[]},
 				{Except[Upright], _, _}
 			]
+		],
+		Test["If the item is marked as Counted, then all non-deprecated products must have CountPerSample set:",
+			{
+				Lookup[Select[prodPackets,!TrueQ[Lookup[#,Deprecated]]&],CountPerSample,{}],
+				Lookup[packet, Counted]
+			},
+			{{_Integer...},True} | {{Null...},False|Null}
+		],
+
+		(* The name for each non-Null ConnectorGrip entry matches the name of the index-matched Connector. *)
+		Test["The name of each non-Null ConnectorGrip matches that the name of the index-matched Connector",
+			Module[{connectors, connectorGrips},
+				{connectors, connectorGrips} = Lookup[packet, {Connectors, ConnectorGrips}, {}];
+
+				If[MatchQ[connectorGrips, {}],
+					True,
+					(* Name is the first index of both Connectors and ConnectorGrips *)
+					And @@ (MatchQ[#[[1,1]], #[[2,1]]]& /@ PickList[Transpose[{connectors, connectorGrips}], connectorGrips, Except[Null]])
+				]
+			],
+			True
+		],
+
+		(* Min is less than Max for ConnectorGrip torque. *)
+		Test["Each ConnectorGrip Min Torque is less than or equal to its Max Torque:",
+			Module[{connectorGrips, minTorques, maxTorques},
+				connectorGrips = Cases[Lookup[packet, ConnectorGrips], {_, _, _, Except[Null], Except[Null]}];
+
+				If[MatchQ[connectorGrips, {}],
+					True,
+
+					(* Pull out the min and max torques for the field. *)
+					minTorques = connectorGrips[[All, 4]];
+					maxTorques = connectorGrips[[All, 5]];
+
+					(* Name is the first index of both Connectors and ConnectorGrips *)
+					And @@ MapThread[LessEqualQ[#1, #2]&, {minTorques, maxTorques}]
+				]
+			],
+			True
 		]
 	}
 ];
@@ -246,7 +286,7 @@ validModelItemCapQTests[packet:PacketP[Model[Item, Cap]]]:={
 			NFPA,
 			DOTHazardClass,
 			BiosafetyLevel,
-			TransportChilled,
+			TransportTemperature,
 			Flammable,
 			IncompatibleMaterials,
 			LightSensitive
@@ -266,8 +306,8 @@ validModelItemCapQTests[packet:PacketP[Model[Item, Cap]]]:={
 		{Crimp, Except[Null]}|{Except[Crimp], _}
 	],
 
-	Test["If CoverType->Crimp, Reusability is False:",
-		Lookup[packet, {CoverType, Reusability}],
+	Test["If CoverType->Crimp, Reusable is False:",
+		Lookup[packet, {CoverType, Reusable}],
 		{Crimp, False}|{Except[Crimp], _}
 	],
 
@@ -324,7 +364,7 @@ validModelItemStopperQTests[packet:PacketP[Model[Item, Stopper]]]:={
 		NFPA,
 		DOTHazardClass,
 		BiosafetyLevel,
-		TransportChilled,
+		TransportTemperature,
 		Flammable,
 		IncompatibleMaterials,
 		LightSensitive
@@ -341,22 +381,22 @@ validModelItemStopperQTests[packet:PacketP[Model[Item, Stopper]]]:={
 (*validModelItemPlateSealQTests*)
 
 
-validModelItemPlateSealQTests[packet:PacketP[Model[Item, PlateSeal]]]:={
+validModelItemPlateSealQTests[packet : PacketP[Model[Item, PlateSeal]]] := {
 
-	NullFieldTest[packet,{
+	NullFieldTest[packet, {
 		MSDSFile,
 		MSDSRequired,
 		NFPA,
 		DOTHazardClass,
 		BiosafetyLevel,
-		TransportChilled,
+		TransportTemperature,
 		Flammable,
 		IncompatibleMaterials,
 		LightSensitive
 	}],
 
 	(* unique fields *)
-	NotNullFieldTest[packet,{CoverType,CoverFootprint,SealType,Name,Synonyms,ImageFile,Pierceable,MinTemperature,MaxTemperature}],
+	NotNullFieldTest[packet, {CoverType, CoverFootprint, SealType, Name, Synonyms, ImageFile, Pierceable, MinTemperature, MaxTemperature, RestingOrientation}],
 
 	Test["CoverType must be Seal:",
 		Lookup[packet, CoverType],
@@ -369,7 +409,7 @@ validModelItemPlateSealQTests[packet:PacketP[Model[Item, PlateSeal]]]:={
 	],
 
 	RequiredTogetherTest[packet, {Positions, PositionPlotting}],
-	FieldComparisonTest[packet, {MaxTemperature,MinTemperature},GreaterEqual]
+	FieldComparisonTest[packet, {MaxTemperature, MinTemperature}, GreaterEqual]
 };
 
 
@@ -416,18 +456,18 @@ validItemBlankQTests[packet:PacketP[Model[Item, Blank]]]:={
 
 
 validModelItemCrossFlowFilterQTests[packet:PacketP[Model[Item,CrossFlowFilter]]]:={
-	
+
 	NullFieldTest[packet,{
 		MSDSFile,
 		MSDSRequired,
 		NFPA,
 		DOTHazardClass,
 		BiosafetyLevel,
-		TransportChilled,
+		TransportTemperature,
 		Flammable,
 		LightSensitive
 	}],
-	
+
 	(* Unique fields *)
 	NotNullFieldTest[packet,{
 		Name,
@@ -442,13 +482,13 @@ validModelItemCrossFlowFilterQTests[packet:PacketP[Model[Item,CrossFlowFilter]]]
 		DefaultFlowRate,
 		FilterType
 	}],
-	
+
 	(* Required together *)
 	Test["The contents of the Name field is a member of the Synonyms field:",
 		MemberQ[Lookup[packet, Synonyms], Lookup[packet, Name]],
 		True
 	],
-	
+
 	Test[
 		"Object has at least three connectors with names \"Feed Pressure Sensor Inlet\", \"Retentate Pressure Sensor Outlet\" and \"Permeate Pressure Sensor Inlet\":",
 		MemberQ[Lookup[packet,Connectors][[All,1]],#]&/@{"Feed Pressure Sensor Inlet","Retentate Pressure Sensor Outlet","Permeate Pressure Sensor Inlet"},
@@ -469,7 +509,7 @@ validModelItemDialysisMembraneQTests[packet:PacketP[Model[Item, DialysisMembrane
             NFPA,
             DOTHazardClass,
             BiosafetyLevel,
-            TransportChilled,
+						TransportTemperature,
             Flammable,
             IncompatibleMaterials,
             LightSensitive
@@ -503,7 +543,7 @@ validModelItemDialysisMembraneQTests[packet:PacketP[Model[Item, DialysisMembrane
 (*validModelItemLidQTests*)
 
 
-validModelItemLidQTests[packet:PacketP[Model[Item, Lid]]]:={
+validModelItemLidQTests[packet : PacketP[Model[Item, Lid]]] := {
 
 	NullFieldTest[packet,
 		{
@@ -512,7 +552,7 @@ validModelItemLidQTests[packet:PacketP[Model[Item, Lid]]]:={
 			NFPA,
 			DOTHazardClass,
 			BiosafetyLevel,
-			TransportChilled,
+			TransportTemperature,
 			Flammable,
 			IncompatibleMaterials,
 			LightSensitive
@@ -520,38 +560,38 @@ validModelItemLidQTests[packet:PacketP[Model[Item, Lid]]]:={
 	],
 
 	(* unique fields *)
-	NotNullFieldTest[packet,{CoverType,CoverFootprint,Name,Synonyms,CondensationRings,ImageFile}],
-	
-	RequiredTogetherTest[packet,{NumberOfRings,Rows,Columns,AspectRatio}],
+	NotNullFieldTest[packet, {CoverType, CoverFootprint, Name, Synonyms, CondensationRings, ImageFile, RestingOrientation}],
+
+	RequiredTogetherTest[packet, {NumberOfRings, Rows, Columns, AspectRatio}],
 
 	Test["CoverType cannot be Crimp, Seal, Screw, or Pry:",
 		Lookup[packet, CoverType],
-		Except[Crimp|Seal|Screw|Pry]
+		Except[Crimp | Seal | Screw | Pry]
 	],
 
 	Test["If and only if Columns is greater than 1, HorizontalPitch and HorizontalMargin are informed:",
-		Lookup[packet,{Columns,HorizontalPitch,HorizontalMargin}],
-		{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
+		Lookup[packet, {Columns, HorizontalPitch, HorizontalMargin}],
+		{GreaterP[1], Except[NullP], Except[NullP]} | {Except[GreaterP[1]], _, _}
 	],
 
 	Test["If and only if Rows is greater than 1, VerticalPitch and VerticalMargin area informed:",
-		Lookup[packet,{Rows,VerticalPitch,VerticalMargin}],
-		{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
+		Lookup[packet, {Rows, VerticalPitch, VerticalMargin}],
+		{GreaterP[1], Except[NullP], Except[NullP]} | {Except[GreaterP[1]], _, _}
 	],
 
 	Test["If both Rows and Columns are non-Null, then AspectRatio must be informed and must be equal to Columns/Rows. Otherwise, AspectRatio cannot be informed:",
-		Lookup[packet,{Rows,Columns,AspectRatio}],
+		Lookup[packet, {Rows, Columns, AspectRatio}],
 		Alternatives[
-			{Except[NullP],Except[NullP],_?(Equal[Rationalize[#],Divide @@ Lookup[packet, {Columns, Rows} ]]&)},
-			{NullP,NullP,NullP}
+			{Except[NullP], Except[NullP], _?(Equal[Rationalize[#], Divide @@ Lookup[packet, {Columns, Rows} ]]&)},
+			{NullP, NullP, NullP}
 		]
 	],
 
 	Test["If both Rows and Columns are non-Null, then NumberOfRings must be equal to Rows*Columns:",
-		Lookup[packet,{Rows,Columns,NumberOfRings}],
+		Lookup[packet, {Rows, Columns, NumberOfRings}],
 		Alternatives[
-			{Except[NullP],Except[NullP],Times@@Lookup[packet, {Rows, Columns}]},
-			{NullP,NullP,NullP}
+			{Except[NullP], Except[NullP], Times @@ Lookup[packet, {Rows, Columns}]},
+			{NullP, NullP, NullP}
 		]
 	],
 
@@ -574,7 +614,7 @@ validModelItemLidSpacerQTests[packet:PacketP[Model[Item, LidSpacer]]]:={
 			NFPA,
 			DOTHazardClass,
 			BiosafetyLevel,
-			TransportChilled,
+			TransportTemperature,
 			Flammable,
 			IncompatibleMaterials,
 			LightSensitive
@@ -689,6 +729,14 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 			True,
 			Message -> Hold[Error::ColumnConnectors],
 			MessageArguments -> {identifier}
+		],
+		(*The FilmThickness Option must be filled out if Model's Chromatography Type is GasChromatography*)
+		Test["FilmThickness Option must be filled out if Model's Chromatography Type is GasChromatography:",
+			If[MatchQ[Lookup[packet,Model],GasChromatography],
+				!NullQ[packet,FilmThickness],
+				True
+			],
+			True
 		],
 		Test["ProtectedColumns can only be informed if ColumnType->Guard:",
 			Lookup[packet, {ColumnType, ProtectedColumns}],
@@ -838,7 +886,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 		If[MatchQ[Lookup[packet, ChromatographyType], Flash],
 			NotNullFieldTest[
 				packet,
-				{MinFlowRate, MaxFlowRate, MinPressure, MaxPressure, Diameter, ColumnLength, Reusability, StorageCaps},
+				{MinFlowRate, MaxFlowRate, MinPressure, MaxPressure, Diameter, ColumnLength, Reusable, StorageCaps, BedWeight, VoidVolume},
 				Message -> Hold[Error::RequiredOptions],
 				MessageArguments -> {identifier}
 			],
@@ -849,7 +897,7 @@ validModelItemColumnQTests[packet : PacketP[Model[Item, Column]]] := With[
 		If[MatchQ[Lookup[packet,{ChromatographyType, ColumnType}],{Flash, Except[Join]}],
 			NotNullFieldTest[
 				packet,
-				{SeparationMode, PackingMaterial, BedWeight, VoidVolume},
+				{SeparationMode, PackingMaterial},
 				Message -> Hold[Error::RequiredOptions],
 				MessageArguments -> {identifier}
 			],
@@ -2139,7 +2187,7 @@ validModelItemCalibrationWeightQTests[packet:PacketP[Model[Item,CalibrationWeigh
 			WettedMaterials
 		}
 	],
-	
+
 	(* Fields that must be uploaded *)
 	NotNullFieldTest[
 		packet,
@@ -2575,7 +2623,7 @@ validModelItemSeptumQTests[packet:PacketP[Model[Item, Septum]]]:={
 		NFPA,
 		DOTHazardClass,
 		BiosafetyLevel,
-		TransportChilled,
+		TransportTemperature,
 		Flammable,
 		IncompatibleMaterials,
 		LightSensitive
@@ -2613,7 +2661,7 @@ validModelItemSequencingCartridgeQTests[packet : PacketP[Model[Item, SequencingC
 			ShelfLife,
 			UnsealedShelfLife,
 			WettedMaterials,
-			Reusability,
+			Reusable,
 			MaxNumberOfUses,
 			Name,
 			Synonyms
@@ -2682,7 +2730,7 @@ validModelItemStickerQTests[packet:PacketP[Model[Item,Sticker]]]:={
 			NFPA,
 			DOTHazardClass,
 			BiosafetyLevel,
-			TransportChilled,
+			TransportTemperature,
 			WettedMaterials
 		}
 	],
@@ -2770,6 +2818,14 @@ validModelItemTipsQTests[packet : PacketP[Model[Item, Tips]]] := {
 	}
 	],
 
+	Test["If Sterilized field is True, Sterile field must be True:",
+		If[MatchQ[Lookup[packet, Sterilized], True],
+			TrueQ[Lookup[packet, Sterile]],
+			True
+		],
+		True
+	],
+
 	Test["TipConnectionType cannot be Null if PipetteType is Micropipette, Serological, or PositiveDisplacement:",
 		If[MatchQ[Lookup[packet, PipetteType], Alternatives[Micropipette, Serological, PositiveDisplacement]],
 			MatchQ[TipConnectionType, Except[Null]],
@@ -2815,7 +2871,39 @@ validModelItemTipsQTests[packet : PacketP[Model[Item, Tips]]] := {
 			KeyExistsQ[Experiment`Private`$HamiltonPartNumbersEquivalence,Download[Lookup[packet,Products][[1]],CatalogNumber]],
 			(* pass for all other cases *)
 			True
-		]
+		],
+		True
+	],
+
+	Test["For serologocial pipettes, at least one graduations field (AscendingGraduations or DescendingGraduations) is informed:",
+		If[MatchQ[Lookup[packet, PipetteType], Serological],
+			MatchQ[Lookup[packet, {AscendingGraduations, DescendingGraduations}], Except[{{}, {}}]],
+			True
+		],
+		True
+	],
+
+	Test["AscendingGraduations are listed from the smallest marking:",
+		{Lookup[packet,AscendingGraduations],MatchQ[Lookup[packet,AscendingGraduations],Sort[Lookup[packet,AscendingGraduations]]]},
+		{{___},True}
+	],
+	Test["DescendingGraduations are listed from the largest marking:",
+		{Lookup[packet,DescendingGraduations],MatchQ[Lookup[packet,DescendingGraduations],Reverse[Sort[Lookup[packet,DescendingGraduations]]]]},
+		{{___},True}
+	],
+	Test["For serological pipettes, MinVolume is a member of AscendingGraduations or max volume minus DescendingGraduations:",
+		If[MatchQ[Lookup[packet, PipetteType], Serological],
+			MemberQ[Lookup[packet, AscendingGraduations], EqualP[Lookup[packet, MinVolume]]] || MemberQ[Lookup[packet, MaxVolume] - Lookup[packet, DescendingGraduations], EqualP[Lookup[packet, MinVolume]]],
+			True
+		],
+		True
+	],
+	Test["For serological pipettes, MaxVolume is a member of AscendingGraduations or zero is a member of DescendingGraduations:",
+		If[MatchQ[Lookup[packet, PipetteType], Serological],
+			MemberQ[Lookup[packet, AscendingGraduations], EqualP[Lookup[packet, MaxVolume]]] || MemberQ[Lookup[packet, DescendingGraduations], EqualP[0 Milliliter]],
+			True
+		],
+		True
 	]
 };
 
@@ -2992,7 +3080,7 @@ validModelItemSequencingCartridgeQTests[packet:PacketP[Model[Item,Cartridge, DNA
 			ShelfLife,
 			UnsealedShelfLife,
 			WettedMaterials,
-			Reusability,
+			Reusable,
 			MaxNumberOfUses,
 			Name,
 			Synonyms
@@ -3018,7 +3106,7 @@ validModelItemCartridgeProteinCapillaryElectrophoresisQTests[packet:PacketP[Mode
 		NFPA,
 		DOTHazardClass,
 		BiosafetyLevel,
-		TransportChilled,
+		TransportTemperature,
 		Flammable,
 		IncompatibleMaterials,
 		LightSensitive
@@ -3219,7 +3307,10 @@ validModelItemSupportRodQTests[packet:PacketP[Model[Item,SupportRod]]]:={
 };
 
 
+(* ::Subsection:: *)
+(*validModelItemWasteLabelQTests*)
 
+validModelItemWasteLabelQTests[packet : PacketP[Model[Item, WasteLabel]]] := {};
 
 
 (* ::Subsection:: *)
@@ -3316,9 +3407,8 @@ registerValidQTestFunction[Model[Item, Plier],validModelItemPlierQTests];
 registerValidQTestFunction[Model[Item, DeliveryNeedle],validModelItemDeliveryNeedleQTests];
 registerValidQTestFunction[Model[Item, SupportRod],validModelItemSupportRodQTests];
 registerValidQTestFunction[Model[Item, Washer],validModelItemWasherQTests];
+registerValidQTestFunction[Model[Item, WasteLabel], validModelItemWasteLabelQTests];
 registerValidQTestFunction[Model[Item, WilhelmyPlate],validModelItemWilhelmyPlateQTests];
-
-
 
 
 

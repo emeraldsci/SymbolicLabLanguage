@@ -18,7 +18,12 @@ DefineObjectType[Object[Plumbing,Tubing], {
 				Object[Instrument, HPLC][BufferBInlet],
 				Object[Instrument, HPLC][BufferCInlet],
 				Object[Instrument, HPLC][BufferDInlet],
-				Object[Instrument, HPLC][NeedleWashSolutionInlet]
+				Object[Instrument, HPLC][NeedleWashSolutionInlet],
+				Object[Instrument, HPLC][SecondaryNeedleWashSolutionInlet],
+				Object[Instrument, HPLC][TertiaryNeedleWashSolutionInlet],
+				Object[Instrument, HPLC][SealWashSolutionInlet],
+				Object[Instrument, HPLC][FluidicsWashSolutionInlet]
+
 			],
 			Description -> "The HPLC instrument that is connected to this buffer inlet tubing.",
 			Category -> "Instrument Specifications"
@@ -55,7 +60,8 @@ DefineObjectType[Object[Plumbing,Tubing], {
 				Object[Instrument, IonChromatography][BufferBInlet],
 				Object[Instrument, IonChromatography][BufferCInlet],
 				Object[Instrument, IonChromatography][BufferDInlet],
-				Object[Instrument, IonChromatography][NeedleWashSolutionInlet]
+				Object[Instrument, IonChromatography][NeedleWashSolutionInlet],
+				Object[Instrument, IonChromatography][SealWashSolutionInlet]
 			],
 			Description -> "The Ion Chromatography instrument that is connected to this buffer inlet tubing.",
 			Category -> "Instrument Specifications"
@@ -71,7 +77,9 @@ DefineObjectType[Object[Plumbing,Tubing], {
 				Object[Instrument, SupercriticalFluidChromatography][CosolventDInlet],
 				Object[Instrument, SupercriticalFluidChromatography][MakeupSolventInlet],
 				Object[Instrument, SupercriticalFluidChromatography][NeedleWashSolutionInlet],
-				Object[Instrument, SupercriticalFluidChromatography][ExternalNeedleWashSolutionInlet]
+				Object[Instrument, SupercriticalFluidChromatography][ExternalNeedleWashSolutionInlet],
+				Object[Instrument, SupercriticalFluidChromatography][SealWashSolutionInlet],
+				Object[Instrument, SupercriticalFluidChromatography][SecondarySealWashSolutionInlet]
 			],
 			Description -> "The SupercriticalFluidChromatography instrument that is connected to this buffer inlet tubing.",
 			Category -> "Instrument Specifications"
@@ -87,6 +95,19 @@ DefineObjectType[Object[Plumbing,Tubing], {
 				Object[Instrument, PlateWasher][BufferDInlet]
 			],
 			Description -> "The plate washer instrument that is connected to this buffer inlet tubing.",
+			Category -> "Instrument Specifications"
+		},
+		pHTitrator -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, pHTitrator][BaseContainerInlet],
+				Object[Instrument, pHTitrator][AcidContainerInlet],
+				Object[Instrument, pHTitrator][BaseContainerOutlet],
+				Object[Instrument, pHTitrator][AcidContainerOutlet]
+			],
+			Description -> "The pHTitrator instrument that is connected to this buffer inlet tubing.",
 			Category -> "Instrument Specifications"
 		}
 	}

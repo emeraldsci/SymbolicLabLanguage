@@ -375,7 +375,7 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 			Category -> "Injection",
 			Developer -> True
 		},
-		PrimaryPreppingSolvent -> {
+		Line1PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -383,10 +383,10 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The primary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryPreppingSolvent -> {
+		Line1SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -394,10 +394,10 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors prior to running the experiment.",
+			Description -> "The secondary solvent with which the line 1 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		PrimaryFlushingSolvent -> {
+		Line2PrimaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -405,10 +405,10 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The primary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The primary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
-		SecondaryFlushingSolvent -> {
+		Line2SecondaryPurgingSolvent -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -416,7 +416,7 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 				Model[Sample],
 				Object[Sample]
 			],
-			Description -> "The secondary solvent with which to wash the injectors after running the experiment.",
+			Description -> "The secondary solvent with which the line 2 injector is washed before and after running the experiment.",
 			Category -> "Injector Cleaning"
 		},
 		SolventWasteContainer -> {
@@ -470,6 +470,56 @@ DefineObjectType[Object[Protocol, SampleManipulation], {
 			Relation -> {Model[Container] | Object[Container], Null},
 			Description -> "A list of placements used to move the waste container(s) into position.",
 			Headers -> {"Object to Place", "Placement Tree"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PrimaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move primary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		SecondaryPurgingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container] | Object[Container] | Model[Sample] | Object[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move secondary purging solvents into position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		PurgingTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for cleaning before and after running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		StorageTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for storage when experiment is not running.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		InjectionTubingPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Plumbing, Tubing] | Object[Plumbing, Tubing] ,Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move tubing into magnetic standoff position for sample injection when running the experiment.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},

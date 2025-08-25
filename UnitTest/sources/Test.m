@@ -479,7 +479,7 @@ testMessageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg
 
 	(* If we're running on AWS with a Unit Test object and a message was thrown that wasn't expected, upload it to the unit test object. *)
 	If[MatchQ[ECL`$UnitTestObject, _ECL`Object] && Length[Intersection[$MessagesExpected, {HoldForm[Message[msg, args]]}, SameTest->matchingMessageQ]]==0,
-		Module[{currentDatabase},
+		Module[{currentDatabase, loginResult, originalLoginResult, retryCount},
 			currentDatabase=Global`$ConstellationDomain;
 
 			Echo["Unexpected message thrown: "<>ToString[HoldForm[Message[msg, args]]]];
@@ -487,12 +487,32 @@ testMessageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg
 			Echo["Logging into stage database to upload message..."];
 
 			(* Switch to the test database. *)
-			ECL`Login[
-				ECL`Token -> GoLink`Private`stashedJwt,
-				ECL`Database -> "https://constellation-stage.emeraldcloudlab.com",
-				ECL`QuietDomainChange -> True
+			(* Retry logging in to the stage database up to 3 times. *)
+			loginResult = False;
+			For[retryCount=1,retryCount<=3,retryCount++,
+				loginResult = ECL`Login[
+					ECL`Token -> GoLink`Private`stashedJwt,
+					ECL`Database -> "https://constellation-stage.emeraldcloudlab.com",
+					ECL`QuietDomainChange -> True
+				];
+
+				(* Check if login was successful, abort if not *)
+				If[TrueQ[loginResult],
+					Break[];
+				];
+				Echo["Attempt number "<>ToString[retryCount]<>" failed. Retrying..."];
+				Pause[3];
 			];
 
+			(* Check if login was successful, abort if not *)
+			If[!TrueQ[loginResult],
+				Echo["Error: Login to stage database failed."];
+				(* This is the exit safe word for Mathematica jobs running in Manifold -- for more context, look this up in ecl-python. enjoy*)
+				Echo["terminate-kernel-strange-excitement-rapidly-explore"];
+				Abort[];
+			];
+
+			(* Perform the upload *)
 			(* Block out $Notebook in case the test has this stubbed to an object that doesn't exist on the stage DB. *)
 			Block[{ECL`$Notebook=Null},
 				ECL`Upload[<|
@@ -504,10 +524,28 @@ testMessageHandler[one_String, two:Hold[msg_MessageName], three:Hold[Message[msg
 			Echo["Returning to "<>ToString[currentDatabase]<>" database..."];
 
 			(* Switch back to the original database. *)
-			ECL`Login[
-				ECL`Token -> GoLink`Private`stashedJwt,
-				ECL`Database -> currentDatabase,
-				ECL`QuietDomainChange -> True
+			(* Retry logging in to the original database up to 3 times. *)
+			originalLoginResult = False;
+			For[retryCount=1,retryCount<=3,retryCount++,
+				originalLoginResult = ECL`Login[
+					ECL`Token -> GoLink`Private`stashedJwt,
+					ECL`Database -> currentDatabase,
+					ECL`QuietDomainChange -> True
+				];
+			
+				(* Check if returning was successful, abort if not *)
+				If[TrueQ[originalLoginResult],
+					Break[];
+				];
+				Echo["Attempt number "<>ToString[retryCount]<>" failed. Retrying..."];
+				Pause[3];
+			];
+
+			(* Check if returning was successful, abort if not *)
+			If[!TrueQ[originalLoginResult],
+				Echo["Error: Could not log back into the original database"];
+				Echo["terminate-kernel-strange-excitement-rapidly-explore"];
+				Abort[];
 			];
 		]
 	];

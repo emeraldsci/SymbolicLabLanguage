@@ -189,6 +189,15 @@ DefineObjectType[Object[Protocol, Cover], {
 			Description -> "Indicates if Aluminum Foil should be wrapped around the entire container after the cover is attached in order to protect the container's contents from light.",
 			Category -> "General"
 		},
+		AluminumFoilRoll -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item, Consumable] | Object[Item, Consumable],
+			Description -> "The aluminum foil roll that is used to cover containers where CoverType -> AluminumFoil, or that is used to wrap around the entire contianer if AluminumFoil is True.",
+			Category -> "General",
+			Developer -> True
+		},
 		KeckClamp -> {
 			Format -> Multiple,
 			Class -> Link,

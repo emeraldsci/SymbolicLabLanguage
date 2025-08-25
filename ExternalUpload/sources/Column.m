@@ -462,6 +462,14 @@ DefineOptions[UploadColumn,
 				Description -> "The condition in which this model columns are stored when not in use by an experiment.",
 				Category -> "Storage Information",
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[StorageCondition]]]
+			},
+			{
+				OptionName -> StorageBuffer,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "The preferred buffer used to keep the resin wet while the column is stored.",
+				Category -> "Storage Information",
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample]}]]
 			}
 		]
 	},
@@ -470,6 +478,21 @@ DefineOptions[UploadColumn,
 	}
 ];
 
+(* Takes in a list of inputs and a list of options, return a list of resolved options. *)
+(* This is a basic legacy resolver that doesn't throw messages, so can just map over all the inputs *)
+resolveUploadColumnOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
+	{result},
+
+	(* Map over the singleton function - this is legacy code *)
+	result = MapThread[resolveUploadColumnOptions[myType, #1, #2, #3] &, {myInput, myOptions, rawOptions}];
+
+	(* Return the output in the expected format *)
+	<|
+		Result -> result,
+		InvalidInputs -> {},
+		InvalidOptions -> {}
+	|>
+];
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
@@ -542,7 +565,7 @@ resolveUploadColumnOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:
 	
 	(* Get the definition of this type. *)
 	fields=Association@Lookup[LookupTypeDefinition[myType], Fields];
-	
+
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
 	resolvedOptions=Association@KeyValueMap[
 		Function[{fieldSymbol, fieldValue},
@@ -560,12 +583,13 @@ resolveUploadColumnOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:
 						
 						(* Strip off all links from our value. *)
 						formattedFieldValue=ReplaceAll[fieldValue, link_Link :> RemoveLinkID[link]];
-						
-						(* Based on the class of our field, we have to format the values differently. *)
-						Switch[Lookup[fieldDefinition, Class],
-							Computable,
+
+						(* Based on the class/format of our field, we have to format the values differently. *)
+						Switch[{Lookup[fieldDefinition, Format],Lookup[fieldDefinition, Class]},
+							{Computable,_},
 							Nothing,
-							_List,
+							(* Named Multiple *)
+							{Multiple,{_Rule..}},
 							fieldSymbol -> formattedFieldValue[[All, 2]],
 							_,
 							fieldSymbol -> formattedFieldValue
@@ -584,8 +608,9 @@ resolveUploadColumnOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:
 InstallDefaultUploadFunction[
 	UploadColumn,
 	Model[Item, Column],
-	resolveUploadColumnOptions,
-	{InstallNameOverload -> True, InstallObjectOverload -> True}
+	OptionResolver -> resolveUploadColumnOptions,
+	InstallNameOverload -> True,
+	InstallObjectOverload -> True
 ];
 InstallValidQFunction[UploadColumn, Model[Item, Column]];
 InstallOptionsFunction[UploadColumn, Model[Item, Column]];

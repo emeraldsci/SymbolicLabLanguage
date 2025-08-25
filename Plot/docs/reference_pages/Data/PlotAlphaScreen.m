@@ -13,7 +13,7 @@ DefineUsage[PlotAlphaScreen,
 		BasicDefinitions -> {
 			{
 				Definition -> {"PlotAlphaScreen[alphaScreenData]", "plot"},
-				Description -> "provides a graphical plot the provided luminescence intensities either in the form of a histogram or a box and whisker plot.",
+				Description -> "provides a graphical plot of the provided luminescence intensities either in the form of a histogram or a box and whisker plot.",
 				Inputs :> {
 					{
 						InputName -> "alphaScreenData",
@@ -25,6 +25,26 @@ DefineUsage[PlotAlphaScreen,
 					{
 						OutputName -> "plot",
 						Description -> "A graphical representation of the distribution(s) of intensities provided.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition -> {"PlotAlphaScreen[protocol]", "plot"},
+				Description -> "creates a 'plot' of the luminescence intensities in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing alpha screen data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, AlphaScreen]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the alpha screen protocol.",
 						Pattern :> ValidGraphicsP[]
 					}
 				}

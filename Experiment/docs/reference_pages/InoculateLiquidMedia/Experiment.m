@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 (* ::Section:: *)
 (* ExperimentInoculateLiquidMedia *)
@@ -9,30 +9,56 @@ DefineUsage[ExperimentInoculateLiquidMedia,
   {
     BasicDefinitions -> {
       {
-        Definition -> {"ExperimentInoculateLiquidMedia[objects]","protocol"},
-        Description -> "creates a 'protocol' that takes colonies from the provided sample or container 'objects' and deposit them into liquid media.",
+        Definition -> {"ExperimentInoculateLiquidMedia[Samples]", "Protocol"},
+        Description -> "creates a 'protocol' that takes cells from the provided 'Samples' and deposit them into fresh liquid media to initiate culture growth.",
         Inputs :> {
           IndexMatching[
             {
-              InputName -> "objects",
-              Description-> "The samples that the colonies are taken from.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              InputName -> "Samples",
+              Description-> "The samples that the cells are taken from.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to P24" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
-              Expandable->False
+              Expandable -> False
             },
-            IndexName->"experiment samples"
+            IndexName -> "experiment samples"
           ]
         },
-        Outputs:>{
+        Outputs :> {
           {
-            OutputName -> "protocol",
-            Description -> "Protocol generated to transfer colonies from the input to a liquid media.",
-            Pattern :> ListableP[ObjectP[Object[Protocol,RoboticCellPreparation]]]
+            OutputName -> "Protocol",
+            Description -> "A protocol generated to transfer cells from the input to a liquid media.",
+            Pattern :> ListableP[ObjectP[{Object[Protocol, RoboticCellPreparation], Object[Protocol, InoculateLiquidMedia]}]]
           }
         }
       }
@@ -50,7 +76,7 @@ DefineUsage[ExperimentInoculateLiquidMedia,
       "ExperimentSpreadCells",
       "ExperimentStreakCells"
     },
-    Author -> {"harrison.gronlund", "taylor.hochuli"}
+    Author -> {"harrison.gronlund", "yanzhe.zhu", "lige.tonggu"}
   }
 ];
 
@@ -58,41 +84,67 @@ DefineUsage[ExperimentInoculateLiquidMedia,
 (* ExperimentInoculateLiquidMediaOptions *)
 DefineUsage[ExperimentInoculateLiquidMediaOptions,
   {
-    BasicDefinitions->{
+    BasicDefinitions -> {
       {
-        Definition->{"ExperimentInoculateLiquidMediaOptions[Samples]","ResolvedOptions"},
-        Description->"returns the resolved options for ExperimentInoculateLiquidMedia when it is called on",
-        Inputs:> {
+        Definition -> {"ExperimentInoculateLiquidMediaOptions[Samples]", "ResolvedOptions"},
+        Description -> "returns the resolved options for ExperimentInoculateLiquidMedia when it is called on.",
+        Inputs :> {
           IndexMatching[
             {
-              InputName->"Samples",
-              Description->"The samples that the colonies are taken from.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              InputName -> "Samples",
+              Description-> "The samples that the cells are taken from.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to P24" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
-              Expandable->False
+              Expandable -> False
             },
-            IndexName->"experiment samples"
+            IndexName -> "experiment samples"
           ]
         },
-        Outputs:>{
+        Outputs :> {
           {
-            OutputName->"ResolvedOptions",
-            Description->"Resolved options when ExperimentInoculateLiquidMedia is called on the input samples.",
-            Pattern:>{Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
+            OutputName -> "ResolvedOptions",
+            Description -> "Resolved options when ExperimentInoculateLiquidMedia is called on the input samples.",
+            Pattern :> {Rule[_Symbol, Except[Automatic|$Failed]]|RuleDelayed[_Symbol, Except[Automatic|$Failed]]...}
           }
         }
       }
     },
-    SeeAlso->{
+    SeeAlso -> {
       "ExperimentInoculateLiquidMedia",
       "ValidExperimentInoculateLiquidMediaQ"
     },
-    Author->{"harrison.gronlund", "taylor.hochuli"}
+    Author -> {"harrison.gronlund", "yanzhe.zhu", "lige.tonggu"}
   }
 ];
 
@@ -100,40 +152,137 @@ DefineUsage[ExperimentInoculateLiquidMediaOptions,
 (* ValidExperimentInoculateLiquidMediaQ *)
 DefineUsage[ValidExperimentInoculateLiquidMediaQ,
   {
-    BasicDefinitions->{
+    BasicDefinitions -> {
       {
-        Definition->{"ValidExperimentInoculateLiquidMediaQ[Samples]","ResolvedOptions"},
-        Description->"checks whether the provided inputs and specified options are valid for calling ExperimentInoculateLiquidMedia.",
-        Inputs:> {
+        Definition -> {"ValidExperimentInoculateLiquidMediaQ[Samples]", "Boolean"},
+        Description -> "checks whether the provided inputs and specified options are valid for calling ExperimentInoculateLiquidMedia.",
+        Inputs :> {
           IndexMatching[
             {
-              InputName->"Samples",
-              Description->"The samples that the colonies are taken from.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              InputName -> "Samples",
+              Description-> "The samples that the cells are taken from.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to P24" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
-              Expandable->False
+              Expandable -> False
             },
-            IndexName->"experiment samples"
+            IndexName -> "experiment samples"
           ]
         },
-        Outputs:>{
+        Outputs :> {
           {
-            OutputName->"ResolvedOptions",
-            Description->"Whether or not the ExperimentInoculateLiquidMedia call is valid. Return value can be changed via the OutputFormat option.",
-            Pattern:>{Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]...}
+            OutputName -> "Boolean",
+            Description -> "Whether or not the ExperimentInoculateLiquidMedia call is valid. Return value can be changed via the OutputFormat option.",
+            Pattern :> _EmeraldTestSummary|BooleanP
           }
         }
       }
     },
-    SeeAlso->{
+    SeeAlso -> {
       "ExperimentInoculateLiquidMedia",
       "ExperimentInoculateLiquidMediaOptions"
     },
-    Author->{"harrison.gronlund", "taylor.hochuli"}
+    Author -> {"harrison.gronlund", "yanzhe.zhu", "lige.tonggu"}
+  }
+];
+(* ::Section:: *)
+(* ExperimentInoculateLiquidMediaPreview *)
+DefineUsage[ExperimentInoculateLiquidMediaPreview,
+  {
+    BasicDefinitions -> {
+      {
+        Definition -> {"ExperimentInoculateLiquidMediaPreview[Samples]", "Preview"},
+        Description -> "generates a graphical 'Preview' for taking cells from the provided 'Samples' and deposit them into fresh liquid media to initiate culture growth.",
+        Inputs :> {
+          IndexMatching[
+            {
+              InputName -> "Samples",
+              Description-> "The samples that the cells are taken from.",
+              Widget -> Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to P24" -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
+                },
+                "Model Sample" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
+              ],
+              Expandable -> False
+            },
+            IndexName -> "experiment samples"
+          ]
+        },
+        Outputs :> {
+          {
+            OutputName -> "Preview",
+            Description -> "A graphical representation of the provided InoculateLiquidMedia experiment. This value is always Null.",
+            Pattern :> Null
+          }
+        }
+      }
+    },
+    MoreInformation -> {},
+    SeeAlso -> {
+      "ExperimentInoculateLiquidMedia",
+      "ExperimentInoculateLiquidMediaOptions",
+      "ValidExperimentInoculateLiquidMediaQ",
+      "ExperimentPickColonies",
+      "ExperimentTransfer"
+    },
+    Author -> {"harrison.gronlund", "yanzhe.zhu", "lige.tonggu"}
   }
 ];

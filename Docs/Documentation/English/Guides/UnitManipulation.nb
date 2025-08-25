@@ -1,3 +1,445 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:97d43e0f1517e01911d27bea6795a561dde06e5870eba86715417614fc27ce3f
-size 18018
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     17373,        435]
+NotebookOptionsPosition[     13161,        354]
+NotebookOutlinePosition[     14610,        390]
+CellTagsIndexPosition[     14567,        387]
+WindowTitle->UnitManipulation
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "9348a84f-0089-4b1b-9ac8-a327a1ec7f06"]
+        }],ExpressionUUID->"3f5a0c02-1b49-42ae-b17f-886aa2af56a4"],
+        StripOnInput->False], {"\<\"Convert\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/Convert"], "\<\"CurrencyForm\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/CurrencyForm"], "\<\"QuantityFunction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityFunction"], \
+"\<\"QuantityPartition\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/QuantityPartition"], "\<\"RCFToRPM\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/RCFToRPM"], "\<\"RoundMatchQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:WLExtension/ref/RoundMatchQ"], "\<\"RPMToRCF\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/RPMToRCF"], "\<\"SignificantFigures\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/SignificantFigures"], "\<\"UnitFlatten\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitFlatten"], "\<\"UnitForm\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/UnitForm"], "\<\"Unitless\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldUnits/ref/Unitless"], "\<\"UnitScale\"\>":>
+       Documentation`HelpLookup["paclet:EmeraldUnits/ref/UnitScale"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "7fcc5c43-a72b-4319-a984-a13f92ae60b7"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "bfea3267-6df6-4dbc-8f0a-fd9fdb142282"]
+        }],ExpressionUUID->"5128d81e-dac1-42ce-9c79-e65688fc5510"],
+        StripOnInput->False], {"\<\"Numerics\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/Numerics"], "\<\"StatisticalDistributions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/StatisticalDistributions"], "\<\"UnitPatterns\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/UnitPatterns"], "\<\"UnitProperties\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/UnitProperties"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "d451d336-1b4b-40c1-ba2f-d22cbd89f1b1"]
+    }], "AnchorBar",ExpressionUUID->"6a157982-6e74-4e2f-b69a-c1668148b0a0"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"6e537b80-a91d-434b-a4d5-2a2787ef9c04"],
+
+Cell["Unit Manipulation", "GuideTitle",
+ CellID->42361807,ExpressionUUID->"58f1d97e-a5ba-4679-80e3-8c80b696329e"],
+
+Cell["Collection of functions for manipulating units.", "GuideAbstract",
+ CellID->311676236,ExpressionUUID->"ec9eb4fa-a951-4f97-84b3-083a9297e7b4"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->223321074,ExpressionUUID->"b6824eed-21f1-4424-8f0e-4753fb9cd76b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Convert"]],"paclet:EmeraldUnits/ref/Convert"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ec6fb872-a577-4679-b509-6a4f3794dbae"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the provided physical quantity to the specified target unit."
+}], "GuideText",
+ CellID->350317995,ExpressionUUID->"880c9a8f-09c7-40e0-aaec-455a97e818c9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Unitless"]],"paclet:EmeraldUnits/ref/Unitless"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "91904ec4-64fe-4645-bfbf-1aa5126e380f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Removes any units from the provided input to return only the numeric value."
+}], "GuideText",
+ CellID->62771518,ExpressionUUID->"0e5d094a-a199-4cea-a692-82411ae6e078"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnitScale"]],"paclet:EmeraldUnits/ref/UnitScale"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ae34ff39-dfc0-4304-bbe1-648a9918e0c4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the unit of the provided physical quantity to the nearest \
+sensible metric unit such that the number is the greater than 1 if possible."
+}], "GuideText",
+ CellID->151906604,ExpressionUUID->"e3b0eb76-7cc4-4fb9-b516-dac6db1d0b36"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnitFlatten"]],"paclet:EmeraldUnits/ref/UnitFlatten"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e1543aec-8120-40b9-bbee-65746d7b52e0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the provided physical quantity to its base units (i.e. without \
+any prefixes)."
+}], "GuideText",
+ CellID->379761624,ExpressionUUID->"9867159e-675d-4200-ba7c-84e0da1b6766"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnitForm"]],"paclet:EmeraldUnits/ref/UnitForm"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8814edcb-cf3a-41db-9389-481540db9258"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the provided physical quantity to a compact string representation."
+}], "GuideText",
+ CellID->404573100,ExpressionUUID->"d4125841-7cee-46b7-b609-688814288280"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["CurrencyForm"]],"paclet:EmeraldUnits/ref/CurrencyForm"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "11a43bb6-51af-479e-b119-ce88104c9d95"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Formats the provided number as a monetary amount."
+}], "GuideText",
+ CellID->67954016,ExpressionUUID->"bfb8d7cc-40aa-4c0f-b318-a38fccf89199"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SignificantFigures"]],"paclet:Core/ref/SignificantFigures"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1b1ce48f-e5a0-481f-8e60-30c60bf3152d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the specified number of significant figures for the provided \
+number."
+}], "GuideText",
+ CellID->227363280,ExpressionUUID->"8f5b1340-747f-4d88-aedd-bc8ad6d466a1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["RCFToRPM"]],"paclet:Core/ref/RCFToRPM"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "604ba551-5e80-4af7-b8b6-7b095af624fc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the provided relative centrifugal force (RCF) value into \
+revolutions per minute (RPM) value given the provided parameters."
+}], "GuideText",
+ CellID->154425995,ExpressionUUID->"7c49aa4d-0167-40f3-9e1f-164cba5b646a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["RPMToRCF"]],"paclet:Core/ref/RPMToRCF"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5cdecad5-75aa-4d9d-85a0-7f6045ba0918"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts the provided revolutions per minute (RPM) value into relative \
+centrifugal force (RCF) value given the provided parameters."
+}], "GuideText",
+ CellID->148293910,ExpressionUUID->"58784812-b83d-4600-bbf7-4ca026b69429"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["QuantityPartition"]],
+    "paclet:EmeraldUnits/ref/QuantityPartition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "92571538-141b-404b-8968-f3b0594ff4de"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Divides the provided quantity into multiple smaller quantities that are \
+all equal to or below the specified amount."
+}], "GuideText",
+ CellID->38509511,ExpressionUUID->"e2830462-1d8a-41a9-82a0-78e8d8f35381"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["QuantityFunction"]],"paclet:EmeraldUnits/ref/QuantityFunction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "28cc9448-7a4a-42ba-8595-2b7ee4e4044e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Applies the specified function after converting the provided quantity to \
+the specified input unit and returns the output value with another specified \
+output unit."
+}], "GuideText",
+ CellID->215978080,ExpressionUUID->"08f5911f-b1ba-478c-9eeb-cd93f10a123d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["RoundMatchQ"]],"paclet:WLExtension/ref/RoundMatchQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "16d90974-1b91-4f78-ae4c-4115ccd2955a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a function that rounds its arguments to the specified digits and \
+then applies MatchQ to them."
+}], "GuideText",
+ CellID->163842423,ExpressionUUID->"f85f6c41-0ca4-4d22-aa21-d5be57bab55f"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->208633998,ExpressionUUID->"f68f49b4-11ab-407d-8a7a-3bec4c9067cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"df76deb5-b4d2-4454-8a80-d238f7f71e51"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->8910574,ExpressionUUID->"d4843c83-2c2f-4e9f-b926-7612b72853fe"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->65665343,ExpressionUUID->"1001cb65-d22a-4e90-8399-7bfc7dd0f873"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Numerics"]],"paclet:Docs/guide/Numerics"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->84274082,ExpressionUUID->"914d4381-9eb5-4e13-b752-d28d37841bab"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["StatisticalDistributions"]],
+   "paclet:Docs/guide/StatisticalDistributions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->562136068,ExpressionUUID->"4647a5d7-5e32-48b7-bd4f-330f0d7bcbec"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnitPatterns"]],"paclet:Docs/guide/UnitPatterns"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->330805912,ExpressionUUID->"d944e080-5383-4a1d-96dd-9d4322777863"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["UnitProperties"]],"paclet:Docs/guide/UnitProperties"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->190193749,ExpressionUUID->"d32c4cc6-39e7-461f-b7c6-8bbe712ef2fa"],
+
+Cell["", "FooterCell",
+ CellID->146948538,ExpressionUUID->"7146d814-8e7d-4edd-8bff-0fbb018a6abb"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"UnitManipulation",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 19:11:21", "context" -> "Docs`", 
+    "keywords" -> {
+     "Convert", "Unitless", "UnitScale", "UnitFlatten", "UnitForm", 
+      "CurrencyForm", "SignificantFigures", "RCFToRPM", "RPMToRCF", 
+      "QuantityPartition", "QuantityFunction", "RoundMatchQ"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> "Collection of functions for manipulating units.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "UnitManipulation", "title" -> "UnitManipulation", "type" -> "Guide", 
+    "uri" -> "Docs/guide/UnitManipulation", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 4446, 104, 56, "AnchorBarGrid",ExpressionUUID->"6e537b80-a91d-434b-a4d5-2a2787ef9c04",
+ CellID->1],
+Cell[5037, 127, 113, 1, 50, "GuideTitle",ExpressionUUID->"58f1d97e-a5ba-4679-80e3-8c80b696329e",
+ CellID->42361807],
+Cell[5153, 130, 147, 1, 31, "GuideAbstract",ExpressionUUID->"ec9eb4fa-a951-4f97-84b3-083a9297e7b4",
+ CellID->311676236],
+Cell[5303, 133, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"b6824eed-21f1-4424-8f0e-4753fb9cd76b",
+ CellID->223321074],
+Cell[5419, 136, 459, 11, 38, "GuideText",ExpressionUUID->"880c9a8f-09c7-40e0-aaec-455a97e818c9",
+ CellID->350317995],
+Cell[5881, 149, 466, 11, 38, "GuideText",ExpressionUUID->"0e5d094a-a199-4cea-a692-82411ae6e078",
+ CellID->62771518],
+Cell[6350, 162, 539, 12, 59, "GuideText",ExpressionUUID->"e3b0eb76-7cc4-4fb9-b516-dac6db1d0b36",
+ CellID->151906604],
+Cell[6892, 176, 486, 12, 38, "GuideText",ExpressionUUID->"9867159e-675d-4200-ba7c-84e0da1b6766",
+ CellID->379761624],
+Cell[7381, 190, 467, 11, 38, "GuideText",ExpressionUUID->"d4125841-7cee-46b7-b609-688814288280",
+ CellID->404573100],
+Cell[7851, 203, 448, 11, 38, "GuideText",ExpressionUUID->"bfb8d7cc-40aa-4c0f-b318-a38fccf89199",
+ CellID->67954016],
+Cell[8302, 216, 482, 12, 38, "GuideText",ExpressionUUID->"8f5b1340-747f-4d88-aedd-bc8ad6d466a1",
+ CellID->227363280],
+Cell[8787, 230, 517, 12, 59, "GuideText",ExpressionUUID->"7c49aa4d-0167-40f3-9e1f-164cba5b646a",
+ CellID->154425995],
+Cell[9307, 244, 517, 12, 59, "GuideText",ExpressionUUID->"58784812-b83d-4600-bbf7-4ca026b69429",
+ CellID->148293910],
+Cell[9827, 258, 531, 13, 59, "GuideText",ExpressionUUID->"e2830462-1d8a-41a9-82a0-78e8d8f35381",
+ CellID->38509511],
+Cell[10361, 273, 574, 13, 59, "GuideText",ExpressionUUID->"08f5911f-b1ba-478c-9eeb-cd93f10a123d",
+ CellID->215978080],
+Cell[10938, 288, 502, 12, 59, "GuideText",ExpressionUUID->"f85f6c41-0ca4-4d22-aa21-d5be57bab55f",
+ CellID->163842423],
+Cell[11443, 302, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f68f49b4-11ab-407d-8a7a-3bec4c9067cb",
+ CellID->208633998],
+Cell[11552, 305, 390, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"d4843c83-2c2f-4e9f-b926-7612b72853fe",
+ CellID->8910574],
+Cell[11945, 319, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"1001cb65-d22a-4e90-8399-7bfc7dd0f873",
+ CellID->65665343],
+Cell[12053, 322, 234, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"914d4381-9eb5-4e13-b752-d28d37841bab",
+ CellID->84274082],
+Cell[12290, 329, 271, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"4647a5d7-5e32-48b7-bd4f-330f0d7bcbec",
+ CellID->562136068],
+Cell[12564, 337, 243, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"d944e080-5383-4a1d-96dd-9d4322777863",
+ CellID->330805912],
+Cell[12810, 344, 247, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"d32c4cc6-39e7-461f-b7c6-8bbe712ef2fa",
+ CellID->190193749],
+Cell[13060, 351, 97, 1, 41, "FooterCell",ExpressionUUID->"7146d814-8e7d-4edd-8bff-0fbb018a6abb",
+ CellID->146948538]
+}
+]
+*)
+
+(* End of internal cache information *)
+

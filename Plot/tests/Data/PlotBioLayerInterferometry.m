@@ -65,7 +65,7 @@ DefineTests[PlotBioLayerInterferometry,
     ],
     Example[{Basic, "Given an Object[Protocol,BioLayerInterferometry] with associated kinetics data, PlotBioLayerInterferometry returns plot for all associated data objects:"},
       PlotBioLayerInterferometry[Object[Protocol, BioLayerInterferometry, "Test protocol object for PlotBioLayerInterferometry"]],
-      {ValidGraphicsP[], ValidGraphicsP[]},
+      _SlideView,
       SetUp :> (
         $CreatedObjects = {}
       ),
@@ -76,13 +76,12 @@ DefineTests[PlotBioLayerInterferometry,
     ],
 
     (*messages*)
-    Example[{Messages, "BLIPlotTooManyRequestedChannels", "When the Channels option is used, the input must be a single data object:"},
+    Example[{Additional, "When the Channels option is used, multiple objects can be input:"},
       PlotBioLayerInterferometry[
         Object[Protocol, BioLayerInterferometry, "Test protocol object for PlotBioLayerInterferometry"],
         Channels -> {1,3,4}
       ],
-      $Failed,
-      Messages:>{Error::BLIPlotTooManyRequestedChannels}
+      _SlideView
     ],
     Example[{Messages, "NoBLIDataToPlot", "The protocol input must contain data objects:"},
       PlotBioLayerInterferometry[
@@ -221,7 +220,11 @@ DefineTests[PlotBioLayerInterferometry,
           Replace[KineticsAssociation] -> fakeAssociationData,
           Replace[KineticsAssociationBaselines] -> fakeAssociationBaselines,
           Replace[KineticsDissociation] -> fakeDissociationData,
-          Replace[KineticsDissociationBaselines] -> fakeDissociationBaselines
+          Replace[KineticsDissociationBaselines] -> fakeDissociationBaselines,
+
+          (* mock up for a simple 2 step assay with association/dissocaition. there are 5 dilutions and one sample *)
+          Replace[WellInformation] -> fakeWellInformation,
+          Replace[WellData]-> fakeWellData
         ],
         Association[
           Type -> Object[Data, BioLayerInterferometry],

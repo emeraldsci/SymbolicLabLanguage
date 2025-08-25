@@ -56,6 +56,20 @@ DefineObjectType[Model[Maintenance, RefillReservoir], {
 			Description -> "Indicates if the reservoir container can be removed from its location.",
 			Category -> "General"
 		},
+		ReservoirCover -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[FieldP[Object, Output -> Short]],
+			Description -> "The field relative to target models' objects which links to the closure for the reservoir.",
+			Category -> "General"
+		},
+		ReservoirInlet -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[FieldP[Object, Output -> Short]],
+			Description -> "The field relative to target models' objects which links to the port that connects to this reservoir.",
+			Category -> "General"
+		},
 		DrainReservoir -> {
 			Format -> Single,
 			Class -> Expression,
@@ -196,41 +210,6 @@ DefineObjectType[Model[Maintenance, RefillReservoir], {
 			Pattern :> _Link,
 			Relation -> Model[Instrument, FumeHood],
 			Description -> "The environment in which to equilibrate temperature of the reservoir.",
-			Category -> "General",
-			Developer -> True
-		},
-		SampleContainer -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Container],
-			Description -> "Container used to temporarily hold the sample from the reservoir if it is not disposed.",
-			Category -> "General",
-			Developer -> True
-		},
-		StorageContainer -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Container],
-			Description -> "Container used to store the sample from the reservoir if it is not disposed.",
-			Category -> "General"
-		},
-		Funnel -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Part, Funnel],
-			Description -> "The funnel used to transfer a sample from one container to another.",
-			Category -> "General",
-			Developer -> True
-		},
-		Spatula -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Model[Item, Spatula],
-			Description -> "The type(s) of spatula(s) used to transfer a solid sample from the reservoir to the SampleContainer.",
 			Category -> "General",
 			Developer -> True
 		}

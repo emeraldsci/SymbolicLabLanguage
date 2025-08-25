@@ -59,6 +59,15 @@ DefineObjectType[Model[Item], {
 			Developer -> True
 		},
 
+		(* --- Quality Assurance --- *)
+		ReceivingBatchInformation -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FieldP[{Object[Report,Certificate,Analysis],Object[Report, Certificate, Calibration]},Output->Short],
+			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+
 		(*--- Item Specifications ---*)
 		ImageFile -> {
 			Format -> Single,
@@ -208,11 +217,11 @@ DefineObjectType[Model[Item], {
 			Description -> "The physical state of the item when well solvated at room temperature and pressure.",
 			Category -> "Physical Properties"
 		},
-		Reusability -> {
+		Reusable -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this item can be used repeatedly.",
+			Description -> "Indicates if the item is designed for multiple uses or if it is discarded after a single use. Reusable items may require cleaning and if so they are hand washed or dishwashed after each use.",
 			Category -> "Physical Properties"
 		},
 
@@ -310,19 +319,19 @@ DefineObjectType[Model[Item], {
 			Description -> "Indicates that this item is stored in a storage buffer and will be wet when retrieved from storage.",
 			Category -> "Storage & Handling"
 		},
-		TransportChilled -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if items of this model should be refrigerated during transport when used in experiments.",
-			Category -> "Storage & Handling"
-		},
-		TransportWarmed -> {
+		TransportTemperature -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "The temperature that items of this model should be incubated at while transported between instruments during experimentation.",
+			Category -> "Storage & Handling"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how items of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage & Handling"
 		},
 		CleaningMethod -> {
@@ -350,6 +359,16 @@ DefineObjectType[Model[Item], {
 			Description -> "Specifications for the ends of this plumbing component that may connect to other plumbing components or instrument ports.",
 			Category -> "Plumbing Information",
 			Headers -> {"Connector Name","Connector Type", "Thread Type", "Inner Diameter", "Outer Diameter","Gender"}
+		},
+		ConnectorGrips -> {
+			Format -> Multiple,
+			Class -> {String, Expression, Real, Real, Real},
+			Pattern :> {ConnectorNameP, ConnectorGripTypeP, GreaterP[0 Inch], GreaterEqualP[0 Newton*Meter], GreaterP[0 Newton*Meter]},
+			Units -> {None, None, Inch, Newton*Meter, Newton*Meter},
+			Description -> "For each member of Connectors, specifications for a region on this item that may be used in concert with tools or fingers to assist in establishing a Connection to the Connector. Connector Name denotes the Connector to which a grip corresponds. Grip Type indicates the form the grip takes. Options include Flats or Knurled. Flats are parallel faces on the body of an object designed interface with the mouth of a wrench. Knurled denotes that a pattern is etched into the body of an object to increase roughness. Grip Size is the distance across flats or the diameter of the grip. Min torque is the lower bound energetic work required to make a leak-proof seal via rotational force. Max torque is the upper bound after which the fitting may be irreparably distorted or damaged.",
+			Category -> "Plumbing Information",
+			Headers -> {"Connector Name", "Grip Type", "Grip Size", "Min Torque", "Max Torque"},
+			IndexMatching -> Connectors
 		},
 		DeadVolume-> {
 			Format -> Single,
@@ -404,6 +423,13 @@ DefineObjectType[Model[Item], {
 		},
 
 		(* --- Inventory --- *)
+		Counted -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if instances of this item have a count which must be decremented each time the item is used.",
+			Category -> "Inventory"
+		},
 		Products -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -420,6 +446,14 @@ DefineObjectType[Model[Item], {
 			Description -> "PDFs of any product documentation provided by the supplier of this item model.",
 			Category -> "Inventory"
 		},
+		ProductURL -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> URLP,
+			Description -> "Supplier webpage for the product.",
+			Category -> "Product Specifications",
+			Developer -> True
+		},
 		Preparable -> {
 			Format -> Single,
 			Class -> Boolean,
@@ -434,6 +468,14 @@ DefineObjectType[Model[Item], {
 			Relation -> Object[Product][KitComponents, ProductModel],
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
+		},
+		Stocked->{
+			Format->Single,
+			Class->Expression,
+			Pattern:>BooleanP,
+			Description->"Indicates if the items of this model are kept in stock for use on demand in experiments.",
+			Abstract->True,
+			Category -> "Container Specifications"
 		},
 		MixedBatchProducts -> {
 			Format -> Multiple,
@@ -493,6 +535,15 @@ DefineObjectType[Model[Item], {
 			Category -> "Inventory",
 			Developer -> True
 		},
+		DefaultStickerModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item,Sticker],
+			Description -> "The type of sticker applied to items of this model when they are stickered upon receiving.",
+			Category -> "Inventory",
+			Developer->True
+		},
 		BarcodeTag -> {
 			Format -> Single,
 			Class -> Link,
@@ -515,7 +566,7 @@ DefineObjectType[Model[Item], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this model of item arrives sterile from the manufacturer.",
+			Description -> "Indicates that this model of item arrives free of microbial contamination from the manufacturer or is sterilized upon receiving.",
 			Category -> "Health & Safety"
 		},
 		Sterilized -> {

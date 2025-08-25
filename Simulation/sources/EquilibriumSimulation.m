@@ -248,7 +248,7 @@ Authors[SimulateEquilibriumOptions] := {"brad"};
 SimulateEquilibriumOptions[in: inputPatternSimulateEquilibriumP, ops : OptionsPattern[SimulateEquilibrium]] := Module[{listedOptions, noOutputOptions},
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	SimulateEquilibrium[in, PassOptions[SimulateEquilibrium, Append[noOutputOptions, Output->Options]]]

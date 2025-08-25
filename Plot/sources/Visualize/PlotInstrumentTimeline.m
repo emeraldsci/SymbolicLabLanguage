@@ -57,7 +57,7 @@ PlotInstrumentTimeline[
 	(* Pull out all the maintenance data *)
 	myMaintenancePercent=-1*(Last[parsedLog][[All,2]]);
 
-	(* Pull out the points we need for teh pie chart *)
+	(* Pull out the points we need for the pie chart *)
 	myAvailable=Last[parsedLog][[All,3]];
 	myRunning=Last[parsedLog][[All,4]];
 	myUndergoingMaintenance=Last[parsedLog][[All,5]];

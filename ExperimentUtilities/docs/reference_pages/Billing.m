@@ -13,7 +13,7 @@ DefineUsage[
 			{"SyncBilling[team]", "updated team and bill", "provides an 'updated team and bill' for the usage of the ECL and activities financed by 'team' during the current billing cycle."}
 		},
 		MoreInformation -> {
-			"The updated bill reflects costs calculated by PriceExperiment, PriceData, PriceShipping, PriceTransactions, and PriceRecurring.",
+			"The updated bill reflects costs calculated by SummaryPrice, PriceData, PriceShipping, PriceTransactions, and PriceRecurring.",
 			"Pricing information is only calculated for Completed parent protocols - protocols that are incomplete at the time of the bill closing will appear on the next bill.",
 			"Note that any prices displayed in this documentation are only for the sake of example and do not represent actual prices.",
 			"If the current billing cycle ends, a new bill is generated, and the completed bill is closed out."
@@ -32,7 +32,7 @@ DefineUsage[
 			"PriceOperatorTime",
 			"PriceMaterials",
 			"PriceTransactions",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "dima", "steven"}
 	}
@@ -69,7 +69,7 @@ DefineUsage[
 			"PriceMaterials",
 			"PriceTransactions",
 			"SyncBilling",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "dima", "steven"}
 	}
@@ -104,7 +104,7 @@ DefineUsage[
 			"PriceMaterials",
 			"PriceTransactions",
 			"SyncBilling",
-			"PriceExperiment"
+			"SummaryPrice"
 		},
 		Author -> {"alou", "robert", "dima"}
 	}

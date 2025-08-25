@@ -12,22 +12,28 @@ DefineTests[PlotDigitalPCR,
 		(*-- Basic --*)
 		Example[{Basic,"Given a DigitalPCR data object, creates a plot:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"]
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID]
 			],
 			ValidGraphicsP[]
 		],
 		Example[{Basic,"Given multiple DigitalPCR data objects, creates a plot:"},
 			PlotDigitalPCR[
 				{
-					Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
-					Object[Data,DigitalPCR,"PlotDigitalPCR test data 2"]
+					Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
+					Object[Data,DigitalPCR,"PlotDigitalPCR test data 2 " <> $SessionUUID]
 				}
 			],
 			ValidGraphicsP[]
 		],
+		Example[{Basic, "Given a DigitalPCR protocol object, creates a plot:"},
+			PlotDigitalPCR[
+				Object[Protocol, DigitalPCR, "PlotDigitalPCR test protocol " <> $SessionUUID]
+			],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
 		Example[{Basic,"Given a DigitalPCR data object, creates a 2D scatter plot when PlotChannels are specified:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotChannels->{517.*Nanometer,556.*Nanometer}
 			],
 			ValidGraphicsP[]
@@ -35,7 +41,7 @@ DefineTests[PlotDigitalPCR,
 
 		Example[{Additional,"Given a DigitalPCR data object, creates a 2D plot:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotChannels->{517.*Nanometer,556.*Nanometer}
 			],
 			ValidGraphicsP[]
@@ -43,8 +49,8 @@ DefineTests[PlotDigitalPCR,
 		Example[{Additional,"Given multiple DigitalPCR data objects, creates a 2D plot:"},
 			PlotDigitalPCR[
 				{
-					Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
-					Object[Data,DigitalPCR,"PlotDigitalPCR test data 2"]
+					Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
+					Object[Data,DigitalPCR,"PlotDigitalPCR test data 2 " <> $SessionUUID]
 				},
 				PlotChannels->{517.*Nanometer,556.*Nanometer}
 			],
@@ -54,7 +60,7 @@ DefineTests[PlotDigitalPCR,
 		(*-- Messages --*)
 		Example[{Messages,"PlotDigitalPCROptionMismatch","When plotting all ExcitationWavelengths or all EmissionWavelengths available by specifying 'All', the other option cannot be specified as a list of wavelengths:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				ExcitationWavelengths->All,
 				EmissionWavelengths->{517.*Nanometer}
 			],
@@ -65,7 +71,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Messages,"PlotDigitalPCRDualChannel","When plotting 2D scatter plot by specifying PlotChannels, EmissionWavelengths must match the wavelengths specified in PlotChannels:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotChannels->{517.*Nanometer,556.*Nanometer},
 				EmissionWavelengths->{517.*Nanometer}
 			],
@@ -76,7 +82,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Messages,"PlotDigitalPCRLengthMismatch","When specifying ExcitationWavelengths and EmissionWavelengths, the option lengths must match:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				ExcitationWavelengths->{495.*Nanometer,535.*Nanometer},
 				EmissionWavelengths->{517.*Nanometer}
 			],
@@ -87,7 +93,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Messages,"PlotDigitalPCRIncompatiblePlot","When PlotType is 'EmeraldListLinePlot', PlotChannels must be specified as a pair of wavelength channels for a 2D plot:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotType->EmeraldListLinePlot,
 				PlotChannels->SingleChannel
 			],
@@ -98,7 +104,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Messages,"PlotDigitalPCRIncompatiblePlot","When PlotType is 'EmeraldSmoothHistogram', PlotChannels must be specified as \"Single Channel\":"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotType->EmeraldSmoothHistogram,
 				PlotChannels->{517.*Nanometer,556.*Nanometer}
 			],
@@ -111,7 +117,7 @@ DefineTests[PlotDigitalPCR,
 		(*-- Options --*)
 		Example[{Options,PlotType,"PlotType automatically resolves to EmeraldSmoothHistogram:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,PlotType],
@@ -120,7 +126,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,PlotType,"PlotType automatically resolves to EmeraldListLinePlot when PlotChannels is specified as a pair of wavelengths:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotChannels->{517.*Nanometer,556.*Nanometer},
 				Output->Options
 			];
@@ -130,7 +136,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,PlotType,"PlotType can be specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotType->EmeraldSmoothHistogram,
 				Output->Options
 			];
@@ -141,7 +147,7 @@ DefineTests[PlotDigitalPCR,
 
 		Example[{Options,ExcitationWavelengths,"ExcitationWavelengths automatically resolves to a list of unique wavelength channels from probes and reference probes in input data objects:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,ExcitationWavelengths],
@@ -150,7 +156,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,ExcitationWavelengths,"ExcitationWavelengths automatically resolves when EmissionWavelengths are specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				EmissionWavelengths->{517.*Nanometer},
 				Output->Options
 			];
@@ -160,7 +166,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,ExcitationWavelengths,"ExcitationWavelengths can be specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				ExcitationWavelengths->{495.*Nanometer},
 				Output->Options
 			];
@@ -171,7 +177,7 @@ DefineTests[PlotDigitalPCR,
 
 		Example[{Options,EmissionWavelengths,"EmissionWavelengths automatically resolves to a list of unique wavelength channels from probes and reference probes in input data objects:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Options
 			];
 			Lookup[options,EmissionWavelengths],
@@ -180,7 +186,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,EmissionWavelengths,"EmissionWavelengths automatically resolves when ExcitationWavelengths are specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				ExcitationWavelengths->{495.*Nanometer},
 				Output->Options
 			];
@@ -190,7 +196,7 @@ DefineTests[PlotDigitalPCR,
 		],
 		Example[{Options,EmissionWavelengths,"EmissionWavelengths can be specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				EmissionWavelengths->{517.*Nanometer},
 				Output->Options
 			];
@@ -201,7 +207,7 @@ DefineTests[PlotDigitalPCR,
 
 		Example[{Options,PlotChannels,"PlotChannels can be specified:"},
 			options=PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				PlotChannels->{517.*Nanometer,665.*Nanometer},
 				Output->Options
 			];
@@ -212,28 +218,28 @@ DefineTests[PlotDigitalPCR,
 
 		Example[{Options,Output,"When specified as Result, outputs a plot:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Result
 			],
 			ValidGraphicsP[]
 		],
 		Example[{Options,Output,"When specified as Options, outputs a list of resolved options:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Options
 			],
 			{_Rule..}
 		],
 		Example[{Options,Output,"When specified as Preview, outputs a plot preview:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Preview
 			],
-			SlideView[{Legended[ValidGraphicsP[], ___]..},___]
+			ValidGraphicsP[]
 		],
 		Example[{Options,Output,"When specified as Tests, outputs {}:"},
 			PlotDigitalPCR[
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
+				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1 " <> $SessionUUID],
 				Output->Tests
 			],
 			{}
@@ -252,9 +258,10 @@ DefineTests[PlotDigitalPCR,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects={
-				Object[Sample,"PlotDigitalPCR test sample 1"],
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 1"],
-				Object[Data,DigitalPCR,"PlotDigitalPCR test data 2"]
+				Object[Sample, "PlotDigitalPCR test sample 1 " <> $SessionUUID],
+				Object[Data, DigitalPCR, "PlotDigitalPCR test data 1 " <> $SessionUUID],
+				Object[Data, DigitalPCR, "PlotDigitalPCR test data 2 " <> $SessionUUID],
+				Object[Protocol, DigitalPCR, "PlotDigitalPCR test protocol " <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -273,7 +280,7 @@ DefineTests[PlotDigitalPCR,
 			Upload[<|
 				Type->Object[Sample],
 				Model->Link[Model[Sample,"Milli-Q water"],Objects],
-				Name->"PlotDigitalPCR test sample 1"
+				Name->"PlotDigitalPCR test sample 1 " <> $SessionUUID
 			|>];
 
 			(* dropletExcitationWavelengths and dropletEmissionWavelengths stay the same *)
@@ -306,13 +313,13 @@ DefineTests[PlotDigitalPCR,
 			(* Generate first data object *)
 			Upload[{
 				<|
-					Object->Object[Sample,"PlotDigitalPCR test sample 1"],
+					Object->Object[Sample,"PlotDigitalPCR test sample 1 " <> $SessionUUID],
 					DeveloperObject->True
 				|>,
 				<|
 					Type->Object[Data,DigitalPCR],
-					Name->"PlotDigitalPCR test data 1",
-					Replace[SamplesIn]->{Link[Object[Sample,"PlotDigitalPCR test sample 1"],Data]},
+					Name->"PlotDigitalPCR test data 1 " <> $SessionUUID,
+					Replace[SamplesIn]->{Link[Object[Sample,"PlotDigitalPCR test sample 1 " <> $SessionUUID],Data]},
 					Well->"A1",
 					Replace[ExcitationWavelengths]->{495.*Nanometer,535.*Nanometer},
 					Replace[EmissionWavelengths]->{517.*Nanometer,556.*Nanometer},
@@ -325,8 +332,8 @@ DefineTests[PlotDigitalPCR,
 				|>,
 				<|
 					Type->Object[Data,DigitalPCR],
-					Name->"PlotDigitalPCR test data 2",
-					Replace[SamplesIn]->{Link[Object[Sample,"PlotDigitalPCR test sample 1"],Data]},
+					Name->"PlotDigitalPCR test data 2 " <> $SessionUUID,
+					Replace[SamplesIn]->{Link[Object[Sample,"PlotDigitalPCR test sample 1 " <> $SessionUUID],Data]},
 					Well->"B1",
 					Replace[ExcitationWavelengths]->{495.*Nanometer,535.*Nanometer},
 					Replace[EmissionWavelengths]->{517.*Nanometer,556.*Nanometer},
@@ -337,7 +344,16 @@ DefineTests[PlotDigitalPCR,
 					Replace[DropletEmissionWavelengths]->dropletEmissionWavelengths,
 					DeveloperObject->True
 				|>
-			}]
+			}];
+
+			(* upload a protocol object with the data *)
+			Upload[
+				<|
+					Type -> Object[Protocol, DigitalPCR],
+					Name -> "PlotDigitalPCR test protocol " <> $SessionUUID,
+					Replace[Data] -> {Link[Object[Data, DigitalPCR, "PlotDigitalPCR test data 1 " <> $SessionUUID], Protocol], Link[Object[Data, DigitalPCR, "PlotDigitalPCR test data 2 " <> $SessionUUID], Protocol]}
+				|>
+			]
 		];
 	),
 

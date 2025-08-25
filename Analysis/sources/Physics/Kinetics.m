@@ -886,7 +886,7 @@ calculateKineticRateFields[trainingSpec:{{(*ic*)_,(*inj*)_,(*traj*)_,(*vol*)_}..
 	  	]
 		];
 
-		(* Solve the optimization problem.  which function solves it depends on teh OptimizationType option *)
+		(* Solve the optimization problem.  which function solves it depends on the OptimizationType option *)
 		List[
 	  With[
 			{

@@ -173,6 +173,40 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Category -> "Instrument Setup",
 			Abstract -> False
 		},
+		ReportedColumn -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if there was a column physically inside the column oven at the beginning of the experiment.",
+			Category -> "Instrument Setup",
+			Abstract -> False
+		},
+		ReportedInlet -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[GCInletP,GCDetectorP,Other,None],
+			Relation -> Null,
+			Description -> "If there was a column physically inside the column oven at the beginning of the experiment, this is the port in the column oven to which the column's inlet was connected.",
+			Category -> "Instrument Setup",
+			Abstract -> False
+		},
+		ReportedOutlet -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[GCInletP,GCDetectorP,Other,None],
+			Relation -> Null,
+			Description -> "If there was a column physically inside the column oven at the beginning of the experiment, this is the port in the column oven to which the column's outlet was connected.",
+			Category -> "Instrument Setup",
+			Abstract -> False
+		},
+		ReportedColumnSerialNumber -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "If there was a column assembly physically inside the column oven at the beginning of the experiment, this is a String including the serial numbers of any components of that assembly that have serial numbers.",
+			Category -> "Instrument Setup",
+			Abstract -> False
+		},
 		LiquidInjectionSyringe -> {
 			Format -> Single,
 			Class -> Link,
@@ -642,7 +676,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Pattern :> GreaterEqualP[0 Second],
 			Units -> Second,
 			Relation -> Null,
-			Description -> "For each member of SamplesIn, the amount of time the headspace tool will flow helium through the injection syringe (thus purging the syringe environment) before drawing a sample.",
+			Description -> "For each member of SamplesIn, the amount of time Helium will flow through the injection syringe (thus purging the syringe environment) before drawing a sample.",
 			IndexMatching -> SamplesIn,
 			Category -> "Sample Preparation",
 			Abstract -> False
@@ -1304,7 +1338,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Class -> Expression,
 			Pattern :> Alternatives[
 				{{GreaterEqualP[0*Minute],GreaterP[0*Kelvin]}..},
-				{{GreaterP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
+				{{GreaterEqualP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
 				{GreaterP[0*Kelvin],GreaterP[0*Minute]},
 				Isothermal
 			],
@@ -1926,8 +1960,11 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 		},
 		StandardHeadspaceSyringeFlushing -> {
 			Format -> Multiple,
-			Class -> Boolean,
-			Pattern :> BooleanP,
+			Class -> Expression,
+			Pattern :> Alternatives[
+				Continuous,
+				{Alternatives[BeforeSampleAspiration,AfterSampleInjection]..}
+			],
 			Relation -> Null,
 			Description -> "For each member of Standards, whether a stream of Helium was flowed through the cylinder of the headspace syringe without interruption between injections (Continuous), or if Helium was flowed through the cylinder of the headspace syringe before and/or after sample aspiration for specified amounts of time.",
 			IndexMatching -> Standards,
@@ -1940,7 +1977,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Pattern :> GreaterEqualP[0 Second],
 			Units -> Second,
 			Relation -> Null,
-			Description -> "For each member of Standards, the amount of time the headspace tool will flow helium through the injection syringe (thus purging the syringe environment) before drawing a sample.",
+			Description -> "For each member of Standards, the amount of time Helium will flow through the injection syringe (thus purging the syringe environment) before drawing a sample.",
 			IndexMatching -> Standards,
 			Category -> "Standards",
 			Abstract -> False
@@ -2602,7 +2639,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Class -> Expression,
 			Pattern :> Alternatives[
 				{{GreaterEqualP[0*Minute],GreaterP[0*Kelvin]}..},
-				{{GreaterP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
+				{{GreaterEqualP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
 				{GreaterP[0*Kelvin],GreaterP[0*Minute]},
 				Isothermal
 			],
@@ -3012,8 +3049,11 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 		},
 		BlankHeadspaceSyringeFlushing -> {
 			Format -> Multiple,
-			Class -> Boolean,
-			Pattern :> BooleanP,
+			Class -> Expression,
+			Pattern :> Alternatives[
+				Continuous,
+				{Alternatives[BeforeSampleAspiration,AfterSampleInjection]..}
+			],
 			Relation -> Null,
 			Description -> "For each member of Blanks, whether a stream of Helium was flowed through the cylinder of the headspace syringe without interruption between injections (Continuous), or if Helium was flowed through the cylinder of the headspace syringe before and/or after sample aspiration for specified amounts of time.",
 			IndexMatching -> Blanks,
@@ -3026,7 +3066,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Pattern :> GreaterEqualP[0 Second],
 			Units -> Second,
 			Relation -> Null,
-			Description -> "For each member of Blanks, the amount of time the headspace tool will flow helium through the injection syringe (thus purging the syringe environment) before drawing a sample.",
+			Description -> "For each member of Blanks, the amount of time Helium will flow through the injection syringe (thus purging the syringe environment) before drawing a sample.",
 			IndexMatching -> Blanks,
 			Category -> "Blanking",
 			Abstract -> False
@@ -3688,7 +3728,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Class -> Expression,
 			Pattern :> Alternatives[
 				{{GreaterEqualP[0*Minute],GreaterP[0*Kelvin]}..},
-				{{GreaterP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
+				{{GreaterEqualP[0*Kelvin/Minute],GreaterP[0*Kelvin],GreaterEqualP[0*Minute]}..},
 				{GreaterP[0*Kelvin],GreaterP[0*Minute]},
 				Isothermal
 			],
@@ -3790,6 +3830,16 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Description -> "The order of Sample, Standard, and Blank sample loading into the Instrument during measurement.",
 			Category -> "Injection",
 			Abstract -> False
+		},
+
+		NumberOfInjections -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Units -> None,
+			Description -> "The number of sample injections in the protocol. Equivalent to the length of the InjectionTable.",
+			Category -> "General",
+			Developer -> True
 		},
 
 		(* Caps *)
@@ -3936,7 +3986,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Format -> Multiple,
 			Class -> {Link,Expression},
 			Pattern :> {_Link,{LocationPositionP..}},
-			Relation -> {Object[Item,Septum],Null},
+			Relation -> {Alternatives[Object[Item,Septum], Model[Item,Septum]],Null},
 			Description -> "Location to place the injection port septum on the gas chromatograph used for the separation.",
 			Category -> "General",
 			Developer -> True,
@@ -3946,7 +3996,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Format -> Multiple,
 			Class -> {Link,Expression},
 			Pattern :> {_Link,{LocationPositionP..}},
-			Relation -> {Object[Item,GCInletLiner],Null},
+			Relation -> {Alternatives[Object[Item,GCInletLiner], Model[Item, GCInletLiner]],Null},
 			Description -> "Location to place the inlet liner on the gas chromatograph used for the separation.",
 			Category -> "General",
 			Developer -> True,
@@ -3956,7 +4006,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Format -> Multiple,
 			Class -> {Link,Expression},
 			Pattern :> {_Link,{LocationPositionP..}},
-			Relation -> {Object[Item,ORing],Null},
+			Relation -> {Alternatives[Object[Item,ORing], Model[Item, ORing]],Null},
 			Description -> "Location to place the inlet liner o-ring on the gas chromatograph used for the separation.",
 			Category -> "General",
 			Developer -> True,
@@ -3996,7 +4046,7 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 				Object[Item,Column],
 				Object[Plumbing,ColumnJoin]
 			],
-			Description -> "The column components that are currently installed in the instrument, and must be removed and stored.",
+			Description -> "The column components that are were installed in the instrument at the beginning of the protocol. If they are different from Columns, they will be removed and stored.",
 			Category -> "General"
 		},
 
@@ -4359,6 +4409,22 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 			Category -> "General",
 			Developer -> True
 		},
+		RawSequenceFileName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The full file name for the original queue file including directory, name, and file extension.",
+			Category -> "General",
+			Developer -> True
+		},
+		SequenceFileName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The full file name for the queue file saved in the instrument software including directory, name, and file extension.",
+			Category -> "General",
+			Developer -> True
+		},
 		TuneExportFilePath -> {
 			Format -> Single,
 			Class -> String,
@@ -4527,6 +4593,15 @@ DefineObjectType[Object[Protocol, GasChromatography], {
 
 		(*--- Et cetera ---*)
 
+
+		GasChromatographyStreaming -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether a stream of the instrument's autosampler deck will be uploaded during the sample run for this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
 		SeparationTime -> {
 			Format -> Single,
 			Class -> Expression,
